@@ -1,0 +1,338 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+/*!
+ * Provides GA102+ specific KernelGsp HAL implementations.
+ */
+
+#include "gpu/gsp/kernel_gsp.h"
+
+#include "gpu/bus/kern_bus.h"
+#include "rmgspseq.h"
+#include "vgpu/rpc.h"
+
+#include "published/ampere/ga102/dev_falcon_v4.h"
+#include "published/ampere/ga102/dev_riscv_pri.h"
+#include "published/ampere/ga102/dev_falcon_second_pri.h"
+#include "published/ampere/ga102/dev_gsp.h"
+#include "published/ampere/ga102/dev_gsp_addendum.h"
+
+
+#define RISCV_BR_ADDR_ALIGNMENT                 (8)
+
+void
+kgspConfigureFalcon_GA102
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    KernelFalconEngineConfig falconConfig;
+
+    portMemSet(&falconConfig, 0, sizeof(falconConfig));
+
+    falconConfig.registerBase       = DRF_BASE(NV_PGSP);
+    falconConfig.riscvRegisterBase  = NV_FALCON2_GSP_BASE;
+    falconConfig.fbifBase           = NV_PGSP_FBIF_BASE;
+    falconConfig.bBootFromHs        = NV_TRUE;
+    falconConfig.pmcEnableMask      = 0;
+    falconConfig.bIsPmcDeviceEngine = NV_FALSE;
+    falconConfig.physEngDesc        = ENG_GSP;
+
+    kflcnConfigureEngine(pGpu, staticCast(pKernelGsp, KernelFalcon), &falconConfig);
+}
+
+/*!
+ * Reset RISCV using secure reset
+ *
+ * @return NV_OK if the RISCV reset was successful.
+ *         Appropriate NV_ERR_xxx value otherwise.
+ */
+static NV_STATUS
+_kgspResetIntoRiscv
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    KernelFalcon *pKernelFlcn = staticCast(pKernelGsp, KernelFalcon);
+    NV_ASSERT_OK_OR_RETURN(kflcnPreResetWait(pGpu, pKernelFlcn));
+    GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _TRUE);
+    GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _FALSE);
+
+    NV_ASSERT_OK_OR_RETURN(kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn));
+
+    kflcnRiscvProgramBcr_HAL(pGpu, pKernelFlcn, NV_TRUE);
+
+    return NV_OK;
+}
+
+/*!
+ * Boot GSP-RM.
+ *
+ * This routine handles the following:
+ *   - prepares boot binary image
+ *   - prepares RISCV core to run GSP-RM
+ *   - prepares libos initialization args
+ *   - prepares GSP-RM initialization message
+ *   - starts the RISCV core and passes control to boot binary image
+ *   - waits for GSP-RM to complete initialization
+ *
+ * Note that boot binary and GSP-RM images have already been placed
+ * in fbmem by kgspCalculateFbLayout_HAL().
+ *
+ * Note that this routine is based on flcnBootstrapRiscvOS_GA102().
+ *
+ * @param[in]   pGpu            GPU object pointer
+ * @param[in]   pKernelGsp      GSP object pointer
+ * @param[in]   pGspFw          GSP_FIRMWARE image pointer
+ *
+ * @return NV_OK if GSP-RM RISCV boot was successful.
+ *         Appropriate NV_ERR_xxx value otherwise.
+ */
+NV_STATUS
+kgspBootstrapRiscvOSEarly_GA102
+(
+    OBJGPU         *pGpu,
+    KernelGsp      *pKernelGsp,
+    GSP_FIRMWARE   *pGspFw
+)
+{
+    KernelFalcon           *pKernelFalcon   = staticCast(pKernelGsp, KernelFalcon);
+    NV_STATUS               status          = NV_OK;
+
+    // Only for GSP client builds
+    if (!IS_GSP_CLIENT(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR, "IS_GSP_CLIENT is not set.\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (!kflcnIsRiscvCpuEnabled_HAL(pGpu, pKernelFalcon))
+    {
+        NV_PRINTF(LEVEL_ERROR, "RISC-V core is not enabled.\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    kgspPopulateGspRmInitArgs(pGpu, pKernelGsp, NULL);
+
+    {
+        // Execute FWSEC to setup FRTS if we have a FRTS region
+        if (kgspGetFrtsSize_HAL(pGpu, pKernelGsp) > 0)
+        {
+            kflcnReset_HAL(pGpu, pKernelFalcon);
+
+            NV_ASSERT_OK_OR_GOTO(status,
+                kgspExecuteFwsecFrts_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode,
+                                        pKernelGsp->pWprMeta->frtsOffset), exit);
+        }
+    }
+
+    NV_ASSERT_OK_OR_RETURN(_kgspResetIntoRiscv(pGpu, pKernelGsp));
+
+    //
+    // Stuff the message queue with async init messages that will be run
+    // before OBJGPU is created.
+    //
+    NV_RM_RPC_GSP_SET_SYSTEM_INFO(pGpu, status);
+    if (status != NV_OK)
+    {
+        NV_ASSERT_OK_FAILED("NV_RM_RPC_GSP_SET_SYSTEM_INFO", status);
+        goto exit;
+    }
+
+    NV_RM_RPC_SET_REGISTRY(pGpu, status);
+    if (status != NV_OK)
+    {
+        NV_ASSERT_OK_FAILED("NV_RM_RPC_SET_REGISTRY", status);
+        goto exit;
+    }
+
+    // First times setup of libos init args
+    kgspSetupLibosInitArgs(pGpu, pKernelGsp);
+
+    // Fb configuration is done so setup libos arg list
+    kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
+
+    RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
+
+    {
+        status = kgspExecuteBooterLoad_HAL(pGpu, pKernelGsp,
+            memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Load (ucode for initial boot): 0x%x\n", status);
+            goto exit;
+        }
+    }
+
+    // Program FALCON_OS
+    kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_OS, pRiscvDesc->appVersion);
+
+    // Ensure the CPU is started
+    if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
+    {
+        NV_PRINTF(LEVEL_INFO, "GSP ucode loaded and RISCV started.\n");
+    }
+    else
+    {
+        NV_ASSERT_FAILED("Failed to boot GSP");
+        status = NV_ERR_NOT_READY;
+        goto exit;
+    }
+
+    NV_PRINTF(LEVEL_INFO, "Waiting for GSP fw RM to be ready...\n");
+
+    // Link the status queue.
+    NV_ASSERT_OK_OR_GOTO(status, GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo),
+                          exit);
+
+    NV_ASSERT_OK_OR_GOTO(status, kgspWaitForRmInitDone(pGpu, pKernelGsp),
+                          exit);
+
+    NV_PRINTF(LEVEL_INFO, "GSP FW RM ready.\n");
+
+exit:
+    NV_ASSERT(status == NV_OK);
+
+    return status;
+}
+
+void
+kgspGetGspRmBootUcodeStorage_GA102
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    BINDATA_STORAGE **ppBinStorageImage,
+    BINDATA_STORAGE **ppBinStorageDesc
+)
+{
+    const BINDATA_ARCHIVE *pBinArchive = kgspGetBinArchiveGspRmBoot_HAL(pKernelGsp);
+
+    if (kgspIsDebugModeEnabled(pGpu, pKernelGsp))
+    {
+        *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, "ucode_image_dbg");
+        *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, "ucode_desc_dbg");
+    }
+    else
+    {
+        *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, "ucode_image_prod");
+        *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchive, "ucode_desc_prod");
+    }
+}
+
+/*!
+ * Execute GSP sequencer operation
+ *
+ * @param[in]   pGpu            GPU object pointer
+ * @param[in]   pKernelGsp      KernelGsp object pointer
+ * @param[in]   opCode          Sequencer opcode
+ * @param[in]   pPayload        Pointer to payload
+ * @param[in]   payloadSize     Size of payload in bytes
+ *
+ * @return NV_OK if the sequencer operation was successful.
+ *         Appropriate NV_ERR_xxx value otherwise.
+ */
+NV_STATUS
+kgspExecuteSequencerCommand_GA102
+(
+    OBJGPU         *pGpu,
+    KernelGsp      *pKernelGsp,
+    NvU32           opCode,
+    NvU32          *pPayload,
+    NvU32           payloadSize
+)
+{
+    NV_STATUS       status        = NV_OK;
+    KernelFalcon   *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
+
+    switch (opCode)
+    {
+        case GSP_SEQ_BUF_OPCODE_CORE_RESET:
+        {
+            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
+
+            // Reset falcon
+            kflcnEnable_HAL(pGpu, pKernelFalcon, NV_FALSE);
+            kflcnEnable_HAL(pGpu, pKernelFalcon, NV_TRUE);
+
+            kflcnDisableCtxReq_HAL(pGpu, pKernelFalcon);
+            break;
+        }
+        case GSP_SEQ_BUF_OPCODE_CORE_START:
+        {
+            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
+
+            kflcnStartCpu_HAL(pGpu, pKernelFalcon);
+            break;
+        }
+        case GSP_SEQ_BUF_OPCODE_CORE_WAIT_FOR_HALT:
+        {
+            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
+
+            // Wait for the bootloader to complete execution.
+            status = kflcnWaitForHalt_HAL(pGpu, pKernelFalcon, GPU_TIMEOUT_DEFAULT, 0);
+            break;
+        }
+        case GSP_SEQ_BUF_OPCODE_CORE_RESUME:
+        {
+            RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
+
+            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
+
+            {
+                NV_ASSERT_OK_OR_RETURN(_kgspResetIntoRiscv(pGpu, pKernelGsp));
+                kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
+
+                status = kgspExecuteBooterReload_HAL(pGpu, pKernelGsp);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Reload (ucode for resume from sequencer): 0x%x\n", status);
+                    break;
+                }
+            }
+
+            // Program FALCON_OS
+            kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_OS, pRiscvDesc->appVersion);
+
+            // Ensure the CPU is started
+            if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
+            {
+                NV_PRINTF(LEVEL_INFO, "GSP ucode loaded and RISCV started.\n");
+            }
+            else
+            {
+                NV_ASSERT_FAILED("Failed to boot GSP");
+                status = NV_ERR_NOT_READY;
+            }
+            break;
+        }
+        default:
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            break;
+        }
+    }
+
+    return status;
+}

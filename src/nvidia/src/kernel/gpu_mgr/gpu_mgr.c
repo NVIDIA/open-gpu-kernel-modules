@@ -1,0 +1,3138 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+/***************************** HW State Routines ***************************\
+*         GPU Manager                                                       *
+\***************************************************************************/
+
+
+
+#include "core/system.h"
+#include "core/locks.h"
+#include "gpu_mgr/gpu_mgr.h"
+#include "gpu/gpu.h"
+#include "tls/tls.h"
+#include "nvrm_registry.h"
+#include "nv_ref.h"
+#include "nvlimits.h"
+
+#include "kernel/gpu/intr/intr.h"
+#include "platform/platform.h"
+#include "platform/chipset/chipset.h"
+#include "published/pcie_switch/pcie_switch_ref.h"
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "gpu/mem_sys/kern_mem_sys.h"
+
+// local static funcs
+static void  gpumgrSetAttachInfo(OBJGPU *, GPUATTACHARG *);
+static void  gpumgrGetGpuHalFactor(NvU32 *pChipId0, NvU32 *pChipId1, RM_RUNTIME_VARIANT *pRmVariant, GPUATTACHARG *pAttachArg);
+
+static void
+_gpumgrUnregisterRmCapsForGpuUnderLock(NvU64 gpuDomainBusDevice)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    // SMC partition caps must be destroyed before GPU caps.
+    gpumgrUnregisterRmCapsForMIGGI(gpuDomainBusDevice);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        PROBEDGPU *pProbedGpu = &pGpuMgr->probedGpus[i];
+
+        if (pProbedGpu->gpuDomainBusDevice == gpuDomainBusDevice &&
+            pProbedGpu->gpuId != NV0000_CTRL_GPU_INVALID_ID)
+        {
+            osRmCapUnregister(&pProbedGpu->pOsRmCaps);
+            break;
+        }
+    }
+}
+
+static void
+_gpumgrUnregisterRmCapsForGpu(NvU64 gpuDomainBusDevice)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+    _gpumgrUnregisterRmCapsForGpuUnderLock(gpuDomainBusDevice);
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+}
+
+static NV_STATUS
+_gpumgrRegisterRmCapsForGpu(OBJGPU *pGpu)
+{
+    NV_STATUS status = NV_ERR_INVALID_STATE;
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        PROBEDGPU *pProbedGpu = &pGpuMgr->probedGpus[i];
+
+        if (pProbedGpu->gpuDomainBusDevice == gpuGetDBDF(pGpu) &&
+            pProbedGpu->gpuId != NV0000_CTRL_GPU_INVALID_ID)
+        {
+            if (pProbedGpu->pOsRmCaps == NULL)
+            {
+                status = osRmCapRegisterGpu(pGpu->pOsGpuInfo,
+                                            &pProbedGpu->pOsRmCaps);
+            }
+            else
+            {
+                status = NV_OK;
+            }
+
+            pGpu->pOsRmCaps = pProbedGpu->pOsRmCaps;
+            break;
+        }
+    }
+
+    NV_ASSERT(status == NV_OK);
+
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+
+    return status;
+}
+
+//
+// ODB functions
+//
+NV_STATUS
+gpumgrConstruct_IMPL(OBJGPUMGR *pGpuMgr)
+{
+    NvU32 i;
+
+    NV_PRINTF(LEVEL_INFO, "gpumgrConstruct\n");
+
+    pGpuMgr->numGpuHandles = 0;
+
+    for (i = 0; i < NV_MAX_DEVICES; i++)
+        pGpuMgr->gpuHandleIDList[i].gpuInstance  = NV_MAX_DEVICES;
+
+    pGpuMgr->probedGpusLock = portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+
+    if (pGpuMgr->probedGpusLock == NULL)
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        portMemSet(&pGpuMgr->probedGpus[i], 0, sizeof(PROBEDGPU));
+        pGpuMgr->probedGpus[i].gpuId = NV0000_CTRL_GPU_INVALID_ID;
+    }
+
+    pGpuMgr->gpuAttachCount = 0;
+    pGpuMgr->gpuAttachMask = 0;
+
+    pGpuMgr->deviceCount = 0;
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->pGpuGrpTable); i++)
+    {
+        pGpuMgr->pGpuGrpTable[i] = NULL;
+    }
+
+    pGpuMgr->powerDisconnectedGpuCount = 0;
+
+    return NV_OK;
+}
+
+
+void
+gpumgrDestruct_IMPL(OBJGPUMGR *pGpuMgr)
+{
+    NV_PRINTF(LEVEL_INFO, "gpumgrDestruct\n");
+
+    portSyncMutexDestroy(pGpuMgr->probedGpusLock);
+}
+
+//
+// gpumgrAllocGpuInstance
+//
+// This interface returns the next available gpu number.
+//
+NV_STATUS
+gpumgrAllocGpuInstance(NvU32 *pGpuInstance)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+
+    NvU32 i;
+    NvU64 availableIDs = ((1ULL << NV_MAX_DEVICES) - 1);
+
+    if (pGpuMgr->numGpuHandles == 0)
+    {
+        *pGpuInstance = 0;
+        return NV_OK;
+    }
+    else if (pGpuMgr->numGpuHandles == NV_MAX_DEVICES)
+    {
+        *pGpuInstance = NV_MAX_DEVICES;
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
+    for (i = 0; i < pGpuMgr->numGpuHandles; i++)
+        availableIDs &= ~NVBIT(pGpuMgr->gpuHandleIDList[i].gpuInstance);
+
+    for (i = 0; ((availableIDs & (1ULL << i)) == 0); i++)
+        ;
+
+    *pGpuInstance = i;
+
+    return NV_OK;
+}
+
+//
+// During destruction of a GPU the handle list needs to be modified.
+// Since we cannot guarantee the _last_ GPU will always be the one
+// destroyed we have to compact the handle list so we have no gaps
+// and can simply decrement numGpuHandles.
+//
+static void
+_gpumgrShiftDownGpuHandles(NvU32 startIndex)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i, lastMovedIndex = startIndex;
+
+    for (i = startIndex; i < (NV_MAX_DEVICES - 1); i++)
+    {
+        if (pGpuMgr->gpuHandleIDList[i + 1].pGpu != 0)
+        {
+            lastMovedIndex = i + 1;
+            pGpuMgr->gpuHandleIDList[i].gpuInstance =
+                pGpuMgr->gpuHandleIDList[i + 1].gpuInstance;
+
+            pGpuMgr->gpuHandleIDList[i].pGpu =
+                pGpuMgr->gpuHandleIDList[i + 1].pGpu;
+        }
+    }
+
+    pGpuMgr->gpuHandleIDList[lastMovedIndex].gpuInstance     = NV_MAX_DEVICES;
+    pGpuMgr->gpuHandleIDList[lastMovedIndex].pGpu            = reinterpretCast(NULL, OBJGPU *);
+    pGpuMgr->numGpuHandles--;
+}
+
+static void
+_gpumgrDestroyGpu(NvU32 gpuInstance)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPU    *pGpu;
+    NvU32      i;
+
+    osSyncWithGpuDestroy(NV_TRUE);
+
+    pGpu = gpumgrGetGpu(gpuInstance);
+
+    if (pGpu != NULL)
+    {
+        objDelete(pGpu);
+    }
+
+    for (i = 0; i < pGpuMgr->numGpuHandles; i++)
+    {
+        if (pGpuMgr->gpuHandleIDList[i].gpuInstance == gpuInstance)
+        {
+            pGpuMgr->gpuHandleIDList[i].gpuInstance     = NV_MAX_DEVICES;
+            pGpuMgr->gpuHandleIDList[i].pGpu            = reinterpretCast(NULL, OBJGPU *);
+            _gpumgrShiftDownGpuHandles(i);
+            break;
+        }
+    }
+
+    // Destroy pointers of blob data if it is created
+    OBJPFM *pPfm = SYS_GET_PFM(pSys);
+    pfmBlobDataDestroy(pPfm);
+
+    osSyncWithGpuDestroy(NV_FALSE);
+}
+
+POBJGPU
+gpumgrGetGpu(NvU32 gpuInstance)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    for (i = 0; i < pGpuMgr->numGpuHandles; i++)
+        if (pGpuMgr->gpuHandleIDList[i].gpuInstance == gpuInstance)
+            if (pGpuMgr->gpuHandleIDList[i].pGpu)
+               return pGpuMgr->gpuHandleIDList[i].pGpu;
+
+    return NULL;
+}
+
+POBJGPU
+gpumgrGetSomeGpu(void)
+{
+    OBJGPU *pGpu        = NULL;
+    NvU32   gpuMask     = 0;
+    NvU32   gpuIndex    = 0;
+    NvU32   gpuCount    = 0;
+
+    // Get some gpu to get the SLI Display Parent
+    gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
+    pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+
+    if (pGpu == NULL)
+    {
+        // None of the GPUs are initialized - Too early
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to retrieve pGpu - Too early call!.\n");
+        NV_ASSERT(NV_FALSE);
+        return pGpu;
+    }
+    return pGpu;
+}
+
+
+//
+// gpumgrAllocDeviceInstance
+//
+// This interface returns the next available broadcast device number.
+// This broadcast device number is used to uniquely identify this set
+// of gpu(s) both internally in the RM (e.g. OBJGPUGRP handle) as well
+// as via the architecture (e.g., for the 'deviceId' parameter of
+// NV0080_ALLOC_PARAMETERS).
+//
+NV_STATUS
+gpumgrAllocDeviceInstance(NvU32 *pDeviceInstance)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->pGpuGrpTable); i++)
+        if (pGpuMgr->pGpuGrpTable[i] == NULL)
+            break;
+
+    if (i == NV_MAX_DEVICES)
+    {
+        *pDeviceInstance = NV_MAX_DEVICES;
+        return NV_ERR_GENERIC;
+    }
+
+    *pDeviceInstance = i;
+
+    return NV_OK;
+}
+
+//
+// gpumgrGetGpuAttachInfo
+//
+// Returns current gpu attach info.
+//
+NV_STATUS
+gpumgrGetGpuAttachInfo(NvU32 *pGpuCnt, NvU32 *pGpuMask)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+
+    // caller can pass in NULL for outparams that it doesn't need.
+    if (pGpuCnt)  *pGpuCnt  = pGpuMgr->gpuAttachCount;
+    if (pGpuMask) *pGpuMask = pGpuMgr->gpuAttachMask;
+
+    return NV_OK;
+}
+
+NvU32
+gpumgrGetDeviceGpuMask(NvU32 deviceInstance)
+{
+    OBJGPUGRP  *pGpuGrp = gpumgrGetGpuGrpFromInstance(deviceInstance);
+
+    if (pGpuGrp == NULL)
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "Could not find GPU Group for deviceInstance 0x%x!\n",
+                  deviceInstance);
+        return 0;
+    }
+
+    return gpugrpGetGpuMask(pGpuGrp);
+}
+
+NV_STATUS
+gpumgrIsDeviceInstanceValid(NvU32 deviceInstance)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPUGRP *pGpuGrp = NULL;
+
+    if (deviceInstance >= NV_MAX_DEVICES)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    pGpuGrp = pGpuMgr->pGpuGrpTable[deviceInstance];
+    if (NULL == pGpuGrp)
+        return NV_ERR_INVALID_DATA;
+
+    if (0 == gpugrpGetGpuMask(pGpuGrp))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    return NV_OK;
+}
+
+NvBool
+gpumgrIsSubDeviceInstanceValid(NvU32 subDeviceInstance)
+{
+    if (subDeviceInstance >= NV2080_MAX_SUBDEVICES)
+        return NV_FALSE;
+
+    return NV_TRUE;
+}
+
+NvU32 gpumgrGetPrimaryForDevice(NvU32 deviceInstance)
+{
+    NvU32 gpuMask, gpuInstance = 0;
+    OBJGPU *pGpu = NULL;
+
+    gpuMask = gpumgrGetDeviceGpuMask(deviceInstance);
+
+    if (gpumgrIsSubDeviceCountOne(gpuMask))
+    {
+        pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+        if (pGpu != NULL)
+        {
+            return pGpu->gpuInstance;
+        }
+    }
+    else
+    {
+        while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+        {
+            if (gpumgrIsParentGPU(pGpu))
+            {
+                return pGpu->gpuInstance;
+            }
+        }
+    }
+
+    NV_PRINTF(LEVEL_ERROR,
+             "deviceInstance 0x%x does not exist!\n", deviceInstance);
+
+    return 0;           // this should not happen, never
+}
+
+NvBool
+gpumgrIsDeviceEnabled(NvU32 deviceInstance)
+{
+    NvU32   gpuMask, gpuInstance = 0;
+    NvBool  bEnabled;
+
+    gpuMask = gpumgrGetDeviceGpuMask(deviceInstance);
+
+    if (gpuMask == 0)
+    {
+        return NV_FALSE;
+    }
+    /*
+     * Check if this device
+     * - has been disabled via Power-SLI
+     * - is in the "drain" state
+     */
+    if (gpumgrIsSubDeviceCountOne(gpuMask))
+    {
+        OBJGPU *pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+
+        if (pGpu == NULL)
+            return NV_FALSE;
+
+        if ((gpumgrQueryGpuDrainState(pGpu->gpuId, &bEnabled, NULL) == NV_OK)
+            && bEnabled)
+        {
+            return NV_FALSE;
+        }
+    }
+
+    return NV_TRUE;
+}
+
+//
+// gpumgrRegisterGpuId
+//
+// This interface is used by os-dependent code to insert a probed
+// gpu into the table of probed gpus known to the RM.
+//
+NV_STATUS
+gpumgrRegisterGpuId(NvU32 gpuId, NvU64 gpuDomainBusDevice)
+{
+    NV_STATUS status = NV_ERR_INSUFFICIENT_RESOURCES;
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "GPU id 0x%x already registered at index %u\n",
+                      gpuId, i);
+
+            // Duplicate gpu
+            status = NV_ERR_IN_USE;
+            goto done;
+        }
+
+        if (pGpuMgr->probedGpus[i].gpuId == NV0000_CTRL_GPU_INVALID_ID)
+        {
+            pGpuMgr->probedGpus[i].gpuId = gpuId;
+            pGpuMgr->probedGpus[i].gpuDomainBusDevice = gpuDomainBusDevice;
+            pGpuMgr->probedGpus[i].bInitAttempted = NV_FALSE;
+            pGpuMgr->probedGpus[i].bExcluded = NV_FALSE;
+            pGpuMgr->probedGpus[i].bUuidValid = NV_FALSE;
+            pGpuMgr->probedGpus[i].pOsRmCaps = NULL;
+            status = NV_OK;
+            goto done;
+        }
+    }
+
+done:
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+    return status;
+}
+
+//
+// gpumgrUnregisterGpuId
+//
+// This interface is used by os-dependent code to remove a gpu
+// from the table of probed gpus known to the RM.
+//
+NV_STATUS
+gpumgrUnregisterGpuId(NvU32 gpuId)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        PROBEDGPU *pProbedGpu = &pGpuMgr->probedGpus[i];
+
+        if (pProbedGpu->gpuId == gpuId)
+        {
+            _gpumgrUnregisterRmCapsForGpuUnderLock(pProbedGpu->gpuDomainBusDevice);
+            pProbedGpu->gpuId = NV0000_CTRL_GPU_INVALID_ID;
+            pProbedGpu->bDrainState = NV_FALSE;
+            pProbedGpu->bRemoveIdle = NV_FALSE;
+            pProbedGpu->bExcluded = NV_FALSE;
+            pProbedGpu->bUuidValid = NV_FALSE;
+            goto done;
+        }
+    }
+
+done:
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+    return NV_OK;
+}
+
+//
+// gpumgrExcludeGpuId
+//
+// This interface is used by os-dependent code to 'exclude' a gpu.
+//
+// gpuId: the device to exclude
+//
+NV_STATUS
+gpumgrExcludeGpuId(NvU32 gpuId)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        PROBEDGPU *pProbedGpu = &pGpuMgr->probedGpus[i];
+
+        if (pProbedGpu->gpuId == gpuId)
+        {
+            pProbedGpu->bExcluded = NV_TRUE;
+            goto done;
+        }
+    }
+
+done:
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+    return NV_OK;
+}
+
+//
+// gpumgrSetUuid
+//
+// This interface is used by os-dependent code to pass the UUID for a gpu.
+// The UUID is a 16-byte raw UUID/GID.
+//
+NV_STATUS
+gpumgrSetUuid(NvU32 gpuId, NvU8 *uuid)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    if (uuid == NULL)
+        return NV_ERR_INVALID_DATA;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        PROBEDGPU *pProbedGpu = &pGpuMgr->probedGpus[i];
+
+        if (pProbedGpu->gpuId == gpuId)
+        {
+            portMemCopy(pProbedGpu->uuid, RM_SHA1_GID_SIZE, uuid, RM_SHA1_GID_SIZE);
+            pProbedGpu->bUuidValid = NV_TRUE;
+            goto done;
+        }
+    }
+
+done:
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+    return NV_OK;
+}
+
+//
+// gpumgrGetCachedUuid
+//
+// Lookup the cached UUID for a GPU
+//
+static NV_STATUS
+gpumgrGetCachedUuid(NvU32 gpuId, NvU8 *uuid, unsigned int len)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+    NV_STATUS status = NV_ERR_OBJECT_NOT_FOUND;
+
+    if (uuid == NULL || len < RM_SHA1_GID_SIZE)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        PROBEDGPU *pProbedGpu = &pGpuMgr->probedGpus[i];
+
+        if (pProbedGpu->gpuId == gpuId)
+        {
+            if (pProbedGpu->bUuidValid)
+            {
+                portMemCopy(uuid, RM_SHA1_GID_SIZE, pProbedGpu->uuid, RM_SHA1_GID_SIZE);
+                status = NV_OK;
+            }
+            else
+                status = NV_ERR_NOT_SUPPORTED;
+            goto done;
+        }
+    }
+
+done:
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+    return status;
+}
+
+NV_STATUS
+gpumgrGetGpuUuidInfo(NvU32 gpuId, NvU8 **ppUuidStr, NvU32 *pUuidStrLen, NvU32 uuidFlags)
+{
+    NvU8 *pUuid;
+    NV_STATUS status;
+
+    if (ppUuidStr == NULL || pUuidStrLen == NULL)
+        return NV_ERR_INVALID_DATA;
+
+    // gpumgr only supports SHA1 format; error out if requesting otherwise
+    if (!FLD_TEST_DRF(0000_CTRL_CMD, _GPU_GET_UUID_FROM_GPU_ID_FLAGS, _TYPE, _SHA1, uuidFlags))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    pUuid = portMemAllocNonPaged(RM_SHA1_GID_SIZE);
+    if (pUuid == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    status = gpumgrGetCachedUuid(gpuId, pUuid, RM_SHA1_GID_SIZE);
+    if (status != NV_OK)
+    {
+        portMemFree(pUuid);
+        return status;
+    }
+
+    if (FLD_TEST_DRF(0000_CTRL_CMD, _GPU_GET_UUID_FROM_GPU_ID_FLAGS, _FORMAT, _BINARY, uuidFlags))
+    {
+        // Binary case - pUuid is freed by the caller
+        *ppUuidStr = pUuid;
+        *pUuidStrLen = RM_SHA1_GID_SIZE;
+    }
+    else
+    {
+        // Conversion to ASCII or UNICODE
+        status = transformGidToUserFriendlyString(pUuid, RM_SHA1_GID_SIZE,
+                                                    ppUuidStr, pUuidStrLen, uuidFlags);
+        portMemFree(pUuid);
+    }
+
+    return status;
+}
+
+static void
+gpumgrGetGpuHalFactorOfVirtual(NvBool *pIsVirtual, GPUATTACHARG *pAttachArg)
+{
+    *pIsVirtual = NV_FALSE;
+}
+
+#define NV_PMC_BOOT_42_ARCHITECTURE_TU100                0x00000016
+static NvBool _gpumgrIsRmFirmwareCapableChip(NvU32 pmcBoot42)
+{
+    return (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pmcBoot42) >= NV_PMC_BOOT_42_ARCHITECTURE_TU100);
+}
+#undef NV_PMC_BOOT_42_ARCHITECTURE_TU100
+
+NvBool gpumgrIsDeviceRmFirmwareCapable
+(
+    NvU16 devId,
+    NvU32 pmcBoot42,
+    NvBool *pbEnabledByDefault
+)
+{
+    static const NvU16 defaultGspRmGpus[] = {
+        0x1E37, // GFN
+        0x1E38, // TU102
+        0x1EB4, // T4G
+        0x1EB8, // T4
+        0x1EB9, // T4
+
+        0x20B0, // A100
+        0x20B1, // A100
+        0x20B2, // A100
+        0x20B3, // A200
+        0x20B5, // A100 80GB
+        0x20B6, // A100
+        0x20B7, // A30
+        0x20B8, // A100X SKU230/231 Roy-100
+        0x20B9, // A30X  SKU205/206 Roy-30
+        0x20F0, // A100
+        0x20F1, // A100
+        0x20F2, // A100
+        0x2235, // A40
+        0x2236, // A10   SKU215     Pris-24
+        0x2237, // A10G  SKU215     Pris-24
+        0x25B6, // A16
+    };
+    NvU32 count = NV_ARRAY_ELEMENTS(defaultGspRmGpus);
+    NvU32 i;
+
+    *pbEnabledByDefault = NV_FALSE;
+
+    if (!_gpumgrIsRmFirmwareCapableChip(pmcBoot42))
+        return NV_FALSE;
+
+    for (i = 0; i < count; i++)
+    {
+        if (defaultGspRmGpus[i] == devId)
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "DevId 0x%x is GSP-RM enabled by default\n",
+                      devId);
+            *pbEnabledByDefault = NV_TRUE;
+            break;
+        }
+    }
+
+    return NV_TRUE;
+}
+
+static NvBool gpumgrCheckRmFirmwarePolicy
+(
+    NvU64  nvDomainBusDeviceFunc,
+    NvBool bRequestFwClientRm,
+    NvU32  pmcBoot42
+)
+{
+
+    if (!bRequestFwClientRm)
+        return NV_FALSE;
+
+    NvU32 data;
+
+    if (!_gpumgrIsRmFirmwareCapableChip(pmcBoot42))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Disabling GSP offload -- GPU not supported\n");
+        return NV_FALSE;
+    }
+
+    // Disable if RM registry override set
+    if (osReadRegistryDword(NULL, NV_REG_STR_RM_DISABLE_GSP_OFFLOAD, &data) == NV_OK)
+    {
+        if (data != NV_REG_STR_RM_DISABLE_GSP_OFFLOAD_FALSE)
+        {
+            NV_PRINTF(LEVEL_NOTICE, "Disabling GSP offload -- registry entry\n");
+            return NV_FALSE;
+        }
+    }
+
+    return NV_TRUE;
+}
+
+//
+// gpumgrGetGpuHalFactor
+//
+// Get Gpu Hal factors those are used to init Hal binding
+//
+// TODO : later this function will be used to read out NVOC Halspec init value for OBJGPU
+//
+static void
+gpumgrGetGpuHalFactor
+(
+    NvU32  *pChipId0,
+    NvU32  *pChipId1,
+    RM_RUNTIME_VARIANT *pRmVariant,
+    GPUATTACHARG *pAttachArg
+)
+{
+    NvBool isVirtual;
+    NvBool isFwClient;
+
+    DEVICE_MAPPING  gpuDevMapping = {0};
+    gpuDevMapping.gpuNvAddr = pAttachArg->regBaseAddr;
+    gpuDevMapping.gpuNvLength = pAttachArg->regLength;
+
+    // get ChipId0 and ChipId1
+    if (pAttachArg->socDeviceArgs.specified)
+    {
+        // This path is taken for T234D+ devices.
+
+        *pChipId0 = pAttachArg->socDeviceArgs.socChipId0;
+        *pChipId1 = 0;
+         isVirtual = NV_FALSE;
+    }
+    else if (pAttachArg->bIsSOC)
+    {
+        // This path is only taken for ARCH MODS iGPU verification.
+
+        *pChipId0 = pAttachArg->socChipId0;
+        *pChipId1 = 0;
+         isVirtual = NV_FALSE;
+    }
+    else
+    {
+        //
+        // PMC_BOOT_42 register is added above G94+ chips which is internal to NVIDIA
+        // Earlier we used PMC_BOOT_0 as Internal ID which is now exposed to customers
+        //
+        *pChipId0 = osDevReadReg032(/*pGpu=*/ NULL, &gpuDevMapping, NV_PMC_BOOT_0);
+        *pChipId1 = osDevReadReg032(/*pGpu=*/ NULL, &gpuDevMapping, NV_PMC_BOOT_42);
+
+        gpumgrGetGpuHalFactorOfVirtual(&isVirtual, pAttachArg);
+    }
+
+    isFwClient = gpumgrCheckRmFirmwarePolicy(pAttachArg->nvDomainBusDeviceFunc,
+                                             pAttachArg->bRequestFwClientRm,
+                                             *pChipId1);
+
+    if (RMCFG_FEATURE_PLATFORM_GSP || RMCFG_FEATURE_PLATFORM_DCE)
+        *pRmVariant = RM_RUNTIME_VARIANT_UCODE;
+    else if (isVirtual)
+        *pRmVariant = RM_RUNTIME_VARIANT_VF;
+    else if (isFwClient)
+        *pRmVariant = RM_RUNTIME_VARIANT_PF_KERNEL_ONLY;
+    else
+        *pRmVariant = RM_RUNTIME_VARIANT_PF_MONOLITHIC;    // default, monolithic mode
+}
+
+
+//
+// _gpumgrCreateGpu
+//
+// Former _sysCreateGpu().  The function is moved to Gpumgr for hinding struct
+// GPUATTACHARG from SYS.  SYS is still the parent object of both GPUMGR and
+// GPU.
+//
+static NV_STATUS
+_gpumgrCreateGpu(NvU32 gpuInstance, GPUATTACHARG *pAttachArg)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPU    *pGpu;
+    NV_STATUS  status;
+    RM_RUNTIME_VARIANT  rmVariant;
+    NvU32      chipId0;     // 32-bit chipId (pmcBoot0 on GPU)
+    NvU32      chipId1;     // 32-bit chipId (pmcBoot42 on GPU)
+    NvU32      hidrev, majorRev;
+
+    gpumgrGetGpuHalFactor(&chipId0, &chipId1, &rmVariant, pAttachArg);
+
+    hidrev = DRF_VAL(_PAPB_MISC, _GP_HIDREV, _CHIPID, chipId0);
+    majorRev = DRF_VAL(_PAPB_MISC, _GP_HIDREV, _MAJORREV, chipId0);
+
+    // WAR: The majorrev of t234 shows 0xa on fmodel instead of 0x4
+    if ((hidrev == 0x23) && (majorRev == 0xa))
+    {
+        majorRev = 0x4;
+    }
+
+    hidrev = (hidrev << 4) | majorRev;
+
+    // create OBJGPU with halspec factor initialization value
+    status = objCreate(&pGpu, pSys, OBJGPU,
+                    /* ChipHal_arch = */ DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, chipId1),
+                    /* ChipHal_impl = */ DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, chipId1),
+                  /* ChipHal_hidrev = */ hidrev,
+          /* RmVariantHal_rmVariant = */ rmVariant,
+                 /* DispIpHal_ipver = */ 0,  // initialized later
+                /* ctor.gpuInstance = */ gpuInstance);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    // legacy chip-config Hal registration path
+    status = gpuBindHalLegacy(pGpu, chipId0, chipId1);
+    if (status != NV_OK)
+    {
+        objDelete(pGpu);
+        return status;
+    }
+
+    //
+    // Save away the public ID associated with the handle just returned
+    // from create object.
+    //
+    pGpuMgr->gpuHandleIDList[pGpuMgr->numGpuHandles].gpuInstance = gpuInstance;
+    pGpuMgr->gpuHandleIDList[pGpuMgr->numGpuHandles].pGpu = pGpu;
+
+    pGpuMgr->numGpuHandles++;
+
+    return status;
+}
+
+
+static void
+_gpumgrGetEncSessionStatsReportingState(OBJGPU *pGpu)
+{
+}
+
+//
+// gpumgrAttachGpu
+//
+// This interface is used by os-dependent code to attach a new gpu
+// to the pool managed by the RM.  Construction of OBJGPU and it's
+// descendants is handled here, along with any other necessary prep
+// for the subsequent gpu preinit/init stages.
+//
+NV_STATUS
+gpumgrAttachGpu(NvU32 gpuInstance, GPUATTACHARG *pAttachArg)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPU    *pGpu = NULL;
+    NV_STATUS  status;
+
+    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+
+    // create the new OBJGPU
+    if ((status = _gpumgrCreateGpu(gpuInstance, pAttachArg)) != NV_OK)
+    {
+        goto gpumgrAttach_error_and_exit;
+    }
+
+    // get a pointer to the new OBJGPU
+    pGpu = gpumgrGetGpu(gpuInstance);
+
+    // load up attach parameters
+    gpumgrSetAttachInfo(pGpu, pAttachArg);
+
+    // Load OOR check address mode based on arch
+#if defined(NVCPU_X86_64)
+    pGpu->busInfo.oorArch = OOR_ARCH_X86_64;
+#elif defined(NVCPU_PPC64LE)
+    pGpu->busInfo.oorArch = OOR_ARCH_PPC64LE;
+#elif defined(NVCPU_ARM)
+    pGpu->busInfo.oorArch = OOR_ARCH_ARM;
+#elif defined(NVCPU_AARCH64)
+    pGpu->busInfo.oorArch = OOR_ARCH_AARCH64;
+#else
+    pGpu->busInfo.oorArch = OOR_ARCH_NONE;
+#endif
+
+    pGpu->pOS = SYS_GET_OS(pSys);
+
+    // let os fill in dpc details before we get into engine construction
+    if ((status = osDpcAttachGpu(pGpu, pAttachArg->pOsAttachArg)) != NV_OK)
+    {
+        goto gpumgrAttach_error_and_exit;
+    }
+
+    // let os fill in what it needs before we get into engine construction
+    if ((status = osAttachGpu(pGpu, pAttachArg->pOsAttachArg)) != NV_OK)
+    {
+        goto gpumgrAttach_error_and_exit;
+    }
+
+    NV_ASSERT((pGpuMgr->gpuAttachMask & NVBIT(gpuInstance)) == 0);
+    pGpuMgr->gpuAttachMask |= NVBIT(gpuInstance);
+    pGpuMgr->gpuAttachCount++;
+
+    status = _gpumgrRegisterRmCapsForGpu(pGpu);
+    if (status != NV_OK)
+    {
+        goto gpumgrAttach_error_and_exit;
+    }
+
+    // finish gpu construction
+    if ((status = gpuPostConstruct(pGpu, pAttachArg)) != NV_OK)
+    {
+        goto gpumgrAttach_error_and_exit;
+    }
+
+    _gpumgrGetEncSessionStatsReportingState(pGpu);
+
+    Intr *pIntr = GPU_GET_INTR(pGpu);
+    // On some boards, vbios enables interrupt early before RM
+    // initialize pGpu so that hotplug intrs can be serviced on
+    // the mfg line. Disable interrupt here for this case.
+    if (pIntr != NULL)
+    {
+        if (intrGetIntrEnFromHw_HAL(pGpu, pIntr, NULL) != INTERRUPT_TYPE_DISABLED)
+        {
+            intrSetIntrEnInHw_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL);
+            intrSetStall_HAL(pGpu, pIntr, INTERRUPT_TYPE_DISABLED, NULL);
+        }
+    }
+
+    // Add entry into system nvlink topo array
+    gpumgrAddSystemNvlinkTopo(pAttachArg->nvDomainBusDeviceFunc);
+    // Add entry into system partition topo array
+    gpumgrAddSystemMIGInstanceTopo(pAttachArg->nvDomainBusDeviceFunc);
+
+    return status;
+
+gpumgrAttach_error_and_exit:
+    if ((pGpuMgr->gpuAttachMask & NVBIT(gpuInstance)) != 0)
+    {
+        pGpuMgr->gpuAttachMask &= ~NVBIT(gpuInstance);
+        pGpuMgr->gpuAttachCount--;
+    }
+
+    if (pGpu != NULL)
+    {
+        _gpumgrUnregisterRmCapsForGpu(gpuGetDBDF(pGpu));
+    }
+
+    osDpcDetachGpu(pGpu);
+    _gpumgrDestroyGpu(gpuInstance);
+    return status;
+}
+
+//
+// gpumgrDetachGpu
+//
+// This entry point detaches a gpu from the RM.  The corresponding
+// OBJGPU and any of it's offspring are released, etc.
+//
+NV_STATUS
+gpumgrDetachGpu(NvU32 gpuInstance)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    NvBool bDelClientResourcesFromGpuMask = !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TIMEOUT_RECOVERY);
+
+    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+
+    // Mark for deletion the stale clients related to the GPU mask
+    if (bDelClientResourcesFromGpuMask)
+    {
+        rmapiSetDelPendingClientResourcesFromGpuMask(NVBIT(gpuInstance));
+    }
+
+    osDpcDetachGpu(pGpu);
+
+    pGpu->pOsRmCaps = NULL;
+
+    // release pDev
+    _gpumgrDestroyGpu(gpuInstance);
+
+    // Delete the marked clients related to the GPU mask
+    if (bDelClientResourcesFromGpuMask)
+    {
+        rmapiDelPendingDevices(NVBIT(gpuInstance));
+        rmapiDelPendingClients();
+    }
+
+    NV_ASSERT(pGpuMgr->gpuAttachMask & NVBIT(gpuInstance));
+    pGpuMgr->gpuAttachMask &= ~NVBIT(gpuInstance);
+    pGpuMgr->gpuAttachCount--;
+
+    return NV_OK;
+}
+
+//
+// gpumgrCreateDevice
+//
+// Create a broadcast device.   The set of one or more gpus
+// comprising the broadcast device is described by gpuMask.
+//
+NV_STATUS
+gpumgrCreateDevice(NvU32 *pDeviceInstance, NvU32 gpuMask, NvU32 *pGpuIdsOrdinal)
+{
+    OBJSYS    *pSys       = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr    = SYS_GET_GPUMGR(pSys);
+    OBJGPU    *pParentGpu = NULL;
+    NvU32      gpuInstance;
+    NV_STATUS  status     = NV_ERR_INVALID_REQUEST;
+    OBJGPUGRP *pGpuGrp    = NULL;
+
+    pGpuMgr->deviceCount++;
+
+    NV_ASSERT(gpuMask != 0);
+
+    // if only 1 gpu in the set, we're done
+    if (gpumgrIsSubDeviceCountOne(gpuMask))
+    {
+        // alloc new broadcast device instance
+        status = gpumgrAllocDeviceInstance(pDeviceInstance);
+        if (status != NV_OK)
+        {
+            goto gpumgrCreateDevice_exit;
+        }
+
+        gpumgrConstructGpuGrpObject(pGpuMgr, gpuMask,
+                                 &pGpuMgr->pGpuGrpTable[*pDeviceInstance]);
+        //
+        // Set up parent gpu state.  pParentGpu == NULL during boot when
+        // we're first creating this device because the GPU attach process
+        // has not yet completed.  pParentGpu != NULL when we're coming
+        // out of SLI (unlinking).
+        //
+        gpuInstance = 0;
+        pParentGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+        if (pParentGpu)
+        {
+            gpumgrSetParentGPU(pParentGpu, pParentGpu);
+        }
+
+        gpumgrAddDeviceMaskToGpuInstTable(gpuMask);
+        status = NV_OK;
+        goto gpumgrCreateDevice_exit;
+    }
+
+gpumgrCreateDevice_exit:
+    if (status != NV_OK)
+    {
+        // Device creation failed
+        pGpuMgr->deviceCount--;
+    }
+    else
+    {
+        pGpuGrp = pGpuMgr->pGpuGrpTable[*pDeviceInstance];
+        if (gpugrpGetGpuMask(pGpuGrp) != gpuMask)
+        {
+            NV_ASSERT(0);
+            gpumgrDestroyDevice(*pDeviceInstance);
+            return NV_ERR_INVALID_DATA;
+        }
+        NV_PRINTF(LEVEL_INFO,
+                  "gpumgrCreateDevice: deviceInst 0x%x mask 0x%x\n",
+                  *pDeviceInstance, gpuMask);
+    }
+    return status;
+}
+
+NV_STATUS
+gpumgrDestroyDevice(NvU32 deviceInstance)
+{
+    OBJSYS    *pSys    = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NV_STATUS  status  = NV_OK;
+    OBJGPUGRP *pGpuGrp = pGpuMgr->pGpuGrpTable[deviceInstance];
+    NvU32      gpuMask;
+
+    NV_ASSERT_OR_RETURN(pGpuGrp != NULL, NV_ERR_OBJECT_NOT_FOUND);
+    gpuMask = gpugrpGetGpuMask(pGpuGrp);
+
+    NV_ASSERT(gpuMask != 0);
+
+    // if we only have one subdevice we're done
+    if (gpumgrIsSubDeviceCountOne(gpuMask))
+    {
+        gpugrpDestroy(pGpuGrp);
+        pGpuMgr->pGpuGrpTable[deviceInstance] = NULL;
+        gpumgrClearDeviceMaskFromGpuInstTable(gpuMask);
+        goto gpumgrDestroyDevice_exit;
+    }
+
+gpumgrDestroyDevice_exit:
+    pGpuMgr->deviceCount--;
+
+    return status;
+}
+
+//
+// gpumgrGetDeviceInstanceMask
+//
+// Returns mask of enabled (or valid) device instances.
+// This mask tells clients which NV01_DEVICE class
+// instances are valid.
+//
+NvU32
+gpumgrGetDeviceInstanceMask(void)
+{
+    NvU32 i, deviceInstanceMask = 0;
+
+    // for every broadcast device...
+    for (i = 0; i < NV_MAX_DEVICES; i++)
+    {
+        // ...add it to our mask if it's enabled
+        if (NV_OK == gpumgrIsDeviceInstanceValid(i))
+            deviceInstanceMask |= NVBIT(i);
+    }
+
+    return deviceInstanceMask;
+}
+
+NvU32
+gpumgrGetGpuMask(OBJGPU *pGpu)
+{
+    NvU32 deviceInstance = gpuGetDeviceInstance(pGpu);
+
+    NV_ASSERT(deviceInstance < NV_MAX_DEVICES);
+
+    return gpumgrGetDeviceGpuMask(deviceInstance);
+}
+
+//
+// gpumgrGetSubDeviceCount
+//
+NvU32
+gpumgrGetSubDeviceCount(NvU32 gpuMask)
+{
+    NvU32 subDeviceCount = 0;
+
+    // tally # of gpus in the set
+    while (gpuMask != 0)
+    {
+        subDeviceCount ++;
+        gpuMask &= (gpuMask-1); // remove lowest bit in gpuMask
+    }
+    return subDeviceCount;
+}
+
+//
+// gpumgrGetSubDeviceCountFromGpu
+// ATTENTION: When using with SLI Next / RM Unlinked SLI, the
+// subdevice count is always 1 for each GPU. This can cause
+// bugs, buffer overflows with arrays based on subdevice instances as
+// with RM Unlinked SLI:
+//  - subdevice count is always 1 (the GPUs are not linked)
+//  - GPU subdevice instance can be non zero
+// For subdevice instance arrays, please use
+// gpumgrGetSubDeviceMaxValuePlus1()
+//
+NvU32
+gpumgrGetSubDeviceCountFromGpu(OBJGPU *pGpu)
+{
+    NvU32 gpuMask = gpumgrGetGpuMask(pGpu);
+    NvU32 subDeviceCount = gpumgrGetSubDeviceCount(gpuMask);
+
+    NV_ASSERT(subDeviceCount > 0);
+    return subDeviceCount;
+}
+
+//
+// gpumgrGetSubDeviceMaxValuePlus1
+// SLI disabled: return 1
+// SLI enabled with RM linked in SLI: returns 2 or more
+// SLI enabled with RM unlinked: return current subdeviceInstance + 1
+// Life of the function: until a full transition to SLI Next / RM Unlinked SLI.
+//
+NvU32
+gpumgrGetSubDeviceMaxValuePlus1(OBJGPU *pGpu)
+{
+    if (!IsSLIEnabled(pGpu))
+    {
+        // SLI disabled: return 1 as all GPU subdevice instances are 0
+        // Unkinked SLI: returns the current subdevice instance + 1
+        return gpumgrGetSubDeviceInstanceFromGpu(pGpu) + 1;
+    }
+    else
+    {
+        // SLI Enabled in RM: The count of subdevice instances for that GPU/device
+        return gpumgrGetSubDeviceCountFromGpu(pGpu);
+    }
+}
+
+static void
+gpumgrSetAttachInfo(OBJGPU *pGpu, GPUATTACHARG *pAttachArg)
+{
+    NvU32 gpuId = NV0000_CTRL_GPU_INVALID_ID;
+
+    if (pAttachArg->socDeviceArgs.specified)
+    {
+        NvU32 idx;
+        // This path is taken for T234D+ SOC devices.
+
+        //
+        // TODO: This existing field is specifically used to safeguard
+        // iGPU-specific code paths within RM, and should actually be NV_FALSE for
+        // T234D+.
+        //
+        // See JIRA TDS-5101 for more details.
+        //
+        pGpu->bIsSOC = NV_TRUE;
+
+        for (idx = 0; idx < SOC_DEV_MAPPING_MAX; idx++)
+        {
+            pGpu->deviceMappings[idx] = pAttachArg->socDeviceArgs.deviceMapping[idx];
+        }
+
+        pGpu->busInfo.iovaspaceId = pAttachArg->socDeviceArgs.iovaspaceId;
+        pGpu->busInfo.gpuPhysAddr = pGpu->deviceMappings[SOC_DEV_MAPPING_DISP].gpuNvPAddr;
+        pGpu->gpuDeviceMapCount = 1;
+
+        //
+        // TODO bug 2100708: a fake DBDF is used on SOC to opt out of some
+        // RM paths that cause issues otherwise, see the bug for details.
+        //
+        pGpu->busInfo.nvDomainBusDeviceFunc = pAttachArg->nvDomainBusDeviceFunc;
+    }
+    else if (pAttachArg->bIsSOC)
+    {
+        // This path is only taken for ARCH MODS iGPU verification.
+
+        NV_ASSERT(sizeof(pGpu->deviceMappings) == sizeof(pAttachArg->socDeviceMappings));
+        pGpu->bIsSOC = NV_TRUE;
+        pGpu->idInfo.PCIDeviceID    = pAttachArg->socId;
+        pGpu->idInfo.PCISubDeviceID = pAttachArg->socSubId;
+        pGpu->busInfo.iovaspaceId   = pAttachArg->iovaspaceId;
+        if (RMCFG_FEATURE_PLATFORM_MODS)
+        {
+            NV_ASSERT(sizeof(pGpu->deviceMappings) == sizeof(pAttachArg->socDeviceMappings));
+            portMemCopy(pGpu->deviceMappings, sizeof(pGpu->deviceMappings), pAttachArg->socDeviceMappings, sizeof(pGpu->deviceMappings));
+            pGpu->gpuDeviceMapCount = pAttachArg->socDeviceCount;
+
+            //
+            // TODO bug 2100708: a fake DBDF is used on SOC to opt out of some
+            // RM paths that cause issues otherwise, see the bug for details.
+            //
+            pGpu->busInfo.nvDomainBusDeviceFunc = pAttachArg->nvDomainBusDeviceFunc;
+        }
+    }
+    else
+    {
+        //
+        // Set this gpu's hardware register access address pointers
+        // from the contents of mappingInfo.
+        //
+        pGpu->bIsSOC = NV_FALSE;
+
+        pGpu->deviceMappings[0].gpuNvAddr = pAttachArg->regBaseAddr;
+        pGpu->registerAccess.gpuFbAddr = pAttachArg->fbBaseAddr;
+        pGpu->busInfo.gpuPhysAddr     = pAttachArg->devPhysAddr;
+        pGpu->busInfo.gpuPhysFbAddr   = pAttachArg->fbPhysAddr;
+        pGpu->busInfo.gpuPhysInstAddr = pAttachArg->instPhysAddr;
+        pGpu->busInfo.gpuPhysIoAddr   = pAttachArg->ioPhysAddr;
+        pGpu->busInfo.iovaspaceId     = pAttachArg->iovaspaceId;
+        pGpu->busInfo.nvDomainBusDeviceFunc = pAttachArg->nvDomainBusDeviceFunc;
+        pGpu->deviceMappings[0].gpuNvLength = pAttachArg->regLength;
+        pGpu->fbLength                = pAttachArg->fbLength;
+        pGpu->busInfo.IntLine         = pAttachArg->intLine;
+        pGpu->gpuDeviceMapCount       = 1;
+
+        if ( ! pAttachArg->instBaseAddr )
+        {
+            //
+            // The OS init goo didn't map a separate region for instmem.
+            // So instead use the 1M mapping in bar0.
+            //
+            pGpu->instSetViaAttachArg = NV_FALSE;
+            pGpu->registerAccess.gpuInstAddr = (GPUHWREG*)(((NvU8*)pGpu->deviceMappings[0].gpuNvAddr) + 0x00700000); // aka NV_PRAMIN.
+            if (!pGpu->busInfo.gpuPhysInstAddr)
+            {
+                //
+                // Only use the bar0 window physical address if the OS didn't
+                // specify a bar2 physical address.
+                //
+                pGpu->busInfo.gpuPhysInstAddr = pGpu->busInfo.gpuPhysAddr + 0x00700000;  // aka NV_PRAMIN
+            }
+            pGpu->instLength = 0x100000; // 1MB
+        }
+        else
+        {
+            pGpu->instSetViaAttachArg = NV_TRUE;
+            pGpu->registerAccess.gpuInstAddr = pAttachArg->instBaseAddr;
+            pGpu->instLength = pAttachArg->instLength;
+        }
+    }
+
+    gpuId = gpuGenerate32BitId(gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu));
+    if (gpuId != NV0000_CTRL_GPU_INVALID_ID)
+    {
+        gpumgrSetGpuId(pGpu, gpuId);
+    }
+}
+
+//
+// gpumgrStatePreInitGpu & gpumgrStateInitGpu
+//
+// These routines handle unicast gpu initialization.
+//
+NV_STATUS
+gpumgrStatePreInitGpu(OBJGPU *pGpu)
+{
+    NV_STATUS status;
+
+    // LOCK: acquire GPUs lock
+    status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT);
+    if (status == NV_OK)
+    {
+        if (FULL_GPU_SANITY_CHECK(pGpu))
+        {
+            // pre-init phase done in UC mode
+            status = gpuStatePreInit(pGpu);
+        }
+        else
+        {
+            status = NV_ERR_GPU_IS_LOST;
+            DBG_BREAKPOINT();
+        }
+        // UNLOCK: release GPUs lock
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
+    // save the init status for later client queries
+    gpumgrSetGpuInitStatus(pGpu->gpuId, status);
+
+    return status;
+}
+
+NV_STATUS
+gpumgrStateInitGpu(OBJGPU *pGpu)
+{
+    NV_STATUS status;
+
+    // LOCK: acquire GPUs lock
+    status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT);
+    if (status == NV_OK)
+    {
+        // init phase
+        status = gpuStateInit(pGpu);
+
+        // UNLOCK: release GPUs lock
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
+    // save the init status for later client queries
+    gpumgrSetGpuInitStatus(pGpu->gpuId, status);
+
+    return status;
+}
+
+NV_STATUS
+gpumgrStateLoadGpu(OBJGPU *pGpu, NvU32 flags)
+{
+    NV_STATUS status;
+
+    // LOCK: acquire GPUs lock
+    status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT);
+    if (status == NV_OK)
+    {
+        // Load phase
+        status = gpuStateLoad(pGpu, flags);
+
+        // UNLOCK: release GPUs lock
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
+    if (status != NV_OK)
+        goto gpumgrStateLoadGpu_exit;
+
+gpumgrStateLoadGpu_exit:
+    // save the init status for later client queries
+    gpumgrSetGpuInitStatus(pGpu->gpuId, status);
+
+    return status;
+}
+
+//
+// gpumgrGetNextGpu
+//
+// This routine searches subDeviceMask for the next gpu by using
+// the start index value as a beginning bit position.  If a gpu is
+// found, the start index value is bumped to the next bit position
+// in the mask.
+//
+POBJGPU
+gpumgrGetNextGpu(NvU32 subDeviceMask, NvU32 *pStartIndex)
+{
+    NvU32 i;
+
+    if (*pStartIndex > NV_MAX_DEVICES)
+    {
+        *pStartIndex = NV_MAX_DEVICES;
+        return NULL;
+    }
+
+    for (i = *pStartIndex; i < NV_MAX_DEVICES; i++)
+    {
+        if (subDeviceMask & NVBIT(i))
+        {
+            *pStartIndex = i+1;
+            return gpumgrGetGpu(i);
+        }
+    }
+
+    *pStartIndex = NV_MAX_DEVICES;
+    return NULL;
+}
+
+
+//
+// gpumgrIsGpuPointerValid - Validates pGpu without dereferencing it.
+//
+NvBool
+gpumgrIsGpuPointerValid(OBJGPU *pGpu)
+{
+    OBJGPU    *pTempGpu       = NULL;
+    NvU32      gpuMask        = 0;
+    NvU32      gpuCount       = 0;
+    NvU32      gpuIndex       = 0;
+
+    gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
+    pTempGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+
+    while(pTempGpu)
+    {
+        if (pTempGpu->getProperty(pTempGpu, PDB_PROP_GPU_STATE_INITIALIZED))
+        {
+            if (pTempGpu == pGpu)
+            {
+                return NV_TRUE;
+            }
+        }
+
+        pTempGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
+    }
+
+    return NV_FALSE;
+}
+
+NvBool gpumgrIsGpuDisplayParent(OBJGPU *pGpu)
+{
+    OBJGPUGRP *pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+    NvBool     rc      = NV_FALSE;
+    NvU32      gpuMask;
+
+    NV_ASSERT_OR_RETURN(pGpuGrp != NULL, NV_FALSE);
+    gpuMask = gpugrpGetGpuMask(pGpuGrp);
+
+    // If there's only one GPU in the device, then of course it's the display parent!
+    if (gpumgrIsSubDeviceCountOne(gpuMask))
+    {
+        rc = NV_TRUE;
+    }
+    //
+    // If the gpuInstance argument is the first gpuInstance in the ordering,
+    // then it's the display parent!
+    //
+    else if (pGpu->gpuInstance == pGpuGrp->SliLinkOrder[0].gpuInstance)
+    {
+        rc = NV_TRUE;
+    }
+
+    // Otherwise it isn't.
+    return rc;
+}
+
+OBJGPU *gpumgrGetDisplayParent(OBJGPU *pGpu)
+{
+    OBJGPUGRP *pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+    NvU32      gpuCount;
+    NvU32      gpuMask;
+    NvU32      gpuInstance;
+
+    NV_ASSERT_OR_RETURN(pGpuGrp != NULL, NULL);
+    gpuMask = gpugrpGetGpuMask(pGpuGrp);
+    gpuCount = gpumgrGetSubDeviceCount(gpuMask);
+
+    if (gpuCount > 1)
+    {
+        gpuInstance = pGpuGrp->SliLinkOrder[0].gpuInstance;
+        pGpu = gpumgrGetGpu(gpuInstance);
+    }
+
+    gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
+
+    return pGpu;
+}
+
+//
+// gpumgrGetProbedGpuIds
+//
+// This routine services the NV0000_CTRL_GPU_GET_PROBED_IDS command.
+// The passed in gpuIds table is filled in with valid gpuId info
+// for each probed gpu.  Invalid entries in the table are set to the
+// invalid id value.
+//
+NV_STATUS
+gpumgrGetProbedGpuIds(NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *pGpuIdsParams)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i, j, k;
+
+    ct_assert(NV_MAX_DEVICES == NV0000_CTRL_GPU_MAX_PROBED_GPUS);
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0, j = 0, k = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId != NV0000_CTRL_GPU_INVALID_ID)
+        {
+            if (pGpuMgr->probedGpus[i].bExcluded)
+                pGpuIdsParams->excludedGpuIds[k++] = pGpuMgr->probedGpus[i].gpuId;
+            else
+                pGpuIdsParams->gpuIds[j++] = pGpuMgr->probedGpus[i].gpuId;
+        }
+    }
+
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+
+    for (i = j; i < NV_ARRAY_ELEMENTS(pGpuIdsParams->gpuIds); i++)
+        pGpuIdsParams->gpuIds[i] = NV0000_CTRL_GPU_INVALID_ID;
+
+    for (i = k; i < NV_ARRAY_ELEMENTS(pGpuIdsParams->excludedGpuIds); i++)
+        pGpuIdsParams->excludedGpuIds[i] = NV0000_CTRL_GPU_INVALID_ID;
+
+    return NV_OK;
+}
+
+//
+// gpumgrGetAttachedGpuIds
+//
+// This routine services the NV0000_CTRL_GPU_GET_ATTACHED_IDS command.
+// The passed in gpuIds table is filled in with valid gpuId info
+// for each attached gpu.  Any remaining entries in the table are set to
+// the invalid id value.
+//
+NV_STATUS
+gpumgrGetAttachedGpuIds(NV0000_CTRL_GPU_GET_ATTACHED_IDS_PARAMS *pGpuIdsParams)
+{
+    OBJGPU *pGpu;
+    NvU32 gpuAttachCnt, gpuAttachMask, i, cnt;
+    NvU32 *pGpuIds = &pGpuIdsParams->gpuIds[0];
+
+    // fill the table w/valid entries
+    gpumgrGetGpuAttachInfo(&gpuAttachCnt, &gpuAttachMask);
+    for (cnt = 0, i = 0; i < NV_MAX_DEVICES; i++)
+    {
+        if (gpuAttachMask & NVBIT(i))
+        {
+            pGpu = gpumgrGetGpu(i);
+            pGpuIds[cnt++] = pGpu->gpuId;
+        }
+    }
+
+    // invalidate rest of the entries
+    while (cnt < NV0000_CTRL_GPU_MAX_ATTACHED_GPUS)
+        pGpuIds[cnt++] = NV0000_CTRL_GPU_INVALID_ID;
+
+    return NV_OK;
+}
+
+//
+// gpumgrGetSubDeviceDeviceInstanceFromGpu
+//
+// Given a pGpu return the corresponding subdevice instance value.
+//
+NvU32
+gpumgrGetSubDeviceInstanceFromGpu(OBJGPU *pGpu)
+{
+    return pGpu->subdeviceInstance;
+}
+
+//
+// gpumgrGetParentGPU
+//
+POBJGPU
+gpumgrGetParentGPU(OBJGPU *pGpu)
+{
+    OBJGPUGRP *pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+    NvU32      gpuMask;
+
+    NV_ASSERT_OR_RETURN(pGpuGrp != NULL, NULL);
+    gpuMask = gpugrpGetGpuMask(pGpuGrp);
+
+    if (gpumgrIsSubDeviceCountOne(gpuMask))
+    {
+        return pGpu;
+    }
+    else
+    {
+        return gpugrpGetParentGpu(pGpuGrp);
+    }
+}
+
+//
+// gpumgrSetParentGPU
+//
+void
+gpumgrSetParentGPU(OBJGPU *pGpu, OBJGPU *pParentGpu)
+{
+    OBJGPUGRP *pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+
+    NV_ASSERT_OR_RETURN_VOID(pGpuGrp != NULL);
+    gpugrpSetParentGpu(pGpuGrp, pParentGpu);
+}
+
+//
+// gpumgrGetGpuFromId
+//
+// Find the specified gpu from it's gpuId.
+//
+POBJGPU
+gpumgrGetGpuFromId(NvU32 gpuId)
+{
+    OBJGPU *pGpu;
+    NvU32 gpuAttachCnt, gpuAttachMask;
+    NvU32 i;
+
+    gpumgrGetGpuAttachInfo(&gpuAttachCnt, &gpuAttachMask);
+    for (i = 0; i < NV_MAX_DEVICES; i++)
+    {
+        if (gpuAttachMask & NVBIT(i))
+        {
+            pGpu = gpumgrGetGpu(i);
+
+            // found it
+            if (pGpu->gpuId == gpuId)
+                return pGpu;
+        }
+    }
+
+    // didn't find it
+    return NULL;
+}
+
+//
+// gpumgrGetGpuFromUuid()
+//
+// Get GPUOBJECT from UUID. Returns NULL if it cannot find a GPU with the
+// requested UUID.
+//
+POBJGPU
+gpumgrGetGpuFromUuid(const NvU8 *pGpuUuid, NvU32 flags)
+{
+     OBJGPU *pGpu;
+     NvU32 attachedGpuCount;
+     NvU32 attachedGpuMask;
+     NvU32 gpuIndex;
+     NvU32 gidStrLen;
+     NvU8 *pGidString = NULL;
+     NV_STATUS rmStatus;
+
+     // get all attached GPUs
+     rmStatus = gpumgrGetGpuAttachInfo(&attachedGpuCount, &attachedGpuMask);
+
+     gpuIndex = 0;
+
+     for(pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex);
+         pGpu != NULL;
+         pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex))
+     {
+         //
+         // get the GPU's UUID
+         //
+         // This implementation relies on the fact that gpuGetGidInfo() only
+         // allocates memory if it succeeds.
+         //
+         rmStatus = gpuGetGidInfo(pGpu, &pGidString, &gidStrLen, flags);
+         if (NV_OK != rmStatus)
+             return NULL;
+
+         // check if it matches
+         if (0 == portMemCmp(pGidString, pGpuUuid, gidStrLen))
+         {
+             portMemFree(pGidString);
+             return pGpu;
+         }
+         else
+         {
+             // if it doesn't match, clean up allocated memory for next iteration
+             portMemFree(pGidString);
+         }
+     }
+
+     return NULL; // Failed to find a GPU with the requested UUID
+}
+
+//
+// gpumgrGetGpuFromBusInfo
+//
+// Find the specified GPU using its PCI bus info.
+//
+POBJGPU
+gpumgrGetGpuFromBusInfo(NvU32 domain, NvU8 bus, NvU8 device)
+{
+    NV_STATUS status;
+    OBJGPU *pGpu;
+    NvU32 attachedGpuCount;
+    NvU32 attachedGpuMask;
+    NvU32 gpuIndex = 0;
+
+    status = gpumgrGetGpuAttachInfo(&attachedGpuCount, &attachedGpuMask);
+    NV_ASSERT_OR_RETURN(status == NV_OK, NULL);
+
+    for (pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex);
+         pGpu != NULL;
+         pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex))
+    {
+        if ((gpuGetDomain(pGpu) == domain)  &&
+            (gpuGetBus(pGpu) == bus)        &&
+            (gpuGetDevice(pGpu) == device))
+        {
+            return pGpu;
+        }
+    }
+
+    return NULL;
+}
+
+//
+// gpumgrSetGpuId
+//
+// This routine assigns the specified gpuId to the specified gpu.
+//
+void
+gpumgrSetGpuId(OBJGPU *pGpu, NvU32 gpuId)
+{
+    pGpu->gpuId = gpuId;
+
+    // if boardId is unassigned then give it a default value now
+    if (pGpu->boardId == 0xffffffff)
+    {
+        pGpu->boardId = gpuId;
+    }
+}
+
+//
+// gpumgrGetGpuIdInfo
+//
+// Special purpose routine that handles NV0000_CTRL_CMD_GPU_GET_ID_INFO
+// requests from clients.
+// NV0000_CTRL_CMD_GPU_GET_ID_INFO is deprecated in favour of
+// NV0000_CTRL_CMD_GPU_GET_ID_INFO_V2, per comments in ctrl0000gpu.h
+//
+NV_STATUS
+gpumgrGetGpuIdInfoV2(NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *pGpuInfo)
+{
+    OBJGPU *pGpu;
+    NvU32 deviceInstance, subDeviceInstance;
+
+    // start by making sure client request specifies a valid gpu
+    pGpu = gpumgrGetGpuFromId(pGpuInfo->gpuId);
+    if (pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "gpumgrGetGpuInfoV2: bad gpuid spec: 0x%x\n",
+                  pGpuInfo->gpuId);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+
+    //
+    // We have a valid gpuInstance, so now let's get the corresponding
+    // deviceInstance/subDeviceInstance pair.
+    //
+    deviceInstance = gpuGetDeviceInstance(pGpu);
+    if (deviceInstance == NV_MAX_DEVICES)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "gpumgrGetGpuInfoV2: deviceInstance not found\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    subDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+
+    pGpuInfo->gpuInstance = pGpu->gpuInstance;
+    pGpuInfo->deviceInstance = deviceInstance;
+    pGpuInfo->subDeviceInstance = subDeviceInstance;
+    pGpuInfo->boardId = pGpu->boardId;
+
+    //
+    // Setup gpu info flags; see ctrl0000gpu.h for list of flags.
+    //
+    pGpuInfo->gpuFlags = 0;
+    pGpuInfo->numaId = NV0000_CTRL_NO_NUMA_NODE;
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED))
+    {
+        pGpuInfo->gpuFlags |= DRF_NUM(0000, _CTRL_GPU_ID_INFO, _ATS_ENABLED,
+                                      NV0000_CTRL_GPU_ID_INFO_ATS_ENABLED_TRUE);
+        pGpuInfo->numaId = pGpu->numaNodeId;
+    }
+
+    // is this gpu in use?
+    pGpuInfo->gpuFlags |= DRF_NUM(0000, _CTRL_GPU_ID_INFO, _IN_USE, gpuIsInUse(pGpu));
+
+    // is this gpu part of a sli device?
+    pGpuInfo->gpuFlags |= DRF_NUM(0000, _CTRL_GPU_ID_INFO, _LINKED_INTO_SLI_DEVICE, IsSLIEnabled(pGpu));
+
+    // is this gpu a mobile gpu?
+    if (IsMobile(pGpu))
+    {
+        pGpuInfo->gpuFlags |= DRF_DEF(0000, _CTRL_GPU_ID_INFO, _MOBILE, _TRUE);
+    }
+
+    // is this gpu the boot primary?
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE))
+    {
+        pGpuInfo->gpuFlags |= DRF_DEF(0000, _CTRL_GPU_ID_INFO, _BOOT_MASTER, _TRUE);
+    }
+
+    // is this GPU part of an SOC
+    if (pGpu->bIsSOC)
+    {
+        pGpuInfo->gpuFlags |= DRF_DEF(0000, _CTRL_GPU_ID_INFO, _SOC, _TRUE);
+    }
+
+    // GPU specific SLI status
+    pGpuInfo->sliStatus = pGpu->sliStatus;
+
+    NV_PRINTF(LEVEL_INFO,
+              "gpumgrGetGpuInfoV2: gpu[0x%x]: device 0x%x subdevice 0x%x\n",
+              pGpuInfo->gpuId, pGpuInfo->deviceInstance,
+              pGpuInfo->subDeviceInstance);
+
+    return NV_OK;
+}
+NV_STATUS
+gpumgrGetGpuIdInfo(NV0000_CTRL_GPU_GET_ID_INFO_PARAMS *pGpuInfo)
+{
+    NV_STATUS status;
+    NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS pGpuInfoV2 = {0};
+    pGpuInfoV2.gpuId = pGpuInfo->gpuId;
+
+    status = gpumgrGetGpuIdInfoV2(&pGpuInfoV2);
+
+    if (status != NV_OK)
+    {
+        return status;
+    }
+    pGpuInfo->gpuFlags = pGpuInfoV2.gpuFlags;
+    pGpuInfo->deviceInstance = pGpuInfoV2.deviceInstance;
+    pGpuInfo->subDeviceInstance = pGpuInfoV2.subDeviceInstance;
+    pGpuInfo->sliStatus = pGpuInfoV2.sliStatus;
+    pGpuInfo->boardId = pGpuInfoV2.boardId;
+    pGpuInfo->gpuInstance = pGpuInfoV2.gpuInstance;
+    pGpuInfo->numaId = pGpuInfoV2.numaId;
+
+    // If we get a non-NULL szName parameter, let os-dependent code
+    // fill it in from information we already have.
+    if (NvP64_VALUE(pGpuInfo->szName) != NULL)
+    {
+        status = osDeviceClassToDeviceName(pGpuInfo->deviceInstance,
+                                           NvP64_VALUE(pGpuInfo->szName));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "gpumgrGetGpuInfo: deviceInstance to szName translation failed\n");
+            return status;
+        }
+    }
+
+    return status;
+}
+
+//
+// gpumgrGetGpuInitStatus
+//
+// Special purpose routine that handles NV0000_CTRL_CMD_GET_GPU_INIT_STATUS
+// requests from clients.
+//
+NV_STATUS
+gpumgrGetGpuInitStatus(NV0000_CTRL_GPU_GET_INIT_STATUS_PARAMS *pGpuInitStatus)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+    NV_STATUS rmStatus;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId == pGpuInitStatus->gpuId)
+        {
+            if (pGpuMgr->probedGpus[i].bInitAttempted)
+            {
+                pGpuInitStatus->status = pGpuMgr->probedGpus[i].initStatus;
+                rmStatus = NV_OK;
+            }
+            else
+            {
+                //
+                // No init has been attempted on this GPU yet, so this request
+                // doesn't make any sense.
+                //
+                rmStatus = NV_ERR_INVALID_STATE;
+            }
+            goto done;
+        }
+    }
+
+    // We couldn't find a probed gpuId matching the requested one.
+    rmStatus = NV_ERR_INVALID_ARGUMENT;
+done:
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+    return rmStatus;
+}
+
+NV_STATUS
+gpumgrGetProbedGpuDomainBusDevice(NvU32 gpuId, NvU64 *gpuDomainBusDevice)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+    NV_STATUS rmStatus;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
+        {
+            *gpuDomainBusDevice = pGpuMgr->probedGpus[i].gpuDomainBusDevice;
+            rmStatus = NV_OK;
+            goto done;
+        }
+    }
+
+    //
+    // We couldn't find a probed gpuId matching the requested one.
+    //
+    // This used to return a generic NV_ERR_INVALID_ARGUMENT, but we want to be
+    // more specific as at least nvml wants to be able to tell this case apart
+    // from other errors. This case is expected when GPUs are removed from the
+    // driver (e.g. through unbind on Linux) after a client queries for the
+    // probed GPUs, but before getting the PCI info for all of them.
+    //
+    rmStatus = NV_ERR_OBJECT_NOT_FOUND;
+
+done:
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+    return rmStatus;
+}
+
+//
+// gpumgrSetGpuInitStatus
+//
+// Marks initialization of the gpu in question as attempted and stores the
+// status.
+//
+void
+gpumgrSetGpuInitStatus(NvU32 gpuId, NV_STATUS status)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); i++)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
+        {
+            // Overwrite any previous init status
+            pGpuMgr->probedGpus[i].bInitAttempted = NV_TRUE;
+            pGpuMgr->probedGpus[i].initStatus = status;
+            break;
+        }
+    }
+
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+}
+
+//
+// gpumgrUpdateBoardId
+//
+// Update gpu boardIds.  By default the boardId will already be set to
+// the gpuId.  This routine fetches the upstream bridge port and sets the
+// new boardId to the pGpu
+//
+void
+gpumgrUpdateBoardId_IMPL(OBJGPU *pGpu)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJCL *pCl = SYS_GET_CL(pSys);
+    void *handleUp;
+    NvU16 vendorIDUp, deviceIDUp;
+    NvU8 busUp, deviceUp, funcUp;
+    NvU32 domain;
+    NvU32 boardId;
+
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_BEHIND_BRIDGE))
+    {
+        return;
+    }
+
+    domain = gpuGetDomain(pGpu);
+    handleUp = clFindBrdgUpstreamPort(pGpu, pCl, NV_TRUE,
+                                      &busUp, &deviceUp, &funcUp,
+                                      &vendorIDUp, &deviceIDUp,
+                                      NULL);
+    if (!handleUp)
+        return;
+
+    if (!(IS_SUPPORTED_PCIE_SWITCH(vendorIDUp, deviceIDUp)))
+    {
+        return;
+    }
+
+    boardId = gpuGenerate32BitId(domain, busUp, deviceUp);
+    pGpu->boardId = boardId;
+}
+
+//
+// gpumgrGetDefaultPrimaryGpu
+//
+// This routine looks at the set of GPUs and picks a the primary (parent)
+// with the following rules, in this order:
+// 1- If a primary GPU has been passed in an SLI config by a client
+// 2- If there is a boot primary in the GPU mask
+// 3- The first VGA device attached (not 3d controller)
+//
+NvU32
+gpumgrGetDefaultPrimaryGpu
+(
+    NvU32 gpuMask
+)
+{
+    OBJGPU     *pGpu = NULL;
+    NvU32       gpuInstance;
+
+    if (gpuMask == 0)
+    {
+        NV_ASSERT(gpuMask);
+        return 0;
+    }
+
+    // Find  masterFromSLIConfig, set when a RM client passes a primary GPU
+    // index from a SLI config
+    gpuInstance = 0;
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        if (pGpu->masterFromSLIConfig)
+        {
+            break;
+        }
+    }
+
+    // default to boot primary
+    if (pGpu == NULL)
+    {
+        gpuInstance = 0;
+        while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+        {
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE))
+            {
+                break;
+            }
+        }
+    }
+
+    if (pGpu)
+    {
+        return gpuGetInstance(pGpu);
+    }
+
+    // otherwise the primary is the first non 3d controller in the set attached to the RM
+    gpuInstance = 0;
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_3D_CONTROLLER))
+        {
+            break;
+        }
+    }
+
+    if (!pGpu)
+    {
+        // The GPU mask contains only 3d Controllers.
+        // Choose first one in the set attached to the RM.
+        gpuInstance = 0;
+        pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+    }
+
+    if (pGpu == NULL)
+    {
+        return 0; // This should never happen
+    }
+
+    return gpuGetInstance(pGpu);
+}
+
+void
+gpumgrServiceInterrupts_IMPL(NvU32 gpuMask, MC_ENGINE_BITVECTOR *engineMask, NvBool bExhaustive)
+{
+    OBJGPU *pGpu;
+    NvU32 gpuInstance = 0;
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        if (gpuIsGpuFullPower(pGpu))
+        {
+            Intr *pIntr = GPU_GET_INTR(pGpu);
+            
+            //
+            // On SLI, one OBJGPU's StateInit functions could attempt to service
+            // interrupts on another OBJGPU which has not yet started StateInit.
+            // However Intr is not prepared to service interrupts until after
+            // intrStateInit. To avoid calling in too early, check that the
+            // interrupt table is initialized.
+            //
+            if (pIntr->pIntrTable == NULL)
+            {
+                continue;
+            }
+
+            //
+            // Service interrupts for the specified engines now.
+            // A non-false value for 'bExhaustive' indicates that intrServiceStallList
+            // should repreatedly service all specified engines, until it finds
+            // no further pending interrupt work remains on those engines.
+            //
+            intrServiceStallList_HAL(pGpu, pIntr, engineMask, bExhaustive);
+        }
+    }
+}
+
+NV_STATUS
+gpumgrGetGpuLockAndDrPorts
+(
+    OBJGPU *pGpu,
+    OBJGPU *pPeerGpu,
+    NvU32 *pPinsetOut,
+    NvU32 *pPinsetIn
+)
+{
+    *pPinsetOut = 0;
+    *pPinsetIn = 0;
+    return NV_OK;
+}
+
+//
+// Stores the address of the boot primary in pGpu
+// Returns NV_OK on success NV_ERR_GENERIC otherwise.
+//
+NV_STATUS
+gpumgrGetBootPrimary(OBJGPU **ppGpu)
+{
+    NvU32 gpuCount, gpuMask, idx1;
+    OBJGPU *pGpu = NULL;
+
+    // Find boot primary
+    idx1 = 0;
+    gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &idx1)) != NULL)
+    {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_PRIMARY_DEVICE))
+            break;
+    }
+    *ppGpu = pGpu;
+
+    // No boot primary
+    if (pGpu == NULL)
+    {
+        return NV_ERR_GENERIC;
+    }
+
+    return NV_OK;
+}
+
+//
+// Returns the mGpu
+//
+OBJGPU *gpumgrGetMGpu (void)
+{
+    OBJGPU *pGpu;
+    NvU32 gpuCount, gpuMask, gpuIndex = 0;
+    // Parse through all the GPUs
+
+    gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)))
+    {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_HYBRID_MGPU))
+        {
+            break;
+        }
+    }
+
+    return pGpu;
+}
+
+//
+// Get PhysFbAddr for the given GPU which may be different if
+// the GPU is broadcast or chipset broadcast are enabled or not:
+// - BC GPU + no CL BC -> returns gpu address
+// - UC GPU -> returns GPU address
+// - BC GPU + CL BC -> returns broadcast address
+//
+RmPhysAddr gpumgrGetGpuPhysFbAddr(OBJGPU *pGpu)
+{
+    RmPhysAddr physFbAddr;
+
+    physFbAddr = pGpu->busInfo.gpuPhysFbAddr;
+
+    NV_ASSERT(physFbAddr);
+    return physFbAddr;
+}
+
+
+//
+// Get GPU object from subdevice instance
+//
+POBJGPU
+gpumgrGetGpuFromSubDeviceInst(NvU32 deviceInst, NvU32 subDeviceInst)
+{
+    OBJGPU    *pGpu     = NULL;
+    OBJGPUGRP *pGpuGrp  = NULL;
+    NvU32 gpuInst = 0;
+    NvU32 gpuMask;
+
+    pGpuGrp = gpumgrGetGpuGrpFromInstance(deviceInst);
+    NV_ASSERT_OR_RETURN(pGpuGrp != NULL, NULL);
+
+    gpuMask = gpugrpGetGpuMask(pGpuGrp);
+
+    // check for single GPU case
+   if (gpumgrGetSubDeviceCount(gpuMask) == 1)
+        return gpumgrGetNextGpu(gpuMask, &gpuInst);
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInst)) != NULL)
+    {
+        if (gpumgrGetSubDeviceInstanceFromGpu(pGpu) == subDeviceInst)
+        {
+            break;
+        }
+    }
+
+    NV_ASSERT(pGpu);
+
+    return pGpu;
+}
+
+/*!
+ * @brief sets the device instance pGpu->deviceInstance for the GPUs indicated by the gpu mask
+ *
+ * Only remove the device instance if it is the last GPU to be removed.
+ *
+ * At RM initialization we fill in the software feature values for this GPU.
+ * The values are determined from the software feature database
+ *
+ * @param[in]   gpuMask   NvU32 value
+ *
+ * @return NV_OK or NV_ERR_OBJECT_NOT_FOUND if no GPU has been found
+ *
+ */
+NV_STATUS
+gpumgrAddDeviceInstanceToGpus(NvU32 gpuMask)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NV_STATUS rmStatus = NV_ERR_OBJECT_NOT_FOUND;
+    OBJGPU *pGpu = NULL;
+    NvU32 i, gpuIndex = 0;
+    OBJGPUGRP *pGpuGrp = NULL;
+
+    // Add the device instance to the GPU objects in the mask
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)))
+    {
+        rmStatus = NV_ERR_OBJECT_NOT_FOUND;
+        for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->pGpuGrpTable); i++)
+        {
+            pGpuGrp = pGpuMgr->pGpuGrpTable[i];
+            // if it contains the specified gpu...
+            if ((pGpuGrp != NULL) &&
+                (gpugrpGetGpuMask(pGpuGrp) & NVBIT(pGpu->gpuInstance)))
+            {
+                pGpu->deviceInstance = i;
+                rmStatus = NV_OK;
+                break;
+            }
+        }
+        NV_ASSERT_OK_OR_RETURN(rmStatus);
+    }
+
+    return rmStatus;
+}
+
+/*!
+ * @brief Retrieves the OBJGPUGRP pointer given the instance
+ *
+ * @param[in]  gpugrpInstance GPUGRP instance
+ *
+ * @return GPUGRP pointer on success, NULL on error
+ *
+ */
+POBJGPUGRP
+gpumgrGetGpuGrpFromInstance
+(
+    NvU32      gpugrpInstance
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NV_ASSERT_OR_RETURN(gpugrpInstance < NV_MAX_DEVICES, NULL);
+    return pGpuMgr->pGpuGrpTable[gpugrpInstance];
+}
+
+/*!
+ * @brief Retrieves the OBJGPUGRP pointer given the GPU pointer.
+ *
+ * @param[in]  pGpu GPU object pointer
+ *
+ * @return OBJGPUGRP pointer on success, NULL on error
+ *
+ */
+POBJGPUGRP
+gpumgrGetGpuGrpFromGpu
+(
+    OBJGPU    *pGpu
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 gpugrpInstance = gpuGetDeviceInstance(pGpu);
+    NV_ASSERT_OR_RETURN(gpugrpInstance < NV_MAX_DEVICES, NULL);
+
+    return pGpuMgr->pGpuGrpTable[gpugrpInstance];
+}
+
+/*!
+ * @brief Constructs the GPUGRP object for the given instance
+ *
+ * @param[in]  pGpu      GPU object pointer
+ * @param[in]  gpuMask   GpuMask corresponding to this GPUGRP
+ * @param[out] ppGpuGrp  Newly created gpugrp object pointer
+ *
+ * @return NV_OK on success, appropriate error on failure.
+ *
+ */
+NV_STATUS
+gpumgrConstructGpuGrpObject
+(
+    OBJGPUMGR *pGpuMgr,
+    NvU32      gpuMask,
+    OBJGPUGRP **ppGpuGrp
+)
+{
+    NV_STATUS  status;
+
+    status = objCreate(ppGpuGrp, pGpuMgr, OBJGPUGRP);
+    if (NV_OK != status)
+    {
+        return status;
+    }
+
+    status = gpugrpCreate(*ppGpuGrp, gpuMask);
+    if (NV_OK != status)
+    {
+        return status;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Enter/exit "drain" state on a given GPU
+ *
+ * @param[in]  gpuId        Platform specific GPU Id
+ * @param[in]  bEnable      NV_TRUE: enter, NV_FALSE: exit
+ * @param[in]  bRemove      Ask the OS to forget the GPU, once quiescent
+ * @param[in]  bLinkDisable Shut down the upstream PCIe link after the removal.
+ *                          This is done in user-land, we just check that the
+ *                          GPU is in the right state.
+ *
+ * @return NV_OK on success, appropriate error on failure.
+ */
+NV_STATUS
+gpumgrModifyGpuDrainState
+
+(
+    NvU32   gpuId,
+    NvBool  bEnable,
+    NvBool  bRemove,
+    NvBool  bLinkDisable
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPU     *pGpu;
+    NvBool      bAttached;
+    NvBool      bStateChange = NV_FALSE;
+    NvU32       i;
+    NvU32       domain = 0;
+    NvU8        bus = 0;
+    NvU8        device = 0;
+
+    if (bRemove && !osRemoveGpuSupported())
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    bAttached = ((pGpu = gpumgrGetGpuFromId(gpuId)) != NULL);
+
+    if (bEnable && bLinkDisable && bAttached)
+    {
+        return NV_ERR_IN_USE;
+    }
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); ++i)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
+        {
+            bStateChange = pGpuMgr->probedGpus[i].bDrainState != bEnable;
+            pGpuMgr->probedGpus[i].bDrainState = bEnable;
+            pGpuMgr->probedGpus[i].bRemoveIdle = bEnable && bRemove;
+            domain = gpuDecodeDomain(pGpuMgr->probedGpus[i].gpuDomainBusDevice);
+            bus = gpuDecodeBus(pGpuMgr->probedGpus[i].gpuDomainBusDevice);
+            device = gpuDecodeDevice(pGpuMgr->probedGpus[i].gpuDomainBusDevice);
+            break;
+        }
+    }
+
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+
+    if (i == NV_MAX_DEVICES)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    //
+    // If the initial drain state (characterized by enabling draining without
+    // setting the remove flag) is already enabled, multiple clients may be
+    // trying to simultaneously manage drain state. Only return success for the
+    // first to allow them to filter out the others.
+    //
+    if (bEnable && !bRemove && !bStateChange)
+    {
+        return NV_ERR_IN_USE;
+    }
+
+    if (bEnable && bRemove && !bAttached)
+    {
+        osRemoveGpu(domain, bus, device);
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Query "drain"/remove state on a given GPU
+ *
+ * @param[in]   gpuId   Platform specific GPU Id
+ * @param[out]  pBEnable Drain state ptr
+ * @param[out]  pBRemove Remove flag ptr
+ *
+ * @return NV_OK on success, appropriate error on failure.
+ */
+NV_STATUS
+gpumgrQueryGpuDrainState
+
+(
+    NvU32   gpuId,
+    NvBool *pBEnable,
+    NvBool *pBRemove
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32       i;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); ++i)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
+        {
+            if (pBEnable != NULL)
+            {
+                *pBEnable = pGpuMgr->probedGpus[i].bDrainState;
+            }
+
+            if (pBRemove != NULL)
+            {
+                *pBRemove = pGpuMgr->probedGpus[i].bRemoveIdle;
+            }
+
+            break;
+        }
+    }
+
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+
+    //
+    // This used to return a generic NV_ERR_INVALID_ARGUMENT on error, but we
+    // want to be more specific as at least nvml wants to be able to tell this
+    // case apart from other errors. This case is expected when GPUs are
+    // removed from the driver (e.g. through unbind on Linux) after a client
+    // queries for the probed GPUs, but before getting the PCI info for all of
+    // them.
+    //
+    return (i == NV_MAX_DEVICES) ? NV_ERR_OBJECT_NOT_FOUND : NV_OK;
+}
+
+/*!
+* @brief Retrieves the group gpuMask that contains this gpuInstance.
+*        Used for locking all gpus under the same device together
+*
+* @param[in] gpuInstance: unique Index per GPU
+*
+* @return        gpuMask: mask of all GPU that are in the same group
+*
+*/
+NvU32
+gpumgrGetGrpMaskFromGpuInst
+(
+    NvU32      gpuInst
+)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+
+    NV_ASSERT_OR_RETURN(gpuInst < NV_MAX_DEVICES, 0);
+
+    return pGpuMgr->gpuInstMaskTable[gpuInst];
+}
+
+/*!
+* @brief Updates per GPU isnstance table to contain correct group mask
+*
+* @param[in] gpuMask: mask of all GPUs that are in the same group
+*
+*/
+void
+gpumgrAddDeviceMaskToGpuInstTable
+(
+    NvU32 gpuMask
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    int gpuInst;
+    NvU32 tempGpuMask = gpuMask;
+
+    for (gpuInst = 0; (tempGpuMask != 0) && (gpuInst < NV_MAX_DEVICES); gpuInst++)
+    {
+        if (NVBIT(gpuInst) & gpuMask)
+            pGpuMgr->gpuInstMaskTable[gpuInst] = gpuMask;
+
+        tempGpuMask &= ~NVBIT(gpuInst);
+    }
+}
+
+/*!
+* @brief Clear group mask from per GPU isnstance table (when group is destroyed)
+*
+* @param[in] gpuMask: gpu group mask being teared down
+*
+*/
+void
+gpumgrClearDeviceMaskFromGpuInstTable
+(
+    NvU32 gpuMask
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    int gpuInst;
+    NvU32 tempGpuMask = gpuMask;
+
+    for (gpuInst = 0; (tempGpuMask != 0) && (gpuInst < NV_MAX_DEVICES); gpuInst++)
+    {
+        if (NVBIT(gpuInst) & gpuMask)
+            pGpuMgr->gpuInstMaskTable[gpuInst] = 0;
+
+        tempGpuMask &= ~NVBIT(gpuInst);
+    }
+}
+
+/*!
+* @brief Add an nvlink topo entry by a GPU's PCI DomainBusDevice if not already present
+*
+* @param[in] DomainBusDevice: the PCI DomainBusDevice for the gpu to be registered
+*
+*/
+void
+gpumgrAddSystemNvlinkTopo_IMPL
+(
+    NvU64 DomainBusDevice
+)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    if (gpumgrGetSystemNvlinkTopo(DomainBusDevice, NULL))
+    {
+        // This gpu is already registered
+        return;
+    }
+
+    for (i = 0; i < NV_MAX_DEVICES; i++)
+    {
+        // add new gpu entry into the first slot available
+        if (!pGpuMgr->nvlinkTopologyInfo[i].valid)
+        {
+            pGpuMgr->nvlinkTopologyInfo[i].valid = NV_TRUE;
+            pGpuMgr->nvlinkTopologyInfo[i].DomainBusDevice = DomainBusDevice;
+            return;
+        }
+    }
+}
+
+/*!
+* @brief Finds nvlinkTopologyInfo entry info based on DomainBusDevice
+*
+* @param[in]  DomainBusDevice: the PCI DomainBusDevice for the gpu to be registered
+* @param[out] pTopoParams: topology params found for the specified GPU
+*
+* @returns NV_TRUE if entry found
+*          NV_FALSE otherwise
+*/
+NvBool
+gpumgrGetSystemNvlinkTopo_IMPL
+(
+    NvU64                   DomainBusDevice,
+    PNVLINK_TOPOLOGY_PARAMS pTopoParams
+)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i, idx;
+
+    for (i = 0; i < NV_MAX_DEVICES; i++)
+    {
+        //
+        // Choose the correct GPU by comparing PCI BusDomainDevice
+        // This ensures we are using the same GPU across gpu load/unload
+        //
+        if ((pGpuMgr->nvlinkTopologyInfo[i].valid) && (pGpuMgr->nvlinkTopologyInfo[i].DomainBusDevice == DomainBusDevice))
+        {
+            if (pTopoParams)
+            {
+                pTopoParams->sysmemLinks     = pGpuMgr->nvlinkTopologyInfo[i].params.sysmemLinks;
+                pTopoParams->maxLinksPerPeer = pGpuMgr->nvlinkTopologyInfo[i].params.maxLinksPerPeer;
+                pTopoParams->bSymmetric      = pGpuMgr->nvlinkTopologyInfo[i].params.bSymmetric;
+                // Pascal Only
+                pTopoParams->numLinks        = pGpuMgr->nvlinkTopologyInfo[i].params.numLinks;
+                // Volta+
+                pTopoParams->numPeers        = pGpuMgr->nvlinkTopologyInfo[i].params.numPeers;
+                pTopoParams->bSwitchConfig   = pGpuMgr->nvlinkTopologyInfo[i].params.bSwitchConfig;
+                // Ampere+
+                for (idx = 0; idx < NV_CE_PCE2LCE_CONFIG__SIZE_1_MAX; idx++)
+                {
+                    pTopoParams->maxPceLceMap[idx] = pGpuMgr->nvlinkTopologyInfo[i].params.maxPceLceMap[idx];
+                }
+                for (idx = 0; idx < NV_CE_GRCE_CONFIG__SIZE_1; idx++)
+                {
+                    pTopoParams->maxGrceConfig[idx] = pGpuMgr->nvlinkTopologyInfo[i].params.maxGrceConfig[idx];
+                }
+                pTopoParams->maxExposeCeMask = pGpuMgr->nvlinkTopologyInfo[i].params.maxExposeCeMask;
+                pTopoParams->maxTopoIdx = pGpuMgr->nvlinkTopologyInfo[i].params.maxTopoIdx;
+                for (idx = 0; idx < NV_CE_MAX_HSHUBS; idx++)
+                {
+                    pTopoParams->pceAvailableMaskPerHshub[idx] = pGpuMgr->nvlinkTopologyInfo[i].params.pceAvailableMaskPerHshub[idx];
+                }
+            }
+            return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
+}
+
+/*!
+* @brief Update the nvlinkTopologyInfo entry
+*
+* @param[in] DomainBusDevice: the PCI DomainBusDevice for the gpu to be registered
+* @param[in] pTopoParams: topology params to update the cache with
+*
+*/
+void
+gpumgrUpdateSystemNvlinkTopo_IMPL
+(
+    NvU64                   DomainBusDevice,
+    PNVLINK_TOPOLOGY_PARAMS pTopoParams
+)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i, idx;
+
+    for (i = 0; i < NV_MAX_DEVICES; i++)
+    {
+        //
+        // Choose the correct GPU by comparing PCI BusDomainDevice
+        // This ensures we are using the same GPU across gpu load/unload
+        //
+        if ((pGpuMgr->nvlinkTopologyInfo[i].valid) && (pGpuMgr->nvlinkTopologyInfo[i].DomainBusDevice == DomainBusDevice))
+        {
+            pGpuMgr->nvlinkTopologyInfo[i].params.sysmemLinks     = pTopoParams->sysmemLinks;
+            pGpuMgr->nvlinkTopologyInfo[i].params.maxLinksPerPeer = pTopoParams->maxLinksPerPeer;
+            pGpuMgr->nvlinkTopologyInfo[i].params.numLinks        = pTopoParams->numLinks; // Pascal only
+            pGpuMgr->nvlinkTopologyInfo[i].params.numPeers        = pTopoParams->numPeers;
+            pGpuMgr->nvlinkTopologyInfo[i].params.bSymmetric      = pTopoParams->bSymmetric;
+            pGpuMgr->nvlinkTopologyInfo[i].params.bSwitchConfig   = pTopoParams->bSwitchConfig;
+            // Ampere + only
+            for (idx = 0; idx < NV_CE_PCE2LCE_CONFIG__SIZE_1_MAX; idx++)
+            {
+                pGpuMgr->nvlinkTopologyInfo[i].params.maxPceLceMap[idx] = pTopoParams->maxPceLceMap[idx];
+            }
+            for (idx = 0; idx < NV_CE_GRCE_CONFIG__SIZE_1; idx++)
+            {
+                pGpuMgr->nvlinkTopologyInfo[i].params.maxGrceConfig[idx] = pTopoParams->maxGrceConfig[idx];
+            }
+            pGpuMgr->nvlinkTopologyInfo[i].params.maxExposeCeMask = pTopoParams->maxExposeCeMask;
+            pGpuMgr->nvlinkTopologyInfo[i].params.maxTopoIdx = pTopoParams->maxTopoIdx;
+            for (idx = 0; idx < NV_CE_MAX_HSHUBS; idx++)
+            {
+                pGpuMgr->nvlinkTopologyInfo[i].params.pceAvailableMaskPerHshub[idx] = pTopoParams->pceAvailableMaskPerHshub[idx];
+            }
+            return;
+        }
+    }
+}
+
+/*!
+* @brief Check if GPUs are indirect peers
+*
+* @param[in] pGpu
+* @param[in] pRemoteGpu
+* @returns  NV_TRUE if GPUs are indirect peers
+*
+*/
+NvBool
+gpumgrCheckIndirectPeer_IMPL
+(
+    OBJGPU *pGpu,
+    OBJGPU *pRemoteGpu
+)
+{
+#if defined(NVCPU_PPC64LE)
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (pKernelNvlink == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    // If it's the same GPU or GPUs belonging to same SLI group, return early
+    if ((pGpu == pRemoteGpu) ||
+        (pGpu->deviceInstance == pRemoteGpu->deviceInstance))
+    {
+        return NV_FALSE;
+    }
+
+    // If we are not on P9 + NVLINK2 systems then we don't support indirect peers
+    if ((GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->coherentCpuFbBase == 0) ||
+        (GPU_GET_KERNEL_MEMORY_SYSTEM(pRemoteGpu)->coherentCpuFbBase == 0))
+    {
+        return NV_FALSE;
+    }
+
+    return !(knvlinkGetNumLinksToPeer(pGpu, pKernelNvlink, pRemoteGpu));
+#else
+    return NV_FALSE;
+#endif
+}
+
+/*!
+ * @brief Set NVLinks (mask) for which initialization is disabled.
+ *
+ * @param[in]  gpuId        Platform specific GPU Id.
+ * @param[in]  mask         Mask representing the links to be disabled.
+ *
+ * @return NV_OK on success, appropriate error on failure.
+ */
+NV_STATUS
+gpumgrSetGpuInitDisabledNvlinks_IMPL
+(
+    NvU32   gpuId,
+    NvU32   mask,
+    NvBool  bSkipHwNvlinkDisable
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NV_STATUS   status = NV_ERR_INVALID_DEVICE;
+    NvU32 i;
+
+    if (gpumgrGetGpuFromId(gpuId) != NULL)
+    {
+        return NV_ERR_IN_USE;
+    }
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); ++i)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
+        {
+            // Mask will be validated during Nvlink construct.
+            pGpuMgr->probedGpus[i].initDisabledNvlinksMask = mask;
+            pGpuMgr->probedGpus[i].bSkipHwNvlinkDisable = bSkipHwNvlinkDisable;
+            status = NV_OK;
+            break;
+        }
+    }
+
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+
+    return status;
+}
+
+/*!
+ * @brief Get NVLinks (mask) for which initialization is disabled.
+ *
+ * @param[in]  gpuId        Platform specific GPU Id.
+ * @param[out]  mask        Mask representing the links to be disabled.
+ *
+ * @return NV_OK on success, appropriate error on failure.
+ */
+NV_STATUS
+gpumgrGetGpuInitDisabledNvlinks_IMPL
+(
+    NvU32   gpuId,
+    NvU32   *pMask,
+    NvBool  *pbSkipHwNvlinkDisable
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NV_STATUS   status = NV_ERR_INVALID_DEVICE;
+    NvU32 i;
+
+    portSyncMutexAcquire(pGpuMgr->probedGpusLock);
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->probedGpus); ++i)
+    {
+        if (pGpuMgr->probedGpus[i].gpuId == gpuId)
+        {
+            *pMask = pGpuMgr->probedGpus[i].initDisabledNvlinksMask;
+            *pbSkipHwNvlinkDisable = pGpuMgr->probedGpus[i].bSkipHwNvlinkDisable;
+            status = NV_OK;
+            break;
+        }
+    }
+
+    portSyncMutexRelease(pGpuMgr->probedGpusLock);
+
+    return status;
+}
+
+/*!
+ * @brief Adds an entry in the system partition topology save for the given GPU
+ *        ID. Note that this does not create any saved partition topology.
+ *
+ * @param[in] DomainBusDevice: the PCI DomainBusDevice for the gpu to be registered
+ */
+void
+gpumgrAddSystemMIGInstanceTopo_IMPL
+(
+    NvU64 domainBusDevice
+)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    if (gpumgrGetSystemMIGInstanceTopo(domainBusDevice, NULL))
+    {
+        // This gpu is already registered
+        return;
+    }
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->MIGTopologyInfo); i++)
+    {
+        // add new gpu entry into the first slot available
+        if (!pGpuMgr->MIGTopologyInfo[i].bValid)
+        {
+            pGpuMgr->MIGTopologyInfo[i].bValid = NV_TRUE;
+            pGpuMgr->MIGTopologyInfo[i].domainBusDevice = domainBusDevice;
+            break;
+        }
+    }
+
+    // Shouldn't be possible to not find an open slot
+    NV_ASSERT(i < NV_ARRAY_ELEMENTS(pGpuMgr->MIGTopologyInfo));
+}
+
+/*!
+ * @brief Retrieves the entry in the system partition topology save for the given GPU
+ *        ID. Note that retrieval of this entry does not constitute a guarantee
+ *        that there is any valid data saved.
+ *
+ * @param[in]  DomainBusDevice: the PCI DomainBusDevice for the gpu to be registered
+ * @param[out] ppTopology: Stores the saved MIG topology for the given GPU, if
+ *                         found.
+ *
+ * @returns NV_TRUE if entry found
+ *          NV_FALSE otherwise
+ */
+NvBool
+gpumgrGetSystemMIGInstanceTopo_IMPL
+(
+    NvU64 domainBusDevice,
+    GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY **ppTopology
+)
+{
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 i;
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGpuMgr->MIGTopologyInfo); i++)
+    {
+        //
+        // Choose the correct GPU by comparing PCI BusDomainDevice
+        // This ensures we are using the same GPU across gpu load/unload
+        //
+        if (!pGpuMgr->MIGTopologyInfo[i].bValid ||
+            (pGpuMgr->MIGTopologyInfo[i].domainBusDevice != domainBusDevice))
+        {
+            continue;
+        }
+
+        if (NULL != ppTopology)
+            *ppTopology = &pGpuMgr->MIGTopologyInfo[i];
+
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
+static void
+_gpumgrUnregisterRmCapsForMIGCI(GPUMGR_SAVE_GPU_INSTANCE *pGPUInstanceSave)
+{
+    GPUMGR_SAVE_COMPUTE_INSTANCE *pComputeInstanceSave;
+    NvU32 i;
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGPUInstanceSave->saveCI); i++)
+    {
+        pComputeInstanceSave = &pGPUInstanceSave->saveCI[i];
+
+        if (pComputeInstanceSave->bValid)
+        {
+            osRmCapUnregister(&pComputeInstanceSave->pOsRmCaps);
+
+            //
+            // Mark invalid as the partition caps have been unregistered from RM
+            // completely.
+            //
+            pComputeInstanceSave->bValid = NV_FALSE;
+        }
+    }
+}
+
+void
+gpumgrUnregisterRmCapsForMIGGI_IMPL(NvU64 gpuDomainBusDevice)
+{
+    GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY *pTopologySave;
+    GPUMGR_SAVE_GPU_INSTANCE *pGPUInstanceSave;
+    NvU32 i;
+
+    if (!gpumgrGetSystemMIGInstanceTopo(gpuDomainBusDevice, &pTopologySave))
+    {
+        return;
+    }
+
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pTopologySave->saveGI); i++)
+    {
+        pGPUInstanceSave = &pTopologySave->saveGI[i];
+
+        if (pGPUInstanceSave->bValid)
+        {
+            _gpumgrUnregisterRmCapsForMIGCI(pGPUInstanceSave);
+
+            osRmCapUnregister(&pGPUInstanceSave->pOsRmCaps);
+
+            //
+            // Mark invalid as the partition caps have been unregistered from RM
+            // completely.
+            //
+            pGPUInstanceSave->bValid = NV_FALSE;
+        }
+    }
+}
+
+/**
+ * @brief Saves a pointer to the current GPU instance in thread local storage,
+ *        to be logged by NVLOG, until gpumgrSetGpuRelease is called.
+ *        Returns a pointer to tls entry (to be passed to gpumgrSetGpuRelease)
+ *
+ * @param[in] pGpu
+ */
+NvBool
+gpumgrSetGpuAcquire(OBJGPU *pGpu)
+{
+    NvU32 **ppGpuInstance;
+    ppGpuInstance = (NvU32 **)tlsEntryAcquire
+                    (TLS_ENTRY_ID_CURRENT_GPU_INSTANCE);
+    if (ppGpuInstance)
+    {
+        *ppGpuInstance = &(pGpu->gpuInstance);
+        return NV_TRUE;
+    }
+    return NV_FALSE;
+}
+
+/**
+ * @brief Releases the thread local storage for GPU ID.
+ */
+void
+gpumgrSetGpuRelease(void)
+{
+    tlsEntryRelease(TLS_ENTRY_ID_CURRENT_GPU_INSTANCE);
+}
+
+/**
+* @brief Returns the type of bridge SLI_BT_*
+*/
+NvU8
+gpumgrGetGpuBridgeType(void)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    
+    return pGpuMgr->gpuBridgeType;
+}

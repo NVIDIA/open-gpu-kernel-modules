@@ -1,0 +1,346 @@
+//*****************************************************************************
+//
+//  SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-License-Identifier: MIT
+//
+//  Permission is hereby granted, free of charge, to any person obtaining a
+//  copy of this software and associated documentation files (the "Software"),
+//  to deal in the Software without restriction, including without limitation
+//  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//  and/or sell copies of the Software, and to permit persons to whom the
+//  Software is furnished to do so, subject to the following conditions:
+//
+//  The above copyright notice and this permission notice shall be included in
+//  all copies or substantial portions of the Software.
+//
+//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+//  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//  DEALINGS IN THE SOFTWARE.
+//
+//  File:       nvt_edidext_displayid20.c
+//
+//  Purpose:    the provide displayID 2.0 related services
+//
+//*****************************************************************************
+
+#include "nvBinSegment.h"
+#include "nvmisc.h"
+
+#include "displayid20.h"
+#include "edid.h"
+
+PUSH_SEGMENTS
+
+// DisplayId2 as EDID extension entry point functions
+static NVT_STATUS parseDisplayId20EDIDExtSection(DISPLAYID_2_0_SECTION *section, NVT_EDID_INFO *pEdidInfo);
+static NVT_STATUS parseDisplayId20EDIDExtDataBlocks(DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NvU8 remainSectionLength, NvU8 *pCurrentDBLength, NVT_EDID_INFO *pEdidInfo);
+
+/**
+ *
+ * @brief Parses a displayId20 EDID Extension block, with timings stored in p and
+ *        other info stored in pInfo
+ * @param p The EDID Extension Block (With a DisplayID in it)
+ * @param size Size of the displayId Extension Block
+ * @param pEdidInfo EDID struct containing DisplayID information and
+ *                  the timings
+ */
+CODE_SEGMENT(PAGE_DD_CODE)
+NVT_STATUS 
+getDisplayId20EDIDExtInfo(
+    NvU8 *p, 
+    NvU32 size,
+    NVT_EDID_INFO *pEdidInfo)
+{
+    DISPLAYID_2_0_SECTION *extSection = NULL;
+
+    if (p == NULL                            ||
+        size < sizeof(EDIDV1STRUC)           ||
+        size > sizeof(EDIDV1STRUC)           ||
+        p[0] != NVT_EDID_EXTENSION_DISPLAYID ||
+        pEdidInfo == NULL)
+    {
+        return NVT_STATUS_INVALID_PARAMETER;
+    }
+
+    // Calculate the All DisplayID20 Extension checksum
+    // The function name 
+    if (computeDisplayId20SectionCheckSum(p, sizeof(EDIDV1STRUC)) != 0)
+    {
+        return NVT_STATUS_ERR;
+        // ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_CHECK_SUM);
+    }
+
+    extSection = (DISPLAYID_2_0_SECTION *)(p + 1);
+
+    return parseDisplayId20EDIDExtSection(extSection, pEdidInfo);
+}
+
+/*
+ *  @brief DisplayId20 as EDID extension block's "Section" entry point functions
+ */
+CODE_SEGMENT(PAGE_DD_CODE)
+NVT_STATUS 
+parseDisplayId20EDIDExtSection(
+    DISPLAYID_2_0_SECTION * extSection,
+    NVT_EDID_INFO *pEdidInfo)
+{
+    NvU8 datablock_location = 0;
+    NvU8 datablock_length;
+    NvU8 remaining_length;
+
+    if ((extSection == NULL) ||
+        (extSection->header.section_bytes != 121))
+    {
+        return NVT_STATUS_ERR;
+    }
+
+    // It is based on the DisplayID v2.0 Errata E7 
+    // First DisplayID2.0 section as EDID extension shall populate "Display Product Primary Use Case" byte with a value from 1h-8h based on the intended primary use case of the sink. 
+    // Any subsequent DisplayID2.0 section EDID extension shall set the "Display Product Primary Use Case" byte to 0h.
+    pEdidInfo->total_did2_extensions++;
+
+    if (extSection->header.version == DISPLAYID_2_0_VERSION)
+    {
+        if (((pEdidInfo->total_did2_extensions == 1) && (extSection->header.product_type == 0                         ||
+                                                         extSection->header.product_type > DISPLAYID_2_0_PROD_HMD_AR  ||
+                                                         extSection->header.extension_count != 0)) ||
+            (pEdidInfo->total_did2_extensions > 1 && extSection->header.product_type != 0))
+        {
+            nvt_assert(0); // product_type value set incorrect in Display Product Primary Use Case field
+        }
+
+        pEdidInfo->ext_displayid20.version = extSection->header.version;
+        pEdidInfo->ext_displayid20.revision = extSection->header.revision;
+        pEdidInfo->ext_displayid20.as_edid_extension = NV_TRUE;
+    }
+    else
+    {
+        return NVT_STATUS_INVALID_PARAMETER;
+    }
+
+    // validate for section checksum before processing the data block
+    if (computeDisplayId20SectionCheckSum((const NvU8*)extSection, DISPLAYID_2_0_SECTION_SIZE_TOTAL(extSection->header)) != 0)
+    {
+        return NVT_STATUS_ERR;
+    }
+
+    remaining_length = extSection->header.section_bytes;
+
+    while (datablock_location < extSection->header.section_bytes)
+    {
+        DISPLAYID_2_0_DATA_BLOCK_HEADER * dbHeader = (DISPLAYID_2_0_DATA_BLOCK_HEADER *) (extSection->data + datablock_location);
+        NvU8 is_reserve = remaining_length > 3 && datablock_location == 0 && dbHeader->type == 0 && dbHeader->data_bytes > 0;
+        NvU8 i;
+
+        // Check the padding.
+        if (dbHeader->type == 0 && !is_reserve)
+        {
+            for (i = 1 ; i < remaining_length; i++)
+            {
+                // All remaining bytes must all be 0.
+                if (extSection->data[datablock_location + i] != 0)
+                {
+                    return NVT_STATUS_ERR;
+                }
+            }
+
+            datablock_length = remaining_length;
+        }
+        else
+        {
+            if (parseDisplayId20EDIDExtDataBlocks(
+                            dbHeader,
+                            extSection->header.section_bytes - datablock_location,
+                            &datablock_length,
+                            pEdidInfo) != NVT_STATUS_SUCCESS)
+                return NVT_STATUS_ERR;
+        }
+
+        datablock_location += datablock_length;
+        remaining_length -= datablock_length;
+    }
+
+    return NVT_STATUS_SUCCESS;
+}
+
+/*
+ *  @brief DisplayId20 as EDID extension block's "Data Block" entry point functions
+ */
+CODE_SEGMENT(PAGE_DD_CODE)
+static NVT_STATUS 
+parseDisplayId20EDIDExtDataBlocks(
+    DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
+    NvU8 RemainSectionLength,
+    NvU8 *pCurrentDBLength,
+    NVT_EDID_INFO *pEdidInfo)
+{
+    NVT_STATUS              status = NVT_STATUS_SUCCESS;
+    NVT_DISPLAYID_2_0_INFO *pDisplayId20Info = NULL;
+    
+    // size sanity checking
+    if ((pDataBlock == NULL || RemainSectionLength <= NVT_DISPLAYID_DATABLOCK_HEADER_LEN) ||
+        (pDataBlock->data_bytes > RemainSectionLength - NVT_DISPLAYID_DATABLOCK_HEADER_LEN))
+        return NVT_STATUS_ERR;
+
+    if (pDataBlock->type < DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY)
+    {
+        return NVT_STATUS_INVALID_PARAMETER;
+    }
+    
+    pDisplayId20Info = &pEdidInfo->ext_displayid20;
+
+    *pCurrentDBLength = pDataBlock->data_bytes + NVT_DISPLAYID_DATABLOCK_HEADER_LEN;
+
+    status = parseDisplayId20DataBlock(pDataBlock, pDisplayId20Info);
+    
+    // TODO : All the data blocks shall sync the data from the datablock in DisplayID2_0 to pEdidInfo
+    if (status == NVT_STATUS_SUCCESS && pDisplayId20Info->as_edid_extension == NV_TRUE)
+    {
+        switch (pDataBlock->type)
+        {
+        case DISPLAYID_2_0_BLOCK_TYPE_INTERFACE_FEATURES:
+            pDisplayId20Info->valid_data_blocks.interface_feature_present = NV_TRUE;
+
+            // Supported - Color depth is supported for all supported timings.  Supported timing includes all Display-ID exposed timings 
+            // (that is timing exposed using DisplayID timing types and CTA VICs)
+            if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId20Info->interface_features.yuv444.bpcs))
+            {
+                pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_YCbCr_444;
+            }
+
+            if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId20Info->interface_features.yuv422.bpcs))
+            {
+                pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_YCbCr_422;
+            }
+
+            if (pDisplayId20Info->interface_features.audio_capability.support_48khz   || 
+                pDisplayId20Info->interface_features.audio_capability.support_44_1khz || 
+                pDisplayId20Info->interface_features.audio_capability.support_32khz)
+            {
+                pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_BASIC_AUDIO;
+            }
+
+        break;
+
+        // DisplayID_v2.0 E5 defined 
+        // if inside CTA embedded block existed 420 VDB/CMDB, then we follow these two blocks only. 
+        // * support for 420 pixel encoding is limited to the timings exposed in the restricted set exposed in the CTA data block.
+        // * field of "Mini Pixel Rate at YCbCr420" shall be set 00h
+        case DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA:
+            pDisplayId20Info->valid_data_blocks.cta_data_present = NV_TRUE;
+
+            // copy all the vendor specific data block from DisplayId20 to pEdidInfo
+            // TODO: mixed CTA extension block and DID2.0 extension block is not handled
+            NVMISC_MEMCPY(&pEdidInfo->hdmiLlcInfo,              &pDisplayId20Info->vendor_specific.hdmiLlc,  sizeof(NVT_HDMI_LLC_INFO));
+            NVMISC_MEMCPY(&pEdidInfo->hdmiForumInfo,            &pDisplayId20Info->vendor_specific.hfvs,     sizeof(NVT_HDMI_FORUM_INFO));
+            NVMISC_MEMCPY(&pEdidInfo->nvdaVsdbInfo,             &pDisplayId20Info->vendor_specific.nvVsdb,   sizeof(NVDA_VSDB_PARSED_INFO));
+            NVMISC_MEMCPY(&pEdidInfo->msftVsdbInfo,             &pDisplayId20Info->vendor_specific.msftVsdb, sizeof(MSFT_VSDB_PARSED_INFO));
+            NVMISC_MEMCPY(&pEdidInfo->hdr_static_metadata_info, &pDisplayId20Info->cta.hdrInfo,              sizeof(NVT_HDR_STATIC_METADATA));
+            NVMISC_MEMCPY(&pEdidInfo->dv_static_metadata_info,  &pDisplayId20Info->cta.dvInfo,               sizeof(NVT_DV_STATIC_METADATA));
+
+            // If the CTA861 extension existed already, we need to transfer the revision/basic_caps to cta embedded in DID20.
+            if (pEdidInfo->ext861.revision >= NVT_CEA861_REV_B)
+            {
+                pDisplayId20Info->cta.cta861_info.revision   = pEdidInfo->ext861.revision;
+                pDisplayId20Info->cta.cta861_info.basic_caps = pEdidInfo->ext861.basic_caps;
+                pDisplayId20Info->basic_caps                 = pEdidInfo->ext861.basic_caps;
+            }
+
+            // this is the DisplayID20 Extension, so we need to copy from what is the CTA raw data in DID20 to Edid's CTA block
+            NVMISC_MEMCPY(&pEdidInfo->ext861,                   &pDisplayId20Info->cta.cta861_info,          sizeof(NVT_EDID_CEA861_INFO));
+        break;
+
+        case DISPLAYID_2_0_BLOCK_TYPE_DISPLAY_PARAM:
+            pDisplayId20Info->valid_data_blocks.parameters_present = NV_TRUE;
+
+            // EDID only supported 10bits chromaitcity to match the OS D3DKMDT_2DOFFSET 10bits, so we don't need to transfer it here.
+
+            pEdidInfo->input.u.digital.bpc = NVT_COLORDEPTH_HIGHEST_BPC(pDisplayId20Info->display_param.native_color_depth);
+            pEdidInfo->gamma = pDisplayId20Info->display_param.gamma_x100;
+
+            if (pDisplayId20Info->display_param.audio_speakers_integrated == AUDIO_SPEAKER_INTEGRATED_SUPPORTED)
+            {
+                pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_BASIC_AUDIO;
+            }
+
+        break;
+
+        default:
+            break;
+        }
+    }
+
+    return status;
+}
+
+/*  @brief Update the correct color format / attribute of timings from interface feature data block
+ */
+CODE_SEGMENT(PAGE_DD_CODE)
+void 
+updateColorFormatForDisplayId20ExtnTimings(
+    NVT_EDID_INFO *pInfo, 
+    NvU32 timingIdx)
+{   
+    // pDisplayId20Info parsed displayID20 info
+    NVT_DISPLAYID_2_0_INFO *pDisplayId20Info = &pInfo->ext_displayid20;
+    NVT_TIMING *pT= &pInfo->timing[timingIdx];
+    
+    nvt_assert(timingIdx <= COUNT(pInfo->timing));
+    
+    if (pDisplayId20Info->as_edid_extension)
+    {
+        if ((pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_A_SUPPORTED ||
+             pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_B_SUPPORTED || 
+             pInfo->ext861.valid.H14B_VSDB || pInfo->ext861.valid.H20_HF_VSDB) && pInfo->ext861.revision >= NVT_CEA861_REV_A)
+        {
+            UPDATE_BPC_FOR_COLORFORMAT(pT->etc.rgb444, 0,
+                                                        1,
+                                                        pDisplayId20Info->interface_features.rgb444.bpc.bpc10,
+                                                        pDisplayId20Info->interface_features.rgb444.bpc.bpc12,
+                                                        pDisplayId20Info->interface_features.rgb444.bpc.bpc14,
+                                                        pDisplayId20Info->interface_features.rgb444.bpc.bpc16);
+        }
+        else
+        {
+            // rgb444 (always support 6bpc and 8bpc as per DP spec 5.1.1.1.1 RGB Colorimetry)
+            UPDATE_BPC_FOR_COLORFORMAT(pT->etc.rgb444, 1,
+                                                        1,
+                                                        pDisplayId20Info->interface_features.rgb444.bpc.bpc10,
+                                                        pDisplayId20Info->interface_features.rgb444.bpc.bpc12,
+                                                        pDisplayId20Info->interface_features.rgb444.bpc.bpc14,
+                                                        pDisplayId20Info->interface_features.rgb444.bpc.bpc16);
+        }
+
+        // yuv444
+        UPDATE_BPC_FOR_COLORFORMAT(pT->etc.yuv444, 0, /* yuv444 does not support 6bpc */
+                                                    pDisplayId20Info->interface_features.yuv444.bpc.bpc8,
+                                                    pDisplayId20Info->interface_features.yuv444.bpc.bpc10,
+                                                    pDisplayId20Info->interface_features.yuv444.bpc.bpc12,
+                                                    pDisplayId20Info->interface_features.yuv444.bpc.bpc14,
+                                                    pDisplayId20Info->interface_features.yuv444.bpc.bpc16);
+        // yuv422
+        UPDATE_BPC_FOR_COLORFORMAT(pT->etc.yuv422, 0, /* yuv422 does not support 6bpc */
+                                                    pDisplayId20Info->interface_features.yuv422.bpc.bpc8,
+                                                    pDisplayId20Info->interface_features.yuv422.bpc.bpc10,
+                                                    pDisplayId20Info->interface_features.yuv422.bpc.bpc12,
+                                                    pDisplayId20Info->interface_features.yuv422.bpc.bpc14,
+                                                    pDisplayId20Info->interface_features.yuv422.bpc.bpc16);
+
+        if (!NVT_DID20_TIMING_IS_CTA861(pInfo->timing[timingIdx].etc.flag, pInfo->timing[timingIdx].etc.status))
+        {
+            // yuv420
+            UPDATE_BPC_FOR_COLORFORMAT(pT->etc.yuv420, 0, /* yuv420 does not support 6bpc */
+                                                        pDisplayId20Info->interface_features.yuv420.bpc.bpc8,
+                                                        pDisplayId20Info->interface_features.yuv420.bpc.bpc10,
+                                                        pDisplayId20Info->interface_features.yuv420.bpc.bpc12,
+                                                        pDisplayId20Info->interface_features.yuv420.bpc.bpc14,
+                                                        pDisplayId20Info->interface_features.yuv420.bpc.bpc16);
+        }
+    }
+}
+
+POP_SEGMENTS

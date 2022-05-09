@@ -1,0 +1,5 @@
+*.o
+*.o_binary
+*.o.cmd
+*.o.d
+_out/
