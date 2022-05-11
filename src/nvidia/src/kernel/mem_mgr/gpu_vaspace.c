@@ -22,7 +22,7 @@
  */
 
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         GPU Virtual Address Space Function Definitions.                   *
 *                                                                           *
@@ -720,7 +720,7 @@ gvaspaceConstruct__IMPL
         //
         // An alternative approach is to pick the partial PDEs dynamically,
         // for example the first N PDEs used.
-        // However this signicantly complicates VA heap allocation,
+        // However this significantly complicates VA heap allocation,
         // especially for grow down requests (think about it).
         // The original RM VAS code used this approach, but it was
         // proved to cause stuttering in allocation-heavy apps due to the

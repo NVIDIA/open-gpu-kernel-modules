@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/**************************** Instmem Rotuines *****************************\
+/**************************** Instmem Routines *****************************\
 *                                                                          *
 *         Display instance memory object function Definitions.             *
 *                                                                          *

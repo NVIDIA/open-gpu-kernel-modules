@@ -22,7 +22,7 @@
  */
 
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         IOMMU Virtual Address Space Function Definitions.                 *
 *                                                                           *

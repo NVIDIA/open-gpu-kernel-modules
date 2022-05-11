@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         System Object Function Definitions.                               *
 *                                                                           *
@@ -448,7 +448,7 @@ coreShutdownRm(void)
     objDelete(pSys);
 
     //
-    // Deinitalize libraries used by RM
+    // Deinitialize libraries used by RM
     //
     nvAssertDestroy();
 

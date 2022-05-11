@@ -22,7 +22,7 @@
  */
 
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         Fabric Virtual Address Space Function Definitions.                *
 *                                                                           *
