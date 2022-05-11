@@ -289,10 +289,8 @@ resize:
            This is unlikely (because we had space before), but can happen. */
         nv_printf(NV_DBG_ERRORS, "NVRM: FATAL: Failed to re-allocate BAR1.\n");
         ret = -ENODEV;
-        goto done;
     }
 
-done:
     /* Re-enable memory decoding */
     pci_write_config_word(pci_dev, PCI_COMMAND, cmd);
 
