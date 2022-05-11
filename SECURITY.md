@@ -1,8 +1,8 @@
 # Report a Security Vulnerability
 
 To report a potential security vulnerability in any NVIDIA product, please use either:
-* this web form: [Security Vulnerability Submission Form](https://www.nvidia.com/object/submit-security-vulnerability.html), or
-* send email to: [NVIDIA PSIRT](mailto:psirt@nvidia.com)
+* This web form: [Security Vulnerability Submission Form](https://www.nvidia.com/object/submit-security-vulnerability.html), or
+* Send email to: [NVIDIA PSIRT](mailto:psirt@nvidia.com)
 
 **OEM Partners should contact their NVIDIA Customer Program Manager**
 
