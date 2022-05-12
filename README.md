@@ -10,16 +10,16 @@ To build:
 
     make modules -j`nproc`
 
-To install, first uninstall any existing NVIDIA kernel modules.  Then,
+To install, first uninstall any existing NVIDIA kernel modules. Then,
 as root:
 
     make modules_install -j`nproc`
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
-515.43.04 driver release.  This can be achieved by installing
+515.43.04 driver release. This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
-option.  E.g.,
+option. E.g.,
 
     sh ./NVIDIA-Linux-[...].run --no-kernel-modules
 
@@ -54,10 +54,10 @@ NV_VERBOSE - Set this to "1" to print each complete command executed;
     otherwise, a succinct "CC" line is printed.
 
 DEBUG - Set this to "1" to build the kernel modules as debug.  By default, the
-    build compiles without debugging information.  This also enables
+    build compiles without debugging information. This also enables
     various debug log messages in the kernel modules.
 
-These variables can be set on the make command line.  E.g.,
+These variables can be set on the make command line. E.g.,
 
     make modules -j`nproc` NV_VERBOSE=1
 
@@ -65,7 +65,7 @@ These variables can be set on the make command line.  E.g.,
 ## Supported Toolchains
 
 Any reasonably modern version of gcc or clang can be used to build the
-kernel modules.  Note that the kernel interface layers of the kernel
+kernel modules. Note that the kernel interface layers of the kernel
 modules must be built with the toolchain that was used to build the
 kernel.
 
@@ -80,7 +80,7 @@ This is currently Linux kernel 3.10 or newer.
 ## How to Contribute
 
 Contributions can be made by creating a pull request on
-https://github.com/NVIDIA/open-gpu-kernel-modules
+https://github.com/NVIDIA/open-gpu-kernel-modules.
 We'll respond via github.
 
 Note that when submitting a pull request, you will be prompted to accept
@@ -88,13 +88,13 @@ a Contributor License Agreement.
 
 This code base is shared with NVIDIA's proprietary drivers, and various
 processing is performed on the shared code to produce the source code that is
-published here.  This has several implications for the foreseeable future:
+published here. This has several implications for the foreseeable future:
 
 * The github repository will function mostly as a snapshot of each driver
   release.
 
 * We do not expect to be able to provide revision history for individual
-  changes that were made to NVIDIA's shared code base.  There will likely
+  changes that were made to NVIDIA's shared code base. There will likely
   only be one git commit per driver release.
 
 * We may not be able to reflect individual contributions as separate
@@ -102,8 +102,8 @@ published here.  This has several implications for the foreseeable future:
 
 * Because the code undergoes various processing prior to publishing here,
   contributions made here require manual merging to be applied to the shared
-  code base.  Therefore, large refactoring changes made here may be difficult to
-  merge and accept back into the shared code base.  If you have large
+  code base. Therefore, large refactoring changes made here may be difficult to
+  merge and accept back into the shared code base. If you have large
   refactoring to suggest, please contact us in advance, so we can coordinate.
 
 
@@ -141,9 +141,9 @@ When packaged in the NVIDIA .run installation package, the OS-agnostic
 component is provided as a binary: it is large and time-consuming to
 compile, so pre-built versions are provided so that the user does
 not have to compile it during every driver installation.  For the
-nvidia.ko kernel module, this component is named "nv-kernel.o_binary".
+nvidia.ko kernel module, this component is named "nv-kernel.o_binary". 
 For the nvidia-modeset.ko kernel module, this component is named
-"nv-modeset-kernel.o_binary".  Neither nvidia-drm.ko nor nvidia-uvm.ko
+"nv-modeset-kernel.o_binary". Neither nvidia-drm.ko nor nvidia-uvm.ko
 have OS-agnostic components.
 
 The kernel interface layer component for each kernel module must be built
