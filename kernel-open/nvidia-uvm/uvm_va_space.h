@@ -529,7 +529,7 @@ uvm_gpu_t *uvm_va_space_retain_gpu_by_uuid(uvm_va_space_t *va_space, const NvPro
 
 // Returns whether read-duplication is supported
 // If gpu is NULL, returns the current state.
-// otherwise, it retuns what the result would be once the gpu's va space is added or removed
+// otherwise, it returns what the result would be once the gpu's va space is added or removed
 // (by inverting the gpu's current state)
 bool uvm_va_space_can_read_duplicate(uvm_va_space_t *va_space, uvm_gpu_t *changing_gpu);
 

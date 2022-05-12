@@ -873,7 +873,7 @@ done:
     if (status != NV_OK) {
         // There is no risk of disabling access counters on a previously
         // registered GPU: the enablement step would have failed before even
-        // discovering that the GPU is already registed.
+        // discovering that the GPU is already registered.
         if (uvm_gpu_access_counters_required(gpu->parent))
             uvm_gpu_access_counters_disable(gpu, va_space);
 
