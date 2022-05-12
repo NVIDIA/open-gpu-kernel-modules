@@ -101,7 +101,7 @@ typedef struct
 // sizes. It is calculated before the operation is applied so we know which PTE
 // sizes to allocate.
 //
-// This only decribes the new layout. The operation page mask describes the new
+// This only describes the new layout. The operation page mask describes the new
 // permissions of each of these PTEs.
 typedef struct
 {
