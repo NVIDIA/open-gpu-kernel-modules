@@ -26,7 +26,7 @@ option.  E.g.,
 
 ## Supported Target CPU Architectures
 
-Currently, the kernel modules can be built for x86_64 or aarch64.
+Currently, the kernel modules can be built for x86_64 or AArch64.
 If cross-compiling, set these variables on the make command line:
 
     TARGET_ARCH=aarch64|x86_64
