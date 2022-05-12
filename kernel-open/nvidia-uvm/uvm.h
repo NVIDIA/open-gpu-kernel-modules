@@ -211,18 +211,13 @@ NV_STATUS UvmDeinitialize(void);
 // UvmReopen
 //
 // Reinitializes the UVM driver after checking for minimal user-mode state.
-// Before calling this function, all GPUs must be unregistered with 
+// Before calling this function, all GPUs must be unregistered with
 // UvmUnregisterGpu() and all allocated VA ranges must be freed with UvmFree().
 // Note that it is not required to release VA ranges that were reserved with
 // UvmReserveVa().
 //
 
-
-
-
-
-
-// UvmReopen() closes the open file returned by UvmGetFileDescriptor() and 
+// UvmReopen() closes the open file returned by UvmGetFileDescriptor() and
 // replaces it with a new open file with the same name.
 //
 // Arguments:
@@ -416,13 +411,6 @@ NV_STATUS UvmRegisterGpuSmc(const NvProcessorUuid *gpuUuid,
 // location will have their range group association changed to
 // UVM_RANGE_GROUP_ID_NONE.
 //
-
-
-
-
-
-
-
 
 // Arguments:
 //     gpuUuid: (INPUT)
@@ -1276,13 +1264,6 @@ NV_STATUS UvmCleanUpZombieResources(void);
 //
 // The VA range can be unmapped and freed via a call to UvmFree.
 //
-
-
-
-
-
-
-
 
 // Arguments:
 //     base: (INPUT)

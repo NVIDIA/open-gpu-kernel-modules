@@ -315,8 +315,6 @@ nvlogWriteToBuffer
     return (status == NV_TRUE) ? NV_OK : NV_ERR_BUFFER_TOO_SMALL;
 }
 
-
-
 NV_STATUS
 nvlogExtractBufferChunk
 (

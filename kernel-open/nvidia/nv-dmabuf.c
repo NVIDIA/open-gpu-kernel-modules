@@ -24,7 +24,6 @@
 #include "nv-dmabuf.h"
 
 
-
 #if defined(CONFIG_DMA_SHARED_BUFFER)
 typedef struct nv_dma_buf_mem_handle
 {
@@ -881,16 +880,3 @@ nv_dma_buf_export(
     return NV_ERR_NOT_SUPPORTED;
 #endif // CONFIG_DMA_SHARED_BUFFER
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

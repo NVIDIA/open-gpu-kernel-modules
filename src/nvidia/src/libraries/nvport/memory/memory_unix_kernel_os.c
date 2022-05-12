@@ -62,8 +62,6 @@ _portMemAllocNonPagedUntracked
     return pMem;
 }
 
-
-
 void
 _portMemFreeUntracked
 (
@@ -143,8 +141,6 @@ portMemCmp
     return os_mem_cmp(pData0, pData1, lengthBytes);
 }
 
-
-
 #define PORT_MEM_USE_GENERIC_portMemSetPattern
 #define PORT_MEM_USE_GENERIC_portMemMove
 #include "memory_generic.h"
@@ -194,12 +190,12 @@ portMemExGetPageSize(void)
 }
 
 // Large allocations (>KMALLOC_LIMIT) will fail, but it is safe to call
-NvBool 
+NvBool
 portMemExSafeForPagedAlloc(void)
 {
     return NV_TRUE;
 }
-NvBool 
+NvBool
 portMemExSafeForNonPagedAlloc(void)
 {
     return NV_TRUE;

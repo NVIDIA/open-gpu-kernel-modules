@@ -156,75 +156,6 @@ static void nv_init_dynamic_power_management
     rm_init_dynamic_power_management(sp, nv, pr3_acpi_method_present);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* find nvidia devices and set initial state */
 static int
 nv_pci_probe
@@ -250,7 +181,6 @@ nv_pci_probe
         return -1;
     }
 
-
 #ifdef NV_PCI_SRIOV_SUPPORT
     if (pci_dev->is_virtfn)
     {
@@ -265,7 +195,7 @@ nv_pci_probe
             goto failed;
         }
 
-        if (pci_dev->dev.bus->iommu_ops == NULL) 
+        if (pci_dev->dev.bus->iommu_ops == NULL)
         {
             nv = NV_STATE_PTR(nvl);
             if (rm_is_iommu_needed_for_sriov(sp, nv))
@@ -507,10 +437,6 @@ next_bar:
     // PPC64LE platform where ATS is currently supported (IBM P9).
     nv_ats_supported &= nv_platform_supports_numa(nvl);
 #else
-
-
-
-
 
 #endif
     if (nv_ats_supported)

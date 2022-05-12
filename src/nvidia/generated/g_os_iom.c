@@ -20,13 +20,6 @@
 // (if any)
 //
 
-
-
-
-
-
-
-
 //
 // Initialize OS's object-level interfaces
 //
@@ -42,10 +35,6 @@ osSetPropertiesSpecial
     }
 
 }
-
-
-
-
 
 //
 // OS's run-time type information
@@ -94,9 +83,6 @@ const struct NVOC_CLASS_DEF __iom_class_def_OBJOS =
     (NVOC_DYNAMIC_OBJ_CREATE)&__iom_objCreate_OBJOS,
     &__iom_castinfo_OBJOS,
 };
-
-
-
 
 //
 // OS's object infrastructure boilerplate

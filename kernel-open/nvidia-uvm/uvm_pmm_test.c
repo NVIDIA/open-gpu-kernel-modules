@@ -100,25 +100,6 @@ typedef enum
 // It is duplicated because we do not want to expose it as an API.
 static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_parent_gpu_t *parent_gpu, uvm_pmm_gpu_memory_type_t type)
 {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     return type;
 }
 
@@ -323,14 +304,6 @@ static NV_STATUS gpu_mem_check(uvm_gpu_t *gpu,
     uvm_gpu_address_t verif_gpu_addr;
     NvU32 *verif_cpu_addr = uvm_mem_get_cpu_addr_kernel(verif_mem);
     size_t i;
-
-
-
-
-
-
-
-
 
     UVM_ASSERT(verif_mem->size >= size);
     memset(verif_cpu_addr, 0, size);

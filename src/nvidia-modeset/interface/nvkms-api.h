@@ -2987,8 +2987,6 @@ struct NvKmsGetFrameLockAttributeValidValuesParams {
     struct NvKmsGetFrameLockAttributeValidValuesReply reply;     /*! out */
 };
 
-
-
 /*!
  * NVKMS_IOCTL_GET_NEXT_EVENT, NVKMS_IOCTL_DECLARE_EVENT_INTEREST:
  * Event handling.
@@ -3011,8 +3009,6 @@ struct NvKmsGetFrameLockAttributeValidValuesParams {
  * interestMask.  So, clients should be prepared to ignore unexpected
  * events after calling NVKMS_IOCTL_DECLARE_EVENT_INTEREST.
  */
-
-
 
 /*!
  * NVKMS_EVENT_TYPE_DPY_CHANGED

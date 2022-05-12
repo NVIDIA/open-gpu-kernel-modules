@@ -69,15 +69,6 @@ typedef enum
     // ^^^^^^
     // Channel types backed by a CE.
 
-
-
-
-
-
-
-
-
-
     UVM_CHANNEL_TYPE_COUNT = UVM_CHANNEL_TYPE_CE_COUNT,
 
 } uvm_channel_type_t;
@@ -97,15 +88,7 @@ typedef enum
     // There is a single proxy pool and channel per GPU.
     UVM_CHANNEL_POOL_TYPE_CE_PROXY = (1 << 1),
 
-
-
-
-
-
-
-
     UVM_CHANNEL_POOL_TYPE_COUNT = 2,
-
 
     // A mask used to select pools of any type.
     UVM_CHANNEL_POOL_TYPE_MASK  = ((1U << UVM_CHANNEL_POOL_TYPE_COUNT) - 1)
@@ -200,26 +183,6 @@ struct uvm_channel_struct
     // Each push on the channel increments the semaphore, see
     // uvm_channel_end_push().
     uvm_gpu_tracking_semaphore_t tracking_sem;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // RM channel information
     union
@@ -327,14 +290,6 @@ static bool uvm_channel_is_ce(uvm_channel_t *channel)
     UVM_ASSERT(channel->pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
     return (channel->pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE) || uvm_channel_is_proxy(channel);
 }
-
-
-
-
-
-
-
-
 
 // Proxy channels are used to push page tree related methods, so their channel
 // type is UVM_CHANNEL_TYPE_MEMOPS.

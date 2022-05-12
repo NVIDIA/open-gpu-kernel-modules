@@ -286,8 +286,6 @@ kchannelConstruct_IMPL
         }
     }
 
-
-
     // Find the TSG, or create the TSG if we need to wrap it
     status = clientGetResourceRefByType(pRsClient, hParent,
                                         classId(KernelChannelGroupApi),

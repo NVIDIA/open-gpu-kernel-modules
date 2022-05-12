@@ -12,41 +12,17 @@
 
 #include "g_os_hal.h"
 
-
-
-
-
-
-
 //
 // OS's object-level *non-static* interface functions (static ones are below)
 //
 
-
-
 #if defined(RMCFG_ENGINE_SETUP)    // for use by hal init only
-
-
-
-
-
-
-
-
-
-
 
 //
 // Setup OS's hal interface function pointers
 //
 
-
-
-
-
 #endif  // RMCFG_ENGINE_SETUP
-
-
 
 // Were any _MOCK interfaces generated into g_os_private.h ?
 #define OS_MOCK_FUNCTIONS_GENERATED        0

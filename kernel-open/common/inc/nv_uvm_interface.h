@@ -1260,7 +1260,7 @@ void nvUvmInterfacePagingChannelDestroy(UvmGpuPagingChannelHandle channel);
         device[IN]      - device under which paging channels were allocated
         dstAddress[OUT] - a virtual address that is valid (i.e. is mapped) in
                           all the paging channels allocated under the given vaSpace.
-        
+
    Error codes:
         NV_ERR_INVALID_ARGUMENT         - Invalid parameter/s is passed.
         NV_ERR_NOT_SUPPORTED            - SR-IOV heavy mode is disabled.
@@ -1373,7 +1373,7 @@ void nvUvmInterfacePagingChannelsUnmap(uvmGpuAddressSpaceHandle srcVaSpace,
         methodStreamSize[IN] - Size of methodStream, in bytes. The maximum push
                                size is 128KB.
 
-        
+
    Error codes:
         NV_ERR_INVALID_ARGUMENT         - Invalid parameter/s is passed.
         NV_ERR_NOT_SUPPORTED            - SR-IOV heavy mode is disabled.
@@ -1383,135 +1383,4 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
                                                 NvU32 methodStreamSize);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                   
 #endif // _NV_UVM_INTERFACE_H_

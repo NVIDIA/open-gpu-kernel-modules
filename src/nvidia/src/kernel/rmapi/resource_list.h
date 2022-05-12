@@ -54,8 +54,6 @@
 // RS-TODO: Rename classes that have 'Object' in their names
 //
 
-
-
 RS_ENTRY(
     /* External Class         */ NV01_ROOT,
     /* Internal Class         */ RmClientResource,

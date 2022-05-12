@@ -45,8 +45,6 @@ typedef struct OBJPFM OBJPFM;
 #define __nvoc_class_id_OBJPFM 0xb543ae
 #endif /* __nvoc_class_id_OBJPFM */
 
-
-
 #include "nvoc/runtime.h"
 #include "nvlimits.h" // NV_MAX_DEVICES
 #include "ctrl/ctrl0073/ctrl0073specific.h" // NV0073_CTRL_SPECIFIC_MAX_ACPI_DEVICES

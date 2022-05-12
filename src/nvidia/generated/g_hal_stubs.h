@@ -900,9 +900,4 @@ void gpioHalIfacesSetup_MISSING(GPIO_HAL_IFACES *pGpioHal)
     // GPIO disabled by rmconfig; no additional MISSING support needed
 }
 
-
-
-
-
-
 #endif  // _G_RMCFG_HAL_STUBS_H_

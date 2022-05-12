@@ -415,8 +415,6 @@ void kchangrpapiDestruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupA
 #define __nvoc_kchangrpapiDestruct(pKernelChannelGroupApi) kchangrpapiDestruct_IMPL(pKernelChannelGroupApi)
 #undef PRIVATE_FIELD
 
-
-
 NV_STATUS CliGetChannelGroup(NvHandle, NvHandle, RsResourceRef**, NvHandle*);
 
 #endif // KERNEL_CHANNEL_GROUP_API_H

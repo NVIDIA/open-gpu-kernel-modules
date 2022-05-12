@@ -28,11 +28,6 @@
 // Source file: ctrl/ctrl2080/ctrl2080clkavfs.finn
 //
 
-
-
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 #include "ctrl/ctrl2080/ctrl2080boardobj.h"
 #include "ctrl/ctrl2080/ctrl2080volt.h"

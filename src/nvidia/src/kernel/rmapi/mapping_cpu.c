@@ -89,8 +89,6 @@ rmapiMapGpuCommon
     return rmStatus;
 }
 
-
-
 NV_STATUS
 rmapiGetEffectiveAddrSpace
 (

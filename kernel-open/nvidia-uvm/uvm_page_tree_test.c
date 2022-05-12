@@ -407,34 +407,6 @@ static NV_STATUS alloc_64k_memory(uvm_gpu_t *gpu)
     return NV_OK;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static NV_STATUS alloc_adjacent_64k_memory(uvm_gpu_t *gpu)
 {
     uvm_page_tree_t tree;
@@ -1513,21 +1485,6 @@ static NV_STATUS entry_test_page_size_ampere(uvm_gpu_t *gpu, size_t page_size)
     return entry_test_page_size_volta(gpu, page_size);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 typedef NV_STATUS (*entry_test_page_size_func)(uvm_gpu_t *gpu, size_t page_size);
 
 static NV_STATUS entry_test_maxwell(uvm_gpu_t *gpu)
@@ -1783,110 +1740,6 @@ static NV_STATUS entry_test_ampere(uvm_gpu_t *gpu, entry_test_page_size_func ent
     return NV_OK;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static NV_STATUS alloc_4k_maxwell(uvm_gpu_t *gpu)
 {
     uvm_page_tree_t tree;
@@ -2121,16 +1974,6 @@ static NV_STATUS fake_gpu_init_ampere(uvm_gpu_t *fake_gpu)
                          fake_gpu);
 }
 
-
-
-
-
-
-
-
-
-
-
 static NV_STATUS maxwell_test_page_tree(uvm_gpu_t *maxwell)
 {
     // create a fake Maxwell GPU for this test.
@@ -2270,18 +2113,6 @@ static NV_STATUS ampere_test_page_tree(uvm_gpu_t *ampere)
 
     return NV_OK;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 NV_STATUS uvm_test_page_tree(UVM_TEST_PAGE_TREE_PARAMS *params, struct file *filp)
 {

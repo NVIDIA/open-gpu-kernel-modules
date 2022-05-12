@@ -24,8 +24,6 @@
 # nvidia-installer, and nvidia-settings
 #
 
-
-
 ##############################################################################
 # The calling Makefile (when building as part of the NVIDIA graphics
 # driver) may export any of the following variables; we assign default
@@ -478,7 +476,7 @@ endef
 
 # This is a function that will generate rules to build
 # files with separate debug information, if so requested.
-# 
+#
 # It takes one parameter: (1) Name of unstripped binary
 #
 # When used, the target for linking should be named (1).unstripped

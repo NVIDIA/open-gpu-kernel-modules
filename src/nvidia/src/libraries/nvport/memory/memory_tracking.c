@@ -309,8 +309,6 @@ _portMemListGetHeader
 #define PORT_MEM_LIST_REMOVE(x, y)
 #endif // ALLOCLIST
 
-
-
 //
 // Memory allocation-caller info implementation
 //

@@ -473,19 +473,6 @@ bool uvm_pmm_gpu_memory_type_is_user(uvm_pmm_gpu_memory_type_t type)
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 static void uvm_gpu_chunk_set_in_eviction(uvm_gpu_chunk_t *chunk, bool in_eviction)
 {
     UVM_ASSERT(uvm_pmm_gpu_memory_type_is_user(chunk->type));
@@ -2765,13 +2752,6 @@ static bool uvm_pmm_should_inject_pma_eviction_error(uvm_pmm_gpu_t *pmm)
 
     return false;
 }
-
-
-
-
-
-
-
 
 // See the documentation of pmaEvictPagesCb_t in pma.h for details of the
 // expected semantics.

@@ -241,8 +241,6 @@ CliControlSystemEvent
     return status;
 }
 
-
-
 static NV_STATUS
 CliGetSystemEventStatus
 (

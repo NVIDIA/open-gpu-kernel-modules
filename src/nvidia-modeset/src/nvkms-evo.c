@@ -550,8 +550,6 @@ nvConstructNvModeTimingsFromHwModeTimings(const NVHwModeTimingsEvo *pTimings,
     pModeTimings->yuv420Mode = pTimings->yuv420Mode;
 }
 
-
-
 /*
  * Tweak pTimings to be compatible with gsync.
  */
@@ -3384,8 +3382,6 @@ void nvSetViewPortsEvo(NVDispEvoPtr pDispEvo,
     EvoSetViewportPointIn(pDispEvo, head, 0 /* x */, 0 /* y */, updateState);
 }
 
-
-
 static void EvoSetViewportPointIn(NVDispEvoPtr pDispEvo, const NvU32 head,
                                   NvU16 x, NvU16 y,
                                   NVEvoUpdateState *updateState)
@@ -4455,8 +4451,6 @@ ConstructHwModeTimingsFromNvModeTimings(const NvModeTimings *pModeTimings,
     pTimings->yuv420Mode = modeTimings.yuv420Mode;
 }
 
-
-
 /*
  * Adjust the HwModeTimings as necessary to meet dual link dvi
  * requirements; returns TRUE if the timings were successfully
@@ -4998,8 +4992,6 @@ ConstructHwModeTimingsViewPort(const NVDispEvoRec *pDispEvo,
     return TRUE;
 }
 
-
-
 /*
  * nvGetDfpProtocol()- determine the protocol to use on the given pDpy
  * with the given pTimings; assigns pTimings->protocol.
@@ -5245,8 +5237,6 @@ NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
 
     return TRUE;
 }
-
-
 
 /*
  * Construct the hardware values to program EVO for the specified

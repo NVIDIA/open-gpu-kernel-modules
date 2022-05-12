@@ -178,25 +178,15 @@ static bool try_claim_channel(uvm_channel_t *channel)
 static void lock_push(uvm_channel_t *channel)
 {
 
-
-
-
 }
 
 static void unlock_push(uvm_channel_t *channel)
 {
 
-
-
-
 }
 
 static bool trylock_push(uvm_channel_t *channel)
 {
-
-
-
-
     return true;
 }
 
@@ -210,10 +200,6 @@ static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool, uvm_channel_t
 
     uvm_for_each_channel_in_pool(channel, pool) {
         // TODO: Bug 1764953: Prefer idle/less busy channels
-
-
-
-
 
         if (trylock_push(channel)) {
             if (try_claim_channel(channel)) {
@@ -316,13 +302,6 @@ NV_STATUS uvm_channel_begin_push(uvm_channel_t *channel, uvm_push_t *push)
     UVM_ASSERT(push);
 
     manager = channel->pool->manager;
-
-
-
-
-
-
-
 
     status = uvm_pushbuffer_begin_push(manager->pushbuffer, push);
     if (status != NV_OK)
@@ -598,40 +577,6 @@ NvU64 uvm_channel_update_completed_value(uvm_channel_t *channel)
     return uvm_gpu_tracking_semaphore_update_completed_value(&channel->tracking_sem);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static void channel_destroy(uvm_channel_pool_t *pool, uvm_channel_t *channel)
 {
     UVM_ASSERT(pool->num_channels > 0);
@@ -684,11 +629,6 @@ static NV_STATUS internal_channel_create(uvm_channel_t *channel, unsigned engine
 
     if (uvm_channel_is_ce(channel)) {
         UVM_ASSERT(channel->pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE);
-
-
-
-
-
     }
 
     memset(&channel_alloc_params, 0, sizeof(channel_alloc_params));
@@ -699,10 +639,6 @@ static NV_STATUS internal_channel_create(uvm_channel_t *channel, unsigned engine
 
     if (uvm_channel_is_ce(channel))
         channel_alloc_params.engineType = UVM_GPU_CHANNEL_ENGINE_TYPE_CE;
-
-
-
-
 
     status = uvm_rm_locked_call(nvUvmInterfaceChannelAllocate(gpu->rm_address_space,
                                                               &channel_alloc_params,
@@ -792,12 +728,6 @@ static NV_STATUS channel_create(uvm_channel_pool_t *pool, uvm_channel_t *channel
 
      if (status != NV_OK)
          goto error;
-
-
-
-
-
-
 
     channel->num_gpfifo_entries = manager->conf.num_gpfifo_entries;
     channel->gpfifo_entries = uvm_kvmalloc_zero(sizeof(*channel->gpfifo_entries) * channel->num_gpfifo_entries);
@@ -1338,12 +1268,6 @@ static NV_STATUS channel_manager_create_pools(uvm_channel_manager_t *manager)
     if (uvm_gpu_uses_proxy_channel_pool(manager->gpu))
         num_channel_pools++;
 
-
-
-
-
-
-
     manager->channel_pools = uvm_kvmalloc_zero(sizeof(*manager->channel_pools) * num_channel_pools);
     if (!manager->channel_pools)
         return NV_ERR_NO_MEMORY;
@@ -1373,18 +1297,6 @@ static NV_STATUS channel_manager_create_pools(uvm_channel_manager_t *manager)
 
         manager->pool_to_use.default_for_type[channel_type] = pool;
     }
-
-
-
-
-
-
-
-
-
-
-
-
     return NV_OK;
 }
 
@@ -1510,11 +1422,7 @@ uvm_channel_t *uvm_channel_any_of_type(uvm_channel_manager_t *manager, NvU32 poo
 
 const char *uvm_channel_type_to_string(uvm_channel_type_t channel_type)
 {
-
-
-
     BUILD_BUG_ON(UVM_CHANNEL_TYPE_COUNT != 5);
-
 
     switch (channel_type) {
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_CPU_TO_GPU);
@@ -1522,27 +1430,17 @@ const char *uvm_channel_type_to_string(uvm_channel_type_t channel_type)
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_GPU_INTERNAL);
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_MEMOPS);
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_GPU_TO_GPU);
-
-
-
         UVM_ENUM_STRING_DEFAULT();
     }
 }
 
 const char *uvm_channel_pool_type_to_string(uvm_channel_pool_type_t channel_pool_type)
 {
-
-
-
     BUILD_BUG_ON(UVM_CHANNEL_POOL_TYPE_COUNT != 2);
-
 
     switch (channel_pool_type) {
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_POOL_TYPE_CE);
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_POOL_TYPE_CE_PROXY);
-
-
-
         UVM_ENUM_STRING_DEFAULT();
     }
 }

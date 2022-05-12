@@ -52,15 +52,10 @@
  */
 #define NVC365_CTRL_CMD_NULL           (0xc3650000) /* finn: Evaluated from "(FINN_ACCESS_COUNTER_NOTIFY_BUFFER_RESERVED_INTERFACE_ID << 8) | 0x0" */
 
-
-
-
-
-
 /*
  * NVC365_CTRL_CMD_ACCESS_CNTR_BUFFER_READ_GET
  *
- * This command provides the value of the GET register 
+ * This command provides the value of the GET register
  *
  *    accessCntrBufferGetOffset [OUT]
  *       This parameter returns the value of the GET register
@@ -81,7 +76,7 @@ typedef struct NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_GET_PARAMS {
 /*
  * NVC365_CTRL_CMD_ACCESS_CNTR_BUFFER_WRITE_GET
  *
- * This command writes a value into the GET register 
+ * This command writes a value into the GET register
  *
  *    accessCntrBufferGetValue [IN]
  *       This parameter specifies the new value of the GET register
@@ -102,7 +97,7 @@ typedef struct NVC365_CTRL_ACCESS_CNTR_BUFFER_WRITE_GET_PARAMS {
 /*
  * NVC365_CTRL_CMD_ACCESS_CNTR_BUFFER_READ_PUT
  *
- * This command provides the value of the PUT register 
+ * This command provides the value of the PUT register
  *
  *    accessCntrBufferPutOffset [OUT]
  *       This parameter returns the value of the PUT register
@@ -123,7 +118,7 @@ typedef struct NVC365_CTRL_ACCESS_CNTR_BUFFER_READ_PUT_PARAMS {
 /*
  * NVC365_CTRL_CMD_ACCESS_CNTR_BUFFER_ENABLE
  *
- * This command enables/disables the access counters 
+ * This command enables/disables the access counters
  * It also sets up RM to either service or ignore the Access Counter interrupts.
  *
  *    intrOwnership [IN]
@@ -181,7 +176,7 @@ typedef struct NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_SIZE_PARAMS {
  *    pAccessCntrBufferPut [OUT]
  *       This parameter returns the pointer to the PUT register
  *    pAccessCntrlBufferFull [OUT]
- *       This parameter returns the pointer to the FULL register 
+ *       This parameter returns the pointer to the FULL register
  *    pHubIntr [OUT]
  *       This parameter returns the pointer to the hub interrupt register
  *    pHubIntrEnSet [OUT]
@@ -190,7 +185,7 @@ typedef struct NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_SIZE_PARAMS {
  *       This parameter returns the pointer to the clear register
  *    accessCntrMask [OUT]
  *       This parameter returns the interrupt mask
- * 
+ *
  * Possible status values returned are:
  *   NV_OK
  */
@@ -239,7 +234,7 @@ typedef struct NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_FULL_INFO_PARAMS {
  *    resetFlag [OUT]
  *       This parameter specifies that counters have been reset
  *    counterType [IN]
- *       This parameter specifies the type of counters that should be reset (MIMC, MOMC or ALL)  
+ *       This parameter specifies the type of counters that should be reset (MIMC, MOMC or ALL)
  *
  * Possible status values returned are:
  *   NV_OK
@@ -315,7 +310,7 @@ typedef struct NVC365_CTRL_ACCESS_CNTR_SET_CONFIG_PARAMS {
 /*
  * NVC365_CTRL_CMD_ACCESS_CNTR_BUFFER_ENABLE_INTR
  *
- * This command enables the access counters interrupts 
+ * This command enables the access counters interrupts
  *
  *    enable [OUT]
  *       This parameter specifies that the access counters interrupts are enabled

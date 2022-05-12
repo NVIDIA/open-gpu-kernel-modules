@@ -56,10 +56,10 @@ ntz_64
     return ((NvU32)(bz + b5 + b4 + b3 + b2 + b1 + b0));
 }
 
-static void 
+static void
 _setBitmap
 (
-    NvU64 *bitmap, 
+    NvU64 *bitmap,
     NvU32 index
 )
 {
@@ -126,8 +126,8 @@ poolListPrint
     it = listIterAll(pList);
     while (listIterNext(&it))
     {
-        NV_PRINTF_EX(POOLALLOC, LEVEL_NOTICE, 
-                     "=> [pageAddr: 0x%llx, bitmap: 0x%llx]", 
+        NV_PRINTF_EX(POOLALLOC, LEVEL_NOTICE,
+                     "=> [pageAddr: 0x%llx, bitmap: 0x%llx]",
                       it.pValue->pageAddr, it.pValue->bitmap);
     }
     NV_PRINTF_EX(POOLALLOC, LEVEL_NOTICE, "\n");
@@ -137,7 +137,7 @@ poolListPrint
 static void
 allocFreeList
 (
-    POOLALLOC        *pPool, 
+    POOLALLOC        *pPool,
     POOLALLOC_HANDLE *pPageHandle
 )
 {
@@ -167,7 +167,7 @@ allocFreeList
 static void
 allocPartialList
 (
-    POOLALLOC        *pPool, 
+    POOLALLOC        *pPool,
     POOLALLOC_HANDLE *pPageHandle
 )
 {
@@ -203,8 +203,8 @@ poolAllocPrint
 {
 #if defined(DEBUG_VERBOSE)
     NV_PRINTF(LEVEL_NOTICE, "upstreamPageSize = %dKB, allocPageSize = %d%s\n",
-              (pPool->upstreamPageSize >> 10), 
-              (pPool->allocPageSize >> 10) ? pPool->allocPageSize >> 10 : 
+              (pPool->upstreamPageSize >> 10),
+              (pPool->allocPageSize >> 10) ? pPool->allocPageSize >> 10 :
                                              pPool->allocPageSize,
               (pPool->allocPageSize >> 10) ? "KB" : "B");
     NV_PRINTF_EX(POOLALLOC, LEVEL_NOTICE, "freeList => ");
@@ -365,8 +365,6 @@ poolTrim
     LOG_EXIT;
 }
 
-
-
 // Allocating from partial and free lists will succeed
 NV_STATUS
 poolAllocate
@@ -398,7 +396,7 @@ poolAllocate
     allocCb = (pPool->callBackInfo).allocCb;
 
     //
-    // Nothing left in free list as well!! Populate the pool if it is configured to be auto-populated 
+    // Nothing left in free list as well!! Populate the pool if it is configured to be auto-populated
     // Once we have free list then allocate from free list.
     //
     if (FLD_TEST_DRF(_RMPOOL, _FLAGS, _AUTO_POPULATE, _ENABLE, pPool->flags))
@@ -427,7 +425,7 @@ poolAllocate
 }
 
 
-NV_STATUS 
+NV_STATUS
 poolAllocateContig
 (
     POOLALLOC *pPool,

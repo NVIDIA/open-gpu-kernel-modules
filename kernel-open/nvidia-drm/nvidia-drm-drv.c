@@ -886,8 +886,6 @@ static void nv_drm_update_drm_driver_features(void)
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 }
 
-
-
 /*
  * Helper function for allocate/register DRM device for given NVIDIA GPU ID.
  */

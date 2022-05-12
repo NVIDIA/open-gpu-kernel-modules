@@ -20,13 +20,6 @@
 // (if any)
 //
 
-
-
-
-
-
-
-
 //
 // Initialize RPC's object-level interfaces
 //
@@ -49,10 +42,6 @@ rpcSetPropertiesSpecial
 {
 
 }
-
-
-
-
 
 //
 // RPC's run-time type information
@@ -91,9 +80,6 @@ const struct NVOC_CLASS_DEF __iom_class_def_OBJRPC =
     NULL,
     &__iom_castinfo_OBJRPC,
 };
-
-
-
 
 //
 // RPC's object infrastructure boilerplate

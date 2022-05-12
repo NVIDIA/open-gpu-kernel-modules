@@ -63,8 +63,6 @@ typedef struct Memory Memory;
 #define __nvoc_class_id_Memory 0x4789f2
 #endif /* __nvoc_class_id_Memory */
 
-
-
 typedef struct
 {
     NvU64 alignment;

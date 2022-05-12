@@ -638,62 +638,6 @@ done:
     return status;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 NV_STATUS uvm_test_channel_sanity(UVM_TEST_CHANNEL_SANITY_PARAMS *params, struct file *filp)
 {
     NV_STATUS status;
@@ -705,12 +649,6 @@ NV_STATUS uvm_test_channel_sanity(UVM_TEST_CHANNEL_SANITY_PARAMS *params, struct
     status = test_ordering(va_space);
     if (status != NV_OK)
         goto done;
-
-
-
-
-
-
 
     if (g_uvm_global.num_simulated_devices == 0) {
         status = test_rc(va_space);

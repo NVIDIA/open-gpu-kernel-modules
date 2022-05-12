@@ -91,8 +91,6 @@ portSyncSpinlockRelease
     os_release_spinlock(pSpinlock->lock, pSpinlock->oldIrql);
 }
 
-
-
 NV_STATUS
 portSyncMutexInitialize
 (

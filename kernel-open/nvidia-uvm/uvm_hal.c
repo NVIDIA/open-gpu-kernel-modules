@@ -43,17 +43,11 @@
 #include "clc7b5.h"
 
 
-
-
-
 #define CE_OP_COUNT (sizeof(uvm_ce_hal_t) / sizeof(void *))
 #define HOST_OP_COUNT (sizeof(uvm_host_hal_t) / sizeof(void *))
 #define ARCH_OP_COUNT (sizeof(uvm_arch_hal_t) / sizeof(void *))
 #define FAULT_BUFFER_OP_COUNT (sizeof(uvm_fault_buffer_hal_t) / sizeof(void *))
 #define ACCESS_COUNTER_BUFFER_OP_COUNT (sizeof(uvm_access_counter_buffer_hal_t) / sizeof(void *))
-
-
-
 
 // Table for copy engine functions.
 // Each entry is associated with a copy engine class through the 'class' field.
@@ -133,22 +127,6 @@ static uvm_hal_class_ops_t ce_table[] =
             .memset_validate = uvm_hal_ce_memset_validate_stub,
         },
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 };
 
 // Table for GPFIFO functions.  Same idea as the copy engine table.
@@ -249,23 +227,6 @@ static uvm_hal_class_ops_t host_table[] =
             .tlb_invalidate_test = uvm_hal_ampere_host_tlb_invalidate_test,
         }
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 };
 
 static uvm_hal_class_ops_t arch_table[] =
@@ -326,43 +287,6 @@ static uvm_hal_class_ops_t arch_table[] =
             .mmu_client_id_to_utlb_id = uvm_hal_ampere_mmu_client_id_to_utlb_id,
         },
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 };
 
 static uvm_hal_class_ops_t fault_buffer_table[] =
@@ -430,33 +354,6 @@ static uvm_hal_class_ops_t fault_buffer_table[] =
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
         .u.fault_buffer_ops = {}
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 };
 
 static uvm_hal_class_ops_t access_counter_buffer_table[] =
@@ -509,104 +406,7 @@ static uvm_hal_class_ops_t access_counter_buffer_table[] =
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
         .u.access_counter_buffer_ops = {}
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 static inline uvm_hal_class_ops_t *ops_find_by_id(uvm_hal_class_ops_t *table, NvU32 row_count, NvU32 id)
 {
@@ -710,18 +510,6 @@ NV_STATUS uvm_hal_init_table(void)
         UVM_ERR_PRINT("ops_init_from_parent(access_counter_buffer_table) failed: %s\n", nvstatusToString(status));
         return status;
     }
-
-
-
-
-
-
-
-
-
-
-
-
     return NV_OK;
 }
 
@@ -771,17 +559,6 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
     }
 
     parent_gpu->access_counter_buffer_hal = &class_ops->u.access_counter_buffer_ops;
-
-
-
-
-
-
-
-
-
-
-
     return NV_OK;
 }
 

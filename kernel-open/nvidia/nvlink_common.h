@@ -70,8 +70,6 @@ struct nvlink_detailed_device_info
     NvU8       *devUuid;
     NvBool      bInitialized;
 
-
-
     void       *dev_info;     // Endpoint driver device info opaque
                               // to core lib. Passed from end point
                               // driver to core
@@ -83,7 +81,7 @@ struct nvlink_detailed_device_info
 struct nvlink_device_register_params
 {
     //
-    // Core lib device info opaque to endpoint driver 
+    // Core lib device info opaque to endpoint driver
     // Passed from core lib to endpoint driver
     //
     void  **deviceHandle;
@@ -99,7 +97,7 @@ struct nvlink_detailed_link_info
                                // to endpoint driver during  device
                                // registration
 
-    void        *link_info;    // End point driver link info  opaque 
+    void        *link_info;    // End point driver link info  opaque
                                // to core lib. Passed from end point
                                // driver to core
 
@@ -114,7 +112,7 @@ struct nvlink_detailed_link_info
 struct nvlink_link_register_params
 {
     //
-    // Core lib link info opaque to endpoint driver 
+    // Core lib link info opaque to endpoint driver
     // Passed from core lib to endpoint driver
     //
     void  **linkHandle;

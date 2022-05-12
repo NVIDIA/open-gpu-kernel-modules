@@ -57,13 +57,6 @@ NV_STATUS uvm_ats_add_gpu(uvm_parent_gpu_t *parent_gpu)
 
         return uvm_ats_ibm_add_gpu(parent_gpu);
     }
-
-
-
-
-
-
-
     return NV_OK;
 }
 
@@ -77,12 +70,6 @@ void uvm_ats_remove_gpu(uvm_parent_gpu_t *parent_gpu)
 
         uvm_ats_ibm_remove_gpu(parent_gpu);
     }
-
-
-
-
-
-
 }
 
 NV_STATUS uvm_ats_bind_gpu(uvm_gpu_va_space_t *gpu_va_space)

@@ -1,17 +1,17 @@
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
  * to deal in the Software without restriction, including without limitation
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
@@ -58,11 +58,6 @@
 */
 #define NVC46F_CTRL_CMD_NULL (NVC36F_CTRL_CMD_NULL)
 
-
-
-
-
-
 /*
  * NVC46F_CTRL_GET_CLASS_ENGINEID
  *
@@ -108,7 +103,6 @@ typedef NVA06F_CTRL_BIND_PARAMS NVC46F_CTRL_BIND_PARAMS;
  * Please see description of NVA06F_CTRL_CMD_EVENT_SET_NOTIFICATION for more information.
 */
 
-
 #define NVC46F_CTRL_CMD_EVENT_SET_NOTIFICATION (NVC36F_CTRL_CMD_EVENT_SET_NOTIFICATION)
 
 typedef NVA06F_CTRL_EVENT_SET_NOTIFICATION_PARAMS NVC46F_CTRL_EVENT_SET_NOTIFICATION_PARAMS;
@@ -124,10 +118,6 @@ typedef NVA06F_CTRL_EVENT_SET_NOTIFICATION_PARAMS NVC46F_CTRL_EVENT_SET_NOTIFICA
  * Please see description of NVA06F_CTRL_CMD_EVENT_SET_TRIGGER for more information.
  */
 #define NVC46F_CTRL_CMD_EVENT_SET_TRIGGER                 (NVC36F_CTRL_CMD_EVENT_SET_TRIGGER)
-
-
-
-
 
 /*
  * NVC46F_CTRL_CMD_GET_MMU_FAULT_INFO

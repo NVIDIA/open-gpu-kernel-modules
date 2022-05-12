@@ -98,13 +98,4 @@ NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channels_map(nvidia_stack_t *, nvgpuAdd
 void       NV_API_CALL rm_gpu_ops_paging_channels_unmap(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuDeviceHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channel_push_stream(nvidia_stack_t *, nvgpuPagingChannelHandle_t, char *, NvU32);
 
-
-
-
-
-
-
-
-
-
 #endif

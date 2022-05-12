@@ -206,11 +206,6 @@ void uvm_hal_ampere_host_tlb_invalidate_test(uvm_push_t *push,
                                              uvm_gpu_phys_address_t pdb,
                                              UVM_TEST_INVALIDATE_TLB_PARAMS *params);
 
-
-
-
-
-
 // By default all semaphore release operations include a membar sys before the
 // operation. This can be affected by using UVM_PUSH_FLAG_NEXT_* flags with
 // uvm_push_set_flag().
@@ -218,17 +213,8 @@ typedef void (*uvm_hal_semaphore_release_t)(uvm_push_t *push, NvU64 gpu_va, NvU3
 void uvm_hal_maxwell_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_maxwell_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 
-
-
 void uvm_hal_pascal_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_turing_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-
-
-
-
-
-
-
 
 // Release a semaphore including a timestamp at the specific GPU VA.
 //
@@ -239,26 +225,12 @@ typedef void (*uvm_hal_semaphore_timestamp_t)(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_maxwell_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_pascal_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 
-
-
-
 void uvm_hal_maxwell_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_volta_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
-
-
-
-
-
-
-
-
 
 typedef void (*uvm_hal_semaphore_acquire_t)(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_maxwell_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_turing_host_semaphore_acquire(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
-
-
-
 
 typedef void (*uvm_hal_host_set_gpfifo_entry_t)(NvU64 *fifo_entry, NvU64 pushbuffer_va, NvU32 pushbuffer_length);
 void uvm_hal_maxwell_host_set_gpfifo_entry(NvU64 *fifo_entry, NvU64 pushbuffer_va, NvU32 pushbuffer_length);
@@ -278,15 +250,9 @@ typedef void (*uvm_hal_ce_offset_out_t)(uvm_push_t *push, NvU64 offset);
 void uvm_hal_maxwell_ce_offset_out(uvm_push_t *push, NvU64 offset);
 void uvm_hal_pascal_ce_offset_out(uvm_push_t *push, NvU64 offset);
 
-
-
-
 typedef void (*uvm_hal_ce_offset_in_out_t)(uvm_push_t *push, NvU64 offset_in, NvU64 offset_out);
 void uvm_hal_maxwell_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 offset_out);
 void uvm_hal_pascal_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 offset_out);
-
-
-
 
 typedef NvU32 (*uvm_hal_ce_phys_mode_t)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 NvU32 uvm_hal_maxwell_ce_phys_mode(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
@@ -381,12 +347,6 @@ void uvm_hal_volta_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_turing_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu);
 
-
-
-
-
-
-
 // Retrieve the page-tree HAL for a given big page size
 typedef uvm_mmu_mode_hal_t *(*uvm_hal_lookup_mode_hal_t)(NvU32 big_page_size);
 typedef void (*uvm_hal_mmu_enable_prefetch_faults_t)(uvm_parent_gpu_t *parent_gpu);
@@ -396,8 +356,6 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU32 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_volta(NvU32 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_turing(NvU32 big_page_size);
 uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_ampere(NvU32 big_page_size);
-
-
 
 void uvm_hal_maxwell_mmu_enable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_maxwell_mmu_disable_prefetch_faults_unsupported(uvm_parent_gpu_t *parent_gpu);
@@ -413,17 +371,11 @@ uvm_mmu_engine_type_t uvm_hal_volta_mmu_engine_id_to_type(NvU16 mmu_engine_id);
 uvm_mmu_engine_type_t uvm_hal_turing_mmu_engine_id_to_type(NvU16 mmu_engine_id);
 uvm_mmu_engine_type_t uvm_hal_ampere_mmu_engine_id_to_type(NvU16 mmu_engine_id);
 
-
-
-
 typedef NvU16 (*uvm_hal_mmu_client_id_to_utlb_id_t)(NvU16 client_id);
 NvU16 uvm_hal_maxwell_mmu_client_id_to_utlb_id_unsupported(NvU16 client_id);
 NvU16 uvm_hal_pascal_mmu_client_id_to_utlb_id(NvU16 client_id);
 NvU16 uvm_hal_volta_mmu_client_id_to_utlb_id(NvU16 client_id);
 NvU16 uvm_hal_ampere_mmu_client_id_to_utlb_id(NvU16 client_id);
-
-
-
 
 // Replayable faults
 typedef void (*uvm_hal_enable_replayable_faults_t)(uvm_parent_gpu_t *parent_gpu);
@@ -478,9 +430,6 @@ void uvm_hal_volta_fault_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
 void uvm_hal_turing_disable_replayable_faults(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_turing_clear_replayable_faults(uvm_parent_gpu_t *parent_gpu, NvU32 get);
 
-
-
-
 bool uvm_hal_maxwell_fault_buffer_entry_is_valid_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index);
 void uvm_hal_maxwell_fault_buffer_entry_clear_valid_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index);
 NvU32 uvm_hal_maxwell_fault_buffer_entry_size_unsupported(uvm_parent_gpu_t *parent_gpu);
@@ -528,13 +477,6 @@ void uvm_hal_volta_cancel_faults_va(uvm_push_t *push,
                                     uvm_gpu_phys_address_t pdb,
                                     const uvm_fault_buffer_entry_t *fault_entry,
                                     uvm_fault_cancel_va_mode_t cancel_va_mode);
-
-
-
-
-
-
-
 
 typedef void (*uvm_hal_host_clear_faulted_channel_method_t)(uvm_push_t *push,
                                                             uvm_user_channel_t *user_channel,
@@ -618,39 +560,6 @@ void uvm_hal_volta_access_counter_clear_targeted(uvm_push_t *push,
 
 void uvm_hal_turing_disable_access_counter_notifications(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_turing_clear_access_counter_notifications(uvm_parent_gpu_t *parent_gpu, NvU32 get);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 struct uvm_host_hal_struct
 {
@@ -742,17 +651,6 @@ struct uvm_access_counter_buffer_hal_struct
     uvm_hal_access_counter_buffer_entry_size_t entry_size;
 };
 
-
-
-
-
-
-
-
-
-
-
-
 typedef struct
 {
     // id is either a hardware class or GPU architecture
@@ -774,10 +672,6 @@ typedef struct
 
         // access_counter_buffer_ops: id is an architecture
         uvm_access_counter_buffer_hal_t access_counter_buffer_ops;
-
-
-
-
 
     } u;
 } uvm_hal_class_ops_t;

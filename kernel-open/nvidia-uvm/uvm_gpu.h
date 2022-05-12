@@ -46,9 +46,6 @@
 #include "uvm_rb_tree.h"
 #include "nv-kthread-q.h"
 
-
-
-
 // Buffer length to store uvm gpu id, RM device name and gpu uuid.
 #define UVM_GPU_NICE_NAME_BUFFER_LENGTH (sizeof("ID 999: : ") + \
             UVM_GPU_NAME_LENGTH + UVM_GPU_UUID_TEXT_BUFFER_LENGTH)
@@ -683,10 +680,6 @@ struct uvm_gpu_struct
     // different from that of sysmem_mappings, because it relates to user
     // mappings (instead of kernel), and it is used in most configurations.
     uvm_pmm_sysmem_mappings_t pmm_reverse_sysmem_mappings;
-
-
-
-
 
     // ECC handling
     // In order to trap ECC errors as soon as possible the driver has the hw
@@ -1362,12 +1355,6 @@ NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr)
 
 static bool uvm_gpu_supports_eviction(uvm_gpu_t *gpu)
 {
-
-
-
-
-
-
     // Eviction is supported only if the GPU supports replayable faults
     return gpu->parent->replayable_faults_supported;
 }

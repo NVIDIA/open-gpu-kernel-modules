@@ -28,14 +28,6 @@
 
 #include "nv-time.h"
 
-
-
-
-
-
-
-
-
 extern char *NVreg_TemporaryFilePath;
 
 #define MAX_ERROR_STRING 512
@@ -444,7 +436,6 @@ NvS32 NV_API_CALL os_mem_cmp(
 {
     return memcmp(buf0, buf1, length);
 }
-
 
 /*
  * Operating System Memory Functions
@@ -1557,7 +1548,7 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
      *                              instead).
      *
      * 6. (Optional) __GFP_RECLAIM: Used to allow/forbid reclaim.
-     *                              This is part of GFP_USER and consequently 
+     *                              This is part of GFP_USER and consequently
      *                              GFP_HIGHUSER_MOVABLE.
      *
      * Some of these flags are relatively more recent, with the last of them
@@ -1937,52 +1928,6 @@ void NV_API_CALL os_wake_up
     complete_all(&wq->q);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 nv_cap_t* NV_API_CALL os_nv_cap_init
 (
     const char *path
@@ -2035,102 +1980,3 @@ void NV_API_CALL os_nv_cap_close_fd
 {
     nv_cap_close_fd(fd);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

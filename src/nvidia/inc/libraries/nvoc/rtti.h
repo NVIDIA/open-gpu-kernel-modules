@@ -51,8 +51,6 @@ struct NVOC_CASTINFO
     const struct NVOC_RTTI *const relatives[];
 };
 
-
-
 //! Items unique to each NVOC class definition.  Used to identify NVOC classes.
 struct NVOC_CLASS_DEF {
     const NVOC_CLASS_INFO classInfo;              // public, defined in runtime.h; contains classId, size, and name

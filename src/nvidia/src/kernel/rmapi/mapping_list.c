@@ -94,8 +94,6 @@ CliFindMappingInClient
     return NULL;
 }
 
-
-
 // ****************************************************************************
 //                                  DMA Mappings
 // ****************************************************************************
@@ -232,7 +230,7 @@ intermapRegisterDmaMapping
             //
             if (IS_VIRTUAL_WITH_SRIOV(pGpu)
                 && RMCFG_FEATURE_PLATFORM_MODS
-                && FLD_TEST_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, pDmaMapping->Flags) 
+                && FLD_TEST_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, pDmaMapping->Flags)
                 && kgmmuIsVaspaceInteropSupported(GPU_GET_KERNEL_GMMU(pGpu))
                 )
             {

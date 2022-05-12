@@ -378,11 +378,6 @@ NV_STATUS uvm_va_range_create_semaphore_pool(uvm_va_space_t *va_space,
         if (status != NV_OK)
             goto error;
 
-
-
-
-
-
         if (attrs.is_cacheable) {
             // At most 1 GPU can have this memory cached, in which case it is
             // the 'owner' GPU.

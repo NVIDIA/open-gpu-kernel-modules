@@ -371,13 +371,6 @@ NV_STATUS nv_alloc_contig_pages(
     if (os_is_xen_dom0() || at->flags.unencrypted)
         return nv_alloc_coherent_pages(nv, at);
 
-
-
-
-
-
-
-
     at->order = get_order(at->num_pages * PAGE_SIZE);
     gfp_mask = nv_compute_gfp_mask(nv, at);
 

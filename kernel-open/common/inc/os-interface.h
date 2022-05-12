@@ -43,7 +43,6 @@
 #include <nv-caps.h>
 
 
-
 typedef struct
 {
     NvU32  os_major_version;
@@ -193,20 +192,6 @@ void        NV_API_CALL  os_nv_cap_destroy_entry      (nv_cap_t *);
 int         NV_API_CALL  os_nv_cap_validate_and_dup_fd(const nv_cap_t *, int);
 void        NV_API_CALL  os_nv_cap_close_fd           (int);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 extern NvU32 os_page_size;
 extern NvU64 os_page_mask;
 extern NvU8  os_page_shift;
@@ -244,12 +229,5 @@ int  NV_API_CALL  nv_printf(NvU32 debuglevel, const char *printf_format, ...);
 #define NV_LOCK_USER_PAGES_FLAGS_WRITE                     0:0
 #define NV_LOCK_USER_PAGES_FLAGS_WRITE_NO                  0x00000000
 #define NV_LOCK_USER_PAGES_FLAGS_WRITE_YES                 0x00000001
-
-
-
-
-
-
-
 
 #endif /* OS_INTERFACE_H */

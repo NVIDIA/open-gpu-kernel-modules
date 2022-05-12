@@ -179,7 +179,6 @@ struct nvidia_p2p_page_table {
  *   Persistent GPU memory mappings are not supported on PowerPC,
 
 
-
  *   MIG-enabled devices and vGPU.
 
  * @param[in]     data

@@ -142,13 +142,6 @@ struct uvm_global_struct
         NvU64 *ptr;
         struct page *page;
     } unload_state;
-
-
-
-
-
-
-
 };
 
 // Initialize global uvm state

@@ -365,13 +365,6 @@ static void unregister_gpu(uvm_va_space_t *va_space,
         }
     }
 
-
-
-
-
-
-
-
     va_space_check_processors_masks(va_space);
 }
 
@@ -751,17 +744,6 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
         goto done;
     }
 
-
-
-
-
-
-
-
-
-
-
-
     uvm_processor_mask_set(&va_space->registered_gpus, gpu->id);
     va_space->registered_gpus_table[uvm_id_gpu_index(gpu->id)] = gpu;
 
@@ -773,9 +755,6 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
 
     // All GPUs have native atomics on their own memory
     processor_mask_array_set(va_space->has_native_atomics, gpu->id, gpu->id);
-
-
-
 
     if (gpu->parent->sysmem_link >= UVM_GPU_LINK_NVLINK_1) {
         processor_mask_array_set(va_space->has_nvlink, gpu->id, UVM_ID_CPU);

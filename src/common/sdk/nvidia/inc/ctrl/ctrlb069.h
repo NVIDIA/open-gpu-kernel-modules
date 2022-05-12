@@ -53,11 +53,6 @@
  */
 #define NVB069_CTRL_CMD_NULL    (0xb0690000) /* finn: Evaluated from "(FINN_MAXWELL_FAULT_BUFFER_A_RESERVED_INTERFACE_ID << 8) | 0x0" */
 
-
-
-
-
-
 /*
  * NVB069_CTRL_CMD_FAULTBUFFER_READ_GET
  *
@@ -92,7 +87,7 @@ typedef struct NVB069_CTRL_FAULTBUFFER_READ_GET_PARAMS {
  * NOTE: The caller must issue a write barrier before this function to
  * ensure modifications to the current buffer entry are committed before
  * the GET pointer is updated.
- * 
+ *
  *    faultBufferGetOffset
  *      Value to be written to HW GET pointer
  *    faultBufferType

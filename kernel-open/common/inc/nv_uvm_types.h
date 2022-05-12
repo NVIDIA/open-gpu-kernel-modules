@@ -373,9 +373,6 @@ typedef enum
     UVM_LINK_TYPE_NVLINK_2,
     UVM_LINK_TYPE_NVLINK_3,
 
-
-
-
 } UVM_LINK_TYPE;
 
 typedef struct UvmGpuCaps_tag
@@ -442,10 +439,6 @@ typedef struct UvmGpuAllocInfo_tag
     NvBool  bMemGrowsDown;          // Causes RM to reserve physical heap from top of FB
     NvBool  bPersistentVidmem;      // Causes RM to allocate persistent video memory
     NvHandle hPhysHandle;           // Handle for phys allocation either provided or retrieved
-
-
-
-
 } UvmGpuAllocInfo;
 
 typedef enum
@@ -576,10 +569,6 @@ typedef struct UvmPlatformInfo_tag
     // Out: ATS (Address Translation Services) is supported
     NvBool atsSupported;
 
-
-
-
-
 } UvmPlatformInfo;
 
 typedef struct UvmGpuClientInfo_tag
@@ -588,24 +577,6 @@ typedef struct UvmGpuClientInfo_tag
 
     NvHandle hSmcPartRef;
 } UvmGpuClientInfo;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #define UVM_GPU_NAME_LENGTH 0x40
 
@@ -671,10 +642,6 @@ typedef struct UvmGpuInfo_tag
 
     UvmGpuClientInfo smcUserClientInfo;
 
-
-
-
-
 } UvmGpuInfo;
 
 typedef struct UvmGpuFbInfo_tag
@@ -717,11 +684,6 @@ typedef struct UvmPmaStatistics_tag
     volatile NvU64 numPages2m;                // PMA-wide 2MB pages count across all regions
     volatile NvU64 numFreePages64k;           // PMA-wide free 64KB page count across all regions
     volatile NvU64 numFreePages2m;            // PMA-wide free 2MB pages count across all regions
-
-
-
-
-
 } UvmPmaStatistics;
 
 /*******************************************************************************
@@ -960,11 +922,5 @@ typedef UvmGpuPagingChannel *gpuPagingChannelHandle;
 typedef UvmGpuPagingChannelInfo gpuPagingChannelInfo;
 typedef UvmGpuPagingChannelAllocParams gpuPagingChannelAllocParams;
 typedef UvmPmaAllocationOptions gpuPmaAllocationOptions;
-
-
-
-
-
-
 
 #endif // _NV_UVM_TYPES_H_

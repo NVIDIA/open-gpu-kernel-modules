@@ -21,8 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-
-
 #include "dp/nvdp-connector.h"
 #include "dp/nvdp-timer.h"
 #include "dp/nvdp-device.h"

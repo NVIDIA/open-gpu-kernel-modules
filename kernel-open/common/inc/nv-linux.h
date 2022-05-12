@@ -1160,16 +1160,6 @@ typedef struct nvidia_pte_s {
     unsigned int    page_count;
 } nvidia_pte_t;
 
-
-
-
-
-
-
-
-
-
-
 typedef struct nv_alloc_s {
     struct nv_alloc_s *next;
     struct device     *dev;
@@ -1303,7 +1293,7 @@ nv_dma_maps_swiotlb(struct device *dev)
 
     /*
      * Commit 2017-11-07 d7b417fa08d ("x86/mm: Add DMA support for
-     * SEV memory encryption") forces SWIOTLB to be enabled when AMD SEV 
+     * SEV memory encryption") forces SWIOTLB to be enabled when AMD SEV
      * is active in all cases.
      */
     if (os_sev_enabled)
@@ -1412,34 +1402,6 @@ struct os_wait_queue {
     struct completion q;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*
  * To report error in msi/msix when unhandled count reaches a threshold
  */
@@ -1463,19 +1425,6 @@ struct nv_dma_device {
     NvBool nvlink;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* linux-specific version of old nv_state_t */
 /* this is a general os-specific state structure. the first element *must* be
    the general state structure, for the generic unix-based code */
@@ -1490,11 +1439,6 @@ typedef struct nv_linux_state_s {
 
     /* IBM-NPU info associated with this GPU */
     nv_ibmnpu_info_t *npu;
-
-
-
-
-
 
     /* NUMA node information for the platforms where GPU memory is presented
      * as a NUMA node to the kernel */
@@ -1574,23 +1518,6 @@ typedef struct nv_linux_state_s {
 
     /* Per-device notifier block for ACPI events */
     struct notifier_block acpi_nb;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /* Lock serializing ISRs for different SOC vectors */
     nv_spinlock_t soc_isr_lock;
@@ -1736,7 +1663,7 @@ static inline struct kmem_cache *nv_kmem_cache_create(const char *name, unsigned
 {
     char *name_unique;
     struct kmem_cache *cache;
- 
+
 #if defined(NV_KMEM_CACHE_HAS_KOBJ_REMOVE_WORK) && !defined(NV_SYSFS_SLAB_UNLINK_PRESENT)
     size_t len;
     NvU64 tm_ns = nv_ktime_get_raw_ns();
@@ -1766,7 +1693,7 @@ static inline struct kmem_cache *nv_kmem_cache_create(const char *name, unsigned
     cache = kmem_cache_create(name_unique, size, align, 0, nv_kmem_ctor_dummy);
     if (name_unique != name)
         kfree(name_unique);
- 
+
     return cache;
 }
 
@@ -1968,11 +1895,6 @@ static inline NvU32 nv_default_irq_flags(nv_state_t *nv)
 #define MODULE_NAME MODULE_BASE_NAME MODULE_INSTANCE_STRING
 
 NvS32 nv_request_soc_irq(nv_linux_state_t *, NvU32, nv_soc_irq_type_t, NvU32, NvU32);
-
-
-
-
-
 
 static inline void nv_mutex_destroy(struct mutex *lock)
 {
