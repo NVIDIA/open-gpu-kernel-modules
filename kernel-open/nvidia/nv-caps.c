@@ -30,6 +30,7 @@ extern int NVreg_ModifyDeviceFiles;
 
 /* sys_close() or __close_fd() */
 #include <linux/syscalls.h>
+#include <linux/string.h>
 
 #define NV_CAP_DRV_MINOR_COUNT 8192
 
@@ -594,9 +595,9 @@ static nv_cap_t* nv_cap_alloc(nv_cap_t *parent_cap, const char *name)
         return NULL;
     }
 
-    strncpy(cap->path, parent_cap->path, len);
-    strncat(cap->path, "/", len);
-    strncat(cap->path, name, len);
+    strscpy(cap->path, parent_cap->path, len);
+    strcat(cap->path, "/");
+    strcat(cap->path, name);
 
     len = strlen(name) + 1;
     NV_KMALLOC(cap->name, len);
@@ -607,7 +608,7 @@ static nv_cap_t* nv_cap_alloc(nv_cap_t *parent_cap, const char *name)
         return NULL;
     }
 
-    strncpy(cap->name, name, len);
+    strscpy(cap->name, name, len);
 
     cap->minor = -1;
     cap->modify = NVreg_ModifyDeviceFiles;
@@ -711,8 +712,8 @@ nv_cap_t* NV_API_CALL nv_cap_init(const char *path)
         return NULL;
     }
 
-    strncpy(name, path, len);
-    strncat(name, dir, len);
+    strscpy(name, path, len);
+    strcat(name, dir, len);
     parent_cap.entry = NULL;
     parent_cap.path = "";
     parent_cap.name = "";
