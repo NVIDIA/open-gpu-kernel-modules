@@ -465,7 +465,7 @@ typedef struct
     // Ignoring access counters means that notifications are left in the HW
     // buffer without being serviced.  Requests to ignore access counters
     // are counted since the suspend path inhibits access counter interrupts,
-    // and the resume path needs to know whether to reenable them.
+    // and the resume path needs to know whether to re-enable them.
     NvU32 notifications_ignored_count;
 
     // Context structure used to service a GPU access counter batch
@@ -1410,7 +1410,7 @@ void uvm_gpu_remove_user_channel(uvm_gpu_t *gpu, uvm_user_channel_t *user_channe
 //                               targets an invalid subcontext
 //
 // out_va_space is valid if NV_OK is returned, otherwise it's NULL. The caller
-// is responsibile for ensuring that the returned va_space can't be destroyed,
+// is responsible for ensuring that the returned va_space can't be destroyed,
 // so these functions should only be called from the bottom half.
 NV_STATUS uvm_gpu_fault_entry_to_va_space(uvm_gpu_t *gpu,
                                           uvm_fault_buffer_entry_t *fault,
