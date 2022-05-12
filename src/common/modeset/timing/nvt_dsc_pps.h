@@ -26,7 +26,7 @@
 
     dsc_pps.h
 
-    Provide definition needed for DSC(Display Stream Compression) PPS(Picture Parameter Set)
+    Provide definition needed for DSC(Display Stream Compression) PPS(Picture Parameter Set).
 
 ================================================================================
 */
@@ -49,7 +49,7 @@
 typedef struct
 {
     // DSC - Callbacks
-    const void* clientHandle;    // ClientHandle is only used when calling into HDMI lib's mallocCb/freeCb
+    const void* clientHandle;    // ClientHandle is only used when calling into HDMI lib's mallocCb/freeCb.
     void (*dscPrint) (const char* fmtstring, ...);
     void *(*dscMalloc)(const void *clientHandle, NvLength size);
     void (*dscFree) (const void *clientHandle, void * ptr);
@@ -57,12 +57,12 @@ typedef struct
 #else
 typedef struct
 {
-    // DSC - Callbacks
+    // DSC - Callbacks.
     void (*dscPrint) (const char* fmtstring, ...);
     void *(*dscMalloc)(NvLength size);
     void (*dscFree) (void * ptr);
 } DSC_CALLBACK;
-#endif // DSC_CALLBACK_MODIFIED
+#endif // DSC_CALLBACK_MODIFIED.
 
 typedef struct
 {
@@ -72,11 +72,11 @@ typedef struct
 
 typedef struct 
 {
-    NvU64 pixelClockHz;                 // Requested pixel clock for the mode
-    NvU32 activeWidth;                  // Active Width
-    NvU32 activeHeight;                 // Active Height
-    NvU32 bitsPerComponent;             // BPC value to be used
-    NVT_COLOR_FORMAT colorFormat;       // Color format to be used for this modeset
+    NvU64 pixelClockHz;                 // Requested pixel clock for the mode.
+    NvU32 activeWidth;                  // Active Width.
+    NvU32 activeHeight;                 // Active Height.
+    NvU32 bitsPerComponent;             // BPC value to be used.
+    NVT_COLOR_FORMAT colorFormat;       // Color format to be used for this modeset.
 
     //
     // Whether to enable Dual mode for DSC.
@@ -89,7 +89,7 @@ typedef struct
     // Whether to enable DROP mode for DSC.
     // DROP mode specifies that instead of compressing the pixels, OR will drop
     // the pixels of the right half frame to reduce the data rate by half.
-    // This mode is added for testing 2head1OR solution without a DSC panel
+    // This mode is added for testing 2head1OR solution without a DSC panel.
     //
     NvBool bDropMode;
 } MODESET_INFO;
@@ -98,7 +98,7 @@ typedef struct
 {
     struct SINK_DSC_CAPS 
     {
-        // Mask of all color formats for which decoding supported by panel
+        // Mask of all color formats for which decoding supported by panel.
         NvU32 decoderColorFormatMask;
 #define DSC_DECODER_COLOR_FORMAT_RGB                    (0x00000001)
 #define DSC_DECODER_COLOR_FORMAT_Y_CB_CR_444            (0x00000002)
@@ -106,7 +106,7 @@ typedef struct
 #define DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422     (0x00000008)
 #define DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420     (0x00000010)
 
-        // e.g. 1/16, 1/8, 1/4, 1/2, 1bpp
+        // e.g. 1/16, 1/8, 1/4, 1/2, 1bpp.
         NvU32 bitsPerPixelPrecision;
 #define DSC_BITS_PER_PIXEL_PRECISION_1_16               (0x00000001)
 #define DSC_BITS_PER_PIXEL_PRECISION_1_8                (0x00000002)
@@ -114,13 +114,13 @@ typedef struct
 #define DSC_BITS_PER_PIXEL_PRECISION_1_2                (0x00000008)
 #define DSC_BITS_PER_PIXEL_PRECISION_1                  (0x00000010)
 
-        // Maximum slice width supported by panel
+        // Maximum slice width supported by panel.
         NvU32 maxSliceWidth;     
 
-        // Maximum number of horizontal slices supported 
+        // Maximum number of horizontal slices supported.
         NvU32 maxNumHztSlices;
 
-        // Slice counts supported by the sink
+        // Slice counts supported by the sink.
         NvU32 sliceCountSupportedMask;
 #define DSC_DECODER_SLICES_PER_SINK_INVALID             (0x00000000)
 #define DSC_DECODER_SLICES_PER_SINK_1                   (0x00000001)
@@ -136,13 +136,13 @@ typedef struct
 
         //
         // Bit depth used by the Sink device to store the
-        // reconstructed pixels within the line buffer
+        // reconstructed pixels within the line buffer.
         //
         NvU32 lineBufferBitDepth;
 #define DSC_DECODER_LINE_BUFFER_BIT_DEPTH_MIN           (0x00000008)
 #define DSC_DECODER_LINE_BUFFER_BIT_DEPTH_MAX           (0x0000000D)
 
-        NvU32 decoderColorDepthCaps;            // Color depth supported by DSC decoder of panel
+        NvU32 decoderColorDepthCaps;            // Color depth supported by DSC decoder of panel.
 #define DSC_DECODER_COLOR_DEPTH_CAPS_8_BITS             (0x00000001)
 #define DSC_DECODER_COLOR_DEPTH_CAPS_10_BITS            (0x00000002)
 #define DSC_DECODER_COLOR_DEPTH_CAPS_12_BITS            (0x00000004)
@@ -150,11 +150,11 @@ typedef struct
 
         NvU32 decoderColorDepthMask;
         
-        DSC_ALGORITHM_REV algorithmRevision;    // DSC algorithm revision that sink supports
+        DSC_ALGORITHM_REV algorithmRevision;    // DSC algorithm revision that sink supports.
         
         NvBool bBlockPrediction;                // Whether block prediction is supported or not.
 
-        // Peak throughput supported for 444 and simple 422 modes
+        // Peak throughput supported for 444 and simple 422 modes.
         NvU32  peakThroughputMode0;
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_INVALID       (0x00000000)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_340           (0x00000001)
@@ -173,7 +173,7 @@ typedef struct
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_1000          (0x0000000E)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE0_170           (0x0000000F)
 
-        // Peak throughput supported for native 422 and 420 modes
+        // Peak throughput supported for native 422 and 420 modes.
         NvU32  peakThroughputMode1;
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_INVALID       (0x00000000)   
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_340           (0x00000001)
@@ -192,13 +192,13 @@ typedef struct
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_1000          (0x0000000E)
 #define DSC_DECODER_PEAK_THROUGHPUT_MODE1_170           (0x0000000F)
 
-        // Maximum bits_per_pixel supported by the DSC decompressor multiplied by 16
+        // Maximum bits_per_pixel supported by the DSC decompressor multiplied by 16.
         NvU32  maxBitsPerPixelX16;
     }sinkCaps;
 
     struct GPU_DSC_CAPS
     {
-        // Mask of all color formats for which encoding supported by GPU
+        // Mask of all color formats for which encoding supported by GPU.
         NvU32 encoderColorFormatMask;
 #define DSC_ENCODER_COLOR_FORMAT_RGB                    (0x00000001)
 #define DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_444            (0x00000002)
@@ -206,36 +206,36 @@ typedef struct
 #define DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420     (0x00000008)
 
         //
-        // Size of line buffer inside DSC. Should be in number of pixels.
-        // this should be greater than or equal to active width
+        // Size of line buffer inside DSC. Should be in number of pixels
+        // This should be greater than or equal to active width.
         //
         NvU32 lineBufferSize;
 
-        // e.g. 1/16, 1/8, 1/4, 1/2, 1bpp
+        // e.g. 1/16, 1/8, 1/4, 1/2, 1bpp.
         NvU32 bitsPerPixelPrecision;
 
-        // Maximum number of horizontal slices supported 
+        // Maximum number of horizontal slices supported .
         NvU32 maxNumHztSlices;
 
         //
         // Bit depth used by the GPU to store the
-        // reconstructed pixels within the line buffer
+        // reconstructed pixels within the line buffer.
         //
         NvU32 lineBufferBitDepth;
     }gpuCaps;
 
     struct FORCED_DSC_PARAMS
     {
-        // Forced Slice count
+        // Forced Slice count.
         NvU32 sliceCount;
 
-        // Forced Slice width
+        // Forced Slice width.
         NvU32 sliceWidth;
 
-        // Forced Slice height
+        // Forced Slice height.
         NvU32 sliceHeight;
 
-        // Forced DSC Algorithm Revision
+        // Forced DSC Algorithm Revision.
         DSC_ALGORITHM_REV dscRevision;
     }forcedDscParams;
 } DSC_INFO;
@@ -286,9 +286,9 @@ typedef struct
 extern "C" {
 #endif
 /*
- * @brief Initializes callbacks for print and assert
+ * @brief Initializes callbacks for print and assert.
  *
- * @param[in]   callback   DSC callbacks
+ * @param[in]   callback   DSC callbacks.
  *
  * @returns NVT_STATUS_SUCCESS if successful;
  *          NVT_STATUS_ERR if unsuccessful;
@@ -297,16 +297,16 @@ NVT_STATUS DSC_InitializeCallback(DSC_CALLBACK callback);
 
 /*
  * @brief Calculate PPS parameters based on passed down Sink,
- *        GPU capability and modeset info
+ *        GPU capability and modeset info.
  *
- * @param[in]   pDscInfo       Includes Sink and GPU DSC capabilities
- * @param[in]   pModesetInfo   Modeset related information
- * @param[in]   pWARData       Data required for providing WAR for issues
+ * @param[in]   pDscInfo       Includes Sink and GPU DSC capabilities.
+ * @param[in]   pModesetInfo   Modeset related information.
+ * @param[in]   pWARData       Data required for providing WAR for issues.
  * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
- *                                                   transmission(After FEC/Downspread overhead consideration)
+ *                                                   transmission(After FEC/Downspread overhead consideration).
  * @param[out]  pps                 Calculated PPS parameter.
  *                                  The data can be send to SetDscPpsData* methods directly.
- * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
+ * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16.
  *
  * @returns NVT_STATUS_SUCCESS if successful;
  *          NVT_STATUS_ERR if unsuccessful;
