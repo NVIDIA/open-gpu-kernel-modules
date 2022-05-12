@@ -260,8 +260,8 @@
 #define RMCFG_FEATURE_MANUAL_TRIGGER_BA_DMA_MODE  0  // Support for manually actuated BA DMA mode data collection.
 #define RMCFG_FEATURE_RM_DRIVEN_BA_DMA_MODE       0  // Support for RM-driven BA DMA mode data collection.
 #define RMCFG_FEATURE_VBLANK_CALLBACK             1  // Vblank callback functionality within RM
-#define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY         0  // Tegra SOC NvDisplay Driver
-#define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY_MINIMAL  0  // Enable only those parts of display code which are needed for Tegra SOC NvDisplay Driver
+#define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY         0  // Tegra SOC NvDisplay Bomb
+#define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY_MINIMAL  0  // Enable only those parts of display code which are needed for Tegra SOC NvDisplay Bomb
 #define RMCFG_FEATURE_HEAD_REGIONAL_CRC           0  // Display Head Regional CRC support
 
 

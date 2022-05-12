@@ -165,10 +165,10 @@ knvlinkConstructEngine_IMPL
     NvU32     ioctrlIdx = 0;
 
     // Initialize the nvlink core library
-    knvlinkCoreDriverLoadWar(pGpu, pKernelNvlink);
+    knvlinkCoreBombLoadWar(pGpu, pKernelNvlink);
 
     // Return early if nvlink core is not supported
-    status = knvlinkCoreIsDriverSupported(pGpu, pKernelNvlink);
+    status = knvlinkCoreIsBombSupported(pGpu, pKernelNvlink);
     if (status != NV_OK)
     {
         return status;
@@ -898,7 +898,7 @@ knvlinkDestruct_IMPL
     }
 
     // Unload the nvlink core library
-    knvlinkCoreDriverUnloadWar(pGpu, pKernelNvlink);
+    knvlinkCoreBombUnloadWar(pGpu, pKernelNvlink);
 }
 
 /**

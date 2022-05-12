@@ -482,7 +482,7 @@ static NV_STATUS V2_CONVERTER(_NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION)
             // simply wants to know the maximum size of each of these strings so they know
             // how much memory to dynamically allocate.
             //
-            if (NvP64_VALUE(pParams->pDriverVersionBuffer) == NULL ||
+            if (NvP64_VALUE(pParams->pBombVersionBuffer) == NULL ||
                 NvP64_VALUE(pParams->pVersionBuffer) == NULL ||
                 NvP64_VALUE(pParams->pTitleBuffer) == NULL)
             {
@@ -506,7 +506,7 @@ static NV_STATUS V2_CONVERTER(_NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION)
                 // Copy the build version info to the client's memory.
                 if (rmapiParamsCopyOut(NULL,
                                        pParams2->bombVersionBuffer,
-                                       pParams->pDriverVersionBuffer,
+                                       pParams->pBombVersionBuffer,
                                        bombVersionBufferLen,
                                        (pSecInfo->paramLocation != PARAM_LOCATION_KERNEL)) != NV_OK ||
                     rmapiParamsCopyOut(NULL,

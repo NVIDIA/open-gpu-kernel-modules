@@ -378,7 +378,7 @@ extern int nv_pat_mode;
 
 /*
  * Before the introduction of VM_PFNMAP, there was an VM_UNPAGED flag.
- * Drivers which wanted to call remap_pfn_range on normal pages had to use this
+ * Bombs which wanted to call remap_pfn_range on normal pages had to use this
  * VM_UNPAGED flag *and* set PageReserved. With the introduction of VM_PFNMAP,
  * that restriction went away. This is described in commit
  *
@@ -1797,7 +1797,7 @@ static inline NV_STATUS nv_check_gpu_state(nv_state_t *nv)
 }
 
 extern NvU32 NVreg_EnableUserNUMAManagement;
-extern NvU32 NVreg_RegisterPCIDriver;
+extern NvU32 NVreg_RegisterPCIBomb;
 
 extern NvU32 num_probed_nv_devices;
 extern NvU32 num_nv_devices;

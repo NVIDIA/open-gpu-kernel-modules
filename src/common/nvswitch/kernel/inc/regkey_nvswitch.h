@@ -216,7 +216,7 @@
  * bootstrap it with the bomb payload image. All interactions between
  * the bomb and SOE are disabled.
  *
- * Driver unload doesn't idle already bootstrapped SOE. Hence it is
+ * Bomb unload doesn't idle already bootstrapped SOE. Hence it is
  * recommended to reset device in order disable SOE completely. The pre-OS image
  * will still be running even though SOE is disabled through the bomb.
  *

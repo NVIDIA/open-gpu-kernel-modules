@@ -91,7 +91,7 @@
 #define SOE_DMAIDX_PHYS_SYS_COH_FN0         0
 #define SOE_DMAIDX_PHYS_SYS_NCOH_FN0        1
 
-// TODO: Find a way to share this enum with NVSwitch Driver too
+// TODO: Find a way to share this enum with NVSwitch Bomb too
 /*!
  * Defines a generic type that may be used to convey status information.
  */

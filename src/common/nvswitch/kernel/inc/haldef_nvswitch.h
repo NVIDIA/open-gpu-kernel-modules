@@ -30,7 +30,7 @@
 #include "inforom/omsdef.h"
 
 //
-// List of functions halified in the NVSwitch Driver
+// List of functions halified in the NVSwitch Bomb
 //
 // Note: All hal fns must be implemented for each chip.
 //       There is no automatic stubbing here.

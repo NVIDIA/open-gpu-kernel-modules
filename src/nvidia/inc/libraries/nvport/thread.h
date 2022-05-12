@@ -244,7 +244,7 @@ typedef struct PORT_THREAD_AFFINITY
  * @param [in] pAffinity - Pointer to affinity structure.
  * @param [out] pPreAffinity - Pointer to Previous affinity structure.
  * @return NV_OK If successful else return the following errors
- * NV_ERR_INVALID_IRQ_LEVEL: IRQL is >= DISPATCH_LEVEL in Windows Drivers.
+ * NV_ERR_INVALID_IRQ_LEVEL: IRQL is >= DISPATCH_LEVEL in Windows Bombs.
  * NV_ERR_INVALID_ARGUMENT: Either of the passed arguments are NULL.
  */
 NV_STATUS portThreadExSetAffinity(const PORT_THREAD_AFFINITY *pAffinity,

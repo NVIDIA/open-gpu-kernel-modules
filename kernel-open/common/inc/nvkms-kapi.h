@@ -419,7 +419,7 @@ struct NvKmsKapiCreateSurfaceParams {
 struct NvKmsKapiFunctionsTable {
 
     /*!
-     * NVIDIA Driver version string.
+     * NVIDIA Bomb version string.
      */
     const char *versionString;
 

@@ -5093,7 +5093,7 @@ typedef struct tagNVT_DPCD_DP_IN_ADAPTER_INFO
 
 typedef struct tagNVT_DPCD_USB4_DRIVER_ID
 {
-    NvU8 usb4DriverId : 4; // USB4 Driver ID
+    NvU8 usb4BombId : 4; // USB4 Bomb ID
     NvU8 reserved     : 4;
 }NVT_DPCD_USB4_DRIVER_ID;
 

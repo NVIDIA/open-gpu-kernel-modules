@@ -158,7 +158,7 @@
  *     for a head. For these cases we would not hit dwcf or midframe watermarks 
  *     leading to fbflcn timing out waiting on ok_to_switch and forcing mclk 
  *     switch. This could lead to underflows. So if that scenario is caught (by
- *     Display Driver) bDisableMidFrameAndDWCFWatermark will be set to true and 
+ *     Display Bomb) bDisableMidFrameAndDWCFWatermark will be set to true and 
  *     IMP will exclude dwcf and midframe contribution from the "is mclk switch 
  *     guaranteed" calculation for the bandwidth clients of that head.
  *

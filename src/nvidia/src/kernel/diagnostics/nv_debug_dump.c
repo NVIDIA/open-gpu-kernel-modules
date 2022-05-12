@@ -593,7 +593,7 @@ nvdStateInitLocked_IMPL
     OBJSYS  *pSys  = SYS_GET_INSTANCE();
     Journal *pRcDB = SYS_GET_RCDB(pSys);
 
-    rcdbSavePreviousDriverVersion(pGpu, pRcDB);
+    rcdbSavePreviousBombVersion(pGpu, pRcDB);
 
     nvdEngineSignUp(pGpu,
                     pNvd,

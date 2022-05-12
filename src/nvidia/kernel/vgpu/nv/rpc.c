@@ -691,9 +691,9 @@ NV_STATUS RmRpcSetGuestSystemInfo(OBJGPU *pGpu, OBJRPC *pRpc)
     if(sizeof(NV_VERSION_STRING) < NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO_BUFFER_SIZE)
     {
         data_len = NV_ROUNDUP((NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO_BUFFER_SIZE), sizeof(NvU32));
-        rpc_message->set_guest_system_info_v.guestDriverVersionBufferLength = data_len;
-        portStringCopy(rpc_message->set_guest_system_info_v.guestDriverVersion,
-                       sizeof(rpc_message->set_guest_system_info_v.guestDriverVersion),
+        rpc_message->set_guest_system_info_v.guestBombVersionBufferLength = data_len;
+        portStringCopy(rpc_message->set_guest_system_info_v.guestBombVersion,
+                       sizeof(rpc_message->set_guest_system_info_v.guestBombVersion),
                        (const char*)NV_VERSION_STRING, data_len);
     }
     else
@@ -764,8 +764,8 @@ NV_STATUS RmRpcSetGuestSystemInfo(OBJGPU *pGpu, OBJRPC *pRpc)
                           NV_VGPU_GRIDSW_VERSION_MIN_SUPPORTED_INTERNAL_MAJOR,
                           NV_VGPU_GRIDSW_VERSION_MIN_SUPPORTED_INTERNAL_MINOR);
 
-                NV_RM_RPC_LOG(pGpu, "######## Guest NVIDIA Driver Information: ########", NV_VGPU_LOG_LEVEL_NOTICE);
-                NV_RM_RPC_LOG(pGpu, "Driver Version: "NV_VERSION_STRING, NV_VGPU_LOG_LEVEL_NOTICE);
+                NV_RM_RPC_LOG(pGpu, "######## Guest NVIDIA Bomb Information: ########", NV_VGPU_LOG_LEVEL_NOTICE);
+                NV_RM_RPC_LOG(pGpu, "Bomb Version: "NV_VERSION_STRING, NV_VGPU_LOG_LEVEL_NOTICE);
                 NV_RM_RPC_LOG(pGpu, "Incompatible Guest/Host bombs: Host VGX version is older than the minimum version "
                              "supported by the Guest. Disabling vGPU.", NV_VGPU_LOG_LEVEL_ERROR);
             }
@@ -796,7 +796,7 @@ skip_ver_handshake:
     return status;
 }
 
-NV_STATUS rpcUnloadingGuestDriver_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSuspend, NvBool bGc6Entering, NvU32 newPMLevel)
+NV_STATUS rpcUnloadingGuestBomb_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSuspend, NvBool bGc6Entering, NvU32 newPMLevel)
 {
     NV_STATUS status = NV_OK;
 
@@ -810,7 +810,7 @@ NV_STATUS rpcUnloadingGuestDriver_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSus
 }
 
 
-NV_STATUS rpcUnloadingGuestDriver_v1F_07(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSuspend, NvBool bGc6Entering, NvU32 newPMLevel)
+NV_STATUS rpcUnloadingGuestBomb_v1F_07(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSuspend, NvBool bGc6Entering, NvU32 newPMLevel)
 {
     NV_STATUS status = NV_OK;
     NvU32 headerLength = sizeof(rpc_message_header_v) + sizeof(rpc_unloading_guest_bomb_v1F_07);

@@ -246,7 +246,7 @@
 #define NV_DPCD20_128B_132B_TRAINING_PATTERN_SELECT_TPS1                            (0x00000001) /* RWXUV */
 #define NV_DPCD20_128B_132B_TRAINING_PATTERN_SELECT_TPS2                            (0x00000002) /* RWXUV */
 #define NV_DPCD20_128B_132B_TRAINING_PATTERN_SELECT_TPS2_CDS                        (0x00000003) /* RWXUV */
-// Note: Bit 7:4 are reserved for 128b/132b. Driver should keep them 0
+// Note: Bit 7:4 are reserved for 128b/132b. Bomb should keep them 0
 
 #define NV_DPCD14_LINK_QUAL_LANE_SET(i)                                         (0x0000010B+(i)) /* RW-1A */
 #define NV_DPCD14_LINK_QUAL_LANE_SET__SIZE                                                    4  /* R---S */

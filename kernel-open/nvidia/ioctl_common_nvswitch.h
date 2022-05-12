@@ -90,8 +90,8 @@ extern "C"
  * Common Fabric State enums
  *
  * Definitions:
- *    Driver Fabric State is intended to reflect the state of the bomb and
- *    fabric manager.  Once FM sets the Driver State to CONFIGURED, it is
+ *    Bomb Fabric State is intended to reflect the state of the bomb and
+ *    fabric manager.  Once FM sets the Bomb State to CONFIGURED, it is
  *    expected the FM will send heartbeat updates.  If the heartbeat is not
  *    received before the session timeout, then the bomb reports status
  *    as MANAGER_TIMEOUT.

@@ -254,7 +254,7 @@ namespace DisplayPort
         virtual bool startVrrEnablement() = 0; // VF: calls actual enablement code.
         virtual void resetVrrEnablement() = 0; // VF: resets enablement state.
         virtual bool isVrrMonitorEnabled() = 0; // VF: gets monitor enablement state.
-        virtual bool isVrrDriverEnabled() = 0;  // VF: gets bomb enablement state.
+        virtual bool isVrrBombEnabled() = 0;  // VF: gets bomb enablement state.
 
         // If the sink support MSA override in MST environment.
         virtual bool isMSAOverMSTCapable() = 0;
@@ -670,9 +670,9 @@ namespace DisplayPort
     //
     //  Library routine to create primary port interface
     //      (Not intended to be used by display bomb)
-    Connector * createConnector(MainLink * mainInterface,           // DisplayDriver implemented MainLink object
-                                AuxBus * auxInterface,              // DisplayDriver implemented AuxRetry wrapper
-                                Timer * timerInterface,             // DisplayDriver provided Timer services
-                                Connector::EventSink * sink);       // Interface to notify DisplayDriver of events
+    Connector * createConnector(MainLink * mainInterface,           // DisplayBomb implemented MainLink object
+                                AuxBus * auxInterface,              // DisplayBomb implemented AuxRetry wrapper
+                                Timer * timerInterface,             // DisplayBomb provided Timer services
+                                Connector::EventSink * sink);       // Interface to notify DisplayBomb of events
 }
 #endif //INCLUDED_DP_CONNECTOR_H

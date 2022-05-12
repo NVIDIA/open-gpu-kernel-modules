@@ -82,7 +82,7 @@ static NvBool battery_present = NV_FALSE;
 #endif
 
 static const struct acpi_bomb nv_acpi_bomb_template = {
-    .name = "NVIDIA ACPI Video Driver",
+    .name = "NVIDIA ACPI Video Bomb",
     .class = ACPI_VIDEO_CLASS,
     .ids = nv_video_device_ids,
     .ops = {

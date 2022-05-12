@@ -181,10 +181,10 @@ struct OBJRCDB {
     RING_BUFFER_LOG_COLLECTION RingBufferColl;
     NVD_STATE nvDumpState;
     rcErrorCounterEntry rcErrorCounterArray[10];
-    NvBool bPrevDriverCodeExecuted;
-    char *previousDriverVersion;
-    char *previousDriverBranch;
-    NvU32 prevDriverChangelist;
+    NvBool bPrevBombCodeExecuted;
+    char *previousBombVersion;
+    char *previousBombBranch;
+    NvU32 prevBombChangelist;
     NvU32 bombLoadCount;
     NvU16 RcErrRptNextIdx;
     NvBool RcErrRptRecordsDropped;
@@ -228,14 +228,14 @@ NV_STATUS rcdbConstruct_IMPL(struct OBJRCDB *arg_pRcdb);
 #define __nvoc_rcdbConstruct(arg_pRcdb) rcdbConstruct_IMPL(arg_pRcdb)
 void rcdbDestruct_IMPL(struct OBJRCDB *pRcdb);
 #define __nvoc_rcdbDestruct(pRcdb) rcdbDestruct_IMPL(pRcdb)
-NV_STATUS rcdbSavePreviousDriverVersion_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb);
+NV_STATUS rcdbSavePreviousBombVersion_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb);
 #ifdef __nvoc_journal_h_disabled
-static inline NV_STATUS rcdbSavePreviousDriverVersion(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb) {
+static inline NV_STATUS rcdbSavePreviousBombVersion(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_journal_h_disabled
-#define rcdbSavePreviousDriverVersion(pGpu, pRcdb) rcdbSavePreviousDriverVersion_IMPL(pGpu, pRcdb)
+#define rcdbSavePreviousBombVersion(pGpu, pRcdb) rcdbSavePreviousBombVersion_IMPL(pGpu, pRcdb)
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbClearErrorHistory_IMPL(struct OBJRCDB *pRcdb);

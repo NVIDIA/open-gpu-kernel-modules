@@ -769,7 +769,7 @@ NV_STATUS rpcSetPageDirectory_STUB(
 }
 
 // RPC:hal:UNLOADING_GUEST_DRIVER  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107
-NV_STATUS rpcUnloadingGuestDriver_STUB(
+NV_STATUS rpcUnloadingGuestBomb_STUB(
     POBJGPU       pGpu,
     POBJRPC       pRpc,
     NvBool        arg3,

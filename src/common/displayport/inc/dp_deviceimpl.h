@@ -411,7 +411,7 @@ namespace DisplayPort
         bool startVrrEnablement(void);
         void resetVrrEnablement(void);
         bool isVrrMonitorEnabled(void);
-        bool isVrrDriverEnabled(void);
+        bool isVrrBombEnabled(void);
 
         // Panel replay related functions
         bool isPanelReplaySupported(void);

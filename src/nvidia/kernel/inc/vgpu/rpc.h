@@ -551,7 +551,7 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
         OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                                         \
         NV_ASSERT(pRpc != NULL);                                                                  \
         if ((status == NV_OK) && (pRpc != NULL))                                                  \
-            status = rpcUnloadingGuestDriver_HAL(pGpu, pRpc, bSuspend, bGc6Entering, newPMLevel); \
+            status = rpcUnloadingGuestBomb_HAL(pGpu, pRpc, bSuspend, bGc6Entering, newPMLevel); \
         else if (pRpc == NULL)                                                                    \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                                               \
     }                                                                                             \

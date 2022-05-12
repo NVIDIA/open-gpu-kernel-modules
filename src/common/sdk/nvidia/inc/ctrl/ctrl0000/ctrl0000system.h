@@ -89,7 +89,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
  *   sizeOfStrings
  *       This field returns the size in bytes of the pVersionBuffer and
  *       pTitleBuffer strings.
- *   pDriverVersionBuffer
+ *   pBombVersionBuffer
  *       This field returns the version (NV_VERSION_STRING).
  *   pVersionBuffer
  *       This field returns the version (NV_BUILD_BRANCH_VERSION).
@@ -112,7 +112,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
 
 typedef struct NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS {
     NvU32 sizeOfStrings;
-    NV_DECLARE_ALIGNED(NvP64 pDriverVersionBuffer, 8);
+    NV_DECLARE_ALIGNED(NvP64 pBombVersionBuffer, 8);
     NV_DECLARE_ALIGNED(NvP64 pVersionBuffer, 8);
     NV_DECLARE_ALIGNED(NvP64 pTitleBuffer, 8);
     NvU32 changelistNumber;
@@ -1025,7 +1025,7 @@ typedef struct NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS {
  *
  * This command returns the current host bomb, host OS and 
  * plugin information. It is only valid when VGX is setup.
- *   szHostDriverVersionBuffer
+ *   szHostBombVersionBuffer
  *       This field returns the host bomb version (NV_VERSION_STRING).
  *   szHostVersionBuffer
  *       This field returns the host bomb version (NV_BUILD_BRANCH_VERSION).
@@ -1051,7 +1051,7 @@ typedef struct NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS {
 #define NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS_MESSAGE_ID (0x33U)
 
 typedef struct NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS {
-    char  szHostDriverVersionBuffer[NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO_BUFFER_SIZE];
+    char  szHostBombVersionBuffer[NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO_BUFFER_SIZE];
     char  szHostVersionBuffer[NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO_BUFFER_SIZE];
     char  szHostTitleBuffer[NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO_BUFFER_SIZE];
     char  szPluginTitleBuffer[NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO_BUFFER_SIZE];

@@ -45,7 +45,7 @@ bool VrrEnablement::start()
         {
             return false;
         }
-        rc = vrrEnableDriver();
+        rc = vrrEnableBomb();
         if(rc != true)
         {
             return false;
@@ -135,7 +135,7 @@ bool VrrEnablement::vrrEnableMonitor()
     return this->bMonitorEnabled;
 }
 
-bool VrrEnablement::vrrEnableDriver()
+bool VrrEnablement::vrrEnableBomb()
 {
     NvU32 enableResult;
 
@@ -234,7 +234,7 @@ bool VrrEnablement::isMonitorEnabled(void)
     return (this->bMonitorEnabled);
 }
 
-bool VrrEnablement::isDriverEnabled(void)
+bool VrrEnablement::isBombEnabled(void)
 {
     NvU32 enableResult;
     MainLink *main = this->parent->connector->main;

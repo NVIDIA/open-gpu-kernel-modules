@@ -1215,7 +1215,7 @@ typedef struct NV2080_CTRL_FB_OFFLINE_PAGES_PARAMS {
  *       NV2080_CTRL_FB_GET_OFFLINED_PAGES_RETIREMENT_PENDING_SBE:
  *         Indicates whether pages are pending retirement due to SBE.
  *       NV2080_CTRL_FB_GET_OFFLINED_PAGES_RETIREMENT_PENDING_DBE:
- *         Indicates whether pages are pending retirement due to DBE. Driver
+ *         Indicates whether pages are pending retirement due to DBE. Bomb
  *         reload needed to retire bad memory pages and allow compute app runs.
  *
  * Possible status values returned are:

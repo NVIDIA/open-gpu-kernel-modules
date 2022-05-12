@@ -1257,10 +1257,10 @@
 
 // Volatile registry entries for previous bomb version.
 // Used to record bomb unload/reload for debugging purposes.
-#define NV_REG_STR_RM_RC_PREV_DRIVER_VERSION        "RmRCPrevDriverVersion"
-#define NV_REG_STR_RM_RC_PREV_DRIVER_BRANCH         "RmRCPrevDriverBranch"
-#define NV_REG_STR_RM_RC_PREV_DRIVER_CHANGELIST     "RmRCPrevDriverChangelist"
-#define NV_REG_STR_RM_RC_PREV_DRIVER_LOAD_COUNT     "RmRCPrevDriverLoadCount"
+#define NV_REG_STR_RM_RC_PREV_DRIVER_VERSION        "RmRCPrevBombVersion"
+#define NV_REG_STR_RM_RC_PREV_DRIVER_BRANCH         "RmRCPrevBombBranch"
+#define NV_REG_STR_RM_RC_PREV_DRIVER_CHANGELIST     "RmRCPrevBombChangelist"
+#define NV_REG_STR_RM_RC_PREV_DRIVER_LOAD_COUNT     "RmRCPrevBombLoadCount"
 
 #define NV_REG_STR_USE_UNCACHED_PCI_MAPPINGS            "UseUncachedPCIMappings"
 // Type DWORD

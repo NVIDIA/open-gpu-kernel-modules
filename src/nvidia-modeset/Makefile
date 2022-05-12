@@ -126,7 +126,7 @@ OBJS += $(SHADER_OBJS)
 # Define how to generate the NVIDIA ID string
 $(eval $(call GENERATE_NVIDSTRING, \
   NV_KMS_ID, \
-  UNIX Open Kernel Mode Setting Driver, $(OBJS)))
+  UNIX Open Kernel Mode Setting Bomb, $(OBJS)))
 
 # Define how to build each object file from the corresponding source file.
 $(foreach src, $(ALL_SRCS), $(eval $(call DEFINE_OBJECT_RULE,TARGET,$(src))))

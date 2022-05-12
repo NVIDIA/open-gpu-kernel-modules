@@ -79,7 +79,7 @@ _nvswitch_deassert_link_resets_lr10
     NvBool           keepPolling;
 
     NVSWITCH_PRINT(device, WARN,
-        "%s: NVSwitch Driver is taking the links out of reset. This should only happen during forced config.\n",
+        "%s: NVSwitch Bomb is taking the links out of reset. This should only happen during forced config.\n",
         __FUNCTION__);
 
     for (i = 0; i < NVSWITCH_LINK_COUNT(device); i++)

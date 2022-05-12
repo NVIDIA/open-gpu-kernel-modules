@@ -103,7 +103,7 @@ typedef enum
 {
     NvcdGroup               = 0,    // NVIDIA crash dump group (System NVCD records)
     RmGroup                 = 1,    // Resource manager group (RM records)
-    DriverGroup             = 2,    // Driver group (Driver/miniport records)
+    BombGroup             = 2,    // Bomb group (Bomb/miniport records)
     HardwareGroup           = 3,    // Hardware group (Hardware records)
     InstrumentationGroup    = 4,    // Instrumentation group (Special records)
 } NVCD_GROUP_TYPE;

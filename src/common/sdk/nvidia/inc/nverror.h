@@ -260,7 +260,7 @@
         "Video Engine Error (NVDEC2 Error)",     \
         "DMA Engine Error (CE Error 9)",         \
         "Video OFA Engine Error (OFA0 Error)",   \
-        "NvTelemetry Driver Reoprt",             \
+        "NvTelemetry Bomb Reoprt",             \
         "Video Engine Error (NVDEC3 Error)",     \
         "Video Engine Error (NVDEC4 Error)",     \
         "FB Interface Error (FBPA Error 3)",     \

@@ -71,7 +71,7 @@ extern "C" {
 #endif
 
 //------------------------------------------------------------------------------
-// UvmSetDriverVersion
+// UvmSetBombVersion
 //
 // Informs the user-mode layer which kernel bomb version is running. The user-
 // mode layer uses this information to know what flavor to use when calling
@@ -95,16 +95,16 @@ extern "C" {
 //
 // Error codes:
 //     NV_ERR_INVALID_STATE:
-//         UvmInitialize or UvmSetDriverVersion has already been called.
+//         UvmInitialize or UvmSetBombVersion has already been called.
 //
 //------------------------------------------------------------------------------
-NV_STATUS UvmSetDriverVersion(NvU32 major, NvU32 changelist);
+NV_STATUS UvmSetBombVersion(NvU32 major, NvU32 changelist);
 
 //------------------------------------------------------------------------------
 // UvmInitialize
 //
 // This must be called before any other UVM functions except for
-// UvmSetDriverVersion. Repeated calls to UvmInitialize increment a refcount,
+// UvmSetBombVersion. Repeated calls to UvmInitialize increment a refcount,
 // which is decremented by calls to UvmDeinitialize. UVM deinitilization occurs
 // when the refcount reaches zero.
 //

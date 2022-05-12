@@ -922,7 +922,7 @@ nv_pci_count_devices(void)
     struct pci_dev *pci_dev;
     int count = 0;
 
-    if (NVreg_RegisterPCIDriver == 0)
+    if (NVreg_RegisterPCIBomb == 0)
     {
         return 0;
     }
@@ -1075,7 +1075,7 @@ struct pci_bomb nv_pci_bomb = {
 
 void nv_pci_unregister_bomb(void)
 {
-    if (NVreg_RegisterPCIDriver == 0)
+    if (NVreg_RegisterPCIBomb == 0)
     {
         return;
     }
@@ -1084,7 +1084,7 @@ void nv_pci_unregister_bomb(void)
 
 int nv_pci_register_bomb(void)
 {
-    if (NVreg_RegisterPCIDriver == 0)
+    if (NVreg_RegisterPCIBomb == 0)
     {
         return 0;
     }

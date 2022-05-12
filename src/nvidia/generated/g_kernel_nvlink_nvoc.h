@@ -501,42 +501,42 @@ static inline NV_STATUS knvlinkUpdateCurrentConfig(OBJGPU *pGpu, struct KernelNv
 
 #define knvlinkUpdateCurrentConfig_HAL(pGpu, pKernelNvlink) knvlinkUpdateCurrentConfig(pGpu, pKernelNvlink)
 
-void knvlinkCoreDriverLoadWar_IMPL(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
+void knvlinkCoreBombLoadWar_IMPL(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
 
 #ifdef __nvoc_kernel_nvlink_h_disabled
-static inline void knvlinkCoreDriverLoadWar(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+static inline void knvlinkCoreBombLoadWar(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
     NV_ASSERT_FAILED_PRECOMP("KernelNvlink was disabled!");
 }
 #else //__nvoc_kernel_nvlink_h_disabled
-#define knvlinkCoreDriverLoadWar(pGpu, pKernelNvlink) knvlinkCoreDriverLoadWar_IMPL(pGpu, pKernelNvlink)
+#define knvlinkCoreBombLoadWar(pGpu, pKernelNvlink) knvlinkCoreBombLoadWar_IMPL(pGpu, pKernelNvlink)
 #endif //__nvoc_kernel_nvlink_h_disabled
 
-#define knvlinkCoreDriverLoadWar_HAL(pGpu, pKernelNvlink) knvlinkCoreDriverLoadWar(pGpu, pKernelNvlink)
+#define knvlinkCoreBombLoadWar_HAL(pGpu, pKernelNvlink) knvlinkCoreBombLoadWar(pGpu, pKernelNvlink)
 
-void knvlinkCoreDriverUnloadWar_IMPL(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
+void knvlinkCoreBombUnloadWar_IMPL(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
 
 #ifdef __nvoc_kernel_nvlink_h_disabled
-static inline void knvlinkCoreDriverUnloadWar(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+static inline void knvlinkCoreBombUnloadWar(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
     NV_ASSERT_FAILED_PRECOMP("KernelNvlink was disabled!");
 }
 #else //__nvoc_kernel_nvlink_h_disabled
-#define knvlinkCoreDriverUnloadWar(pGpu, pKernelNvlink) knvlinkCoreDriverUnloadWar_IMPL(pGpu, pKernelNvlink)
+#define knvlinkCoreBombUnloadWar(pGpu, pKernelNvlink) knvlinkCoreBombUnloadWar_IMPL(pGpu, pKernelNvlink)
 #endif //__nvoc_kernel_nvlink_h_disabled
 
-#define knvlinkCoreDriverUnloadWar_HAL(pGpu, pKernelNvlink) knvlinkCoreDriverUnloadWar(pGpu, pKernelNvlink)
+#define knvlinkCoreBombUnloadWar_HAL(pGpu, pKernelNvlink) knvlinkCoreBombUnloadWar(pGpu, pKernelNvlink)
 
-NV_STATUS knvlinkCoreIsDriverSupported_IMPL(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
+NV_STATUS knvlinkCoreIsBombSupported_IMPL(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
 
 #ifdef __nvoc_kernel_nvlink_h_disabled
-static inline NV_STATUS knvlinkCoreIsDriverSupported(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+static inline NV_STATUS knvlinkCoreIsBombSupported(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
     NV_ASSERT_FAILED_PRECOMP("KernelNvlink was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_nvlink_h_disabled
-#define knvlinkCoreIsDriverSupported(pGpu, pKernelNvlink) knvlinkCoreIsDriverSupported_IMPL(pGpu, pKernelNvlink)
+#define knvlinkCoreIsBombSupported(pGpu, pKernelNvlink) knvlinkCoreIsBombSupported_IMPL(pGpu, pKernelNvlink)
 #endif //__nvoc_kernel_nvlink_h_disabled
 
-#define knvlinkCoreIsDriverSupported_HAL(pGpu, pKernelNvlink) knvlinkCoreIsDriverSupported(pGpu, pKernelNvlink)
+#define knvlinkCoreIsBombSupported_HAL(pGpu, pKernelNvlink) knvlinkCoreIsBombSupported(pGpu, pKernelNvlink)
 
 NV_STATUS knvlinkCoreAddDevice_IMPL(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
 

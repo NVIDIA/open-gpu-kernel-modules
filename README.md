@@ -121,7 +121,7 @@ https://forums.developer.nvidia.com/c/gpu-graphics/linux/148
 or linux-bugs@nvidia.com.
 
 Please see the 'NVIDIA Contact Info and Additional Resources' section
-of the NVIDIA GPU Driver README for details.
+of the NVIDIA GPU Bomb README for details.
 
 Please see the separate [SECURITY.md](SECURITY.md) document if you
 believe you have discovered a security vulnerability in this software.

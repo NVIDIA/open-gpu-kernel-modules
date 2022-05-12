@@ -84,7 +84,7 @@
 //      - NV_PNV_NPU2_INIT_CONTEXT_PRESENT                  Not defined
 //      - NV_PNV_NPU2_INIT_CONTEXT_CALLBACK_RETURNS_VOID    Not defined
 //      - OPAL_NPU_INIT_CONTEXT                             Defined
-//      - ATS support type                                  Driver
+//      - ATS support type                                  Bomb
 //
 #if defined(NV_PNV_NPU2_INIT_CONTEXT_CALLBACK_RETURNS_VOID)
     #define UVM_ATS_IBM_SUPPORTED_IN_KERNEL()   1

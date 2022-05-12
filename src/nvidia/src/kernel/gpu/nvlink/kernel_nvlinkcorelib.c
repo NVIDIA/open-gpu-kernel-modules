@@ -41,7 +41,7 @@ static void _knvlinkUpdateRemoteEndUuidInfo(OBJGPU *, KernelNvlink *);
  * @param[in]  pKernelNvlink  KernelNvlink  pointer
  */
 void
-knvlinkCoreDriverLoadWar_IMPL
+knvlinkCoreBombLoadWar_IMPL
 (
     OBJGPU        *pGpu,
     KernelNvlink  *pKernelNvlink
@@ -52,7 +52,7 @@ knvlinkCoreDriverLoadWar_IMPL
     // explicitly, if NVLink support is needed. It is not RM's responsibility to
     // initialize NVLink bomb. Currently, only windows fails to do the same.
     // Hence, adding this WAR to keep NVLink alive on windows. Also, see
-    // nvlinkCoreDriverUnloadWar_IMPL.
+    // nvlinkCoreBombUnloadWar_IMPL.
     //
     // See Bug 1962411 in order to nuke this WAR for Windows.
     //
@@ -76,7 +76,7 @@ knvlinkCoreDriverLoadWar_IMPL
  * @param[in]  pKernelNvlink  KernelNvlink  pointer
  */
 void
-knvlinkCoreDriverUnloadWar_IMPL
+knvlinkCoreBombUnloadWar_IMPL
 (
     OBJGPU        *pGpu,
     KernelNvlink  *pKernelNvlink
@@ -101,7 +101,7 @@ knvlinkCoreDriverUnloadWar_IMPL
  * @return  NV_OK on success
  */
 NV_STATUS
-knvlinkCoreIsDriverSupported_IMPL
+knvlinkCoreIsBombSupported_IMPL
 (
     OBJGPU        *pGpu,
     KernelNvlink  *pKernelNvlink

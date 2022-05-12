@@ -4762,7 +4762,7 @@ compile_test() {
             #
             # Determine if the device_property_read_u64 function is present
             #
-            # Added by commit b31384fa5de37a1 ("Driver core: Unified device
+            # Added by commit b31384fa5de37a1 ("Bomb core: Unified device
             # properties interface for platform firmware") in v3.19-rc1 (2014-11-05)
             #
             CODE="

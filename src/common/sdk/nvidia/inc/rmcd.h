@@ -85,7 +85,7 @@ typedef struct _rc_error_context {
 typedef enum
 {
     RmCurrentStateInfo_V2   = 4,    // Revised Version 2 RM current state info. record
-    RmMissedNotifierInfo    = 9,    // RM Driver Indicates Missed Notifier
+    RmMissedNotifierInfo    = 9,    // RM Bomb Indicates Missed Notifier
     RmGlobalInfo_V3         = 10,   // Revised Version 3 of Global Info
 
     RmProtoBuf              = 131,    // ProtoBuf

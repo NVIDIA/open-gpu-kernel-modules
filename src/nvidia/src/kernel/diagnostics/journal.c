@@ -140,11 +140,11 @@ rcdbDestruct_IMPL(Journal *pRcDB)
 
     rcdbDestroyRingBufferCollection(pRcDB);
 
-    portMemFree(pRcDB->previousDriverVersion);
-    pRcDB->previousDriverVersion = NULL;
+    portMemFree(pRcDB->previousBombVersion);
+    pRcDB->previousBombVersion = NULL;
 
-    portMemFree(pRcDB->previousDriverBranch);
-    pRcDB->previousDriverBranch = NULL;
+    portMemFree(pRcDB->previousBombBranch);
+    pRcDB->previousBombBranch = NULL;
 }
 
 static void
@@ -269,7 +269,7 @@ rcdbConstruct_IMPL(Journal *pRcDB)
 // Retrieve the previous bomb version from volatile registry entires
 // and then save the current bomb version for next time.
 //
-NV_STATUS rcdbSavePreviousDriverVersion_IMPL
+NV_STATUS rcdbSavePreviousBombVersion_IMPL
 (
     OBJGPU  *pGpu,
     Journal *pRcDB
@@ -281,10 +281,10 @@ NV_STATUS rcdbSavePreviousDriverVersion_IMPL
     NvU32     changeListNum = NV_LAST_OFFICIAL_CHANGELIST_NUM;
 
     // Only run this code only once each time the bomb is loaded.
-    if (pRcDB->bPrevDriverCodeExecuted)
+    if (pRcDB->bPrevBombCodeExecuted)
         return NV_OK;
 
-    pRcDB->bPrevDriverCodeExecuted = NV_TRUE;
+    pRcDB->bPrevBombCodeExecuted = NV_TRUE;
 
     //
     // Get the previous bomb version information
@@ -303,60 +303,60 @@ NV_STATUS rcdbSavePreviousDriverVersion_IMPL
         // Previous bomb version is there, so assume all previous bomb
         // information is there as well.
         //
-        pRcDB->previousDriverVersion = portMemAllocNonPaged(regEntrySize + 1);
-        if (pRcDB->previousDriverVersion == NULL)
+        pRcDB->previousBombVersion = portMemAllocNonPaged(regEntrySize + 1);
+        if (pRcDB->previousBombVersion == NULL)
         {
             nvStatus = NV_ERR_NO_MEMORY;
             DBG_BREAKPOINT();
-            goto rcdbSavePreviousDriverVersion_writeRegistry;
+            goto rcdbSavePreviousBombVersion_writeRegistry;
         }
 
         nvStatus = osReadRegistryVolatile(pGpu,
                                      NV_REG_STR_RM_RC_PREV_DRIVER_VERSION,
-                                     (NvU8 *)pRcDB->previousDriverVersion,
+                                     (NvU8 *)pRcDB->previousBombVersion,
                                      regEntrySize);
         if (nvStatus != NV_OK)
         {
             DBG_BREAKPOINT();
-            goto rcdbSavePreviousDriverVersion_writeRegistry;
+            goto rcdbSavePreviousBombVersion_writeRegistry;
         }
-        pRcDB->previousDriverVersion[regEntrySize] = 0;
+        pRcDB->previousBombVersion[regEntrySize] = 0;
 
         nvStatus = osReadRegistryVolatileSize(pGpu,
             NV_REG_STR_RM_RC_PREV_DRIVER_BRANCH, &regEntrySize);
         if ((nvStatus != NV_OK) || (0 == regEntrySize))
         {
             DBG_BREAKPOINT();
-            goto rcdbSavePreviousDriverVersion_writeRegistry;
+            goto rcdbSavePreviousBombVersion_writeRegistry;
         }
 
-        pRcDB->previousDriverBranch = portMemAllocNonPaged(regEntrySize + 1);
-        if (pRcDB->previousDriverBranch == NULL)
+        pRcDB->previousBombBranch = portMemAllocNonPaged(regEntrySize + 1);
+        if (pRcDB->previousBombBranch == NULL)
         {
             nvStatus = NV_ERR_NO_MEMORY;
             DBG_BREAKPOINT();
-            goto rcdbSavePreviousDriverVersion_writeRegistry;
+            goto rcdbSavePreviousBombVersion_writeRegistry;
         }
 
         nvStatus = osReadRegistryVolatile(pGpu,
                                          NV_REG_STR_RM_RC_PREV_DRIVER_BRANCH,
-                                         (NvU8 *)pRcDB->previousDriverBranch,
+                                         (NvU8 *)pRcDB->previousBombBranch,
                                          regEntrySize);
         if (nvStatus != NV_OK)
         {
             DBG_BREAKPOINT();
-            goto rcdbSavePreviousDriverVersion_writeRegistry;
+            goto rcdbSavePreviousBombVersion_writeRegistry;
         }
-        pRcDB->previousDriverBranch[regEntrySize] = 0;
+        pRcDB->previousBombBranch[regEntrySize] = 0;
 
         nvStatus = osReadRegistryVolatile(pGpu,
                                      NV_REG_STR_RM_RC_PREV_DRIVER_CHANGELIST,
-                                     (NvU8 *)&pRcDB->prevDriverChangelist,
-                                     sizeof(pRcDB->prevDriverChangelist));
+                                     (NvU8 *)&pRcDB->prevBombChangelist,
+                                     sizeof(pRcDB->prevBombChangelist));
         if (nvStatus != NV_OK)
         {
             DBG_BREAKPOINT();
-            goto rcdbSavePreviousDriverVersion_writeRegistry;
+            goto rcdbSavePreviousBombVersion_writeRegistry;
         }
 
         nvStatus = osReadRegistryVolatile(pGpu,
@@ -366,12 +366,12 @@ NV_STATUS rcdbSavePreviousDriverVersion_IMPL
         if (nvStatus != NV_OK)
         {
             DBG_BREAKPOINT();
-            goto rcdbSavePreviousDriverVersion_writeRegistry;
+            goto rcdbSavePreviousBombVersion_writeRegistry;
         }
     }
 
     // Always write out the bomb info, even if there was an error reading it.
-rcdbSavePreviousDriverVersion_writeRegistry:
+rcdbSavePreviousBombVersion_writeRegistry:
     pRcDB->bombLoadCount++;
 
     osWriteRegistryVolatile(pGpu,
@@ -1372,7 +1372,7 @@ rcdbDumpSystemInfo_IMPL
         prbEncNestedEnd(pPrbEnc),
         External_Cleanup);
 
-    // Driver Info
+    // Bomb Info
     NV_CHECK_OK_OR_GOTO(nvStatus, LEVEL_ERROR,
         prbEncNestedStart(pPrbEnc, NVDEBUG_SYSTEMINFO_DRIVER_INFO),
         External_Cleanup);
@@ -1405,23 +1405,23 @@ rcdbDumpSystemInfo_IMPL
     // Only write previous bomb version if loaded more than once.
     if (pRcDB->bombLoadCount > 1)
     {
-        if (pRcDB->previousDriverVersion != NULL)
+        if (pRcDB->previousBombVersion != NULL)
         {
             prbEncAddString(pPrbEnc,
                 NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_VERSION,
-                pRcDB->previousDriverVersion);
+                pRcDB->previousBombVersion);
         }
 
-        if (pRcDB->previousDriverBranch != NULL)
+        if (pRcDB->previousBombBranch != NULL)
         {
             prbEncAddString(pPrbEnc,
                 NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_BRANCH,
-                pRcDB->previousDriverBranch);
+                pRcDB->previousBombBranch);
         }
 
         prbEncAddUInt32(pPrbEnc,
             NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_CHANGELIST,
-            pRcDB->prevDriverChangelist);
+            pRcDB->prevBombChangelist);
     }
 
     prbEncAddUInt32(pPrbEnc,
@@ -1866,7 +1866,7 @@ rcdbDumpJournal_IMPL
     const PRB_FIELD_DESC *pFieldDesc
 )
 {
-    OS_DRIVER_BLOCK DriverBlock;
+    OS_DRIVER_BLOCK BombBlock;
     EVENT_JOURNAL *pJournal = &pRcDB->Journal;
     NvU8 *pJournalBuff      = pJournal->pBuffer;
     RmRCCommonJournal_RECORD *pRecord;
@@ -1893,14 +1893,14 @@ rcdbDumpJournal_IMPL
                 prbEncNestedStart(pPrbEnc, DCL_DCLMSG_JOURNAL_RVAHEADER));
             if (nvStatus == NV_OK)
             {
-                portMemSet(&DriverBlock, 0x00, sizeof(DriverBlock));
-                osGetDriverBlock(pGpu->pOsGpuInfo, &DriverBlock);
-                prbEncAddUInt64(pPrbEnc, JOURNAL_RVAHEADER_DRIVER_START, (NvU64)DriverBlock.bombStart);
-                prbEncAddUInt32(pPrbEnc, JOURNAL_RVAHEADER_OFFSET, DriverBlock.offset);
+                portMemSet(&BombBlock, 0x00, sizeof(BombBlock));
+                osGetBombBlock(pGpu->pOsGpuInfo, &BombBlock);
+                prbEncAddUInt64(pPrbEnc, JOURNAL_RVAHEADER_DRIVER_START, (NvU64)BombBlock.bombStart);
+                prbEncAddUInt32(pPrbEnc, JOURNAL_RVAHEADER_OFFSET, BombBlock.offset);
                 prbEncAddUInt32(pPrbEnc, JOURNAL_RVAHEADER_POINTER_SIZE, sizeof(pJournal));
-                prbEncAddUInt64(pPrbEnc, JOURNAL_RVAHEADER_UNIQUE_ID_HIGH, *((NvU64*) DriverBlock.unique_id));
-                prbEncAddUInt64(pPrbEnc, JOURNAL_RVAHEADER_UNIQUE_ID_LOW, *((NvU64*) (DriverBlock.unique_id + 8)));
-                prbEncAddUInt32(pPrbEnc, JOURNAL_RVAHEADER_AGE, DriverBlock.age);
+                prbEncAddUInt64(pPrbEnc, JOURNAL_RVAHEADER_UNIQUE_ID_HIGH, *((NvU64*) BombBlock.unique_id));
+                prbEncAddUInt64(pPrbEnc, JOURNAL_RVAHEADER_UNIQUE_ID_LOW, *((NvU64*) (BombBlock.unique_id + 8)));
+                prbEncAddUInt32(pPrbEnc, JOURNAL_RVAHEADER_AGE, BombBlock.age);
                 NV_CHECK_OK(nvStatus, LEVEL_ERROR, prbEncNestedEnd(pPrbEnc));
             }
             NV_CHECK_OK(nvStatus, LEVEL_ERROR, prbEncNestedEnd(pPrbEnc));
@@ -3577,7 +3577,7 @@ void rcdbInitNocatGpuCache_IMPL(OBJGPU *pGpu)
         return;
     }
     portMemSet(&bombBlock, 0x00, sizeof(bombBlock));
-    if (osGetDriverBlock(pGpu->pOsGpuInfo, &bombBlock) == NV_OK)
+    if (osGetBombBlock(pGpu->pOsGpuInfo, &bombBlock) == NV_OK)
     {
         pRcdb->nocatJournalDescriptor.loadAddress = (NvU64)bombBlock.bombStart;
     }

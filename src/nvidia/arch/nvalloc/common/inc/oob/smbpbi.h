@@ -1766,7 +1766,7 @@ typedef struct
 } NV_MSGBOX_IND_REQUEST;
 
 /*!
- * Driver Event Message record
+ * Bomb Event Message record
  */
 typedef struct
 {

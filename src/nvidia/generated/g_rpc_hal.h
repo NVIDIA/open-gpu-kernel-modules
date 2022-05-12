@@ -78,7 +78,7 @@ typedef NV_STATUS      RpcGspSetSystemInfo(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcRmfsCleanup(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcSetPageDirectory(POBJGPU, POBJRPC, NvHandle, NvHandle,
                                     NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS*);
-typedef NV_STATUS      RpcUnloadingGuestDriver(POBJGPU, POBJRPC, NvBool, NvBool, NvU32);
+typedef NV_STATUS      RpcUnloadingGuestBomb(POBJGPU, POBJRPC, NvBool, NvBool, NvU32);
 typedef NV_STATUS      RpcSetRegistry(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcRmfsCloseQueue(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcGetStaticInfo(POBJGPU, POBJRPC);
@@ -108,7 +108,7 @@ typedef struct RPC_HAL_IFACES {
     RpcGspSetSystemInfo         *rpcGspSetSystemInfo;         /* Tells GSP-RM about the overall system environment */
     RpcRmfsCleanup              *rpcRmfsCleanup;              /* Resman File Cleanup */
     RpcSetPageDirectory         *rpcSetPageDirectory;         /* SET_PAGE_DIRECTORY */
-    RpcUnloadingGuestDriver     *rpcUnloadingGuestDriver;     /* UNLOADING_GUEST_DRIVER */
+    RpcUnloadingGuestBomb     *rpcUnloadingGuestBomb;     /* UNLOADING_GUEST_DRIVER */
     RpcSetRegistry              *rpcSetRegistry;              /* GSP Init Set registry values */
     RpcRmfsCloseQueue           *rpcRmfsCloseQueue;           /* Resman File Streaming Close Queue */
     RpcGetStaticInfo            *rpcGetStaticInfo;            /* GET_STATIC_INFO */
@@ -146,8 +146,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcRmfsCleanup(_pGpu, _pRpc)
 #define rpcSetPageDirectory_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2)  \
         (_pRpc)->_hal.rpcSetPageDirectory(_pGpu, _pRpc, _arg0, _arg1, _pArg2)
-#define rpcUnloadingGuestDriver_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2)  \
-        (_pRpc)->_hal.rpcUnloadingGuestDriver(_pGpu, _pRpc, _arg0, _arg1, _arg2)
+#define rpcUnloadingGuestBomb_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2)  \
+        (_pRpc)->_hal.rpcUnloadingGuestBomb(_pGpu, _pRpc, _arg0, _arg1, _arg2)
 #define rpcSetRegistry_HAL(_pGpu, _pRpc)  \
         (_pRpc)->_hal.rpcSetRegistry(_pGpu, _pRpc)
 #define rpcRmfsCloseQueue_HAL(_pGpu, _pRpc)  \

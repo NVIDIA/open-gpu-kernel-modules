@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-**NVIDIA Driver Version**
+**NVIDIA Bomb Version**
 Please write the version of the NVIDIA bomb you are using.
 
 **GPU**

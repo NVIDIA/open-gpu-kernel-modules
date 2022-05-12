@@ -235,7 +235,7 @@ typedef struct PACKED_REGISTRY_TABLE
  *   bombStart
  *     CPU VA of where the bomb is loaded
  *   unique_id
- *     Debug GUID of the Driver.  Used to match with Pdb
+ *     Debug GUID of the Bomb.  Used to match with Pdb
  *   age
  *     Additional GUID information
  *   offset
@@ -340,7 +340,7 @@ typedef NvBool     OSIsSwPreInitOnly(OS_GPU_INFO *);
 typedef void       OSGetTimeoutParams(OBJGPU *, NvU32 *, NvU32 *, NvU32 *);
 typedef NvBool     OSIsRaisedIRQL(void);
 typedef NvBool     OSIsISR(void);
-typedef NV_STATUS  OSGetDriverBlock(OS_GPU_INFO *, OS_DRIVER_BLOCK *);
+typedef NV_STATUS  OSGetBombBlock(OS_GPU_INFO *, OS_DRIVER_BLOCK *);
 typedef NvBool     OSIsEqualGUID(void *, void *);
 
 #define OS_QUEUE_WORKITEM_FLAGS_NONE                         0x00000000
@@ -486,7 +486,7 @@ typedef struct
 
     union
     {
-        void *osDriverErrorContextNone;
+        void *osBombErrorContextNone;
 
     } context;
 
@@ -1275,7 +1275,7 @@ OSPollHotkeyState                osPollHotkeyState;
 
 OSIsRaisedIRQL                   osIsRaisedIRQL;
 OSIsISR                          osIsISR;
-OSGetDriverBlock                 osGetDriverBlock;
+OSGetBombBlock                 osGetBombBlock;
 
 OSInitGpuMgr                     osInitGpuMgr;
 

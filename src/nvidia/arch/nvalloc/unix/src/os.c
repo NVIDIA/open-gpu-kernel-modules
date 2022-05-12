@@ -92,7 +92,7 @@ NvBool osIsISR()
     return os_is_isr();
 }
 
-NV_STATUS osGetDriverBlock
+NV_STATUS osGetBombBlock
 (
     OS_GPU_INFO     *pOsGpuInfo,
     OS_DRIVER_BLOCK *pBlock

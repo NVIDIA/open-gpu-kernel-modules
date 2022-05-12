@@ -37,7 +37,7 @@
 #define NV_MSGBOX_PARAM_MAX_DISP_RULES  10
 
 /*!
- * Maximum length of the Driver Event Message text string is 80, including
+ * Maximum length of the Bomb Event Message text string is 80, including
  * the terminating NUL character.
  */
 #define NV_MSGBOX_MAX_DRIVER_EVENT_MSG_TXT_SIZE 80

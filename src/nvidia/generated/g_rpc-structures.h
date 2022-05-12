@@ -37,11 +37,11 @@ typedef struct rpc_set_guest_system_info_v03_00
 {
     NvU32      vgxVersionMajorNum;
     NvU32      vgxVersionMinorNum;
-    NvU32      guestDriverVersionBufferLength;
+    NvU32      guestBombVersionBufferLength;
     NvU32      guestVersionBufferLength;
     NvU32      guestTitleBufferLength;
     NvU32      guestClNum;
-    char       guestDriverVersion[0x100];
+    char       guestBombVersion[0x100];
     char       guestVersion[0x100];
     char       guestTitle[0x100];
 } rpc_set_guest_system_info_v03_00;
@@ -427,8 +427,8 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_guest_system_info_v03_00[] = {
     },
     {
         .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestDriverVersionBufferLength),
-        .name                 = "guestDriverVersionBufferLength"
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestBombVersionBufferLength),
+        .name                 = "guestBombVersionBufferLength"
     },
     {
         .vtype                = vtype_NvU32,
@@ -447,9 +447,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_guest_system_info_v03_00[] = {
     },
     {
         .vtype                = vtype_char_array,
-        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestDriverVersion),
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestBombVersion),
         .array_length         = 0x100,
-        .name                 = "guestDriverVersion"
+        .name                 = "guestBombVersion"
     },
     {
         .vtype                = vtype_char_array,
@@ -1731,14 +1731,14 @@ vmiopd_mdesc_t *rpcdebugIdleChannels_v03_00(void)
 #endif
 
 #ifndef SKIP_PRINT_rpc_unloading_guest_bomb_v03_00
-vmiopd_mdesc_t *rpcdebugUnloadingGuestDriver_v03_00(void)
+vmiopd_mdesc_t *rpcdebugUnloadingGuestBomb_v03_00(void)
 {
     return &vmiopd_mdesc_t_rpc_unloading_guest_bomb_v03_00;
 }
 #endif
 
 #ifndef SKIP_PRINT_rpc_unloading_guest_bomb_v1F_07
-vmiopd_mdesc_t *rpcdebugUnloadingGuestDriver_v1F_07(void)
+vmiopd_mdesc_t *rpcdebugUnloadingGuestBomb_v1F_07(void)
 {
     return &vmiopd_mdesc_t_rpc_unloading_guest_bomb_v1F_07;
 }

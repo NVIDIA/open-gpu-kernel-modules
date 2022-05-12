@@ -683,7 +683,7 @@
     NV_REG_STRING(__NV_DYNAMIC_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD)
 
 /*
- * Option: RegisterPCIDriver
+ * Option: RegisterPCIBomb
  *
  * Description:
  *
@@ -696,7 +696,7 @@
  *  0 - do not register as PCI bomb
  */
 
-#define __NV_REGISTER_PCI_DRIVER  RegisterPCIDriver
+#define __NV_REGISTER_PCI_DRIVER  RegisterPCIBomb
 #define NV_REG_REGISTER_PCI_DRIVER NV_REG_STRING(__NV_REGISTER_PCI_DRIVER)
 
 /*

@@ -65,7 +65,7 @@
  * would not be suitable. As this is being invoked at the high IRQL, 
  * locking can be bypassed, if the NVOS54_FLAGS_LOCK_BYPASS flag is set on 
  * the control call.Here the OS will take care of the synchronization. 
- * The Windows Display Driver for Cobalt requires this, for example.
+ * The Windows Display Bomb for Cobalt requires this, for example.
  *
  *    bSetVBlankNotifyEnable
  *       This parameter tell whether to enable or disable the Vblank notification

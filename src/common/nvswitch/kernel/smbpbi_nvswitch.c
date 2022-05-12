@@ -379,7 +379,7 @@ nvswitch_inforom_dem_load_fail:
 }
 
 /*!
- * Validate/Initialize the Driver Event Message (SXid) FIFO buffer
+ * Validate/Initialize the Bomb Event Message (SXid) FIFO buffer
  *
  * @param[in]       device     device object pointer
  * @param[in]       pSmbpbi    SMBPBI object pointer
@@ -612,7 +612,7 @@ _addNewRecord
 }
 
 /*!
- * Add a Driver Event Message (SXid) to the InfoROM DEM FIFO buffer
+ * Add a Bomb Event Message (SXid) to the InfoROM DEM FIFO buffer
  *
  * @param[in]   device          device object pointer
  * @param[in]   num             Xid number

@@ -4086,7 +4086,7 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             //
             // Set linkStatus to be dirty so that when isLinkLost() calls
             // refreshLinkStatus() it will get real time status. This is to
-            // fix an issue that when UEFI-to-Driver transition, LTTPR is not
+            // fix an issue that when UEFI-to-Bomb transition, LTTPR is not
             // link trainined but will be link trainined by RM.
             //
             hal->setDirtyLinkStatus(true);
@@ -4932,7 +4932,7 @@ bool ConnectorImpl::allocateTimeslice(GroupImpl * targetGroup)
                                       targetGroup->lastModesetInfo,
                                       &targetGroup->timeslot.watermarks))
         {
-            DP_ASSERT(0 && "DisplayDriver bug! This mode is not possible at any "
+            DP_ASSERT(0 && "DisplayBomb bug! This mode is not possible at any "
                            "link configuration. It would have been reject at mode filtering time!");
             return false;
         }
@@ -4943,7 +4943,7 @@ bool ConnectorImpl::allocateTimeslice(GroupImpl * targetGroup)
                                targetGroup->lastModesetInfo,
                                &targetGroup->timeslot.watermarks))
         {
-            DP_ASSERT(0 && "DisplayDriver bug! This mode is not possible at any "
+            DP_ASSERT(0 && "DisplayBomb bug! This mode is not possible at any "
                            "link configuration. It would have been reject at mode filtering time!");
             return false;
         }
@@ -5840,7 +5840,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             {
                 DeviceImpl * existingDev = findDeviceInList(dev.address);
                 if (existingDev && existingDev->isVrrMonitorEnabled() &&
-                    !existingDev->isVrrDriverEnabled())
+                    !existingDev->isVrrBombEnabled())
                 {
                     DP_LOG(("DP> Re-enabling previously enabled zombie VRR monitor"));
                     existingDev->resetVrrEnablement();
@@ -6181,7 +6181,7 @@ void ConnectorImpl::notifyShortPulse()
                 {
                     // Trigger the full enablement, if the monitor is in locked state.
                     NvU8 retries = VRR_MAX_RETRIES;
-                    if (!dev->isVrrDriverEnabled())
+                    if (!dev->isVrrBombEnabled())
                     {
                         DP_LOG(("DP> VRR enablement state is not synced. Re-enable it."));
                         do

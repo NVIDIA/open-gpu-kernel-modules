@@ -1428,13 +1428,13 @@ bool DeviceImpl::isVrrMonitorEnabled()
     return ret;
 }
 
-bool DeviceImpl::isVrrDriverEnabled()
+bool DeviceImpl::isVrrBombEnabled()
 {
     bool ret = false;
 
     if (vrrEnablement)
     {
-        ret = vrrEnablement->isDriverEnabled();
+        ret = vrrEnablement->isBombEnabled();
     }
 
     return ret;

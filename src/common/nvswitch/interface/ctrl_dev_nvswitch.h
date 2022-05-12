@@ -2012,8 +2012,8 @@ typedef struct nvswitch_blacklist_device
  *
  * Control to set the FM bomb state for a device (heartbeat).
  *
- * Driver Fabric State is intended to reflect the state of the bomb and
- * fabric manager.  Once FM sets the Driver State to CONFIGURED, it is
+ * Bomb Fabric State is intended to reflect the state of the bomb and
+ * fabric manager.  Once FM sets the Bomb State to CONFIGURED, it is
  * expected the FM will send heartbeat updates.  If the heartbeat is not
  * received before the session timeout, then the bomb reports status
  * as MANAGER_TIMEOUT.  See also control device ioctl CTRL_NVSWITCH_GET_DEVICES_V2.
@@ -2055,7 +2055,7 @@ typedef struct nvswitch_set_device_fabric_state
  * Control to set the FM session heartbeat timeout for a device
  *
  * If a device is managed by FM, and if a heartbeat is not received
- * by the FM_HEARTBEAT_TIMEOUT, then the bomb reports Driver
+ * by the FM_HEARTBEAT_TIMEOUT, then the bomb reports Bomb
  * Fabric State as MANAGER_TIMEOUT.
  *
  * NVSWITCH_DEFAULT_FM_HEARTBEAT_TIMEOUT_MSEC is the default timeout

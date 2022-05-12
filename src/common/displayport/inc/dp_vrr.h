@@ -66,7 +66,7 @@ namespace DisplayPort
             bool    vrrGetPublicInfo(void);
             bool    vrrWaitOnEnableStatus(void);
             bool    vrrEnableMonitor(void);
-            bool    vrrEnableDriver(void);
+            bool    vrrEnableBomb(void);
 
         public:
 
@@ -88,7 +88,7 @@ namespace DisplayPort
                 bMonitorEnabled = false;
             }
             bool isMonitorEnabled(void);
-            bool isDriverEnabled(void);
+            bool isBombEnabled(void);
     };
 }
 

@@ -56,9 +56,9 @@ RpcSetPageDirectory                rpcSetPageDirectory_v1E_05;
 RpcSetPageDirectory                rpcSetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
 
                                                // RPC:UNLOADING_GUEST_DRIVER
-RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_v03_00;
-RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_v1F_07;
-RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcUnloadingGuestBomb            rpcUnloadingGuestBomb_v03_00;
+RpcUnloadingGuestBomb            rpcUnloadingGuestBomb_v1F_07;
+RpcUnloadingGuestBomb            rpcUnloadingGuestBomb_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
 
                                                // RPC:SET_REGISTRY
 RpcSetRegistry                     rpcSetRegistry_v17_00;
@@ -2153,9 +2153,9 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     if (IsIPVersionInRange(pRpc, 0x1E050000, 0xFFFFFFFF))
        pRpcHal->rpcSetPageDirectory = rpcSetPageDirectory_v1E_05;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0x1F06FFFF))
-       pRpcHal->rpcUnloadingGuestDriver = rpcUnloadingGuestDriver_v03_00;
+       pRpcHal->rpcUnloadingGuestBomb = rpcUnloadingGuestBomb_v03_00;
     if (IsIPVersionInRange(pRpc, 0x1F070000, 0xFFFFFFFF))
-       pRpcHal->rpcUnloadingGuestDriver = rpcUnloadingGuestDriver_v1F_07;
+       pRpcHal->rpcUnloadingGuestBomb = rpcUnloadingGuestBomb_v1F_07;
     if (IsIPVersionInRange(pRpc, 0x17000000, 0xFFFFFFFF))
        pRpcHal->rpcSetRegistry = rpcSetRegistry_v17_00;
     if (IsIPVersionInRange(pRpc, 0x15000000, 0xFFFFFFFF))
@@ -2208,7 +2208,7 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGspSetSystemInfo);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmfsCleanup);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetPageDirectory);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUnloadingGuestDriver);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUnloadingGuestBomb);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetRegistry);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmfsCloseQueue);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetStaticInfo);
@@ -2733,7 +2733,7 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcRmfsCleanup_STUB,                     // rpcRmfsCleanup
         rpcSetPageDirectory_STUB,                // rpcSetPageDirectory
-        rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
+        rpcUnloadingGuestBomb_STUB,            // rpcUnloadingGuestBomb
         rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcRmfsCloseQueue_STUB,                  // rpcRmfsCloseQueue
         rpcGetStaticInfo_STUB,                   // rpcGetStaticInfo
@@ -2806,7 +2806,7 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
         rpcRmfsCleanup_STUB,                     // rpcRmfsCleanup
         rpcSetPageDirectory_STUB,                // rpcSetPageDirectory
-        rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
+        rpcUnloadingGuestBomb_STUB,            // rpcUnloadingGuestBomb
         rpcSetRegistry_STUB,                     // rpcSetRegistry
         rpcRmfsCloseQueue_STUB,                  // rpcRmfsCloseQueue
         rpcGetStaticInfo_STUB,                   // rpcGetStaticInfo

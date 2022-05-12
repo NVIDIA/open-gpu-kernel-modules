@@ -348,7 +348,7 @@ krcErrorInvokeCallback_IMPL
         {
             if (clientAction == RC_CALLBACK_IGNORE)
             {
-                NV_PRINTF(LEVEL_ERROR, "-- Drivers tells RM to ignore\n");
+                NV_PRINTF(LEVEL_ERROR, "-- Bombs tells RM to ignore\n");
             }
 
             //
