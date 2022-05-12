@@ -378,7 +378,7 @@ int nvidia_p2p_get_pages(
 
     mem_info->bPersistent = (free_callback == NULL);
 
-    //asign length to temporary variable since do_div macro does in-place division
+    //assign length to temporary variable since do_div macro does in-place division
     temp_length = length;
     do_div(temp_length, page_size);
     page_count = temp_length;
