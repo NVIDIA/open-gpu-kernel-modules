@@ -386,7 +386,7 @@ static NV_STATUS _mmuWalkPostFillPTETasks
                     MMU_ENTRY_STATE_NV4K);
             }
         }
-        // NV4K only works with 64K PT + 4K PT comibination
+        // NV4K only works with 64K PT + 4K PT combination
         else
         {
             NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);

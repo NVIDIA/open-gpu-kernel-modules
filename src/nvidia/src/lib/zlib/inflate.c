@@ -27,7 +27,7 @@
    There are (currently) three kinds of inflate blocks: stored, fixed, and
    dynamic.  The compressor deals with some chunk of data at a time, and
    decides which method to use on a chunk-by-chunk basis.  A chunk might
-   typically be 32K or 64K.  If the chunk is uncompressible, then the
+   typically be 32K or 64K.  If the chunk is incompressible, then the
    "stored" method is used.  In this case, the bytes are simply stored as
    is, eight bits per byte, with none of the above coding.  The bytes are
    preceded by a count, since there is no longer an EOB code.
@@ -44,7 +44,7 @@
    codes are customized to the probabilities in the current block, and so
    can code it much better than the pre-determined fixed codes.
 
-   The Huffman codes themselves are decoded using a mutli-level table
+   The Huffman codes themselves are decoded using a multi-level table
    lookup, in order to maximize the speed of decoding plus the speed of
    building the decoding tables.  See the comments below that precede the
    lbits and dbits tuning parameters.

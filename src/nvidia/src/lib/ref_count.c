@@ -487,7 +487,7 @@ _refcntReleaseReferences
         //
         // Transition into the default state if necessary - only change the
         // counter state if the transition is successful, but leave the count
-        // at 0 to inidicate it's not in use. Do not do the state transition
+        // at 0 to indicate it's not in use. Do not do the state transition
         // while in reset - refcntReset() will handle this if needed.
         //
         if (pRefcnt->state != REFCNT_STATE_DEFAULT && pRefcnt->count == 0 &&
