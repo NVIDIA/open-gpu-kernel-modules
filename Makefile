@@ -8,7 +8,7 @@
 
 include utils.mk
 
-all: modules
+All: modules
 
 nv_kernel_o                = src/nvidia/$(OUTPUTDIR)/nv-kernel.o
 nv_kernel_o_binary         = kernel-open/nvidia/nv-kernel.o_binary
