@@ -242,7 +242,7 @@ NV_STATUS uvm_spin_loop(uvm_spin_loop_t *spin)
     // - RM must service interrupts which stall UVM (SW methods, stalling CE
     //   interrupts, etc) in order for UVM to service faults
     //
-    // Even though UVM's bottom half is preemptable, we have encountered cases
+    // Even though UVM's bottom half is preemptible, we have encountered cases
     // in which a user thread running in RM won't preempt the UVM driver's
     // thread unless the UVM driver thread gives up its timeslice. This is also
     // theoretically possible if the RM thread has a low nice priority.
