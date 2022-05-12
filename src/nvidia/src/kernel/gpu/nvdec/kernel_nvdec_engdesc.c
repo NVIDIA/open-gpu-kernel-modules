@@ -40,7 +40,7 @@
  * This function returns an engine descriptor corresponding to the class
  * and engine instance passed in.
  *
- * @params[in] externalClassId  Id of classs being allocated
+ * @params[in] externalClassId  Id of class being allocated
  * @params[in] pAllocParams     void pointer containing creation parameters.
  *
  * @returns
@@ -56,15 +56,15 @@ nvdecGetEngineDescFromAllocParams
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
     NvU32                        engineInstance    = 0;
-    NV_BSP_ALLOCATION_PARAMETERS *pNvdecAllocParms = pAllocParams;
+    NV_BSP_ALLOCATION_PARAMETERS *pNvdecAllocParams = pAllocParams;
 
-    NV_ASSERT_OR_RETURN((pNvdecAllocParms != NULL), ENG_INVALID);
+    NV_ASSERT_OR_RETURN((pNvdecAllocParams != NULL), ENG_INVALID);
 
-    if (pNvdecAllocParms->size != sizeof(NV_BSP_ALLOCATION_PARAMETERS))
+    if (pNvdecAllocParams->size != sizeof(NV_BSP_ALLOCATION_PARAMETERS))
     {
         NV_PRINTF(LEVEL_ERROR, "createParams size mismatch (rm = 0x%x / client = 0x%x)\n",
                   (NvU32) sizeof(NV_BSP_ALLOCATION_PARAMETERS),
-                  pNvdecAllocParms->size);
+                  pNvdecAllocParams->size);
         DBG_BREAKPOINT();
         return ENG_INVALID;
     }
@@ -82,7 +82,7 @@ nvdecGetEngineDescFromAllocParams
         case NVC4B0_VIDEO_DECODER:
         case NVC6B0_VIDEO_DECODER:
         case NVC7B0_VIDEO_DECODER:
-            engineInstance = pNvdecAllocParms->engineInstance;
+            engineInstance = pNvdecAllocParams->engineInstance;
             break;
         default:
             return ENG_INVALID;
