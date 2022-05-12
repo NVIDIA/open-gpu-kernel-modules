@@ -5206,7 +5206,7 @@ NV_STATUS NV_API_CALL nv_acquire_fabric_mgmt_cap(int fd, int *duped_fd)
 }
 
 /*
- * Wakes up the NVIDIA GPU HDA codec and contoller by reading
+ * Wakes up the NVIDIA GPU HDA codec and controller by reading
  * codec proc file.
  */
 void NV_API_CALL nv_audio_dynamic_power(
@@ -5246,7 +5246,7 @@ void NV_API_CALL nv_audio_dynamic_power(
         return;
 
     /*
-     * Check if HDA controller is in pm suspended state. The HDA contoller
+     * Check if HDA controller is in pm suspended state. The HDA controller
      * can not be runtime resumed if this API is called during system
      * suspend/resume time and HDA controller is in pm suspended state.
      */
