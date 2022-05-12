@@ -2691,7 +2691,7 @@ NV_STATUS UvmIs8Supported(NvU32 *is8Supported);
 // UvmDebugGetVersion
 //
 // Returns the version number of the UVM debug library
-// See uvm_types.h for valid verion numbers, e.g. UVM_DEBUG_V1
+// See uvm_types.h for valid version numbers, e.g. UVM_DEBUG_V1
 //
 //------------------------------------------------------------------------------
 unsigned UvmDebugVersion(void);
@@ -3578,7 +3578,7 @@ NV_STATUS UvmToolsEventQueueDisableEvents(UvmToolsEventQueueHandle queue,
 //     counters_buffer : (INPUT)
 //         User allocated buffer. Must be aligned to the OS's page aligned. Must
 //         be large enough to hold all possible counter types. In practice, 4kB
-//         system page (minimal granurality) should be sufficent. This memory
+//         system page (minimal granularity) should be sufficient. This memory
 //         gets pinned until counters are destroyed.
 //
 //     counters: (OUTPUT)
@@ -3619,7 +3619,7 @@ NV_STATUS UvmToolsCreateProcessAggregateCounters(UvmToolsSessionHandle   session
 //     counters_buffer : (INPUT)
 //         User allocated buffer. Must be aligned to the OS's page aligned. Must
 //         be large enough to hold all possible counter types. In practice, 4kB
-//         system page should be sufficent. This memory gets pinned until
+//         system page should be sufficient. This memory gets pinned until
 //         counters are destroyed.
 //
 //     processorUuid: (INPUT)
