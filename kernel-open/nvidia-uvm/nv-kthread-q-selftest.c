@@ -111,7 +111,7 @@ static int _basic_start_stop_test(void)
     basic_start_stop_args_t start_stop_args[NUM_Q_ITEMS_IN_BASIC_TEST];
     nv_kthread_q_t local_q;
 
-    // Do a redudant stop to ensure stop is supported on zero initialized memory
+    // Do a redundant stop to ensure stop is supported on zero initialized memory
     // No crash should occur
     memset(&local_q, 0, sizeof(nv_kthread_q_t));
     nv_kthread_q_stop(&local_q);
