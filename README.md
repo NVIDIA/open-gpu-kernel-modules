@@ -36,7 +36,7 @@ If cross-compiling, set these variables on the make command line:
     CXX
     OBJCOPY
 
-E.g.,
+E.g.:
 
     # compile on x86_64 for aarch64
     make modules -j`nproc`          \
@@ -110,7 +110,7 @@ published here.  This has several implications for the foreseeable future:
 ## How to Report Issues
 
 Problems specific to the Open GPU Kernel Modules can be reported in the
-Issues section of the https://github.com/NVIDIA/open-gpu-kernel-modules
+'Issues Section' of the https://github.com/NVIDIA/open-gpu-kernel-modules
 repository.
 
 Further, any of the existing bug reporting venues can be used to communicate
@@ -134,7 +134,7 @@ Most of NVIDIA's kernel modules are split into two components:
 * An "OS-agnostic" component: this is the component of each kernel module
   that is independent of operating system.
 
-* A "kernel interface layer": this is the component of each kernel module
+* A "Kernel Interface Layer": this is the component of each kernel module
   that is specific to the Linux kernel version and configuration.
 
 When packaged in the NVIDIA .run installation package, the OS-agnostic
