@@ -177,13 +177,8 @@ static NV_STATUS _osVerifyInterrupts(
     // note that we only enable the software interrupt, so we won't get any unexpected hw interrupts
     //
     // Concerning HW interrupts while software interrupts
-    // are enabled.
-    //
-    // "Yes, if INTERRUPT_TYPE is set to SOFTWARE, all the other
-    // [hardware] interrupts can no longer assert.
-    //
-    // I'm surprised the manual doesn't have a #define for BOTH (0x3).
-    // That would allow both SW and HW interrupts to assert."
+    // are enabled, if INTERRUPT_TYPE is set to SOFTWARE, all the other
+    // interrupts can no longer assert, including hardware ones.
     //
     gpuInstance = i = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuAttachMask, &gpuInstance)) != NULL)
