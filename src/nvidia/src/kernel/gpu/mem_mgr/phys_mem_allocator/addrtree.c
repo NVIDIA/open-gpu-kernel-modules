@@ -1497,9 +1497,7 @@ _addrtreeNodeIndexHasSeeChildSet
     NvU32 newIndex = 0;
     *pState = STATE_FREE;
 
-    // TODO: try this for only STATE_MASK, because stats will only
-    // get corrupted if the STATE_MASK values differ.
-    PMA_PAGESTATUS stateMask = MAP_MASK; // check all states TODO
+    PMA_PAGESTATUS stateMask = STATE_MASK; // check all states TODO
 
     while(n->level != pNode->level)
     {
