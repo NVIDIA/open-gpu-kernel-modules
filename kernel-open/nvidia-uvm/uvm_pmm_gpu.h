@@ -168,7 +168,7 @@ typedef enum
     // VA block lock.
     UVM_PMM_ALLOC_FLAGS_EVICT = (1 << 0),
 
-    // Do not use batching in this call if PMA page allocaion is required
+    // Do not use batching in this call if PMA page allocation is required
     UVM_PMM_ALLOC_FLAGS_DONT_BATCH = (1 << 1),
 
     UVM_PMM_ALLOC_FLAGS_MASK = (1 << 2) - 1
@@ -231,7 +231,7 @@ struct uvm_gpu_chunk_struct
 
         bool                      inject_split_error : 1;
 
-        // This flag is initalized when allocating a new root chunk from PMA.
+        // This flag is initialized when allocating a new root chunk from PMA.
         // It is set to true, if PMA already scrubbed the chunk. The flag is
         // only valid at allocation time (after uvm_pmm_gpu_alloc call), and
         // the caller is not required to clear it before freeing the chunk. The
