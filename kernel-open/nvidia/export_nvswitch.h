@@ -568,7 +568,7 @@ nvswitch_lib_notify_client_events
  * @param[in]  device          Device to operate on
  * @param[out] validPortsMask  A pointer to a mask of valid ports
  *
- * @returns              NVL_SUCCESS if successfuly
+ * @returns              NVL_SUCCESS if successfully
  *                       -NVL_BAD_ARGS if bad arguments provided
  */
 NvlStatus
