@@ -407,7 +407,7 @@ void nvlink_core_exit(void)
 
     nv_mutex_destroy(&nvlink_drvctx.lock);
 
-    nvlink_print(NVLINK_DBG_INFO, "Unregistered the Nvlink Core, major device number %d\n",
+    nvlink_print(NVLINK_DBG_INFO, "Unregistered Nvlink Core, major device number %d\n",
                  nvlink_drvctx.major_devnum);
 }
 
