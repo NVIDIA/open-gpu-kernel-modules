@@ -306,8 +306,8 @@ static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
                                nv_mem_context->page_table);
 
 #ifdef _DEBUG_ONLY_
-    /* Here we expect an error in real life cases that should be ignored - not printed.
-      * (e.g. concurrent callback with that call)
+   /* Here we expect an error in real life cases that should be ignored - not printed.
+    * (e.g. concurrent callback with that call)
     */
     if (ret < 0) {
         printk(KERN_ERR "error %d while calling nvidia_p2p_put_pages, page_table=%p \n",
@@ -355,8 +355,8 @@ static int nv_mem_get_pages(unsigned long addr,
     }
 
     /* No extra access to nv_mem_context->page_table here as we are
-        called not under a lock and may race with inflight invalidate callback on that buffer.
-        Extra handling was delayed to be done under nv_dma_map.
+       	called not under a lock and may race with inflight invalidate callback on that buffer.
+       Extra handling was delayed to be done under nv_dma_map.
      */
     return 0;
 }
@@ -478,7 +478,7 @@ static int __init nv_mem_client_init(void)
 
     // The nc client enables support for persistent pages.
     // Thanks to this check, nvidia-peermem requires the new symbol from nvidia.ko, which 
-    // prevents users to unintentionally load this module with unsupported nvidia.ko.
+    // prevents users to unintentionally load this module with unsupported nvidia.ko .
     BUG_ON(!nvidia_p2p_cap_persistent_pages);
     strcpy(nv_mem_client_nc.name, DRV_NAME "_nc");
     strcpy(nv_mem_client_nc.version, DRV_VERSION);
