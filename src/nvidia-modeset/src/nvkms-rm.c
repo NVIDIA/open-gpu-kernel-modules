@@ -4983,7 +4983,7 @@ static void MuxInit(const NVDpyEvoRec *pDpyEvo)
          * is disconnected from the GPU. */
 
         /* Map with hard-coded data for systems known to support dynamic mux
-         * switching. This is a poor-man's alternative to the WDDM driver's
+         * switching. This is a poor-person's alternative to the WDDM driver's
          * CDisplayMgr::NVInitializeACPIToDeviceMaskMap() */
         NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS acpiMap = {
             .mapTable = {
