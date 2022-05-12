@@ -459,7 +459,7 @@ static NVFrameLockEvoPtr AllocFrameLockEvo(NVDevEvoPtr pDevEvo,
         nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "The firmware on this Quadro Sync "
                     "card is not compatible with the GPUs connected to it."
                     "  Please visit "
-                    "<http://www.nvidia.com/object/quadro-sync.html> "
+                    "<https://www.nvidia.com/object/quadro-sync.html> "
                     "for instructions on installing the correct firmware.");
         goto fail;
     }
