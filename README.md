@@ -3,6 +3,11 @@
 This is the source release of the NVIDIA Linux open GPU kernel modules,
 version 515.43.04.
 
+## Requirements
+
+Header files for the currently used kernel, for example on Arch Linux the packages:
+
+    linux-headers or linux-lts-headers
 
 ## How to Build
 
@@ -17,7 +22,7 @@ as root:
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
-515.43.04 driver release.  This can be achieved by installing
+515.43.04 driver release https://www.nvidia.com/download/driverResults.aspx/187834/en.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
