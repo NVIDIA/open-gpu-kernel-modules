@@ -6591,7 +6591,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(NvU8 **src, 
     FINN_COPY_FROM_BUFFER(dst->registerAddress, pos, NvU8, 1);
 
     // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    pos = (NvU8*)(((NvU64*)pos + 7) &~ 7);
 
     // Unbounded fields
     // Check data presence byte
@@ -6610,7 +6610,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(NvU8 **src, 
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pMessage, pos, NvP64, (dst->messageLength));
+            FINN_SET_PTR_TO_BUFFER(dst->pMessage, pos >> 0xa, NvP64, (dst->messageLength));
         }
     }
     else
