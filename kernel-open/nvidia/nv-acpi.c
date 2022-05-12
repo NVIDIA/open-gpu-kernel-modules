@@ -289,7 +289,7 @@ static int nv_acpi_add(struct acpi_device *device)
         status =
             acpi_evaluate_integer(dev->handle, "_ADR", NULL, &device_id);
         if (ACPI_FAILURE(status))
-            /* Couldnt query device_id for this device */
+            /* Couldn't query device_id for this device */
             continue;
 
         device_id = (device_id & 0xffff);
@@ -299,7 +299,7 @@ static int nv_acpi_add(struct acpi_device *device)
             (device_id != 0x0110) && (device_id != 0x0118) && (device_id != 0x0400) && /* Not an LCD*/
             (device_id != 0x0111) && (device_id != 0x0120) && (device_id != 0x0300)) /* Not a known DVI device-id */
         {
-            /* This isnt a known device Id.
+            /* This isn't a known device Id.
                Do default switching on this system. */
             pNvAcpiObject->default_display_mask = 1;
             break;
@@ -424,7 +424,7 @@ static void nv_acpi_event(acpi_handle handle, u32 event_type, void *data)
 
     if (event_type == NVIF_DISPLAY_DEVICE_CHANGE_EVENT)
     {
-        /* We are getting NVIF events on this machine. We arent putting a very
+        /* We are getting NVIF events on this machine. We aren't putting a very
            extensive handling in-place to communicate back with SBIOS, know
            the next enabled devices, and then do the switch. We just
            pass a default display switch event, so that X-driver decides
@@ -1186,7 +1186,7 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
 
         status = acpi_evaluate_integer(dev->handle, "_ADR", NULL, &device_id);
         if (ACPI_FAILURE(status))
-            /* Couldnt query device_id for this device */
+            /* Couldn't query device_id for this device */
             continue;
 
         switch (device_id & 0xffff) {
@@ -1707,7 +1707,7 @@ static acpi_status nv_acpi_find_battery_info(
      * system.
      * _STA method on the battery device handle couldn't be used due to the same
      * reason.
-     * Hence just cheking if battery technology of slot is rechargable or not.
+     * Hence just checking if battery technology of slot is rechargeable or not.
      */
     
     if ((object_package->package.elements[battery_technology_offset].type != ACPI_TYPE_INTEGER) ||
