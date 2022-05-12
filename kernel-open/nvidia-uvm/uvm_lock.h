@@ -54,7 +54,7 @@
 //      infrequently, and only as part of to power management.  Starvation is
 //      not a concern.
 //
-//      The mmap_lock deadlock potential aside, the trylock approch is also
+//      The mmap_lock deadlock potential aside, the trylock approach is also
 //      motivated by the need to prevent user threads making UVM system calls
 //      from blocking when UVM is suspended: when the kernel suspends the
 //      system, the freezer employed to stop user tasks requires these tasks
@@ -110,7 +110,7 @@
 //      mapping, it must take mmap_lock in read mode very early on.
 //
 //      However, current->mm is not necessarily the owning mm of the UVM vma.
-//      fork or fd passing via a UNIX doman socket can cause that. Notably, this
+//      fork or fd passing via a UNIX domain socket can cause that. Notably, this
 //      is also the case when handling GPU faults or doing other operations from
 //      a kernel thread. In some cases we have an mm associated with a VA space,
 //      and in those cases we lock that mm instead of current->mm. But since we
@@ -651,7 +651,7 @@ typedef struct
 
 //
 // Note that this is a macro, not an inline or static function so the
-// "uvm_sem" argument is subsituted as text. If this is invoked with
+// "uvm_sem" argument is substituted as text. If this is invoked with
 // uvm_assert_rwsem_locked_mode(_sem, flags) then we get code "_sem = _sem"
 // and _sem is initialized to NULL. Avoid this by using a name unlikely to
 // be the same as the string passed to "uvm_sem".
@@ -779,7 +779,7 @@ typedef struct
 } uvm_mutex_t;
 
 // Note that this is a macro, not an inline or static function so the
-// "uvm_macro" argument is subsituted as text. If this is invoked with
+// "uvm_macro" argument is substituted as text. If this is invoked with
 // uvm__mutex_is_locked(_mutex) then we get code "_mutex = _mutex" and _mutex is
 // initialized to NULL. Avoid this by using a name unlikely to be the same as
 // the string passed to "uvm_mutex".
@@ -931,7 +931,7 @@ typedef struct
 // Asserts that the spinlock is held. Notably the macros below support both
 // types of spinlocks.
 // Note that this is a macro, not an inline or static function so the
-// "spinlock" argument is subsituted as text. If this is invoked with
+// "spinlock" argument is substituted as text. If this is invoked with
 // uvm_assert_spinlock_locked(_lock) then we get code "_lock = _lock"
 // and _lock is initialized to NULL. Avoid this by using a name unlikely to
 // be the same as the string passed to "spinlock".
