@@ -470,6 +470,11 @@ char * nvlink_strcpy(char *dest, const char *src)
     return strcpy(dest, src);
 }
 
+char * nvlink_strncpy(char *dest, const char *src, size_t n)
+{
+    return strncpy(dest, src, n);
+}
+
 int nvlink_strcmp(const char *dest, const char *src)
 {
     return strcmp(dest, src);

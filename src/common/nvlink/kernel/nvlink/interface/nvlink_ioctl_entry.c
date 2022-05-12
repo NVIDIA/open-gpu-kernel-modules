@@ -517,7 +517,7 @@ nvlink_lib_ctrl_check_version
     versionParams->user.version[NVLINK_VERSION_STRING_LENGTH - 1] = '\0';
 
     nvlink_memset(versionParams->kernel.version, 0x0, sizeof(versionParams->kernel.version));
-    nvlink_strcpy(versionParams->kernel.version, NV_VERSION_STRING);
+    nvlink_strncpy(versionParams->kernel.version, NV_VERSION_STRING, NVLINK_VERSION_STRING_LENGTH);
 
     versionParams->kernel.version[NVLINK_VERSION_STRING_LENGTH - 1] = '\0';
 

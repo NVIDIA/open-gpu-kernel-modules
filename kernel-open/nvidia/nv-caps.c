@@ -594,9 +594,9 @@ static nv_cap_t* nv_cap_alloc(nv_cap_t *parent_cap, const char *name)
         return NULL;
     }
 
-    strcpy(cap->path, parent_cap->path);
-    strcat(cap->path, "/");
-    strcat(cap->path, name);
+    strncpy(cap->path, parent_cap->path, len);
+    strncat(cap->path, "/", len);
+    strncat(cap->path, name, len);
 
     len = strlen(name) + 1;
     NV_KMALLOC(cap->name, len);
@@ -607,7 +607,7 @@ static nv_cap_t* nv_cap_alloc(nv_cap_t *parent_cap, const char *name)
         return NULL;
     }
 
-    strcpy(cap->name, name);
+    strncpy(cap->name, name, len);
 
     cap->minor = -1;
     cap->modify = NVreg_ModifyDeviceFiles;
@@ -696,6 +696,7 @@ nv_cap_t* NV_API_CALL nv_cap_init(const char *path)
     nv_cap_t parent_cap;
     nv_cap_t *cap;
     int mode;
+    int len;
     char *name = NULL;
     char dir[] = "/capabilities";
 
@@ -703,15 +704,15 @@ nv_cap_t* NV_API_CALL nv_cap_init(const char *path)
     {
         return NULL;
     }
-
-    NV_KMALLOC(name, (strlen(path) + strlen(dir)) + 1);
+    len = (strlen(path) + strlen(dir)) + 1;
+    NV_KMALLOC(name, len);
     if (name == NULL)
     {
         return NULL;
     }
 
-    strcpy(name, path);
-    strcat(name, dir);
+    strncpy(name, path, len);
+    strncat(name, dir, len);
     parent_cap.entry = NULL;
     parent_cap.path = "";
     parent_cap.name = "";
