@@ -84,6 +84,8 @@
  #define NV_SPEC_BARRIER_CSDB "HINT #20\n"
 #elif defined(NVCPU_NVRISCV64) && NVOS_IS_LIBOS
 #   define nv_speculation_barrier()
+#elif defined(NVCPU_RISCV64) && defined(__linux__)
+#   define nv_speculation_barrier()
 #else
  #error "Unknown compiler/chip family"
 #endif

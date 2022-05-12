@@ -265,7 +265,7 @@ NV_STATUS nvos_forward_error_to_cray(struct pci_dev *, NvU32,
 #undef NV_SET_PAGES_UC_PRESENT
 #endif
 
-#if !defined(NVCPU_AARCH64) && !defined(NVCPU_PPC64LE)
+#if !defined(NVCPU_AARCH64) && !defined(NVCPU_PPC64LE) && !defined(NVCPU_RISCV64)
 #if !defined(NV_SET_MEMORY_UC_PRESENT) && !defined(NV_SET_PAGES_UC_PRESENT)
 #error "This driver requires the ability to change memory types!"
 #endif
@@ -457,7 +457,7 @@ typedef enum
     NV_MEMORY_TYPE_DEVICE_MMIO, /* All kinds of MMIO referred by NVRM e.g. BARs and MCFG of device */
 } nv_memory_type_t;
 
-#if defined(NVCPU_AARCH64) || defined(NVCPU_PPC64LE)
+#if defined(NVCPU_AARCH64) || defined(NVCPU_PPC64LE) || defined(NVCPU_RISCV64)
 #define NV_ALLOW_WRITE_COMBINING(mt)    1
 #elif defined(NVCPU_X86_64)
 #if defined(NV_ENABLE_PAT_SUPPORT)
