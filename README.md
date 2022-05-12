@@ -1,7 +1,9 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
-![latest open-gpu-kernel-modules tag](https://img.shields.io/github/v/tag/NVIDIA/open-gpu-kernel-modules?include_prereleases)
-![latest open-gpu-kernel-modules release](https://img.shields.io/github/v/release/NVIDIA/open-gpu-kernel-modules?include_prereleases&style=flat-square)
+[![latest open-gpu-kernel-modules tag][latest-tag]][latest-driver-link]
+
+[latest-tag]: https://img.shields.io/github/v/tag/NVIDIA/open-gpu-kernel-modules?include_prereleases
+[latest-driver-link]: https://www.nvidia.com/download/driverResults.aspx/187834/en
 
 This is the source release of the NVIDIA Linux open GPU kernel modules.
 
