@@ -1,4 +1,12 @@
-# ![Logo](https://avatars.githubusercontent.com/u/1728152?s=128) Linux Open GPU Kernel Module Source 
+<div align="center">
+    
+<img width="300" alt="NVIDIA logo" src="https://user-images.githubusercontent.com/100533118/167988450-18db0494-e988-4ca7-aa60-b3ddaf75e989.svg#gh-light-mode-only"/>
+    
+<img width="300" alt="NVIDIA logo" src="https://user-images.githubusercontent.com/100533118/167988652-551a1c2f-2498-4e6c-98db-215c6a2e18bb.svg#gh-dark-mode-only"/>
+
+<h1>NVIDIA Linux Open GPU Kernel Module Source</h1>
+
+</div>
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
 version 515.43.04.
