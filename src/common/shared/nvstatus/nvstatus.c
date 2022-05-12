@@ -70,7 +70,7 @@ const char *nvstatusToString(NV_STATUS nvStatusIn)
     static NV_PRINTF_STRING_SECTION const char rm_pvt_UNKNOWN_str[] = "Unknown error code!";
     NvU32 i;
     NvU32 n = ((NvU32)(sizeof(g_StatusCodeList))/(NvU32)(sizeof(g_StatusCodeList[0])));
-    for (i = 0; i < n; i++)
+    for (i = 0; i < n; ++i)
     {
         if (g_StatusCodeList[i].statusCode == nvStatusIn)
         {
