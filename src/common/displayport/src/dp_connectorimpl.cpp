@@ -2455,7 +2455,7 @@ bool DisplayPort::SetConfigSingleHeadMultiStreamMode(Group **targets,
             pTargetImpl->singleHeadMultiStreamID = (DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID)iter;
 
             // Save the 'Audio over Right Pannel' configuration in Connector Impl
-            // Use this configuration when SF gets programed.
+            // Use this configuration when SF gets programmed.
             if (bEnableAudioOverRightPanel)
             {
                 pConnectorImpl->bAudioOverRightPanel = true;
@@ -6719,8 +6719,8 @@ bool ConnectorImpl::updatePsrLinkState(bool bTrainLink)
     bool bRet = true;
     if (bTrainLink)
     {
-        // Bug 3438892 If the panel is turned off the reciever on its side,
-        // force panel link on by writting 600 = 1
+        // Bug 3438892 If the panel is turned off the receiver on its side,
+        // force panel link on by writing 600 = 1
         if (this->isLinkLost())
         {
             hal->setPowerState(PowerStateD0);
