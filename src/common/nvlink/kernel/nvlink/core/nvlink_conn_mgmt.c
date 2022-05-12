@@ -153,7 +153,7 @@ nvlink_core_add_intranode_conn
  * @param[in] localLink       NVLink Link pointer for one end
  * @param[in] remoteEndPoint  Remote endpoint
  *
- * return NVL_SUCCESS if the conn was added succesfully
+ * return NVL_SUCCESS if the conn was added successfully
  */
 NvlStatus
 nvlink_core_add_internode_conn
