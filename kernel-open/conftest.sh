@@ -744,7 +744,7 @@ compile_test() {
             # Determine if cpuhp_setup_state() is present
             #
             # Added by commit 5b7aa87e0482 ("cpu/hotplug: Implement
-            # setup/removal interface") in v4.6 (commited 2016-02-26)
+            # setup/removal interface") in v4.6 (committed 2016-02-26)
             #
             # It is used as a replacement for register_cpu_notifier
             CODE="
