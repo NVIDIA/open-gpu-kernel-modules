@@ -37,7 +37,7 @@ _nvswitch_calculate_checksum
     NvU32 i;
     NvU8 checksum = 0;
 
-    for (i = 0; i < size; ++i)
+    for (i = 0; i < size; i++)
     {
         checksum += data[i];
     }
