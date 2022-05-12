@@ -1212,7 +1212,7 @@ struct DPCDHALImpl : DPCDHAL
         // a BAD way to do it but no EDID is available to differentiate here
         // this is the first access which happens before EDID read to read caps.
         // We also found that some LG panels on HP NBs goes in a bad state after
-        // factory reset. Retyring 3 times works for them. So making faultyRetries as 3.
+        // factory reset. Retrying 3 times works for them. So making faultyRetries as 3.
         //
         NvU32 faultyRetries = 3;
         while ((dpcdOffline) && (faultyRetries > 0))
