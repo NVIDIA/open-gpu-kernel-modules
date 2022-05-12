@@ -1774,11 +1774,6 @@ void ConnectorImpl::populateDscSinkCaps(DSC_INFO* dscInfo, DeviceImpl * dev)
 
     if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_16)
     {
-        dscInfo->sinkCaps.bitsPerPixelPrecision |= DSC_BITS_PER_PIXEL_PRECISION_1_16;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_16)
-    {
         dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_16;
     }
 
