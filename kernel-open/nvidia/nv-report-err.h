@@ -44,7 +44,7 @@ typedef void (*nv_report_error_cb_t)(struct pci_dev *, uint32_t, char *, int);
  *   Register callback function to obtain XID error string and data.
  *
  * @param[in]    report_error_cb
- *   A function pointer to recieve callback.
+ *   A function pointer to receive callback.
  *
  * @return
  *   0           upon successful completion.
