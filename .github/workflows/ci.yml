@@ -1,0 +1,35 @@
+# .github/workflows/ci.yml
+
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get tag
+        id: tag
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/tags/}
+
+      - name: Checkout the current branch
+        run: |
+          echo "BRANCH=$(echo $GITHUB_REF | cut -d'/' -f 3)" >> $GITHUB_ENV
+          git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+          git fetch --unshallow --tags
+          git tag
+          if [[ $(git rev-parse --abbrev-ref HEAD) == "master" ]]; then
+              echo "reattaching HEAD on master"
+              git symbolic-ref --short HEAD || git checkout -b ${GITHUB_ENV}-test $GITHUB_ENV
+          fi
+
+          sudo apt update -q
+
+      - name: Test make
+        run: |
+          make
+          make clean
