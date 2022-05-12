@@ -70,7 +70,7 @@ NV_STATUS UvmSetGlobalStatePointer(struct UvmGlobalState_tag *pGlobalState);
 // live in uvm_gpu_op_testc.c
 //
 // This type should be really put into user-kernel shared types specific file,
-// e.g. uvm_test_ioctl.h. Leaving it here temporarily to keep it compatibile
+// e.g. uvm_test_ioctl.h. Leaving it here temporarily to keep it compatible
 // with older drivers.
 //
 typedef enum
