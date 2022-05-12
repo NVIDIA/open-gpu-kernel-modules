@@ -1,0 +1,46 @@
+name: Bug report
+description: Create a report to help us improve
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: NVIDIA Driver Version
+      description: Please write the version of the NVIDIA driver you are using.
+    validations:
+      required: true
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      description: Please write the particular model of NVIDIA GPU you are using.
+    validations:
+      required: true
+
+  - type: textarea
+    id: describe
+    attributes:
+      label: Describe the bug
+      description: Please write a clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: To Reproduce
+      description: |
+        Please reproduce the problem, run `nvidia-bug-report.sh`, and attach the resulting `nvidia-bug-report.log.gz`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: Please write a clear and concise description of what you expected to happen.
+    validations:
+      required: true
+
