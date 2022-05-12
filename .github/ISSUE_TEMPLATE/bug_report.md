@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: 'bug'
+labels: bug
 assignees: ''
 
 ---
@@ -23,4 +23,3 @@ Please write the steps to reproduce the behavior.
 Please write a clear and concise description of what you expected to happen.
 
 **Please reproduce the problem, run nvidia-bug-report.sh, and attach the resulting nvidia-bug-report.log.gz.**
-
