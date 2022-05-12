@@ -2678,7 +2678,7 @@ static NV_STATUS block_copy_resident_pages_between(uvm_va_block_t *block,
 
     // Update VA block status bits
     //
-    // Only update the bits for the pages that succeded
+    // Only update the bits for the pages that succeeded
     if (status != NV_OK)
         uvm_page_mask_region_clear(copy_mask, uvm_va_block_region(page_index, PAGES_PER_UVM_VA_BLOCK));
 
@@ -4976,7 +4976,7 @@ static void block_gpu_map_big_and_4k(uvm_va_block_t *block,
     uvm_pte_batch_begin(push, pte_batch);
     uvm_tlb_batch_begin(tree, tlb_batch);
 
-    // All of these cases might be perfomed in the same call:
+    // All of these cases might be performed in the same call:
     // 1) Split currently-big PTEs to 4k
     //    a) Write new 4k PTEs which inherit curr_prot under the split big PTEs
     //    b) Write new 4k PTEs which get new_prot under the split big PTEs
@@ -5278,7 +5278,7 @@ static void block_gpu_unmap_big_and_4k(uvm_va_block_t *block,
     uvm_pte_batch_begin(push, pte_batch);
     uvm_tlb_batch_begin(tree, tlb_batch);
 
-    // All of these cases might be perfomed in the same call:
+    // All of these cases might be performed in the same call:
     // 1) Split currently-big PTEs to 4k
     //    a) Write new 4k PTEs which inherit curr_prot under the split big PTEs
     //    b) Clear new 4k PTEs which get unmapped under the split big PTEs

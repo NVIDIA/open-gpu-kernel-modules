@@ -683,7 +683,7 @@ static void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, 
 // va_block_context->make_resident.pages_changed_residency for each page that
 // changed residency (due to a migration or first population) as a result of the
 // operation. This function only sets bits in that mask. It is the caller's
-// responsiblity to zero the mask or not first.
+// responsibility to zero the mask or not first.
 //
 // Notably any status other than NV_OK indicates that the block's lock might
 // have been unlocked and relocked.
@@ -1912,7 +1912,7 @@ uvm_processor_id_t uvm_va_block_select_residency(uvm_va_block_t *va_block,
                                                  bool *read_duplicate);
 
 // Return the maximum mapping protection for processor_id that will not require
-// any permision revocation on the rest of processors.
+// any permission revocation on the rest of processors.
 uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block,
                                                         uvm_processor_id_t processor_id,
                                                         uvm_page_index_t page_index);
