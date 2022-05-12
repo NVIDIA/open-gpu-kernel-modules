@@ -167,7 +167,7 @@ extern "C" {
  *      This is sort of like the inverse of DRF_NUM
  *
  * DRF_IDX...:
- *      These macros are similar to the above but for fields that accept an index argumment
+ *      These macros are similar to the above but for fields that accept an index argument
  *
  * FLD_SET_DRF:
  *      Set the field bits in a given value with the given field constant

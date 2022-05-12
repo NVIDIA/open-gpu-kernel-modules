@@ -82,7 +82,7 @@ extern "C"
 #endif // (defined(_WIN32) || defined(_WIN64))
 
 /*
- * NVSWITCH_NVLINK_MAX_LANES is used by both internal and exteranl IOCTLs.
+ * NVSWITCH_NVLINK_MAX_LANES is used by both internal and external IOCTLs.
  */
 #define NVSWITCH_NVLINK_MAX_LANES  4
 
