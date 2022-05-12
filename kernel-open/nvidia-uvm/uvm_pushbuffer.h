@@ -130,7 +130,7 @@
 // driver, but for now we will set the MAX_PUSH to 128K as that seems pretty
 // safe.
 //
-// A pushbuffer needs to accomodate all possible operations on a 2 Mb Va region
+// A pushbuffer needs to accommodate all possible operations on a 2 Mb Va region
 // per gpu. The longest sequence of operations would be:
 // Acquire 3 + 32 trackers:
 // replay tracker, instancePtr tracker, 2Mb descriptor tracker and 32 trackers
