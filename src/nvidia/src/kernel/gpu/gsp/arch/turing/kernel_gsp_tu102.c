@@ -193,7 +193,7 @@ kgspFreeBootArgs_TU102
     KernelGsp *pKernelGsp
 )
 {
-    // release wpr meta data resources
+    // Release wpr meta data resources
     if (pKernelGsp->pWprMeta != NULL)
     {
         memdescUnmap(pKernelGsp->pWprMetaDescriptor,
@@ -210,7 +210,7 @@ kgspFreeBootArgs_TU102
         pKernelGsp->pWprMetaDescriptor = NULL;
     }
 
-    // release libos init argument resources
+    // Release libos init argument resources
     if (pKernelGsp->pLibosInitArgumentsCached != NULL)
     {
         memdescUnmap(pKernelGsp->pLibosInitArgumentsDescriptor,
@@ -227,7 +227,7 @@ kgspFreeBootArgs_TU102
         pKernelGsp->pLibosInitArgumentsDescriptor = NULL;
     }
 
-    // release init argument page resources
+    // Release init argument page resources
     if (pKernelGsp->pGspArgumentsCached != NULL)
     {
         memdescUnmap(pKernelGsp->pGspArgumentsDescriptor,
