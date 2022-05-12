@@ -59,7 +59,7 @@
  * underlying pages' reserved bits, but didn't free them. The kernel
  * was expected to do this.
  *
- * This worked in practise, but made dangerous assumptions about the
+ * This worked in practice, but made dangerous assumptions about the
  * kernel's behavior and could fail in some cases. We now handle
  * this case differently (see below).
  */
