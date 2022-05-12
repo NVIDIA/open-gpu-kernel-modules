@@ -48,7 +48,7 @@ typedef enum
 
 //
 // A policy covers one or more contiguous Linux VMAs or portion of a VMA and
-// does not cover non-existant VMAs.
+// does not cover non-existent VMAs.
 // The VA range is determined from either the uvm_va_range_t for UVM managed
 // allocations or the uvm_va_policy_node_t for HMM allocations.
 //
