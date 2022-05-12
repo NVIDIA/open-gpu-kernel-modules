@@ -49,7 +49,7 @@ E.g.,
         
 For aarch64 make sure you have these packages installed:
 
-    aarch64-linux-gnu-binutils 
+    aarch64-linux-gnu-binutils
     aarch64-linux-gnu-glibc
     aarch64-linux-gnu-linux-api-headers
     aarch64-linux-gnu-gcc
