@@ -193,7 +193,7 @@ NV_STATUS uvm_ats_ibm_add_gpu(uvm_parent_gpu_t *parent_gpu)
 
     npu = uvm_ibm_npu_find(pci_domain_nr(npu_dev->bus));
     if (!npu) {
-        // If this happens then we can't support the system configuation until
+        // If this happens then we can't support the system configuration until
         // NV_MAX_NPUS is updated. Return the same error as when the number of
         // GPUs exceeds UVM_MAX_GPUS.
         UVM_ERR_PRINT("No more NPU slots available, update NV_MAX_NPUS\n");
