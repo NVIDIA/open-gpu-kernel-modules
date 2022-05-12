@@ -813,14 +813,14 @@ typedef struct
 #define UVM_TEST_GET_PREFETCH_FAULTS_REENABLE_LAPSE      UVM_TEST_IOCTL_BASE(50)
 typedef struct
 {
-    NvU32       reenable_lapse; // Out: Lapse in miliseconds
+    NvU32       reenable_lapse; // Out: Lapse in milliseconds
     NV_STATUS         rmStatus; // Out
 } UVM_TEST_GET_PREFETCH_FAULTS_REENABLE_LAPSE_PARAMS;
 
 #define UVM_TEST_SET_PREFETCH_FAULTS_REENABLE_LAPSE      UVM_TEST_IOCTL_BASE(51)
 typedef struct
 {
-    NvU32       reenable_lapse; // In: Lapse in miliseconds
+    NvU32       reenable_lapse; // In: Lapse in milliseconds
     NV_STATUS         rmStatus; // Out
 } UVM_TEST_SET_PREFETCH_FAULTS_REENABLE_LAPSE_PARAMS;
 
@@ -870,7 +870,7 @@ typedef struct
 } UVM_TEST_PMM_INJECT_PMA_EVICT_ERROR_PARAMS;
 
 // Change configuration of access counters. This call will disable access
-// counters and reenable them using the new configuration. All previous
+// counters and re-enable them using the new configuration. All previous
 // notifications will be lost
 //
 // The reconfiguration affects all VA spaces that rely on the access
