@@ -21,7 +21,7 @@ as root:
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
-latest driver release.  This can be achieved by installing
+[latest driver release][latest-driver-link].  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
