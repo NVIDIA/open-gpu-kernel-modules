@@ -17,4 +17,4 @@ jobs:
 
       - name: Build
         run: |
-          make modules -j`nproc`
+          make modules -j$(nproc)
