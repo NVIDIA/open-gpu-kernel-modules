@@ -1141,11 +1141,13 @@ void nv_drm_enumerate_crtcs_and_planes(
         }
 
         for (layer = 0; layer < pResInfo->numLayers[i]; layer++) {
+            struct drm_plane *overlay_plane;
+
             if (layer == NVKMS_KAPI_LAYER_PRIMARY_IDX) {
                 continue;
             }
 
-            struct drm_plane *overlay_plane =
+            overlay_plane =
                 nv_drm_plane_create(nv_dev->dev,
                                     DRM_PLANE_TYPE_OVERLAY,
                                     layer,
