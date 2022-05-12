@@ -1772,29 +1772,23 @@ void ConnectorImpl::populateDscSinkCaps(DSC_INFO* dscInfo, DeviceImpl * dev)
         dscInfo->sinkCaps.decoderColorFormatMask |= DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420;
     }
 
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_16)
+    switch (dev->dscCaps.dscBitsPerPixelIncrement)
     {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_16;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_8)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_8;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_4)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_4;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_2)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_2;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1;
+        case BITS_PER_PIXEL_PRECISION_1_16:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_16;
+            break;
+        case BITS_PER_PIXEL_PRECISION_1_8:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_8;
+            break;
+        case BITS_PER_PIXEL_PRECISION_1_4:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_4;
+            break;
+        case BITS_PER_PIXEL_PRECISION_1_2:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_2;
+            break;
+        case BITS_PER_PIXEL_PRECISION_1:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1;
+            break;
     }
 
     // Decoder color depth mask
