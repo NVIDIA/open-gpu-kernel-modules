@@ -1492,7 +1492,7 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
                                                        va_range->node.start,
                                                        va_range->node.end) {
             if (!iter.migratable) {
-                // Clear the range group assocation for any unmigratable ranges if there is no preferred location
+                // Clear the range group association for any unmigratable ranges if there is no preferred location
                 status = uvm_range_group_assign_range(va_space, NULL, iter.start, iter.end);
                 if (status != NV_OK)
                     return status;
