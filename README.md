@@ -19,7 +19,7 @@ Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
 515.43.04 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
-option.  E.g.,
+option.  E.g.
 
     sh ./NVIDIA-Linux-[...].run --no-kernel-modules
 
@@ -36,7 +36,7 @@ If cross-compiling, set these variables on the make command line:
     CXX
     OBJCOPY
 
-E.g.,
+E.g.
 
     # compile on x86_64 for aarch64
     make modules -j`nproc`          \
@@ -57,7 +57,7 @@ DEBUG - Set this to "1" to build the kernel modules as debug.  By default, the
     build compiles without debugging information.  This also enables
     various debug log messages in the kernel modules.
 
-These variables can be set on the make command line.  E.g.,
+These variables can be set on the make command line.  E.g.
 
     make modules -j`nproc` NV_VERBOSE=1
 
