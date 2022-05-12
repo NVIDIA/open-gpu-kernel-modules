@@ -1,0 +1,74 @@
+## wattman-like functionality
+# boot with amdgpu.ppfeaturemask=0xffffffff (make sure PP_OVERDRIVE_MASK bit is set see hwmgr.h)
+# see the current dpm clock and voltage levels
+cat /sys/class/drm/card0/device/pp_od_clk_voltage
+#OD_SCLK:
+#0:        300Mhz        900 mV
+#1:        484Mhz        925 mV
+#2:        709Mhz        962 mV
+#3:        858Mhz       1112 mV
+#4:        891Mhz       1150 mV
+#5:        917Mhz       1175 mV
+#6:        949Mhz       1175 mV
+#7:        973Mhz       1175 mV
+#OD_MCLK:
+#0:        150Mhz        900 mV
+#1:       1375Mhz        975 mV
+# change mclk dpm level 0 from 150 to 155Mhz, no change to voltage
+# format is "m dpm_level clock_in_mhz voltage_in_mv"
+echo "m 0 155 900" > /sys/class/drm/card0/device/pp_od_clk_voltage
+# change sclk dpm level 7 from 973 to 975Mhz, change voltage from 1175 to 1180 mV
+# format is "s dpm_level clock_in_mhz voltage_in_mv"
+echo "s 7 975 1180" > /sys/class/drm/card0/device/pp_od_clk_voltage
+# change sclk dpm level 5 from 917 to 910Mhz, change voltage from 1175 to 1160 mV
+# format is "s dpm_level clock_in_mhz voltage_in_mv"
+echo "s 7 910 1160" > /sys/class/drm/card0/device/pp_od_clk_voltage
+# see the current dpm clock and voltage levels
+cat /sys/class/drm/card0/device/pp_od_clk_voltage
+#OD_SCLK:
+#0:        300Mhz        900 mV
+#1:        484Mhz        925 mV
+#2:        709Mhz        962 mV
+#3:        858Mhz       1112 mV
+#4:        891Mhz       1150 mV
+#5:        910Mhz       1160 mV
+#6:        949Mhz       1175 mV
+#7:        975Mhz       1180 mV
+#OD_MCLK:
+#0:        155Mhz        900 mV
+#1:       1375Mhz        975 mV
+# commit the changes to the hw
+echo "c" > /sys/class/drm/card0/device/pp_od_clk_voltage
+# reset to the default dpm states
+echo "r" > /sys/class/drm/card0/device/pp_od_clk_voltage
+# commit the reset state to the hw
+echo "c" > /sys/class/drm/card0/device/pp_od_clk_voltage
+
+## reading/adjusting hwmon values
+# https://www.kernel.org/doc/Documentation/hwmon/sysfs-interface
+# see which hwmon device this is
+cat /sys/class/hwmon/hwmon0/name
+# readback current vddgfx/vddnb voltages
+# see which one this is
+cat /sys/class/hwmon/hwmon0/in0_label
+# read the voltage (mV)
+cat /sys/class/hwmon/hwmon0/in0_input
+# see current power (microwatts)
+cat /sys/class/hwmon/hwmon0/power1_average
+# current temp (millidegrees C)
+cat /sys/class/hwmon/hwmon0/temp1_input
+# see fan speed (rpm)
+cat /sys/class/hwmon/hwmon0/fan1_input
+# see fan speed pwm (0-255)
+cat /sys/class/hwmon/hwmon0/pwm1
+# see min/max pwm limits
+cat /sys/class/hwmon/hwmon0/pwm1_min
+cat /sys/class/hwmon/hwmon0/pwm1_max
+# see current fan control mode (0 none, 1 manual fan control, 2 dynamic fan control)
+cat /sys/class/hwmon/hwmon0/pwm1_enable
+# enable manual fan control
+echo 1 > /sys/class/hwmon/hwmon0/pwm1_enable
+# manually set the fan speed (100/255 = 39%)
+echo 100 > /sys/class/hwmon/hwmon0/pwm1
+# enable automatic fan control
+echo 2 > /sys/class/hwmon/hwmon0/pwm1_enable

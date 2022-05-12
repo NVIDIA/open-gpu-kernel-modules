@@ -1,0 +1,147 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/media/nxp,imx7-mipi-csi2.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: NXP i.MX7 MIPI CSI-2 receiver
+
+maintainers:
+  - Rui Miguel Silva <rmfrfs@gmail.com>
+
+description: |-
+  The NXP i.MX7 SoC family includes a MIPI CSI-2 receiver IP core, documented
+  as "CSIS V3.3". The IP core seems to originate from Samsung, and may be
+  compatible with some of the Exynos4 ad S5P SoCs.
+
+  While the CSI-2 receiver is separate from the MIPI D-PHY IP core, the PHY is
+  completely wrapped by the CSIS and doesn't expose a control interface of its
+  own. This binding thus covers both IP cores.
+
+properties:
+  compatible:
+    const: fsl,imx7-mipi-csi2
+
+  reg:
+    maxItems: 1
+
+  interrupts:
+    maxItems: 1
+
+  clocks:
+    items:
+      - description: The peripheral clock (a.k.a. APB clock)
+      - description: The external clock (optionally used as the pixel clock)
+      - description: The MIPI D-PHY clock
+
+  clock-names:
+    items:
+      - const: pclk
+      - const: wrap
+      - const: phy
+
+  power-domains:
+    maxItems: 1
+
+  phy-supply:
+    description: The MIPI D-PHY digital power supply
+
+  resets:
+    items:
+      - description: MIPI D-PHY slave reset
+
+  clock-frequency:
+    description: The desired external clock ("wrap") frequency, in Hz
+    default: 166000000
+
+  ports:
+    $ref: /schemas/graph.yaml#/properties/ports
+
+    properties:
+      port@0:
+        $ref: /schemas/graph.yaml#/$defs/port-base
+        unevaluatedProperties: false
+        description:
+          Input port node, single endpoint describing the CSI-2 transmitter.
+
+        properties:
+          endpoint:
+            $ref: video-interfaces.yaml#
+            unevaluatedProperties: false
+
+            properties:
+              data-lanes:
+                oneOf:
+                  - items:
+                      - const: 1
+                  - items:
+                      - const: 1
+                      - const: 2
+
+            required:
+              - data-lanes
+
+      port@1:
+        $ref: /schemas/graph.yaml#/properties/port
+        description:
+          Output port node
+
+required:
+  - compatible
+  - reg
+  - interrupts
+  - clocks
+  - clock-names
+  - power-domains
+  - phy-supply
+  - resets
+  - ports
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/imx7d-clock.h>
+    #include <dt-bindings/interrupt-controller/arm-gic.h>
+    #include <dt-bindings/interrupt-controller/irq.h>
+    #include <dt-bindings/reset/imx7-reset.h>
+
+    mipi_csi: mipi-csi@30750000 {
+        compatible = "fsl,imx7-mipi-csi2";
+        reg = <0x30750000 0x10000>;
+        interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
+
+        clocks = <&clks IMX7D_IPG_ROOT_CLK>,
+                 <&clks IMX7D_MIPI_CSI_ROOT_CLK>,
+                 <&clks IMX7D_MIPI_DPHY_ROOT_CLK>;
+        clock-names = "pclk", "wrap", "phy";
+        clock-frequency = <166000000>;
+
+        power-domains = <&pgc_mipi_phy>;
+        phy-supply = <&reg_1p0d>;
+        resets = <&src IMX7_RESET_MIPI_PHY_MRST>;
+
+        ports {
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            port@0 {
+                reg = <0>;
+
+                mipi_from_sensor: endpoint {
+                    remote-endpoint = <&ov2680_to_mipi>;
+                    data-lanes = <1>;
+                };
+            };
+
+            port@1 {
+                reg = <1>;
+
+                mipi_vc0_to_csi_mux: endpoint {
+                    remote-endpoint = <&csi_mux_from_mipi_vc0>;
+                };
+            };
+        };
+    };
+
+...

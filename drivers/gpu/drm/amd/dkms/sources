@@ -1,0 +1,33 @@
+#
+# The 'sources' file contains source/destination directives to be used
+# by the build framework to construct the DKMS source tree
+#
+# File format:
+#   source                  destination
+#   ------                  -----------
+#   directory[/file] name   directory/[file] name
+#   must exist at the       directory: must have explicit directory name
+#   source path                        e.g. dir/ (with '/'). The name without
+#                                      slash is treated as a file if it does
+#                                      not exist
+#                                      the directory will be created if it
+#                                      does not exist
+#                           file: optional file name at the destination
+#
+drivers/gpu/drm/amd .
+drivers/gpu/drm/ttm .
+include/drm/ttm include/drm/
+include/uapi/drm/amdgpu_drm.h include/uapi/drm/
+include/kcl include/
+drivers/gpu/drm/scheduler .
+include/drm/gpu_scheduler.h include/drm/
+include/drm/amd_asic_type.h include/drm/
+include/drm/spsc_queue.h include/drm/
+include/uapi/linux/kfd_ioctl.h include/uapi/linux/
+include/drm/amd_rdma.h include/drm/
+drivers/dma-buf/dma-resv.c amd/amdkcl/dma-buf/
+include/linux/dma-resv.h include/linux/
+include/kcl/reservation.h include/linux/
+include/uapi/linux/kfd_sysfs.h include/uapi/linux/
+drivers/gpu/drm/drm_gem_ttm_helper.c .
+include/drm/drm_gem_ttm_helper.h include/drm/
