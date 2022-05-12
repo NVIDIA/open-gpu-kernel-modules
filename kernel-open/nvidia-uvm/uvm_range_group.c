@@ -599,7 +599,7 @@ NV_STATUS uvm_range_group_assign_range(uvm_va_space_t *va_space, uvm_range_group
             uvm_range_tree_shrink_node(&va_space->range_group_ranges, &rgr->node, rgr->node.start, start - 1);
         }
         else if (rgr->node.end > end) {
-            // The region [start, end] overlaps with the begining of rgr.
+            // The region [start, end] overlaps with the beginning of rgr.
             // Shrink rgr by moving its beginning upward.
             uvm_range_tree_shrink_node(&va_space->range_group_ranges, &rgr->node, end + 1, rgr->node.end);
         }
