@@ -1122,13 +1122,13 @@ typedef struct tagNVT_VALID_EXTENDED_BLOCKS
 #define NVT_CEA861_Y420VDB_SD_SIZE              1
 
 // Max number of YUV420 VDBs for each VDB block is 30 per CTA-861-G spec sec. 7.5.10
-// Accomodate 2 blocks 
+// Accommodate 2 blocks 
 #define NVT_CEA861_Y420VDB_MAX_DESCRIPTOR       60
 
 #define NVT_CEA861_Y420CMDB_SD_SIZE             1
 
 // Max number of YUV420 SVDs for each VDB block is 30 per CTA-861-G spec sec. 7.5.11
-// Accomodate 2 blocks 
+// Accommodate 2 blocks 
 #define NVT_CEA861_Y420CMDB_MAX_DESCRIPTOR      60 
 #define NVT_CEA861_VFPDB_SD_SIZE                1
 #define NVT_CEA861_VFPDB_MAX_DESCRIPTOR         16  // NOTE: Limiting to 16 to not allocate too much space.  The maximum descriptor should be:
