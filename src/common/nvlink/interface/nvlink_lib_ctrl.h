@@ -396,7 +396,7 @@ typedef struct
  * CTRL_NVLINK_DEVICE_GET_INTRANODE_CONNS
  * 
  * Returns all the nvlink intranode connections for a device.
- * This interface allows a user mode module to retrive endpoint details 
+ * This interface allows a user mode module to retrieve endpoint details 
  * of all the intranode connections for the specified device.
  *
  * Note:
@@ -930,7 +930,7 @@ typedef struct
  *      nvlink connections 
  *
  *   endPointPairsCount [IN]
- *      Specify count of intranode connnection passed in
+ *      Specify count of intranode connection passed in
  *
  *   status [OUT]
  *      One of the NVL_XXX status value.
