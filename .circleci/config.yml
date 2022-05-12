@@ -1,0 +1,95 @@
+version: 2.1
+
+commands:
+  build-kernel-module:
+    description: "Builds Kernel Module"
+    parameters:
+      build-args:
+        type: string
+        default: "-j`nproc`"
+      NV_VERBOSE:
+        type: string
+        default: "0"
+      DEBUG:
+        type: string
+        default: "0"
+    steps:
+      - checkout
+      - run:
+          name: Compile Kernel Module
+          command: make modules << parameters.build-args >> NV_VERBOSE=<< parameters.NV_VERBOSE >> DEBUG=<< parameters.DEBUG >>
+      - run:
+          name: "Move Compiled Files to Temp Directory"
+          command: |
+            mkdir -p /tmp/kernel-open
+            cp -r kernel-open/* /tmp/kernel-open/
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - kernel-open/*
+
+  install-kernel-module:
+    description: "Installs Kernel Module"
+    parameters:
+      install-args:
+        type: string
+        default: "-j`nproc`"
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp
+      - run:
+          name: "Copy over Compiled Files from Temp Directory"
+          command: cp -r /tmp/kernel-open/* kernel-open/
+      - run: ls -lah kernel-open/
+      - run:
+          name: Install Kernel Module
+          command: sudo make modules_install << parameters.install-args >>
+
+
+executors:
+  arm64:
+    machine:
+      image: ubuntu-2004:current
+    resource_class: arm.medium
+
+  amd64:
+    machine:
+      image: ubuntu-2004:current
+    resource_class: medium
+
+
+jobs:
+  build:
+    parameters:
+      architecture:
+        type: executor
+    executor: << parameters.architecture >>
+    steps:
+      - build-kernel-module:
+          build-args: "-j`nproc`"
+
+  install:
+    parameters:
+      architecture:
+        type: executor
+    executor: << parameters.architecture >>
+    steps:
+      - install-kernel-module:
+          install-args: "-j`nproc`"
+
+workflows:
+  multi-arch-build:
+    jobs:
+      - build:
+          name: "Building << matrix.architecture >> Kernel Module"
+          matrix:
+            parameters:
+              architecture: ["arm64", "amd64"]
+      - install:
+          name: "Installing << matrix.architecture >> Kernel Module"
+          matrix:
+            parameters:
+              architecture: ["arm64", "amd64"]
+          requires:
+            - "Building << matrix.architecture >> Kernel Module"
