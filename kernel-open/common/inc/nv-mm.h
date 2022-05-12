@@ -108,7 +108,7 @@ typedef int vm_fault_t;
  *
  * The guidelines are: call NV_GET_USER_PAGES_REMOTE if you need the 8-argument
  * version that uses something other than current and current->mm. Use
- * NV_GET_USER_PAGES if you are refering to current and current->mm.
+ * NV_GET_USER_PAGES if you are referring to current and current->mm.
  *
  * Note that get_user_pages_remote() requires the caller to hold a reference on
  * the task_struct (if non-NULL and if this API has tsk argument) and the mm_struct.
