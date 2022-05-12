@@ -938,7 +938,7 @@ static void rtt_get_rand_range_covering(uvm_test_rng_t *rng,
 // Attempt to add N ranges to the tree, where N is randomly selected from the
 // range [1, params->max_batch_count]. Each range is randomly chosen.
 //
-// Repeats eachs individual addition on collision up to params->max_attempts
+// Repeats each individual addition on collision up to params->max_attempts
 // times. If the attempt threshold is reached this stops trying to add more
 // ranges, adjusts the RNG probabilities to prefer remove operations, and
 // returns NV_ERR_BUSY_RETRY.
