@@ -22,5 +22,5 @@ Please write the steps to reproduce the behavior.
 **Expected behavior**
 Please write a clear and concise description of what you expected to happen.
 
-**Please reproduce the problem, run nvidia-bug-report.sh, and attach the resulting nvidia-bug-report.log.gz.**
+**Please reproduce the problem, run `nvidia-bug-report.sh`, and attach the resulting nvidia-bug-report.log.gz.**
 
