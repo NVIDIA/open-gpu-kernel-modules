@@ -995,7 +995,7 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
     // bit index just beyond the most significant bit used to index the current entry
     NvU32 addr_bit_shift = hal->num_va_bits();
 
-    // track depth upon which the invalidate occured
+    // track depth upon which the invalidate occurred
     NvS32 invalidate_depth = -1;
     uvm_page_directory_t *dir = tree->root;
 
