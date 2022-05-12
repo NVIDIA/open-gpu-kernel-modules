@@ -1242,7 +1242,7 @@ nvlink_core_initnegotiate
         }
     }
 
-    // Bug 2398907 mentioned that a link pair can take upto 125us for DL stat to have CONFIG_GOOD.
+    // Bug 2398907 mentioned that a link pair can take up to 125us for DL stat to have CONFIG_GOOD.
     nvlink_sleep(1);
 
     for (i = 0; i < numLinks; i++)
