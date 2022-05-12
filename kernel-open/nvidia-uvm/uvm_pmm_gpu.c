@@ -642,13 +642,9 @@ NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
                                    uvm_gpu_chunk_t **chunks,
                                    uvm_tracker_t *out_tracker)
 {
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     NV_STATUS status;
     size_t i;
     uvm_pmm_gpu_memory_type_t memory_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
-
-
-
 
 
     status = uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, memory_type, flags, chunks, out_tracker);
