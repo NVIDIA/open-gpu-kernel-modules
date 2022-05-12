@@ -573,7 +573,7 @@ NV_STATUS uvm_hmm_va_block_reclaim(uvm_va_space_t *va_space,
         }
 
         // Note that this waits for any invalidations callbacks to complete
-        // so uvm_hmm_invalidate() won't see a block disapear.
+        // so uvm_hmm_invalidate() won't see a block disappear.
         // The va_space write lock should prevent uvm_hmm_va_block_find_create()
         // from adding it back.
         mmu_interval_notifier_remove(&va_block->hmm.notifier);
