@@ -8,12 +8,16 @@ version 515.43.04.
 
 To build:
 
-    make modules -j`nproc`
+```sh
+make modules -j`nproc`
+```
 
 To install, first uninstall any existing NVIDIA kernel modules.  Then,
 as root:
 
-    make modules_install -j`nproc`
+```sh
+make modules_install -j`nproc`
+```
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
@@ -21,8 +25,9 @@ firmware and user-space NVIDIA GPU driver components from a corresponding
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
-    sh ./NVIDIA-Linux-[...].run --no-kernel-modules
-
+```sh
+sh ./NVIDIA-Linux-[...].run --no-kernel-modules
+```
 
 ## Supported Target CPU Architectures
 
@@ -38,15 +43,16 @@ If cross-compiling, set these variables on the make command line:
 
 E.g.,
 
-    # compile on x86_64 for aarch64
-    make modules -j`nproc`          \
-        TARGET_ARCH=aarch64         \
-        CC=aarch64-linux-gnu-gcc    \
-        LD=aarch64-linux-gnu-ld     \
-        AR=aarch64-linux-gnu-ar     \
-        CXX=aarch64-linux-gnu-g++   \
-        OBJCOPY=aarch64-linux-gnu-objcopy
-
+```sh
+# compile on x86_64 for aarch64
+make modules -j`nproc`          \
+    TARGET_ARCH=aarch64         \
+    CC=aarch64-linux-gnu-gcc    \
+    LD=aarch64-linux-gnu-ld     \
+    AR=aarch64-linux-gnu-ar     \
+    CXX=aarch64-linux-gnu-g++   \
+    OBJCOPY=aarch64-linux-gnu-objcopy
+```
 
 ## Other Build Knobs
 
@@ -59,8 +65,9 @@ DEBUG - Set this to "1" to build the kernel modules as debug.  By default, the
 
 These variables can be set on the make command line.  E.g.,
 
-    make modules -j`nproc` NV_VERBOSE=1
-
+```sh
+make modules -j`nproc` NV_VERBOSE=1
+```
 
 ## Supported Toolchains
 
