@@ -500,12 +500,12 @@ get_configuration_option() {
 }
 
 check_for_ib_peer_memory_symbols() {
-    local kernel_dir="$1"
-    local module_symvers="${kernel_dir}/Module.symvers"
+    kernel_dir="$1"
+    module_symvers="${kernel_dir}/Module.symvers"
 
-    local sym_ib_register="ib_register_peer_memory_client"
-    local sym_ib_unregister="ib_unregister_peer_memory_client"
-    local tab='	'
+    sym_ib_register="ib_register_peer_memory_client"
+    sym_ib_unregister="ib_unregister_peer_memory_client"
+    tab='	'
 
     # Return 0 for true(no errors), 1 for false
     if [ ! -f "${module_symvers}" ]; then
