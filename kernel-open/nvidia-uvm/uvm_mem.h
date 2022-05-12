@@ -96,7 +96,7 @@ typedef struct
     // For DMA allocations, the accessing GPU needs to be known at alloc
     // time for sysmem allocations. Setting the DMA owner has consequences on
     // the lifetime of the allocation, which are described in the block
-    // commment at the top of the file.
+    // comment at the top of the file.
     // The mapping is bound to the allocation, hence, one can assume that the
     // mappings on dma_owner are done when uvm_mem_alloc() returns.
     uvm_gpu_t *dma_owner;
