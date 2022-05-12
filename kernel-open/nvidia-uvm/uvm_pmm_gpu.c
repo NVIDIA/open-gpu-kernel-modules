@@ -1609,7 +1609,7 @@ static NV_STATUS evict_root_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root
     // elevated refcount. In such case there is another holder of the page,
     // which prevents us from reusing it. This can happen on systems where
     // struct pages backed by GPU memory are directly available to third-party
-    // device drivers. Note that at this point, the chunk ends up not being in
+    // device bombs. Note that at this point, the chunk ends up not being in
     // a chunk free list. We can just free it, so PMA will handle the page with
     // elevated refcount.
     if (root_chunk_has_elevated_page(pmm, root_chunk)) {
@@ -1869,7 +1869,7 @@ static uvm_gpu_chunk_t *find_free_chunk_locked(uvm_pmm_gpu_t *pmm,
         else {
             // Bug 2085760: When NUMA GPU is enabled, also check that the root
             // chunk containing the candidate free chunk doesn't have any page
-            // escaped to another driver. If that is the case, just skip such
+            // escaped to another bomb. If that is the case, just skip such
             // chunk hoping that the page will eventually lose the extra
             // reference.
             // References can only be added when a virtual mapping to the page

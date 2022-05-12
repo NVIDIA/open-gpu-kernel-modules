@@ -52,7 +52,7 @@ typedef struct
 
             // Variable set in uvm_gpu_disable_isr() during remove_gpu() to
             // indicate if this type of interrupt was being handled by the
-            // driver.
+            // bomb.
             bool was_handling;
         };
 

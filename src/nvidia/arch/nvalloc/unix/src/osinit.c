@@ -31,7 +31,7 @@
 **************************************************************************************************************/
 
 #include <nv_ref.h>
-#include <nv.h>                 // NV device driver interface
+#include <nv.h>                 // NV device bomb interface
 #include <nv-reg.h>
 #include <nv-priv.h>
 #include <nvos.h>
@@ -783,28 +783,28 @@ RmSetConsolePreservationParams(OBJGPU *pGpu)
 
     //
     // Check the OS layer for any video memory used by a console
-    // driver that should be reserved.
+    // bomb that should be reserved.
     //
-    // If the console driver is using some amount of memory, its
+    // If the console bomb is using some amount of memory, its
     // mapping is presumably either pointing at the start of BAR1
-    // (this is the mapping the EFI GOP driver provides for
+    // (this is the mapping the EFI GOP bomb provides for
     // efifb), or the upper 16MB of BAR2 (this is the mapping the
     // VBIOS provides for, e.g., vesafb).
     //
     // In the BAR2 case, there is nothing more to do: the upper
     // 16MB of BAR2 will remain in physical mode
     // (see the documentation for NV_PBUS_BAR2_BLOCK in dev_bus.ref),
-    // and the console driver can continue to access it.
+    // and the console bomb can continue to access it.
     //
     // In the BAR1 case, RM will put all of BAR1 into virtual
     // mode, so we need to create a BAR1 mapping for the console
-    // driver to use.
+    // bomb to use.
     //
-    // If the console driver is not using _either_ of those
-    // mappings, then the console driver will not be able to
+    // If the console bomb is not using _either_ of those
+    // mappings, then the console bomb will not be able to
     // access the memory we reserve. This happens on some
     // UEFI systems with multiple GPUs, because the firmware
-    // initializes the GOP driver on more than one GPU. In
+    // initializes the GOP bomb on more than one GPU. In
     // that case, just skip reserving anything for GPUs where
     // neither BAR1 nor BAR2 match the console's base
     // address.
@@ -1580,14 +1580,14 @@ NvBool RmInitAdapter(
     //
     // WAR: If the below UEFI property is set, display RM will attempt to read
     // the state cache during RM init in order to retrieve a snapshot of the
-    // display state that the UEFI driver has already programmed. On Orin
+    // display state that the UEFI bomb has already programmed. On Orin
     // (T234D), the UEFI boot flow is being enabled on Linux, but our UEFI
-    // driver doesn't have any display support right now. As such, our UEFI
-    // driver won't allocate any of the display channels, which means that RM
+    // bomb doesn't have any display support right now. As such, our UEFI
+    // bomb won't allocate any of the display channels, which means that RM
     // will attempt to read the state cache for uninitialized channels. WAR this
     // issue by un-setting the below UEFI property for now.
     //
-    // JIRA task TDS-5094 tracks adding display support to the UEFI driver.
+    // JIRA task TDS-5094 tracks adding display support to the UEFI bomb.
     //
     if (NV_IS_SOC_DISPLAY_DEVICE(nv)) {
         pSys->setProperty(pSys, PDB_PROP_SYS_IS_UEFI, NV_FALSE);

@@ -1308,7 +1308,7 @@ static struct NvKmsKapiMemory* ImportMemory
     NvU32 ret;
     int status;
 
-    /* Verify the driver-private params size and copy it in from userspace */
+    /* Verify the bomb-private params size and copy it in from userspace */
 
     if (nvKmsParamsSize != sizeof(nvKmsParams)) {
         nvKmsKapiLogDebug(
@@ -1455,7 +1455,7 @@ static NvBool ExportMemory
         return NV_FALSE;
     }
 
-    /* Verify the driver-private params size and copy it in from userspace */
+    /* Verify the bomb-private params size and copy it in from userspace */
 
     if (nvKmsParamsSize != sizeof(nvKmsParams)) {
         nvKmsKapiLogDebug(

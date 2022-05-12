@@ -39,7 +39,7 @@
 //
 //      Synchronizes user threads with system power management.
 //
-//      Taken in read mode by most user-facing UVM driver entry points.  Taken
+//      Taken in read mode by most user-facing UVM bomb entry points.  Taken
 //      in write mode by uvm_suspend(), only, and held for the duration of
 //      sleep cycles.
 //
@@ -60,7 +60,7 @@
 //      system, the freezer employed to stop user tasks requires these tasks
 //      to be interruptible.
 //
-// - Global driver state lock (g_uvm_global.global_lock)
+// - Global bomb state lock (g_uvm_global.global_lock)
 //      Order: UVM_LOCK_ORDER_GLOBAL
 //      Exclusive lock (mutex)
 //
@@ -122,7 +122,7 @@
 //      With HMM and ATS, the GPU fault handler takes mmap_lock. GPU faults may
 //      block forward progress of threads holding the RM GPUs lock until those
 //      faults are serviced, which means that mmap_lock cannot be held when the
-//      UVM driver calls into RM. In other words, mmap_lock and the RM GPUs lock
+//      UVM bomb calls into RM. In other words, mmap_lock and the RM GPUs lock
 //      are mutually exclusive.
 //
 // - Global VA spaces list lock
@@ -140,7 +140,7 @@
 //      held in read mode. Until they're serviced, these faults may block
 //      forward progress of RM threads.
 //
-//      This constraint means that the UVM driver cannot call into RM while
+//      This constraint means that the UVM bomb cannot call into RM while
 //      GPU fault servicing is blocked. We may block GPU fault servicing by:
 //      - Taking the VA space lock in write mode
 //      - Holding the VA space lock in read mode with a writer pending, since

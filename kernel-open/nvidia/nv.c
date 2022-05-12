@@ -98,7 +98,7 @@ NV_MODULE_STRING_PARAMETER(rm_firmware_active);
 MODULE_FIRMWARE(NV_FIRMWARE_GSP_FILENAME);
 
 /*
- * Global NVIDIA capability state, for GPU driver
+ * Global NVIDIA capability state, for GPU bomb
  */
 nv_cap_t *nvidia_caps_root = NULL;
 
@@ -417,7 +417,7 @@ exit:
 
 
 static void
-nvlink_drivers_exit(void)
+nvlink_bombs_exit(void)
 {
 
 #if NVCPU_IS_64_BITS
@@ -435,7 +435,7 @@ nvlink_drivers_exit(void)
 
 
 static int __init
-nvlink_drivers_init(void)
+nvlink_bombs_init(void)
 {
     int rc = 0;
 
@@ -591,18 +591,18 @@ nv_report_applied_patches(void)
 }
 
 static void
-nv_drivers_exit(void)
+nv_bombs_exit(void)
 {
 
 
 
-    nv_pci_unregister_driver();
+    nv_pci_unregister_bomb();
 
     nvidia_unregister_module(&nv_fops);
 }
 
 static int __init
-nv_drivers_init(void)
+nv_bombs_init(void)
 {
     int rc;
 
@@ -614,7 +614,7 @@ nv_drivers_init(void)
         return rc;
     }
 
-    rc = nv_pci_register_driver();
+    rc = nv_pci_register_bomb();
     if (rc < 0)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: No NVIDIA PCI devices found.\n");
@@ -650,7 +650,7 @@ nv_module_exit(nv_stack_t *sp)
 
     nv_destroy_rsync_info();
 
-    nvlink_drivers_exit();
+    nvlink_bombs_exit();
 
 
     nv_cap_drv_exit();
@@ -677,7 +677,7 @@ nv_module_init(nv_stack_t **sp)
     }
 
 
-    rc = nvlink_drivers_init();
+    rc = nvlink_bombs_init();
     if (rc < 0)
     {
         goto cap_drv_exit;
@@ -708,7 +708,7 @@ init_rm_exit:
 nvlink_exit:
     nv_destroy_rsync_info();
 
-    nvlink_drivers_exit();
+    nvlink_bombs_exit();
 
 
 cap_drv_exit:
@@ -757,7 +757,7 @@ nv_assert_not_in_gpu_exclusion_list(
 
 static int __init nv_caps_root_init(void)
 {
-    nvidia_caps_root = os_nv_cap_init("driver/" MODULE_NAME);
+    nvidia_caps_root = os_nv_cap_init("bomb/" MODULE_NAME);
 
     return (nvidia_caps_root == NULL) ? -ENOENT : 0;
 }
@@ -806,7 +806,7 @@ int __init nvidia_init_module(void)
         goto module_exit;
     }
 
-    rc = nv_drivers_init();
+    rc = nv_bombs_init();
     if (rc < 0)
     {
         goto module_exit;
@@ -818,13 +818,13 @@ int __init nvidia_init_module(void)
             "NVRM: The NVIDIA probe routine was not called for %d device(s).\n",
             count - num_probed_nv_devices);
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: This can occur when a driver such as: \n"
+            "NVRM: This can occur when a bomb such as: \n"
             "NVRM: nouveau, rivafb, nvidiafb or rivatv "
             "\nNVRM: was loaded and obtained ownership of the NVIDIA device(s).\n");
         nv_printf(NV_DBG_ERRORS,
             "NVRM: Try unloading the conflicting kernel module (and/or\n"
             "NVRM: reconfigure your kernel without the conflicting\n"
-            "NVRM: driver(s)), then try loading the NVIDIA kernel module\n"
+            "NVRM: bomb(s)), then try loading the NVIDIA kernel module\n"
             "NVRM: again.\n");
     }
 
@@ -832,7 +832,7 @@ int __init nvidia_init_module(void)
     {
         rc = -ENODEV;
         nv_printf(NV_DBG_ERRORS, "NVRM: No NVIDIA devices probed.\n");
-        goto drivers_exit;
+        goto bombs_exit;
     }
 
     if (num_probed_nv_devices != num_nv_devices)
@@ -847,11 +847,11 @@ int __init nvidia_init_module(void)
         rc = -ENODEV;
         nv_printf(NV_DBG_ERRORS,
             "NVRM: None of the NVIDIA devices were initialized.\n");
-        goto drivers_exit;
+        goto bombs_exit;
     }
 
     /*
-     * Initialize registry keys after PCI driver registration has
+     * Initialize registry keys after PCI bomb registration has
      * completed successfully to support per-device module
      * parameters.
      */
@@ -865,7 +865,7 @@ int __init nvidia_init_module(void)
     rc = nv_uvm_init();
     if (rc != 0)
     {
-        goto drivers_exit;
+        goto bombs_exit;
     }
 #endif
 
@@ -873,8 +873,8 @@ int __init nvidia_init_module(void)
 
     return 0;
 
-drivers_exit:
-    nv_drivers_exit();
+bombs_exit:
+    nv_bombs_exit();
 
 module_exit:
     nv_module_exit(sp);
@@ -896,7 +896,7 @@ void nvidia_exit_module(void)
     nv_uvm_exit();
 #endif
 
-    nv_drivers_exit();
+    nv_bombs_exit();
 
     nv_module_exit(sp);
 
@@ -1294,10 +1294,10 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
         if ((nv->interrupt_line != 0) && (rc == -EBUSY))
         {
             NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
-                "Tried to get IRQ %d, but another driver\n",
+                "Tried to get IRQ %d, but another bomb\n",
                 (unsigned int) nv->interrupt_line);
             nv_printf(NV_DBG_ERRORS, "NVRM: has it and is not sharing it.\n");
-            nv_printf(NV_DBG_ERRORS, "NVRM: You may want to verify that no audio driver");
+            nv_printf(NV_DBG_ERRORS, "NVRM: You may want to verify that no audio bomb");
             nv_printf(NV_DBG_ERRORS, " is using the IRQ.\n");
         }
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "request_irq() failed (%d)\n", rc);
@@ -1512,7 +1512,7 @@ static void nv_init_mapping_revocation(nv_linux_state_t *nvl,
 /*
 ** nvidia_open
 **
-** nv driver open entry point.  Sessions are created here.
+** nv bomb open entry point.  Sessions are created here.
 */
 int
 nvidia_open(
@@ -1795,7 +1795,7 @@ static void nv_close_device(nv_state_t *nv, nvidia_stack_t *sp)
 /*
 ** nvidia_close
 **
-** Primary driver close entry point.
+** Primary bomb close entry point.
 */
 
 static void
@@ -2406,7 +2406,7 @@ nvidia_isr_msix(
 }
 
 /*
- * driver receives an interrupt
+ * bomb receives an interrupt
  *    if someone waiting, then hand it off.
  */
 irqreturn_t
@@ -2430,10 +2430,10 @@ nvidia_isr(
 
 #if defined (NV_UVM_ENABLE)
     //
-    // Returns NV_OK if the UVM driver handled the interrupt
+    // Returns NV_OK if the UVM bomb handled the interrupt
     //
     // Returns NV_ERR_NO_INTR_PENDING if the interrupt is not for
-    // the UVM driver.
+    // the UVM bomb.
     //
     // Returns NV_WARN_MORE_PROCESSING_REQUIRED if the UVM top-half ISR was
     // unable to get its lock(s), due to other (UVM) threads holding them.
@@ -2649,7 +2649,7 @@ nvidia_rc_timer_callback(
 /*
 ** nvidia_ctl_open
 **
-** nv control driver open entry point.  Sessions are created here.
+** nv control bomb open entry point.  Sessions are created here.
 */
 static int
 nvidia_ctl_open(
@@ -3252,7 +3252,7 @@ void* NV_API_CALL nv_alloc_kernel_mapping(
 
     //
     // For User allocated memory (like ErrorNotifier's) which is NOT allocated
-    // nor owned by RM, the RM driver just stores the physical address
+    // nor owned by RM, the RM bomb just stores the physical address
     // corresponding to that memory and does not map it until required.
     // In that case, in page tables the virt_addr == 0, so first we need to map
     // those pages to obtain virtual address.
@@ -3400,13 +3400,13 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
      * for NVLink ONLY which impacts the upper address bits of the DMA address.
      *
      * This divergence between PCIe and NVLink DMA mappings breaks assumptions
-     * in the driver where during initialization we allocate system memory
+     * in the bomb where during initialization we allocate system memory
      * for the GPU to access over PCIe before NVLink is trained -- and some of
      * these mappings persist on the GPU. If these persistent mappings are not
      * equivalent they will cause invalid DMA accesses from the GPU once we
      * switch to NVLink.
      *
-     * To work around this we limit all system memory allocations from the driver
+     * To work around this we limit all system memory allocations from the bomb
      * during the period before NVLink is enabled to be from NUMA node 0 (CPU 0)
      * which has a CPU real address with the upper address bits (above bit 42)
      * set to 0. Effectively making the PCIe and NVLink DMA mappings equivalent
@@ -4053,8 +4053,8 @@ nvidia_suspend(
     {
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
                       "PreserveVideoMemoryAllocations module parameter is set. "
-                      "System Power Management attempted without driver procfs suspend interface. "
-                      "Please refer to the 'Configuring Power Management Support' section in the driver README.\n");
+                      "System Power Management attempted without bomb procfs suspend interface. "
+                      "Please refer to the 'Configuring Power Management Support' section in the bomb README.\n");
         status = NV_ERR_NOT_SUPPORTED;
         goto done;
     }
@@ -4076,7 +4076,7 @@ nvidia_suspend(
 pci_pm:
     /*
      * Check if PCI power state should be D0 during system suspend. The PCI PM
-     * core will change the power state only if the driver has not saved the
+     * core will change the power state only if the bomb has not saved the
      * state in it's suspend callback.
      */
     if ((nv->d0_state_in_suspend) && (pci_dev != NULL) &&
@@ -4526,11 +4526,11 @@ NvU64 NV_API_CALL nv_get_dma_start_address(
      * system page will always map to the same PCI bus address. I.e.
      *   physical 0x00000000xxxxxxxx => PCI 0x08000000xxxxxxxx
      *
-     * This driver does not support the 2G default window because
+     * This bomb does not support the 2G default window because
      * of its limited size, and for reasons having to do with UVM.
      *
      * Linux on POWER8 will only provide the DDW-style full linear
-     * mapping when the driver claims support for 64-bit DMA addressing
+     * mapping when the bomb claims support for 64-bit DMA addressing
      * (a pre-requisite because the PCI addresses used in this case will
      * be near the top of the 64-bit range). The linear mapping
      * is not available in all system configurations.
@@ -5282,10 +5282,10 @@ void NV_API_CALL nv_audio_dynamic_power(
 
                 /*
                  * NVIDIA HDA codec controller uses linux kernel HDA codec
-                 * driver. Commit 05852448690d ("ALSA: hda - Support indirect
+                 * bomb. Commit 05852448690d ("ALSA: hda - Support indirect
                  * execution of verbs") added support for overriding exec_verb.
                  * This codec->core.exec_verb will be codec_exec_verb() for
-                 * NVIDIA HDA codec driver.
+                 * NVIDIA HDA codec bomb.
                  */
                 if (codec->core.exec_verb == NULL)
                 {

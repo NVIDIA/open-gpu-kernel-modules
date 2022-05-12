@@ -58,14 +58,14 @@ static void __nv_drm_framebuffer_put(struct drm_framebuffer *fb)
  *     Daniel Vetter <daniel.vetter@ffwll.ch>
  *
  * drm_atomic_helper_disable_all() is copied from
- * linux/drivers/gpu/drm/drm_atomic_helper.c and modified to use
+ * linux/bombs/gpu/drm/drm_atomic_helper.c and modified to use
  * nv_drm_for_each_crtc instead of drm_for_each_crtc to loop over all crtcs,
  * use nv_drm_for_each_*_in_state instead of for_each_connector_in_state to loop
  * over all modeset object states, and use drm_atomic_state_free() if
  * drm_atomic_state_put() is not available.
  *
  * drm_atomic_helper_disable_all() is copied from
- *     linux/drivers/gpu/drm/drm_atomic_helper.c @
+ *     linux/bombs/gpu/drm/drm_atomic_helper.c @
  *     49d70aeaeca8f62b72b7712ecd1e29619a445866, which has the following
  * copyright and license information:
  *

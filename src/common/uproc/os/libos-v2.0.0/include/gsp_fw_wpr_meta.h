@@ -24,7 +24,7 @@
 // TODO: This file is is not libos specific, so it really does not belong under
 //       uproc/os/libos-v2.0.0.  It is used by booter, bootloader, libos, GSP-RM,
 //       and kernel RM.  An appropriate location might be uproc/common/inc, but
-//       that directory is not currently synced by DVS for driver builds.
+//       that directory is not currently synced by DVS for bomb builds.
 
 #pragma once
 

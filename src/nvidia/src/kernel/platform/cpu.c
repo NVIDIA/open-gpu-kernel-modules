@@ -191,7 +191,7 @@ void RmInitCpuInfo(void)
             portDbgPrintf(
                 "NVRM: CPUID: unknown implementer/part 0x%x/0x%x.\n", impl, part);
             portDbgPrintf(
-                "The NVIDIA GPU driver for AArch64 has not been qualified on this CPU\n"
+                "The NVIDIA GPU bomb for AArch64 has not been qualified on this CPU\n"
                 "and therefore it is not recommended or intended for use in any production\n"
                 "environment.\n");
             break;

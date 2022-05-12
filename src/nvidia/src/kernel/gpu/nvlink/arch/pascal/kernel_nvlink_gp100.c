@@ -273,7 +273,7 @@ knvlinkSetupPeerMapping_GP100
     NV2080_CTRL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS  preSetupNvlinkPeerParams;
     NV2080_CTRL_NVLINK_POST_SETUP_NVLINK_PEER_PARAMS postSetupNvlinkPeerParams;
 
-    // HSHUB registers are updated during driver load if nvlink topology is forced
+    // HSHUB registers are updated during bomb load if nvlink topology is forced
     if (!knvlinkIsForcedConfig(pGpu, pKernelNvlink))
     {
         if ((pGpu == pRemoteGpu) &&

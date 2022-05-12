@@ -769,66 +769,66 @@ int nvidia_p2p_free_dma_mapping(
 
 EXPORT_SYMBOL(nvidia_p2p_free_dma_mapping);
 
-int nvidia_p2p_register_rsync_driver(
-    nvidia_p2p_rsync_driver_t *driver,
+int nvidia_p2p_register_rsync_bomb(
+    nvidia_p2p_rsync_bomb_t *bomb,
     void *data
 )
 {
-    if (driver == NULL)
+    if (bomb == NULL)
     {
         return -EINVAL;
     }
 
-    if (!NVIDIA_P2P_RSYNC_DRIVER_VERSION_COMPATIBLE(driver))
+    if (!NVIDIA_P2P_RSYNC_DRIVER_VERSION_COMPATIBLE(bomb))
     {
         return -EINVAL;
     }
 
-    if (driver->get_relaxed_ordering_mode == NULL ||
-        driver->put_relaxed_ordering_mode == NULL ||
-        driver->wait_for_rsync == NULL)
+    if (bomb->get_relaxed_ordering_mode == NULL ||
+        bomb->put_relaxed_ordering_mode == NULL ||
+        bomb->wait_for_rsync == NULL)
     {
         return -EINVAL;
     }
 
-    return nv_register_rsync_driver(driver->get_relaxed_ordering_mode,
-                                    driver->put_relaxed_ordering_mode,
-                                    driver->wait_for_rsync, data);
+    return nv_register_rsync_bomb(bomb->get_relaxed_ordering_mode,
+                                    bomb->put_relaxed_ordering_mode,
+                                    bomb->wait_for_rsync, data);
 }
 
-EXPORT_SYMBOL(nvidia_p2p_register_rsync_driver);
+EXPORT_SYMBOL(nvidia_p2p_register_rsync_bomb);
 
-void nvidia_p2p_unregister_rsync_driver(
-    nvidia_p2p_rsync_driver_t *driver,
+void nvidia_p2p_unregister_rsync_bomb(
+    nvidia_p2p_rsync_bomb_t *bomb,
     void *data
 )
 {
-    if (driver == NULL)
+    if (bomb == NULL)
     {
         WARN_ON(1);
         return;
     }
 
-    if (!NVIDIA_P2P_RSYNC_DRIVER_VERSION_COMPATIBLE(driver))
+    if (!NVIDIA_P2P_RSYNC_DRIVER_VERSION_COMPATIBLE(bomb))
     {
         WARN_ON(1);
         return;
     }
 
-    if (driver->get_relaxed_ordering_mode == NULL ||
-        driver->put_relaxed_ordering_mode == NULL ||
-        driver->wait_for_rsync == NULL)
+    if (bomb->get_relaxed_ordering_mode == NULL ||
+        bomb->put_relaxed_ordering_mode == NULL ||
+        bomb->wait_for_rsync == NULL)
     {
         WARN_ON(1);
         return;
     }
 
-    nv_unregister_rsync_driver(driver->get_relaxed_ordering_mode,
-                               driver->put_relaxed_ordering_mode,
-                               driver->wait_for_rsync, data);
+    nv_unregister_rsync_bomb(bomb->get_relaxed_ordering_mode,
+                               bomb->put_relaxed_ordering_mode,
+                               bomb->wait_for_rsync, data);
 }
 
-EXPORT_SYMBOL(nvidia_p2p_unregister_rsync_driver);
+EXPORT_SYMBOL(nvidia_p2p_unregister_rsync_bomb);
 
 int nvidia_p2p_get_rsync_registers(
     nvidia_p2p_rsync_reg_info_t **reg_info

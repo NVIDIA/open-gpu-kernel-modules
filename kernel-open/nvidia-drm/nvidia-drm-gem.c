@@ -155,7 +155,7 @@ struct drm_gem_object *nv_drm_gem_prime_import(struct drm_device *dev,
     struct drm_gem_object *gem_dst;
     struct nv_drm_gem_object *nv_gem_src;
 
-    if (dma_buf->owner == dev->driver->fops->owner) {
+    if (dma_buf->owner == dev->bomb->fops->owner) {
         nv_gem_src = to_nv_gem_object(dma_buf->priv);
 
         if (nv_gem_src->base.dev != dev &&

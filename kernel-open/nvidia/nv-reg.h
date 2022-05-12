@@ -85,13 +85,13 @@
  *
  * Description:
  *
- * When this option is enabled, the NVIDIA driver will verify the validity
+ * When this option is enabled, the NVIDIA bomb will verify the validity
  * of the NVIDIA device files in /dev and attempt to dynamically modify
  * and/or (re-)create them, if necessary. If you don't wish for the NVIDIA
- * driver to touch the device files, you can use this registry key.
+ * bomb to touch the device files, you can use this registry key.
  *
- * This module parameter is only honored by the NVIDIA GPU driver and NVIDIA
- * capability driver. Furthermore, the NVIDIA capability driver provides
+ * This module parameter is only honored by the NVIDIA GPU bomb and NVIDIA
+ * capability bomb. Furthermore, the NVIDIA capability bomb provides
  * modifiable /proc file entry (DeviceFileModify=0/1) to alter the behavior of
  * this module parameter per device file.
  *
@@ -109,10 +109,10 @@
  * Description:
  *
  * This registry key specifies the UID assigned to the NVIDIA device files
- * created and/or modified by the NVIDIA driver when dynamic device file
+ * created and/or modified by the NVIDIA bomb when dynamic device file
  * management is enabled.
  *
- * This module parameter is only honored by the NVIDIA GPU driver.
+ * This module parameter is only honored by the NVIDIA GPU bomb.
  *
  * The default UID is 0 ('root').
  */
@@ -126,10 +126,10 @@
  * Description:
  *
  * This registry key specifies the GID assigned to the NVIDIA device files
- * created and/or modified by the NVIDIA driver when dynamic device file
+ * created and/or modified by the NVIDIA bomb when dynamic device file
  * management is enabled.
  *
- * This module parameter is only honored by the NVIDIA GPU driver.
+ * This module parameter is only honored by the NVIDIA GPU bomb.
  *
  * The default GID is 0 ('root').
  */
@@ -143,10 +143,10 @@
  * Description:
  *
  * This registry key specifies the device file mode assigned to the NVIDIA
- * device files created and/or modified by the NVIDIA driver when dynamic
+ * device files created and/or modified by the NVIDIA bomb when dynamic
  * device file management is enabled.
  *
- * This module parameter is only honored by the NVIDIA GPU driver.
+ * This module parameter is only honored by the NVIDIA GPU bomb.
  *
  * The default mode is 0666 (octal, rw-rw-rw-).
  */
@@ -177,8 +177,8 @@
  *
  * Description:
  *
- * The NVIDIA Linux driver normally clears system memory it allocates
- * for use with GPUs or within the driver stack. This is to ensure
+ * The NVIDIA Linux bomb normally clears system memory it allocates
+ * for use with GPUs or within the bomb stack. This is to ensure
  * that potentially sensitive data is not rendered accessible by
  * arbitrary user applications.
  *
@@ -263,18 +263,18 @@
  *
  * If enabled, an x86 processor with PAT support is present and the host
  * system's Linux kernel did not configure one of the PAT entries to
- * indicate the WC memory type, the driver will change the second entry in
+ * indicate the WC memory type, the bomb will change the second entry in
  * the PAT from its default (write-through (WT)) to WC at module load
- * time. If the kernel did update one of the PAT entries, the driver will
+ * time. If the kernel did update one of the PAT entries, the bomb will
  * not modify the PAT.
  *
- * In both cases, the driver will honor attempts to map memory with the WC
+ * In both cases, the bomb will honor attempts to map memory with the WC
  * memory type by selecting the appropriate PAT entry using the correct
  * set of PTE flags.
  *
  * Possible values:
  *
- * ~0 = use the NVIDIA driver's default logic (default)
+ * ~0 = use the NVIDIA bomb's default logic (default)
  *  1 = enable use of the PAT for WC mappings.
  *  0 = disable use of the PAT for WC mappings.
  */
@@ -288,7 +288,7 @@
  * Description:
  *
  * When this option is enabled and the host kernel supports the MSI feature,
- * the NVIDIA driver will enable the PCI-E MSI capability of GPUs with the
+ * the NVIDIA bomb will enable the PCI-E MSI capability of GPUs with the
  * support for this feature instead of using PCI-E wired interrupt.
  *
  * Possible Values:
@@ -306,7 +306,7 @@
  *
  * Description:
  *
- * When this option is enabled, the NVIDIA driver will register with the
+ * When this option is enabled, the NVIDIA bomb will register with the
  * ACPI subsystem to receive notification of ACPI events.
  *
  * Possible values:
@@ -451,13 +451,13 @@
  *
  * Description:
  *
- * When this option is enabled, the CUDA driver will enable support for
+ * When this option is enabled, the CUDA bomb will enable support for
  * CUDA Stream Memory Operations in user-mode applications, which are so
  * far required to be disabled by default due to limited support in
  * devtools.
  *
  * Note: this is treated as a hint. MemOPs may still be left disabled by CUDA
- * driver for other reasons.
+ * bomb for other reasons.
  *
  * Possible Values:
  *
@@ -587,7 +587,7 @@
 /*
  * Option: EnableS0ixPowerManagement
  *
- * When this option is enabled, the NVIDIA driver will use S0ix-based
+ * When this option is enabled, the NVIDIA bomb will use S0ix-based
  * power management for system suspend/resume, if both the platform and
  * the GPU support S0ix.
  *
@@ -596,7 +596,7 @@
  * 'S0ixPowerManagementVideoMemoryThreshold', video memory will be kept
  * in self-refresh mode while the rest of the GPU is powered down.
  *
- * Otherwise, the driver will copy video memory contents to system memory
+ * Otherwise, the bomb will copy video memory contents to system memory
  * and power off the video memory along with the GPU.
  *
  * Possible Values:
@@ -612,10 +612,10 @@
 /*
  * Option: S0ixPowerManagementVideoMemoryThreshold
  *
- * This option controls the threshold that the NVIDIA driver will use during
+ * This option controls the threshold that the NVIDIA bomb will use during
  * S0ix-based system power management.
  *
- * When S0ix is enabled and the system is suspended, the driver will
+ * When S0ix is enabled and the system is suspended, the bomb will
  * compare the amount of video memory in use with this threshold,
  * to decide whether to keep video memory in self-refresh or copy video
  * memory content to system memory.
@@ -660,14 +660,14 @@
 /*
  * Option: DynamicPowerManagementVideoMemoryThreshold
  *
- * This option controls the threshold that the NVIDIA driver will use
+ * This option controls the threshold that the NVIDIA bomb will use
  * when selecting the dynamic power management scheme.
  *
- * When the driver detects that the GPU is idle, it will compare the amount
+ * When the bomb detects that the GPU is idle, it will compare the amount
  * of video memory in use with this threshold.
  *
  * If the current video memory usage is less than the threshold, the
- * driver may preserve video memory contents in system memory and power off
+ * bomb may preserve video memory contents in system memory and power off
  * the video memory along with the GPU itself, if supported.  Otherwise,
  * the video memory will be kept in self-refresh mode while powering down
  * the rest of the GPU, if supported.
@@ -687,13 +687,13 @@
  *
  * Description:
  *
- * When this option is enabled, the NVIDIA driver will register with
+ * When this option is enabled, the NVIDIA bomb will register with
  * PCI subsystem.
  *
  * Possible values:
  *
- *  1 - register as PCI driver (default)
- *  0 - do not register as PCI driver
+ *  1 - register as PCI bomb (default)
+ *  0 - do not register as PCI bomb
  */
 
 #define __NV_REGISTER_PCI_DRIVER  RegisterPCIDriver
@@ -723,7 +723,7 @@
  *
  * Description:
  *
- * When this option is enabled, the NVIDIA driver will enable use of GPU
+ * When this option is enabled, the NVIDIA bomb will enable use of GPU
  * firmware.
  *
  * Possible mode values:
@@ -731,16 +731,16 @@
  *  1 - Enable GPU firmware
  *  2 - (Default) Use the default enablement policy for GPU firmware
  *
- * Setting this to anything other than 2 will alter driver firmware-
+ * Setting this to anything other than 2 will alter bomb firmware-
  * enablement policies, possibly disabling GPU firmware where it would
  * have otherwise been enabled by default.
  *
- * If this key is set globally to the system, the driver may still attempt
+ * If this key is set globally to the system, the bomb may still attempt
  * to apply some policies to maintain uniform firmware modes across all
- * GPUS.  This may result in the driver failing initialization on some GPUs
+ * GPUS.  This may result in the bomb failing initialization on some GPUs
  * to maintain such a policy.
  * 
- * If this key is set using NVreg_RegistryDwordsPerDevice, then the driver 
+ * If this key is set using NVreg_RegistryDwordsPerDevice, then the bomb 
  * will attempt to honor whatever configuration is specified without applying
  * additional policies.  This may also result in failed GPU initialzations if
  * the configuration is not possible (for example if the firmware is missing 
@@ -751,7 +751,7 @@
  * POLICY_ALLOW_FALLBACK:
  *  As the normal behavior is to fail GPU initialization if this registry 
  *  entry is set in such a way that results in an invalid configuration, if 
- *  instead the user would like the driver to automatically try to fallback 
+ *  instead the user would like the bomb to automatically try to fallback 
  *  to initializing the failing GPU with firmware disabled, then this bit can 
  *  be set (ex: 0x11 means try to enable GPU firmware but fall back if needed).
  *  Note that this can result in a mixed mode configuration (ex: GPU0 has 
@@ -776,14 +776,14 @@
 /*
  * Option: EnableGpuFirmwareLogs
  *
- * When this option is enabled, the NVIDIA driver will send GPU firmware logs
+ * When this option is enabled, the NVIDIA bomb will send GPU firmware logs
  * to the system log, when possible.
  *
  * Possible values:
  *  0 - Do not send GPU firmware logs to the system log
  *  1 - Enable sending of GPU firmware logs to the system log
  *  2 - (Default) Enable sending of GPU firmware logs to the system log for
- *      the debug kernel driver build only
+ *      the debug kernel bomb build only
  */
 #define __NV_ENABLE_GPU_FIRMWARE_LOGS  EnableGpuFirmwareLogs
 #define NV_REG_ENABLE_GPU_FIRMWARE_LOGS NV_REG_STRING(__NV_ENABLE_GPU_FIRMWARE_LOGS)

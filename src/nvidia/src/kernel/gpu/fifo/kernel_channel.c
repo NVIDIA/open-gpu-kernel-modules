@@ -3976,7 +3976,7 @@ _kchannelNotifyOfChid
     ContextDma *pContextDma;
 
     //
-    // Return the chid to the drivers in the error context DMA
+    // Return the chid to the bombs in the error context DMA
     //
     // We need to update this when virtual channel gets mapped in.
     //

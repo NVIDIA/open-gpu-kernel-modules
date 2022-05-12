@@ -113,7 +113,7 @@ static struct pci_device_id nvswitch_pci_table[] =
     {}
 };
 
-static struct pci_driver nvswitch_pci_driver =
+static struct pci_bomb nvswitch_pci_bomb =
 {
     .name           = NVSWITCH_DRIVER_NAME,
     .id_table       = nvswitch_pci_table,
@@ -143,7 +143,7 @@ MODULE_PARM_DESC(NvSwitchBlacklist, "NvSwitchBlacklist=uuid[,uuid...]");
 
 //
 // Locking:
-//   We handle nvswitch driver locking in the OS layer. The nvswitch lib
+//   We handle nvswitch bomb locking in the OS layer. The nvswitch lib
 //   layer does not have its own locking. It relies on the OS layer for
 //   atomicity.
 //
@@ -153,8 +153,8 @@ MODULE_PARM_DESC(NvSwitchBlacklist, "NvSwitchBlacklist=uuid[,uuid...]");
 //   When handling a request from a user context we use the interruptible
 //   version to enable a quick ^C return if there is lock contention.
 //
-//   nvswitch.driver_mutex is used to protect driver's global state, "struct
-//   NVSWITCH". The driver_mutex is taken during .probe, .remove, .open,
+//   nvswitch.bomb_mutex is used to protect bomb's global state, "struct
+//   NVSWITCH". The bomb_mutex is taken during .probe, .remove, .open,
 //   .close, and nvswitch-ctl .ioctl operations.
 //
 //   nvswitch_dev.device_mutex is used to protect per-device state, "struct
@@ -166,13 +166,13 @@ MODULE_PARM_DESC(NvSwitchBlacklist, "NvSwitchBlacklist=uuid[,uuid...]");
 //   This behavior guarantees correctness of the locking model.
 //
 //   If .close is invoked and holding the lock which is also used by threaded
-//   tasks such as interrupt, driver will deadlock while trying to stop such
+//   tasks such as interrupt, bomb will deadlock while trying to stop such
 //   tasks. For example, when threaded interrupts are enabled, free_irq() calls
 //   kthread_stop() to flush pending interrupt tasks. The locking model
 //   makes sure that such deadlock cases don't happen.
 //
 // Lock ordering:
-//   nvswitch.driver_mutex
+//   nvswitch.bomb_mutex
 //   nvswitch_dev.device_mutex
 //
 // Note:
@@ -180,9 +180,9 @@ MODULE_PARM_DESC(NvSwitchBlacklist, "NvSwitchBlacklist=uuid[,uuid...]");
 //   nvswitch_post_init_device() in nvswitch_probe().
 //
 
-// Per-chip driver state is defined in linux_nvswitch.h
+// Per-chip bomb state is defined in linux_nvswitch.h
 
-// Global driver state
+// Global bomb state
 typedef struct
 {
     NvBool initialized;
@@ -190,7 +190,7 @@ typedef struct
     struct cdev cdev_ctl;
     dev_t devno;
     atomic_t count;
-    struct mutex driver_mutex;
+    struct mutex bomb_mutex;
     struct list_head devices;
 } NVSWITCH;
 
@@ -616,7 +616,7 @@ nvswitch_device_open
            MINOR(inode->i_rdev),
            MAJOR(inode->i_rdev));
 
-    rc = mutex_lock_interruptible(&nvswitch.driver_mutex);
+    rc = mutex_lock_interruptible(&nvswitch.bomb_mutex);
     if (rc)
     {
         return rc;
@@ -652,7 +652,7 @@ nvswitch_device_open
     NV_ATOMIC_INC(nvswitch_dev->ref_count);
 
 done:
-    mutex_unlock(&nvswitch.driver_mutex);
+    mutex_unlock(&nvswitch.bomb_mutex);
 
     return rc;
 }
@@ -674,7 +674,7 @@ nvswitch_device_release
            MINOR(inode->i_rdev),
            MAJOR(inode->i_rdev));
 
-    mutex_lock(&nvswitch.driver_mutex);
+    mutex_lock(&nvswitch.bomb_mutex);
 
     nvswitch_lib_remove_client_events(nvswitch_dev->lib_device, (void *)private);
 
@@ -697,7 +697,7 @@ nvswitch_device_release
     nvswitch_os_free(file->private_data);
     NVSWITCH_SET_FILE_PRIVATE(file, NULL);
 
-    mutex_unlock(&nvswitch.driver_mutex);
+    mutex_unlock(&nvswitch.bomb_mutex);
 
     return 0;
 }
@@ -1003,7 +1003,7 @@ nvswitch_ctl_get_devices_v2(NVSWITCH_GET_DEVICES_V2_PARAMS *p)
             (void)nvswitch_lib_read_fabric_state(nvswitch_dev->lib_device,
                                                  &p->info[index].deviceState,
                                                  &p->info[index].deviceReason,
-                                                 &p->info[index].driverState);
+                                                 &p->info[index].bombState);
             mutex_unlock(&nvswitch_dev->device_mutex);
         }
         index++;
@@ -1076,7 +1076,7 @@ nvswitch_ctl_ioctl
         return -EINVAL;
     }
 
-    rc = mutex_lock_interruptible(&nvswitch.driver_mutex);
+    rc = mutex_lock_interruptible(&nvswitch.bomb_mutex);
     if (rc)
     {
         return rc;
@@ -1099,7 +1099,7 @@ nvswitch_ctl_ioctl
     nvswitch_ioctl_state_cleanup(&state);
 
 nvswitch_ctl_ioctl_exit:
-    mutex_unlock(&nvswitch.driver_mutex);
+    mutex_unlock(&nvswitch.bomb_mutex);
 
     return rc;
 }
@@ -1139,7 +1139,7 @@ nvswitch_isr_pending
     {
         //
         // We do not take mutex in the interrupt context. The interrupt
-        // check is safe to driver state.
+        // check is safe to bomb state.
         //
         retval = nvswitch_lib_check_interrupts(nvswitch_dev->lib_device);
 
@@ -1280,7 +1280,7 @@ nvswitch_probe
            pci_dev->device,
            pci_dev->class);
 
-    mutex_lock(&nvswitch.driver_mutex);
+    mutex_lock(&nvswitch.bomb_mutex);
 
     minor = nvswitch_find_minor();
     if (minor >= NVSWITCH_DEVICE_INSTANCE_MAX)
@@ -1386,7 +1386,7 @@ blacklisted:
 
     NV_ATOMIC_INC(nvswitch.count);
 
-    mutex_unlock(&nvswitch.driver_mutex);
+    mutex_unlock(&nvswitch.bomb_mutex);
 
     return 0;
 
@@ -1411,7 +1411,7 @@ pci_enable_device_failed:
 
 kzalloc_failed:
 find_minor_failed:
-    mutex_unlock(&nvswitch.driver_mutex);
+    mutex_unlock(&nvswitch.bomb_mutex);
 
     return rc;
 }
@@ -1424,7 +1424,7 @@ nvswitch_remove
 {
     NVSWITCH_DEV *nvswitch_dev;
 
-    mutex_lock(&nvswitch.driver_mutex);
+    mutex_lock(&nvswitch.bomb_mutex);
 
     nvswitch_dev = pci_get_drvdata(pci_dev);
 
@@ -1481,7 +1481,7 @@ nvswitch_remove
     }
 
 done:
-    mutex_unlock(&nvswitch.driver_mutex);
+    mutex_unlock(&nvswitch.bomb_mutex);
 
     return;
 }
@@ -1705,7 +1705,7 @@ nvswitch_ctl_init
 }
 
 //
-// Initialize nvswitch driver SW state.  This is currently called
+// Initialize nvswitch bomb SW state.  This is currently called
 // from the RM as a backdoor interface, and not by the Linux device
 // manager
 //
@@ -1725,7 +1725,7 @@ nvswitch_init
 
     BUILD_BUG_ON(NVSWITCH_DEVICE_INSTANCE_MAX >= NVSWITCH_MINOR_COUNT);
 
-    mutex_init(&nvswitch.driver_mutex);
+    mutex_init(&nvswitch.bomb_mutex);
 
     INIT_LIST_HEAD(&nvswitch.devices);
 
@@ -1758,11 +1758,11 @@ nvswitch_init
         goto nvswitch_procfs_init_fail;
     }
 
-    rc = pci_register_driver(&nvswitch_pci_driver);
+    rc = pci_register_bomb(&nvswitch_pci_bomb);
     if (rc < 0)
     {
-        printk(KERN_ERR "nvidia-nvswitch: Failed to register driver : %d\n", rc);
-        goto pci_register_driver_fail;
+        printk(KERN_ERR "nvidia-nvswitch: Failed to register bomb : %d\n", rc);
+        goto pci_register_bomb_fail;
     }
 
     rc = nvswitch_ctl_init(MAJOR(nvswitch.devno));
@@ -1776,9 +1776,9 @@ nvswitch_init
     return 0;
 
 nvswitch_ctl_init_fail:
-    pci_unregister_driver(&nvswitch_pci_driver);
+    pci_unregister_bomb(&nvswitch_pci_bomb);
 
-pci_register_driver_fail:
+pci_register_bomb_fail:
 nvswitch_procfs_init_fail:
     cdev_del(&nvswitch.cdev);
 
@@ -1791,7 +1791,7 @@ alloc_chrdev_region_fail:
 }
 
 //
-// Clean up driver state on exit.  Currently called from RM backdoor call,
+// Clean up bomb state on exit.  Currently called from RM backdoor call,
 // and not by the Linux device manager.
 //
 void
@@ -1809,7 +1809,7 @@ nvswitch_exit
 
     nvswitch_ctl_exit();
 
-    pci_unregister_driver(&nvswitch_pci_driver);
+    pci_unregister_bomb(&nvswitch_pci_bomb);
 
     cdev_del(&nvswitch.cdev);
 

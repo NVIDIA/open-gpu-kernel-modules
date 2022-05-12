@@ -275,7 +275,7 @@ typedef struct NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS {
  *
  * This command is used to inform hardware the receiver's audio capabilities
  * using the new EDID Like Data (ELD) memory structure.  The ELD memory
- * structure is read by the audio driver by issuing the ELD Data command verb.
+ * structure is read by the audio bomb by issuing the ELD Data command verb.
  * This mechanism is used for passing sink device' audio EDID information
  * from graphics software to audio software.  ELD contents will contain a
  * subset of the sink device's EDID information.
@@ -294,7 +294,7 @@ typedef struct NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS {
  *   numELDSize
  *     This parameter specifies how many bytes of data RM should write to the
  *     ELD buffer.  Section 7.3.3.36 of the ECN specifies that the ELD buffer
- *     size of zero based.  HDAudio driver will then use this information to
+ *     size of zero based.  HDAudio bomb will then use this information to
  *     determine how many bytes of the ELD buffer the HDAudio should read.
  *     The maximum size of the buffer is 96 bytes.
  *   bufferELD

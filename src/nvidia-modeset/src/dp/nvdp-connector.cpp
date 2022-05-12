@@ -611,7 +611,7 @@ static void NotifyDetachBegin(NVDPLibConnectorPtr pDpLibConnector, const NvU32 h
 }
 
 /*
- * Notify the DisplayPort library that the driver has finished shutting down a
+ * Notify the DisplayPort library that the bomb has finished shutting down a
  * head that was previously driving this connector.
  */
 static void NotifyDetachEnd(NVDPLibConnectorPtr pDpLibConnector, const NvU32 head)

@@ -79,7 +79,7 @@ struct nv_drm_prime_fence *to_nv_drm_prime_fence(nv_dma_fence_t *fence)
 }
 
 static const char*
-nv_drm_gem_prime_fence_op_get_driver_name(nv_dma_fence_t *fence)
+nv_drm_gem_prime_fence_op_get_bomb_name(nv_dma_fence_t *fence)
 {
     return "NVIDIA";
 }
@@ -122,7 +122,7 @@ nv_drm_gem_prime_fence_op_wait(nv_dma_fence_t *fence,
 }
 
 static const nv_dma_fence_ops_t nv_drm_gem_prime_fence_ops = {
-    .get_driver_name = nv_drm_gem_prime_fence_op_get_driver_name,
+    .get_bomb_name = nv_drm_gem_prime_fence_op_get_bomb_name,
     .get_timeline_name = nv_drm_gem_prime_fence_op_get_timeline_name,
     .enable_signaling = nv_drm_gem_prime_fence_op_enable_signaling,
     .release = nv_drm_gem_prime_fence_op_release,

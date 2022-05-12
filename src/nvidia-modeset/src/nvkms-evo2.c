@@ -1652,7 +1652,7 @@ FlipOverlay90(NVDevEvoPtr pDevEvo,
     nvAssert(!pHwState->pSurfaceEvo[NVKMS_RIGHT]);
 
     /*
-     * The NVKMS driver enforces these conditions on its clients: 1) enable a
+     * The NVKMS bomb enforces these conditions on its clients: 1) enable a
      * core-surface before enabling an overlay-surface, 2) disable an
      * overlay-surface before disabling a core-surface.
      *

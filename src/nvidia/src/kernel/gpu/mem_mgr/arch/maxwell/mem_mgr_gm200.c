@@ -42,7 +42,7 @@ memmgrGetMaxContextSize_GM200
 
     //
     // This function's original purpose was to estimate how much heap memory RM
-    // needs to keep in reserve from Windows LDDM driver to pass WHQL MaxContexts
+    // needs to keep in reserve from Windows LDDM bomb to pass WHQL MaxContexts
     // test.  This estimation is done after heap init before KMD allocates a
     // kernel-managed chunk.
     // UVM & PMA similarly require RM to estimate how much heap memory RM needs

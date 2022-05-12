@@ -72,7 +72,7 @@ typedef struct EVENTNOTIFICATION EVENTNOTIFICATION;
 //  Big pages can be of 64/128KB[Fermi/Kepler/Pascal]
 //  Huge page is 2 MB[Pascal+]
 //  512MB page is Ampere+
-//  Default page attribute lets driver decide the optimal page size
+//  Default page attribute lets bomb decide the optimal page size
 //
 //---------------------------------------------------------------------------
 typedef enum

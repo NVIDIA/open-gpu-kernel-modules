@@ -217,23 +217,23 @@ typedef struct NV0073_CTRL_DP_AUXCH_CTRL_PARAMS {
  *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_VBIOS
  *         Write the aux channel semaphore for vbios/efi to own the
  *         the aux channel.  This value is used only for HW verification
- *         and should not be used in normal driver operation.
+ *         and should not be used in normal bomb operation.
  *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_PMU
  *         Write the aux channel semaphore for pmu to own the
  *         the aux channel.  This value is used only by pmu
- *         and should not be used in normal driver operation.
+ *         and should not be used in normal bomb operation.
  *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_DPU
  *         Write the aux channel semaphore for dpu to own the
  *         the aux channel and should not be used in normal
- *         driver operation.
+ *         bomb operation.
  *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_SEC2
  *         Write the aux channel semaphore for sec2 to own the
  *         the aux channel and should not be used in normal
- *         driver operation.
+ *         bomb operation.
  *       NV0073_CTRL_DP_AUXCH_SET_SEMA_OWNER_RELEASE
  *         Write the aux channel semaphore for hardware to own the
  *         the aux channel.  This value is used only for HW verification
- *         and should not be used in normal driver operation.
+ *         and should not be used in normal bomb operation.
  * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_INVALID_PARAM_STRUCT
@@ -1959,7 +1959,7 @@ typedef struct NV0073_CTRL_CMD_DP_GENERATE_FAKE_INTERRUPT_PARAMS {
 /*
  * NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG
  *
- * This command sets the MS displayId lit up by driver for further use of VBIOS
+ * This command sets the MS displayId lit up by bomb for further use of VBIOS
  *
  *   subDeviceInstance
  *     This parameter specifies the subdevice instance within the
@@ -2067,7 +2067,7 @@ typedef struct NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT_PARAMS {
 *
 *   bSetConfigure
 *     This parameter configures single head multistream mode
-*     if TRUE it sets SST or MST based on 'mode' parameter and updates internal driver data structures with the given information.
+*     if TRUE it sets SST or MST based on 'mode' parameter and updates internal bomb data structures with the given information.
 *     if FALSE clears the configuration of single head multi stream mode.
 *
 *   vbiosPrimaryDispIdIndex
@@ -2510,7 +2510,7 @@ typedef struct NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS {
  *        _MONITOR_ENABLE_CHALLENGE:  Send challenge to the monitor
  *        _MONITOR_ENABLE_CHECK:      Read digest from the monitor, and verify
  *                                    if the result is valid.
- *        _DRIVER_ENABLE_BEGIN:       Send command to the monitor to start driver
+ *        _DRIVER_ENABLE_BEGIN:       Send command to the monitor to start bomb
  *                                    enablement procedure.
  *        _DRIVER_ENABLE_CHALLENGE:   Read challenge from the monitor and write back
  *                                    corresponding digest.

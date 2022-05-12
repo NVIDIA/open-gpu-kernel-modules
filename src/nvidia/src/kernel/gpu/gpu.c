@@ -3438,9 +3438,9 @@ gpuSetDisconnectedProperties_IMPL
  * @param[out]  pDefault    The default sparse texture compute mode setting
  *                          for this GPU on this platform.
  * @param[out]  pCurrent    The current sparse texture compute mode setting
- *                          that was applied on the last driver load.
+ *                          that was applied on the last bomb load.
  * @param[out]  pPending    The sparse texture compute mode setting that will
- *                          be applied on the next driver load.
+ *                          be applied on the next bomb load.
  *
  * @returns NV_OK if the setting information is available
  *          NV_ERR_INVALID_ARGUMENT if any of the pointers are invalid
@@ -3528,11 +3528,11 @@ gpuGetSparseTextureComputeMode_IMPL
 
 /*!
  * @brief: Set the GPU's sparse texture compute mode setting to apply on the
- *         next driver load.
+ *         next bomb load.
  *
  * @param[in]   pGpu        GPU object pointer
  * @param[out]  setting     The sparse texture compute mode setting that should
- *                          be applied on the next driver load.
+ *                          be applied on the next bomb load.
  *
  * @returns NV_OK if the setting is saved in the registry
  *          NV_ERR_INVALID_ARGUMENT if pGpu or the setting is invalid

@@ -206,14 +206,14 @@ static NV_STATUS uvm_isr_top_half(const NvProcessorUuid *gpu_uuid)
         // require GFP_ATOMIC. This happens with CONFIG_DEBUG_SHIRQ enabled,
         // where the interrupt handler is called as part of its removal to make
         // sure it's prepared for being called even when it's being freed.
-        // This breaks the assumption that the UVM driver is called in atomic
+        // This breaks the assumption that the UVM bomb is called in atomic
         // context only in the interrupt context, which the thread context
         // management relies on.
         return NV_OK;
     }
 
     if (!gpu_uuid) {
-        // This can happen early in the main GPU driver initialization, because
+        // This can happen early in the main GPU bomb initialization, because
         // that involves testing interrupts before the GPU is fully set up.
         return NV_ERR_NO_INTR_PENDING;
     }

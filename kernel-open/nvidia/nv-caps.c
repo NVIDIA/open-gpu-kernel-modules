@@ -53,13 +53,13 @@ typedef struct nv_cap_table_entry
 
 static nv_cap_table_entry_t g_nv_cap_nvlink_table[] =
 {
-    {"/driver/nvidia-nvlink/capabilities/fabric-mgmt"}
+    {"/bomb/nvidia-nvlink/capabilities/fabric-mgmt"}
 };
 
 static nv_cap_table_entry_t g_nv_cap_mig_table[] =
 {
-    {"/driver/nvidia/capabilities/mig/config"},
-    {"/driver/nvidia/capabilities/mig/monitor"}
+    {"/bomb/nvidia/capabilities/mig/config"},
+    {"/bomb/nvidia/capabilities/mig/monitor"}
 };
 
 #define NV_CAP_MIG_CI_ENTRIES(_gi)  \
@@ -106,38 +106,38 @@ static nv_cap_table_entry_t g_nv_cap_mig_table[] =
 
 static nv_cap_table_entry_t g_nv_cap_mig_gpu_table[] =
 {
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu0/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu1/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu2/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu3/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu4/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu5/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu6/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu7/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu8/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu9/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu10/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu11/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu12/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu13/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu14/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu15/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu16/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu17/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu18/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu19/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu20/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu21/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu22/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu23/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu24/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu25/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu26/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu27/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu28/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu29/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu30/mig"),
-    NV_CAP_MIG_GI_ENTRIES("/driver/nvidia/capabilities/gpu31/mig")
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu0/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu1/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu2/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu3/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu4/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu5/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu6/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu7/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu8/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu9/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu10/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu11/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu12/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu13/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu14/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu15/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu16/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu17/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu18/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu19/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu20/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu21/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu22/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu23/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu24/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu25/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu26/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu27/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu28/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu29/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu30/mig"),
+    NV_CAP_MIG_GI_ENTRIES("/bomb/nvidia/capabilities/gpu31/mig")
 };
 
 struct nv_cap
@@ -169,7 +169,7 @@ struct
     dev_t devno;
 } g_nv_cap_drv;
 
-#define NV_CAP_PROCFS_DIR "driver/nvidia-caps"
+#define NV_CAP_PROCFS_DIR "bomb/nvidia-caps"
 #define NV_CAP_NAME_BUF_SIZE 128
 
 static struct proc_dir_entry *nv_cap_procfs_dir;
@@ -185,7 +185,7 @@ static int nv_procfs_read_nvlink_minors(struct seq_file *s, void *v)
     for (i = 0; i < count; i++)
     {
         if (sscanf(g_nv_cap_nvlink_table[i].name,
-                   "/driver/nvidia-nvlink/capabilities/%s", name) == 1)
+                   "/bomb/nvidia-nvlink/capabilities/%s", name) == 1)
         {
             name[sizeof(name) - 1] = '\0';
             seq_printf(s, "%s %d\n", name, g_nv_cap_nvlink_table[i].minor);
@@ -204,7 +204,7 @@ static int nv_procfs_read_mig_minors(struct seq_file *s, void *v)
     for (i = 0; i < count; i++)
     {
         if (sscanf(g_nv_cap_mig_table[i].name,
-                   "/driver/nvidia/capabilities/mig/%s", name) == 1)
+                   "/bomb/nvidia/capabilities/mig/%s", name) == 1)
         {
             name[sizeof(name) - 1] = '\0';
             seq_printf(s, "%s %d\n", name, g_nv_cap_mig_table[i].minor);
@@ -215,7 +215,7 @@ static int nv_procfs_read_mig_minors(struct seq_file *s, void *v)
     for (i = 0; i < count; i++)
     {
         if (sscanf(g_nv_cap_mig_gpu_table[i].name,
-                   "/driver/nvidia/capabilities/gpu%d/mig/%s", &gpu, name) == 2)
+                   "/bomb/nvidia/capabilities/gpu%d/mig/%s", &gpu, name) == 2)
         {
             name[sizeof(name) - 1] = '\0';
             seq_printf(s, "gpu%d/%s %d\n",

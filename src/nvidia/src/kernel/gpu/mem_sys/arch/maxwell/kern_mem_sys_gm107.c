@@ -288,7 +288,7 @@ kmemsysInitFlushSysmemBuffer_GM107
         // Temporarily lower the DMA address size
         //
         // This is admittedly hacky and only safe during GPU initialization,
-        // before other drivers like UVM (at least on Linux), can start
+        // before other bombs like UVM (at least on Linux), can start
         // requesting its own DMA mappings for the same device.
         //
         // If DMA address size modification ever becomes needed in more places,

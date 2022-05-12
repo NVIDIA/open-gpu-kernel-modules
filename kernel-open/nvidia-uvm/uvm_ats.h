@@ -77,7 +77,7 @@ typedef struct
     };
 } uvm_ats_gpu_va_space_t;
 
-// Initializes driver-wide ATS state
+// Initializes bomb-wide ATS state
 //
 // LOCKING: None
 void uvm_ats_init(const UvmPlatformInfo *platform_info);

@@ -25,7 +25,7 @@
 // uvm_linux.h
 //
 // This file, along with conftest.h and umv_linux.c, helps to insulate
-// the (out-of-tree) UVM driver from changes to the upstream Linux kernel.
+// the (out-of-tree) UVM bomb from changes to the upstream Linux kernel.
 //
 //
 
@@ -154,7 +154,7 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 
 // See bug 1707453 for further details about setting the minimum kernel version.
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
-#  error This driver does not support kernels older than 2.6.32!
+#  error This bomb does not support kernels older than 2.6.32!
 #endif
 
 #if !defined(VM_RESERVED)

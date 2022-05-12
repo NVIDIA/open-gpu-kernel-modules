@@ -109,7 +109,7 @@ nvswitch_is_lr10_device_id
 
 /*
  * NVLink corelib callbacks are used by the NVLink library separate from the
- * NVSwitch driver, therefore they do not take a device lock and can not modify
+ * NVSwitch bomb, therefore they do not take a device lock and can not modify
  * nvswitch_device state or use error logging.
  *
  * These NVSwitch functions modify link state outside of the corelib:
@@ -359,7 +359,7 @@ _nvswitch_init_device_regkeys
 
     //
     // Private internal use regkeys
-    // Not available on release build kernel drivers
+    // Not available on release build kernel bombs
     //
     NVSWITCH_INIT_REGKEY(_PRIVATE, external_fabric_mgmt,
                          NV_SWITCH_REGKEY_EXTERNAL_FABRIC_MGMT,
@@ -785,7 +785,7 @@ _nvswitch_set_dma_mask
         return;
     }
 
-    // failure is not fatal, the driver will just restrict DMA functionality
+    // failure is not fatal, the bomb will just restrict DMA functionality
     NVSWITCH_PRINT(device, ERROR, "Failed to set DMA mask : %d\n", retval);
 }
 
@@ -845,7 +845,7 @@ nvswitch_lib_read_fabric_state
     nvswitch_device *device,
     NVSWITCH_DEVICE_FABRIC_STATE *device_fabric_state,
     NVSWITCH_DEVICE_BLACKLIST_REASON *device_blacklist_reason,
-    NVSWITCH_DRIVER_FABRIC_STATE *driver_fabric_state
+    NVSWITCH_DRIVER_FABRIC_STATE *bomb_fabric_state
 )
 {
     if (!NVSWITCH_IS_DEVICE_ACCESSIBLE(device))
@@ -857,8 +857,8 @@ nvswitch_lib_read_fabric_state
     if (device_blacklist_reason != NULL)
         *device_blacklist_reason = device->device_blacklist_reason;
 
-    if (driver_fabric_state != NULL)
-        *driver_fabric_state = device->driver_fabric_state;
+    if (bomb_fabric_state != NULL)
+        *bomb_fabric_state = device->bomb_fabric_state;
 
     return NVL_SUCCESS;
 }
@@ -917,7 +917,7 @@ nvswitch_ctrl_blacklist_device(
 }
 
 static NvlStatus
-nvswitch_ctrl_set_fm_driver_state(
+nvswitch_ctrl_set_fm_bomb_state(
     nvswitch_device *device,
     NVSWITCH_SET_FM_DRIVER_STATE_PARAMS *p
 )
@@ -927,7 +927,7 @@ nvswitch_ctrl_set_fm_driver_state(
         return -NVL_BAD_ARGS;
     }
 
-    device->driver_fabric_state = p->driverState;
+    device->bomb_fabric_state = p->bombState;
     device->fabric_state_timestamp = nvswitch_os_get_platform_time();
 
     return NVL_SUCCESS;
@@ -951,8 +951,8 @@ nvswitch_ctrl_set_device_fabric_state(
     device->fabric_state_timestamp = nvswitch_os_get_platform_time();
 
     // If FM had exceeded timeout, reset the status to not timed-out
-    if (device->driver_fabric_state == NVSWITCH_DRIVER_FABRIC_STATE_MANAGER_TIMEOUT)
-        device->driver_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_CONFIGURED;
+    if (device->bomb_fabric_state == NVSWITCH_DRIVER_FABRIC_STATE_MANAGER_TIMEOUT)
+        device->bomb_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_CONFIGURED;
 
     return NVL_SUCCESS;
 }
@@ -1072,9 +1072,9 @@ nvswitch_fabric_state_heartbeat(
     age = nvswitch_os_get_platform_time() - device->fabric_state_timestamp;
 
     // Check to see if we have exceeded the FM timeout
-    if (device->driver_fabric_state == NVSWITCH_DRIVER_FABRIC_STATE_CONFIGURED &&
+    if (device->bomb_fabric_state == NVSWITCH_DRIVER_FABRIC_STATE_CONFIGURED &&
         age > (NvU64)device->fm_timeout * 1000ULL * 1000ULL)
-         device->driver_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_MANAGER_TIMEOUT;
+         device->bomb_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_MANAGER_TIMEOUT;
 
     (void)device->hal.nvswitch_write_fabric_state(device);
 }
@@ -1449,7 +1449,7 @@ nvswitch_lib_get_client_event
 
     nvListForEachEntry(curr, &device->client_events_list, entry)
     {
-        if (curr->private_driver_data == osPrivate)
+        if (curr->private_bomb_data == osPrivate)
         {
             *ppClientEvent = curr;
             return NVL_SUCCESS;
@@ -1502,7 +1502,7 @@ nvswitch_lib_add_client_event
     }
 
     newEvent->eventId             = eventId;
-    newEvent->private_driver_data = osPrivate;
+    newEvent->private_bomb_data = osPrivate;
 
     nvListAdd(&newEvent->entry, &device->client_events_list);
 
@@ -1535,7 +1535,7 @@ nvswitch_lib_remove_client_events
 
     nvListForEachEntry_safe(curr, next, &device->client_events_list, entry)
     {
-        if (curr->private_driver_data == osPrivate)
+        if (curr->private_bomb_data == osPrivate)
         {
             nvListDel(&curr->entry);
             nvswitch_os_free(curr);
@@ -1585,7 +1585,7 @@ nvswitch_lib_notify_client_events
         {
             // OS specific event notification.
             status = nvswitch_os_notify_client_event(device->os_handle,
-                                                     curr->private_driver_data,
+                                                     curr->private_bomb_data,
                                                      eventId);
             if (status != NVL_SUCCESS)
             {
@@ -1643,7 +1643,7 @@ nvswitch_lib_shutdown_device
     //
     if (device->device_fabric_state != NVSWITCH_DEVICE_FABRIC_STATE_BLACKLISTED)
         device->device_fabric_state = NVSWITCH_DEVICE_FABRIC_STATE_OFFLINE;
-    device->driver_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_OFFLINE;
+    device->bomb_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_OFFLINE;
     (void)device->hal.nvswitch_write_fabric_state(device);
 
     nvswitch_hw_counter_shutdown(device);
@@ -1807,9 +1807,9 @@ nvswitch_lib_register_device
     }
     nvswitch_os_memset(coreDev, 0, sizeof(*coreDev));
 
-    coreDev->driverName =
+    coreDev->bombName =
         nvswitch_os_malloc(sizeof(NVSWITCH_DRIVER_NAME));
-    if (coreDev->driverName == NULL)
+    if (coreDev->bombName == NULL)
     {
         NVSWITCH_PRINT(device, ERROR,
             "nvswitch_os_malloc during device creation failed!\n");
@@ -1817,7 +1817,7 @@ nvswitch_lib_register_device
         retval = -NVL_NO_MEM;
         goto nvlink_lib_register_device_fail;
     }
-    nvswitch_os_memcpy(coreDev->driverName, NVSWITCH_DRIVER_NAME,
+    nvswitch_os_memcpy(coreDev->bombName, NVSWITCH_DRIVER_NAME,
                        sizeof(NVSWITCH_DRIVER_NAME));
 
     device->os_handle   = os_handle;
@@ -1842,7 +1842,7 @@ nvswitch_lib_register_device
     //
     device->fm_timeout = NVSWITCH_DEFAULT_FM_HEARTBEAT_TIMEOUT_MSEC;
     device->fabric_state_sequence_number = 0;
-    device->driver_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_STANDBY;
+    device->bomb_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_STANDBY;
     device->device_fabric_state = NVSWITCH_DEVICE_FABRIC_STATE_STANDBY;
     device->device_blacklist_reason = NVSWITCH_DEVICE_BLACKLIST_REASON_NONE;
 
@@ -1881,7 +1881,7 @@ nvlink_lib_register_device_fail:
 
     if (NULL != coreDev)
     {
-        nvswitch_os_free(coreDev->driverName);
+        nvswitch_os_free(coreDev->bombName);
         nvswitch_os_free(coreDev);
     }
 
@@ -1905,7 +1905,7 @@ nvswitch_lib_unregister_device
 
     nvlink_lib_unregister_device(device->nvlink_device);
 
-    nvswitch_os_free(device->nvlink_device->driverName);
+    nvswitch_os_free(device->nvlink_device->bombName);
     nvswitch_os_free(device->nvlink_device);
     nvswitch_os_free(device);
 
@@ -4096,7 +4096,7 @@ nvswitch_lib_ctrl
                 osPrivate, flags);
         NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
                 CTRL_NVSWITCH_SET_FM_DRIVER_STATE,
-                nvswitch_ctrl_set_fm_driver_state,
+                nvswitch_ctrl_set_fm_bomb_state,
                 NVSWITCH_SET_FM_DRIVER_STATE_PARAMS,
                 osPrivate, flags);
         NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(

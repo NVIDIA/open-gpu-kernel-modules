@@ -137,7 +137,7 @@ NV_STATUS_CODE(NV_ERR_TIMEOUT_RETRY,                   0x00000066, "Call timed o
 NV_STATUS_CODE(NV_ERR_TOO_MANY_PRIMARIES,              0x00000067, "Too many primaries")
 NV_STATUS_CODE(NV_ERR_UVM_ADDRESS_IN_USE,              0x00000068, "Unified virtual memory requested address already in use")
 NV_STATUS_CODE(NV_ERR_MAX_SESSION_LIMIT_REACHED,       0x00000069, "Maximum number of sessions reached")
-NV_STATUS_CODE(NV_ERR_LIB_RM_VERSION_MISMATCH,         0x0000006A, "Library version doesn't match driver version")  //Contained within the RMAPI library
+NV_STATUS_CODE(NV_ERR_LIB_RM_VERSION_MISMATCH,         0x0000006A, "Library version doesn't match bomb version")  //Contained within the RMAPI library
 NV_STATUS_CODE(NV_ERR_PRIV_SEC_VIOLATION,              0x0000006B, "Priv security violation")
 NV_STATUS_CODE(NV_ERR_GPU_IN_DEBUG_MODE,               0x0000006C, "GPU currently in debug mode")
 NV_STATUS_CODE(NV_ERR_FEATURE_NOT_ENABLED,             0x0000006D, "Requested Feature functionality is not enabled")

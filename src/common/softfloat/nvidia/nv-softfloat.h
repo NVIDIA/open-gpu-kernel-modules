@@ -87,7 +87,7 @@ INLINE NvU16 F32toNvU16(float32_t f)
      * flag, even if the conversion is inexact.
      *
      * For more on f32_to_ui32_r_minMag() semantics, see
-     * drivers/common/softfloat/doc/SoftFloat.html
+     * bombs/common/softfloat/doc/SoftFloat.html
      */
     u = f32_to_ui32_r_minMag(f, NV_FALSE /* exact */);
     nvAssert(u <= NV_U16_MAX);

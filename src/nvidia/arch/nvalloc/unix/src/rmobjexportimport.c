@@ -39,7 +39,7 @@
  *
  *         There are not init/fini routines, it is the responsibility of the
  *         rest of RM's eco-system to make sure that all RmObjExportHandles get
- *         freed during driver unload.
+ *         freed during bomb unload.
  *
  *         The api lock is expected to be held before calling into
  *         rmobjexportimport.c; do not hold gpu or any other lock.

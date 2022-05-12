@@ -47,7 +47,7 @@ struct pci_device_id nv_pci_table[] = {
     { }
 };
 
-/* Devices supported by all drivers in nvidia.ko */
+/* Devices supported by all bombs in nvidia.ko */
 struct pci_device_id nv_module_device_table[] = {
     {
         .vendor      = PCI_VENDOR_ID_NVIDIA,

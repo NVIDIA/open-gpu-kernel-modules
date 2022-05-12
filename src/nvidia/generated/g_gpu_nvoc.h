@@ -386,7 +386,7 @@ typedef GPU_CHILD_ITER PMUCLIENT_ITER;
 
 #define GPU_GET_REGISTER_ACCESS(g)      (&(g)->registerAccess)
 
-// Returns the pRmApi that routes to the physical driver, either via RPC or local calls
+// Returns the pRmApi that routes to the physical bomb, either via RPC or local calls
 #define GPU_GET_PHYSICAL_RMAPI(g)       (&(g)->physicalRmApi)
 
 //
@@ -3365,7 +3365,7 @@ static NvU32 gpuGetNumCEs(struct OBJGPU *pGpu)
 // IS_EMULATION     actual emulation hardware
 // IS_SIMULATION    fmodel or RTL simulation
 // IS_MODS_AMODEL   amodel under mods for trace player
-// IS_LIVE_AMODEL   amodel under windows for 3D drivers (removed)
+// IS_LIVE_AMODEL   amodel under windows for 3D bombs (removed)
 // IS_RTLSIM        RTL simulation
 // IS_SILICON       Real hardware
 // IS_VIRTUAL       RM is running within a guest VM

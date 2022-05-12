@@ -232,7 +232,7 @@ namespace DisplayPort
 
         virtual void configureMsScratchRegisters(NvU32 address,
                                                  NvU32 hopCount,
-                                                 NvU32 driverState) = 0;
+                                                 NvU32 bombState) = 0;
 
         virtual bool controlRateGoverning(NvU32 head, bool enable, bool updateNow = true) = 0;
         virtual bool getDpTestPattern(NV0073_CTRL_DP_TESTPATTERN * testPattern) = 0;

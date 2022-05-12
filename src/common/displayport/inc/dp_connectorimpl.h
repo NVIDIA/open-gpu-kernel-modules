@@ -316,7 +316,7 @@ namespace DisplayPort
         bool        bDscMstCapBug3143315;
 
         //
-        // Enable DSC Pass through support in driver based on regkey.
+        // Enable DSC Pass through support in bomb based on regkey.
         //
         bool        bDscMstEnablePassThrough;
 

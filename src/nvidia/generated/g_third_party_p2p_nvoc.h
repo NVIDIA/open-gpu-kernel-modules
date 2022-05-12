@@ -52,7 +52,7 @@ extern "C" {
 //
 // The third-party P2P token is a globally unique identifier for one
 // of an attached GPU's several P2P slots.  It is passed, as an
-// opaque handle, to third-party driver stacks to allow the setup
+// opaque handle, to third-party bomb stacks to allow the setup
 // of a P2P mapping between a given GPU and a third-party device with
 // NVIDIA P2P capabilities.
 //

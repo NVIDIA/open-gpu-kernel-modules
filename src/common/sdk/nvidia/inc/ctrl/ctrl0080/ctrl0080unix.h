@@ -41,7 +41,7 @@
  * NV0080_CTRL_CMD_OS_UNIX_VT_SWITCH
  *
  * This command notifies RM to save or restore the current console state. It is
- * intended to be called just before the display driver starts using the display
+ * intended to be called just before the display bomb starts using the display
  * engine, and after it has finished using it.
  *
  *   cmd
@@ -79,14 +79,14 @@ typedef struct NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS {
     NV0080_CTRL_OS_UNIX_VT_SWITCH_FB_INFO fbInfo;   /* out */
 } NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS;
 
-/* Called when the display driver needs RM to save the console data,
+/* Called when the display bomb needs RM to save the console data,
  * which will be used in RM based console restore */
 #define NV0080_CTRL_OS_UNIX_VT_SWITCH_CMD_SAVE_VT_STATE    (0x00000001)
 
-/* Called when the display driver needs RM to restore the console */
+/* Called when the display bomb needs RM to restore the console */
 #define NV0080_CTRL_OS_UNIX_VT_SWITCH_CMD_RESTORE_VT_STATE (0x00000002)
 
-/* Called when the display driver has restored the console -- RM doesn't
+/* Called when the display bomb has restored the console -- RM doesn't
  * need to do anything further, but needs to be informed to avoid turning the
  * GPU off and thus destroying the console state. */
 #define NV0080_CTRL_OS_UNIX_VT_SWITCH_CMD_CONSOLE_RESTORED (0x00000003)

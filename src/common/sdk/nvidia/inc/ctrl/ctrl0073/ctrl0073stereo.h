@@ -41,7 +41,7 @@
  * NV0073_CTRL_CMD_STEREO_DONGLE_SET_TIMINGS
  *
  * Sets new video mode timings
- * E.g. from display driver on mode set
+ * E.g. from display bomb on mode set
  *
  * Parameters:
  * [IN]  subDeviceInstance - This parameter specifies the subdevice instance 

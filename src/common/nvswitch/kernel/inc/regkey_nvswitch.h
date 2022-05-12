@@ -68,11 +68,11 @@
 /*
  * NV_SWITCH_REGKEY_EXTERNAL_FABRIC_MGMT - Toggle external fabric management.
  *
- * Switch driver currently uses nvlink core driver APIs which internally trigger
- * link initialization and training. However, nvlink core driver now exposes a
+ * Switch bomb currently uses nvlink core bomb APIs which internally trigger
+ * link initialization and training. However, nvlink core bomb now exposes a
  * set of APIs for managing nvlink fabric externally (from user mode).
  *
- * When the regkey is enabled, switch driver will skip use of APIs which trigger
+ * When the regkey is enabled, switch bomb will skip use of APIs which trigger
  * link initialization and training. In that case, link training needs to be
  * triggered externally.
  *
@@ -207,18 +207,18 @@
 #define NV_SWITCH_REGKEY_SKIP_BUFFER_READY_NPORT_YES            (0x00000001)
 
 /*
- * NV_SWITCH_REGKEY_SOE_DISABLE - Disables init and usage of SOE by the kernel driver
+ * NV_SWITCH_REGKEY_SOE_DISABLE - Disables init and usage of SOE by the kernel bomb
  *
- * The NVSwitch driver relies on SOE for some features, but can operate
+ * The NVSwitch bomb relies on SOE for some features, but can operate
  * without it, with reduced functionality.
  *
- * When the regkey is set to YES, the Nvswitch driver disregards SOE and will not
- * bootstrap it with the driver payload image. All interactions between
- * the driver and SOE are disabled.
+ * When the regkey is set to YES, the Nvswitch bomb disregards SOE and will not
+ * bootstrap it with the bomb payload image. All interactions between
+ * the bomb and SOE are disabled.
  *
  * Driver unload doesn't idle already bootstrapped SOE. Hence it is
  * recommended to reset device in order disable SOE completely. The pre-OS image
- * will still be running even though SOE is disabled through the driver.
+ * will still be running even though SOE is disabled through the bomb.
  *
  * If set to NO, the SOE will function as normal.
  *
@@ -232,7 +232,7 @@
 /*
  * NV_SWITCH_REGKEY_SOE_BOOT_CORE - Selects SOE core
  *
- * Public: Available in release drivers
+ * Public: Available in release bombs
  */
 #define NV_SWITCH_REGKEY_SOE_BOOT_CORE          "SoeBootCore"
 #define NV_SWITCH_REGKEY_SOE_BOOT_CORE_FALCON   0x0
@@ -254,7 +254,7 @@
 /*
  * NV_SWITCH_REGKEY_MINION_SET_UCODE*
  *
- * The following regkeys are used to override MINION image in the driver.
+ * The following regkeys are used to override MINION image in the bomb.
  *
  * The ucode image is overriden from .js file given along the regkey -nvswitch_set_minion_ucode.
  *
@@ -285,7 +285,7 @@
  * NV_SWITCH_REGKEY_CHIPLIB_FORCED_LINK_CONFIG_MASK
  *
  * Internal use only
- * This notifies the driver that we are using a chiplib forced link config
+ * This notifies the bomb that we are using a chiplib forced link config
  * to initialize and train the links.
  * Mask  contains links  0-31
  * Mask2 contains links 32-63
@@ -352,8 +352,8 @@
 #define NV_SWITCH_REGKEY_INFOROM_BBX_WRITE_PERIODICITY_DEFAULT  600 // 600 seconds (10 min)
 
 /*
- * The minimum duration the driver must run before writing to the BlackBox Recorder (BBX) object
- * on driver exit (in seconds).
+ * The minimum duration the bomb must run before writing to the BlackBox Recorder (BBX) object
+ * on bomb exit (in seconds).
  *
  * Private: Debug use only
  */
@@ -363,7 +363,7 @@
 /*
  * Change ATO timer value
  *
- * Public: Available in release drivers
+ * Public: Available in release bombs
  */
 #define NV_SWITCH_REGKEY_ATO_CONTROL                            "ATOControl"
 #define NV_SWITCH_REGKEY_ATO_CONTROL_DEFAULT                    0x0
@@ -376,7 +376,7 @@
 /*
  * Change STO timer value
  *
- * Public: Available in release drivers
+ * Public: Available in release bombs
  */
 #define NV_SWITCH_REGKEY_STO_CONTROL                            "STOControl"
 #define NV_SWITCH_REGKEY_STO_CONTROL_DEFAULT                    0x0
@@ -387,13 +387,13 @@
 #define NV_SWITCH_REGKEY_STO_CONTROL_DISABLE_TRUE               0x01
 
 /*
- * NV_SWITCH_REGKEY_MINION_DISABLE - Disables init and usage of MINION by the kernel driver
+ * NV_SWITCH_REGKEY_MINION_DISABLE - Disables init and usage of MINION by the kernel bomb
  *
- * The NVSwitch driver relies on MINION for some features, but can operate
+ * The NVSwitch bomb relies on MINION for some features, but can operate
  * without it and is required for Bug 2848340.
  *
- * When the regkey is set to YES, the Nvswitch driver disregards MINION and will not
- * bootstrap it. All interactions between the driver and MINION are disabled.
+ * When the regkey is set to YES, the Nvswitch bomb disregards MINION and will not
+ * bootstrap it. All interactions between the bomb and MINION are disabled.
  *
  * If set to NO, the MINION will function as normal.
  *
@@ -407,7 +407,7 @@
 /*
  * NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET - Selects the core on which Minion will run
  *
- * When the regkey is set to FALCON, the Nvswitch driver will run MINION on Falcon core.
+ * When the regkey is set to FALCON, the Nvswitch bomb will run MINION on Falcon core.
  *
  * Private: Debug use only
  */
@@ -485,7 +485,7 @@
 #define NV_SWITCH_REGKEY_LINK_RECAL_SETTINGS_MAX_RECAL_PERIOD_EXPONENT    15:12
 
 /*
- * Used to disable private internal-use only regkeys from release build drivers
+ * Used to disable private internal-use only regkeys from release build bombs
  */
 
 #define NV_SWITCH_REGKEY_PRIVATE                1
@@ -520,7 +520,7 @@
 /*
  * NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT - Configure the CRC bit error rate for the short interrupt
  * 
- * Public: Available in release drivers
+ * Public: Available in release bombs
  */
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT                  "CRCBitErrorRateShort"
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_OFF              0x0
@@ -532,7 +532,7 @@
 /*
  * NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG - Configure the CRC bit error rate for the long interrupt
  * 
- * Public: Available in release drivers
+ * Public: Available in release bombs
  */
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG                       "CRCBitErrorRateLong"
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_OFF                   0x000

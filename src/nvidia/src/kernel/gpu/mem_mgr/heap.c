@@ -754,7 +754,7 @@ heapDestruct_IMPL
     // Free the heap structure, if we freed everything
     // (the first block represents the entire free space of the heap).
     // this is only done if the "internal" interface is used.
-    // heapDestroy is an exported function now to user/display driver land,
+    // heapDestroy is an exported function now to user/display bomb land,
     // and we don't want the heap structures being freed unless we've been
     // called from RM-land during a STATE_DESTROY
     //
@@ -1438,7 +1438,7 @@ NV_STATUS heapAlloc_IMPL
     //   error if can't allocate within that range.
     //
     //   Used on Windows by OpenGL.  On Windows during a modeswitch, the
-    //   display driver frees all vidmem surfaces.  Unfortunately, OpenGL
+    //   display bomb frees all vidmem surfaces.  Unfortunately, OpenGL
     //   writes to some vidmem surface with the CPU from user mode.  If these
     //   surfaces are freed during the modeswitch, then the user mode OpenGL
     //   app might scribble on someone else's surface if that video memory is
@@ -1516,7 +1516,7 @@ NV_STATUS heapAlloc_IMPL
     // Check for fixed address request.
     // This allows caller to say: I really want this memory at a particular
     //   offset.  Returns error if can't get that offset.
-    //   Used initially by Mac display driver twinview code.
+    //   Used initially by Mac display bomb twinview code.
     //   On the Mac it is a very bad thing to *ever* move the primary
     //   during a modeset since a lot of sw caches the value and never
     //   checks again.

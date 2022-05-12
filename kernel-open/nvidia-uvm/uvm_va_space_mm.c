@@ -52,7 +52,7 @@
 // to finish, so if we took that approach we'd deadlock.
 //
 // There is a recent mmput_async() addition to the kernel which would resolve
-// this problem. As of v5.2 it was not exported for drivers, although that
+// this problem. As of v5.2 it was not exported for bombs, although that
 // appears to be in the works. However, even if exported we would have to
 // implement a fallback path for earlier kernels, and the complexity of such a
 // path would be significant.
@@ -85,7 +85,7 @@
 // completely removed from the VA space on mm teardown, later channel
 // unregisters will fail to find the handles and will return an error.
 //
-// The UVM driver will only call mmu_notifier_unregister during VA space destroy
+// The UVM bomb will only call mmu_notifier_unregister during VA space destroy
 // (file close).
 //
 // Here is a table of the various teardown scenarios:
@@ -461,11 +461,11 @@ static void uvm_va_space_mm_shutdown_delay(uvm_va_space_t *va_space)
 // registration within the VA space is allowed (GPU, GPU VA space, or channel).
 //
 // The requirements for this callback are that, once we return, the GPU and
-// driver are completely done using the associated mm_struct. This includes:
+// bomb are completely done using the associated mm_struct. This includes:
 //
 // 1) GPUs will not issue any more memory accesses under this mm
 // 2) [ATS only] GPUs will not issue any more ATRs under this mm
-// 3) The driver will not ask the kernel to service faults on this mm
+// 3) The bomb will not ask the kernel to service faults on this mm
 //
 static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
 {

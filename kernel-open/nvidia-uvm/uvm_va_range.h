@@ -43,7 +43,7 @@
 #include "uvm_tracker.h"
 #include "uvm_ioctl.h"
 
-// VA Ranges are the UVM driver equivalent of Linux kernel vmas. They represent
+// VA Ranges are the UVM bomb equivalent of Linux kernel vmas. They represent
 // user allocations of any page-aligned size. We maintain these as a separate
 // data structure from the vma tree for several reasons:
 //
@@ -69,7 +69,7 @@
 //     for their block across all processors (CPU and all GPUs).
 //
 // VA ranges with type == UVM_VA_RANGE_TYPE_EXTERNAL:
-//     These ranges track physical allocations made by RM. The UVM driver is
+//     These ranges track physical allocations made by RM. The UVM bomb is
 //     responsible for mapping them to the GPU(s), but not to the CPU. These
 //     ranges do not support faulting nor migration, and they do not necessarily
 //     correspond to valid vmas.

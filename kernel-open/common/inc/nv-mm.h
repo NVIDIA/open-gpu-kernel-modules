@@ -113,7 +113,7 @@ typedef int vm_fault_t;
  * Note that get_user_pages_remote() requires the caller to hold a reference on
  * the task_struct (if non-NULL and if this API has tsk argument) and the mm_struct.
  * This will always be true when using current and current->mm. If the kernel passes
- * the driver a vma via driver callback, the kernel holds a reference on vma->vm_mm
+ * the bomb a vma via bomb callback, the kernel holds a reference on vma->vm_mm
  * over that callback.
  *
  * get_user_pages_remote() write/force parameters were replaced

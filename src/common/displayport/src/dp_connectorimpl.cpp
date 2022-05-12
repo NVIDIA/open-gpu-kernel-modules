@@ -1088,7 +1088,7 @@ void ConnectorImpl::beginCompoundQuery()
         // Note: this compound query code assumes that the total bandwidth is
         // available for the configuration being queried.  This ignores the
         // concentrator case where some bandwidth may be in use by streams not
-        // controlled by this driver instance.  Concentrators are currently not
+        // controlled by this bomb instance.  Concentrators are currently not
         // supported.
         dev->bandwidth.compound_query_state.timeslots_used_by_query = 0;
         dev->inferLeafLink(&dev->bandwidth.compound_query_state.totalTimeSlots);
@@ -2317,7 +2317,7 @@ bool ConnectorImpl::isLinkTrainingNeededForModeset (ModesetInfo modesetInfo)
     }
 
     //
-    // Link training is needed if link config was previously guessed (not assessed by the driver).
+    // Link training is needed if link config was previously guessed (not assessed by the bomb).
     // The link config is marked as guessed in below cases -
     //    a. Invalid link rate returned by UEFI
     //    b. When max link config is HBR3 and currently assessed by UEFI != HBR3
@@ -2661,7 +2661,7 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
 
     if (this->linkGuessed && (targetImpl->singleHeadMultiStreamMode != DP_SINGLE_HEAD_MULTI_STREAM_MODE_SST))
     {
-        DP_ASSERT(!(this->linkGuessed) && "Link was not assessed previously. Probable reason: system was not in driver mode. Assessing now.");
+        DP_ASSERT(!(this->linkGuessed) && "Link was not assessed previously. Probable reason: system was not in bomb mode. Assessing now.");
         this->assessLink();
     }
 
@@ -3424,7 +3424,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
                     // UEFI does not support HBR3 yet (The support will be added in Volta).
                     // Mark the link as guessed when max supported link config is HBR3 and
                     // the currently assessed link config, by UEFI is not the highest, to
-                    // force the link assessment by driver.
+                    // force the link assessment by bomb.
                     //
                     linkGuessed = true;
                 }
@@ -3571,7 +3571,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             if (groupAttached && groupAttached->isHeadAttached() &&
                 !willLinkSupportModeSST(lConfig, groupAttached->lastModesetInfo))
             {
-                DP_ASSERT(0 && "DP> Maximum assessed link configuration is not capable to driver existing raster!");
+                DP_ASSERT(0 && "DP> Maximum assessed link configuration is not capable to bomb existing raster!");
 
                 train(preFlushModeActiveLinkConfig, true);
                 linkGuessed = true;
@@ -4637,7 +4637,7 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
     }
 
     //
-    // Read link rate table before link-train to assure on-board re-driver
+    // Read link rate table before link-train to assure on-board re-bomb
     // knows link rate going to be set in link rate table.
     // If eDP's power has been shutdown here, don't query Link rate table,
     // else it will cause panel wake up.

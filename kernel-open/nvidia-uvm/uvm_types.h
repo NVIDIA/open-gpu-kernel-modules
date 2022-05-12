@@ -71,7 +71,7 @@ typedef unsigned long long UvmStream;
 // specified virtual address range. There are 3 basic kinds of accesses: read,
 // write and atomics. Each type indicates what kinds of accesses are allowed.
 // Accesses of any disallowed kind are fatal. The "Default" type specifies that
-// the UVM driver should decide on the types of accesses allowed.
+// the UVM bomb should decide on the types of accesses allowed.
 //------------------------------------------------------------------------------
 typedef enum
 {
@@ -86,7 +86,7 @@ typedef enum
 // UVM GPU caching types
 //
 // These types indicate the cacheability of the specified virtual address range
-// from a given GPU. The "Default" type specifies that the UVM driver should
+// from a given GPU. The "Default" type specifies that the UVM bomb should
 // set caching on or off as required to follow the UVM coherence model. The
 // "ForceUncached" and "ForceCached" types will always turn caching off or on
 // respectively. These two types override the cacheability specified by the UVM
@@ -104,7 +104,7 @@ typedef enum
 // UVM GPU format types
 //
 // These types indicate the memory format of the specified virtual address
-// range for a given GPU. The "Default" type specifies that the UVM driver will
+// range for a given GPU. The "Default" type specifies that the UVM bomb will
 // detect the format based on the allocation and is mutually inclusive with
 // UvmGpuFormatElementBitsDefault.
 //------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ typedef enum {
 // UVM GPU Element bits types
 //
 // These types indicate the element size of the specified virtual address range
-// for a given GPU. The "Default" type specifies that the UVM driver will
+// for a given GPU. The "Default" type specifies that the UVM bomb will
 // detect the element size based on the allocation and is mutually inclusive
 // with UvmGpuFormatTypeDefault. The element size is specified in bits:
 // UvmGpuFormatElementBits8 uses the 8-bits format.
@@ -138,7 +138,7 @@ typedef enum {
 // UVM GPU Compression types
 //
 // These types indicate the compression type of the specified virtual address
-// range for a given GPU. The "Default" type specifies that the UVM driver will
+// range for a given GPU. The "Default" type specifies that the UVM bomb will
 // detect the compression attributes based on the allocation. Any type other
 // than the default will override the compression behavior of the physical
 // allocation. UvmGpuCompressionTypeEnabledNoPlc will disable PLC but enables
@@ -461,13 +461,13 @@ typedef struct
 
 typedef enum
 {
-    // These fault types are handled and may be "fixed" by the UVM driver
+    // These fault types are handled and may be "fixed" by the UVM bomb
     UvmFaultTypeInvalid                                                        = 0,
     UvmFaultTypeInvalidPde                                                     = 1,
     UvmFaultTypeInvalidPte                                                     = 2,
     UvmFaultTypeWrite                                                          = 3,
     UvmFaultTypeAtomic                                                         = 4,
-    // The next fault types are fatal and cannot be serviced by the UVM driver
+    // The next fault types are fatal and cannot be serviced by the UVM bomb
     UvmFaultTypeFatal                                                          = 5,
     UvmFaultTypeInvalidPdeSize                                                 = UvmFaultTypeFatal,
     UvmFaultTypeLimitViolation                                                 = 6,
@@ -512,7 +512,7 @@ typedef enum
     UvmEventMigrationCauseCoherence      = 2,
 
     // Speculative migration of pages that are likely to be accessed in the
-    // near future. Initiated by the UVM driver performance heuristics.
+    // near future. Initiated by the UVM bomb performance heuristics.
     UvmEventMigrationCausePrefetch       = 3,
 
     // Migration performed to evict memory from the GPU.
@@ -859,7 +859,7 @@ typedef enum
     UvmEventMapRemoteCauseOutOfMemory = 4,
 
     // On GPUs with access counters, memory evicted to sysmem is always mapped
-    // from the GPU. The UVM driver will invalidate the mapping if the region
+    // from the GPU. The UVM bomb will invalidate the mapping if the region
     // is heavily accessed by the GPU later on.
     UvmEventMapRemoteCauseEviction    = 5,
 } UvmEventMapRemoteCause;

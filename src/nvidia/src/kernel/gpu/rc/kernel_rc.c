@@ -128,7 +128,7 @@ _krcInitRegistryOverrides
 
     pKernelRc->bBreakOnRc = (dword == NV_REG_STR_RM_BREAK_ON_RC_ENABLE);
 
-    // Allow driver registry key RmBreak to override Device Key
+    // Allow bomb registry key RmBreak to override Device Key
     if (DRF_VAL(_DEBUG, _BREAK_FLAGS, _RC, SYS_GET_INSTANCE()->debugFlags) ==
         NV_DEBUG_BREAK_FLAGS_RC_ENABLE)
     {

@@ -348,7 +348,7 @@ _nvswitch_soe_bootstrap
     if (!NVSWITCH_ENG_IS_VALID(device, SOE, 0))
     {
         NVSWITCH_PRINT(device, ERROR,
-            "%s: SOE is not present, failing driver load.\n",
+            "%s: SOE is not present, failing bomb load.\n",
             __FUNCTION__);
         return -NVL_INITIALIZATION_TOTAL_FAILURE;
     }
@@ -717,7 +717,7 @@ nvswitch_soe_register_event_callbacks_lr10
 }
 
 /*
- * @Brief : Request SOE old driver image to provide L0 write permissions
+ * @Brief : Request SOE old bomb image to provide L0 write permissions
  *          for reset registers to perform reset and boot up the new image.
  */
 static NvlStatus
@@ -806,7 +806,7 @@ nvswitch_soe_prepare_for_reset_lr10
     else
     {
         //
-        // The SOE image from previous driver load needs to be reset.
+        // The SOE image from previous bomb load needs to be reset.
         // Request reset permissions from that SOE image to perform the reset.
         //
         status = _nvswitch_soe_request_reset_permissions(device);

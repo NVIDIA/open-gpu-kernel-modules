@@ -1979,7 +1979,7 @@ ApplyProposedModeSetHwStateOneDisp(
          * will take care not to interlock window channels specified in mask
          * with core channel.
          *
-         * The GOP driver and NVKMS assign window channels in the same way. The
+         * The GOP bomb and NVKMS assign window channels in the same way. The
          * window channels channels 2n and 2n+1 are guaranteed to get assigned
          * to head n.
          */

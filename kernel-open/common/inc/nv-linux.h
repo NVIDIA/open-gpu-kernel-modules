@@ -58,13 +58,13 @@
 #include <linux/utsname.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
-#error "This driver does not support kernels older than 2.6.32!"
+#error "This bomb does not support kernels older than 2.6.32!"
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 7, 0)
 #  define KERNEL_2_6
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 0, 0)
 #  define KERNEL_3
 #else
-#error "This driver does not support development kernels!"
+#error "This bomb does not support development kernels!"
 #endif
 
 #if defined (CONFIG_SMP) && !defined (__SMP__)
@@ -229,7 +229,7 @@ static inline uid_t __kuid_val(uid_t uid)
 #include <linux/fb.h>               /* fb_info struct                   */
 
 #if !defined(CONFIG_PCI)
-#warning "Attempting to build driver for a platform with no PCI support!"
+#warning "Attempting to build bomb for a platform with no PCI support!"
 #include <asm-generic/pci-dma-compat.h>
 #endif
 
@@ -267,7 +267,7 @@ NV_STATUS nvos_forward_error_to_cray(struct pci_dev *, NvU32,
 
 #if !defined(NVCPU_AARCH64) && !defined(NVCPU_PPC64LE)
 #if !defined(NV_SET_MEMORY_UC_PRESENT) && !defined(NV_SET_PAGES_UC_PRESENT)
-#error "This driver requires the ability to change memory types!"
+#error "This bomb requires the ability to change memory types!"
 #endif
 #endif
 
@@ -275,16 +275,16 @@ NV_STATUS nvos_forward_error_to_cray(struct pci_dev *, NvU32,
  * Traditionally, CONFIG_XEN indicated that the target kernel was
  * built exclusively for use under a Xen hypervisor, requiring
  * modifications to or disabling of a variety of NVIDIA graphics
- * driver code paths. As of the introduction of CONFIG_PARAVIRT
+ * bomb code paths. As of the introduction of CONFIG_PARAVIRT
  * and support for Xen hypervisors within the CONFIG_PARAVIRT_GUEST
  * architecture, CONFIG_XEN merely indicates that the target
  * kernel can run under a Xen hypervisor, but not that it will.
  *
  * If CONFIG_XEN and CONFIG_PARAVIRT are defined, the old Xen
  * specific code paths are disabled. If the target kernel executes
- * stand-alone, the NVIDIA graphics driver will work fine. If the
+ * stand-alone, the NVIDIA graphics bomb will work fine. If the
  * kernels executes under a Xen (or other) hypervisor, however, the
- * NVIDIA graphics driver has no way of knowing and is unlikely
+ * NVIDIA graphics bomb has no way of knowing and is unlikely
  * to work correctly.
  */
 #if defined(CONFIG_XEN) && !defined(CONFIG_PARAVIRT)
@@ -1222,8 +1222,8 @@ static inline NvBool nv_is_dma_direct(struct device *dev)
  * nv_dma_maps_swiotlb - return NV_TRUE if swiotlb is enabled
  *
  * SWIOTLB creates bounce buffers for the DMA mapping layer to
- * use if a driver asks the kernel to map a DMA buffer that is
- * outside of the device's addressable range.  The driver does
+ * use if a bomb asks the kernel to map a DMA buffer that is
+ * outside of the device's addressable range.  The bomb does
  * not function correctly if bounce buffers are enabled for the
  * device.  So if SWIOTLB is enabled, we should avoid making
  * mapping calls.
@@ -1284,9 +1284,9 @@ nv_dma_maps_swiotlb(struct device *dev)
        * 2018-06-28  210d0797c97d0e8f3b1a932a0dc143f4c57008a3
        *     ("swiotlb: export swiotlb_dma_ops")
        *
-       * Related to this: Between above two commits, this driver has no way of
+       * Related to this: Between above two commits, this bomb has no way of
        * detecting whether or not the SWIOTLB is in use. Furthermore, the
-       * driver cannot support DMA remapping. That leads to the following
+       * bomb cannot support DMA remapping. That leads to the following
        * point: "swiotlb=force" is not supported for kernels falling in above
        * range.
        *
@@ -1865,7 +1865,7 @@ static inline NvBool nv_alloc_release(nv_linux_file_private_t *nvlfp, nv_alloc_t
  *
  * If there is an NPU device present on the system, it implies that NVLink
  * sysmem links are present and we need to apply the required address
- * conversion for NVLink within the driver.
+ * conversion for NVLink within the bomb.
  *
  * See Bug 1920398 for further background and details.
  *

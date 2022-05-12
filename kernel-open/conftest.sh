@@ -22,10 +22,10 @@ if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]; then
     fi
 fi
 
-# VGX_BUILD parameter defined only for VGX builds (vGPU Host driver)
+# VGX_BUILD parameter defined only for VGX builds (vGPU Host bomb)
 # VGX_KVM_BUILD parameter defined only vGPU builds on KVM hypervisor
-# GRID_BUILD parameter defined only for GRID builds (GRID Guest driver)
-# GRID_BUILD_CSP parameter defined only for GRID CSP builds (GRID Guest driver for CSPs)
+# GRID_BUILD parameter defined only for GRID builds (GRID Guest bomb)
+# GRID_BUILD_CSP parameter defined only for GRID CSP builds (GRID Guest bomb for CSPs)
 
 test_xen() {
     #
@@ -46,8 +46,8 @@ test_xen() {
 append_conftest() {
     #
     # Echo data from stdin: this is a transitional function to make it easier
-    # to port conftests from drivers with parallel conftest generation to
-    # older driver versions
+    # to port conftests from bombs with parallel conftest generation to
+    # older bomb versions
     #
 
     while read LINE; do
@@ -328,7 +328,7 @@ set_configuration() {
     # Set a specific configuration option.  This function is called to always
     # enable a configuration, in order to verify whether the test code for that
     # configuration is no longer required and the corresponding
-    # conditionally-compiled code in the driver can be removed.
+    # conditionally-compiled code in the bomb can be removed.
     #
     DEF="$1"
 
@@ -349,7 +349,7 @@ unset_configuration() {
     # Un-set a specific configuration option.  This function is called to
     # always disable a configuration, in order to verify whether the test
     # code for that configuration is no longer required and the corresponding
-    # conditionally-compiled code in the driver can be removed.
+    # conditionally-compiled code in the bomb can be removed.
     #
     DEF="$1"
     CAT="$2"
@@ -972,7 +972,7 @@ compile_test() {
             # 'kobj_remove_work' was added by commit 3b7b314053d02 ("slub: make
             # sysfs file removal asynchronous") in v4.12 (2017-06-23). This
             # commit introduced a race between kmem_cache destroy and create
-            # which we need to workaround in our driver (see nvbug: 2543505).
+            # which we need to workaround in our bomb (see nvbug: 2543505).
             # Also see comment for sysfs_slab_unlink conftest.
             #
             CODE="
@@ -1207,7 +1207,7 @@ compile_test() {
             #endif
 
             void conftest_drm_available(void) {
-                struct drm_driver drv;
+                struct drm_bomb drv;
 
                 /* 2013-10-02 1bb72532ac260a2d3982b40bdd4c936d779d0d16 */
                 (void)drm_dev_alloc;
@@ -1792,7 +1792,7 @@ compile_test() {
             # Determine if the DRM atomic modesetting subsystem is usable
             #
             # Added by commit 036ef5733ba4
-            # ("drm/atomic: Allow drivers to subclass drm_atomic_state, v3") in
+            # ("drm/atomic: Allow bombs to subclass drm_atomic_state, v3") in
             # v4.2 (2018-05-18).
             #
             # Make conftest more robust by adding test for
@@ -1856,7 +1856,7 @@ compile_test() {
             #
             # Determine if the 'struct drm_bus' type is present.
             #
-            # Added by commit 8410ea3b95d1 ("drm: rework PCI/platform driver
+            # Added by commit 8410ea3b95d1 ("drm: rework PCI/platform bomb
             # interface.") in v2.6.39 (2010-12-15)
             #
             # Removed by commit c5786fe5f1c5 ("drm: Goody bye, drm_bus!")
@@ -1878,7 +1878,7 @@ compile_test() {
             #
             # Determine if the 'drm_bus' structure has a 'bus_type' field.
             #
-            # Added by commit 8410ea3b95d1 ("drm: rework PCI/platform driver
+            # Added by commit 8410ea3b95d1 ("drm: rework PCI/platform bomb
             # interface.") in v2.6.39 (2010-12-15)
             #
             # Removed by commit 42b21049fc26 ("drm: kill drm_bus->bus_type")
@@ -1901,7 +1901,7 @@ compile_test() {
             # Determine if the 'drm_bus' structure has a 'get_irq' field.
             #
             # Added by commit 8410ea3b95d1 ("drm: rework PCI/platform
-            # driver interface.") in v2.6.39 (2010-12-15)
+            # bomb interface.") in v2.6.39 (2010-12-15)
             #
             # Removed by commit b2a21aa25a39 ("drm: remove bus->get_irq
             # implementations") in v3.16 (2013-11-03)
@@ -1922,7 +1922,7 @@ compile_test() {
             #
             # Determine if the 'drm_bus' structure has a 'get_name' field.
             #
-            # Added by commit 8410ea3b95d1 ("drm: rework PCI/platform driver
+            # Added by commit 8410ea3b95d1 ("drm: rework PCI/platform bomb
             # interface.") in v2.6.39 (2010-12-15)
             #
             # removed by commit 9de1b51f1fae ("drm: remove drm_bus->get_name")
@@ -1940,13 +1940,13 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_BUS_HAS_GET_NAME" "" "types"
         ;;
 
-        drm_driver_has_device_list)
+        drm_bomb_has_device_list)
             #
-            # Determine if the 'drm_driver' structure has a 'device_list' field.
+            # Determine if the 'drm_bomb' structure has a 'device_list' field.
             #
             # Renamed from device_list to legacy_device_list by commit
             # b3f2333de8e8 ("drm: restrict the device list for shadow
-            # attached drivers") in v3.14 (2013-12-11)
+            # attached bombs") in v3.14 (2013-12-11)
             #
             CODE="
             #if defined(NV_DRM_DRMP_H_PRESENT)
@@ -1957,25 +1957,25 @@ compile_test() {
             #include <drm/drm_drv.h>
             #endif
 
-            int conftest_drm_driver_has_device_list(void) {
-                return offsetof(struct drm_driver, device_list);
+            int conftest_drm_bomb_has_device_list(void) {
+                return offsetof(struct drm_bomb, device_list);
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DEVICE_LIST" "" "types"
         ;;
 
 
-        drm_driver_has_legacy_dev_list)
+        drm_bomb_has_legacy_dev_list)
             #
-            # Determine if the 'drm_driver' structure has a 'legacy_dev_list' field.
+            # Determine if the 'drm_bomb' structure has a 'legacy_dev_list' field.
             #
             # Renamed from device_list to legacy_device_list by commit
             # b3f2333de8e8 ("drm: restrict the device list for shadow
-            # attached drivers") in v3.14 (2013-12-11)
+            # attached bombs") in v3.14 (2013-12-11)
             #
             # The commit 57bb1ee60340 ("drm: Compile out legacy chunks from
             # struct drm_device") compiles out the legacy chunks like
-            # drm_driver::legacy_dev_list.
+            # drm_bomb::legacy_dev_list.
             #
             CODE="
             #if defined(NV_DRM_DRMP_H_PRESENT)
@@ -1986,8 +1986,8 @@ compile_test() {
             #include <drm/drm_drv.h>
             #endif
 
-            int conftest_drm_driver_has_legacy_dev_list(void) {
-                return offsetof(struct drm_driver, legacy_dev_list);
+            int conftest_drm_bomb_has_legacy_dev_list(void) {
+                return offsetof(struct drm_bomb, legacy_dev_list);
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST" "" "types"
@@ -2150,12 +2150,12 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VZALLOC_PRESENT" "" "functions"
         ;;
 
-        drm_driver_has_set_busid)
+        drm_bomb_has_set_busid)
             #
-            # Determine if the drm_driver structure has a 'set_busid' callback
+            # Determine if the drm_bomb structure has a 'set_busid' callback
             # field.
             #
-            # Added by commit 915b4d11b8b9 ("drm: add driver->set_busid()
+            # Added by commit 915b4d11b8b9 ("drm: add bomb->set_busid()
             # callback") in v3.18 (2014-08-29)
             #
             CODE="
@@ -2163,16 +2163,16 @@ compile_test() {
             #include <drm/drmP.h>
             #endif
 
-            int conftest_drm_driver_has_set_busid(void) {
-                return offsetof(struct drm_driver, set_busid);
+            int conftest_drm_bomb_has_set_busid(void) {
+                return offsetof(struct drm_bomb, set_busid);
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_SET_BUSID" "" "types"
         ;;
 
-        drm_driver_has_gem_prime_res_obj)
+        drm_bomb_has_gem_prime_res_obj)
             #
-            # Determine if the drm_driver structure has a 'gem_prime_res_obj'
+            # Determine if the drm_bomb structure has a 'gem_prime_res_obj'
             # callback field.
             #
             # Added by commit 3aac4502fd3f ("dma-buf: use reservation
@@ -2186,8 +2186,8 @@ compile_test() {
             #include <drm/drmP.h>
             #endif
 
-            int conftest_drm_driver_has_gem_prime_res_obj(void) {
-                return offsetof(struct drm_driver, gem_prime_res_obj);
+            int conftest_drm_bomb_has_gem_prime_res_obj(void) {
+                return offsetof(struct drm_bomb, gem_prime_res_obj);
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_GEM_PRIME_RES_OBJ" "" "types"
@@ -2743,7 +2743,7 @@ compile_test() {
 
         drm_master_drop_has_from_release_arg)
             #
-            # Determine if drm_driver::master_drop() has 'from_release' argument.
+            # Determine if drm_bomb::master_drop() has 'from_release' argument.
             #
             # Last argument 'bool from_release' has been removed by commit
             # d6ed682eba54 ("drm: Refactor drop/set master code a bit")
@@ -2754,7 +2754,7 @@ compile_test() {
             #include <drm/drmP.h>
             #endif
 
-            void conftest_drm_master_drop_has_from_release_arg(struct drm_driver *drv) {
+            void conftest_drm_master_drop_has_from_release_arg(struct drm_bomb *drv) {
                 drv->master_drop(NULL, NULL, false);
             }"
 
@@ -2879,9 +2879,9 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_OF_GET_IBM_CHIP_ID_PRESENT" "" "functions"
         ;;
 
-        drm_driver_unload_has_int_return_type)
+        drm_bomb_unload_has_int_return_type)
             #
-            # Determine if drm_driver::unload() returns integer value
+            # Determine if drm_bomb::unload() returns integer value
             #
             # Changed to void by commit 11b3c20bdd15 ("drm: Change the return
             # type of the unload hook to void") in v4.11 (2017-01-06)
@@ -2891,7 +2891,7 @@ compile_test() {
             #include <drm/drmP.h>
             #endif
 
-            int conftest_drm_driver_unload_has_int_return_type(struct drm_driver *drv) {
+            int conftest_drm_bomb_unload_has_int_return_type(struct drm_bomb *drv) {
                 return drv->unload(NULL /* dev */);
             }"
 
@@ -3625,18 +3625,18 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PM_RUNTIME_AVAILABLE" "" "generic"
         ;;
 
-        device_driver_of_match_table)
+        device_bomb_of_match_table)
             #
-            # Determine if the device_driver struct has an of_match_table member.
+            # Determine if the device_bomb struct has an of_match_table member.
             #
-            # of_match_table was added by commit 597b9d1e44e9 ("drivercore:
-            # Add of_match_table to the common device drivers") in v2.6.35
+            # of_match_table was added by commit 597b9d1e44e9 ("bombcore:
+            # Add of_match_table to the common device bombs") in v2.6.35
             # (2010-04-13).
             #
             CODE="
             #include <linux/device.h>
-            int conftest_device_driver_of_match_table(void) {
-                return offsetof(struct device_driver, of_match_table);
+            int conftest_device_bomb_of_match_table(void) {
+                return offsetof(struct device_bomb, of_match_table);
             }"
 
             compile_check_conftest "$CODE" "NV_DEVICE_DRIVER_OF_MATCH_TABLE_PRESENT" "" "types"
@@ -3646,7 +3646,7 @@ compile_test() {
             #
             # Determine if the device struct has an of_node member.
             #
-            # of_node member was added by commit d706c1b05027 ("driver-core:
+            # of_node member was added by commit d706c1b05027 ("bomb-core:
             # Add device node pointer to struct device") in v2.6.35
             # (2010-04-13).
             #
@@ -3817,9 +3817,9 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_ROTATION_AVAILABLE" "" "functions"
             ;;
 
-        drm_driver_prime_flag_present)
+        drm_bomb_prime_flag_present)
             #
-            # Determine whether driver feature flag DRIVER_PRIME is present.
+            # Determine whether bomb feature flag DRIVER_PRIME is present.
             #
             # The DRIVER_PRIME flag was added by commit 3248877ea179 (drm:
             # base prime/dma-buf support (v5)) in v3.4 (2011-11-25) and is
@@ -3843,7 +3843,7 @@ compile_test() {
             #include <drm/drm_drv.h>
             #endif
 
-            unsigned int drm_driver_prime_flag_present_conftest(void) {
+            unsigned int drm_bomb_prime_flag_present_conftest(void) {
                 return DRIVER_PRIME;
             }"
 
@@ -4314,12 +4314,12 @@ compile_test() {
 
         ;;
 
-        drm_driver_master_set_has_int_return_type)
+        drm_bomb_master_set_has_int_return_type)
             #
-            # Determine if drm_driver::master_set() returns integer value
+            # Determine if drm_bomb::master_set() returns integer value
             #
             # Changed to void by commit 907f53200f98 ("drm: vmwgfx: remove
-            # drm_driver::master_set() return type") in v5.9-rc1.
+            # drm_bomb::master_set() return type") in v5.9-rc1.
             #
             CODE="
             #if defined(NV_DRM_DRMP_H_PRESENT)
@@ -4330,7 +4330,7 @@ compile_test() {
             #include <drm/drm_drv.h>
             #endif
 
-            int conftest_drm_driver_master_set_has_int_return_type(struct drm_driver *drv,
+            int conftest_drm_bomb_master_set_has_int_return_type(struct drm_bomb *drv,
                 struct drm_device *dev, struct drm_file *file_priv, bool from_open) {
 
                 return drv->master_set(dev, file_priv, from_open);
@@ -4339,13 +4339,13 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_SET_MASTER_HAS_INT_RETURN_TYPE" "" "types"
         ;;
 
-        drm_driver_has_gem_free_object)
+        drm_bomb_has_gem_free_object)
             #
-            # Determine if the 'drm_driver' structure has a 'gem_free_object'
+            # Determine if the 'drm_bomb' structure has a 'gem_free_object'
             # function pointer.
             #
-            # drm_driver::gem_free_object is removed by commit 1a9458aeb8eb
-            # ("drm: remove drm_driver::gem_free_object") in v5.9-rc1.
+            # drm_bomb::gem_free_object is removed by commit 1a9458aeb8eb
+            # ("drm: remove drm_bomb::gem_free_object") in v5.9-rc1.
             #
             CODE="
             #if defined(NV_DRM_DRMP_H_PRESENT)
@@ -4356,8 +4356,8 @@ compile_test() {
             #include <drm/drm_drv.h>
             #endif
 
-            int conftest_drm_driver_has_gem_free_object(void) {
-                return offsetof(struct drm_driver, gem_free_object);
+            int conftest_drm_bomb_has_gem_free_object(void) {
+                return offsetof(struct drm_bomb, gem_free_object);
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_GEM_FREE_OBJECT" "" "types"
@@ -4456,14 +4456,14 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_PRIME_PAGES_TO_SG_HAS_DRM_DEVICE_ARG" "" "types"
         ;;
 
-        drm_driver_has_gem_prime_callbacks)
+        drm_bomb_has_gem_prime_callbacks)
             #
-            # Determine if drm_driver structure has the GEM and PRIME callback
+            # Determine if drm_bomb structure has the GEM and PRIME callback
             # function pointers.
             #
-            # The GEM and PRIME callback are removed from drm_driver
+            # The GEM and PRIME callback are removed from drm_bomb
             # structure, by commit d693def4fd1c ("drm: Remove obsolete GEM and
-            # PRIME callbacks from struct drm_driver").
+            # PRIME callbacks from struct drm_bomb").
             #
             CODE="
             #if defined(NV_DRM_DRMP_H_PRESENT)
@@ -4474,8 +4474,8 @@ compile_test() {
             #include <drm/drm_drv.h>
             #endif
 
-            void conftest_drm_driver_has_gem_and_prime_callbacks(void) {
-                struct drm_driver drv;
+            void conftest_drm_bomb_has_gem_and_prime_callbacks(void) {
+                struct drm_bomb drv;
 
                 drv.gem_prime_pin = 0;
                 drv.gem_prime_get_sg_table = 0;
@@ -4707,32 +4707,32 @@ compile_test() {
             fi
         ;;
 
-        add_memory_driver_managed)
+        add_memory_bomb_managed)
             #
-            # Determine if the add_memory_driver_managed function is present
+            # Determine if the add_memory_bomb_managed function is present
             #
             # Added by commit 7b7b27214bba ("mm/memory_hotplug: introduce
-            # add_memory_driver_managed()") in v5.8-rc1 (2020-06-05)
+            # add_memory_bomb_managed()") in v5.8-rc1 (2020-06-05)
             #
             CODE="
             #include <linux/memory_hotplug.h>
-            void conftest_add_memory_driver_managed() {
-                add_memory_driver_managed();
+            void conftest_add_memory_bomb_managed() {
+                add_memory_bomb_managed();
             }"
 
             compile_check_conftest "$CODE" "NV_ADD_MEMORY_DRIVER_MANAGED_PRESENT" "" "functions"
         ;;
 
-        add_memory_driver_managed_has_mhp_flags_arg)
+        add_memory_bomb_managed_has_mhp_flags_arg)
             #
-            # Check if add_memory_driver_managed() has mhp_flags arg.
+            # Check if add_memory_bomb_managed() has mhp_flags arg.
             #
             # Added by commit b6117199787c ("mm/memory_hotplug: prepare passing flags to
             # add_memory() and friends") in v5.10-rc1 (2020-10-16)
             #
             CODE="
             #include <linux/memory_hotplug.h>
-            int add_memory_driver_managed(int nid, u64 start, u64 size,
+            int add_memory_bomb_managed(int nid, u64 start, u64 size,
                                           const char *resource_name,
                                           mhp_t mhp_flags) {
                 return 0;
@@ -5481,7 +5481,7 @@ case "$5" in
         if [ "$XEN_PRESENT" != "0" ]; then
             echo "The kernel you are installing for is a Xen kernel!";
             echo "";
-            echo "The NVIDIA driver does not currently support Xen kernels. If ";
+            echo "The NVIDIA bomb does not currently support Xen kernels. If ";
             echo "you are using a stock distribution kernel, please install ";
             echo "a variant of this kernel without Xen support; if this is a ";
             echo "custom kernel, please install a standard Linux kernel.  Then ";
@@ -5517,7 +5517,7 @@ case "$5" in
         if [ "$PREEMPT_RT_PRESENT" != "0" ]; then
             echo "The kernel you are installing for is a PREEMPT_RT kernel!";
             echo "";
-            echo "The NVIDIA driver does not support real-time kernels. If you ";
+            echo "The NVIDIA bomb does not support real-time kernels. If you ";
             echo "are using a stock distribution kernel, please install ";
             echo "a variant of this kernel that does not have the PREEMPT_RT ";
             echo "patch set applied; if this is a custom kernel, please ";
@@ -5632,7 +5632,7 @@ case "$5" in
                     exit 0
             else
                 echo "Below CONFIG options are missing on the kernel for installing";
-                echo "NVIDIA vGPU driver on KVM host";
+                echo "NVIDIA vGPU bomb on KVM host";
                 if [ "$VFIO_IOMMU_PRESENT" = "0" ]; then
                     echo "CONFIG_VFIO_IOMMU_TYPE1";
                 fi

@@ -34,7 +34,7 @@
  *
  * We implement these callbacks to keep track of the number of user
  * mappings of system memory allocations. This was motivated by a
- * subtle interaction problem between the driver and the kernel with
+ * subtle interaction problem between the bomb and the kernel with
  * respect to the bookkeeping of pages marked reserved and later
  * mapped with mmap().
  *

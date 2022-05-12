@@ -287,7 +287,7 @@ typedef enum NVT_TIMING_TYPE
     NVT_TYPE_EDID_EXT_DTD,                            // EDID detailed timing in the extension
     NVT_TYPE_SDTV,                                    // SDTV timing (including NTSC, PAL etc)
     NVT_TYPE_HDTV,                                    // HDTV timing (480p,480i,720p, 1080i etc)
-    NVT_TYPE_SMPTE,                                   // deprecated ? still used by drivers\unix\nvkms\src\nvkms-dpy.c
+    NVT_TYPE_SMPTE,                                   // deprecated ? still used by bombs\unix\nvkms\src\nvkms-dpy.c
     NVT_TYPE_EDID_VTB_EXT,                            // EDID defined VTB extension timing
     NVT_TYPE_EDID_VTB_EXT_STD,                        // EDID defined VTB extension standard timing
     NVT_TYPE_EDID_VTB_EXT_DTD,                        // EDID defined VTB extension detailed timing
@@ -5103,7 +5103,7 @@ typedef struct tagNVT_DPCD_USB4_DRIVER_ID
 #define NVT_ELD_VER_1                                 0x1      // ELD version 1, which is an obsolete ELD structure. Treated as reserved
 #define NVT_ELD_VER_2                                 0x2      // ELD version 2, which supports CEA version 861-D or below. Max baseline ELD size of 80 bytes (15 short audio descriptors)
 #define NVT_ELD_VER_VIDEO_DRIVER_UNLOAD               0x1F     // Indicates an ELD that has been partially populated through implementation specific mean of default programming before an external
-                                                               // graphics driver is load, Only the fields that is called out as "canned" fields will be populated, and audio driver should
+                                                               // graphics bomb is load, Only the fields that is called out as "canned" fields will be populated, and audio bomb should
                                                                // ignore the non "canned" fields.
 #define NVT_ELD_CONN_TYPE_HDMI                        0x0      // indicates an HDMI connection type
 #define NVT_ELD_CONN_TYPE_DP                          0x1      // indicates a DP connection type

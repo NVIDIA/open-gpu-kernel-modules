@@ -231,7 +231,7 @@ kmemsysAllocComprResources_KERNEL
  * @brief Initializes static config data from the Physical side.
  * @param[in]  pGpu pointer to the GPU instance.
  * @param[in]  pKernelMemorySystem pointer to the kernel side KernelMemorySystem instance.
- * @param[out] pConfig pointer to the static config init on Physical driver.
+ * @param[out] pConfig pointer to the static config init on Physical bomb.
  * 
  * @return NV_OK upon success.
  *         NV_ERR* otherwise.  

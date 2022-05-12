@@ -461,20 +461,20 @@ static NV_STATUS V2_CONVERTER(_NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION)
         if (status == NV_OK)
         {
             NvU32 maxSizeOfStrings;
-            NvU32 driverVersionBufferLen;
+            NvU32 bombVersionBufferLen;
             NvU32 versionBufferLen;
             NvU32 titleBufferLen;
             NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS *pParams = NvP64_VALUE(pArgs->params);
 
             // Get the maximum string size as per legacy behavior
-            driverVersionBufferLen = portStringLengthSafe(pParams2->driverVersionBuffer,
-                                                          sizeof(pParams2->driverVersionBuffer)) + 1;
+            bombVersionBufferLen = portStringLengthSafe(pParams2->bombVersionBuffer,
+                                                          sizeof(pParams2->bombVersionBuffer)) + 1;
             versionBufferLen = portStringLengthSafe(pParams2->versionBuffer,
                                                     sizeof(pParams2->versionBuffer)) + 1;
             titleBufferLen = portStringLengthSafe(pParams2->titleBuffer,
                                                   sizeof(pParams2->titleBuffer)) + 1;
 
-            maxSizeOfStrings = NV_MAX(driverVersionBufferLen,
+            maxSizeOfStrings = NV_MAX(bombVersionBufferLen,
                                       NV_MAX(versionBufferLen, titleBufferLen));
             
             //
@@ -505,9 +505,9 @@ static NV_STATUS V2_CONVERTER(_NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION)
 
                 // Copy the build version info to the client's memory.
                 if (rmapiParamsCopyOut(NULL,
-                                       pParams2->driverVersionBuffer,
+                                       pParams2->bombVersionBuffer,
                                        pParams->pDriverVersionBuffer,
-                                       driverVersionBufferLen,
+                                       bombVersionBufferLen,
                                        (pSecInfo->paramLocation != PARAM_LOCATION_KERNEL)) != NV_OK ||
                     rmapiParamsCopyOut(NULL,
                                        pParams2->versionBuffer,

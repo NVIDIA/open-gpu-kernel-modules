@@ -664,7 +664,7 @@ _flcnQueueSeqInfoStateInit_IMPL
  *
  * Invokes the callback function for any commands that are currently running
  * to inform the client that the command has been cancelled/failed.  This could
- * happen as a result of restarting the FLCN or tearing down the driver.
+ * happen as a result of restarting the FLCN or tearing down the bomb.
  *
  * All sequences that are currently running will be marked as "cancelled". The
  * sequence itself will not be released for reuse.  This is to allow the status

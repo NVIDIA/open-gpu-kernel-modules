@@ -1465,7 +1465,7 @@ memmgrCalcReservedFbSpace_IMPL
     // Linux and Mac don't have reserved memory and doesn't use this function.
     //
     // On Vista, Fermi's instance memory is not reserved by RM anymore.
-    // KMD has to reserve enough instance memory for driver private data.
+    // KMD has to reserve enough instance memory for bomb private data.
     // This function does the calculation of needed space.  See bug 642233.
     // While it returns the result in Mb, the calculation is made with byte
     //

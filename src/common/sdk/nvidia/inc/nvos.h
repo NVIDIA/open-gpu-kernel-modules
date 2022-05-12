@@ -293,9 +293,9 @@ typedef struct
  * This field allows to specify the page kind. If the page kind
  * is not specified then the page kind associated with the memory will be used.
  *
- * In tegra display driver stack, the page kind remains unknown at the time
+ * In tegra display bomb stack, the page kind remains unknown at the time
  * of memory allocation/import, the page kind can only be known when display
- * driver client creates a framebuffer from allocated/imported memory.
+ * bomb client creates a framebuffer from allocated/imported memory.
  *
  * This field compatible with NVOS03_FLAGS_PTE_KIND_BL_OVERRIDE flag.
  */
@@ -369,7 +369,7 @@ typedef void (*Callback1ArgVoidReturn)(void *arg);
 typedef void (*Callback5ArgVoidReturn)(void *arg1, void *arg2, NvHandle hEvent, NvU32 data, NvU32 status);
 
 /* NOTE: the 'void* arg' below is ok (but unfortunate) since this interface
-   can only be used by other kernel drivers which must share the same ptr-size */
+   can only be used by other kernel bombs which must share the same ptr-size */
 typedef struct
 {
     Callback1ArgVoidReturn  func;
@@ -379,7 +379,7 @@ typedef struct
 /* For use with NV01_EVENT_KERNEL_CALLBACK_EX. */
 /* NVOS10_EVENT_KERNEL_CALLBACK_EX data structure storage needs to be retained by the caller. */
 /* NOTE: the 'void* arg' below is ok (but unfortunate) since this interface
-   can only be used by other kernel drivers which must share the same ptr-size */
+   can only be used by other kernel bombs which must share the same ptr-size */
 typedef struct
 {
     Callback5ArgVoidReturn  func;
@@ -391,7 +391,7 @@ typedef struct
 #define NV01_EVENT_BROADCAST                                       (0x80000000)
 
 /* allow non-root resman client to create NV01_EVENT_KERNEL_CALLBACK events */
-/* -- this works in debug/develop drivers only (for security reasons)*/
+/* -- this works in debug/develop bombs only (for security reasons)*/
 #define NV01_EVENT_PERMIT_NON_ROOT_EVENT_KERNEL_CALLBACK_CREATION  (0x40000000)
 
 /* RM event should be triggered only by the specified subdevice; see cl0005.h
@@ -876,7 +876,7 @@ typedef struct
           NvU32     allocAttr2;
           NvU32     retAttr2;                                 // Output Indicates the resources that we allocated
           NvU64     allocAddr       NV_ALIGN_BYTES(8);
-          // [out] from GMMU_COMPR_INFO in drivers/common/shared/inc/mmu/gmmu_fmt.h
+          // [out] from GMMU_COMPR_INFO in bombs/common/shared/inc/mmu/gmmu_fmt.h
           struct
           {
               NvU32 compPageShift;
@@ -1123,7 +1123,7 @@ typedef struct
 #define NVOS32_ATTR2_NONE                               0x00000000
 
 //
-// DEFAULT          - Let lower level drivers pick optimal page kind.
+// DEFAULT          - Let lower level bombs pick optimal page kind.
 // PREFER_NO_ZBC    - Prefer other types of compression over ZBC when
 //                    selecting page kind.
 // PREFER_ZBC       - Prefer ZBC over other types of compression when
@@ -1682,7 +1682,7 @@ typedef struct
     NvU64     size            NV_ALIGN_BYTES(8);
     NvU64     allocAddr       NV_ALIGN_BYTES(8);
 
-    // [out] from GMMU_COMPR_INFO in drivers/common/shared/inc/mmu/gmmu_fmt.h
+    // [out] from GMMU_COMPR_INFO in bombs/common/shared/inc/mmu/gmmu_fmt.h
     NvU32 compPageShift;
     NvU32 compressedKind;
     NvU32 compTagLineMin;
@@ -2449,7 +2449,7 @@ typedef struct {
  *    NVOS04_FLAGS_CHANNEL_SKIP_MAP_REFCOUNTING:
  *     This flag specifies if the channel can skip refcounting of potentially
  *     accessed mappings on job kickoff.  This flag is only meaningful for
- *     kernel drivers which perform refcounting of memory mappings.
+ *     kernel bombs which perform refcounting of memory mappings.
  *
  *       NVOS04_FLAGS_CHANNEL_SKIP_MAP_REFCOUNTING_FALSE:
  *         The channel cannot not skip refcounting of memory mappings
@@ -2876,7 +2876,7 @@ typedef struct
 
 /* parameters */
 /* NOTE: the "void* pParm's" below are ok (but unfortunate) since this interface
-   can only be used by other kernel drivers which must share the same ptr-size */
+   can only be used by other kernel bombs which must share the same ptr-size */
 typedef struct
 {
     NvHandle             hClient;     // [IN] client handle
@@ -2902,7 +2902,7 @@ typedef struct
  *       index, RM/NVMEM will decide the HW ASID to be used with
  *       this VA Space. "index" takes values from the
  *       NVMEM_CLIENT_* defines in
- *       "drivers/common/inc/tegra/memory/ioctl.h".
+ *       "bombs/common/inc/tegra/memory/ioctl.h".
  *
  *       Big GPU: With FERMI_VASPACE_A, see NV_VASPACE_ALLOCATION_INDEX_GPU_*.
  *
@@ -2916,7 +2916,7 @@ typedef struct
  *
  *       SHARED_MANAGEMENT
  *          Indicates management of the VA space is shared with another
- *          component (e.g. driver layer, OS, etc.).
+ *          component (e.g. bomb layer, OS, etc.).
  *
  *          The initial VA range from vaBase (inclusive) through vaSize (exclusive)
  *          is managed by RM. The range must be aligned to a top-level PDE's VA
@@ -2962,7 +2962,7 @@ typedef struct
  *                        As of now page faulting is only supported for compute on pascal+.
  *       IS_EXTERNALLY_OWNED
  *                        This vaspace that has been allocated will be managed by
- *                        an external driver. RM will not own the pagetables for this vaspace.
+ *                        an external bomb. RM will not own the pagetables for this vaspace.
  *
  *       ENABLE_NVLINK_ATS
  *                        Enables VA translation for this address space using NVLINK ATS.

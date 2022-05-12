@@ -33,7 +33,7 @@ extern "C" {
 *                                                                           *
 *   OBJSWENG implements the 'Software Engine' from the GPU host             *
 *   perspective. That is the software component that emulates a GPU host    *
-*   engine by implementing SW methods in the driver.                        *
+*   engine by implementing SW methods in the bomb.                        *
 *                                                                           *
 ****************************************************************************/
 

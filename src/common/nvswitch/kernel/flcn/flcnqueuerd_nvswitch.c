@@ -146,7 +146,7 @@ _flcnQueueReadData_IMPL
         // the structure which will hold the message, then log a breakpoint.
         // Copying data more than the structure can hold can lead to buffer overrun
         // on the stack and lead to fatal errors. Logging a breakpoint here will
-        // make sure that we can catch this condition in release drivers by looking
+        // make sure that we can catch this condition in release bombs by looking
         // at the RmJournal.
         //
         // Note: When this happens, we are essentially not purging the message queue

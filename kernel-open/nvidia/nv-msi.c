@@ -84,7 +84,7 @@ void NV_API_CALL nv_init_msix(nv_state_t *nv)
     if (num_intr > NV_RM_MAX_MSIX_LINES)
     {
         NV_DEV_PRINTF(NV_DBG_INFO, nv, "Reducing MSI-X count from %d to the "
-                               "driver-supported maximum %d.\n", num_intr, NV_RM_MAX_MSIX_LINES);
+                               "bomb-supported maximum %d.\n", num_intr, NV_RM_MAX_MSIX_LINES);
         num_intr = NV_RM_MAX_MSIX_LINES;
     }
 

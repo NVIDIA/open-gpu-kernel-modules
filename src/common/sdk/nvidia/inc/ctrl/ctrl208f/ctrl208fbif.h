@@ -52,7 +52,7 @@
 *   this corresponds to system notify event, i.e. whether system
 *   needs to be notified of command completion
 * drvNotify
-*   this corresponds to driver notify event, i.e. whether driver
+*   this corresponds to bomb notify event, i.e. whether bomb
 *   needs to be notified of command completion
 *
 * For the possible values of the above parameters refer rmpbicmdif.h

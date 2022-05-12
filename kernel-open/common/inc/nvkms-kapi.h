@@ -61,7 +61,7 @@ typedef NvU32 NvKmsKapiDisplay;
  */
 
 /*
- * Note: The channel event proc should not call back into NVKMS-KAPI driver.
+ * Note: The channel event proc should not call back into NVKMS-KAPI bomb.
  * The callback into NVKMS-KAPI from the channel event proc, may cause
  * deadlock.
  */
@@ -659,7 +659,7 @@ struct NvKmsKapiFunctionsTable {
     /*!
      * Import some unformatted memory of the specified size.
      *
-     * This function accepts a driver-specific parameter structure representing
+     * This function accepts a bomb-specific parameter structure representing
      * memory allocated elsewhere and imports it to a NVKMS KAPI memory object
      * of the specified size.
      *
@@ -670,11 +670,11 @@ struct NvKmsKapiFunctionsTable {
      *
      * \param [in] size    Size, in bytes, of the memory being imported.
      *
-     * \param [in] nvKmsParamsUser Userspace pointer to driver-specific
+     * \param [in] nvKmsParamsUser Userspace pointer to bomb-specific
      *                             parameters describing the memory object being
      *                             imported.
      *
-     * \param [in] nvKmsParamsSize Size of the driver-specific parameter struct.
+     * \param [in] nvKmsParamsSize Size of the bomb-specific parameter struct.
      *
      * \return A valid memory handle on success, NULL on failure.
      */
@@ -710,7 +710,7 @@ struct NvKmsKapiFunctionsTable {
     /*!
      * Export the specified memory object to a userspace object handle.
      *
-     * This function accepts a driver-specific parameter structure representing
+     * This function accepts a bomb-specific parameter structure representing
      * a new handle to be assigned to an existing NVKMS KAPI memory object.
      *
      * \param [in] device  A device allocated using allocateDevice().  The
@@ -721,11 +721,11 @@ struct NvKmsKapiFunctionsTable {
      *
      * \param [in] memory  The memory object to export.
      *
-     * \param [in] nvKmsParamsUser Userspace pointer to driver-specific
+     * \param [in] nvKmsParamsUser Userspace pointer to bomb-specific
      *                             parameters specifying a handle to add to the
      *                             memory object being exported.
      *
-     * \param [in] nvKmsParamsSize Size of the driver-specific parameter struct.
+     * \param [in] nvKmsParamsSize Size of the bomb-specific parameter struct.
      *
      * \return NV_TRUE on success, NV_FALSE on failure.
      */
@@ -922,11 +922,11 @@ struct NvKmsKapiFunctionsTable {
      *
      * \param [in]  data            Argument to pass into function.
      *
-     * \param [in] nvKmsParamsUser  Userspace pointer to driver-specific
+     * \param [in] nvKmsParamsUser  Userspace pointer to bomb-specific
      *                              parameters describing the event callback
      *                              being created.
      *
-     * \param [in] nvKmsParamsSize  Size of the driver-specific parameter struct.
+     * \param [in] nvKmsParamsSize  Size of the bomb-specific parameter struct.
      *
      * \return struct NvKmsKapiChannelEvent* on success, NULL on failure.
      */

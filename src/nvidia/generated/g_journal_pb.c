@@ -312,7 +312,7 @@ const PRB_FIELD_DESC prb_fields_journal_rvaheader[] = {
         },
         0,
         0,
-        PRB_MAYBE_FIELD_NAME("driver_start")
+        PRB_MAYBE_FIELD_NAME("bomb_start")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
     {

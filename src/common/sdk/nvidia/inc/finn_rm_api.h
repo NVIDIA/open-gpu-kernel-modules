@@ -30,7 +30,7 @@
  * between the serializer and the deserializer.
  *
  * WARNING: Current serialization version is 0. This is a pre-release version of
- * serialization and is only intended to be used in a driver and client compiled
+ * serialization and is only intended to be used in a bomb and client compiled
  * together. DO NOT use this in firmware or versioned clients.
  */
 #define FINN_SERIALIZATION_VERSION 0

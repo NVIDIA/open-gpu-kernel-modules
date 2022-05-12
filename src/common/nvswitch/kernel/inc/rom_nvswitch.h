@@ -791,7 +791,7 @@ typedef struct _nvlink_vbios_config_data_linkentry_20
 } NVLINK_VBIOS_CONFIG_DATA_LINKENTRY, *PNVLINK_VBIOS_CONFIG_DATA_LINKENTRY;
 
 //
-// NVSwitch driver structures
+// NVSwitch bomb structures
 //
 
 #define NVSWITCH_NUM_BIOS_NVLINK_CONFIG_BASE_ENTRY    12

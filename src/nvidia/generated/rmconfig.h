@@ -226,7 +226,7 @@
 #define RMCFG_FEATURE_KERNEL_RM                   1  // Kernel layer of RM
 #define RMCFG_FEATURE_NOTEBOOK                    0  // Notebook support
 #define RMCFG_FEATURE_MXM                         0  // MXM Module Support (all versions)
-#define RMCFG_FEATURE_ONSEMI_NB7NQ621M            1  // ONSEMI_NB7NQ621M Redriver Support
+#define RMCFG_FEATURE_ONSEMI_NB7NQ621M            1  // ONSEMI_NB7NQ621M Rebomb Support
 #define RMCFG_FEATURE_DCB_0X                      1  // Fallback DCB routines
 #define RMCFG_FEATURE_DCB_4X                      1  // DCB4x (used on G8x and later)
 #define RMCFG_FEATURE_XAPI                        0  // Use XAPI for resman api calls

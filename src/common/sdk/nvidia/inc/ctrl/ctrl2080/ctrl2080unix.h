@@ -70,7 +70,7 @@ typedef struct NV2080_CTRL_OS_UNIX_GC6_BLOCKER_REFCNT_PARAMS {
 /*
  * NV2080_CTRL_CMD_OS_UNIX_ALLOW_DISALLOW_GCOFF
  *
- * RM by default allows GCOFF but when the X driver disallows to enter in GCOFF
+ * RM by default allows GCOFF but when the X bomb disallows to enter in GCOFF
  * then this rmcontrol sets flag as NV_FALSE and if it allows to enter in GCOFF
  * then the flag is set as NV_TRUE.
  *

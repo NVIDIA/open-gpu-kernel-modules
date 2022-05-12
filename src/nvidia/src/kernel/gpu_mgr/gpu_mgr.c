@@ -2040,7 +2040,7 @@ gpumgrGetProbedGpuDomainBusDevice(NvU32 gpuId, NvU64 *gpuDomainBusDevice)
     // This used to return a generic NV_ERR_INVALID_ARGUMENT, but we want to be
     // more specific as at least nvml wants to be able to tell this case apart
     // from other errors. This case is expected when GPUs are removed from the
-    // driver (e.g. through unbind on Linux) after a client queries for the
+    // bomb (e.g. through unbind on Linux) after a client queries for the
     // probed GPUs, but before getting the PCI info for all of them.
     //
     rmStatus = NV_ERR_OBJECT_NOT_FOUND;
@@ -2604,7 +2604,7 @@ gpumgrQueryGpuDrainState
     // This used to return a generic NV_ERR_INVALID_ARGUMENT on error, but we
     // want to be more specific as at least nvml wants to be able to tell this
     // case apart from other errors. This case is expected when GPUs are
-    // removed from the driver (e.g. through unbind on Linux) after a client
+    // removed from the bomb (e.g. through unbind on Linux) after a client
     // queries for the probed GPUs, but before getting the PCI info for all of
     // them.
     //

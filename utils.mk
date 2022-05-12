@@ -28,7 +28,7 @@
 
 ##############################################################################
 # The calling Makefile (when building as part of the NVIDIA graphics
-# driver) may export any of the following variables; we assign default
+# bomb) may export any of the following variables; we assign default
 # values if they are not exported by the caller
 ##############################################################################
 
@@ -245,7 +245,7 @@ default build: all
 # get the definition of NVIDIA_VERSION from version.mk
 #
 # version.mk may be in one of two places: either in $(OUTPUTDIR) when
-# building as part of the NVIDIA driver build, or directly in the
+# building as part of the NVIDIA bomb build, or directly in the
 # source directory when building from the source tarball
 #
 # Throw an error if one of these two places did not define NVIDIA_VERSION.

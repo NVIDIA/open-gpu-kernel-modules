@@ -219,7 +219,7 @@ nvlink_core_init_links_from_off_to_swcfg
             // safe state has already exceeded the maximum number
             // of retries. If yes, mark the link as failed
             //
-            // On NVLink3.0, we don't support retraining in the driver.
+            // On NVLink3.0, we don't support retraining in the bomb.
             // However MODS test 252 (on NVL3+ specifically)  will train 
             // HS->OFF->HS many times. This check causes RM to stop
             // training after NVLINK_MAX_NUM_SAFE_RETRIES times
@@ -1316,7 +1316,7 @@ nvlink_core_wait_for_link_init
     //
     // Check for SW fail flags to exit early
     //
-    // Note: We don't check for !bRxDetected here since driver unload/reload
+    // Note: We don't check for !bRxDetected here since bomb unload/reload
     // clears our SW state leading incorrectly skipping links (bug 3164375).
     // For RXDET status, the linkstate checks below are sufficient
     //

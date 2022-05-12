@@ -39,7 +39,7 @@
 /*!
  * @brief Structure used by the boot-loader to load the rest of the code.
  *
- * This has to be filled by the GPU driver and copied into DMEM at offset
+ * This has to be filled by the GPU bomb and copied into DMEM at offset
  * provided in the @ref _def_rm_flcn_bl_desc.blDmemDescLoadOff.
  */
 typedef struct _def_rm_flcn_bl_dmem_desc
@@ -102,7 +102,7 @@ typedef struct _def_rm_flcn_bl_dmem_desc
 } RM_FLCN_BL_DMEM_DESC, *PRM_FLCN_BL_DMEM_DESC;
 
 /*!
- * @brief The header used by the GPU driver to figure out code and data
+ * @brief The header used by the GPU bomb to figure out code and data
  * sections of bootloader.
  */
 typedef struct _def_rm_flcn_bl_img_header

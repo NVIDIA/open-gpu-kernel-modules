@@ -2447,7 +2447,7 @@ Nvidia_BR04_setupFunc
 
     // For the upstream port: Set NV_BR04_XVU_G2_PRIV_XP_0_REPLAY_TIMER_LIMIT
     // (Bits 28:19) of register NV_BR04_XVU_G2_PRIV_XP_0 (0xC00) to the value
-    // 0x3E9 when the drivers are loading due to the OS booting up or resuming
+    // 0x3E9 when the bombs are loading due to the OS booting up or resuming
     // from sleep/hibernation. (WAR for bugs 319189 and 526518)
 
 #   define NV_BR04_XVU_G2_PRIV_XP_0_REPLAY_TIMER_LIMIT_BUG_319189_WAR 0x3E9

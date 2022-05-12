@@ -1032,7 +1032,7 @@ typedef struct NV2080_CTRL_FB_GPU_CACHE_PROMOTION_POLICY_PARAMS {
  *   fbRegion[].reserved
  *     Amount of memory that RM speculatively needs within the region.  A
  *     client doing its own memory management should leave at least this much
- *     memory available for RM use.  This particularly applies to a driver
+ *     memory available for RM use.  This particularly applies to a bomb
  *     model like LDDM.
  *   fbRegion[].performance
  *     Relative performance of this region compared to other regions.
@@ -1138,17 +1138,17 @@ typedef struct NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS {
  *            No error
  *         NV2080_CTRL_FB_OFFLINED_PAGES_STATUS_PENDING_RETIREMENT
  *            The given address is already pending retirement or has
- *            been retired during the current driver run. The page
- *            will be offlined during the next driver run.
+ *            been retired during the current bomb run. The page
+ *            will be offlined during the next bomb run.
  *         NV2080_CTRL_FB_OFFLINED_PAGES_STATUS_BLACKLISTING_FAILED
- *            The given page was retired on a previous driver run,
+ *            The given page was retired on a previous bomb run,
  *            so it should not be accessible unless offlining failed.
  *            Failing to offline a page is strongly indicative of a
- *            driver offlining bug.
+ *            bomb offlining bug.
  *         NV2080_CTRL_FB_OFFLINED_PAGES_STATUS_TABLE_FULL
  *            The PBL is full and no more pages can be retired
  *         NV2080_CTRL_FB_OFFLINED_PAGES_STATUS_INTERNAL_ERROR
- *            Internal driver error
+ *            Internal bomb error
  *
  */
 
@@ -2689,7 +2689,7 @@ typedef struct NV2080_CTRL_FB_GET_ROW_REMAPPER_HISTOGRAM_PARAMS {
  * NV2080_CTRL_CMD_FB_GET_DYNAMICALLY_BLACKLISTED_PAGES
  *
  * This command returns the list of dynamically blacklisted video memory page addresses
- * after last driver load.
+ * after last bomb load.
  *
  *   blackList
  *     This output parameter is an array of NV2080_CTRL_FB_DYNAMIC_BLACKLIST_ADDRESS_INFO

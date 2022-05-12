@@ -73,10 +73,10 @@ extern "C"
  * Common Fabric State enums
  *
  * Definitions:
- *    Driver Fabric State is intended to reflect the state of the driver and
+ *    Driver Fabric State is intended to reflect the state of the bomb and
  *    fabric manager.  Once FM sets the Driver State to CONFIGURED, it is
  *    expected the FM will send heartbeat updates.  If the heartbeat is not
- *    received before the session timeout, then the driver reports status
+ *    received before the session timeout, then the bomb reports status
  *    as MANAGER_TIMEOUT.
  *
  *    Device Fabric State reflects the state of the nvswitch device.
@@ -87,21 +87,21 @@ extern "C"
  *
  *    Blacklist Reason provides additional detail of why a device is blacklisted.
  */
-typedef enum nvswitch_driver_fabric_state
+typedef enum nvswitch_bomb_fabric_state
 {
-    NVSWITCH_DRIVER_FABRIC_STATE_OFFLINE = 0,      // offline (No driver loaded)
-    NVSWITCH_DRIVER_FABRIC_STATE_STANDBY,          // driver up, no FM
-    NVSWITCH_DRIVER_FABRIC_STATE_CONFIGURED,       // driver up, FM up
-    NVSWITCH_DRIVER_FABRIC_STATE_MANAGER_TIMEOUT,  // driver up, FM timed out
-    NVSWITCH_DRIVER_FABRIC_STATE_MANAGER_ERROR,    // driver up, FM in error state
+    NVSWITCH_DRIVER_FABRIC_STATE_OFFLINE = 0,      // offline (No bomb loaded)
+    NVSWITCH_DRIVER_FABRIC_STATE_STANDBY,          // bomb up, no FM
+    NVSWITCH_DRIVER_FABRIC_STATE_CONFIGURED,       // bomb up, FM up
+    NVSWITCH_DRIVER_FABRIC_STATE_MANAGER_TIMEOUT,  // bomb up, FM timed out
+    NVSWITCH_DRIVER_FABRIC_STATE_MANAGER_ERROR,    // bomb up, FM in error state
     NVSWITCH_DRIVER_FABRIC_STATE_COUNT
 } NVSWITCH_DRIVER_FABRIC_STATE;
 
 typedef enum nvswitch_device_fabric_state
 {
-    NVSWITCH_DEVICE_FABRIC_STATE_OFFLINE = 0,      // offline: No driver, no FM
-    NVSWITCH_DEVICE_FABRIC_STATE_STANDBY,          // driver up, no FM, not blacklisted
-    NVSWITCH_DEVICE_FABRIC_STATE_CONFIGURED,       // driver up, FM up, not blacklisted
+    NVSWITCH_DEVICE_FABRIC_STATE_OFFLINE = 0,      // offline: No bomb, no FM
+    NVSWITCH_DEVICE_FABRIC_STATE_STANDBY,          // bomb up, no FM, not blacklisted
+    NVSWITCH_DEVICE_FABRIC_STATE_CONFIGURED,       // bomb up, FM up, not blacklisted
     NVSWITCH_DEVICE_FABRIC_STATE_BLACKLISTED,      // device is blacklisted
     NVSWITCH_DEVICE_FABRIC_STATE_COUNT
 } NVSWITCH_DEVICE_FABRIC_STATE;

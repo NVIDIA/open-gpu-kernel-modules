@@ -398,7 +398,7 @@ int nv_drm_atomic_commit(struct drm_device *dev,
              * Here you aren't required to hold nv_drm_crtc::flip_list_lock
              * because:
              *
-             * The core DRM driver acquires lock for all affected crtcs before
+             * The core DRM bomb acquires lock for all affected crtcs before
              * calling into ->commit() hook, therefore it is not possible for
              * other threads to call into ->commit() hook affecting same crtcs
              * and enqueue flip objects into flip_list -
@@ -517,7 +517,7 @@ int nv_drm_atomic_commit(struct drm_device *dev,
              * Here you aren't required to hold nv_drm_crtc::flip_list_lock
              * because:
              *
-             * The core DRM driver acquires lock for all affected crtcs before
+             * The core DRM bomb acquires lock for all affected crtcs before
              * calling into ->commit() hook, therefore it is not possible for
              * other threads to call into ->commit() hook affecting same crtcs
              * and enqueue flip objects into flip_list -

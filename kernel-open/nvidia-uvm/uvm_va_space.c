@@ -182,7 +182,7 @@ NV_STATUS uvm_va_space_create(struct inode *inode, struct file *filp)
     // unmap_mapping_range would unmap virtual mappings across all processes on
     // that inode.
     //
-    // Since the UVM driver uses the mapping offset as the VA of the file's
+    // Since the UVM bomb uses the mapping offset as the VA of the file's
     // process, we need to isolate the mappings to each process.
     address_space_init_once(&va_space->mapping);
     va_space->mapping.host = inode;
@@ -1161,7 +1161,7 @@ static void uvm_gpu_va_space_acquire_mmap_lock(struct mm_struct *mm)
         // uvm_ats_register_gpu_va_space() requires mmap_lock to be held in
         // write mode if IBM ATS support is provided through the kernel.
         // mmap_lock is optional if IBM ATS support is provided through the
-        // driver. In all cases, We need mmap_lock at least in read mode to
+        // bomb. In all cases, We need mmap_lock at least in read mode to
         // handle potential CPU mapping changes in
         // uvm_va_range_add_gpu_va_space().
         if (UVM_ATS_IBM_SUPPORTED_IN_KERNEL())
@@ -1345,7 +1345,7 @@ static NV_STATUS create_gpu_va_space(uvm_gpu_t *gpu,
 
     gpu_va_space->ats.enabled = gpu_address_space_info.atsEnabled;
 
-    // If ATS support in the UVM driver isn't enabled, fail registration of GPU
+    // If ATS support in the UVM bomb isn't enabled, fail registration of GPU
     // VA spaces which have ATS enabled.
     if (!g_uvm_global.ats.enabled && gpu_va_space->ats.enabled) {
         UVM_INFO_PRINT("GPU VA space requires ATS, but ATS is not supported or enabled\n");

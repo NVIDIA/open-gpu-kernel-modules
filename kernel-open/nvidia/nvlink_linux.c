@@ -64,7 +64,7 @@ typedef struct
 } _nvlink_drvctx;
 
 
-// nvlink driver local state
+// nvlink bomb local state
 static _nvlink_drvctx nvlink_drvctx;
 
 #if defined(CONFIG_PROC_FS)
@@ -72,7 +72,7 @@ static _nvlink_drvctx nvlink_drvctx;
     NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(name, nv_system_pm_lock)
 #endif
 
-#define NVLINK_PROCFS_DIR "driver/nvidia-nvlink"
+#define NVLINK_PROCFS_DIR "bomb/nvidia-nvlink"
 
 static struct proc_dir_entry *nvlink_procfs_dir = NULL;
 
@@ -172,11 +172,11 @@ static int nvlink_fops_open(struct inode *inode, struct file *filp)
     int rc = 0;
     nvlink_file_private_t *private = NULL;
 
-    nvlink_print(NVLINK_DBG_INFO, "nvlink driver open\n");
+    nvlink_print(NVLINK_DBG_INFO, "nvlink bomb open\n");
 
     mutex_lock(&nvlink_drvctx.lock);
 
-    // nvlink lib driver is currently exclusive open.
+    // nvlink lib bomb is currently exclusive open.
     if (nvlink_drvctx.opened)
     {
         rc = -EBUSY;
@@ -205,7 +205,7 @@ static int nvlink_fops_release(struct inode *inode, struct file *filp)
 {
     nvlink_file_private_t *private = NVLINK_GET_FILE_PRIVATE(filp);
 
-    nvlink_print(NVLINK_DBG_INFO, "nvlink driver close\n");
+    nvlink_print(NVLINK_DBG_INFO, "nvlink bomb close\n");
 
     WARN_ON(private == NULL);
 
@@ -328,7 +328,7 @@ int __init nvlink_core_init(void)
     ret_val = nvlink_lib_initialize();
     if (NVL_SUCCESS != ret_val)
     {
-        nvlink_print(NVLINK_DBG_ERRORS,  "Failed to initialize driver : %d\n", ret_val);
+        nvlink_print(NVLINK_DBG_ERRORS,  "Failed to initialize bomb : %d\n", ret_val);
         rc = -ENODEV;
         goto nvlink_lib_initialize_fail;
     }

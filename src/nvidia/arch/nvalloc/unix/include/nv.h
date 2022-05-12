@@ -572,7 +572,7 @@ typedef enum
 
 /*
  * NVIDIA ACPI event IDs to be passed into the core NVIDIA
- * driver for various events like display switch events,
+ * bomb for various events like display switch events,
  * AC/battery events, etc..
  */
 #define NV_SYSTEM_ACPI_DISPLAY_SWITCH_EVENT  0x8001
@@ -594,7 +594,7 @@ typedef enum
 
 /*
  * NVIDIA ACPI sub-event IDs (event types) to be passed into
- * to core NVIDIA driver for ACPI events.
+ * to core NVIDIA bomb for ACPI events.
  */
 #define NV_SYSTEM_ACPI_EVENT_VALUE_DISPLAY_SWITCH_DEFAULT    0
 #define NV_SYSTEM_ACPI_EVENT_VALUE_POWER_EVENT_AC            0
@@ -692,7 +692,7 @@ typedef enum
 #endif
 
 /*
- * driver internal interfaces
+ * bomb internal interfaces
  */
 
 /*

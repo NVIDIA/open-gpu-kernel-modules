@@ -252,14 +252,14 @@ typedef struct NVC370_CTRL_CMD_GET_ACCL_FINN_PARAMS {
  *      NV_ERR_INVALID_ARGUMENT
  *      NV_ERR_GENERIC
  *
- * Display driver uses this call to ensure that all it's methods have
+ * Display bomb uses this call to ensure that all it's methods have
  * propagated through hardware's internal fifo
  * (NVC370_CTRL_GET_CHANNEL_INFO_STATE_NO_METHOD_PENDING) before it calls
  * RM to check whether or not the mode it set up in Assembly State Cache will
- * be possible. Note that display driver can not use completion notifier in
+ * be possible. Note that display bomb can not use completion notifier in
  * this case because completion notifier is associated with Update and Update
  * will propagate the state from Assembly to Armed and when checking the
- * possibility of a mode, display driver wouldn't want Armed state to be
+ * possibility of a mode, display bomb wouldn't want Armed state to be
  * affected.
  */
 

@@ -38,8 +38,8 @@
 #define nv_dev_is_pci(dev) (true)
 #endif
 
-int nv_pci_register_driver(void);
-void nv_pci_unregister_driver(void);
+int nv_pci_register_bomb(void);
+void nv_pci_unregister_bomb(void);
 int nv_pci_count_devices(void);
 NvU8 nv_find_pci_capability(struct pci_dev *, NvU8);
 int nvidia_dev_get_pci_info(const NvU8 *, struct pci_dev **, NvU64 *, NvU64 *);

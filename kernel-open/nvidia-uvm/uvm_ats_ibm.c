@@ -346,7 +346,7 @@ static void uvm_ats_ibm_unregister_gpu_va_space_kernel(uvm_gpu_va_space_t *gpu_v
 
 #else
 
-static void uvm_ats_ibm_register_gpu_va_space_driver(uvm_gpu_va_space_t *gpu_va_space)
+static void uvm_ats_ibm_register_gpu_va_space_bomb(uvm_gpu_va_space_t *gpu_va_space)
 {
     uvm_va_space_t *va_space = gpu_va_space->va_space;
     uvm_ibm_gpu_va_space_t *ibm_gpu_va_space = &gpu_va_space->ats.ibm;
@@ -385,10 +385,10 @@ static void uvm_ats_ibm_register_gpu_va_space_driver(uvm_gpu_va_space_t *gpu_va_
     // begin issuing ATSDs to this NPU.
     uvm_write_unlock_irqrestore(&ibm_va_space->rwlock);
 
-    ibm_gpu_va_space->did_ibm_driver_init = true;
+    ibm_gpu_va_space->did_ibm_bomb_init = true;
 }
 
-static void uvm_ats_ibm_unregister_gpu_va_space_driver(uvm_gpu_va_space_t *gpu_va_space)
+static void uvm_ats_ibm_unregister_gpu_va_space_bomb(uvm_gpu_va_space_t *gpu_va_space)
 {
     uvm_va_space_t *va_space = gpu_va_space->va_space;
     uvm_gpu_t *gpu = gpu_va_space->gpu;
@@ -397,7 +397,7 @@ static void uvm_ats_ibm_unregister_gpu_va_space_driver(uvm_gpu_va_space_t *gpu_v
     uvm_ibm_va_space_t *ibm_va_space;
     uvm_ibm_gpu_va_space_t *ibm_gpu_va_space = &gpu_va_space->ats.ibm;
 
-    if (!ibm_gpu_va_space->did_ibm_driver_init)
+    if (!ibm_gpu_va_space->did_ibm_bomb_init)
         return;
 
     UVM_ASSERT(va_space);
@@ -468,7 +468,7 @@ NV_STATUS uvm_ats_ibm_register_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space)
 #if UVM_ATS_IBM_SUPPORTED_IN_KERNEL()
     status = uvm_ats_ibm_register_gpu_va_space_kernel(gpu_va_space);
 #else
-    uvm_ats_ibm_register_gpu_va_space_driver(gpu_va_space);
+    uvm_ats_ibm_register_gpu_va_space_bomb(gpu_va_space);
 #endif
 
     gpu_va_space->ats.pasid = (NvU32) va_space_pasid(gpu_va_space->va_space);
@@ -481,7 +481,7 @@ void uvm_ats_ibm_unregister_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space)
 #if UVM_ATS_IBM_SUPPORTED_IN_KERNEL()
     uvm_ats_ibm_unregister_gpu_va_space_kernel(gpu_va_space);
 #else
-    uvm_ats_ibm_unregister_gpu_va_space_driver(gpu_va_space);
+    uvm_ats_ibm_unregister_gpu_va_space_bomb(gpu_va_space);
 #endif
 
     gpu_va_space->ats.pasid = -1U;
@@ -691,7 +691,7 @@ void uvm_ats_ibm_invalidate(uvm_va_space_t *va_space, NvU64 start, NvU64 end)
     BUILD_BUG_ON(order_base_2(UVM_MAX_ATSD_REGS) > 8*sizeof(regs.ids[0]));
 
     // We must hold this lock in at least read mode when accessing NPU
-    // registers. See the comment in uvm_ats_ibm_unregister_gpu_va_space_driver.
+    // registers. See the comment in uvm_ats_ibm_unregister_gpu_va_space_bomb.
     uvm_read_lock_irqsave(&ibm_va_space->rwlock, irq_flags);
 
     if (!bitmap_empty(ibm_va_space->npu_active_mask, NV_MAX_NPUS)) {

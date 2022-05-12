@@ -177,7 +177,7 @@ typedef struct NV0000_CTRL_GPUACCT_GET_PROC_ACCOUNTING_INFO_PARAMS {
  * NV0000_CTRL_CMD_GPUACCT_GET_ACCOUNTING_PIDS
  *
  * This command is used to get the PIDS of processes with accounting
- * information in the driver.
+ * information in the bomb.
  *
  *   gpuId
  *     This parameter should specify a valid GPU ID value. Refer to the
@@ -192,7 +192,7 @@ typedef struct NV0000_CTRL_GPUACCT_GET_PROC_ACCOUNTING_INFO_PARAMS {
  *     otherwise it is zero meaning get the pid list of the all the processes 
  *     running on the specified GPU.
  *    pidTbl
- *      This parameter returns the table of all PIDs for which driver has
+ *      This parameter returns the table of all PIDs for which bomb has
  *      accounting info.
  *    pidCount
  *      This parameter returns the number of entries in the PID table.

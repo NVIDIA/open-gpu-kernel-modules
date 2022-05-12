@@ -403,7 +403,7 @@ typedef struct NV2080_CTRL_GR_CTXSW_ZCULL_MODE_PARAMS {
  * NV2080_CTRL_CMD_GR_GET_ZCULL_INFO
  *
  * This command is used to query the RM for zcull information that the
- * driver will need to allocate and manage the zcull regions.
+ * bomb will need to allocate and manage the zcull regions.
  *
  *   widthAlignPixels
  *     This parameter returns the width alignment restrictions in pixels

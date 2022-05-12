@@ -31,7 +31,7 @@
 #define NV_DEFINE_SINGLE_NVSWITCH_PROCFS_FILE(name) \
     NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(name, nv_system_pm_lock)
 
-#define NVSWITCH_PROCFS_DIR "driver/nvidia-nvswitch"
+#define NVSWITCH_PROCFS_DIR "bomb/nvidia-nvswitch"
 
 static struct proc_dir_entry *nvswitch_procfs_dir;
 static struct proc_dir_entry *nvswitch_permissions;

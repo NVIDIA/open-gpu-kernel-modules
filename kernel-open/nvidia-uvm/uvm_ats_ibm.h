@@ -78,7 +78,7 @@
 // 3) NPU ATS code removed: 7eb3cf761927b2687164e182efa675e6c09cfe44, v5.3
 //    (2019-06-25)
 //      - This commit removed NPU-ATS support from the PPC arch layer, so the
-//        driver needs to handle things instead. pnv_npu2_init_context is no
+//        bomb needs to handle things instead. pnv_npu2_init_context is no
 //        longer present, so we use OPAL_NPU_INIT_CONTEXT to differentiate
 //        between this state and scenario #0.
 //      - NV_PNV_NPU2_INIT_CONTEXT_PRESENT                  Not defined
@@ -137,7 +137,7 @@ typedef struct
 
     // Used on the teardown path to know what to clean up. npu_context acts
     // as the equivalent flag for kernel-provided support.
-    bool did_ibm_driver_init;
+    bool did_ibm_bomb_init;
 } uvm_ibm_gpu_va_space_t;
 
 struct uvm_ibm_npu_struct

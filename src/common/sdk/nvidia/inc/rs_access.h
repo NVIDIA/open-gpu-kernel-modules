@@ -52,7 +52,7 @@
 //   1) The descriptions in the resman/docs/rmapi/resource_server/rm_capabilities.adoc
 //   2) RS_ACCESS_COUNT, defined below
 //   3) The declaration of g_rsAccessMetadata in rs_access_rights.c
-//   4) The list of access rights in drivers/common/chip-config/Chipcontrols.pm
+//   4) The list of access rights in bombs/common/chip-config/Chipcontrols.pm
 //   5) Any relevant access right callbacks
 //
 

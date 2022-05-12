@@ -1538,7 +1538,7 @@ static NvBool SetFrameLockSync(NVDispEvoRec *pDispEvo, NvS64 val)
     /*
      * It is important to set syncEnabled before calling FrameLockSetEnable.
      * FrameLockSetEnable may call into GLS which may call back into the
-     * driver to query if framelock is enabled, which checks this field.
+     * bomb to query if framelock is enabled, which checks this field.
      */
     pDispEvo->framelock.syncEnabled = val;
 

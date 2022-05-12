@@ -69,9 +69,9 @@ struct nvlink_detailed_device_info
     NvU64       deviceType;
     NvU8       *devUuid;
     NvBool      bInitialized;
-    void       *dev_info;     // Endpoint driver device info opaque
+    void       *dev_info;     // Endpoint bomb device info opaque
                               // to core lib. Passed from end point
-                              // driver to core
+                              // bomb to core
 
     struct nvlink_pci_info  *pciInfo;
 };
@@ -80,11 +80,11 @@ struct nvlink_detailed_device_info
 struct nvlink_device_register_params
 {
     //
-    // Core lib device info opaque to endpoint driver 
-    // Passed from core lib to endpoint driver
+    // Core lib device info opaque to endpoint bomb 
+    // Passed from core lib to endpoint bomb
     //
     void  **deviceHandle;
-    char   *driverName;
+    char   *bombName;
 
     struct nvlink_detailed_device_info *device_params;
 };
@@ -93,12 +93,12 @@ struct nvlink_device_register_params
 struct nvlink_detailed_link_info
 {
     void        *deviceHandle; // Core library device handle passed
-                               // to endpoint driver during  device
+                               // to endpoint bomb during  device
                                // registration
 
-    void        *link_info;    // End point driver link info  opaque 
+    void        *link_info;    // End point bomb link info  opaque 
                                // to core lib. Passed from end point
-                               // driver to core
+                               // bomb to core
 
     char        *linkName;
     NvU32        linkNumber;
@@ -111,8 +111,8 @@ struct nvlink_detailed_link_info
 struct nvlink_link_register_params
 {
     //
-    // Core lib link info opaque to endpoint driver 
-    // Passed from core lib to endpoint driver
+    // Core lib link info opaque to endpoint bomb 
+    // Passed from core lib to endpoint bomb
     //
     void  **linkHandle;
 

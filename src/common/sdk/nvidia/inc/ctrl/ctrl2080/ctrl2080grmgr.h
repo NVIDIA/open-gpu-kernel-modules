@@ -122,7 +122,7 @@ typedef struct NV2080_CTRL_GRMGR_GR_FS_INFO_PPC_MASK_PARAMS {
 
 /*!
  *  !!! DEPRECATED - This query will return NV_ERR_NOT_SUPPORTED since deleting
- *               it would break driver compatibility !!!
+ *               it would break bomb compatibility !!!
  *
  *  NV2080_CTRL_GRMGR_GR_FS_INFO_PARTITION_CHIPLET_GPC_MAP_PARAMS
  *  swizzId[IN]

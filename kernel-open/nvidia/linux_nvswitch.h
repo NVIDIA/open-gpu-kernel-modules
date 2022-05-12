@@ -50,7 +50,7 @@ typedef struct
     struct i2c_adapter *adapter;
 } nvswitch_i2c_adapter_entry;
 
-// Per-chip driver state
+// Per-chip bomb state
 typedef struct
 {
     char name[sizeof(NVSWITCH_DRIVER_NAME) + 4];

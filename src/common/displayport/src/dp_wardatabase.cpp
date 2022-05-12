@@ -169,9 +169,9 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
                 if (YearWeek == 0x0B32)
                 {
                     // Override IBM T210. IBM T210 reports 2048x1536x60Hz in the edid but it's
-                    // actually 2048x1536x40Hz. See bug 76347. This hack was, earlier, in disp driver
+                    // actually 2048x1536x40Hz. See bug 76347. This hack was, earlier, in disp bomb
                     // Now it's being moved down to keep all overrides in same place.
-                    // This hack was also preventing disp driver from comparing entire edid when
+                    // This hack was also preventing disp bomb from comparing entire edid when
                     // trying to figure out whether or not the edid for some device has changed.
                     buffer.data[0x36] = 0x32;
                     buffer.data[0x37] = 0x3E;

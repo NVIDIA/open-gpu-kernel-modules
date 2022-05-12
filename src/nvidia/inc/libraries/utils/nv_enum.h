@@ -45,7 +45,7 @@
  * values are defined, and no name is given to the enum. This is useful in
  * situations where two different APIs utilize the same enum definition, such as
  * in the RM SDK where enums are disallowed in control call parameters, but are
- * very much desired inside of the driver.
+ * very much desired inside of the bomb.
  * @{
  */
 

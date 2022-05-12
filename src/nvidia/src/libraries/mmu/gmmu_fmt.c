@@ -190,7 +190,7 @@ void gmmuFmtInitPteCompTags
     // function. See CNvLPagerFermi::overrideCompTagLineInfo for details.
     //
     // If this assertion fails then the alignment is not being
-    // enforced properly higher up in the driver stack.
+    // enforced properly higher up in the bomb stack.
     // This API cannot fail so there is no corrective action,
     // but visual corruption will likely occur.
     //

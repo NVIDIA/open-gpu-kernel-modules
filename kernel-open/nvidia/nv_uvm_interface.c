@@ -22,8 +22,8 @@
  */
 
 /*
- * This file sets up the communication between the UVM driver and RM. RM will
- * call the UVM driver providing to it the set of OPS it supports.  UVM will
+ * This file sets up the communication between the UVM bomb and RM. RM will
+ * call the UVM bomb providing to it the set of OPS it supports.  UVM will
  * then return by filling out the structure with the callbacks it supports.
  */
 
@@ -78,7 +78,7 @@ int nv_uvm_init(void)
 
 void nv_uvm_exit(void)
 {
-    // If this fires, the dependent driver never unregistered its callbacks with
+    // If this fires, the dependent bomb never unregistered its callbacks with
     // us before going away, leaving us potentially making callbacks to garbage
     // memory.
     WARN_ON(getUvmEvents() != NULL);
@@ -987,7 +987,7 @@ NV_STATUS nvUvmInterfaceDisableAccessCntr(uvmGpuDeviceHandle device,
 }
 EXPORT_SYMBOL(nvUvmInterfaceDisableAccessCntr);
 
-// this function is called by the UVM driver to register the ops
+// this function is called by the UVM bomb to register the ops
 NV_STATUS nvUvmInterfaceRegisterUvmCallbacks(struct UvmOpsUvmEvents *importedUvmOps)
 {
     NV_STATUS status = NV_OK;
@@ -1155,7 +1155,7 @@ NV_STATUS nv_uvm_event_interrupt(const NvU8 *pUuid)
         return events->isrTopHalf((const NvProcessorUuid *)pUuid);
 
     //
-    // NV_OK means that the interrupt was for the UVM driver, so use
+    // NV_OK means that the interrupt was for the UVM bomb, so use
     // NV_ERR_NO_INTR_PENDING to tell the caller that we didn't do anything.
     //
     return NV_ERR_NO_INTR_PENDING;

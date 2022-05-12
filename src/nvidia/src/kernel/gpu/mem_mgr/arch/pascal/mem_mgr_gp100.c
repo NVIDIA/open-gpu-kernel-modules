@@ -255,7 +255,7 @@ memmgrGetMaxContextSize_GP100
 
     //
     // This function's original purpose was to estimate how much heap memory RM
-    // needs to keep in reserve from Windows LDDM driver to pass WHQL MaxContexts
+    // needs to keep in reserve from Windows LDDM bomb to pass WHQL MaxContexts
     // test.  This estimation is done after heap init before KMD allocates a
     // kernel-managed chunk.
     // UVM & PMA similarly require RM to estimate how much heap memory RM needs
@@ -270,7 +270,7 @@ memmgrGetMaxContextSize_GP100
     // at the setRootPageTable ddi call and don't restore at the unsetRootPT time.
     // Because of the above reservation RM has to create quite a few 4k page tables and
     // this results in extra ~28k consumption per default DX device (with default 2 contexts).
-    // On Kepler and Maxwell, the up-to-date wddm2 driver supports up to ~400 processes.
+    // On Kepler and Maxwell, the up-to-date wddm2 bomb supports up to ~400 processes.
     // On Pascal, with the same amount of reserve, we can only have ~200 processes.
     // Hence we need to increase the RM physical reserve size for MMUv2 enabled chips
     // to have supported process count on parity with previous chips.

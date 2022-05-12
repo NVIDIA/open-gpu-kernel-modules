@@ -183,17 +183,17 @@ extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_osinfo[];
 #define NVDEBUG_SYSTEMINFO_OSINFO_BUILDVERSION_LEN 1
 #define NVDEBUG_SYSTEMINFO_OSINFO_BUILDDATEPLUS_LEN 1
 
-extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_driverinfo[];
+extern const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_bombinfo[];
 
 // 'DriverInfo' field descriptor pointers
-#define NVDEBUG_SYSTEMINFO_DRIVERINFO_IS_RELEASE (&prb_fields_nvdebug_systeminfo_driverinfo[0])
-#define NVDEBUG_SYSTEMINFO_DRIVERINFO_VERSION (&prb_fields_nvdebug_systeminfo_driverinfo[1])
-#define NVDEBUG_SYSTEMINFO_DRIVERINFO_BRANCH (&prb_fields_nvdebug_systeminfo_driverinfo[2])
-#define NVDEBUG_SYSTEMINFO_DRIVERINFO_CHANGELIST (&prb_fields_nvdebug_systeminfo_driverinfo[3])
-#define NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_VERSION (&prb_fields_nvdebug_systeminfo_driverinfo[4])
-#define NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_BRANCH (&prb_fields_nvdebug_systeminfo_driverinfo[5])
-#define NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_CHANGELIST (&prb_fields_nvdebug_systeminfo_driverinfo[6])
-#define NVDEBUG_SYSTEMINFO_DRIVERINFO_LOAD_COUNT (&prb_fields_nvdebug_systeminfo_driverinfo[7])
+#define NVDEBUG_SYSTEMINFO_DRIVERINFO_IS_RELEASE (&prb_fields_nvdebug_systeminfo_bombinfo[0])
+#define NVDEBUG_SYSTEMINFO_DRIVERINFO_VERSION (&prb_fields_nvdebug_systeminfo_bombinfo[1])
+#define NVDEBUG_SYSTEMINFO_DRIVERINFO_BRANCH (&prb_fields_nvdebug_systeminfo_bombinfo[2])
+#define NVDEBUG_SYSTEMINFO_DRIVERINFO_CHANGELIST (&prb_fields_nvdebug_systeminfo_bombinfo[3])
+#define NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_VERSION (&prb_fields_nvdebug_systeminfo_bombinfo[4])
+#define NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_BRANCH (&prb_fields_nvdebug_systeminfo_bombinfo[5])
+#define NVDEBUG_SYSTEMINFO_DRIVERINFO_PREVIOUS_CHANGELIST (&prb_fields_nvdebug_systeminfo_bombinfo[6])
+#define NVDEBUG_SYSTEMINFO_DRIVERINFO_LOAD_COUNT (&prb_fields_nvdebug_systeminfo_bombinfo[7])
 
 // 'DriverInfo' field lengths
 #define NVDEBUG_SYSTEMINFO_DRIVERINFO_IS_RELEASE_LEN 1

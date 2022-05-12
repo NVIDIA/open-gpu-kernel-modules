@@ -147,7 +147,7 @@ typedef struct NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS {
  * NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS
  *
  * This command provides kernel mapping to a few registers.
- * These mappings are needed by UVM driver to handle non fatal gpu faults
+ * These mappings are needed by UVM bomb to handle non fatal gpu faults
  *
  *    pFaultBufferGet
  *      Mapping for fault buffer's get pointer (NV_PFIFO_REPLAYABLE_FAULT_BUFFER_GET)

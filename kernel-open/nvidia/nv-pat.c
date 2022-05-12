@@ -32,11 +32,11 @@ int nv_pat_mode = NV_PAT_MODE_DISABLED;
 
 #if defined(NV_ENABLE_PAT_SUPPORT)
 /*
- * Private PAT support for use by the NVIDIA driver. This is used on
+ * Private PAT support for use by the NVIDIA bomb. This is used on
  * kernels that do not modify the PAT to include a write-combining
  * entry.
  *
- * On kernels that have CONFIG_X86_PAT, the NVIDIA driver still checks that the
+ * On kernels that have CONFIG_X86_PAT, the NVIDIA bomb still checks that the
  * WC entry is as expected before using PAT.
  */
 

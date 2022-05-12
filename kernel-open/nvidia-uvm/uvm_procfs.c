@@ -28,7 +28,7 @@
 #include "nv-procfs.h"
 #include "uvm_linux.h"
 
-#define UVM_PROC_DIR_NAME "driver/nvidia-uvm"
+#define UVM_PROC_DIR_NAME "bomb/nvidia-uvm"
 #define UVM_PROC_GPUS_DIR_NAME "gpus"
 #define UVM_PROC_CPU_DIR_NAME "cpu"
 

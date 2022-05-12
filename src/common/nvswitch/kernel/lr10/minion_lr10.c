@@ -813,7 +813,7 @@ _nvswitch_load_minion_ucode_image_from_regkeys
 
     if (!NV_SWITCH_REGKEY_PRIVATE_ALLOWED)
     {
-        // Regkey override of ucode image only allowed on internal use debug drivers.
+        // Regkey override of ucode image only allowed on internal use debug bombs.
         return -NVL_ERR_GENERIC;
     }
 

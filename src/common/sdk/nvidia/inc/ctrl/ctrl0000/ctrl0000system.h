@@ -79,12 +79,12 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
 /*
  * NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION
  *
- * This command returns the current driver information.
+ * This command returns the current bomb information.
  * The first time this is called the size of strings is
  * set with the greater of NV_BUILD_BRANCH_VERSION and
  * NV_DISPLAY_DRIVER_TITLE. The client then allocates memory
  * of size sizeOfStrings for pVersionBuffer and pTitleBuffer
- * and calls the command again to receive driver info.
+ * and calls the command again to receive bomb info.
  *
  *   sizeOfStrings
  *       This field returns the size in bytes of the pVersionBuffer and
@@ -1023,20 +1023,20 @@ typedef struct NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS {
 /*
  * NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO
  *
- * This command returns the current host driver, host OS and 
+ * This command returns the current host bomb, host OS and 
  * plugin information. It is only valid when VGX is setup.
  *   szHostDriverVersionBuffer
- *       This field returns the host driver version (NV_VERSION_STRING).
+ *       This field returns the host bomb version (NV_VERSION_STRING).
  *   szHostVersionBuffer
- *       This field returns the host driver version (NV_BUILD_BRANCH_VERSION).
+ *       This field returns the host bomb version (NV_BUILD_BRANCH_VERSION).
  *   szHostTitleBuffer
- *       This field returns the host driver title (NV_DISPLAY_DRIVER_TITLE).
+ *       This field returns the host bomb title (NV_DISPLAY_DRIVER_TITLE).
  *   szPluginTitleBuffer
  *       This field returns the plugin build title (NV_DISPLAY_DRIVER_TITLE).
  *   szHostUnameBuffer
  *       This field returns the call of 'uname' on the host OS.
  *   iHostChangelistNumber
- *       This field returns the changelist value of the host driver (NV_BUILD_CHANGELIST_NUM).
+ *       This field returns the changelist value of the host bomb (NV_BUILD_CHANGELIST_NUM).
  *   iPluginChangelistNumber
  *       This field returns the changelist value of the plugin (NV_BUILD_CHANGELIST_NUM).
  *
@@ -1175,7 +1175,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FABRIC_STATUS_PARAMS {
  * NV0000_CTRL_SYSTEM_GET_RM_INSTANCE_ID
  *
  * This command is used to get a unique identifier for the instance of RM.
- * The returned value will only change when the driver is reloaded. A previous
+ * The returned value will only change when the bomb is reloaded. A previous
  * value will never be reused on a given machine.
  *
  *  rm_instance_id;
@@ -1243,10 +1243,10 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CLIENT_DATABASE_INFO_PARAMS {
 /*
  * NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION_V2
  *
- * This command returns the current driver information in
+ * This command returns the current bomb information in
  * statically sized character arrays.
  *
- *   driverVersionBuffer
+ *   bombVersionBuffer
  *       This field returns the version (NV_VERSION_STRING).
  *   versionBuffer
  *       This field returns the version (NV_BUILD_BRANCH_VERSION).
@@ -1268,7 +1268,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CLIENT_DATABASE_INFO_PARAMS {
 #define NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_PARAMS_MESSAGE_ID (0x3EU)
 
 typedef struct NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_PARAMS {
-    char  driverVersionBuffer[NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_MAX_STRING_SIZE];
+    char  bombVersionBuffer[NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_MAX_STRING_SIZE];
     char  versionBuffer[NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_MAX_STRING_SIZE];
     char  titleBuffer[NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_MAX_STRING_SIZE];
     NvU32 changelistNumber;

@@ -29,7 +29,7 @@
  * @brief  SOE BIF Command Queue
  *
  *         The BIF unit ID will be used for sending and recieving
- *         Command Messages between driver and BIF unit of SOE
+ *         Command Messages between bomb and BIF unit of SOE
  */
 
 /*!

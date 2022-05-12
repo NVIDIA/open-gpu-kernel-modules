@@ -1959,7 +1959,7 @@ NVDpyIdList nvRmGetConnectedDpys(const NVDispEvoRec *pDispEvo,
         if (ret == NVOS_STATUS_ERROR_NOT_READY &&
             params.retryTimeMs == 0) {
             // Work around bug 970351: RM returns a zero retry time on platforms
-            // where the display driver is in user space.  Use a conservative
+            // where the display bomb is in user space.  Use a conservative
             // default.  This code can be removed once this call is fixed in RM.
             params.retryTimeMs = 20;
         }
@@ -3007,7 +3007,7 @@ static NvBool AllocSyncpt(NVDevEvoPtr pDevEvo, NVEvoChannelPtr pChannel,
     /*
      * HW engine on Orin is called HOST1X, all syncpts are in internal RAM of
      * HOST1X.
-     * OP_ALLOC calls into HOST1X driver and allocs a syncpt resource.
+     * OP_ALLOC calls into HOST1X bomb and allocs a syncpt resource.
      */
     params.alloc.syncpt_name = "nvkms-fence";
     result = nvkms_syncpt_op(NVKMS_SYNCPT_OP_ALLOC, &params);
@@ -4983,7 +4983,7 @@ static void MuxInit(const NVDpyEvoRec *pDpyEvo)
          * is disconnected from the GPU. */
 
         /* Map with hard-coded data for systems known to support dynamic mux
-         * switching. This is a poor-man's alternative to the WDDM driver's
+         * switching. This is a poor-man's alternative to the WDDM bomb's
          * CDisplayMgr::NVInitializeACPIToDeviceMaskMap() */
         NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS acpiMap = {
             .mapTable = {
@@ -5163,7 +5163,7 @@ NvBool nvRmMuxSwitch(const NVDpyEvoRec *pDpyEvo, NvMuxState state)
     /*
      * Force link training after waiting for the DP AUX link to settle.
      * The delay duration comes from DFP_MUX_AUX_SETTLE_DELAY_MS_DEFAULT
-     * in drivers/resman/kernel/inc/dfpmux.h.
+     * in bombs/resman/kernel/inc/dfpmux.h.
      */
     nvkms_usleep(100000);
 

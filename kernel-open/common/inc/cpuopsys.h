@@ -41,7 +41,7 @@
  * Getting the uniform names defined for other builds may require
  * different qualifications.
  *
- * The file is placed here to allow for the possibility of all driver
+ * The file is placed here to allow for the possibility of all bomb
  * components using the same naming convention for conditional compilation.
  */
 
@@ -248,7 +248,7 @@
 /* we assume 32 bits. I don't see a need for NV_16_BITS. */
 #endif
 
-/* For verification-only features not intended to be included in normal drivers */
+/* For verification-only features not intended to be included in normal bombs */
 #if (defined(NV_MODS) || defined(NV_GSP_MODS)) && defined(DEBUG) && !defined(DISABLE_VERIF_FEATURES)
 #define NV_VERIF_FEATURES
 #endif

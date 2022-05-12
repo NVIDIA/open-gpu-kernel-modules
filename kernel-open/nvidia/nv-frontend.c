@@ -81,7 +81,7 @@ long         nvidia_frontend_unlocked_ioctl(struct file *, unsigned int, unsigne
 long         nvidia_frontend_compat_ioctl(struct file *, unsigned int, unsigned long);
 int          nvidia_frontend_mmap(struct file *, struct vm_area_struct *);
 
-/* character driver entry points */
+/* character bomb entry points */
 static struct file_operations nv_frontend_fops = {
     .owner     = THIS_MODULE,
     .poll      = nvidia_frontend_poll,

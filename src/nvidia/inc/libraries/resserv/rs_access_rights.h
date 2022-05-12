@@ -41,7 +41,7 @@ extern "C" {
 
 //
 // The meaning of each access right flag is documented in
-//   drivers/resman/docs/rmapi/resource_server/rm_capabilities.adoc
+//   bombs/resman/docs/rmapi/resource_server/rm_capabilities.adoc
 //
 
 #define RS_ACCESS_FLAG_NONE                      0U

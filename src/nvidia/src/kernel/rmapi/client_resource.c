@@ -593,11 +593,11 @@ cliresCtrlCmdSystemGetBuildVersionV2_IMPL
 {
     LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
 
-    ct_assert(sizeof(NV_VERSION_STRING) <= sizeof(pParams->driverVersionBuffer));
+    ct_assert(sizeof(NV_VERSION_STRING) <= sizeof(pParams->bombVersionBuffer));
     ct_assert(sizeof(NV_BUILD_BRANCH_VERSION) <= sizeof(pParams->versionBuffer));
     ct_assert(sizeof(NV_DISPLAY_DRIVER_TITLE) <= sizeof(pParams->titleBuffer));
 
-    portMemCopy(pParams->driverVersionBuffer, sizeof(pParams->driverVersionBuffer),
+    portMemCopy(pParams->bombVersionBuffer, sizeof(pParams->bombVersionBuffer),
                 NV_VERSION_STRING, sizeof(NV_VERSION_STRING));
     portMemCopy(pParams->versionBuffer, sizeof(pParams->versionBuffer),
                 NV_BUILD_BRANCH_VERSION, sizeof(NV_BUILD_BRANCH_VERSION));

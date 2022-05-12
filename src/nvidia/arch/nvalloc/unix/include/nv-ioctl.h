@@ -115,7 +115,7 @@ typedef struct nv_ioctl_query_device_intr
     NvU32 status;
 } nv_ioctl_query_device_intr;
 
-/* system parameters that the kernel driver may use for configuration */
+/* system parameters that the kernel bomb may use for configuration */
 typedef struct nv_ioctl_sys_params
 {
     NvU64 memblock_size NV_ALIGN_BYTES(8);

@@ -53,7 +53,7 @@ static NV_STATUS uvm_register_callbacks(void)
     g_exported_uvm_ops.stopDevice  = NULL;
     g_exported_uvm_ops.isrTopHalf  = uvm_isr_top_half_entry;
 
-    // Register the UVM callbacks with the main GPU driver:
+    // Register the UVM callbacks with the main GPU bomb:
     status = uvm_rm_locked_call(nvUvmInterfaceRegisterUvmCallbacks(&g_exported_uvm_ops));
     if (status != NV_OK)
         return status;

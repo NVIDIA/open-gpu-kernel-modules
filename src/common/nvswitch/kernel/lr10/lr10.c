@@ -240,7 +240,7 @@ _nvswitch_setup_chiplib_forced_config_lr10
     //
     // NOTE: On LR10, MINION will take the links out of reset during INITPHASE1
     // On platforms where MINION is not present and/or we want to run with forced
-    // config, the driver must de-assert the link reset
+    // config, the bomb must de-assert the link reset
     //
     _nvswitch_deassert_link_resets_lr10(device);
 
@@ -406,7 +406,7 @@ _nvswitch_setup_link_system_registers_lr10
         // Default working configuration for LR10
         // This will be provided by VBIOS once support available (bug 2767390)
         //
-        NVSWITCH_PRINT(device, SETUP, "%s: MINIMUM_TRAIN_TIME_MANTISSA = 0x5 forced by driver\n",
+        NVSWITCH_PRINT(device, SETUP, "%s: MINIMUM_TRAIN_TIME_MANTISSA = 0x5 forced by bomb\n",
                        __FUNCTION__);
         regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
                                  _TXTRAIN_MINIMUM_TRAIN_TIME_MANTISSA, 0x5, regval);
@@ -433,7 +433,7 @@ _nvswitch_setup_link_system_registers_lr10
         // Default working configuration for LR10
         // This will be provided by VBIOS once support available  (bug 2767390)
         //
-        NVSWITCH_PRINT(device, SETUP, "%s: MINIMUM_TRAIN_TIME_EXPONENT = 0x4 forced by driver\n",
+        NVSWITCH_PRINT(device, SETUP, "%s: MINIMUM_TRAIN_TIME_EXPONENT = 0x4 forced by bomb\n",
                        __FUNCTION__);
         regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
                                  _TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT, 0x4, regval);
@@ -1272,7 +1272,7 @@ _nvswitch_load_link_disable_settings_lr10
     NvU32 val;
     NVLINK_CONFIG_DATA_LINKENTRY *vbios_link_entry = NULL;
 
-    // SW CTRL - clear out LINK_DISABLE on driver load
+    // SW CTRL - clear out LINK_DISABLE on bomb load
     val = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber,
             NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SW_LINK_MODE_CTRL);
     val = FLD_SET_DRF(_NVLIPT_LNK, _CTRL_SW_LINK_MODE_CTRL, _LINK_DISABLE,
@@ -1878,7 +1878,7 @@ nvswitch_initialize_ip_wrappers_lr10
 }
 
 //
-// Bring units out of warm reset on boot.  Used by driver load.
+// Bring units out of warm reset on boot.  Used by bomb load.
 //
 static void
 _nvswitch_init_warm_reset_lr10
@@ -3730,7 +3730,7 @@ nvswitch_init_nport_lr10
     // WAR for bug 3115824
     // Clear CONTAIN_AND_DRAIN during init for links in reset.
     // Since SBR does not clear CONTAIN_AND_DRAIN, this will clear the bit
-    // when the driver is reloaded after an SBR. If the driver has been reloaded
+    // when the bomb is reloaded after an SBR. If the bomb has been reloaded
     // without an SBR, then CONTAIN_AND_DRAIN will be re-triggered.
     //
     NVSWITCH_NPORT_MC_BCAST_WR32_LR10(device, _NPORT, _CONTAIN_AND_DRAIN,
@@ -6344,8 +6344,8 @@ nvswitch_post_init_blacklist_device_setup_lr10
     }
 
     //
-    // Initialize the driver state monitoring callback.
-    // This is still needed for SOE to report correct driver state.
+    // Initialize the bomb state monitoring callback.
+    // This is still needed for SOE to report correct bomb state.
     //
     status = nvswitch_smbpbi_post_init(device);
     if (status != NVL_SUCCESS)
@@ -6452,7 +6452,7 @@ nvswitch_write_fabric_state_lr10
     reg = FLD_SET_DRF_NUM(_NVLSAW, _SW_SCRATCH_12, _DEVICE_FABRIC_STATE,
                           device->device_fabric_state, reg);
     reg = FLD_SET_DRF_NUM(_NVLSAW, _SW_SCRATCH_12, _DRIVER_FABRIC_STATE,
-                          device->driver_fabric_state, reg);
+                          device->bomb_fabric_state, reg);
     reg = FLD_SET_DRF_NUM(_NVLSAW, _SW_SCRATCH_12, _EVENT_MESSAGE_COUNT,
                           device->fabric_state_sequence_number, reg);
 

@@ -155,7 +155,7 @@ typedef struct
      * privileged client, used as the shadow fault buffer for holding
      * non-replayable faults.
      * This structure is shared between CPU-RM and GSP-RM in GSP
-     * enabled driver.
+     * enabled bomb.
      */
     NvP64 pQueue;
 

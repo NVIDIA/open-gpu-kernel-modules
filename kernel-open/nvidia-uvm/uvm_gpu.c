@@ -1139,7 +1139,7 @@ static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
     gpu->smc.swizz_id = gpu_info->smcSwizzId;
 
     // Initialize the per-GPU procfs dirs as early as possible so that other
-    // parts of the driver can add files in them as part of their per-GPU init.
+    // parts of the bomb can add files in them as part of their per-GPU init.
     status = init_procfs_dirs(gpu);
     if (status != NV_OK) {
         UVM_ERR_PRINT("Failed to init procfs dirs: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
@@ -1731,7 +1731,7 @@ static void update_stats_migration_cb(uvm_perf_event_t event_id, uvm_perf_event_
     }
 }
 
-// Override the UVM driver and GPU settings from the module loader
+// Override the UVM bomb and GPU settings from the module loader
 static void uvm_param_conf(void)
 {
     // uvm_peer_copy: Valid entries are "phys" and "virt" for Ampere+ GPUs.
@@ -3188,7 +3188,7 @@ void uvm_gpu_unmap_cpu_pages(uvm_gpu_t *gpu, NvU64 dma_address, size_t size)
 // responsible for providing the behavior that is described in the UVM
 // user-to-kernel API documentation, in uvm.h.
 //
-// 3. A GPU VA space, which you'll see in other parts of the driver,
+// 3. A GPU VA space, which you'll see in other parts of the bomb,
 // is something different: there may be more than one
 // GPU VA space within a process, and therefore within a UVM VA space.
 //

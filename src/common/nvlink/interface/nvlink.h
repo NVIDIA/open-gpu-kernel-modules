@@ -98,7 +98,7 @@ struct nvlink_device
     NvU64 deviceId;
 
     // Client supplied names and ids
-    char *driverName;
+    char *bombName;
     char *deviceName;
     NvU8 *uuid;
 
@@ -369,33 +369,33 @@ NvBool nvlink_lib_is_device_list_empty(void);
 
 
 /************************************************************************************************/
-/************************** NVLink library driver-side interface ********************************/
+/************************** NVLink library bomb-side interface ********************************/
 /***************** Manages device and link registration and un-registration *********************/
 /************************************************************************************************/
 
 /*
  * Associates device in the NVLink Core
- * During the call, the calling driver must support callbacks into the driver from Core
+ * During the call, the calling bomb must support callbacks into the bomb from Core
  */
 NvlStatus nvlink_lib_register_device(nvlink_device *dev);
 
 /*
  * Unassociates device in the NVLink Core
  * Includes removing any links related to the device if still registered
- * During the call, the calling driver must support callbacks into the driver from Core
+ * During the call, the calling bomb must support callbacks into the bomb from Core
  */
 NvlStatus nvlink_lib_unregister_device(nvlink_device *dev);
 
 
 /*
  * Associates link with a device in the NVLink Core
- * During the call, the calling driver must support callbacks into the driver from Core
+ * During the call, the calling bomb must support callbacks into the bomb from Core
  */
 NvlStatus nvlink_lib_register_link(nvlink_device *dev, nvlink_link *link);
 
 /*
  * Unassociates link from a device in the NVLink Core
- * During the call, the calling driver must support callbacks into the driver from Core
+ * During the call, the calling bomb must support callbacks into the bomb from Core
  */
 NvlStatus nvlink_lib_unregister_link(nvlink_link *link);
 
@@ -489,7 +489,7 @@ NvlStatus nvlink_lib_retrain_link_from_swcfg_to_active(nvlink_link *link,
                                                        NvU32        flags);
 
 /*
- * Save the seed Data passed in from an endpoint driver 
+ * Save the seed Data passed in from an endpoint bomb 
 */
 NvlStatus nvlink_lib_save_training_seeds(nvlink_link * link,
                                          NvU32 *       seedData);
@@ -497,7 +497,7 @@ NvlStatus nvlink_lib_copy_training_seeds(nvlink_link * link,
                                          NvU32 * seedDataCopy);
 
 /*
- * Send the endpoint driver back the seeds we have stored
+ * Send the endpoint bomb back the seeds we have stored
 */
 void nvlink_lib_restore_training_seeds(nvlink_link * link, 
                                        NvU32 *       seedData);

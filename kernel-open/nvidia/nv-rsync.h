@@ -41,12 +41,12 @@ void nv_init_rsync_info(void);
 void nv_destroy_rsync_info(void);
 int nv_get_rsync_info(void);
 void nv_put_rsync_info(void);
-int nv_register_rsync_driver(
+int nv_register_rsync_bomb(
                         int (*get_relaxed_ordering_mode)(int *mode, void *data),
                         void (*put_relaxed_ordering_mode)(int mode, void *data),
                         void (*wait_for_rsync)(struct pci_dev *gpu, void *data),
                         void *data);
-void nv_unregister_rsync_driver(
+void nv_unregister_rsync_bomb(
                         int (*get_relaxed_ordering_mode)(int *mode, void *data),
                         void (*put_relaxed_ordering_mode)(int mode, void *data),
                         void (*wait_for_rsync)(struct pci_dev *gpu, void *data),

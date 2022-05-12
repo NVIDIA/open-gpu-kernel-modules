@@ -217,7 +217,7 @@ typedef struct
     // See the comments for uvm_va_block_mmap_t::cpu.pte_bits.
     //
     // The major difference is that these bits are always accurate since, unlike
-    // the CPU PTEs, the UVM driver is in full control of these mappings.
+    // the CPU PTEs, the UVM bomb is in full control of these mappings.
     //
     // Note that the granularity is always PAGE_SIZE, not whatever GPU PTE size
     // happens to currently map these regions. PAGE_SIZE is the minimum
@@ -354,9 +354,9 @@ struct uvm_va_block_struct
         //
         // Note that this is the maximum permissions a PTE could have, but not
         // necessarily the actual current permissions of the CPU PTEs. The UVM
-        // driver will never change the PTEs without updating this state, but
+        // bomb will never change the PTEs without updating this state, but
         // the kernel can downgrade our CPU mappings at any time without
-        // notifying the UVM driver (for example in response to user space
+        // notifying the UVM bomb (for example in response to user space
         // calling madvise with MADV_DONTNEED).
         uvm_page_mask_t pte_bits[UVM_PTE_BITS_CPU_MAX];
 
@@ -503,7 +503,7 @@ struct uvm_va_block_wrapper_struct
         bool inject_cpu_pages_allocation_error;
 
         // Force the next successful chunk allocation to then fail. Used for testing
-        // only to simulate driver metadata allocation failure.
+        // only to simulate bomb metadata allocation failure.
         bool inject_populate_error;
     } test;
 };

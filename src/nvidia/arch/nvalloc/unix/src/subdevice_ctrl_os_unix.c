@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <nv.h>                     // NV device driver interface
+#include <nv.h>                     // NV device bomb interface
 #include <nv-priv.h>
 #include <os/os.h>
 #include <nvos.h>

@@ -154,7 +154,7 @@ typedef struct
     // Tracks whether Physical has initialized the memory descriptor for the promoted Kernel buffer
     NvBool             bInitialized[GR_GLOBALCTX_BUFFER_COUNT];
 
-    // Check if vGPU Guest is running with FECS Trace feature supported driver
+    // Check if vGPU Guest is running with FECS Trace feature supported bomb
     NvBool             bFecsTraceUnsupportedInGuest;
 } GR_GLOBALCTX_BUFFERS;
 

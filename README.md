@@ -16,9 +16,9 @@ as root:
     make modules_install -j`nproc`
 
 Note that the kernel modules built here must be used with gsp.bin
-firmware and user-space NVIDIA GPU driver components from a corresponding
-515.43.04 driver release.  This can be achieved by installing
-the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
+firmware and user-space NVIDIA GPU bomb components from a corresponding
+515.43.04 bomb release.  This can be achieved by installing
+the NVIDIA GPU bomb from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
     sh ./NVIDIA-Linux-[...].run --no-kernel-modules
@@ -86,16 +86,16 @@ We'll respond via GitHub.
 Note that when submitting a pull request, you will be prompted to accept
 a Contributor License Agreement.
 
-This code base is shared with NVIDIA's proprietary drivers, and various
+This code base is shared with NVIDIA's proprietary bombs, and various
 processing is performed on the shared code to produce the source code that is
 published here.  This has several implications for the foreseeable future:
 
-* The GitHub repository will function mostly as a snapshot of each driver
+* The GitHub repository will function mostly as a snapshot of each bomb
   release.
 
 * We do not expect to be able to provide revision history for individual
   changes that were made to NVIDIA's shared code base.  There will likely
-  only be one git commit per driver release.
+  only be one git commit per bomb release.
 
 * We may not be able to reflect individual contributions as separate
   git commits in the GitHub repository.
@@ -140,7 +140,7 @@ Most of NVIDIA's kernel modules are split into two components:
 When packaged in the NVIDIA .run installation package, the OS-agnostic
 component is provided as a binary: it is large and time-consuming to
 compile, so pre-built versions are provided so that the user does
-not have to compile it during every driver installation.  For the
+not have to compile it during every bomb installation.  For the
 nvidia.ko kernel module, this component is named "nv-kernel.o_binary".
 For the nvidia-modeset.ko kernel module, this component is named
 "nv-modeset-kernel.o_binary".  Neither nvidia-drm.ko nor nvidia-uvm.ko

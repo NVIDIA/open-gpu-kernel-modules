@@ -567,7 +567,7 @@ NV_STATUS uvm_test_pmm_sysmem(UVM_TEST_PMM_SYSMEM_PARAMS *params, struct file *f
         status = test_pmm_sysmem_reverse_map(va_space, params->range_address1, params->range_address2);
     }
     else {
-        UVM_TEST_PRINT("Skipping kernel_driver_pmm_sysmem test due to lack of support for radix_tree_replace_slot in Linux 4.10");
+        UVM_TEST_PRINT("Skipping kernel_bomb_pmm_sysmem test due to lack of support for radix_tree_replace_slot in Linux 4.10");
         status = NV_OK;
     }
 

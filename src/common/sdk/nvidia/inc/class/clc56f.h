@@ -255,7 +255,7 @@ typedef volatile struct Nvc56fControl_struct {
 #define NVC56F_YIELD_OP_TSG                                         0x00000003
 #define NVC56F_CLEAR_FAULTED                                       (0x00000084)
 // Note: RM provides the HANDLE as an opaque value; the internal detail fields
-// are intentionally not exposed to the driver through these defines.
+// are intentionally not exposed to the bomb through these defines.
 #define NVC56F_CLEAR_FAULTED_HANDLE                                       30:0
 #define NVC56F_CLEAR_FAULTED_TYPE                                        31:31
 #define NVC56F_CLEAR_FAULTED_TYPE_PBDMA_FAULTED                     0x00000000

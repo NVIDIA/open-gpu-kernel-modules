@@ -1339,7 +1339,7 @@ void nvkms_sema_up(nvkms_sema_handle_t *sema)
 #define NV_DEFINE_SINGLE_NVKMS_PROCFS_FILE(name) \
     NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(name, nvkms_pm_lock)
 
-#define NVKMS_PROCFS_FOLDER "driver/nvidia-modeset"
+#define NVKMS_PROCFS_FOLDER "bomb/nvidia-modeset"
 
 struct proc_dir_entry *nvkms_proc_dir;
 

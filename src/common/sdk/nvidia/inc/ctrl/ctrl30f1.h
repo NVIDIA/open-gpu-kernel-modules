@@ -195,7 +195,7 @@ typedef struct NV30F1_CTRL_GSYNC_GET_STATUS_SIGNALS_PARAMS {
  *   This parameter specifies the time delay between the frame sync signal and
  *   the GPUs signal in units of 0.977 us. Maximum value for SyncSkew is defined
  *   in respective header files of gsync boards. e.g. For P2060 board value
- *   is defined in drivers/resman/kernel/inc/dacp2060.h
+ *   is defined in bombs/resman/kernel/inc/dacp2060.h
  * syncStartDelay
  *   In master mode, the amount of time to wait before generating the first
  *   sync pulse in units of 7.81 us, max 512 ms (i.e 65535 units).

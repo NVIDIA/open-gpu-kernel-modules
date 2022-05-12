@@ -670,7 +670,7 @@ static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *tran
     //
     // 1766112: Prevent channels in fault-capable VAS from running unless bound
     //  User-mode clients can allocate a fault-capable VAS and schedule it
-    //  without registering it with the UVM driver if it is not marked as
+    //  without registering it with the UVM bomb if it is not marked as
     //  externally owned. This will cause what looks like a hang on the GPU
     //  until the app is killed.
     //  ATS still requires non-externally-owned fault-capable VAS in MODS,

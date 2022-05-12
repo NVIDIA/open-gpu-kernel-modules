@@ -27,7 +27,7 @@
 /*
  * This file was copied from the X.Org X server source at commit
  * 5884e7dedecdd82ddbb037360cf9c85143e094b5 and modified to match NVIDIA's X
- * driver code style.
+ * bomb code style.
  */
 
 #ifndef _NV_LIST_H_

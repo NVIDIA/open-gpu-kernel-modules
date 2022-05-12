@@ -96,7 +96,7 @@
 #define NV_PBI_COMMAND_SYS_NOTIFY_FALSE                      0x00
 
 /*
- * If this bit is set driver will be notified of command completion status
+ * If this bit is set bomb will be notified of command completion status
  */
 #define NV_PBI_COMMAND_DRV_NOTIFY                            30:30
 #define NV_PBI_COMMAND_DRV_NOTIFY_TRUE                       0x01

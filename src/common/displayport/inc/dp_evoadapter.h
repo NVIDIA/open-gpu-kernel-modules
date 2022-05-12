@@ -375,7 +375,7 @@ namespace DisplayPort
 
         void configureMsScratchRegisters(NvU32 address,
                                          NvU32 hopCount,
-                                         NvU32 driverState);
+                                         NvU32 bombState);
 
         bool isActive();
         bool isEDP();

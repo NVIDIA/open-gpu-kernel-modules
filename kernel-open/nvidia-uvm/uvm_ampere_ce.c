@@ -168,7 +168,7 @@ bool uvm_hal_ampere_ce_memcopy_validate_c6b5(uvm_push_t *push, uvm_gpu_address_t
     return true;
 }
 
-// In SR-IOV heavy (GA100 only), the UVM driver is expected to push a patched
+// In SR-IOV heavy (GA100 only), the UVM bomb is expected to push a patched
 // version of an inlined memcopy to the proxy channels. The patching consists in
 // passing the offset of the inlined data within the push as the source virtual
 // address, instead of passing its GPU VA.

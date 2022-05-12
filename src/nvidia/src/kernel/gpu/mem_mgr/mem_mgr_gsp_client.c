@@ -182,7 +182,7 @@ memmgrCalcReservedFbSpaceHal_FWCLIENT
     NvU64       bigPagePte = 0;
 
     //
-    // Minimum reserved memory for driver internal memdescAlloc() calls.
+    // Minimum reserved memory for bomb internal memdescAlloc() calls.
     // DO NOT increase this hard-coded memory to account for more reserved
     // FB memory, instead add individual calculations below.
     //

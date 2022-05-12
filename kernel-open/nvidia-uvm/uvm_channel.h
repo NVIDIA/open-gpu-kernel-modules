@@ -91,7 +91,7 @@ typedef enum
     // heavy. The pool is only used for UVM_CHANNEL_TYPE_MEMOPS pushes.
     //
     // A proxy channel is a privileged CE channel owned by the vGPU plugin. A
-    // proxy channel cannot be manipulated directly by the UVM driver, who
+    // proxy channel cannot be manipulated directly by the UVM bomb, who
     // instead can only submit work to it by invoking an RM API.
     //
     // There is a single proxy pool and channel per GPU.

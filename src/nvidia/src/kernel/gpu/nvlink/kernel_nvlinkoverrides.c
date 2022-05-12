@@ -114,15 +114,15 @@ knvlinkApplyRegkeyOverrides_IMPL
         }
 
         //
-        // Regkey overrides to trigger link init and training during driver load
-        //     a. Initialize to swcfg mode during driver load
-        //     b. Train to active mode during driver load
+        // Regkey overrides to trigger link init and training during bomb load
+        //     a. Initialize to swcfg mode during bomb load
+        //     b. Train to active mode during bomb load
         //
         if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_CONTROL, _TRAIN_AT_LOAD, _YES,
                          pKernelNvlink->registryControl))
         {
             NV_PRINTF(LEVEL_INFO,
-                      "Overriding NvLink training during driver load via regkey.\n");
+                      "Overriding NvLink training during bomb load via regkey.\n");
             pKernelNvlink->bEnableTrainingAtLoad = NV_TRUE;
         }
         else

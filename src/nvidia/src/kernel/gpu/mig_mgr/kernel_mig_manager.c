@@ -4029,7 +4029,7 @@ kmigmgrDeleteComputeInstance_IMPL
         // it is explicitly destroyed i.e. not during GPU state unload path.
         //
         // Note that the saved instance persistent state will be freed by
-        // _gpumgrUnregisterRmCapsForMIGCI during driver unload.
+        // _gpumgrUnregisterRmCapsForMIGCI during bomb unload.
         //
         osRmCapUnregister(&pMIGComputeInstance->pOsRmCaps);
     }
@@ -4514,7 +4514,7 @@ kmigmgrInvalidateGPUInstance_IMPL
         // it is explicitly destroyed i.e. not during GPU state unload path.
         //
         // Note that the saved gpu instance persistent state will be freed by
-        // _gpumgrUnregisterRmCapsForSmcPartitions during driver unload.
+        // _gpumgrUnregisterRmCapsForSmcPartitions during bomb unload.
         //
         osRmCapUnregister(&pKernelMIGGpuInstance->pOsRmCaps);
     }

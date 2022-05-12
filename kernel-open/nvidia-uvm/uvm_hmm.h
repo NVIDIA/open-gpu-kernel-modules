@@ -64,7 +64,7 @@ typedef struct
 
     // Initialize HMM for the given the va_space for testing.
     // Bug 1750144: UVM: Add HMM (Heterogeneous Memory Management) support to
-    // the UVM driver. Remove this when enough HMM functionality is implemented.
+    // the UVM bomb. Remove this when enough HMM functionality is implemented.
     NV_STATUS uvm_hmm_va_space_initialize_test(uvm_va_space_t *va_space);
 
     // Destroy any HMM state for the given the va_space.

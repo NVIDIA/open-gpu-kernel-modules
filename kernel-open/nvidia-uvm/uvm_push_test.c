@@ -296,7 +296,7 @@ static NV_STATUS test_push_interleaving_on_gpu(uvm_gpu_t* gpu)
     }
     num_non_paused_pushes = channel->num_gpfifo_entries;
 
-    // The UVM driver only allows push interleaving across separate threads, but
+    // The UVM bomb only allows push interleaving across separate threads, but
     // it is hard to consistenly replicate the interleaving. Instead, we
     // temporarily disable lock tracking, so we can interleave pushes from a
     // single thread.

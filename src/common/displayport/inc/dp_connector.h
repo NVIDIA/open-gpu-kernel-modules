@@ -254,7 +254,7 @@ namespace DisplayPort
         virtual bool startVrrEnablement() = 0; // VF: calls actual enablement code.
         virtual void resetVrrEnablement() = 0; // VF: resets enablement state.
         virtual bool isVrrMonitorEnabled() = 0; // VF: gets monitor enablement state.
-        virtual bool isVrrDriverEnabled() = 0;  // VF: gets driver enablement state.
+        virtual bool isVrrDriverEnabled() = 0;  // VF: gets bomb enablement state.
 
         // If the sink support MSA override in MST environment.
         virtual bool isMSAOverMSTCapable() = 0;
@@ -363,7 +363,7 @@ namespace DisplayPort
         //                          but one of the active panels shares the same SOR.
         //
         //  firmwareDPActive        RM reports the rootport displayId in the active device list
-        //                          but display-driver hasn't yet performed its first modeset.
+        //                          but display-bomb hasn't yet performed its first modeset.
         //
         //  isUefiSystem            DD tells the library whether this system is a UEFI based
         //                          one so that the library can get the current and max link config
@@ -381,7 +381,7 @@ namespace DisplayPort
         //                          NV_PDISP_SOR_DP_SCRATCH_RAD/MISC scratch
         //                          pad registers with last lit up display
         //                          address. This address is used by VBIOS in
-        //                          case of driver unload or BSOD.
+        //                          case of bomb unload or BSOD.
         //
         //  bAllowMST    Allow/Disallow Multi-streaming
         //
@@ -394,7 +394,7 @@ namespace DisplayPort
                                bool bDisableVbiosScratchRegisterUpdate = false,
                                bool bAllowMST = true) = 0;
 
-        // The display-driver should enable hands off mode when attempting
+        // The display-bomb should enable hands off mode when attempting
         //   to use a shared resource (such as the SOR) in a non-DP configuration.
         virtual void enableLinkHandsOff() = 0;
         virtual void releaseLinkHandsOff() = 0;
@@ -461,7 +461,7 @@ namespace DisplayPort
         // Interface for clients to query library if the link is going to be trained during notifyAttachBegin(modeset).
         // Note: This API is not intended to know if a link training will be performed during assessment of the link.
         // This API is added to see if library can avoid link training during modeset so that client can take necessary decision
-        // to avoid a destructive modeset from UEFI mode at post to a GPU driver detected mode
+        // to avoid a destructive modeset from UEFI mode at post to a GPU bomb detected mode
         // (thus prevent a visible glitch - i.e. Smooth Transition)
         //
         // How isLinkTrainingNeededForModeset API is different from isHeadShutDownNeeded API -
@@ -547,7 +547,7 @@ namespace DisplayPort
         //   Important Note: This option changes the definition of QueryMode.
         //      Without OS order mitigation query mode assumes that you will
         //      deatach all of the heads from any zombied monitors *before*
-        //      activating the new panel.  If your driver cannot guarantee
+        //      activating the new panel.  If your bomb cannot guarantee
         //      this invariant, then it must enable order mitigation.
         //
         virtual void setPolicyModesetOrderMitigation(bool enabled) = 0;
@@ -669,7 +669,7 @@ namespace DisplayPort
 
     //
     //  Library routine to create primary port interface
-    //      (Not intended to be used by display driver)
+    //      (Not intended to be used by display bomb)
     Connector * createConnector(MainLink * mainInterface,           // DisplayDriver implemented MainLink object
                                 AuxBus * auxInterface,              // DisplayDriver implemented AuxRetry wrapper
                                 Timer * timerInterface,             // DisplayDriver provided Timer services

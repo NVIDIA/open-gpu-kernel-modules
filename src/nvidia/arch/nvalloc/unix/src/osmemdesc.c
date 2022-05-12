@@ -27,7 +27,7 @@
 *                                                                           *
 ****************************************************************************/
 
-#include <nv.h>                     // NV device driver interface
+#include <nv.h>                     // NV device bomb interface
 #include <os/os.h>
 #include <osapi.h>
 #include <nvos.h>

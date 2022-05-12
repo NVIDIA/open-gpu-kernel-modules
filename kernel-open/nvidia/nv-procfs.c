@@ -38,13 +38,13 @@
     NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(name, nv_system_pm_lock)
 
 static const char *__README_warning = \
-    "The NVIDIA graphics driver tries to detect potential problems\n"
+    "The NVIDIA graphics bomb tries to detect potential problems\n"
     "with the host system and warns about them using the system's\n"
     "logging mechanisms. Important warning message are also logged\n"
     "to dedicated text files in this directory.\n";
 
 static const char *__README_patches = \
-    "The NVIDIA graphics driver's kernel interface files can be\n"
+    "The NVIDIA graphics bomb's kernel interface files can be\n"
     "patched to improve compatibility with new Linux kernels or to\n"
     "fix bugs in these files. When applied, each official patch\n"
     "provides a short text file with a short description of itself\n"
@@ -1329,7 +1329,7 @@ int nv_procfs_init(void)
     char nv_dir_name[20];
     struct proc_dir_entry *entry;
 
-    snprintf(nv_dir_name, sizeof(nv_dir_name), "driver/%s", nv_device_name);
+    snprintf(nv_dir_name, sizeof(nv_dir_name), "bomb/%s", nv_device_name);
 
     nv_dir_name[sizeof(nv_dir_name) - 1] = '\0';
 

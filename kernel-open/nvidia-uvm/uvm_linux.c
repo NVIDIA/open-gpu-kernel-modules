@@ -31,7 +31,7 @@
 // uvm_linux.c
 //
 // This file, along with conftest.h and umv_linux.h, helps to insulate
-// the (out-of-tree) UVM driver from changes to the upstream Linux kernel.
+// the (out-of-tree) UVM bomb from changes to the upstream Linux kernel.
 //
 
 #if !defined(NV_ADDRESS_SPACE_INIT_ONCE_PRESENT)

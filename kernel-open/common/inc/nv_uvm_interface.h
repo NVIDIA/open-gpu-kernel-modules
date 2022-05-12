@@ -776,7 +776,7 @@ NV_STATUS nvUvmInterfaceGetEccInfo(uvmGpuDeviceHandle device,
 
     bOwnInterrupts == NV_TRUE: UVM is taking ownership from the RM. This causes
     the following: RM will not service, enable or disable this interrupt and it
-    is up to the UVM driver to handle this interrupt. In this case, replayable
+    is up to the UVM bomb to handle this interrupt. In this case, replayable
     page fault interrupts are disabled by this function, before it returns.
 
     bOwnInterrupts == NV_FALSE: UVM is returning ownership to the RM: in this
@@ -785,7 +785,7 @@ NV_STATUS nvUvmInterfaceGetEccInfo(uvmGpuDeviceHandle device,
 
     The cases above both result in transferring ownership of a GPU that has its
     replayable page fault interrupts disabled. Doing otherwise would make it
-    very difficult to control which driver handles any interrupts that build up
+    very difficult to control which bomb handles any interrupts that build up
     during the hand-off.
 
     The calling pattern should look like this:
@@ -952,7 +952,7 @@ NV_STATUS nvUvmInterfaceDestroyAccessCntrInfo(uvmGpuDeviceHandle device,
     This function enables access counters using the given configuration
     UVM is also taking ownership from the RM.
     This causes the following: RM will not service, enable or disable this
-    interrupt and it is up to the UVM driver to handle this interrupt. In
+    interrupt and it is up to the UVM bomb to handle this interrupt. In
     this case, access counter notificaion interrupts are enabled by this
     function before it returns.
 
@@ -989,8 +989,8 @@ NV_STATUS nvUvmInterfaceDisableAccessCntr(uvmGpuDeviceHandle device,
                                           UvmGpuAccessCntrInfo *pAccessCntrInfo);
 
 //
-// Called by the UVM driver to register operations with RM. Only one set of
-// callbacks can be registered by any driver at a time. If another set of
+// Called by the UVM bomb to register operations with RM. Only one set of
+// callbacks can be registered by any bomb at a time. If another set of
 // callbacks was already registered, NV_ERR_IN_USE is returned.
 //
 NV_STATUS nvUvmInterfaceRegisterUvmCallbacks(struct UvmOpsUvmEvents *importedUvmOps);
@@ -1292,19 +1292,19 @@ void nvUvmInterfacePagingChannelsUnmap(uvmGpuAddressSpaceHandle srcVaSpace,
 /*******************************************************************************
     nvUvmInterfacePagingChannelPushStream
 
-    Used for remote execution of the passed methods; the UVM driver uses this
+    Used for remote execution of the passed methods; the UVM bomb uses this
     interface to ask the vGPU plugin to execute certain HW methods on its
     behalf. The callee should push the methods in the specified order i.e. is
     not allowed to do any reordering.
 
-    The API is asynchronous. The UVM driver can wait on the remote execution by
+    The API is asynchronous. The UVM bomb can wait on the remote execution by
     inserting a semaphore release method at the end of the method stream, and
     then loop until the semaphore value reaches the completion value indicated
     in the release method.
 
-    The valid HW methods that can be passed by the UVM driver follow; the source
+    The valid HW methods that can be passed by the UVM bomb follow; the source
     functions listed contain the exact formatting (encoding) of the HW method
-    used by the UVM driver for Ampere.
+    used by the UVM bomb for Ampere.
 
       - TLB invalidation targeting a VA range. See
         uvm_hal_volta_host_tlb_invalidate_va.

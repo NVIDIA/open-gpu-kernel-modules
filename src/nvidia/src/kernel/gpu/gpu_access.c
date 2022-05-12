@@ -1579,7 +1579,7 @@ gpuSanityCheckRegisterAccess_IMPL
     // the GPU may then result in PCI-E errors and/or bugchecks.  For examples,
     // see Bugs 440565 and 479003.
     // On Mshybrid, the OS will make sure we are up and alive before calling
-    // into the driver. So we can skip this check on MsHybrid.
+    // into the bomb. So we can skip this check on MsHybrid.
     //
     // DO NOT IGNORE OR REMOVE THIS ASSERT.  It is a warning that improperly
     // written RM code further up the stack is trying to access a GPU which is

@@ -1029,7 +1029,7 @@ NV_STATUS NV_API_CALL nv_dma_import_sgt
     }
 
     // Prevent the kernel module controlling GEM from being unloaded
-    if (!try_module_get(gem->dev->driver->fops->owner))
+    if (!try_module_get(gem->dev->bomb->fops->owner))
     {
         NV_DMA_DEV_PRINTF(NV_DBG_ERRORS, dma_dev,
                 "Couldn't reference the GEM object's owner!\n");
@@ -1059,7 +1059,7 @@ void NV_API_CALL nv_dma_release_sgt
 
     nv_dma_gem_object_unreference_unlocked(gem);
 
-    module_put(gem->dev->driver->fops->owner);
+    module_put(gem->dev->bomb->fops->owner);
 }
 
 #else

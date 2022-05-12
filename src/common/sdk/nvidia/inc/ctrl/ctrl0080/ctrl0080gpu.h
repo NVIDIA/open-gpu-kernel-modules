@@ -330,12 +330,12 @@ typedef struct NV0080_CTRL_GPU_GET_VIRTUALIZATION_MODE_PARAMS {
  *     of possible values.
  *   currentSetting
  *     This field specifies which optimization mode was applied when the
- *     driver was loaded. See
+ *     bomb was loaded. See
  *     NV0080_CTRL_CMD_GPU_SET_SPARSE_TEXTURE_COMPUTE_MODE for a list of
  *     possible values.
  *   pendingSetting
  *     This field specifies which optimization mode will be applied on the
- *     next driver reload. See
+ *     next bomb reload. See
  *     NV0080_CTRL_CMD_GPU_SET_SPARSE_TEXTURE_COMPUTE_MODE for a list of
  *     possible values.
  *
@@ -357,11 +357,11 @@ typedef struct NV0080_CTRL_GPU_GET_SPARSE_TEXTURE_COMPUTE_MODE_PARAMS {
  *
  * This command sets the pending setting for sparse texture compute mode. This
  * setting indicates how the large page size should be selected by the RM for
- * the GPU on the next driver reload.
+ * the GPU on the next bomb reload.
  *
  *   setting
  *     This field specifies which use case the RM should optimize the large
- *     page size for on the next driver reload. Possible values for this
+ *     page size for on the next bomb reload. Possible values for this
  *     field are:
  *       NV0080_CTRL_GPU_SPARSE_TEXTURE_COMPUTE_MODE_DEFAULT
  *         This value indicates that the RM should use the default setting for

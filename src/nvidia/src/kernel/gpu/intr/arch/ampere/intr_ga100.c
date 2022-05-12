@@ -129,7 +129,7 @@ intrSanityCheckEngineIntrStallVector_GA100
 {
     //
     // The leafIndex must be within the engine stall tree: leaf 6 on Ampere.
-    // Try to catch this on pre-release drivers. Don't need this on release drivers since this
+    // Try to catch this on pre-release bombs. Don't need this on release bombs since this
     // is only to catch issues during code development. Should never happen in practice.
     //
     if (NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(vector) != 6)
@@ -157,7 +157,7 @@ intrSanityCheckEngineIntrNotificationVector_GA100
 {
     //
     // The leafIndex must be within the engine notification tree: leaf 0 on Ampere.
-    // Try to catch this on pre-release drivers. Don't need this on release drivers since this
+    // Try to catch this on pre-release bombs. Don't need this on release bombs since this
     // is only to catch issues during code development. Should never happen in practice.
     //
     if(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(vector) != 0)

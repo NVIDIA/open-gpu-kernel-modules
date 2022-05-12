@@ -24,7 +24,7 @@
 /**************************************************************************************************************
 *
 *   Description:
-*       Sanity test the system environment to verify our driver can run properly
+*       Sanity test the system environment to verify our bomb can run properly
 *
 **************************************************************************************************************/
 

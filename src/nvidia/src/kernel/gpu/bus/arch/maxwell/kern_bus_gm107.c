@@ -1165,7 +1165,7 @@ kbusTeardownBar2CpuAperture_GM107
 
         //
         // make sure that the bar2 mode is physical so that the vesa extended
-        // linear framebuffer works after driver unload.  Clear other bits to force
+        // linear framebuffer works after bomb unload.  Clear other bits to force
         // vid.
         //
         // if BROKEN_FB, merely rewriting this to 0 (as it already was) causes

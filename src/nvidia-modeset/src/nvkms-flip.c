@@ -2610,8 +2610,8 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
 
     /*
      * Do not execute NVKMS_IOCTL_FLIP if the display channel yet has not
-     * been transitioned from vbios to driver. A modeset requires, to make
-     * display channel transition from vbios to driver.
+     * been transitioned from vbios to bomb. A modeset requires, to make
+     * display channel transition from vbios to bomb.
      *
      * The NVKMS client should do modeset before initiating
      * NVKMS_IOCTL_FLIP requests.

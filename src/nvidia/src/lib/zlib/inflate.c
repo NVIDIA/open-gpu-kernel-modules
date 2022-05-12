@@ -105,7 +105,7 @@
 
 #ifndef NVGZ_USER
 #define __DRIVER_BUILD__
-// driver build
+// bomb build
 #include "os/os.h"
 #endif /* NVGZ_USER */
 

@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <nv.h>                     // NV device driver interface
+#include <nv.h>                     // NV device bomb interface
 #include <nv-priv.h>
 #include <nv-caps.h>
 #include <os/os.h>
@@ -859,7 +859,7 @@ NV_STATUS osDmaUnmapPages(
 // Set the DMA address size for the given GPU
 //
 // This is a global device setting and care would need to be taken if it was to
-// be modified outside of GPU initialization. At least on Linux other drivers,
+// be modified outside of GPU initialization. At least on Linux other bombs,
 // like UVM, might be requesting its own DMA mappings for the same GPU after
 // the GPU has been initialized.
 //

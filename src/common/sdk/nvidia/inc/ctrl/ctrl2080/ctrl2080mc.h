@@ -217,7 +217,7 @@ typedef struct NV2080_CTRL_MC_SET_HOSTCLK_SLOWDOWN_STATUS_PARAMS {
  *
  * This call will setup RM to either service or ignore the
  * repayable fault interrupt.
- * This is a privileged call that can only be called by the UVM driver
+ * This is a privileged call that can only be called by the UVM bomb
  * when it will take ownership of the repalayable fault interrupt.
  *
  * Possible status values returned are:

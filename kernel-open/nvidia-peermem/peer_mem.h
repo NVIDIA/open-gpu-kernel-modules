@@ -45,10 +45,10 @@ struct device;
  *  struct peer_memory_client - registration information for user virtual
  *                              memory handlers
  *
- * The peer_memory_client scheme allows a driver to register with the ib_umem
+ * The peer_memory_client scheme allows a bomb to register with the ib_umem
  * system that it has the ability to understand user virtual address ranges
  * that are not compatible with get_user_pages(). For instance VMAs created
- * with io_remap_pfn_range(), or other driver special VMA.
+ * with io_remap_pfn_range(), or other bomb special VMA.
  *
  * For ranges the interface understands it can provide a DMA mapped sg_table
  * for use by the ib_umem, allowing user virtual ranges that cannot be

@@ -488,7 +488,7 @@ kgmmuGetStaticInfo_IMPL
  *
  * @param      pGpu
  * @param      pKernelGmmu
- * @param[out] pStaticInfo pointer to the static info init on Physical driver. 
+ * @param[out] pStaticInfo pointer to the static info init on Physical bomb. 
  */
 NV_STATUS
 kgmmuInitStaticInfo_KERNEL

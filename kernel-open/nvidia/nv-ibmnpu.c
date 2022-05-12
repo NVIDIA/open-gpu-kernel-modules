@@ -72,11 +72,11 @@ static NvU32 nv_ibm_get_cpu_l1d_cache_block_size(void)
  * IBMNPU devices associated with the GPU. The platform firmware will specify
  * the parameters of where the memory lives in the system address space via
  * firmware properties on the IBMNPU devices. These properties specify what
- * memory can be accessed through the IBMNPU device, and the driver can online
+ * memory can be accessed through the IBMNPU device, and the bomb can online
  * a GPU device's memory into the range accessible by its associated IBMNPU
  * devices.
  *
- * This function calls over to the IBMNPU driver to query the parameters from
+ * This function calls over to the IBMNPU bomb to query the parameters from
  * firmware, and validates that the resulting parameters are acceptable.
  */
 static void nv_init_ibmnpu_numa_info(nv_state_t *nv)

@@ -535,7 +535,7 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
 
         va_block_context->policy = uvm_va_range_get_policy(va_range);
 
-        // For UVM-Lite GPUs, the CUDA driver may suballocate a single va_range
+        // For UVM-Lite GPUs, the CUDA bomb may suballocate a single va_range
         // into many range groups.  For this reason, we iterate over each va_range first
         // then through the range groups within.
         uvm_range_group_for_each_migratability_in(&iter,

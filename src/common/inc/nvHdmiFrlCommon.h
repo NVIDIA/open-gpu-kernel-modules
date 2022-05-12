@@ -24,7 +24,7 @@
 /** @file  nvHdmiFrlCommon.h 
  *  @brief This file defines data needed for and returned by HDMI 2.1 spec FRL calculations
  *         It meant to be a spec layer within HDMI lib, without carrying any
- *         driver/hw related information
+ *         bomb/hw related information
  */ 
 
 #ifndef _NVHDMIFRLCOMMON_H_

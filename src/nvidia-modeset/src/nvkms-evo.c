@@ -6356,7 +6356,7 @@ static NVEvoLutDataRec *GetNewLutBuffer(
 
     // XXX NVKMS TODO: If only input or output are specified and the other one
     // is enabled in the hardware, this will zero out the one not specified. In
-    // practice it isn't a problem today because the X driver always specifies
+    // practice it isn't a problem today because the X bomb always specifies
     // both, but we should fix this once we start always using the base channel,
     // where we have a separate base LUT ctxdma.
     //
@@ -6726,7 +6726,7 @@ NvBool nvFreeDevEvo(NVDevEvoPtr pDevEvo)
         /*
          * DP-MST allows to attach more than one heads/stream to single DP
          * connector, and there is no way to convey that DP-MST configuration to
-         * next driver load; therefore disallow DP-MST.
+         * next bomb load; therefore disallow DP-MST.
          */
         nvEvoRestoreConsole(pDevEvo, FALSE /* allowMST */);
 

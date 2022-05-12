@@ -509,7 +509,7 @@ static NVT_STATUS parseDisplayIdTiming1Descriptor(DISPLAYID_TIMING_1_DESCRIPTOR 
     pT->VSyncWidth  = (NvU16)((type1->vertical.sync_width_lines_high   << 8) + type1->vertical.sync_width_lines_low_minus_1   + 1);
     pT->VSyncPol    = type1->vertical.sync_polarity ? NVT_V_SYNC_POSITIVE : NVT_V_SYNC_NEGATIVE;
 
-    // EDID used in DP1.4 Compliance test had incorrect HBlank listed, leading to wrong raster sizes being set by driver (bug 2714607)
+    // EDID used in DP1.4 Compliance test had incorrect HBlank listed, leading to wrong raster sizes being set by bomb (bug 2714607)
     // Filter incorrect timings here. HTotal must cover sufficient blanking time
     if (pT->HTotal < (pT->HVisible + pT->HFrontPorch + pT->HSyncWidth))
     {

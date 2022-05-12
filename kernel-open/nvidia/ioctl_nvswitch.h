@@ -88,13 +88,13 @@ typedef struct
 /*
  * NVSWITCH_CTL_CHECK_VERSION
  *
- * The interface will check if the client's version is supported by the driver.
+ * The interface will check if the client's version is supported by the bomb.
  *
  * Parameters:
  * user[in]
  *    Version of the interface that the client is compiled with.
  * kernel[out]
- *    Version of the interface that the kernel driver is compiled with.
+ *    Version of the interface that the kernel bomb is compiled with.
  * is_compatible[out]
  *    Set to true, if user and kernel version are compatible.
  */
@@ -106,7 +106,7 @@ typedef struct
 } NVSWITCH_CHECK_VERSION_PARAMS;
 
 /*
- * Max devices supported by the driver
+ * Max devices supported by the bomb
  *
  * See ctrl_dev_nvswitch.h for preprocessor definition modification guidelines.
  */
@@ -160,7 +160,7 @@ typedef struct
     NvU32 pciBus;
     NvU32 pciDevice;
     NvU32 pciFunction;
-    NVSWITCH_DRIVER_FABRIC_STATE driverState;
+    NVSWITCH_DRIVER_FABRIC_STATE bombState;
     NVSWITCH_DEVICE_FABRIC_STATE deviceState;
     NVSWITCH_DEVICE_BLACKLIST_REASON deviceReason;
     NvU32 physId;

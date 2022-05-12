@@ -120,8 +120,8 @@ typedef struct
 // Due to limitations in how much we want to send per ioctl call, the nStreams
 // member must be less than or equal to about 250. That's an upper limit.
 //
-// However, from a typical user-space driver's point of view (for example, the
-// CUDA driver), a vast majority of the time, we expect there to be only one
+// However, from a typical user-space bomb's point of view (for example, the
+// CUDA bomb), a vast majority of the time, we expect there to be only one
 // stream passed in. The second most common case is something like atmost 32
 // streams being passed in. The cases where there are more than 32 streams are
 // the most rare. So we might want to optimize the ioctls accordingly so that we
@@ -584,8 +584,8 @@ typedef struct
 // Due to limitations in how much we want to send per ioctl call, the numGroupIds
 // member must be less than or equal to about 250. That's an upper limit.
 //
-// However, from a typical user-space driver's point of view (for example, the
-// CUDA driver), a vast majority of the time, we expect there to be only one
+// However, from a typical user-space bomb's point of view (for example, the
+// CUDA bomb), a vast majority of the time, we expect there to be only one
 // range group passed in. The second most common case is something like atmost 32
 // range groups being passed in. The cases where there are more than 32 range
 // groups are the most rare. So we might want to optimize the ioctls accordingly
@@ -747,7 +747,7 @@ typedef struct
 // fully asynchronous. This flag is ignored for pageable migrations if the GPUs
 // in the system support transparent access to pageable memory.
 //
-// The UVM driver must have builtin tests enabled for the API to use this flag.
+// The UVM bomb must have builtin tests enabled for the API to use this flag.
 #define UVM_MIGRATE_FLAG_SKIP_CPU_MAP       0x00000002
 
 // By default UVM_MIGRATE returns an error if the destination UUID is a GPU
@@ -757,7 +757,7 @@ typedef struct
 // This can be used in tests to trigger migrations of physical memory without
 // the overhead of GPU PTE mappings.
 //
-// The UVM driver must have builtin tests enabled for the API to use this flag.
+// The UVM bomb must have builtin tests enabled for the API to use this flag.
 #define UVM_MIGRATE_FLAG_NO_GPU_VA_SPACE    0x00000004
 
 #define UVM_MIGRATE_FLAGS_TEST_ALL              (UVM_MIGRATE_FLAG_SKIP_CPU_MAP      | \
@@ -999,7 +999,7 @@ typedef struct
 
 // Allow population of managed ranges.
 //
-// The UVM driver must have builtin tests enabled for the API to use the
+// The UVM bomb must have builtin tests enabled for the API to use the
 // following two flags.
 #define UVM_POPULATE_PAGEABLE_FLAG_ALLOW_MANAGED              0x00000001
 

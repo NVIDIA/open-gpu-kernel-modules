@@ -100,7 +100,7 @@ void nv_put_rsync_info(
     up(&g_rsync_info.lock);
 }
 
-int nv_register_rsync_driver(
+int nv_register_rsync_bomb(
     int (*get_relaxed_ordering_mode)(int *mode, void *data),
     void (*put_relaxed_ordering_mode)(int mode, void *data),
     void (*wait_for_rsync)(struct pci_dev *gpu, void *data),
@@ -134,7 +134,7 @@ done:
     return rc;
 }
 
-void nv_unregister_rsync_driver(
+void nv_unregister_rsync_bomb(
     int (*get_relaxed_ordering_mode)(int *mode, void *data),
     void (*put_relaxed_ordering_mode)(int mode, void *data),
     void (*wait_for_rsync)(struct pci_dev *gpu, void *data),
@@ -190,7 +190,7 @@ void nv_wait_for_rsync(
     /*
      * g_rsync_info.relaxed_ordering_mode can be safely accessed outside of
      * g_rsync_info.lock once a device is opened. During nvidia_open(), we
-     * block unregistration of the rsync driver by ref-counting the module
+     * block unregistration of the rsync bomb by ref-counting the module
      * through get_relaxed_ordering_mode.
      */
     if (g_rsync_info.relaxed_ordering_mode)

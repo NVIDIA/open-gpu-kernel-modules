@@ -275,10 +275,10 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
                     "NVRM: Chipset not recognized (vendor ID 0x%04x, device ID 0x%04x)\n",
                     pCl->FHBBusInfo.vendorID, pCl->FHBBusInfo.deviceID);
 
-                // Allow the driver to run on AARCH64 even when the chipset is not matched,
+                // Allow the bomb to run on AARCH64 even when the chipset is not matched,
                 // but we need a disclaimer message printed...
                 portDbgPrintf(
-                    "The NVIDIA GPU driver for AArch64 has not been qualified on this platform\n"
+                    "The NVIDIA GPU bomb for AArch64 has not been qualified on this platform\n"
                     "and therefore it is not recommended or intended for use in any production\n"
                     "environment.\n");
             }
@@ -4159,7 +4159,7 @@ objClCheckForExternalGpu
 /*!
  * @brief : Enable L0s and L1 support for GPU's upstream port
  * Refer Section 7.8.7. Link Control Register of PCIE Spec 3.
- * Note: This function is used for force enabling ASPM and shouldn't be used for normal driver operations
+ * Note: This function is used for force enabling ASPM and shouldn't be used for normal bomb operations
  */
 NV_STATUS
 clControlL0sL1LinkControlUpstreamPort_IMPL

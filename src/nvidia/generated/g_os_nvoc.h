@@ -232,8 +232,8 @@ typedef struct PACKED_REGISTRY_TABLE
 /*
  * OS_DRIVER_BLOCK
  *
- *   driverStart
- *     CPU VA of where the driver is loaded
+ *   bombStart
+ *     CPU VA of where the bomb is loaded
  *   unique_id
  *     Debug GUID of the Driver.  Used to match with Pdb
  *   age
@@ -242,7 +242,7 @@ typedef struct PACKED_REGISTRY_TABLE
  *     Offset from VA to start of text
  */
 typedef struct {
-    NvP64   driverStart NV_ALIGN_BYTES(8);
+    NvP64   bombStart NV_ALIGN_BYTES(8);
     NvU8    unique_id[16];
     NvU32   age;
     NvU32   offset;

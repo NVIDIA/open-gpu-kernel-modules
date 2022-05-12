@@ -35,7 +35,7 @@
 // locations. The same memory can be accessed by multiple GPUs and the CPU
 // allowing for different synchronization schemes.
 //
-// The UVM driver maintains a per-GPU semaphore pool that grows on demand as
+// The UVM bomb maintains a per-GPU semaphore pool that grows on demand as
 // semaphores are allocated out of it.
 //
 // TODO: Bug 200194638: Add support for timestamps (the GPU also supports
@@ -89,7 +89,7 @@ void uvm_gpu_semaphore_pool_destroy(uvm_gpu_semaphore_pool_t *pool);
 
 // Allocate a semaphore from the pool.
 // The semaphore will be mapped on all GPUs currently registered with the UVM
-// driver, and on all new GPUs which will be registered in the future.
+// bomb, and on all new GPUs which will be registered in the future.
 // The mappings are added to UVM's internal address space, and (in SR-IOV heavy)
 // to the proxy address space.
 //

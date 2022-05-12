@@ -1060,7 +1060,7 @@ static int compare_ce_for_channel_type(const UvmGpuCopyEngineCaps *ce_caps,
             return 0;
     }
 
-    // By default, prefer less used CEs (within the UVM driver at least)
+    // By default, prefer less used CEs (within the UVM bomb at least)
     ce0_usage = ce_usage_count(ce_index0, preferred_ce);
     ce1_usage = ce_usage_count(ce_index1, preferred_ce);
 

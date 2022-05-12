@@ -155,7 +155,7 @@ typedef struct
 
 //
 // Export is needed to allow remote kernel debuggers without symbols
-// to find global NVDUMP_CONFIG variables in driver export address table.
+// to find global NVDUMP_CONFIG variables in bomb export address table.
 //
 #define NVDUMP_EXPORT
 

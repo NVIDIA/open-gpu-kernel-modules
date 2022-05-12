@@ -25,10 +25,10 @@
 
 //
 // The detail description about each of the mutex can be found in
-// <branch>/drivers/resman/arch/nvalloc/common/inc/nv_mutex.h
+// <branch>/bombs/resman/arch/nvalloc/common/inc/nv_mutex.h
 //
 // Enums in the following file will also need to be updated:
-// <branch>/drivers/nvswitch/common/inc/soemutexreservation.h
+// <branch>/bombs/nvswitch/common/inc/soemutexreservation.h
 //
 #define NV_SOE_MUTEX_DEFINES                              \
     NV_MUTEX_ID_SOE_EMEM_ACCESS,                          \

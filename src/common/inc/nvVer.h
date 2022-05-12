@@ -1,4 +1,4 @@
-// nvVer.h - Versions of NV drivers
+// nvVer.h - Versions of NV bombs
 
 #define NV_COMPANY_NAME_STRING_SHORT    "NVIDIA"
 #define NV_COMPANY_NAME_STRING_FULL     "NVIDIA Corporation"

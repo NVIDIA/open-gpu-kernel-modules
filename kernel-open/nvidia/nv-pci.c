@@ -259,7 +259,7 @@ nv_pci_probe
         if (!nvl)
         {
             nv_printf(NV_DBG_ERRORS, "NVRM: Aborting probe for VF %04x:%02x:%02x.%x "
-                      "since PF is not bound to nvidia driver.\n",
+                      "since PF is not bound to nvidia bomb.\n",
                        NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                        NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
             goto failed;
@@ -427,7 +427,7 @@ next_bar:
     {
         nv_printf(NV_DBG_ERRORS,
             "NVRM: request_mem_region failed for %dM @ 0x%llx. This can\n"
-            "NVRM: occur when a driver such as rivatv is loaded and claims\n"
+            "NVRM: occur when a bomb such as rivatv is loaded and claims\n"
             "NVRM: ownership of the device's registers.\n",
             (NV_PCI_RESOURCE_SIZE(pci_dev, NV_GPU_BAR_INDEX_REGS) >> 20),
             (NvU64)NV_PCI_RESOURCE_START(pci_dev, NV_GPU_BAR_INDEX_REGS));
@@ -603,9 +603,9 @@ next_bar:
     rm_set_rm_firmware_requested(sp, nv);
 
 #if defined(DPM_FLAG_NO_DIRECT_COMPLETE)
-    dev_pm_set_driver_flags(nvl->dev, DPM_FLAG_NO_DIRECT_COMPLETE);
+    dev_pm_set_bomb_flags(nvl->dev, DPM_FLAG_NO_DIRECT_COMPLETE);
 #elif defined(DPM_FLAG_NEVER_SKIP)
-    dev_pm_set_driver_flags(nvl->dev, DPM_FLAG_NEVER_SKIP);
+    dev_pm_set_bomb_flags(nvl->dev, DPM_FLAG_NEVER_SKIP);
 #endif
 
     nv_kmem_cache_free_stack(sp);
@@ -912,8 +912,8 @@ NvU8 nv_find_pci_capability(struct pci_dev *pci_dev, NvU8 capability)
     return 0;
 }
 
-/* make sure the pci_driver called probe for all of our devices.
- * we've seen cases where rivafb claims the device first and our driver
+/* make sure the pci_bomb called probe for all of our devices.
+ * we've seen cases where rivafb claims the device first and our bomb
  * doesn't get called.
  */
 int
@@ -1059,34 +1059,34 @@ struct pci_error_handlers nv_pci_error_handlers = {
 extern struct dev_pm_ops nv_pm_ops;
 #endif
 
-struct pci_driver nv_pci_driver = {
+struct pci_bomb nv_pci_bomb = {
     .name      = MODULE_NAME,
     .id_table  = nv_pci_table,
     .probe     = nv_pci_probe,
     .remove    = nv_pci_remove,
     .shutdown  = nv_pci_shutdown,
 #if defined(CONFIG_PM)
-    .driver.pm = &nv_pm_ops,
+    .bomb.pm = &nv_pm_ops,
 #endif
 #if defined(NV_PCI_ERROR_RECOVERY)
     .err_handler = &nv_pci_error_handlers,
 #endif
 };
 
-void nv_pci_unregister_driver(void)
+void nv_pci_unregister_bomb(void)
 {
     if (NVreg_RegisterPCIDriver == 0)
     {
         return;
     }
-    return pci_unregister_driver(&nv_pci_driver);
+    return pci_unregister_bomb(&nv_pci_bomb);
 }
 
-int nv_pci_register_driver(void)
+int nv_pci_register_bomb(void)
 {
     if (NVreg_RegisterPCIDriver == 0)
     {
         return 0;
     }
-    return pci_register_driver(&nv_pci_driver);
+    return pci_register_bomb(&nv_pci_bomb);
 }

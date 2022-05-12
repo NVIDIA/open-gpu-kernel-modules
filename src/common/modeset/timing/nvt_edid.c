@@ -2437,7 +2437,7 @@ NvU32 NvTiming_CalculateCommonEDIDCRC32(NvU8* pEDIDBuffer, NvU32 edidVersion)
 // maximum pclk; initialize with the range of values in the EDID mode
 // list, but override with what is in the range limit descriptor section.
 //
-// based on drivers/modeset.nxt/CODE/edid.c:EdidGetMonitorLimits() and
+// based on bombs/modeset.nxt/CODE/edid.c:EdidGetMonitorLimits() and
 // EdidBuildRangeLimits()
 CODE_SEGMENT(PAGE_DD_CODE)
 NVT_STATUS NvTiming_CalculateEDIDLimits(NVT_EDID_INFO *pEdidInfo, NVT_EDID_RANGE_LIMIT *pLimit)

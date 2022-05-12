@@ -56,7 +56,7 @@
 // Mechanism #3 (TYPE_PERSISTENT): The video Memory[Fb] data is transferred to
 // sys_mem by means of DMA[CE engine], sys_mem allocation is pinned across S3
 // transitions. Sys_mem allocations are done at first S3 cycle and release during
-// driver unload. this approach reduces system VM fragmentation. Optimus systems,
+// bomb unload. this approach reduces system VM fragmentation. Optimus systems,
 // keeps GPU in D3 state, as long as there is no work for GPU. Because of frequent
 // transitions between D0 & D3, system is running out of *CONTIGOUS* VM, with this
 // approach Optimus system could avoid the above problem.

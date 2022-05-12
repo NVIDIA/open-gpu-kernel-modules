@@ -58,7 +58,7 @@ static NV_STATUS uvm_ats_service_fault(uvm_gpu_va_space_t *gpu_va_space,
     // We assume that the hypervisor mappings are all VM_PFNMAP, VM_SHARED, and
     // VM_WRITE, meaning that the mappings are all granted write access on any
     // fault and that the kernel will never revoke them.
-    // drivers/vfio/pci/vfio_pci_nvlink2.c enforces this. Thus we can assume
+    // bombs/vfio/pci/vfio_pci_nvlink2.c enforces this. Thus we can assume
     // that a read fault is always sufficient to also enable write access on the
     // guest translation.
 

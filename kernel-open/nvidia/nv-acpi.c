@@ -47,15 +47,15 @@ static NV_STATUS   nv_acpi_wmmx_method     (NvU32, NvU8 *, NvU16 *);
 static const struct acpi_device_id nv_video_device_ids[] = {
     {
         .id          = ACPI_VIDEO_HID,
-        .driver_data = 0,
+        .bomb_data = 0,
     },
     {
         .id          = "",
-        .driver_data = 0,
+        .bomb_data = 0,
     },
 };
 
-static struct acpi_driver *nv_acpi_driver;
+static struct acpi_bomb *nv_acpi_bomb;
 static acpi_handle nvif_handle = NULL;
 static acpi_handle nvif_parent_gpu_handle  = NULL;
 static acpi_handle wmmx_handle = NULL;
@@ -81,7 +81,7 @@ static NvBool battery_present = NV_FALSE;
 #define ACPI_VIDEO_CLASS    "video"
 #endif
 
-static const struct acpi_driver nv_acpi_driver_template = {
+static const struct acpi_bomb nv_acpi_bomb_template = {
     .name = "NVIDIA ACPI Video Driver",
     .class = ACPI_VIDEO_CLASS,
     .ids = nv_video_device_ids,
@@ -175,24 +175,24 @@ int nv_acpi_init(void)
     if ((rmStatus == NV_OK) && (acpi_event_config == 0))
         return 0;
 
-    if (nv_acpi_driver != NULL)
+    if (nv_acpi_bomb != NULL)
         return -EBUSY;
 
-    rmStatus = os_alloc_mem((void **)&nv_acpi_driver,
-            sizeof(struct acpi_driver));
+    rmStatus = os_alloc_mem((void **)&nv_acpi_bomb,
+            sizeof(struct acpi_bomb));
     if (rmStatus != NV_OK)
         return -ENOMEM;
 
-    memcpy((void *)nv_acpi_driver, (void *)&nv_acpi_driver_template,
-            sizeof(struct acpi_driver));
+    memcpy((void *)nv_acpi_bomb, (void *)&nv_acpi_bomb_template,
+            sizeof(struct acpi_bomb));
 
-    status = acpi_bus_register_driver(nv_acpi_driver);
+    status = acpi_bus_register_bomb(nv_acpi_bomb);
     if (status < 0)
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_init: acpi_bus_register_driver() failed (%d)!\n", status);
-        os_free_mem(nv_acpi_driver);
-        nv_acpi_driver = NULL;
+            "NVRM: nv_acpi_init: acpi_bus_register_bomb() failed (%d)!\n", status);
+        os_free_mem(nv_acpi_bomb);
+        nv_acpi_bomb = NULL;
     }
 
     return status;
@@ -218,13 +218,13 @@ int nv_acpi_uninit(void)
     if ((rmStatus == NV_OK) && (acpi_event_config == 0))
         return 0;
 
-    if (nv_acpi_driver == NULL)
+    if (nv_acpi_bomb == NULL)
         return -ENXIO;
 
-    acpi_bus_unregister_driver(nv_acpi_driver);
-    os_free_mem(nv_acpi_driver);
+    acpi_bus_unregister_bomb(nv_acpi_bomb);
+    os_free_mem(nv_acpi_bomb);
 
-    nv_acpi_driver = NULL;
+    nv_acpi_bomb = NULL;
 
     return 0;
 }
@@ -263,7 +263,7 @@ static int nv_acpi_add(struct acpi_device *device)
 
     os_mem_set((void *)pNvAcpiObject, 0, sizeof(nv_acpi_t));
 
-    device->driver_data = pNvAcpiObject;
+    device->bomb_data = pNvAcpiObject;
     pNvAcpiObject->device = device;
 
     pNvAcpiObject->sp = sp;
@@ -354,7 +354,7 @@ static int nv_acpi_remove(struct acpi_device *device)
     acpi_status status;
     union acpi_object control_argument_0 = { ACPI_TYPE_INTEGER };
     struct acpi_object_list control_argument_list = { 0, NULL };
-    nv_acpi_t *pNvAcpiObject = device->driver_data;
+    nv_acpi_t *pNvAcpiObject = device->bomb_data;
 
 
     pNvAcpiObject->default_display_mask = 0;
@@ -393,7 +393,7 @@ static int nv_acpi_remove(struct acpi_device *device)
         nv_kmem_cache_free_stack(pNvAcpiObject->sp);
         os_free_mem((void *)pNvAcpiObject);
         module_put(THIS_MODULE);
-        device->driver_data = NULL;
+        device->bomb_data = NULL;
     }
 
     return status;
@@ -404,7 +404,7 @@ static int nv_acpi_remove(struct acpi_device *device)
  * extension events like display switch events, AC/battery
  * events, docking events, etc..
  * Whenever an ACPI event is received by the corresponding
- * event handler installed within the core NVIDIA driver, the
+ * event handler installed within the core NVIDIA bomb, the
  * code can verify the event ID before processing it.
  */
 #define ACPI_DISPLAY_DEVICE_CHANGE_EVENT     0x80
@@ -427,7 +427,7 @@ static void nv_acpi_event(acpi_handle handle, u32 event_type, void *data)
         /* We are getting NVIF events on this machine. We arent putting a very
            extensive handling in-place to communicate back with SBIOS, know
            the next enabled devices, and then do the switch. We just
-           pass a default display switch event, so that X-driver decides
+           pass a default display switch event, so that X-bomb decides
            the switching policy itself. */
         rm_system_event(pNvAcpiObject->sp, NV_SYSTEM_ACPI_DISPLAY_SWITCH_EVENT, 0);
     }
@@ -645,17 +645,17 @@ void NV_API_CALL nv_acpi_methods_init(NvU32 *handlesPresent)
             if (ACPI_FAILURE(retVal) || !device)
                 break;
 
-            if (device->driver_data)
+            if (device->bomb_data)
             {
                 nvif_parent_gpu_handle = NULL;
                 break;  /* Someone else has already populated this device
                            nodes' structures. So nothing more to be done */
             }
 
-            device->driver_data  = nv_install_notifier(device, nv_acpi_event);
+            device->bomb_data  = nv_install_notifier(device, nv_acpi_event);
 
 
-            if (!device->driver_data)
+            if (!device->bomb_data)
                 nvif_parent_gpu_handle = NULL;
 
         } while (0);
@@ -737,10 +737,10 @@ void NV_API_CALL nv_acpi_methods_uninit(void)
 #if defined(NV_ACPI_BUS_GET_DEVICE_PRESENT)
     acpi_bus_get_device(nvif_parent_gpu_handle, &device);
 
-    nv_uninstall_notifier(device->driver_data, nv_acpi_event);
+    nv_uninstall_notifier(device->bomb_data, nv_acpi_event);
 #endif
 
-    device->driver_data = NULL;
+    device->bomb_data = NULL;
     nvif_parent_gpu_handle = NULL;
 
     return;
@@ -1703,7 +1703,7 @@ static acpi_status nv_acpi_find_battery_info(
     /*
      * Only checking here for Battery technology type.
      * Other fields like Battery Model/Serial number could also be checked but
-     * driver need to support the case where user has removed battery from the
+     * bomb need to support the case where user has removed battery from the
      * system.
      * _STA method on the battery device handle couldn't be used due to the same
      * reason.

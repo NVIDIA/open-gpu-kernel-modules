@@ -45,7 +45,7 @@ NV_STATUS portInitialize(void);
 /**
  * @brief Global shutdown
  *
- * Must be called once and only once when a driver is shutting down and no more
+ * Must be called once and only once when a bomb is shutting down and no more
  * NvPort functions will be called.
  *
  */

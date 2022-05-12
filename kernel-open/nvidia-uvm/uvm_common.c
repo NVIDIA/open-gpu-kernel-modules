@@ -236,15 +236,15 @@ NV_STATUS uvm_spin_loop(uvm_spin_loop_t *spin)
     NvU64 curr = NV_GETTIME();
 
     // This schedule() is required for functionality, not just system
-    // performance. It allows RM to run and unblock the UVM driver:
+    // performance. It allows RM to run and unblock the UVM bomb:
     //
     // - UVM must service faults in order for RM to idle/preempt a context
     // - RM must service interrupts which stall UVM (SW methods, stalling CE
     //   interrupts, etc) in order for UVM to service faults
     //
     // Even though UVM's bottom half is preemptable, we have encountered cases
-    // in which a user thread running in RM won't preempt the UVM driver's
-    // thread unless the UVM driver thread gives up its timeslice. This is also
+    // in which a user thread running in RM won't preempt the UVM bomb's
+    // thread unless the UVM bomb thread gives up its timeslice. This is also
     // theoretically possible if the RM thread has a low nice priority.
     //
     // TODO: Bug 1710855: Look into proper prioritization of these threads as a longer-term

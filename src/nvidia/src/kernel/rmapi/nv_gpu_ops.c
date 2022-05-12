@@ -294,7 +294,7 @@ struct gpuChannel
 ct_assert(UVM_GPU_CHANNEL_MAX_RESOURCES >= (GR_GLOBALCTX_BUFFER_COUNT + 3));
 
 // A retained channel is a user client's channel which has been registered with
-// the UVM driver.
+// the UVM bomb.
 struct gpuRetainedChannel_struct
 {
     struct gpuDevice            *device;
@@ -1042,7 +1042,7 @@ static NV_STATUS gpuDeviceRmSubDeviceInitEcc(struct gpuDevice *device)
 
     // Do not initialize ECC for this device if SMC is enabled, but no partition
     // was subscribed to.  This will be the case for select devices created
-    // on behalf of the UVM driver.
+    // on behalf of the UVM bomb.
     if (IS_MIG_IN_USE(pGpu) && rmSubDevice->smcPartition.info == NULL)
         return NV_OK;
 
@@ -4443,7 +4443,7 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
     if (status != NV_OK)
         goto cleanup_free_virtual;
 
-    // 4. Find and share the VA with UVM driver
+    // 4. Find and share the VA with UVM bomb
 
     // TODO: Acquired because CliGetDmaMappingInfo expects RMAPI lock. Necessary?
     status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);

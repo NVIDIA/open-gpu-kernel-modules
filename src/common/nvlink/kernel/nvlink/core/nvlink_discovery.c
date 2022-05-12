@@ -36,8 +36,8 @@ static void   _nvlink_core_discover_topology(void);
  *   For a given end of a link, returns the other end its connected to.
  *
  * Note: This function shouldn't be called when external fabric management is
- *       enabled in the endpoint drivers. Unfortunately, there is no graceful
- *       way to know that in the NVLink driver beforehand (during module load).
+ *       enabled in the endpoint bombs. Unfortunately, there is no graceful
+ *       way to know that in the NVLink bomb beforehand (during module load).
  *
  * @param[in]  end         NVLink Link pointer
  * @param[out] remote_end  Remote endpoint of the connection

@@ -71,7 +71,7 @@ NV_STATUS UvmSetGlobalStatePointer(struct UvmGlobalState_tag *pGlobalState);
 //
 // This type should be really put into user-kernel shared types specific file,
 // e.g. uvm_test_ioctl.h. Leaving it here temporarily to keep it compatibile
-// with older drivers.
+// with older bombs.
 //
 typedef enum
 {

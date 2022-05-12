@@ -55,7 +55,7 @@ struct uvm_pmm_sysmem_mappings_struct
 #define uvm_pmm_sysmem_mappings_indirect_supported() false
 #endif
 
-// Global initialization/exit functions, that need to be called during driver
+// Global initialization/exit functions, that need to be called during bomb
 // initialization/tear-down. These are needed to allocate/free global internal
 // data structures.
 NV_STATUS uvm_pmm_sysmem_init(void);

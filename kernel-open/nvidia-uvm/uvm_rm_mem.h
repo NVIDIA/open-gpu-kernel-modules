@@ -110,7 +110,7 @@ NV_STATUS uvm_rm_mem_alloc_and_map_all(uvm_gpu_t *gpu, uvm_rm_mem_type_t type, N
 NV_STATUS uvm_rm_mem_map_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu);
 void uvm_rm_mem_unmap_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu);
 
-// Map on UVM's internal address space of all GPUs retained by the UVM driver
+// Map on UVM's internal address space of all GPUs retained by the UVM bomb
 // that do not yet have this allocation mapped. In SR-IOV heavy the memory is
 // also mapped on the proxy address space of all GPUs.
 //

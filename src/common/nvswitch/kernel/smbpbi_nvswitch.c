@@ -168,9 +168,9 @@ nvswitch_smbpbi_post_init
 
     //
     // Make the interval twice the heartbeat period to avoid
-    // skew between driver and soe threads
+    // skew between bomb and soe threads
     //
-    pInitCmd->driverPollingPeriodUs = (NVSWITCH_HEARTBEAT_INTERVAL_NS / 1000) * 2;
+    pInitCmd->bombPollingPeriodUs = (NVSWITCH_HEARTBEAT_INTERVAL_NS / 1000) * 2;
 
     nvswitch_timeout_create(NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn,

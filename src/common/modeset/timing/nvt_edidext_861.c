@@ -2927,7 +2927,7 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             }
 
             // Per spec, number of bytes has to be computed as 1024 x (1 + DSC_TotalChunkKBytes). 
-            // For driver parser purposes, add 1 here so that the field means max num of KBytes in a link of chunks
+            // For bomb parser purposes, add 1 here so that the field means max num of KBytes in a link of chunks
             pHdmiInfo->dsc_totalChunkKBytes = (pHdmiForum->DSC_totalChunkKBytes == 0) ? 0 : pHdmiForum->DSC_totalChunkKBytes + 1;
             break;
 

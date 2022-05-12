@@ -29,7 +29,7 @@
  * @brief  SOE SMBPBI Command Queue
  *
  *         The SMBPBI unit ID will be used for sending and recieving
- *         Command Messages between driver and SMBPBI unit of SOE
+ *         Command Messages between bomb and SMBPBI unit of SOE
  */
 
 /*!
@@ -49,7 +49,7 @@ enum
 typedef struct
 {
     NvU8        cmdType;
-    NvU32       driverPollingPeriodUs;
+    NvU32       bombPollingPeriodUs;
     RM_FLCN_U64 dmaHandle;
 } RM_SOE_SMBPBI_CMD_INIT, *PRM_SOE_SMBPBI_CMD_INIT;
 

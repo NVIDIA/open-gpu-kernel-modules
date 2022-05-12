@@ -61,7 +61,7 @@
  * NV90EC_CTRL_CMD_HDACODEC_SET_CP_READY_ENABLE
  *
  * This command sets the CP_READY bit. It basically informs RM whether
- * the DD has worked upon the HDCP request requested by the Audio driver 
+ * the DD has worked upon the HDCP request requested by the Audio bomb 
  * or not. DD asks RM to enable CP_READY bit (by setting CpReadyEnable to NV_TRUE)
  * once it is done honouring/dishonouring the request.
  *
@@ -120,7 +120,7 @@ typedef struct NV90EC_CTRL_HDACODEC_NOTIFY_AUDIO_EVENT_PARAMS {
 } NV90EC_CTRL_HDACODEC_NOTIFY_AUDIO_EVENT_PARAMS;
 
 /*
- * This command notifies audio driver that PD bit is set by DD, by writing to scratch register
+ * This command notifies audio bomb that PD bit is set by DD, by writing to scratch register
  */
 #define NV90EC_CTRL_HDACODEC_AUDIOEVENT_PD_BIT_SET (0x00000001)
 

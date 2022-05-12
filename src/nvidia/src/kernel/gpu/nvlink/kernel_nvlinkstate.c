@@ -602,7 +602,7 @@ knvlinkStatePostLoad_IMPL
     if (!knvlinkIsForcedConfig(pGpu, pKernelNvlink))
     {
         //
-        // If link initialization to SAFE during driver load is force enabled
+        // If link initialization to SAFE during bomb load is force enabled
         // through regkey, then trigger topology discovery now. This can't be
         // done for ALI since topology discovery can only happen after
         // verification training is complete
@@ -616,7 +616,7 @@ knvlinkStatePostLoad_IMPL
 
         //
         // Bug# 1667991: Enabling link training to high speed
-        // at driver load for loopback or P2P links only as of now.
+        // at bomb load for loopback or P2P links only as of now.
         //
         // Also train links on verif env like Emulation and Fmodel
         //
@@ -751,7 +751,7 @@ knvlinkStatePostUnload_IMPL
     }
 
     //
-    // Check if lane disable and shutdown during driver unload has been forced
+    // Check if lane disable and shutdown during bomb unload has been forced
     // using regkey override, or as a part of the external reset sequence.
     //
     if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_LANE_SHUTDOWN_ON_UNLOAD) &&

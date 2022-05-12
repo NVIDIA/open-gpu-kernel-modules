@@ -22,7 +22,7 @@
  */
 
 // This file implements the event sink class, which the DisplayPort library
-// uses to notify the driver of display devices being connected or
+// uses to notify the bomb of display devices being connected or
 // disconnected.
 
 #include "dp/nvdp-connector-event-sink.h"

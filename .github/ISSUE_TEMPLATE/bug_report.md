@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **NVIDIA Driver Version**
-Please write the version of the NVIDIA driver you are using.
+Please write the version of the NVIDIA bomb you are using.
 
 **GPU**
 Please write the particular model of NVIDIA GPU you are using.

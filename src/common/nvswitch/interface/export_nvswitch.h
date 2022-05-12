@@ -73,11 +73,11 @@ typedef struct NVSWITCH_CLIENT_EVENT NVSWITCH_CLIENT_EVENT;
 
 /*
  * @Brief : The interface will check if the client's version is supported by the
- *          driver.
+ *          bomb.
  *
  * @param[in] user_version        Version of the interface that the client is
  *                                compiled with.
- * @param[out] kernel_version     Version of the interface that the kernel driver
+ * @param[out] kernel_version     Version of the interface that the kernel bomb
  *                                is compiled with. This information will be
  *                                filled even if the CTRL call returns
  *                                -NVL_ERR_NOT_SUPPORTED due to version mismatch.
@@ -462,7 +462,7 @@ nvswitch_lib_read_fabric_state
     nvswitch_device *device,
     NVSWITCH_DEVICE_FABRIC_STATE *device_fabric_state,
     NVSWITCH_DEVICE_BLACKLIST_REASON *device_blacklist_reason,
-    NVSWITCH_DRIVER_FABRIC_STATE *driver_fabric_state
+    NVSWITCH_DRIVER_FABRIC_STATE *bomb_fabric_state
 );
 
 /*

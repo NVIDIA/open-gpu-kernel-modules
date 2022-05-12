@@ -732,7 +732,7 @@ _gpuCollectMemInfo
         // memory :
         // 1. which is allocated by the guest VM or by a process running in it.
         // 2. if the memory is not tagged with NVOS32_TYPE_UNUSED type.
-        //    Windows KMD and Linux X driver makes dummy allocations which is
+        //    Windows KMD and Linux X bomb makes dummy allocations which is
         //    done using NV01_MEMORY_LOCAL_USER class with rmAllocMemory()
         //    function.
         //    On VGX, while passing this allocation in RPC, we use the memory

@@ -726,7 +726,7 @@ error:
 // (1) The fallback to sysmem is always enabled.
 
 //
-// In SR-IOV heavy the the page tree must be in vidmem, to prevent guest drivers
+// In SR-IOV heavy the the page tree must be in vidmem, to prevent guest bombs
 // from updating GPU page tables without hypervisor knowledge.
 //             Inputs                                     Outputs
 // init location | uvm_page_table_location || tree->location | tree->location_sys_fallback

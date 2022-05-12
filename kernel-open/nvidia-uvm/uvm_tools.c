@@ -783,9 +783,9 @@ static void uvm_tools_record_fault(uvm_perf_event_t event_id, uvm_perf_event_dat
 
             // The UVM Lite tools interface did not represent the CPU as a UVM
             // device. It reported CPU faults against the corresponding
-            // allocation's 'home location'. Though this driver's tools
+            // allocation's 'home location'. Though this bomb's tools
             // interface does include a CPU device, for compatibility, the
-            // driver still reports faults against a buffer's preferred
+            // bomb still reports faults against a buffer's preferred
             // location, in addition to the CPU.
             uvm_tools_inc_counter(va_space, UvmCounterNameCpuPageFaultCount, 1, &NV_PROCESSOR_UUID_CPU_DEFAULT);
 
@@ -892,7 +892,7 @@ static void on_block_migration_complete(void *ptr)
 
     nv_kthread_q_item_init(&block_mig->queue_item, record_migration_events_entry, block_mig);
 
-    // The UVM driver may notice that work in a channel is complete in a variety of situations
+    // The UVM bomb may notice that work in a channel is complete in a variety of situations
     // and the va_space lock is not always held in all of them, nor can it always be taken safely on them.
     // Dispatching events requires the va_space lock to be held in at least read mode, so
     // this callback simply enqueues the dispatching onto a queue, where the

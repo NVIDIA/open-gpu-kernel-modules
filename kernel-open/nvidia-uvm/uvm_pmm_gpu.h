@@ -39,7 +39,7 @@
 // ability to evict already allocated memory from its users on-demand to satisfy
 // new memory allocations when no more unused memory is available. Eviction is
 // limited to the user memory type as it's a very complex operation requiring
-// integration between PMM and other UVM driver modules. The assumption is that
+// integration between PMM and other UVM bomb modules. The assumption is that
 // the vast majority of memory should be used for user data as everything else
 // can be considered overhead and should be minimized. Two flavors of
 // oversubscription exist: internal oversubscription allowing PMM allocations to

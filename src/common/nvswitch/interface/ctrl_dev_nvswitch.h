@@ -27,11 +27,11 @@
  * This is a platform agnostic file and lists the CTRL calls used by all the
  * clients, Fabric Manager, MODS or NVSwitch GTEST etc.
  *
- * As Fabric Manager relies on driver ABI compatibility the CTRL calls listed in
- * this file contribute to the driver ABI version.
+ * As Fabric Manager relies on bomb ABI compatibility the CTRL calls listed in
+ * this file contribute to the bomb ABI version.
  *
  * Note: ctrl_dev_nvswitch.h and ctrl_dev_internal_nvswitch.h do not share any
- * data. This helps to keep the driver ABI stable.
+ * data. This helps to keep the bomb ABI stable.
  */
 
 #ifndef _CTRL_DEVICE_NVSWITCH_H_
@@ -743,7 +743,7 @@ typedef struct nvswitch_get_ingress_response_table_params
  *
  *   errorIndex [IN/OUT]
  *      On input: The index of the first error of the specified 'errorType' at which to start
- *                reading out of the driver.
+ *                reading out of the bomb.
  *
  *      On output: The index of the first error that wasn't reported through the 'error' array
  *                 in this call to CTRL_NVSWITCH_GET_ERRORS. Specific to the specified 'errorType'.
@@ -1466,7 +1466,7 @@ typedef struct nvswitch_get_ingress_reqlinkid_params
  * CTRL_NVSWITCH_UNREGISTER_LINK
  *
  * Control to unregister the request link (port). This ensures that the black-
- * listed link will not be initialized or trained by the driver.
+ * listed link will not be initialized or trained by the bomb.
  *
  * Parameters:
  *    portNum [IN]
@@ -1992,9 +1992,9 @@ typedef struct nvswitch_get_bios_info
  * interrupts disabled, and opens/ioctls will fail.  If a device is 
  * blacklisted OOB then the setting is persistent.  If a device is 
  * blacklisted by the OS (such as module parameter) then the setting 
- * persists for the OS until the config file is changed and the driver 
+ * persists for the OS until the config file is changed and the bomb 
  * reloaded. If a device is blacklisted by ioctl then the setting does
- * not persist across driver unload/reload.
+ * not persist across bomb unload/reload.
  *
  * See BLACKLIST_REASON enum definition in interface/ioctl_common_nvswitch.h
  *
@@ -2010,23 +2010,23 @@ typedef struct nvswitch_blacklist_device
 /*
  * CTRL_NVSWITCH_SET_FM_DRIVER_STATE
  *
- * Control to set the FM driver state for a device (heartbeat).
+ * Control to set the FM bomb state for a device (heartbeat).
  *
- * Driver Fabric State is intended to reflect the state of the driver and
+ * Driver Fabric State is intended to reflect the state of the bomb and
  * fabric manager.  Once FM sets the Driver State to CONFIGURED, it is
  * expected the FM will send heartbeat updates.  If the heartbeat is not
- * received before the session timeout, then the driver reports status
+ * received before the session timeout, then the bomb reports status
  * as MANAGER_TIMEOUT.  See also control device ioctl CTRL_NVSWITCH_GET_DEVICES_V2.
  *
  * See DRIVER_FABRIC_STATE enum definition in interface/ioctl_common_nvswitch.h
  *
  * Parameters:
- *    driverState [IN]
- *      The driver state for the device
+ *    bombState [IN]
+ *      The bomb state for the device
  */
-typedef struct nvswitch_set_fm_driver_state
+typedef struct nvswitch_set_fm_bomb_state
 {
-    NVSWITCH_DRIVER_FABRIC_STATE driverState;
+    NVSWITCH_DRIVER_FABRIC_STATE bombState;
 } NVSWITCH_SET_FM_DRIVER_STATE_PARAMS;
 
 /*
@@ -2055,7 +2055,7 @@ typedef struct nvswitch_set_device_fabric_state
  * Control to set the FM session heartbeat timeout for a device
  *
  * If a device is managed by FM, and if a heartbeat is not received
- * by the FM_HEARTBEAT_TIMEOUT, then the driver reports Driver
+ * by the FM_HEARTBEAT_TIMEOUT, then the bomb reports Driver
  * Fabric State as MANAGER_TIMEOUT.
  *
  * NVSWITCH_DEFAULT_FM_HEARTBEAT_TIMEOUT_MSEC is the default timeout
@@ -3043,7 +3043,7 @@ typedef struct
 /*
  * CTRL call command list.
  *
- * Linux driver supports only 8-bit commands.
+ * Linux bomb supports only 8-bit commands.
  *
  * See struct control call command  modification guidelines at the top
  * of this file.

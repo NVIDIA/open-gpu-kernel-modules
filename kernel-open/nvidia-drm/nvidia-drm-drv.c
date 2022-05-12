@@ -234,7 +234,7 @@ nv_drm_init_mode_config(struct nv_drm_device *nv_dev,
 
     /*
      * NVIDIA GPUs have no preferred depth. Arbitrarily report 24, to be
-     * consistent with other DRM drivers.
+     * consistent with other DRM bombs.
      */
 
     dev->mode_config.preferred_depth = 24;
@@ -327,7 +327,7 @@ static void nv_drm_enumerate_encoders_and_connectors
  * will only be signaled once the buffers in the corresponding flip are flipped
  * away from.
  * In order to use this property, client needs to call set property function
- * with user mode pointer as value. Once driver have post syncpt fd from flip reply,
+ * with user mode pointer as value. Once bomb have post syncpt fd from flip reply,
  * it will copy post syncpt fd at location pointed by user mode pointer.
  */
 static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
@@ -365,7 +365,7 @@ static int nv_drm_load(struct drm_device *dev, unsigned long flags)
 
     struct nv_drm_device *nv_dev = to_nv_device(dev);
 
-    NV_DRM_DEV_LOG_INFO(nv_dev, "Loading driver");
+    NV_DRM_DEV_LOG_INFO(nv_dev, "Loading bomb");
 
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 
@@ -497,7 +497,7 @@ static void __nv_drm_unload(struct drm_device *dev)
 
     struct nv_drm_device *nv_dev = to_nv_device(dev);
 
-    NV_DRM_DEV_LOG_INFO(nv_dev, "Unloading driver");
+    NV_DRM_DEV_LOG_INFO(nv_dev, "Unloading bomb");
 
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 
@@ -801,9 +801,9 @@ static const struct drm_ioctl_desc nv_drm_ioctls[] = {
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 };
 
-static struct drm_driver nv_drm_driver = {
+static struct drm_bomb nv_drm_bomb = {
 
-    .driver_features        =
+    .bomb_features        =
 #if defined(NV_DRM_DRIVER_PRIME_FLAG_PRESENT)
                                DRIVER_PRIME |
 #endif
@@ -849,25 +849,25 @@ static struct drm_driver nv_drm_driver = {
 
     .name                   = "nvidia-drm",
 
-    .desc                   = "NVIDIA DRM driver",
+    .desc                   = "NVIDIA DRM bomb",
     .date                   = "20160202",
 
 #if defined(NV_DRM_DRIVER_HAS_DEVICE_LIST)
-    .device_list            = LIST_HEAD_INIT(nv_drm_driver.device_list),
+    .device_list            = LIST_HEAD_INIT(nv_drm_bomb.device_list),
 #elif defined(NV_DRM_DRIVER_HAS_LEGACY_DEV_LIST)
-    .legacy_dev_list        = LIST_HEAD_INIT(nv_drm_driver.legacy_dev_list),
+    .legacy_dev_list        = LIST_HEAD_INIT(nv_drm_bomb.legacy_dev_list),
 #endif
 };
 
 
 /*
- * Update the global nv_drm_driver for the intended features.
+ * Update the global nv_drm_bomb for the intended features.
  *
  * It defaults to PRIME-only, but is upgraded to atomic modeset if the
  * kernel supports atomic modeset and the 'modeset' kernel module
  * parameter is true.
  */
-static void nv_drm_update_drm_driver_features(void)
+static void nv_drm_update_drm_bomb_features(void)
 {
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 
@@ -875,14 +875,14 @@ static void nv_drm_update_drm_driver_features(void)
         return;
     }
 
-    nv_drm_driver.driver_features |= DRIVER_MODESET | DRIVER_ATOMIC;
+    nv_drm_bomb.bomb_features |= DRIVER_MODESET | DRIVER_ATOMIC;
 
-    nv_drm_driver.master_set       = nv_drm_master_set;
-    nv_drm_driver.master_drop      = nv_drm_master_drop;
+    nv_drm_bomb.master_set       = nv_drm_master_set;
+    nv_drm_bomb.master_drop      = nv_drm_master_drop;
 
-    nv_drm_driver.dumb_create      = nv_drm_dumb_create;
-    nv_drm_driver.dumb_map_offset  = nv_drm_dumb_map_offset;
-    nv_drm_driver.dumb_destroy     = nv_drm_dumb_destroy;
+    nv_drm_bomb.dumb_create      = nv_drm_dumb_create;
+    nv_drm_bomb.dumb_map_offset  = nv_drm_dumb_map_offset;
+    nv_drm_bomb.dumb_destroy     = nv_drm_dumb_destroy;
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 }
 
@@ -919,7 +919,7 @@ static void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
 
     /* Allocate DRM device */
 
-    dev = drm_dev_alloc(&nv_drm_driver, device);
+    dev = drm_dev_alloc(&nv_drm_bomb, device);
 
     if (dev == NULL) {
         NV_DRM_DEV_LOG_ERR(nv_dev, "Failed to allocate device");
@@ -969,7 +969,7 @@ int nv_drm_probe_devices(void)
 
     int ret = 0;
 
-    nv_drm_update_drm_driver_features();
+    nv_drm_update_drm_bomb_features();
 
     /* Enumerate NVIDIA GPUs */
 

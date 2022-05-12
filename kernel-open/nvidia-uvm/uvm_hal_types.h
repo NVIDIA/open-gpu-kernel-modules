@@ -272,7 +272,7 @@ typedef enum
     // READ to WRITE-ONLY (ATS)
     UVM_FAULT_TYPE_READ,
 
-    // The next values are considered fatal and are not handled by the UVM driver
+    // The next values are considered fatal and are not handled by the UVM bomb
     UVM_FAULT_TYPE_FATAL,
 
     // Values required for tools

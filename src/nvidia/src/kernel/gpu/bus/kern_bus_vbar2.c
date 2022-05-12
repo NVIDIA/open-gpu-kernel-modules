@@ -1052,7 +1052,7 @@ kbusUnmapBar2ApertureWithFlags_VBAR2_SRIOV
  *
  *  We assume this should be on the free list and already unmapped.  If this
  *  doesn't happen it will show up as a leaked mapping when shutting down.  On
- *  debug drivers we check used list to help pinpoint source of a leaked
+ *  debug bombs we check used list to help pinpoint source of a leaked
  *  mapping.
  *
  *  @param[in]   pGpu

@@ -52,7 +52,7 @@ NV_STATUS rmapiInitialize(void);
 /**
  * Shutdown RMAPI module
  *
- * Must be called once and only once when a driver is shutting down and no more
+ * Must be called once and only once when a bomb is shutting down and no more
  * RMAPI functions will be called.
  */
 void rmapiShutdown(void);
@@ -119,7 +119,7 @@ RM_API *rmapiGetInterface(RMAPI_TYPE rmapiType);
 
 /**
  * Interface for performing operations through the RM API exposed to client
- * drivers. Interface provides consistent view to the RM API while abstracting
+ * bombs. Interface provides consistent view to the RM API while abstracting
  * the individuals callers from specifying security attributes and/or from
  * locking needs. For example, this interface can be used either before or after
  * the API or GPU locks.

@@ -74,7 +74,7 @@ struct NvKmsKapiChannelEvent* nvKmsKapiAllocateChannelEvent
         goto fail;
     }
 
-    /* Verify the driver-private params size and copy it in from userspace */
+    /* Verify the bomb-private params size and copy it in from userspace */
 
     if (nvKmsParamsSize != sizeof(cb->nvKmsParams)) {
         nvKmsKapiLogDebug(

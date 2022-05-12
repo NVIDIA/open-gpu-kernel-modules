@@ -153,9 +153,9 @@ nvswitch_inforom_ecc_unload
 
     //
     // Flush the data to InfoROM before unloading the object
-    // Currently the driver doesn't support deferred processing and so the
+    // Currently the bomb doesn't support deferred processing and so the
     // error logging path in the interrupt handler cannot defer the flush.
-    // This is WAR until the driver adds support for deferred processing
+    // This is WAR until the bomb adds support for deferred processing
     //
     nvswitch_inforom_ecc_flush(device);
 

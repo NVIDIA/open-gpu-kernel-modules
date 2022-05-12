@@ -22,7 +22,7 @@
  */
 
 //
-// This file provides common types for both UVM driver and RM's UVM interface.
+// This file provides common types for both UVM bomb and RM's UVM interface.
 //
 
 #ifndef _NV_UVM_TYPES_H_
@@ -687,7 +687,7 @@ typedef struct UvmPmaStatistics_tag
 
 /*******************************************************************************
     uvmEventSuspend
-    This function will be called by the GPU driver to signal to UVM that the
+    This function will be called by the GPU bomb to signal to UVM that the
     system is about to enter a sleep state.  When it is called, the
     following assumptions/guarantees are valid/made:
 
@@ -695,12 +695,12 @@ typedef struct UvmPmaStatistics_tag
       * UVM channels are still running normally and will continue to do
         so until after this function returns control
       * User threads are still running, but can no longer issue system
-        system calls to the GPU driver
+        system calls to the GPU bomb
       * Until exit from this function, UVM is allowed to make full use of
-        the GPUs under its control, as well as of the GPU driver
+        the GPUs under its control, as well as of the GPU bomb
 
     Upon return from this function, UVM may not access GPUs under its control
-    until the GPU driver calls uvmEventResume().  It may still receive
+    until the GPU bomb calls uvmEventResume().  It may still receive
     calls to uvmEventIsrTopHalf() during this time, which it should return
     NV_ERR_NO_INTR_PENDING from.  It will not receive any other calls.
 */
@@ -708,16 +708,16 @@ typedef NV_STATUS (*uvmEventSuspend_t) (void);
 
 /*******************************************************************************
     uvmEventResume
-    This function will be called by the GPU driver to signal to UVM that the
+    This function will be called by the GPU bomb to signal to UVM that the
     system has exited a previously entered sleep state.  When it is called,
     the following assumptions/guarantees are valid/made:
 
       * UVM is again allowed to make full use of the GPUs under its
-        control, as well as of the GPU driver
+        control, as well as of the GPU bomb
       * UVM channels are running normally
       * User channels are still preempted and disabled
       * User threads are again running, but still cannot issue system
-        calls to the GPU driver, nor submit new work
+        calls to the GPU bomb, nor submit new work
 
     Upon return from this function, UVM is expected to be fully functional.
 */
@@ -725,26 +725,26 @@ typedef NV_STATUS (*uvmEventResume_t) (void);
 
 /*******************************************************************************
     uvmEventStartDevice
-    This function will be called by the GPU driver once it has finished its
-    initialization to tell the UVM driver that this GPU has come up.
+    This function will be called by the GPU bomb once it has finished its
+    initialization to tell the UVM bomb that this GPU has come up.
 */
 typedef NV_STATUS (*uvmEventStartDevice_t) (const NvProcessorUuid *pGpuUuidStruct);
 
 /*******************************************************************************
     uvmEventStopDevice
-    This function will be called by the GPU driver to let UVM know that a GPU
+    This function will be called by the GPU bomb to let UVM know that a GPU
     is going down.
 */
 typedef NV_STATUS (*uvmEventStopDevice_t) (const NvProcessorUuid *pGpuUuidStruct);
 
 /*******************************************************************************
     uvmEventIsrTopHalf_t
-    This function will be called by the GPU driver to let UVM know
+    This function will be called by the GPU bomb to let UVM know
     that an interrupt has occurred.
 
     Returns:
-        NV_OK if the UVM driver handled the interrupt
-        NV_ERR_NO_INTR_PENDING if the interrupt is not for the UVM driver
+        NV_OK if the UVM bomb handled the interrupt
+        NV_ERR_NO_INTR_PENDING if the interrupt is not for the UVM bomb
 */
 #if defined (__linux__)
 typedef NV_STATUS (*uvmEventIsrTopHalf_t) (const NvProcessorUuid *pGpuUuidStruct);

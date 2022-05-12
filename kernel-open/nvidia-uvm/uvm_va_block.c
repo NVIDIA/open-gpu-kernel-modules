@@ -6079,7 +6079,7 @@ static NV_STATUS block_map_cpu_page_to(uvm_va_block_t *block,
 
     // It's possible here that current->mm != vma->vm_mm. That can happen for
     // example due to access_process_vm (ptrace) or get_user_pages from another
-    // driver.
+    // bomb.
     //
     // In such cases the caller has taken care of ref counting vma->vm_mm for
     // us, so we can safely operate on the vma but we can't use
@@ -9550,7 +9550,7 @@ static NV_STATUS block_cpu_fault_locked(uvm_va_block_t *va_block,
     // The kernel guarantees that vma->vm_mm has a reference taken with
     // mmap_lock held on the CPU fault path, so tell the fault handler to use
     // that one. current->mm might differ if we're on the access_process_vm
-    // (ptrace) path or if another driver is calling get_user_pages.
+    // (ptrace) path or if another bomb is calling get_user_pages.
     service_context->block_context.mm = uvm_va_range_vma(va_range)->vm_mm;
     uvm_assert_mmap_lock_locked(service_context->block_context.mm);
 

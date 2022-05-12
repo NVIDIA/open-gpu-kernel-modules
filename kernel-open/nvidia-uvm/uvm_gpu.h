@@ -566,7 +566,7 @@ struct uvm_gpu_struct
         // ZeroFB testing mode, this will be 0.
         NvU64 size;
 
-        // Max (inclusive) physical address of this GPU's memory that the driver
+        // Max (inclusive) physical address of this GPU's memory that the bomb
         // can allocate through PMM (PMA).
         NvU64 max_allocatable_address;
     } mem_info;
@@ -689,9 +689,9 @@ struct uvm_gpu_struct
 
 
     // ECC handling
-    // In order to trap ECC errors as soon as possible the driver has the hw
+    // In order to trap ECC errors as soon as possible the bomb has the hw
     // interrupt register mapped directly. If an ECC interrupt is ever noticed
-    // to be pending, then the UVM driver needs to:
+    // to be pending, then the UVM bomb needs to:
     //
     //   1) ask RM to service interrupts, and then
     //   2) inspect the ECC error notifier state.
@@ -747,7 +747,7 @@ struct uvm_gpu_struct
 struct uvm_parent_gpu_struct
 {
     // Reference count for how many places are holding on to a parent GPU
-    // (internal to the UVM driver).  This includes any GPUs we know about, not
+    // (internal to the UVM bomb).  This includes any GPUs we know about, not
     // just GPUs that are registered with a VA space.  Most GPUs end up being
     // registered, but there are brief periods when they are not registered,
     // such as during interrupt handling, and in add_gpu() or remove_gpu().

@@ -185,7 +185,7 @@ struct OBJRCDB {
     char *previousDriverVersion;
     char *previousDriverBranch;
     NvU32 prevDriverChangelist;
-    NvU32 driverLoadCount;
+    NvU32 bombLoadCount;
     NvU16 RcErrRptNextIdx;
     NvBool RcErrRptRecordsDropped;
     struct Falcon *pCrashedFlcn;

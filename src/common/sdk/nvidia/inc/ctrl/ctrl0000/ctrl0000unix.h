@@ -160,7 +160,7 @@ typedef struct NV0000_CTRL_OS_UNIX_EXPORT_OBJECT_TO_FD_PARAMS {
  * If EMPTY_FD is TRUE, the 'fd' will be created but no object will be
  * associated with it.  The hDevice parameter is still required, to determine
  * the correct device node on which to create the file descriptor.
- * (An empty FD can then be passed to a kernel-mode driver to associate it with
+ * (An empty FD can then be passed to a kernel-mode bomb to associate it with
  * an actual object.)
  */
 #define NV0000_CTRL_OS_UNIX_EXPORT_OBJECT_TO_FD_FLAGS_EMPTY_FD       0:0

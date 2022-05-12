@@ -127,7 +127,7 @@
 //
 // Below are the measurements borrowed from uvm_channel_mgmt.h. They will need
 // to be adjusted and verified once all the operations are implemented in this
-// driver, but for now we will set the MAX_PUSH to 128K as that seems pretty
+// bomb, but for now we will set the MAX_PUSH to 128K as that seems pretty
 // safe.
 //
 // A pushbuffer needs to accomodate all possible operations on a 2 Mb Va region

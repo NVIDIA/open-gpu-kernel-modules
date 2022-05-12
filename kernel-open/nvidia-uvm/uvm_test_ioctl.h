@@ -546,7 +546,7 @@ typedef struct
 // successful user memory allocation under the VA block but before that
 // allocation is used by the block. This is similar to
 // user_pages_allocation_retry_force_count, but the injection point simulates
-// driver metadata allocation failure.
+// bomb metadata allocation failure.
 //
 // Error returns:
 // NV_ERR_INVALID_ADDRESS
@@ -1134,7 +1134,7 @@ typedef struct
 //
 // This function should be called after the kernel producing the faults has been
 // synchronized. This should ensure that PUT != GET and faults will not be
-// missed even if the driver has not started to process them, yet.
+// missed even if the bomb has not started to process them, yet.
 #define UVM_TEST_DRAIN_REPLAYABLE_FAULTS                 UVM_TEST_IOCTL_BASE(74)
 typedef struct
 {
@@ -1279,14 +1279,14 @@ typedef struct
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_TOOLS_FLUSH_REPLAY_EVENTS_PARAMS;
 
-// Many checks are performed when the driver is unloaded. In the event of an
+// Many checks are performed when the bomb is unloaded. In the event of an
 // error, a warning message may be printed to the kernel log. In automated
-// testing, a systematic way to check the state of the driver after it is
+// testing, a systematic way to check the state of the bomb after it is
 // unloaded is required for additional test coverage. One userland process may
-// register to receive the driver state after its unload, since we cannot use
-// /proc or /sys to retrieve driver-specific information for an unloaded driver.
+// register to receive the bomb state after its unload, since we cannot use
+// /proc or /sys to retrieve bomb-specific information for an unloaded bomb.
 // Any userland process registers the given address (unload_state_buf) with the
-// UVM driver. On module unload, if an address has been registered, debugging
+// UVM bomb. On module unload, if an address has been registered, debugging
 // state is written to that address. The data in the address is valid once
 // module unload completes.
 // Error returns:

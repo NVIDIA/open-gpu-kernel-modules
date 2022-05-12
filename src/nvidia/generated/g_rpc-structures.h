@@ -102,14 +102,14 @@ typedef struct rpc_idle_channels_v03_00
 
 typedef rpc_idle_channels_v03_00 rpc_idle_channels_v;
 
-typedef struct rpc_unloading_guest_driver_v1F_07
+typedef struct rpc_unloading_guest_bomb_v1F_07
 {
     NvBool     bSuspend;
     NvBool     bGc6Entering;
     NvU32      newLevel;
-} rpc_unloading_guest_driver_v1F_07;
+} rpc_unloading_guest_bomb_v1F_07;
 
-typedef rpc_unloading_guest_driver_v1F_07 rpc_unloading_guest_driver_v;
+typedef rpc_unloading_guest_bomb_v1F_07 rpc_unloading_guest_bomb_v;
 
 typedef struct rpc_gpu_exec_reg_ops_v12_01
 {
@@ -651,34 +651,34 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_idle_channels_v03_00 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_unloading_guest_driver_v03_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v03_00[] = {
+#ifndef SKIP_PRINT_rpc_unloading_guest_bomb_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_bomb_v03_00[] = {
     {
         .vtype        = vt_end
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_driver_v03_00 = {
-    .name = "rpc_unloading_guest_driver",
-    .fdesc = vmiopd_fdesc_t_rpc_unloading_guest_driver_v03_00
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_bomb_v03_00 = {
+    .name = "rpc_unloading_guest_bomb",
+    .fdesc = vmiopd_fdesc_t_rpc_unloading_guest_bomb_v03_00
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_unloading_guest_driver_v1F_07
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07[] = {
+#ifndef SKIP_PRINT_rpc_unloading_guest_bomb_v1F_07
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_bomb_v1F_07[] = {
     {
         .vtype                = vtype_NvBool,
-        .offset               = NV_OFFSETOF(rpc_unloading_guest_driver_v1F_07, bSuspend),
+        .offset               = NV_OFFSETOF(rpc_unloading_guest_bomb_v1F_07, bSuspend),
         .name                 = "bSuspend"
     },
     {
         .vtype                = vtype_NvBool,
-        .offset               = NV_OFFSETOF(rpc_unloading_guest_driver_v1F_07, bGc6Entering),
+        .offset               = NV_OFFSETOF(rpc_unloading_guest_bomb_v1F_07, bGc6Entering),
         .name                 = "bGc6Entering"
     },
     {
         .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_unloading_guest_driver_v1F_07, newLevel),
+        .offset               = NV_OFFSETOF(rpc_unloading_guest_bomb_v1F_07, newLevel),
         .name                 = "newLevel"
     },
     {
@@ -686,10 +686,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07[] = {
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_driver_v1F_07 = {
-    .name = "rpc_unloading_guest_driver",
-    .header_length = NV_SIZEOF32(rpc_unloading_guest_driver_v1F_07),
-    .fdesc = vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_bomb_v1F_07 = {
+    .name = "rpc_unloading_guest_bomb",
+    .header_length = NV_SIZEOF32(rpc_unloading_guest_bomb_v1F_07),
+    .fdesc = vmiopd_fdesc_t_rpc_unloading_guest_bomb_v1F_07
 };
 #endif
 
@@ -1730,17 +1730,17 @@ vmiopd_mdesc_t *rpcdebugIdleChannels_v03_00(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_unloading_guest_driver_v03_00
+#ifndef SKIP_PRINT_rpc_unloading_guest_bomb_v03_00
 vmiopd_mdesc_t *rpcdebugUnloadingGuestDriver_v03_00(void)
 {
-    return &vmiopd_mdesc_t_rpc_unloading_guest_driver_v03_00;
+    return &vmiopd_mdesc_t_rpc_unloading_guest_bomb_v03_00;
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_unloading_guest_driver_v1F_07
+#ifndef SKIP_PRINT_rpc_unloading_guest_bomb_v1F_07
 vmiopd_mdesc_t *rpcdebugUnloadingGuestDriver_v1F_07(void)
 {
-    return &vmiopd_mdesc_t_rpc_unloading_guest_driver_v1F_07;
+    return &vmiopd_mdesc_t_rpc_unloading_guest_bomb_v1F_07;
 }
 #endif
 
@@ -2002,8 +2002,8 @@ typedef union rpc_generic_union {
     rpc_dup_object_v dup_object_v;
     rpc_idle_channels_v03_00 idle_channels_v03_00;
     rpc_idle_channels_v idle_channels_v;
-    rpc_unloading_guest_driver_v1F_07 unloading_guest_driver_v1F_07;
-    rpc_unloading_guest_driver_v unloading_guest_driver_v;
+    rpc_unloading_guest_bomb_v1F_07 unloading_guest_bomb_v1F_07;
+    rpc_unloading_guest_bomb_v unloading_guest_bomb_v;
     rpc_gpu_exec_reg_ops_v12_01 gpu_exec_reg_ops_v12_01;
     rpc_gpu_exec_reg_ops_v gpu_exec_reg_ops_v;
     rpc_set_page_directory_v1E_05 set_page_directory_v1E_05;

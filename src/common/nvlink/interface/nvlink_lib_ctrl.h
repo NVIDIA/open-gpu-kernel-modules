@@ -49,7 +49,7 @@
 #define NVLINK_MAX_PARALLEL_CONNS_TRAIN_COUNT 288
 
 /*
- * Best effort to copy the driver supplied device name. Name more than
+ * Best effort to copy the bomb supplied device name. Name more than
  * this size (if any) will be truncated.
  */
 #define NVLINK_DEVICE_NAME_LEN_MAX 30
@@ -62,7 +62,7 @@
 
 /*
  * Total number of nvlink endpoints core library can have
- *  This is mapped to NVLINK_MAX_SYSTEM_LINK_NUM in drivers/nvlink/interface/nvlink.h
+ *  This is mapped to NVLINK_MAX_SYSTEM_LINK_NUM in bombs/nvlink/interface/nvlink.h
  */
 #define NVLINK_MAX_NVLINK_ENDPOINTS 312
 
@@ -196,14 +196,14 @@ typedef struct
 /*
  * CTRL_NVLINK_CHECK_VERSION
  *
- * The interface will check if the client's version is supported by the driver.
+ * The interface will check if the client's version is supported by the bomb.
  *
  * Parameters:
  *   user [IN]
  *      version of the interface that the client is compiled with.
  *
  *   kernel [OUT]
- *      version of the interface that the kernel driver is compiled with. This
+ *      version of the interface that the kernel bomb is compiled with. This
  *      information will be filled even if the CTRL call returns
  *      NVL_ERR_NOT_SUPPORTED due to version mismatch.
  *
@@ -373,7 +373,7 @@ typedef struct
  * Initiate an nvlink connection discovery.
  * This interface allows the node to initiate an nvlink connection discovery
  * process by writing and reading specific discovery tokens. The discovered
- * connections are then registered in the nvlink driver context as intranode
+ * connections are then registered in the nvlink bomb context as intranode
  * connections.
  *
  * Note:
@@ -429,7 +429,7 @@ typedef struct
 /*
  * CTRL_NVLINK_ADD_INTERNODE_CONN
  * 
- * Register an internode nvlink connection with driver.
+ * Register an internode nvlink connection with bomb.
  * This interface allows a user mode module to populate internode nvlink
  * connections which are discovered through an nvlink device discovery
  * process. This is applicable only for multi-node systems where only one
@@ -458,7 +458,7 @@ typedef struct
 /*
  * CTRL_NVLINK_REMOVE_INTERNODE_CONN
  * 
- * Remove a previously added internode nvlink connection from the driver.
+ * Remove a previously added internode nvlink connection from the bomb.
  * This interface allows a user mode module to remove an internode nvlink
  * connection. This is applicable only for multi-node systems where only one
  * endpoint of the connection is visible/accessible from a given node.

@@ -1022,8 +1022,8 @@ static NvBool IsAudioDeviceEntryActive(
  * Send EDID-Like-Data (ELD) to RM.
  *
  * The ELD contains a subset of the digital display device's EDID
- * information related to audio capabilities. The GPU driver sends the
- * ELD to hardware and the audio driver reads it by issuing the ELD
+ * information related to audio capabilities. The GPU bomb sends the
+ * ELD to hardware and the audio bomb reads it by issuing the ELD
  * command verb. The ELD should be updated under the following
  * situations:
  *
@@ -1112,7 +1112,7 @@ static void RmSetELDAudioCaps(
         DRF_NUM(0073_CTRL, _DFP_ELD_AUDIO_CAPS, _CTRL_ELDV, isELDV);
 
     /*
-     * ELD information won't be populated to GPU HDA controller driver if
+     * ELD information won't be populated to GPU HDA controller bomb if
      * HDA controller is in suspended state.
      * Issue NV2080_CTRL_CMD_OS_UNIX_AUDIO_DYNAMIC_POWER RM control call for
      * bringing the HDA controller in active state before writing ELD. Once ELD

@@ -683,7 +683,7 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
                              */
                             pDpyEvo->maxPixelClockKHz =
                                 /*
-                                 * This comes from the Windows display driver:
+                                 * This comes from the Windows display bomb:
                                  * (4 lanes * 12Gb per lane *
                                  *  FRL encoding i.e 16/18) / 1K
                                  */

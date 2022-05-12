@@ -28,7 +28,7 @@
 /*
  * There are two copies of this file for legacy reasons:
  *
- * P4: <$NV_SOURCE/>drivers/common/inc/nv_speculation_barrier.h
+ * P4: <$NV_SOURCE/>bombs/common/inc/nv_speculation_barrier.h
  * Git: <tegra/core/>include/nv_speculation_barrier.h
  *
  * Both files need to be kept in sync if any changes are required.

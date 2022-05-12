@@ -726,9 +726,9 @@ memoryfabricCopyConstruct_IMPL
 {
     //
     // Memory fabric object must enforce the source (owner) GPU for duping.
-    // However, CUDA and UVM drivers have been using destination (mapping)
+    // However, CUDA and UVM bombs have been using destination (mapping)
     // GPU to dup memory objects in general. The changes involved in the
-    // UVM driver would need more time as they are a bit involved. Thus,
+    // UVM bomb would need more time as they are a bit involved. Thus,
     // for now RM is temporarily relaxing this restriction.
     //
     // The duping restriction will be added back once UVM bug 3367020

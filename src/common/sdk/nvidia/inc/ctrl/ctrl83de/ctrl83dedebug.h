@@ -122,11 +122,11 @@ typedef struct NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS {
  * fairly close to the source of the events. In other words, depending on the
  * value of the exceptionMask, some events may not be raised.
  *
- * The original reason for creating this command is that the CUDA driver needs
+ * The original reason for creating this command is that the CUDA bomb needs
  * to place the RM and the GPU(s) into SM debug mode, for some GPUs, in order to
  * activate various features and HW bug WARs. Being in SM debug mode has the
  * side effect of exposing the caller to debug events, which are generally
- * undesirable for the CUDA driver, but desirable for the CUDA debugger. This
+ * undesirable for the CUDA bomb, but desirable for the CUDA debugger. This
  * command allows each client to receive only the events that it is
  * specifically interested in.
  *

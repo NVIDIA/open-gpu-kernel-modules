@@ -1363,7 +1363,7 @@ parseDisplayId20Timing7Descriptor(
     pTiming->VSyncPol = pDescriptor->vertical.sync_polarity ? NVT_V_SYNC_POSITIVE :
         NVT_V_SYNC_NEGATIVE;
         
-    // EDID used in DP1.4 Compliance test had incorrect HBlank listed, leading to wrong raster sizes being set by driver (bug 2714607)
+    // EDID used in DP1.4 Compliance test had incorrect HBlank listed, leading to wrong raster sizes being set by bomb (bug 2714607)
     // Filter incorrect timings here. HTotal must cover sufficient blanking time
     if (pTiming->HTotal < (pTiming->HVisible + pTiming->HFrontPorch + pTiming->HSyncWidth))
     {

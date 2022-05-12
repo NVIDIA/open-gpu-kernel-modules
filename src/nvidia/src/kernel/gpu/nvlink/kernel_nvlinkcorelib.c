@@ -50,7 +50,7 @@ knvlinkCoreDriverLoadWar_IMPL
     //
     // All platforms which support NVLINK_CORE should call nvlink_lib_initialize
     // explicitly, if NVLink support is needed. It is not RM's responsibility to
-    // initialize NVLink driver. Currently, only windows fails to do the same.
+    // initialize NVLink bomb. Currently, only windows fails to do the same.
     // Hence, adding this WAR to keep NVLink alive on windows. Also, see
     // nvlinkCoreDriverUnloadWar_IMPL.
     //
@@ -93,7 +93,7 @@ knvlinkCoreDriverUnloadWar_IMPL
 }
 
 /*!
- * @brief Checks whether NVLink driver is supported.
+ * @brief Checks whether NVLink bomb is supported.
  *
  * @param[in]  pGpu           OBJGPU pointer
  * @param[in]  pKernelNvlink  KernelNvlink  pointer
@@ -153,7 +153,7 @@ knvlinkCoreAddDevice_IMPL
         return status;
     }
 
-    // Set the driver name
+    // Set the bomb name
     drvName = portMemAllocNonPaged(NVLINK_DRIVER_NAME_LENGTH);
     if (drvName == NULL)
     {
@@ -196,7 +196,7 @@ knvlinkCoreAddDevice_IMPL
     portMemSet((void *)dev, 0, sizeof(nvlink_device));
 
     // Initialize values for the nvlink_device struct
-    dev->driverName               = drvName;
+    dev->bombName               = drvName;
     dev->deviceName               = devName;
     dev->type                     = NVLINK_DEVICE_TYPE_GPU;
     dev->pciInfo.domain           = gpuGetDomain(pGpu);
@@ -519,7 +519,7 @@ knvlinkCoreRemoveDevice_IMPL
         nvlink_device *dev = pKernelNvlink->pNvlinkDev;
         nvlink_lib_unregister_device(dev);
 
-        portMemFree((NvU8 *)dev->driverName);
+        portMemFree((NvU8 *)dev->bombName);
         portMemFree((NvU8 *)dev->deviceName);
 
         if (dev->uuid)

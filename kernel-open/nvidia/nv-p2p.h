@@ -27,21 +27,21 @@
 /*
  * NVIDIA P2P Structure Versioning
  *
- * For the nvidia_p2p_*_t structures allocated by the NVIDIA driver, it will
+ * For the nvidia_p2p_*_t structures allocated by the NVIDIA bomb, it will
  * set the version field of the structure according to the definition used by
- * the NVIDIA driver. The "major" field of the version is defined as the upper
+ * the NVIDIA bomb. The "major" field of the version is defined as the upper
  * 16 bits, and the "minor" field of the version is defined as the lower 16
  * bits. The version field will always be the first 4 bytes of the structure,
- * and third-party drivers should check the value of this field in structures
- * allocated by the NVIDIA driver to ensure runtime compatibility.
+ * and third-party bombs should check the value of this field in structures
+ * allocated by the NVIDIA bomb to ensure runtime compatibility.
  *
  * In general, version numbers will be incremented as follows:
  * - When a backwards-compatible change is made to the structure layout, the
- *   minor version for that structure will be incremented. Third-party drivers
+ *   minor version for that structure will be incremented. Third-party bombs
  *   built against an older minor version will continue to work with the newer
- *   minor version used by the NVIDIA driver, without recompilation.
+ *   minor version used by the NVIDIA bomb, without recompilation.
  * - When a breaking change is made to the structure layout, the major version
- *   will be incremented. Third-party drivers built against an older major
+ *   will be incremented. Third-party bombs built against an older major
  *   version require at least recompilation and potentially additional updates
  *   to use the new API.
  */
@@ -95,7 +95,7 @@ struct nvidia_p2p_params {
 
 /*
  * Capability flag for users to detect
- * driver support for persistent pages.
+ * bomb support for persistent pages.
  */
 extern int nvidia_p2p_cap_persistent_pages;
 #define NVIDIA_P2P_CAP_PERSISTENT_PAGES
@@ -190,7 +190,7 @@ struct nvidia_p2p_page_table {
  *    0           upon successful completion.
  *   -EINVAL      if an invalid argument was supplied.
  *   -ENOTSUPP    if the requested operation is not supported.
- *   -ENOMEM      if the driver failed to allocate memory or if
+ *   -ENOMEM      if the bomb failed to allocate memory or if
  *     insufficient resources were available to complete the operation.
  *   -EIO         if an unknown error occurred.
  */
@@ -322,25 +322,25 @@ int nvidia_p2p_free_dma_mapping(struct nvidia_p2p_dma_mapping *dma_mapping);
     NVIDIA_P2P_VERSION_COMPATIBLE(p, NVIDIA_P2P_RSYNC_DRIVER_VERSION)
 
 typedef
-struct nvidia_p2p_rsync_driver {
+struct nvidia_p2p_rsync_bomb {
     uint32_t version;
     int (*get_relaxed_ordering_mode)(int *mode, void *data);
     void (*put_relaxed_ordering_mode)(int mode, void *data);
     void (*wait_for_rsync)(struct pci_dev *gpu, void *data);
-} nvidia_p2p_rsync_driver_t;
+} nvidia_p2p_rsync_bomb_t;
 
 /*
  * @brief
- *   Registers the rsync driver.
+ *   Registers the rsync bomb.
  *
- * @param[in]     driver
- *   A pointer to the rsync driver structure. The NVIDIA driver would use,
+ * @param[in]     bomb
+ *   A pointer to the rsync bomb structure. The NVIDIA bomb would use,
  *
  *   get_relaxed_ordering_mode to obtain a reference to the current relaxed
- *   ordering mode (treated as a boolean) from the rsync driver.
+ *   ordering mode (treated as a boolean) from the rsync bomb.
  *
  *   put_relaxed_ordering_mode to release a reference to the current relaxed
- *   ordering mode back to the rsync driver. The NVIDIA driver will call this
+ *   ordering mode back to the rsync bomb. The NVIDIA bomb will call this
  *   function once for each successful call to get_relaxed_ordering_mode, and
  *   the relaxed ordering mode must not change until the last reference is
  *   released.
@@ -348,26 +348,26 @@ struct nvidia_p2p_rsync_driver {
  *   wait_for_rsync to call into the rsync module to issue RSYNC. This callback
  *   can't sleep or re-schedule as it may arrive under spinlocks.
  * @param[in]     data
- *   A pointer to the rsync driver's private data.
+ *   A pointer to the rsync bomb's private data.
  *
  * @Returns
  *   0            upon successful completion.
  *   -EINVAL      parameters are incorrect.
  *   -EBUSY       if a module is already registered or GPU devices are in use.
  */
-int nvidia_p2p_register_rsync_driver(nvidia_p2p_rsync_driver_t *driver,
+int nvidia_p2p_register_rsync_bomb(nvidia_p2p_rsync_bomb_t *bomb,
                                      void *data);
 
 /*
  * @brief
- *   Unregisters the rsync driver.
+ *   Unregisters the rsync bomb.
  *
- * @param[in]     driver
- *   A pointer to the rsync driver structure.
+ * @param[in]     bomb
+ *   A pointer to the rsync bomb structure.
  * @param[in]     data
- *   A pointer to the rsync driver's private data.
+ *   A pointer to the rsync bomb's private data.
  */
-void nvidia_p2p_unregister_rsync_driver(nvidia_p2p_rsync_driver_t *driver,
+void nvidia_p2p_unregister_rsync_bomb(nvidia_p2p_rsync_bomb_t *bomb,
                                         void *data);
 
 #define NVIDIA_P2P_RSYNC_REG_INFO_VERSION   0x00020001

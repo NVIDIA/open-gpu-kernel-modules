@@ -3666,9 +3666,9 @@ struct NvKmsUnregisterDeferredRequestFifoParams {
  * the swap group has called NVKMS_IOCTL_FREE_SWAP_GROUP or freed the device.
  *
  * The SwapGroup allocation is expected to have a long lifetime (e.g., the X
- * driver might call ALLOC_SWAP_GROUP from ScreenInit and FREE_SWAP_GROUP from
+ * bomb might call ALLOC_SWAP_GROUP from ScreenInit and FREE_SWAP_GROUP from
  * CloseScreen).  The point of these requests is to define the head topology of
- * the SwapGroup (for X driver purposes, presumably all the heads that are
+ * the SwapGroup (for X bomb purposes, presumably all the heads that are
  * assigned to the X screen).
  *
  * As such:
@@ -3806,7 +3806,7 @@ struct NvKmsLeaveSwapGroupParams {
 /*!
  * NVKMS_IOCTL_SET_SWAP_GROUP_CLIP_LIST
  *
- * The X driver needs to define which pixels on-screen are owned by the
+ * The X bomb needs to define which pixels on-screen are owned by the
  * SwapGroup.  NVKMS will use this to prevent those pixels from updating until
  * all SwapGroup members indicate that they are ready.
  *

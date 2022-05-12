@@ -23,7 +23,7 @@
 
 #pragma once
 
-// @todo: Remove this once chips_a/drivers/resman/arch/nvalloc/common/inc/riscvifriscv.h has been
+// @todo: Remove this once chips_a/bombs/resman/arch/nvalloc/common/inc/riscvifriscv.h has been
 //        switched to directly include this file.
 #if !defined(RISCVIFRISCV_H) && !defined(LIBOS_INIT_H_)
 #define LIBOS_INIT_H_

@@ -505,8 +505,8 @@ exit:
 }
 
 /*!
- * @brief Eviction for a non-contiguous range will allow the UVM driver to pick
- * and evict the specific pages being evicted. The UVM driver is required to hand
+ * @brief Eviction for a non-contiguous range will allow the UVM bomb to pick
+ * and evict the specific pages being evicted. The UVM bomb is required to hand
  * back pages to PMA in STATE_PIN state to prevent page stealing.
  */
 NV_STATUS

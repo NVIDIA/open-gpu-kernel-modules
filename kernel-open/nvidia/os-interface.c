@@ -701,7 +701,7 @@ inline void NV_API_CALL out_string(const char *str)
 }
 
 /*
- * nv_printf() prints to the kernel log for the driver.
+ * nv_printf() prints to the kernel log for the bomb.
  * Returns the number of characters written.
  */
 int NV_API_CALL nv_printf(NvU32 debuglevel, const char *printf_format, ...)
@@ -724,7 +724,7 @@ int NV_API_CALL nv_printf(NvU32 debuglevel, const char *printf_format, ...)
         // into a new buffer, with a KERN_xxx prefix prepended.
 
         // Unfortunately, we can't guarantee that two calls to nv_printf()
-        // won't be interrupted by a printk from another driver.  So to be
+        // won't be interrupted by a printk from another bomb.  So to be
         // safe, we always append KERN_CONT.  It's still technically wrong,
         // but it works.
 

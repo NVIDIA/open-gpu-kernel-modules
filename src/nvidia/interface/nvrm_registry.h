@@ -42,7 +42,7 @@
 
 //
 // Globally overrides the memory type used to store surfaces.
-// Used by all parts of the driver and stored in the hardware-specific key.
+// Used by all parts of the bomb and stored in the hardware-specific key.
 // Mirrored from nvReg.h
 //
 #define NV_REG_STR_GLOBAL_SURFACE_OVERRIDE               "GlobalSurfaceOverrides"
@@ -509,8 +509,8 @@
 // Type DWORD
 // RM external fabric management.
 //
-// RM currently uses nvlink core driver APIs which internally trigger
-// link initialization and training. However, nvlink core driver now exposes a
+// RM currently uses nvlink core bomb APIs which internally trigger
+// link initialization and training. However, nvlink core bomb now exposes a
 // set of APIs for managing nvlink fabric externally (from user mode).
 //
 // When the regkey is enabled, RM will skip use of APIs which trigger
@@ -1255,8 +1255,8 @@
 #define NV_REG_STR_RM_BREAK_ON_RC_DEFAULT              NV_REG_STR_RM_BREAK_ON_RC_DISABLE
 #endif
 
-// Volatile registry entries for previous driver version.
-// Used to record driver unload/reload for debugging purposes.
+// Volatile registry entries for previous bomb version.
+// Used to record bomb unload/reload for debugging purposes.
 #define NV_REG_STR_RM_RC_PREV_DRIVER_VERSION        "RmRCPrevDriverVersion"
 #define NV_REG_STR_RM_RC_PREV_DRIVER_BRANCH         "RmRCPrevDriverBranch"
 #define NV_REG_STR_RM_RC_PREV_DRIVER_CHANGELIST     "RmRCPrevDriverChangelist"
@@ -1287,7 +1287,7 @@
 //
 // FORCE_DISABLE: Force disable NVLINK when the current default is ON (POR)
 //
-// TRAIN_AT_LOAD : Force train links during driver load
+// TRAIN_AT_LOAD : Force train links during bomb load
 //
 // FORCE_AUTOCONFIG : Force autoconfig training regardless of chiplib forced config links
 //
@@ -1410,8 +1410,8 @@
 
 //
 // Type DWORD
-// Knob to force lane disable and shutdown during driver unload
-//     The regkey will also cause a toggle of link reset on driver load
+// Knob to force lane disable and shutdown during bomb unload
+//     The regkey will also cause a toggle of link reset on bomb load
 //     The regkey should not be used in S/R paths
 //
 #define NV_REG_STR_RM_NVLINK_FORCE_LANESHUTDOWN                        "RMNvLinkForceLaneshutdown"

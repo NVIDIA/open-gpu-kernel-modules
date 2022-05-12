@@ -535,7 +535,7 @@ gvaspaceConstruct__IMPL
     }
     if (flags & VASPACE_FLAGS_IS_EXTERNALLY_OWNED)
     {
-        // This address space is managed by the UVM driver.
+        // This address space is managed by the UVM bomb.
        pGVAS->bIsExternallyOwned = NV_TRUE;
     }
     if (flags & VASPACE_FLAGS_ENABLE_ATS)

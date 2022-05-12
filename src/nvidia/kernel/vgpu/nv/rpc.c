@@ -766,7 +766,7 @@ NV_STATUS RmRpcSetGuestSystemInfo(OBJGPU *pGpu, OBJRPC *pRpc)
 
                 NV_RM_RPC_LOG(pGpu, "######## Guest NVIDIA Driver Information: ########", NV_VGPU_LOG_LEVEL_NOTICE);
                 NV_RM_RPC_LOG(pGpu, "Driver Version: "NV_VERSION_STRING, NV_VGPU_LOG_LEVEL_NOTICE);
-                NV_RM_RPC_LOG(pGpu, "Incompatible Guest/Host drivers: Host VGX version is older than the minimum version "
+                NV_RM_RPC_LOG(pGpu, "Incompatible Guest/Host bombs: Host VGX version is older than the minimum version "
                              "supported by the Guest. Disabling vGPU.", NV_VGPU_LOG_LEVEL_ERROR);
             }
         }
@@ -813,23 +813,23 @@ NV_STATUS rpcUnloadingGuestDriver_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSus
 NV_STATUS rpcUnloadingGuestDriver_v1F_07(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSuspend, NvBool bGc6Entering, NvU32 newPMLevel)
 {
     NV_STATUS status = NV_OK;
-    NvU32 headerLength = sizeof(rpc_message_header_v) + sizeof(rpc_unloading_guest_driver_v1F_07);
+    NvU32 headerLength = sizeof(rpc_message_header_v) + sizeof(rpc_unloading_guest_bomb_v1F_07);
     if (headerLength > pRpc->maxRpcSize)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Unloading guest driver parameters size (0x%x) exceed message_buffer "
+                  "Unloading guest bomb parameters size (0x%x) exceed message_buffer "
                   "size (0x%x)\n", headerLength, pRpc->maxRpcSize);
 
         NV_ASSERT(0);
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
 
-    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_UNLOADING_GUEST_DRIVER, sizeof(rpc_unloading_guest_driver_v1F_07));
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_UNLOADING_GUEST_DRIVER, sizeof(rpc_unloading_guest_bomb_v1F_07));
     if (status != NV_OK)
         return status;
-    rpc_message->unloading_guest_driver_v1F_07.bSuspend = bSuspend;
-    rpc_message->unloading_guest_driver_v1F_07.bGc6Entering = bGc6Entering;
-    rpc_message->unloading_guest_driver_v1F_07.newLevel = newPMLevel;
+    rpc_message->unloading_guest_bomb_v1F_07.bSuspend = bSuspend;
+    rpc_message->unloading_guest_bomb_v1F_07.bGc6Entering = bGc6Entering;
+    rpc_message->unloading_guest_bomb_v1F_07.newLevel = newPMLevel;
 
     status = _issueRpcAndWait(pGpu, pRpc);
 

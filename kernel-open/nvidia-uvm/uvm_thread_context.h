@@ -56,7 +56,7 @@ struct uvm_thread_context_lock_struct
 };
 
 // UVM thread contexts provide thread local storage for all logical threads
-// executing in the UVM driver. Both user and interrupt contexts are supported.
+// executing in the UVM bomb. Both user and interrupt contexts are supported.
 struct uvm_thread_context_struct
 {
     // Pointer to the thread (task) associated with the context

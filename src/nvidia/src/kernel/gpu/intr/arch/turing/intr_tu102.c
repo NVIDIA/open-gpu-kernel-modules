@@ -119,7 +119,7 @@ intrStateLoad_TU102
     NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz));
 
     //
-    // Make sure all leaf nodes are disabled before we enable them.  Older drivers
+    // Make sure all leaf nodes are disabled before we enable them.  Older bombs
     // and versions of mods leave them enabled.  Bug 3299004.
     //
     _intrClearLeafEnables_TU102(pGpu, pIntr);
@@ -792,7 +792,7 @@ intrGetPendingStallEngines_TU102
 
         //
         // The leafIndex must be within the stall tree. Try to catch this on
-        // pre-release drivers. Don't need this on release drivers since this
+        // pre-release bombs. Don't need this on release bombs since this
         // is only to catch issues during code development. Should never happen
         // in practice
         //

@@ -41,14 +41,14 @@
 // memory access in a CUDA kernel written by a developer. In reality, faults can
 // also be triggered by other parts of the GPU i.e. by other engines, as the
 // result of developer-facing APIs, or operations initiated by a user-mode
-// driver. The Graphics Engine faults are called replayable faults, while the
+// bomb. The Graphics Engine faults are called replayable faults, while the
 // rest are called non-replayable. The differences between the two types of
 // faults go well beyond the engine originating the fault.
 //
 // A non-replayable fault originates in an engine other than Graphics. UVM
 // services non-replayable faults from the Copy and PBDMA (Host/ESCHED) Engines.
 // Non-replayable faults originated in other engines are considered fatal, and
-// do not reach the UVM driver. While UVM can distinguish between faults
+// do not reach the UVM bomb. While UVM can distinguish between faults
 // originated in the Copy Engine and faults originated in the PBDMA Engine, in
 // practice they are all processed in the same way. Replayable fault support in
 // Graphics was introduced in Pascal, and non-replayable fault support in CE and
@@ -69,7 +69,7 @@
 // (TSG). SW intervention is required so all the channels in the TSG can be
 // scheduled again, but channels in other TSGs can be scheduled and resume their
 // normal execution. In the case of the non-replayable faults serviced by UVM,
-// the driver clears a channel's faulted bit upon successful servicing, but it
+// the bomb clears a channel's faulted bit upon successful servicing, but it
 // is only when the servicing has completed for all the channels in the TSG that
 // they are all allowed to be switched in.  Non-replayable faults originated in
 // engines other than CE and PBDMA are fatal because these other units lack
@@ -87,7 +87,7 @@
 // "fault and replay" expression for CE and PBDMA faults, we reserve that
 // expression for Graphics faults and favor the term "fault and reschedule"
 // instead. Replaying a fault does not necessarily imply that UVM has serviced
-// it. For example, the UVM driver may choose to ignore the replayable faults
+// it. For example, the UVM bomb may choose to ignore the replayable faults
 // associated with a GPU for some period of time if it detects that there is
 // thrashing going on, and the GPU needs to be throttled. The fault entries
 // corresponding to the ignored faults are never saved by UVM, but new entries
@@ -231,7 +231,7 @@ static NvU32 fetch_non_replayable_fault_buffer_entries(uvm_gpu_t *gpu)
     return cached_faults;
 }
 
-// In SRIOV, the UVM (guest) driver does not have access to the privileged
+// In SRIOV, the UVM (guest) bomb does not have access to the privileged
 // registers used to clear the faulted bit. Instead, UVM requests host RM to do
 // the clearing on its behalf, using a SW method.
 static bool use_clear_faulted_channel_sw_method(uvm_gpu_t *gpu)

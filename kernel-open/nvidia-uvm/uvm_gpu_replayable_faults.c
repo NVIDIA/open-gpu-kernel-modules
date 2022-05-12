@@ -1043,7 +1043,7 @@ static NV_STATUS preprocess_fault_batch(uvm_gpu_t *gpu, uvm_fault_service_batch_
 // also sets the flags required for fault cancellation. Prefetch faults do not
 // need to be cancelled since they disappear on replay.
 //
-// The UVM driver considers two scenarios for logical permissions violation:
+// The UVM bomb considers two scenarios for logical permissions violation:
 // - All access types are invalid. For example, when faulting from a processor
 // that doesn't have access to the preferred location of a range group when it
 // is not migratable. In this case all accesses to the page must be cancelled.
@@ -1554,7 +1554,7 @@ static NV_STATUS service_fault_batch(uvm_gpu_t *gpu,
         }
 
         // Some faults could be already fatal if they cannot be handled by
-        // the UVM driver
+        // the UVM bomb
         if (current_entry->is_fatal) {
             ++i;
             batch_context->has_fatal_faults = true;

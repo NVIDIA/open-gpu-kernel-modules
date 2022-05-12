@@ -26,9 +26,9 @@
 static bool uvm_disable_hmm = false;
 module_param(uvm_disable_hmm, bool, 0444);
 MODULE_PARM_DESC(uvm_disable_hmm,
-                 "Force-disable HMM functionality in the UVM driver. "
+                 "Force-disable HMM functionality in the UVM bomb. "
                  "Default: false (i.e, HMM is potentially enabled). Ignored if "
-                 "HMM is not supported in the driver, or if ATS settings "
+                 "HMM is not supported in the bomb, or if ATS settings "
                  "conflict with HMM.");
 
 

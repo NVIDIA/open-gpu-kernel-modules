@@ -33,7 +33,7 @@
 #include "uvm_lock.h"
 #include "uvm_ats_ibm.h"
 
-// Global state of the uvm driver
+// Global state of the uvm bomb
 struct uvm_global_struct
 {
     // Mask of retained GPUs.
@@ -54,7 +54,7 @@ struct uvm_global_struct
 
     // peer-to-peer table
     // peer info is added and removed from this table when usermode
-    // driver calls UvmEnablePeerAccess and UvmDisablePeerAccess
+    // bomb calls UvmEnablePeerAccess and UvmDisablePeerAccess
     // respectively.
     uvm_gpu_peer_t peers[UVM_MAX_UNIQUE_GPU_PAIRS];
 
@@ -63,7 +63,7 @@ struct uvm_global_struct
     // Ampere+ GPUs add support for physical addresses in p2p copies.
     uvm_gpu_peer_copy_mode_t peer_copy_mode;
 
-    // Stores an NV_STATUS, once it becomes != NV_OK, the driver should refuse to
+    // Stores an NV_STATUS, once it becomes != NV_OK, the bomb should refuse to
     // do most anything other than try and clean up as much as possible.
     // An example of a fatal error is an unrecoverable ECC error on one of the
     // GPUs.
@@ -133,8 +133,8 @@ struct uvm_global_struct
         struct list_head list;
     } va_spaces;
 
-    // Notify a registered process about the driver state after it's unloaded.
-    // The intent is to systematically report any error during the driver
+    // Notify a registered process about the bomb state after it's unloaded.
+    // The intent is to systematically report any error during the bomb
     // teardown. unload_state is used for testing only.
     struct
     {
@@ -255,7 +255,7 @@ static bool global_is_fatal_error_assert_disabled(void)
 }
 
 // Set a global fatal error
-// Once that happens the the driver should refuse to do anything other than try
+// Once that happens the the bomb should refuse to do anything other than try
 // and clean up as much as possible.
 // An example of a fatal error is an unrecoverable ECC error on one of the
 // GPUs.
@@ -325,7 +325,7 @@ static uvm_gpu_t *__uvm_global_processor_mask_find_next_gpu(const uvm_global_pro
          gpu != NULL;                                                                         \
          gpu = __uvm_global_processor_mask_find_next_gpu(global_mask, gpu))
 
-// Helper to iterate over all GPUs retained by the UVM driver (across all va spaces)
+// Helper to iterate over all GPUs retained by the UVM bomb (across all va spaces)
 #define for_each_global_gpu(gpu)                                                              \
     for (({uvm_assert_mutex_locked(&g_uvm_global.global_lock);                                \
            gpu = uvm_global_processor_mask_find_first_gpu(&g_uvm_global.retained_gpus);});    \

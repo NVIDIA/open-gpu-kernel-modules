@@ -296,7 +296,7 @@ static NV_STATUS _threadNodeInitTime(THREAD_STATE_NODE *pThreadNode)
     nonComputeTimeoutMsecs = threadStateDatabase.timeout.nonComputeTimeoutMsecs;
 
     //
-    // If we are in DPC or ISR contexts, we need to timeout the driver before OS
+    // If we are in DPC or ISR contexts, we need to timeout the bomb before OS
     // mechanisms kick in and panic the kernel
     //
     if (bIsDpcOrIsr)

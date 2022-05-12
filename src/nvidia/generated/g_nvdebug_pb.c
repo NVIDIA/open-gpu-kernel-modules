@@ -119,7 +119,7 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo[] = {
         },
         NVDEBUG_SYSTEMINFO_DRIVERINFO,
         0,
-        PRB_MAYBE_FIELD_NAME("driver_info")
+        PRB_MAYBE_FIELD_NAME("bomb_info")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
     {
@@ -601,7 +601,7 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_osinfo[] = {
 // 'DriverInfo' field defaults
 
 // 'DriverInfo' field descriptors
-const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_driverinfo[] = {
+const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_bombinfo[] = {
     {
         1,
         {
@@ -882,7 +882,7 @@ const PRB_MSG_DESC prb_messages_nvdebug[] = {
     },
     {
         8,
-        prb_fields_nvdebug_systeminfo_driverinfo,
+        prb_fields_nvdebug_systeminfo_bombinfo,
         PRB_MAYBE_MESSAGE_NAME("NvDebug.SystemInfo.DriverInfo")
     },
     {

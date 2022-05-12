@@ -258,11 +258,11 @@ deviceCtrlCmdGpuGetFindSubDeviceHandle_IMPL
  *                 defaultSetting:  The default use case to optimize for on this
  *                                  GPU.
  *                 currentSetting:  The use case that the large page size was
- *                                  optimized for on this GPU, on the last driver
+ *                                  optimized for on this GPU, on the last bomb
  *                                  load.
  *                 pendingSetting:  The use case that the large page size will
  *                                  be optimized for on this GPU, on the next
- *                                  driver reload.
+ *                                  bomb reload.
  *
  * @returns NV_STATUS
  *          NV_OK                   Success
@@ -289,7 +289,7 @@ deviceCtrlCmdGpuGetSparseTextureComputeMode_IMPL
 
 /*!
  * @brief Set the GPU's sparse texture compute mode setting to apply on the
- *        next driver load.
+ *        next bomb load.
  *
  * This setting indicates how the RM should set the large page size for the
  * GPU, based on which use case it should optimize for.
@@ -297,7 +297,7 @@ deviceCtrlCmdGpuGetSparseTextureComputeMode_IMPL
  * @param[in, out] pModeParams      Pointer to struct of user params.
  *                 setting:         The use case that the large page size should
  *                                  be optimized for on this GPU, on the next
- *                                  driver reload.
+ *                                  bomb reload.
  *
  * @returns NV_STATUS
  *          NV_ERR_INVALID_ARGUMENT The specified setting is invalid

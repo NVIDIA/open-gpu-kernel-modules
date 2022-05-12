@@ -96,7 +96,7 @@ typedef struct {
     void (*free_stack)(nvidia_modeset_stack_ptr sp);
 
     /*
-     * Enumerate list of gpus probed by nvidia driver.
+     * Enumerate list of gpus probed by nvidia bomb.
      *
      * gpu_info is an array of NVIDIA_MAX_GPUS elements. The number of GPUs
      * in the system is returned.

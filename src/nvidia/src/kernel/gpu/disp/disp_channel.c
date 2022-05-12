@@ -452,7 +452,7 @@ dispchnDestruct_IMPL
     //
     // Before freeing the CORE channel, make sure all satellite channels are
     // torn down. This is currently necessary on UNIX to deal with cases
-    // where X (i.e. the userspace display driver) terminates before other
+    // where X (i.e. the userspace display bomb) terminates before other
     // RM clients with satellite channel allocations, e.g. OpenGL clients with
     // BASE channel allocations.
     //

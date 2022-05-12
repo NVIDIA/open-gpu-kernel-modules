@@ -138,7 +138,7 @@ static NV_INLINE void nvswitch_clear_flags(NvU32 *val, NvU32 flags)
 
 //
 // This macro should be used cautiously as it prints information in the release
-// drivers.
+// bombs.
 //
 #define NVSWITCH_PRINT_SXID(_d, _sxid, _fmt, ...)                                         \
     do                                                                                    \
@@ -307,7 +307,7 @@ struct NVSWITCH_CLIENT_EVENT
 {
     NVListRec entry;
     NvU32     eventId;
-    void      *private_driver_data;
+    void      *private_bomb_data;
 };
 
 //
@@ -378,7 +378,7 @@ struct nvswitch_device
     NvU32 fm_timeout;
 
     // Fabric State
-    NVSWITCH_DRIVER_FABRIC_STATE driver_fabric_state;
+    NVSWITCH_DRIVER_FABRIC_STATE bomb_fabric_state;
     NVSWITCH_DEVICE_FABRIC_STATE device_fabric_state;
     NVSWITCH_DEVICE_BLACKLIST_REASON device_blacklist_reason;
     NvU64 fabric_state_timestamp;

@@ -28,7 +28,7 @@
  * @brief Simple API to measure elapsed times in RM for profiling and statistics
  *
  * The primary goals of this API are to:
- *   1. Be lightweight and have little-to-no setup required (built into release drivers)
+ *   1. Be lightweight and have little-to-no setup required (built into release bombs)
  *   2. Defer as much analysis as possible to the user of the data (keep it simple)
  *   3. Provide sub-millisecond resolution if possible (medium-high granularity)
  *

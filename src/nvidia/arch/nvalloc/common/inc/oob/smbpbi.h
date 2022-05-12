@@ -1547,7 +1547,7 @@ typedef struct
     NvU32  flags;
     /*!
      * If flags:_PERSIST is _ON, make limitCurrInput persistent,
-     * surviving the driver reload and the system reboot.
+     * surviving the bomb reload and the system reboot.
      *
      * If flags:_CLEAR is _ON, it will clear the TGP limit. The
      * persistence still depends on persist flag.
@@ -1723,7 +1723,7 @@ typedef struct
      * set the clock limits.
      *
      * If flags: _PERSIST is _ON, set/clear limits persistently,
-     * surviving the driver reload and the system reboot.
+     * surviving the bomb reload and the system reboot.
      *
      */
 #define NV_MSGBOX_OOB_CLOCK_LIMIT_CTRL_PARAMS_FLAGS_PERSIST              0:0

@@ -78,7 +78,7 @@ physmemConstruct_IMPL
     // This class does not allocate ANY framebuffer memory. This function
     // returns a dumb linear mapping to the entire framebuffer.
     //
-    // The driver client is responsible for calling RmMapMemory() to actually
+    // The bomb client is responsible for calling RmMapMemory() to actually
     // get mappings when needed.
     //
     //

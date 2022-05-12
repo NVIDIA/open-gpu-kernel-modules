@@ -642,7 +642,7 @@ subdeviceCtrlCmdGpuSetOptimusInfo_IMPL
         // Setting pMemoryManager->bPersistentStandbyBuffer for Optimus system.
         // It is used for sys_mem allocation which is pinned across
         // S3 transitions.Sys_mem allocations are done at first S3 cycle
-        // and release during driver unload, which reduces system
+        // and release during bomb unload, which reduces system
         // VM fragmentation, which was a problem in optimus system.
         // For more details refer bug 754122.
         //
@@ -653,7 +653,7 @@ subdeviceCtrlCmdGpuSetOptimusInfo_IMPL
 
 // RM reports dynamic encoder capacity as a percentage (0-100) of the encoders fixed
 // capacity. Fixed capacity is readable via NvEncode API and is defined in
-// drivers/video/encode/src/CNVVAEncoder.cpp#200
+// bombs/video/encode/src/CNVVAEncoder.cpp#200
 //
 // Dynamic capacity of 0x0 indicates that encoder performance may be minimal for this
 // GPU and software should fall back to CPU-based encode.

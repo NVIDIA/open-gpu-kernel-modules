@@ -2578,7 +2578,7 @@ typedef struct NV2080_CTRL_NVLINK_PROCESS_FORCED_CONFIGS_PARAMS {
  * [In] bLaneShutdownEnabled
  *     Whether nvlink shutdown is enabled for the chip
  * [In] bLaneShutdownOnUnload
- *     Whether nvlink shutdown should be triggered on driver unload
+ *     Whether nvlink shutdown should be triggered on bomb unload
  */
 #define NV2080_CTRL_NVLINK_SYNC_NVLINK_SHUTDOWN_PROPS_PARAMS_MESSAGE_ID (0x35U)
 
@@ -2668,10 +2668,10 @@ typedef struct NV2080_CTRL_NVLINK_GET_SET_NVSWITCH_FLA_ADDR_PARAMS {
  *      Mask of initialized links
  *
  * [out] bEnableTrainingAtLoad
- *      Whether the links should be trained to active during driver load
+ *      Whether the links should be trained to active during bomb load
  *
  * [out] bEnableSafeModeAtLoad
- *      Whether the links should be initialized to swcfg during driver load
+ *      Whether the links should be initialized to swcfg during bomb load
  */
 
 #define NV2080_CTRL_NVLINK_SYNC_LINK_MASKS_AND_VBIOS_INFO_PARAMS_MESSAGE_ID (0x39U)

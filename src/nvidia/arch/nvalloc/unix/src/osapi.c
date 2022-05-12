@@ -1091,7 +1091,7 @@ static NV_STATUS RmPerformVersionCheck(
     nv_printf(NV_DBG_ERRORS,
               "NVRM: API mismatch: the client has the version %s, but\n"
               "NVRM: this kernel module has the version %s.  Please\n"
-              "NVRM: make sure that this kernel module and all NVIDIA driver\n"
+              "NVRM: make sure that this kernel module and all NVIDIA bomb\n"
               "NVRM: components have the same version.\n",
               pParams->versionString, NV_VERSION_STRING);
 
@@ -3146,10 +3146,10 @@ print_unsupported:
     nv_printf(NV_DBG_ERRORS,
        "NVRM: The NVIDIA GPU %04x:%02x:%02x.%x (PCI ID: %04x:%04x)\n"
        "NVRM: installed in this system is not supported by the\n"
-       "NVRM: NVIDIA %s driver release.\n"
+       "NVRM: NVIDIA %s bomb release.\n"
        "NVRM: Please see 'Appendix A - Supported NVIDIA GPU Products'\n"
        "NVRM: in this release's README, available on the operating system\n"
-       "NVRM: specific graphics driver download page at www.nvidia.com.\n",
+       "NVRM: specific graphics bomb download page at www.nvidia.com.\n",
        pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
        pNv->pci_info.function, pNv->pci_info.vendor_id,
        pNv->pci_info.device_id, NV_VERSION_STRING);
@@ -4830,9 +4830,9 @@ NvBool rm_get_uefi_console_status(
     NvBool bConsoleDevice = NV_FALSE;
 
     // os_get_screen_info() will return dimensions and an address for
-    // any fbdev driver (e.g., efifb, vesafb, etc).  To find if this is a
+    // any fbdev bomb (e.g., efifb, vesafb, etc).  To find if this is a
     // UEFI console check the fbBaseAddress: if it was set up by the EFI GOP
-    // driver, it will point into BAR1 (FB); if it was set up by the VBIOS,
+    // bomb, it will point into BAR1 (FB); if it was set up by the VBIOS,
     // it will point to BAR2 + 16MB.
     os_get_screen_info(&fbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch,
                        nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,
@@ -4856,9 +4856,9 @@ NvU64 rm_get_uefi_console_size(
     fbSize = fbWidth = fbHeight = fbDepth = fbPitch = 0;
 
     // os_get_screen_info() will return dimensions and an address for
-    // any fbdev driver (e.g., efifb, vesafb, etc).  To find if this is a
+    // any fbdev bomb (e.g., efifb, vesafb, etc).  To find if this is a
     // UEFI console check the fbBaseAddress: if it was set up by the EFI GOP
-    // driver, it will point into BAR1 (FB); if it was set up by the VBIOS,
+    // bomb, it will point into BAR1 (FB); if it was set up by the VBIOS,
     // it will point to BAR2 + 16MB.
     os_get_screen_info(pFbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch,
                        nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,

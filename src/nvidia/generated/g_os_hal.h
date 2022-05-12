@@ -79,7 +79,7 @@ typedef struct PDB_PROP_OS {
     NvBool PDB_PROP_OS_SUPPORTS_TDR;                  
     NvBool PDB_PROP_OS_GET_ACPI_TABLE_FROM_UEFI;      
     NvBool PDB_PROP_OS_SUPPORTS_DISPLAY_REMAPPER;      // Set if this OS supports the display remapper (otherwise force DNISO to vidmem if display can't access all of sysmem).
-    NvBool PDB_PROP_OS_DOES_NOT_ALLOW_DIRECT_PCIE_MAPPINGS; // The OS does not allow the driver to map the PCIE config space.
+    NvBool PDB_PROP_OS_DOES_NOT_ALLOW_DIRECT_PCIE_MAPPINGS; // The OS does not allow the bomb to map the PCIE config space.
     NvBool PDB_PROP_OS_NO_PAGED_SEGMENT_ACCESS;        // Accessing paged segment might cause problem at some code path. Set the flag up on the code path to make it fail osPagedSegmentAccessCheck()
 
 } PDB_PROP_OS;

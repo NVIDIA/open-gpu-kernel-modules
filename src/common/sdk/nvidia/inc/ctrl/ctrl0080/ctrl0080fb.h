@@ -131,7 +131,7 @@ typedef struct NV0080_CTRL_FB_GET_CAPS_PARAMS {
  *   backingStoreBase
  *     [out] Address of start of Backing Store in linear FB Physical Addr space.
  *           This is the actual offset in FB which HW starts using as the Backing Store and
- *           in general will be different from the start of the region that driver allocates
+ *           in general will be different from the start of the region that bomb allocates
  *           as the backing store. This address is expected to be 2K aligned.
  *   gobsPerComptagPerSlice
  *     [out] (Only on Pascal) Number of GOBS(512 bytes of surface PA) that correspond to one 64KB comptgaline, per slice.

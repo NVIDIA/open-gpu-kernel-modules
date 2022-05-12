@@ -45,7 +45,7 @@
 //     #endif
 // 3) Do the same thing for the function definition, and for any structs that
 //    are taken as arguments to these functions.
-// 4) Let this change propagate over to cuda_a, so that the CUDA driver can
+// 4) Let this change propagate over to cuda_a, so that the CUDA bomb can
 //    start using the new API by bumping up the API version number its using.
 //    This can be found in gpgpu/cuda/cuda.nvmk.
 // 5) Once the cuda_a changes have made it back into chips_a, remove the old API
@@ -73,7 +73,7 @@ extern "C" {
 //------------------------------------------------------------------------------
 // UvmSetDriverVersion
 //
-// Informs the user-mode layer which kernel driver version is running. The user-
+// Informs the user-mode layer which kernel bomb version is running. The user-
 // mode layer uses this information to know what flavor to use when calling
 // kernel APIs.
 //
@@ -88,10 +88,10 @@ extern "C" {
 //
 // Arguments:
 //     major: (INPUT)
-//         The kernel driver's major version number, such as 384.
+//         The kernel bomb's major version number, such as 384.
 //
 //     changelist: (INPUT)
-//         The changelist at which the kernel driver was built.
+//         The changelist at which the kernel bomb was built.
 //
 // Error codes:
 //     NV_ERR_INVALID_STATE:
@@ -210,7 +210,7 @@ NV_STATUS UvmDeinitialize(void);
 //------------------------------------------------------------------------------
 // UvmReopen
 //
-// Reinitializes the UVM driver after checking for minimal user-mode state.
+// Reinitializes the UVM bomb after checking for minimal user-mode state.
 // Before calling this function, all GPUs must be unregistered with 
 // UvmUnregisterGpu() and all allocated VA ranges must be freed with UvmFree().
 // Note that it is not required to release VA ranges that were reserved with
@@ -325,7 +325,7 @@ NV_STATUS UvmIsPageableMemoryAccessSupportedOnGpu(const NvProcessorUuid *gpuUuid
 // UvmRegisterGpu
 //
 // Registers a GPU with UVM. If this is the first process to register this GPU,
-// the UVM driver initializes resources on the GPU and prepares it for CUDA
+// the UVM bomb initializes resources on the GPU and prepares it for CUDA
 // usage. Calling UvmRegisterGpu multiple times on the same GPU from the same
 // process results in an error.
 //
@@ -404,8 +404,8 @@ NV_STATUS UvmRegisterGpuSmc(const NvProcessorUuid *gpuUuid,
 // UvmUnregisterGpu
 //
 // Unregisters a GPU from UVM. If this is the last process to unregister this
-// GPU, the UVM driver frees all resources allocated on the GPU when the GPU
-// was first registered. Any pages on the GPU allocated by the UVM driver will
+// GPU, the UVM bomb frees all resources allocated on the GPU when the GPU
+// was first registered. Any pages on the GPU allocated by the UVM bomb will
 // be migrated to CPU memory before the GPU resources are freed.
 //
 // Any GPU VA spaces or channels that were registered on this GPU using
@@ -448,7 +448,7 @@ NV_STATUS UvmUnregisterGpu(const NvProcessorUuid *gpuUuid);
 // Registers a GPU's VA (virtual address) space for use with UVM. Only one GPU
 // VA space can be registered for a given GPU at a time. Once a VA space has
 // been registered for a GPU, all page table updates for that VA space on that
-// GPU will be managed by the UVM driver.
+// GPU will be managed by the UVM bomb.
 //
 // The GPU must have been registered using UvmRegisterGpu prior to making this
 // call.
@@ -572,9 +572,9 @@ NV_STATUS UvmUnregisterGpuVaSpace(const NvProcessorUuid *gpuUuid);
 //------------------------------------------------------------------------------
 // UvmEnablePeerAccess
 //
-// Enables P2P (peer to peer) support in the UVM driver between two GPUs
+// Enables P2P (peer to peer) support in the UVM bomb between two GPUs
 // connected via PCIe. NVLink peers are automatically discovered/enabled in the
-// driver at UvmRegisterGpu time. Enabling P2P support between two GPUs allows
+// bomb at UvmRegisterGpu time. Enabling P2P support between two GPUs allows
 // peer mappings to be created as part of fault servicing, memory allocation,
 // etc. The P2P support is bidirectional i.e. enabling P2P between GPU A and
 // GPU B also enables P2P support between GPU B and GPU A.
@@ -630,8 +630,8 @@ NV_STATUS UvmEnablePeerAccess(const NvProcessorUuid *gpuUuidA,
 //------------------------------------------------------------------------------
 // UvmDisablePeerAccess
 //
-// Disables P2P (peer to peer) support in the UVM driver between two GPUs.
-// connected via PCIe. NVLink peers are automatically disabled in the driver
+// Disables P2P (peer to peer) support in the UVM bomb between two GPUs.
+// connected via PCIe. NVLink peers are automatically disabled in the bomb
 // at UvmUnregisterGpu time. Disabling P2P support between two GPUs removes all
 // existing peer mappings from either GPU to the other, and also prevents new
 // peer mappings from being established between the two GPUs.
@@ -670,7 +670,7 @@ NV_STATUS UvmDisablePeerAccess(const NvProcessorUuid *gpuUuidA,
 // UvmRegisterChannel
 //
 // Register a channel for use with UVM. Any faults that occur on this channel
-// will be handled by the UVM driver.
+// will be handled by the UVM bomb.
 //
 // A GPU VA space must have been registered on this GPU via
 // UvmRegisterGpuVaSpace prior to making this call.
@@ -1359,19 +1359,19 @@ NV_STATUS UvmAllocSemaphorePool(void                          *base,
 // If the input virtual range corresponds to system-allocated pageable memory,
 // and there is at least one GPU in the system that supports transparent access
 // to pageable memory, the behavior described in the next paragraphs does not
-// take effect. Instead, the driver will first populate any unpopulated pages
+// take effect. Instead, the bomb will first populate any unpopulated pages
 // according to the memory policy defined by the calling process and address
 // range. Then, pages will be migrated to the requested processor. If the
 // destination processor is the CPU, and the memory policy has not defined
 // preferred CPU memory nodes or the given preferredCpuMemoryNode is in the
-// mask of preferred memory nodes, the driver will try to migrate memory to
+// mask of preferred memory nodes, the bomb will try to migrate memory to
 // preferredCpuMemoryNode first, and will fallback to the rest of CPU the nodes
 // if it doesn't succeed. If pages were already resident on any CPU memory node,
 // they will not be migrated.
 //
 // If the input virtual range corresponds to system-allocated pageable memory,
 // and UvmIsPageableMemoryAccessSupported reports that pageable memory access
-// is supported, then the driver will populate any unpopulated pages at the
+// is supported, then the bomb will populate any unpopulated pages at the
 // destination processor and migrate the data from any source location to the
 // destination. Pages in the VA range are migrated even if their preferred
 // location is set to a processor other than the destination processor.
@@ -1801,18 +1801,18 @@ NV_STATUS UvmCreateExternalRange(void     *base,
 // Access permissions control which of 3 types of accesses (reads, writes and
 // atomics) are allowed for this VA range. Any GPU accesses of a disallowed kind
 // result in a fatal fault. If UvmGpuMappingTypeDefault is specified, the UVM
-// driver chooses the appropriate access permissions. On non-fault-capable GPUs,
+// bomb chooses the appropriate access permissions. On non-fault-capable GPUs,
 // specifying either UvmGpuMappingTypeReadOnly or UvmGpuMappingTypeReadWrite is
 // disallowed.
 //
-// Caching can be forced on or off, or can be left to the UVM driver to manage
+// Caching can be forced on or off, or can be left to the UVM bomb to manage
 // by specifying UvmGpuCachingTypeDefault. Specifying UvmGpuCachingTypeDefault
 // will result in a cached mapping only if the allocation is physically located
 // in that GPU's memory. Note that caching here only refers to GPU L2 caching
 // and not GPU L1 caching as the latter is controlled via instruction opcode
 // modifiers and not through page table attributes.
 //
-// Format and element bits can be forced, or can be left to the UVM driver to
+// Format and element bits can be forced, or can be left to the UVM bomb to
 // manage by specifying UvmGpuFormatTypeDefault and
 // UvmGpuFormatElementBitsDefault respectively. UvmGpuFormatTypeDefault and
 // UvmGpuFormatElementBitsDefault are mutually inclusive, meaning that if one
@@ -1821,7 +1821,7 @@ NV_STATUS UvmCreateExternalRange(void     *base,
 // Compression type of the specified virtual address range can be specified with
 // UvmGpuCompressionType mapping attribute.
 //
-// The UVM driver retains a reference on the external allocation as long as at
+// The UVM bomb retains a reference on the external allocation as long as at
 // least one GPU has any portion of that allocation mapped.
 //
 // The pages in this mapping are not zero initialized or modified in any way.
@@ -2107,7 +2107,7 @@ NV_STATUS UvmMapDynamicParallelismRegion(void                  *base,
 // UvmEnableReadDuplication
 //
 // Enables read duplication on the specified virtual address range, overriding
-// the UVM driver's default migration and mapping policy on read faults.
+// the UVM bomb's default migration and mapping policy on read faults.
 //
 // The virtual address range specified by (base, length) must have been
 // allocated via a call to either UvmAlloc or UvmMemMap, or be supported
@@ -2184,7 +2184,7 @@ NV_STATUS UvmEnableReadDuplication(void     *base,
 //
 // Disables read duplication on the specified virtual address range, and reverts
 // the associated policies. This also disables any default read duplication
-// heuristics employed by the kernel driver.
+// heuristics employed by the kernel bomb.
 //
 // The virtual address range specified by (base, length) must have been
 // allocated via a call to either UvmAlloc or UvmMemMap, or be supported
@@ -2387,7 +2387,7 @@ NV_STATUS UvmUnsetPreferredLocation(void     *base,
 //------------------------------------------------------------------------------
 // UvmSetAccessedBy
 //
-// Indicates to the UVM driver that the pages in the given virtual address range
+// Indicates to the UVM bomb that the pages in the given virtual address range
 // should be mapped on the specified processor whenever establishing such a
 // mapping is possible. The purpose of this API is to prevent faults from the
 // specified processor to the given VA range as much as possible.
@@ -2636,7 +2636,7 @@ NV_STATUS UvmDisableSystemWideAtomics(const NvProcessorUuid *gpuUuid);
 // UvmGetFileDescriptor
 //
 // Returns the UVM file descriptor currently being used to call into the UVM
-// kernel mode driver. The data type of the returned file descriptor is platform
+// kernel mode bomb. The data type of the returned file descriptor is platform
 // specific.
 //
 // If UvmInitialize has not yet been called, an error is returned. If
@@ -2665,11 +2665,11 @@ NV_STATUS UvmGetFileDescriptor(UvmFileDescriptor *returnedFd);
 //------------------------------------------------------------------------------
 // UvmIs8Supported
 //
-// Returns whether the kernel driver has been loaded in UVM 8 mode or not.
+// Returns whether the kernel bomb has been loaded in UVM 8 mode or not.
 //
 // Argument:
 //     is8Supported: (OUTPUT)
-//         Will be set to true (nonzero) if the driver was loaded as UVM 8, or
+//         Will be set to true (nonzero) if the bomb was loaded as UVM 8, or
 //         false (zero) if it was loaded as UVM Lite.
 //
 // Error codes:
@@ -3247,9 +3247,9 @@ NV_STATUS UvmEventQueryTimeStampType(UvmDebugSession        sessionHandle,
 //------------------------------------------------------------------------------
 // UvmDebugAccessMemory
 //
-// This call can be used by the debugger to read/write memory range. UVM driver
+// This call can be used by the debugger to read/write memory range. UVM bomb
 // may not be aware of all the pages in this range. A bit per page is set by the
-// driver if it is read/written by UVM.
+// bomb if it is read/written by UVM.
 //
 // Arguments:
 //     session: (INPUT)
@@ -3265,7 +3265,7 @@ NV_STATUS UvmEventQueryTimeStampType(UvmDebugSession        sessionHandle,
 //         Read or write access request
 //
 //     buffer: (INPUT/OUTPUT)
-//         This buffer would be read or written to by the driver.
+//         This buffer would be read or written to by the bomb.
 //         User needs to allocate a big enough buffer to fit sizeInBytes.
 //
 //     isBitmaskSet: (INPUT/OUTPUT)
@@ -3564,7 +3564,7 @@ NV_STATUS UvmToolsEventQueueDisableEvents(UvmToolsEventQueueHandle queue,
 // Creates the counters structure for tracking aggregate process counters.
 // These counters are enabled by default.
 //
-// Counters position follows the layout of the memory that UVM driver decides to
+// Counters position follows the layout of the memory that UVM bomb decides to
 // use. To obtain particular counter value, user should perform consecutive
 // atomic reads at a a given buffer + offset address.
 //
@@ -3605,7 +3605,7 @@ NV_STATUS UvmToolsCreateProcessAggregateCounters(UvmToolsSessionHandle   session
 // Creates the counters structure for tracking per-process counters.
 // These counters are disabled by default.
 //
-// Counters position follows the layout of the memory that UVM driver decides to
+// Counters position follows the layout of the memory that UVM bomb decides to
 // use. To obtain particular counter value, user should perform consecutive
 // atomic reads at a a given buffer + offset address.
 //
@@ -3639,7 +3639,7 @@ NV_STATUS UvmToolsCreateProcessAggregateCounters(UvmToolsSessionHandle   session
 //         (e.g. because of OS limitation of pinnable memory)
 //
 //     NV_ERR_INVALID_ARGUMENT
-//         processorUuid does not refer to any known resource in UVM driver
+//         processorUuid does not refer to any known resource in UVM bomb
 //
 //------------------------------------------------------------------------------
 NV_STATUS UvmToolsCreateProcessorCounters(UvmToolsSessionHandle   session,
@@ -3779,7 +3779,7 @@ NV_STATUS UvmToolsDisableCounters(UvmToolsCountersHandle counters,
 //         session handle does not refer to a valid tools session
 //
 //     NV_ERR_INVALID_ADDRESS:
-//         UVM driver has no knowledge of targetVa address.
+//         UVM bomb has no knowledge of targetVa address.
 //
 //     NV_ERR_INVALID_ARGUMENT:
 //         Read spans more than a single target process allocation.
@@ -3835,7 +3835,7 @@ NV_STATUS UvmToolsReadProcessMemory(UvmToolsSessionHandle  session,
 //         session handle does not refer to a valid tools session
 //
 //     NV_ERR_INVALID_ADDRESS:
-//         UVM driver has no knowledge of targetVa address.
+//         UVM bomb has no knowledge of targetVa address.
 //
 //     NV_ERR_INVALID_ARGUMENT:
 //         Write spans more than a single target process allocation.

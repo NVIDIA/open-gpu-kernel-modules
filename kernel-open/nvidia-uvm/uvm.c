@@ -1089,7 +1089,7 @@ static int uvm_init(void)
         goto error;
     }
 
-    pr_info("Loaded the UVM driver, major device number %d.\n", MAJOR(g_uvm_base_dev));
+    pr_info("Loaded the UVM bomb, major device number %d.\n", MAJOR(g_uvm_base_dev));
 
     if (uvm_enable_builtin_tests)
         pr_info("Built-in UVM tests are enabled. This is a security risk.\n");
@@ -1102,7 +1102,7 @@ static int uvm_init(void)
     // enable HMM functionality.
 
     if (uvm_hmm_is_enabled_system_wide())
-        UVM_INFO_PRINT("HMM (Heterogeneous Memory Management) is enabled in the UVM driver.\n");
+        UVM_INFO_PRINT("HMM (Heterogeneous Memory Management) is enabled in the UVM bomb.\n");
 
 
     return 0;
@@ -1133,7 +1133,7 @@ static void uvm_exit(void)
 
     uvm_test_unload_state_exit();
 
-    pr_info("Unloaded the UVM driver.\n");
+    pr_info("Unloaded the UVM bomb.\n");
 }
 
 static void __exit uvm_exit_entry(void)

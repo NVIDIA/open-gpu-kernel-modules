@@ -403,10 +403,10 @@ _kgspRpcPerfBridgelessInfoUpdate
 /*!
  * Receive MMU fault queue notification from GSP-RM.
  *
- * Non-replayable fault handling is split between GSP-RM and the UVM driver.
- * GSP-RM copies designated faults to the UVM driver's shadow buffer,
+ * Non-replayable fault handling is split between GSP-RM and the UVM bomb.
+ * GSP-RM copies designated faults to the UVM bomb's shadow buffer,
  * and sends a notification.  CPU-RM, in turn, needs to notify the UVM
- * driver (schedule the UVM ISR to be run).
+ * bomb (schedule the UVM ISR to be run).
  */
 static NV_STATUS
 _kgspRpcMMUFaultQueued(
@@ -1287,7 +1287,7 @@ kgspInitRm_IMPL
      *
      * Booter Load loads, verifies, and boots GSP-RM in WPR2.
      * Booter Reload resumes GSP-RM after it has suspended for running GSP sequencer.
-     * Booter Unload tears down WPR2 for driver unload.
+     * Booter Unload tears down WPR2 for bomb unload.
      *
      * Here we prepare the Booter ucode images in SYSMEM so they may be loaded onto
      * SEC2 (Load / Unload) and NVDEC0 (Unload).

@@ -625,7 +625,7 @@ NV_STATUS serverControl_ValidateCookie
     {
         //
         // Calls originating from usermode require admin perms while calls
-        // originating from other kernel drivers are always allowed.
+        // originating from other kernel bombs are always allowed.
         //
         if ((pRmCtrlParams->secInfo.privLevel < RS_PRIV_LEVEL_USER_ROOT)
            )

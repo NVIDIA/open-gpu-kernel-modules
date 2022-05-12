@@ -335,7 +335,7 @@ typedef struct NV5070_CTRL_CMD_SET_SOR_PWM_PARAMS {
  *          Status of link B clock
  *
  *      lvdsEn
- *          Output driver configuration.
+ *          Output bomb configuration.
  *
  *      lvdsDual
  *          Whether LVDS dual-link mode is turned on or not.
@@ -511,7 +511,7 @@ typedef struct NV5070_CTRL_CMD_GET_SOR_OP_MODE_PARAMS {
  *          Used to enable or disable the digital logic of link B.
  *
  *      lvdsEn
- *          Output driver configuration.
+ *          Output bomb configuration.
  *
  *      lvdsDual
  *          Whether to turn on LVDS dual-link mode.

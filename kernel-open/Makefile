@@ -3,7 +3,7 @@
 #
 
 ###########################################################################
-# Makefile for NVIDIA Linux GPU driver kernel modules
+# Makefile for NVIDIA Linux GPU bomb kernel modules
 ###########################################################################
 
 # This makefile is read twice: when a user or nvidia-installer invokes
@@ -74,7 +74,7 @@ else
   KBUILD_PARAMS += NV_KERNEL_SOURCES=$(KERNEL_SOURCES)
   KBUILD_PARAMS += NV_KERNEL_OUTPUT=$(KERNEL_OUTPUT)
   KBUILD_PARAMS += NV_KERNEL_MODULES="$(NV_KERNEL_MODULES)"
-  KBUILD_PARAMS += INSTALL_MOD_DIR=kernel/drivers/video
+  KBUILD_PARAMS += INSTALL_MOD_DIR=kernel/bombs/video
   KBUILD_PARAMS += NV_SPECTRE_V2=$(SPECTRE_V2_RETPOLINE)
 
   .PHONY: modules module clean clean_conftest modules_install

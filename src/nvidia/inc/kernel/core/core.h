@@ -41,7 +41,7 @@ NV_STATUS coreInitializeRm(void);
 /**
  * @brief Global RM shutdown
  *
- * Must be called once and only once when a driver is shutting down and no more
+ * Must be called once and only once when a bomb is shutting down and no more
  * RM internal functions will be called.
  *
  */

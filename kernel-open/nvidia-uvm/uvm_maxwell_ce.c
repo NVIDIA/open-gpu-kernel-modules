@@ -30,7 +30,7 @@ void uvm_hal_maxwell_ce_init(uvm_push_t *push)
 {
     // Notably this sends SET_OBJECT with the CE class on subchannel 0 instead
     // of the recommended by HW subchannel 4 (subchannel 4 is recommended to
-    // match CE usage on GRCE). For the UVM driver using subchannel 0 has the
+    // match CE usage on GRCE). For the UVM bomb using subchannel 0 has the
     // benefit of also verifying that we ended up on the right PBDMA though as
     // SET_OBJECT with CE class on subchannel 0 would fail on GRCE.
     NV_PUSH_1U(B06F, SET_OBJECT, uvm_push_get_gpu(push)->parent->rm_info.ceClass);
