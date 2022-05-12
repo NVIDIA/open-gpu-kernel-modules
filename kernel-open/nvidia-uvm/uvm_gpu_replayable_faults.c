@@ -1897,7 +1897,7 @@ static NV_STATUS cancel_faults_precise_va(uvm_gpu_t *gpu,
             // If there is no GPU VA space for the GPU, ignore the fault.
             // This can happen if the GPU VA did not exist in
             // service_fault_batch(), or it was destroyed since then.
-            // This is to avoid targetting a PDB that might have been reused
+            // This is to avoid targeting a PDB that might have been reused
             // by another process.
             continue;
         }
@@ -2183,7 +2183,7 @@ static void enable_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu, uvm_fau
     else if (!parent_gpu->fault_buffer_info.prefetch_faults_enabled) {
         NvU64 lapse = NV_GETTIME() - parent_gpu->fault_buffer_info.disable_prefetch_faults_timestamp;
 
-        // Reenable prefetch faults after some time
+        // Re-enable prefetch faults after some time
         if (lapse > ((NvU64)uvm_perf_reenable_prefetch_faults_lapse_msec * (1000 * 1000)))
             uvm_gpu_enable_prefetch_faults(parent_gpu);
     }
