@@ -1,7 +1,9 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
-This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 515.43.04.
+![latest open-gpu-kernel-modules tag](https://img.shields.io/github/v/tag/NVIDIA/open-gpu-kernel-modules?include_prereleases)
+![latest open-gpu-kernel-modules release](https://img.shields.io/github/v/release/NVIDIA/open-gpu-kernel-modules?include_prereleases&style=flat-square)
+
+This is the source release of the NVIDIA Linux open GPU kernel modules.
 
 
 ## How to Build
@@ -17,7 +19,7 @@ as root:
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
-515.43.04 driver release.  This can be achieved by installing
+latest driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
