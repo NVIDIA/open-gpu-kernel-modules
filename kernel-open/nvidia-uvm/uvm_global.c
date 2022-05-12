@@ -379,7 +379,7 @@ static NV_STATUS uvm_resume(void)
 
         uvm_gpu_set_isr_suspended(gpu, false);
 
-        // Reenable access counter interrupt processing unless notifications
+        // Re-enable access counter interrupt processing unless notifications
         // have been set to be suppressed.
         uvm_gpu_access_counters_set_ignore(gpu, false);
     }

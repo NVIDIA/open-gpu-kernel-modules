@@ -43,7 +43,7 @@ struct uvm_global_struct
     uvm_global_processor_mask_t retained_gpus;
 
     // Array of the parent GPUs registered with UVM. Note that GPUs will have
-    // ids offset by 1 to accomodate the UVM_GLOBAL_ID_CPU so e.g.
+    // ids offset by 1 to accommodate the UVM_GLOBAL_ID_CPU so e.g.
     // parent_gpus[0] will have GPU id = 1. A GPU entry is unused iff it does
     // not exist (is a NULL pointer) in this table.
     uvm_parent_gpu_t *parent_gpus[UVM_MAX_GPUS];
