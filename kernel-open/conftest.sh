@@ -73,8 +73,8 @@ translate_and_preprocess_header_files() {
     # strings, without special handling of the beginning or the end of the line.
     TEST_CFLAGS=`echo "-E -M $CFLAGS " | sed -e 's/\( -M[DG]\)* / /g'`
 
-    for file in $@; do
-        local file_define=NV_`echo $file | tr '/.' '_' | tr '-' '_' | tr 'a-z' 'A-Z'`_PRESENT
+    for file in "$@"; do
+        file_define=NV_`echo $file | tr '/.' '_' | tr '-' '_' | tr 'a-z' 'A-Z'`_PRESENT
 
         CODE="#include <$file>"
 
@@ -5687,7 +5687,7 @@ case "$5" in
 
         HASH=$(get_configuration_option CONFIG_MODULE_SIG_HASH)
 
-        if [ $? -eq 0 ] && [ -n $HASH ]; then
+        if [ $? -eq 0 ] && [ -n "$HASH" ]; then
             echo $HASH
             exit 0
         else
