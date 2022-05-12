@@ -622,13 +622,13 @@ void uvm_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
     //     3) Unlock GPU isr.replayable_faults.service_lock (mutex)
     //     4) Unlock isr.interrupts_lock (spin lock)
     //
-    // ...because the moment that page fault interrupts are reenabled, a top
+    // ...because the moment that page fault interrupts are re-enabled, a top
     // half might start receiving them. A top-half cannot run on the core
     // executing this code as interrupts are disabled as long as the
     // interrupts_lock is held. If it runs on a different core, it's going to
     // spin waiting for the interrupts_lock to be released by this core before
     // attempting to acquire the service_lock mutex. Hence there is no risk of
-    // the top-half missing interrupts after they are reenabled, but before the
+    // the top-half missing interrupts after they are re-enabled, but before the
     // service_lock mutex is released.
 
     if (parent_gpu->isr.replayable_faults.handling) {
