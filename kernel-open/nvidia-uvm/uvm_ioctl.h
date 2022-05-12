@@ -702,7 +702,7 @@ typedef struct
 // UvmMigrate. If the input virtual range corresponds to system-allocated
 // pageable memory, and the GPUs in the system support transparent access to
 // pageable memory, the scheme is a bit more elaborate, potentially with
-// several transitions betwen user and kernel spaces:
+// several transitions between user and kernel spaces:
 //
 // 1) UVM_MIGRATE with the range base address and size. This will migrate
 // anonymous vmas until:
