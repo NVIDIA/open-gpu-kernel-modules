@@ -6,7 +6,7 @@ commands:
     parameters:
       build-args:
         type: string
-        default: "-j`nproc`"
+        default: "-j$(nproc)"
       NV_VERBOSE:
         type: string
         default: "0"
@@ -33,7 +33,7 @@ commands:
     parameters:
       install-args:
         type: string
-        default: "-j`nproc`"
+        default: "-j$(nproc)"
     steps:
       - checkout
       - attach_workspace:
@@ -67,7 +67,7 @@ jobs:
     executor: << parameters.architecture >>
     steps:
       - build-kernel-module:
-          build-args: "-j`nproc`"
+          build-args: "-j$(nproc)"
 
   install:
     parameters:
@@ -76,7 +76,7 @@ jobs:
     executor: << parameters.architecture >>
     steps:
       - install-kernel-module:
-          install-args: "-j`nproc`"
+          install-args: "-j$(nproc)"
 
 workflows:
   multi-arch-build:
