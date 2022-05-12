@@ -305,7 +305,6 @@ static inline uint64_t NV_DIV64(uint64_t dividend, uint64_t divisor, uint64_t *r
 }
 #endif
 
-#if defined(CLOCK_MONOTONIC_RAW)
 /* Return a nanosecond-precise value */
 static inline NvU64 NV_GETTIME(void)
 {
@@ -314,17 +313,6 @@ static inline NvU64 NV_GETTIME(void)
     ktime_get_raw_ts64(&tm);
     return (NvU64) timespec64_to_ns(&tm);
 }
-#else
-/* We can only return a microsecond-precise value with the
- * available non-GPL symbols. */
-static inline NvU64 NV_GETTIME(void)
-{
-    struct timespec64 tm;
-
-    ktime_get_real_ts64(&tm);
-    return (NvU64) timespec64_to_ns(&tm);
-}
-#endif
 
 #if !defined(ilog2)
     static inline int NV_ILOG2_U32(u32 n)
