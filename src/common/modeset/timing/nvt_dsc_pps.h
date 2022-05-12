@@ -152,7 +152,7 @@ typedef struct
         
         DSC_ALGORITHM_REV algorithmRevision;    // DSC algorithm revision that sink supports
         
-        NvBool bBlockPrediction;                // Whether block prediction is supported or not.
+        NvBool bBlockPrediction;                // Whether block prediction is supported or not
 
         // Peak throughput supported for 444 and simple 422 modes
         NvU32  peakThroughputMode0;
@@ -207,7 +207,7 @@ typedef struct
 
         //
         // Size of line buffer inside DSC. Should be in number of pixels.
-        // this should be greater than or equal to active width
+        // This should be greater than or equal to active width
         //
         NvU32 lineBufferSize;
 
