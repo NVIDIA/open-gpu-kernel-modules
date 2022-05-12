@@ -138,12 +138,12 @@ Most of NVIDIA's kernel modules are split into two components:
   that is specific to the Linux kernel version and configuration.
 
 When packaged in the NVIDIA .run installation package, the OS-agnostic
-component is provided as a binary: it is large and time-consuming to
-compile, so pre-built versions are provided so that the user does
-not have to compile it during every driver installation.  For the
-nvidia.ko kernel module, this component is named "nv-kernel.o_binary".
-For the nvidia-modeset.ko kernel module, this component is named
-"nv-modeset-kernel.o_binary".  Neither nvidia-drm.ko nor nvidia-uvm.ko
+component is provided as a binary: it is large and time-consuming to compile
+(e.g. about 25 seconds on Ryzen 3700X/make -j16), so pre-built versions are
+provided so that the user does not have to compile it during every driver
+installation. For the nvidia.ko kernel module, this component is named
+"nv-kernel.o_binary". For the nvidia-modeset.ko kernel module, this component
+is named "nv-modeset-kernel.o_binary". Neither nvidia-drm.ko nor nvidia-uvm.ko
 have OS-agnostic components.
 
 The kernel interface layer component for each kernel module must be built
