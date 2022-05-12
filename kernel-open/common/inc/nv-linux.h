@@ -1055,7 +1055,7 @@ extern void *nvidia_stack_t_cache;
  *
  * To workaround this kernel issue, we take two steps:
  * - Create unmergeable caches: a kmem_cache with a constructor is unmergeable.
- *   So, we define an empty contructor for the same. Creating an unmergeable
+ *   So, we define an empty constructor for the same. Creating an unmergeable
  *   cache ensures that the kernel doesn't generate an internal name and always
  *   uses our name instead.
  *
@@ -1871,7 +1871,7 @@ static inline NvBool nv_alloc_release(nv_linux_file_private_t *nvlfp, nv_alloc_t
  *
  * Note, a deviation from the documented compression scheme is that the
  * upper address bits (i.e. bit 56-63) instead of being set to zero are
- * preserved during NVLink address compression so the orignal PCIe DMA
+ * preserved during NVLink address compression so the original PCIe DMA
  * address can be reconstructed on expansion. These bits can be safely
  * ignored on NVLink since they are truncated by the GPU.
  *
