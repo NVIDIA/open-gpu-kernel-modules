@@ -401,15 +401,15 @@ NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, 
 uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk);
 
 // Mark the CPU sub-page page_index in the CPU chunk as dirty.
-// page_index has to be a page withing the chunk's region.
+// page_index has to be a page within the chunk's region.
 void uvm_cpu_chunk_mark_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
 
 // Mark the CPU sub-pages page_index in the CPU chunk as clean.
-// page_index has to be a page withing the chunk's region.
+// page_index has to be a page within the chunk's region.
 void uvm_cpu_chunk_mark_clean(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
 
 // Return true if the CPU sub-pages page_index in the CPU chunk are dirty.
-// page_index has to be a page withing the chunk's region.
+// page_index has to be a page within the chunk's region.
 bool uvm_cpu_chunk_is_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
 
 #else // UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
