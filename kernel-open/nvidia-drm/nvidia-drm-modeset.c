@@ -94,8 +94,6 @@ static bool __will_generate_flip_event(struct drm_crtc *crtc,
     struct drm_plane_state *old_plane_state = NULL;
     struct drm_plane *plane = NULL;
     struct drm_plane *primary_plane = crtc->primary;
-    bool primary_event = false;
-    bool overlay_event = false;
     int i;
 
     if (!old_crtc_state->active  && !new_crtc_state->active) {
