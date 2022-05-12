@@ -1131,7 +1131,7 @@ NV_STATUS uvm_cpu_chunk_alloc(uvm_va_block_t *va_block,
     // size from the set of CPU chunk sizes that we can.
     // This is accomplished by:
     //   1. Aligning the CPU page address down to the allocation size.
-    //   2. Ensuring that the entire allocation region fits withing the VA
+    //   2. Ensuring that the entire allocation region fits within the VA
     //      block.
     //   3. Ensuring that the region covered by the allocation is empty.
     for_each_chunk_size_rev(alloc_size, cpu_allocation_sizes) {
