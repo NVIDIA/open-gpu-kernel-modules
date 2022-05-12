@@ -577,7 +577,7 @@ static void access_counters_yield_ownership(uvm_gpu_t *gpu)
     UVM_ASSERT(gpu->parent->access_counters_supported);
     UVM_ASSERT(uvm_sem_is_locked(&gpu->parent->isr.access_counters.service_lock));
 
-    // Wait for any pending clear operation befor releasing ownership
+    // Wait for any pending clear operation before releasing ownership
     status = uvm_tracker_wait(&access_counters->clear_tracker);
     if (status != NV_OK)
         UVM_ASSERT(status == uvm_global_get_status());
