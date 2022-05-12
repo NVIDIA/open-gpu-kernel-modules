@@ -972,7 +972,7 @@ NV_STATUS nvUvmInterfaceEnableAccessCntr(uvmGpuDeviceHandle device,
 /*******************************************************************************
     nvUvmInterfaceDisableAccessCntr
 
-    This function disables acccess counters
+    This function disables access counters
     UVM is also returning ownership to the RM: RM can service, enable or
     disable this interrupt. In this case, access counter notificaion interrupts
     are disabled by this function before it returns.
@@ -1280,8 +1280,8 @@ NV_STATUS nvUvmInterfacePagingChannelsMap(uvmGpuAddressSpaceHandle srcVaSpace,
     RM or GPU locks.
 
     Arguments:
-        srcVaSpace[IN] - VA space handle that was passed to prevous mapping.
-        srcAddress[IN] - virtual address that was passed to prevous mapping.
+        srcVaSpace[IN] - VA space handle that was passed to previous mapping.
+        srcAddress[IN] - virtual address that was passed to previous mapping.
         device[IN]     - device under which paging channels were allocated.
  */
 void nvUvmInterfacePagingChannelsUnmap(uvmGpuAddressSpaceHandle srcVaSpace,
