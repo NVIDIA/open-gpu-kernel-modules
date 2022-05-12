@@ -46,6 +46,13 @@ E.g.,
         AR=aarch64-linux-gnu-ar     \
         CXX=aarch64-linux-gnu-g++   \
         OBJCOPY=aarch64-linux-gnu-objcopy
+        
+For aarch64 make sure you have these packages installed:
+
+    aarch64-linux-gnu-binutils 
+    aarch64-linux-gnu-glibc
+    aarch64-linux-gnu-linux-api-headers
+    aarch64-linux-gnu-gcc
 
 
 ## Other Build Knobs
