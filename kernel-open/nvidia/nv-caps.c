@@ -713,7 +713,7 @@ nv_cap_t* NV_API_CALL nv_cap_init(const char *path)
     }
 
     strscpy(name, path, len);
-    strcat(name, dir, len);
+    strcat(name, dir);
     parent_cap.entry = NULL;
     parent_cap.path = "";
     parent_cap.name = "";
