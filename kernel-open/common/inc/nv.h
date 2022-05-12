@@ -857,44 +857,6 @@ NV_STATUS NV_API_CALL nv_get_num_phys_pages      (void *, NvU32 *);
 NV_STATUS NV_API_CALL nv_get_phys_pages          (void *, void *, NvU32 *);
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*
  * ---------------------------------------------------------------------------
  *
@@ -1035,17 +997,6 @@ static inline const NvU8 *nv_get_cached_uuid(nv_state_t *nv)
 {
     return nv->nv_uuid_cache.valid ? nv->nv_uuid_cache.uuid : NULL;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 #if defined(NVCPU_X86_64)
