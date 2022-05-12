@@ -260,7 +260,7 @@ static uvm_va_range_t *find_va_range(uvm_user_channel_t *new_user_channel, NvP64
     return NULL;
 }
 
-// Find an unallocated VA region of the given size and alignment witin the range
+// Find an unallocated VA region of the given size and alignment within the range
 // [base, end]. base must not be 0. If no such region exists, 0 is returned.
 static NvU64 find_va_in_range(uvm_va_space_t *va_space, NvU64 base, NvU64 end, NvU64 size, NvU64 alignment)
 {
@@ -433,7 +433,7 @@ error:
     return status;
 }
 
-// "Binding" the resouces tells RM the virtual address of each allocation so it
+// "Binding" the resources tells RM the virtual address of each allocation so it
 // can in turn tell the HW where they are.
 static NV_STATUS bind_channel_resources(uvm_user_channel_t *user_channel)
 {
