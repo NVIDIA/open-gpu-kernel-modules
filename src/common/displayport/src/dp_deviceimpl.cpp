@@ -1764,7 +1764,7 @@ bool DeviceImpl::setDscEnable(bool enable)
         //
         // Get Current DSC Enable State
         // Ideally we don't need to check the current state but Synaptics DSC device,
-        // which was used for inital DSC code developement did not follow spec and so
+        // which was used for initial DSC code development did not follow spec and so
         // we have added this code. Overwriting the same value should not have any 
         // impact as per the spec. Will remove this check once all DSC devices follow spec.
         //
