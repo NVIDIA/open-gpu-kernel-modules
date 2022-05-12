@@ -323,7 +323,7 @@ namespace DisplayPort
                                                                                                    //   become a zombie
 
             virtual void notifyZombieStateChange(Device * dev, bool zombied)  = 0;  // Notification that zombie device was attached or dettached
-            virtual void notifyCableOkStateChange(Device * dev, bool cableOk) = 0;  // Notification that device got cable state chagne (true - cable is good, false - cables is bad)
+            virtual void notifyCableOkStateChange(Device * dev, bool cableOk) = 0;  // Notification that device got cable state change (true - cable is good, false - cables is bad)
             virtual void notifyHDCPCapDone(Device * dev, bool hdcpCap) = 0;         // Notification that device's HDCP cap detection is done and get state change.
             virtual void notifyMCCSEvent(Device * dev) = 0;                         // Notification that an MCCS event is coming
         };
