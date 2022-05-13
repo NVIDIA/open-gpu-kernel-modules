@@ -48,7 +48,7 @@ static void gpuacctStopTimerCallbacks(OBJGPU *, GPUACCT_GPU_INSTANCE_INFO *);
 static NV_STATUS gpuacctSampleGpuUtil(OBJGPU *, OBJTMR *, TMR_EVENT *);
 
 /*!
- * Constrcutor for gpu accounting class.
+ * Constructor for gpu accounting class.
  *
  * @param[in,out]  pGpuAcct  GPUACCT object pointer
  *
@@ -501,7 +501,7 @@ gpuacctSampleGpuUtil_out:
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Error sheduling callback for util 0x%x\n",
+                  "Error scheduling callback for util 0x%x\n",
                   status);
         return status;
     }
