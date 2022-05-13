@@ -68,7 +68,7 @@
  * NvRmIdleChannel(channel_containing_the_9074_object);
  * NvRmControl(NV9074_CTRL_CMD_FLUSH, {FALSE, 0});
  *
- * When an NV9074 object is placed into the flushing state, a snaphot of the
+ * When an NV9074 object is placed into the flushing state, a snapshot of the
  * current timer value is taken, and "maxFlushTime" is added to this. This
  * value is the "flush limit timestamp". Any previously or newly invoked
  * NV9074_SEMAPHORE_SCHED methods and NV9074_CTRL_CMD_RELEASE requests that
