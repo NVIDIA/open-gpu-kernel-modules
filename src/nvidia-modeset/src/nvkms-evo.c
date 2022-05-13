@@ -3906,7 +3906,7 @@ void nvRestoreSORAssigmentsEvo(NVDevEvoRec *pDevEvo)
             if (ret != NVOS_STATUS_SUCCESS) {
                 nvEvoLogDispDebug(pDispEvo,
                                   EVO_LOG_ERROR,
-                                  "Failed to restore SOR-%u -> %s assigment.",
+                                  "Failed to restore SOR-%u -> %s assignment.",
                                   sorIndex, sorAssignList[sorIndex]->name);
             } else {
                 RefreshSORAssignments(pDispEvo, &params);
