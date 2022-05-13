@@ -41,9 +41,9 @@
  * for RM-bound messages.
  *
  * There are currently two type of queues supported:
- *      1) DMEM queues.  The original queue type.   For informaiton specific to
+ *      1) DMEM queues.  The original queue type.   For information specific to
  *          DMEM queues see the HDR of flcnqueue_dmem.c
- *      2) FB Queues   For infomation specific to FB Queues, see the HDR of
+ *      2) FB Queues   For information specific to FB Queues, see the HDR of
  *          flcnqueue_fb.c.
  * This file contains routines common to both queue types.
  *
@@ -572,7 +572,7 @@ _flcnQueueSeqInfoFind_IMPL
  * @param[in]   device  nvswitch device pointer
  * @param[in]   pFlcn   FLCN object pointer
  *
- * @return  SEQ_INFO structure pointer or NULL if no free entry was fount
+ * @return  SEQ_INFO structure pointer or NULL if no free entry was found
  */
 static PFLCN_QMGR_SEQ_INFO
 _flcnQueueSeqInfoAcq_IMPL
