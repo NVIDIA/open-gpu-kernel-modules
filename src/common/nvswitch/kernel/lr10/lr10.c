@@ -750,7 +750,7 @@ _nvswitch_perform_BIT_offset_update
                                    __FUNCTION__);
                     return NV_ERR_GENERIC;
                 }
-                // Update the retrived info with device info
+                // Update the retrieved info with device info
                 bios_config->nvlink_config_table_address = (nvInitTablePtrs.NvlinkConfigDataPtr + bios_config->pci_image_address);
             }
             break;
@@ -1282,7 +1282,7 @@ _nvswitch_load_link_disable_settings_lr10
 
     //
     // SYSTEM CTRL
-    // If the SYSTEM_CTRL setting had been overidden by another entity,
+    // If the SYSTEM_CTRL setting had been overridden by another entity,
     // it should also be locked, so this write would not take effect.
     //
     if (bios_config != NULL)
@@ -2397,7 +2397,7 @@ nvswitch_ctrl_set_remap_policy_valid_lr10
         return -NVL_BAD_ARGS;
     }
 
-    // Select REMAPPOLICY RAM and disable Auto Increament.
+    // Select REMAPPOLICY RAM and disable Auto Increment.
     remap_ram =
         DRF_DEF(_INGRESS, _REQRSPMAPADDR, _RAM_SEL, _SELECTSREMAPPOLICYRAM) |
         DRF_NUM(_INGRESS, _REQRSPMAPADDR, _AUTO_INCR, 0);
@@ -3179,7 +3179,7 @@ nvswitch_ctrl_set_routing_lan_valid_lr10
         return -NVL_BAD_ARGS;
     }
 
-    // Select RLAN RAM and disable Auto Increament.
+    // Select RLAN RAM and disable Auto Increment.
     rlan_ctrl =
         DRF_DEF(_INGRESS, _REQRSPMAPADDR, _RAM_SEL, _SELECTSRLANROUTERAM) |
         DRF_NUM(_INGRESS, _REQRSPMAPADDR, _AUTO_INCR, 0);
@@ -3516,7 +3516,7 @@ _nvswitch_init_cmd_routing
           DRF_DEF(_ROUTE, _CMD_ROUTE_TABLE0, _RFUN7, _SPRAY);
     NVSWITCH_NPORT_MC_BCAST_WR32_LR10(device, _ROUTE, _CMD_ROUTE_TABLE0, val);
 
-    // Set Random policy for reponses.
+    // Set Random policy for responses.
     val = DRF_DEF(_ROUTE, _CMD_ROUTE_TABLE2, _RFUN16, _RANDOM) |
           DRF_DEF(_ROUTE, _CMD_ROUTE_TABLE2, _RFUN17, _RANDOM);
     NVSWITCH_NPORT_MC_BCAST_WR32_LR10(device, _ROUTE, _CMD_ROUTE_TABLE2, val);
@@ -5436,7 +5436,7 @@ const static NvU32 nport_reg_addr[] =
 };
 
 /*
- *  Disable interrupts comming from NPG & NVLW blocks.
+ *  Disable interrupts coming from NPG & NVLW blocks.
  */
 static void
 _nvswitch_link_disable_interrupts_lr10
