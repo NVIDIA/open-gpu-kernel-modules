@@ -758,7 +758,7 @@ typedef struct nvswitch_get_ingress_response_table_params
  *      by NVSWITCH_ERROR_COUNT_SIZE. In order to query all the errors, a
  *      client needs to keep calling the control till errorCount is zero.
  *   error [OUT]
- *      The error entires.
+ *      The error entries.
  */
 
 typedef enum nvswitch_error_severity_type
@@ -1343,7 +1343,7 @@ typedef struct nvswitch_set_switch_port_config
  *      A valid link/port mask returned by the port masks returned by
  *      NVSWITCH_GET_INFO.
  *   entries [IN]
- *      The Ganged link entires. (TODO: Describe format)
+ *      The Ganged link entries. (TODO: Describe format)
  */
 
 #define NVSWITCH_GANGED_LINK_TABLE_ENTRIES_MAX 256
