@@ -243,7 +243,7 @@ void nvEvoMoveCursorInternal(NVDispEvoPtr pDispEvo,
     pDevEvo->cursorHal->MoveCursor(pDevEvo, sd, head, x, y);
 
     /* If the cursor is visible, trigger VRR unstall to display the
-     * cursor at the new postion */
+     * cursor at the new position */
     if (pEvoSubDev->headState[head].cursor.pSurfaceEvo) {
         nvTriggerVrrUnstallMoveCursor(pDispEvo);
     }
