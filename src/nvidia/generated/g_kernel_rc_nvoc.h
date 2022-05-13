@@ -546,7 +546,7 @@ static inline void krcWatchdogWriteNotifierToGpfifo(struct OBJGPU *pGpu, struct 
 
 
 
-/*! Actual callback funtion called during RC */
+/*! Actual callback function called during RC */
 NvU32 krcResetCallback(NvHandle hClient,
                        NvHandle hDevice,
                        NvHandle hFifo,
