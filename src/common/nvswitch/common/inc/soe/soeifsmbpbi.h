@@ -28,7 +28,7 @@
  * @file   soeifsmbpbi.h
  * @brief  SOE SMBPBI Command Queue
  *
- *         The SMBPBI unit ID will be used for sending and recieving
+ *         The SMBPBI unit ID will be used for sending and receiving
  *         Command Messages between driver and SMBPBI unit of SOE
  */
 
