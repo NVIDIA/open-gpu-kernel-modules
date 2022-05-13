@@ -83,7 +83,7 @@ unsigned DisplayPort::dpCalculateBodyCRC(BitStreamReader * reader)
     for (i = 8; i != 0; i--)
     {
         remainder <<= 1;
-        if ((remainder & 0x100) != 0)
+        if (!(remainder & 0x100) == 0)
         {
             remainder ^= 0xD5;
         }
