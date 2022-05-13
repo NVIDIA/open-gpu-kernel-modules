@@ -208,7 +208,7 @@ nvlink_lib_top_lock_acquire(void)
     }
 
     //
-    // ToDo: Check if the lock was acquired succesfully
+    // ToDo: Check if the lock was acquired successfully
     // Currently the nvlink_acquireLock function doesn't report failures
     //
     nvlink_acquireLock(nvlinkLibCtx.topLevelLock);
@@ -243,7 +243,7 @@ nvlink_lib_top_lock_release(void)
     }
 
     //
-    // ToDo: Check if the lock was released succesfully
+    // ToDo: Check if the lock was released successfully
     // Currently the nvlink_releaseLock function doesn't report failures
     //
     nvlink_releaseLock(nvlinkLibCtx.topLevelLock);
@@ -314,7 +314,7 @@ nvlink_lib_link_locks_acquire
     }
 
     //
-    // ToDo: Check if the lock was acquired succesfully
+    // ToDo: Check if the lock was acquired successfully
     // Currently the nvlink_acquireLock function doesn't report failures
     //
     return NVL_SUCCESS;
@@ -377,7 +377,7 @@ nvlink_lib_link_locks_release
     }
 
     //
-    // ToDo: Check if the lock was released succesfully
+    // ToDo: Check if the lock was released successfully
     // Currently the nvlink_releaseLock function doesn't report failures
     //
     return NVL_SUCCESS;
