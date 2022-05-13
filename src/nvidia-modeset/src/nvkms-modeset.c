@@ -556,7 +556,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
              * Function ApplyProposedModeSetHwStateOneHeadShutDown() clears
              * pSdHeadState and disables all layers. It is not possible to
              * re-apply the existing flipstates because hardware releases
-             * sempahores when layers get disabled; this results in a stuck
+             * semaphores when layers get disabled; this results in a stuck
              * channel if you re-apply the existing flipstate which has
              * the old semaphore values.
              */
