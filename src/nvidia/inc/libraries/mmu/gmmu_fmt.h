@@ -37,7 +37,7 @@ extern "C" {
  * 2. Description of the fields within PDEs and PTEs described by the
  *    field_desc.h and GMMU_FMT_P*E structs.
  *
- * The GMMU_FMT structure wraps these compoments together.
+ * The GMMU_FMT structure wraps these components together.
  *
  * The goals of this abstraction are:
  * G1. Allow common page table management code to work across a variety
