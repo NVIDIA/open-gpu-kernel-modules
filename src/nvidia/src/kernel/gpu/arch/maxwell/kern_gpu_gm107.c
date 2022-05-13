@@ -154,7 +154,7 @@ gpuReadFunctionConfigReg_GM107
 
         default:
             NV_PRINTF(LEVEL_ERROR,
-                      "attempt to read cfg space of non-existant function %x\n",
+                      "attempt to read cfg space of non-existent function %x\n",
                       function);
             return NV_ERR_GENERIC;
     }
@@ -216,7 +216,7 @@ gpuWriteFunctionConfigRegEx_GM107
 
         default:
             NV_PRINTF(LEVEL_ERROR,
-                      "attempt to read cfg space of non-existant function %x\n",
+                      "attempt to read cfg space of non-existent function %x\n",
                       function);
             return NV_ERR_INVALID_ARGUMENT;
     }
