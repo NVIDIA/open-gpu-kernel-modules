@@ -194,7 +194,7 @@ void nvUvmInterfaceAddressSpaceDestroy(uvmGpuAddressSpaceHandle vaSpace);
     nvUvmInterfaceMemoryAllocFB
 
     This function will allocate video memory and provide a mapped Gpu
-    virtual address to this allocation. It also returns the Gpu physical 
+    virtual address to this allocation. It also returns the Gpu physical
     offset if contiguous allocations are requested.
 
     This function will allocate a minimum page size if the length provided is 0
