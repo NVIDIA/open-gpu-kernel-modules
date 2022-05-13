@@ -80,7 +80,7 @@ NV_STATUS nvUvmInterfaceRegisterGpu(const NvProcessorUuid *gpuUuid, UvmGpuPlatfo
     nvUvmInterfaceUnregisterGpu
 
     Unregisters the GPU with the provided UUID. This drops the ref count from
-    nvUvmInterfaceRegisterGpu. Once the reference count is equal to 0 the device may
+    nvUvmInterfaceRegisterGpu. Once the reference count goes to 0, the device may
     no longer be accessible until the next nvUvmInterfaceRegisterGpu call. No
     automatic resource freeing is performed, so only make the last unregister
     call after destroying all your allocations associated with that UUID (such
@@ -194,7 +194,7 @@ void nvUvmInterfaceAddressSpaceDestroy(uvmGpuAddressSpaceHandle vaSpace);
     nvUvmInterfaceMemoryAllocFB
 
     This function will allocate video memory and provide a mapped Gpu
-    virtual address to this allocation. It also returns the Gpu's physical 
+    virtual address to this allocation. It also returns the Gpu physical 
     offset if contiguous allocations are requested.
 
     This function will allocate a minimum page size if the length provided is 0
