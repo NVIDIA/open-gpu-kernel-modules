@@ -378,7 +378,7 @@ void flcnDestroy(nvswitch_device *device, FLCN *pFlcn);
 #define NV_UPROC_ENGINE_ARCH_FALCON_RISCV   (0x2)
 
 /*!
- * Hepler macro to check what HW arch is enabled and running on an uproc engine.
+ * Helper macro to check what HW arch is enabled and running on an uproc engine.
  */
 #define UPROC_ENG_ARCH_FALCON(pFlcn)        (pFlcn->engArch == NV_UPROC_ENGINE_ARCH_FALCON)
 #define UPROC_ENG_ARCH_FALCON_RISCV(pFlcn)  (pFlcn->engArch == NV_UPROC_ENGINE_ARCH_FALCON_RISCV)
