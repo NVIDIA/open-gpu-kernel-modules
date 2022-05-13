@@ -552,7 +552,7 @@ nvlink_core_get_link_discovery_token
 }
 
 /**
- * Write the dicovery token for the given link
+ * Write the discovery token for the given link
  *
  * @param[in]  link   nvlink_link pointer
  * @param[in]  token  Discovery token to write
@@ -596,7 +596,7 @@ nvlink_core_write_link_discovery_token
 }
 
 /**
- * Read the dicovery token for the given link
+ * Read the discovery token for the given link
  *
  * @param[in]  link   nvlink_link pointer
  *
