@@ -90,7 +90,6 @@ kgraphicsAllocGrGlobalCtxBuffers_GP100
 {
     extern NV_STATUS kgraphicsAllocGrGlobalCtxBuffers_GM200(OBJGPU *pGpu, KernelGraphics *pKernelGraphics, NvU32 gfid, KernelGraphicsContext *pKernelGraphicsContext);
     GR_GLOBALCTX_BUFFERS         *pCtxBuffers;
-    NvU64                         allocFlags = MEMDESC_FLAGS_NONE;
     NV_STATUS                     status;
     CTX_BUF_POOL_INFO            *pCtxBufPool;
     const KGRAPHICS_STATIC_INFO  *pKernelGraphicsStaticInfo;
@@ -112,25 +111,12 @@ kgraphicsAllocGrGlobalCtxBuffers_GP100
         //
         if (pCtxBuffers->bAllocated)
              return NV_OK;
-
-        // check for allocating local buffers in VPR memory (don't want for global memory)
-        if (
-            pKernelGraphicsContextUnicast->bVprChannel)
-            allocFlags |= MEMDESC_ALLOC_FLAGS_PROTECTED;
-
-        // If allocated per channel, ensure allocations goes into Suballocator if available
-        allocFlags |= MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
     }
     else
     {
         pCtxBuffers = &pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid];
         NV_ASSERT_OK_OR_RETURN(ctxBufPoolGetGlobalPool(pGpu, CTX_BUF_ID_GR_GLOBAL,
             NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance), &pCtxBufPool));
-    }
-
-    if (pCtxBufPool != NULL)
-    {
-        allocFlags |= MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL;
     }
 
     pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);

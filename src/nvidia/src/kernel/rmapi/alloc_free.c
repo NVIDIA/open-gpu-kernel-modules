@@ -893,10 +893,6 @@ serverResLock_Epilogue
     NvU32 *pReleaseFlags
 )
 {
-    NvU32 gpuLockFlags = GPUS_LOCK_FLAGS_NONE;
-    if (access == LOCK_ACCESS_READ)
-        gpuLockFlags |= GPU_LOCK_FLAGS_READ;
-
     if (*pReleaseFlags & RM_LOCK_RELEASE_GPU_GROUP_LOCK)
     {
         // UNLOCK: release GPU group lock
