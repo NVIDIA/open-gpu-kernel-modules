@@ -526,7 +526,7 @@ kbusInitFla_GA100
     // Initialize FLA State Info if possible
     //  1. FLA is by default enabled for GA100,
     //  2. Disable FLA when MIG is enabled
-    //     Currently MIG is persistent state, so GPU reboot will happpen, when MIG is being enabled/disabled
+    //     Currently MIG is persistent state, so GPU reboot will happen, when MIG is being enabled/disabled
     //     so when the GPU reboot happens with a modified state, don't enable FLA. This is decent WAR for bug: 2568634
     //   3. Disable FLA when SLI is enabled
     //       Bug: 2985556, re-enable once we fix this bug.
@@ -802,7 +802,7 @@ kbusGetFlaVaspace_GA100
     //
     // when FLA init moves to P2P object creation time, any client trying to get
     // FLA VAS reference, needs to be returned NV_ERR_NOT_SUPPORTED. In that case, only
-    // way to determine is to check if links are trained in the system. Since we dont have an easy
+    // way to determine is to check if links are trained in the system. Since we don't have an easy
     // way to do the checks, currently we can assume that Nvlinks will not be disabled outside of MIG
     //
 
