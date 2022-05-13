@@ -188,7 +188,7 @@ typedef struct NV30F1_CTRL_GSYNC_GET_STATUS_SIGNALS_PARAMS {
  *   signal.
  * nSync
  *   This parameter specifies the number of pulses to wait between frame lock
- *   signal generation. 0 indicates that every incomming pulse should result in
+ *   signal generation. 0 indicates that every incoming pulse should result in
  *   a frame lock sync pulse being generated (i.e. the input and output rate 
  *   matches).
  * syncSkew
@@ -288,7 +288,7 @@ typedef NV30F1_CTRL_GSYNC_GET_CONTROL_PARAMS_PARAMS NV30F1_CTRL_GSYNC_SET_CONTRO
  *
  * minRevRequired
  *  This parameter is set by the RM to indicate the minimum
- *  Qsync FPGA revision required for a specific CHIP Familiy
+ *  Qsync FPGA revision required for a specific CHIP Family
  *
  * isFirmwareRevMismatch
  * This parameter is set to TRUE by RM when the Qsync Firmware
@@ -601,17 +601,17 @@ typedef struct NV30F1_CTRL_GSYNC_GET_STATUS_SYNC_PARAMS {
  *   framelocked to an external house sync signal. Otherwise, this is same
  *   as the refresh rate of the master display device.
  * houseSyncIncomming
- *   This parameter is set by the RM to indicate the rate of an incomming 
+ *   This parameter is set by the RM to indicate the rate of an incoming 
  *   house sync signal in 0.0001 Hertz (i.e. it has been multiplied by 10000).
  * syncInterval
  *   This parameter is set by the RM to indicate the number of incoming 
  *   sync pulses to wait before the generation of the frame sync pulse.
  * bSyncReady
- *   This paramater is set by the RM to indicate if a sync signal has 
+ *   This parameter is set by the RM to indicate if a sync signal has 
  *   been detected (this parameter is also available from the 
  *   NV30F1_CTRL_CMD_GSYNC_GET_STATUS_SYNC method).
  * bSwapReady
- *   This paramater is set by the RM to indicate if the hardware is 
+ *   This parameter is set by the RM to indicate if the hardware is 
  *   ready to swap. 
  * bHouseSync
  *   This parameter is set by the RM to indicate that a house sync signal
@@ -1427,7 +1427,7 @@ typedef struct NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS {
  * NV30F1_CTRL_CMD_GSYNC_CONFIG_FLASH
  *
  * This command configure GSYNC registers for pre-flash and post-flash
- * operations. This is currenly used for GSYNC-3 (P2060) only. RM clients
+ * operations. This is currently used for GSYNC-3 (P2060) only. RM clients
  * has to make sure that they perform both pre-flash and post-flash
  * operations on GSYNC board. Avoiding, post-flash will cause mismatch
  * between RM cached-data and GSYNC register values.
