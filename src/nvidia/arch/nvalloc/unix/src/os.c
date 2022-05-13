@@ -1323,7 +1323,7 @@ NV_STATUS osEventNotificationWithInfo
         switch (pNotifyEvent->NotifyType)
         {
             case NV_EVENT_BUFFER_BIND:
-            case NV01_EVENT_WIN32_EVENT:
+            case NV01_EVENT_OS_EVENT:
             {
                 nv_event_t *event = NvP64_VALUE(pNotifyEvent->Data);
                 postEvent(event,

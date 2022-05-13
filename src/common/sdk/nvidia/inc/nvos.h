@@ -355,11 +355,8 @@ typedef struct
 } NVOS05_PARAMETERS;
 
 /* Valid values for hClass in Nv01AllocEvent */
-/* Note that NV01_EVENT_OS_EVENT is same as NV01_EVENT_WIN32_EVENT */
-/* TODO: delete the WIN32 name */
 #define  NV01_EVENT_KERNEL_CALLBACK                                (0x00000078)
 #define  NV01_EVENT_OS_EVENT                                       (0x00000079)
-#define  NV01_EVENT_WIN32_EVENT                             NV01_EVENT_OS_EVENT
 #define  NV01_EVENT_KERNEL_CALLBACK_EX                             (0x0000007E)
 
 /* NOTE: NV01_EVENT_KERNEL_CALLBACK is deprecated. Please use NV01_EVENT_KERNEL_CALLBACK_EX. */

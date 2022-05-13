@@ -313,12 +313,6 @@
 #ifndef NV1_EVENT_OS_EVENT
 #define NV1_EVENT_OS_EVENT                       (0x00000079) // alias
 #endif
-#ifndef NV01_EVENT_WIN32_EVENT
-#define NV01_EVENT_WIN32_EVENT                   (0x00000079) // alias
-#endif
-#ifndef NV1_EVENT_WIN32_EVENT
-#define NV1_EVENT_WIN32_EVENT                    (0x00000079) // alias
-#endif
 
 #ifndef NV01_EVENT_KERNEL_CALLBACK_EX
 #define NV01_EVENT_KERNEL_CALLBACK_EX            (0x0000007e)
