@@ -135,7 +135,7 @@ int msgqRxLink(msgqHandle handle, const void *pBackingStore, unsigned size,
  * @param handle
  * @return 0 if outgoing queue is full or not initialized
  *
- * WARING: This function doesn NOT flush caches. It's fast, but in reality
+ * WARNING: This function does NOT flush caches. It's fast, but in reality
  * there may be more space than is reported.
  */
 unsigned msgqTxGetFreeSpace(msgqHandle handle);
