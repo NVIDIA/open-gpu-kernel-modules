@@ -844,7 +844,7 @@ static void dwarfBuildARangeTable(libosDebugResolver *pThis)
  *   A dwarf stream object initialized to the start of a unit in the
  *   .debug_lines elf section.
  * @param[in] address
- *   Any virtual address contained in teh above .debug_lines unit.
+ *   Any virtual address contained in the above .debug_lines unit.
  */
 static void dwarfSetARangeTableLineUnit(libosDebugResolver *pThis, DwarfStream unit, NvU64 address)
 {
