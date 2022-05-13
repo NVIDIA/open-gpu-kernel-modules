@@ -2137,7 +2137,7 @@ nvlink_lib_ctrl_train_intranode_conns_parallel
             trainParams->endPointPairs[i].dst.nodeId)
         {
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: Node index 0x%x with mis-match ids (src:0x%x dst:0x%x).\n",
+                "%s: Node index 0x%x with mismatch ids (src:0x%x dst:0x%x).\n",
                 __FUNCTION__ , i,
                 trainParams->endPointPairs[i].src.nodeId,
                 trainParams->endPointPairs[i].dst.nodeId));
