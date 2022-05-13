@@ -155,7 +155,7 @@ nvlink_core_train_internode_conns_from_swcfg_to_active
 
     //
     // Always return success to FM on training failures
-    // FM will read link states to determine sucessfull training
+    // FM will read link states to determine successful training
     //
     return NVL_SUCCESS;
 }
@@ -621,7 +621,7 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
         }
     }
 
-    // Bug 2398907 mentioned that a link pair can take upto 125us for DL stat to have CONFIG_GOOD.
+    // Bug 2398907 mentioned that a link pair can take up to 125us for DL stat to have CONFIG_GOOD.
     nvlink_sleep(1);
 
     // STEP 8: Set POST_INITNEGOTIATE
