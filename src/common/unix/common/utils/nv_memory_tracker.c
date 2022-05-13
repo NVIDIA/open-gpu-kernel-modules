@@ -54,7 +54,7 @@ typedef union {
     /*
      * Unused. For alignment purposes only.  Guarantee alignment to
      * twice pointer size.  That is the alignment guaranteed by glibc:
-     * http://www.gnu.org/software/libc/manual/html_node/Aligned-Memory-Blocks.html
+     * https://www.gnu.org/software/libc/manual/html_node/Aligned-Memory-Blocks.html
      * which seems reasonable to match here.
      */
     NvU8 align __attribute__((aligned(sizeof(void*) * 2)));

@@ -198,7 +198,7 @@ NvBool nvDbgBreakpointEnabled(void);
  * coverage.
  *
  * - See @ref PORT_ASSERT for usage example.
- * - See http://www.bullseye.com/help/build-exclude.html for more details.
+ * - See https://www.bullseye.com/help/build-exclude.html for more details.
  */
 /**
  * @def PORT_COVERAGE_PUSH_ON()

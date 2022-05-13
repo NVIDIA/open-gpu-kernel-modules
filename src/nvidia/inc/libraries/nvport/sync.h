@@ -110,7 +110,7 @@ void portSyncShutdown(void);
  * @brief A spinlock data type.
  *
  * For documentation on what a spinlock is and how it behaves see
- * http://en.wikipedia.org/wiki/Spinlock
+ * https://en.wikipedia.org/wiki/Spinlock
  *
  *  - A valid spinlock is any which is non-NULL
  *  - Spinlocks are not recursive.

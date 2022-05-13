@@ -2410,7 +2410,7 @@ NvU32 NvTiming_CalculateCommonEDIDCRC32(NvU8* pEDIDBuffer, NvU32 edidVersion)
     CommonEDIDBuffer[0x7F] = 0;
     CommonEDIDBuffer[0xFF] = 0;
 
-    // We also need to zero out any "EDID Other Monitor Descriptors" (http://en.wikipedia.org/wiki/Extended_display_identification_data)
+    // We also need to zero out any "EDID Other Monitor Descriptors" (https://en.wikipedia.org/wiki/Extended_display_identification_data)
     for (edidBufferIndex = 54; edidBufferIndex <= 108; edidBufferIndex += 18)
     {
         if (CommonEDIDBuffer[edidBufferIndex] == 0 && CommonEDIDBuffer[edidBufferIndex+1] == 0)

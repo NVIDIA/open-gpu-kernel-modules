@@ -195,7 +195,7 @@ PCIACCESS_LDFLAGS     ?=
 ##############################################################################
 # This makefile uses the $(eval) builtin function, which was added in
 # GNU make 3.80.  Check that the current make version recognizes it.
-# Idea suggested by:  http://www.jgc.org/blog/cookbook-sample.pdf
+# Idea suggested by:  https://www.jgc.org/blog/cookbook-sample.pdf
 ##############################################################################
 
 _eval_available :=

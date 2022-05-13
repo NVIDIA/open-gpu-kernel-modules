@@ -70,9 +70,9 @@
  * - No HW random support (older CPUs)
  *
  * For additional information, see these links:
- * - http://www.2uo.de/myths-about-urandom/
+ * - https://www.2uo.de/myths-about-urandom/
  * - https://bugs.ruby-lang.org/issues/9569
- * - http://security.stackexchange.com/questions/3936/is-a-rand-from-dev-urandom-secure-for-a-login-key
+ * - https://security.stackexchange.com/questions/3936/is-a-rand-from-dev-urandom-secure-for-a-login-key
  *
  * @{
  */

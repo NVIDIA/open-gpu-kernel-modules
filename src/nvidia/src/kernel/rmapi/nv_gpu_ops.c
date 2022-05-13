@@ -1550,7 +1550,7 @@ out:
 // megabytes per seconds..
 static NV_STATUS getPCIELinkRateMBps(struct gpuDevice *device, NvU32 *pcieLinkRate)
 {
-    // PCI Express Base Specification: http://www.pcisig.com/specifications/pciexpress
+    // PCI Express Base Specification: https://www.pcisig.com/specifications/pciexpress
     const NvU32 PCIE_1_ENCODING_RATIO_TOTAL = 10;
     const NvU32 PCIE_1_ENCODING_RATIO_EFFECTIVE = 8;
     const NvU32 PCIE_2_ENCODING_RATIO_TOTAL = 10;
