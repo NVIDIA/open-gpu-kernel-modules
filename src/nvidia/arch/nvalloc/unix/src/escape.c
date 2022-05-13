@@ -64,7 +64,7 @@
     }                                          \
 }
 
-// only return errors through pApi->status
+// Only return errors through pApi->status
 static void RmCreateOsDescriptor(NVOS32_PARAMETERS *pApi, API_SECURITY_INFO secInfo)
 {
     NV_STATUS rmStatus;
@@ -143,7 +143,7 @@ done:
         pApi->status = rmStatus;
 }
 
-// only return errors through pApi->status
+// Only return errors through pApi->status
 static void RmAllocOsDescriptor(NVOS02_PARAMETERS *pApi, API_SECURITY_INFO secInfo)
 {
     NV_STATUS rmStatus = NV_OK;
@@ -199,7 +199,7 @@ static void RmAllocOsDescriptor(NVOS02_PARAMETERS *pApi, API_SECURITY_INFO secIn
     if (DRF_VAL(OS02, _FLAGS, _ALLOC_USER_READ_ONLY, pApi->flags))
         attr2 = FLD_SET_DRF(OS32, _ATTR2, _PROTECTION_USER, _READ_ONLY, attr2);
 
-    // currently CPU-RO memory implies GPU-RO as well
+    // Currently CPU-RO memory implies GPU-RO as well
     if (DRF_VAL(OS02, _FLAGS, _ALLOC_DEVICE_READ_ONLY, pApi->flags) ||
         DRF_VAL(OS02, _FLAGS, _ALLOC_USER_READ_ONLY, pApi->flags))
         attr2 = FLD_SET_DRF(OS32, _ATTR2, _PROTECTION_DEVICE, _READ_ONLY, attr2);
