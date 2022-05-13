@@ -38,7 +38,7 @@ static void __nv_drm_framebuffer_free(struct nv_drm_framebuffer *nv_fb)
 {
     uint32_t i;
 
-    /* Dereference gem object */
+    /* Unreference gem object */
     for (i = 0; i < ARRAY_SIZE(nv_fb->nv_gem); i++) {
         if (nv_fb->nv_gem[i] != NULL) {
             nv_drm_gem_object_unreference_unlocked(nv_fb->nv_gem[i]);
