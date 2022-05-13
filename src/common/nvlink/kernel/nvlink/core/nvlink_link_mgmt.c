@@ -223,7 +223,7 @@ nvlink_core_check_rx_sublink_state
 }
 
 /**
- * Poll the link to reach the specified state upto the given timeout.
+ * Poll the link to reach the specified state up to the given timeout.
  * Link state transition is considered failed once timeout occurs.
  *
  * @param[in]  link       NVLink link pointer
@@ -253,7 +253,7 @@ nvlink_core_poll_link_state
         if (!timeout)
         {
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: Timeout occured while polling on link.\n",
+                "%s: Timeout occurred while polling on link.\n",
                 __FUNCTION__));
 
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
@@ -330,7 +330,7 @@ nvlink_core_poll_sublink_state
 }
 
 /**
- * Poll for the tx sublink to reach the specified state upto the given
+ * Poll for the tx sublink to reach the specified state up to the given
  * timeout. Sublink state transition is considered failed once timeout
  * occurs.
  *
@@ -367,7 +367,7 @@ nvlink_core_poll_tx_sublink_state
         if (!timeout)
         {
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: Timeout occured while polling on link.\n",
+                "%s: Timeout occurred while polling on link.\n",
                 __FUNCTION__));
 
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
@@ -388,7 +388,7 @@ nvlink_core_poll_tx_sublink_state
 }
 
 /**
- * Poll for the rx sublink to reach the specified state upto the given
+ * Poll for the rx sublink to reach the specified state up to the given
  * timeout. Sublink state transition is considered failed once timeout
  * occurs.
  *
@@ -425,7 +425,7 @@ nvlink_core_poll_rx_sublink_state
         if (!timeout)
         {
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: Timeout occured while polling on link.\n",
+                "%s: Timeout occurred while polling on link.\n",
                 __FUNCTION__));
 
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
