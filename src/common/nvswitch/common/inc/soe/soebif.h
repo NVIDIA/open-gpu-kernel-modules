@@ -28,7 +28,7 @@
  * @file   soebif.h
  * @brief  SOE BIF Command Queue
  *
- *         The BIF unit ID will be used for sending and recieving
+ *         The BIF unit ID will be used for sending and receiving
  *         Command Messages between driver and BIF unit of SOE
  */
 
