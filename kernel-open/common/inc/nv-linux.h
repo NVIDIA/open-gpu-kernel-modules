@@ -447,6 +447,9 @@ extern NvBool nvos_is_chipset_io_coherent(void);
 #define CACHE_FLUSH()            asm volatile("sync;  \n" \
                                               "isync; \n" ::: "memory")
 #define WRITE_COMBINE_FLUSH()    CACHE_FLUSH()
+#elif defined(NVCPU_RISCV64)
+#define CACHE_FLUSH()  asm volatile("fence.i":::"memory")
+#define WRITE_COMBINE_FLUSH() CACHE_FLUSH()
 #endif
 
 typedef enum

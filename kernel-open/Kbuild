@@ -104,6 +104,10 @@ ifeq ($(ARCH),powerpc)
  EXTRA_CFLAGS += -mlittle-endian -mno-strict-align -mno-altivec
 endif
 
+ifeq ($(ARCH),riscv)
+ EXTRA_CFLAGS += -march=rv64imac -mabi=lp64
+endif
+
 EXTRA_CFLAGS += -DNV_UVM_ENABLE
 EXTRA_CFLAGS += $(call cc-option,-Werror=undef,)
 EXTRA_CFLAGS += -DNV_SPECTRE_V2=$(NV_SPECTRE_V2)
