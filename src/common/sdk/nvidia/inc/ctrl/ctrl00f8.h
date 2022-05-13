@@ -95,7 +95,7 @@ typedef struct NV00F8_CTRL_GET_INFO_PARAMS {
  *  numPfns [OUT]
  *    Number of valid entries in pfnArray.
  *
- * Note: This ctrl call is only available for kerenl mode client in vGPU platforms.
+ * Note: This ctrl call is only available for kernel mode client in vGPU platforms.
  */
 
 #define NV00F8_CTRL_CMD_DESCRIBE            (0xf80102) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_DESCRIBE_PARAMS_MESSAGE_ID" */
