@@ -127,7 +127,7 @@ typedef struct
 //
 // Explanation: This struct will be provided when UVM/RM registers a region with PMA,
 // after which the struct is stored locally in PMA. The internal "filter" function will
-// use the information everytime a request comes in.
+// use the information every time a request comes in.
 //
 typedef struct
 {
