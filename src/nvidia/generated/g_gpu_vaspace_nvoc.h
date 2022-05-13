@@ -149,7 +149,7 @@ MAKE_LIST(ReservedPageTableEntriesList, VA_RANGE_GPU);
 typedef struct GVAS_GPU_STATE
 {
     /*!
-     * GMMU format for this GPU (structured for heterogenous SLI).
+     * GMMU format for this GPU (structured for heterogeneous SLI).
      */
     const GMMU_FMT    *pFmt;
     /*!
