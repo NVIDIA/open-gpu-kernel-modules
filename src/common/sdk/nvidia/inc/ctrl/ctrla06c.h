@@ -47,7 +47,7 @@
  * A channel in a channel group may be restricted with respect to what objects
  * can be allocated on it and what APIs are allowed to operate on the channel.
  * For more details on specifics of how groups behave see the Software and
- * Hardware documetation for the specific architecture in which you are
+ * Hardware documentation for the specific architecture in which you are
  * interested.
  *
  */
@@ -336,7 +336,7 @@ typedef struct NVA06C_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS {
  *   runqueue
  *
  * numValidEntries [input]
- *   The number of valid entries upto
+ *   The number of valid entries up to
  *   NVC36F_CTRL_CMD_GPFIFO_FAULT_METHOD_BUFFER_MAX_RUNQUEUES actually filled in
  *   the control call parameters.
  *
