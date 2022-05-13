@@ -45,7 +45,7 @@
  * There are currently two types of queues used:
  *      1) DMEM queues.  The original queue type.  This file contains the routines
  *          specific to DMEM queues.
- *      2) FB Queues   For infomation specific to FB Queues, see the HDR of
+ *      2) FB Queues   For information specific to FB Queues, see the HDR of
  *          flcnqueue_fb.c.
  * File flcnqueue.c has all routines common to both types of queues.
  *
