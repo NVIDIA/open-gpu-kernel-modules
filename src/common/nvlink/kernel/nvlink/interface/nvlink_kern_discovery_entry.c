@@ -78,7 +78,7 @@ nvlink_lib_get_remote_conn_info
 
     //
     // Top-level lock is now acquired. Proceed to traversing the 
-    // connnection list
+    // connection list
     //
 
     // Find the associated intranode connection with this link
