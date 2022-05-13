@@ -22,7 +22,7 @@
  */
 
 /*
- * @brief Bindata APIs implememtation
+ * @brief Bindata APIs implementation
  */
 
 #include "core/bin_data.h"
