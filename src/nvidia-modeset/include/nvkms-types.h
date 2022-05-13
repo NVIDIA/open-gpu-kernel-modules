@@ -1562,7 +1562,7 @@ typedef struct _NVDispHeadStateEvoRec {
      *
      * The numVblankSyncObjectsCreated will ideally always be equal to
      * NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD, but could be lower if errors
-     * occured during syncpt allocation in nvRMSetupEvoCoreChannel().
+     * occurred during syncpt allocation in nvRMSetupEvoCoreChannel().
      */
     NvU8 numVblankSyncObjectsCreated;
     NVVblankSyncObjectRec vblankSyncObjects[NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD];
