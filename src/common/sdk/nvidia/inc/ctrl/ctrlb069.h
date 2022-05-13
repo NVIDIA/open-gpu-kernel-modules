@@ -155,7 +155,7 @@ typedef struct NVB069_CTRL_FAULTBUFFER_GET_SIZE_PARAMS {
  *      Mapping for fault buffer's put pointer (NV_PFIFO_REPLAYABLE_FAULT_BUFFER_PUT)
  *    pFaultBufferInfo
  *      Mapping for fault buffer's Info pointer (NV_PFIFO_REPLAYABLE_FAULT_BUFFER_INFO)
- *      Note: this variable is deprecated since buffer overflow is not a seperate register from Volta
+ *      Note: this variable is deprecated since buffer overflow is not a separate register from Volta
  *    pPmcIntr
  *      Mapping for PMC intr register (NV_PMC_INTR(0))
  *    pPmcIntrEnSet
