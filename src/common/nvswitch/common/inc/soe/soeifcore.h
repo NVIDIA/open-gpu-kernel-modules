@@ -28,7 +28,7 @@
  * @file   soeifutil.h
  * @brief  SOE CORE Command Queue
  *
- *         The CORE unit ID will be used for sending and recieving
+ *         The CORE unit ID will be used for sending and receiving
  *         Command Messages between driver and CORE unit of SOE
  */
 
