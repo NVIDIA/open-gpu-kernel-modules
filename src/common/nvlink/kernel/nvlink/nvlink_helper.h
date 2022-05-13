@@ -140,12 +140,12 @@ NvlStatus nvlink_core_initnegotiate(nvlink_link **links, NvU32 numLinks, NvU32 f
 NvU64 nvlink_core_get_link_discovery_token(nvlink_link *link);
 
 /**
- * Write the dicovery token for the given link
+ * Write the discovery token for the given link
  */
 NvlStatus nvlink_core_write_link_discovery_token(nvlink_link *link, NvU64 token);
 
 /**
- * Read the dicovery token for the given link
+ * Read the discovery token for the given link
  */
 NvU64 nvlink_core_read_link_discovery_token(nvlink_link *link);
 
@@ -318,7 +318,7 @@ NvBool nvlink_core_check_tx_sublink_state(nvlink_link *link, NvU64 txSublinkStat
 NvBool nvlink_core_check_rx_sublink_state(nvlink_link *link, NvU64 rxSublinkState);
 
 /**
- * Poll for the link to reach the particular state upto the given timeout. The link
+ * Poll for the link to reach the particular state up to the given timeout. The link
  * state transition is considered failed once timeout occurs
  */
 NvlStatus nvlink_core_poll_link_state(nvlink_link *link,
@@ -337,7 +337,7 @@ NvlStatus nvlink_core_poll_sublink_state(nvlink_link *localTxSubLink,
                                          NvU32        timeout);
 
 /**
- * Poll for the tx sublink to reach the specified state upto the given timeout. The
+ * Poll for the tx sublink to reach the specified state up to the given timeout. The
  * sublink state transition is considered failed once timeout occurs
  */
 NvlStatus nvlink_core_poll_tx_sublink_state(nvlink_link *link,
@@ -346,7 +346,7 @@ NvlStatus nvlink_core_poll_tx_sublink_state(nvlink_link *link,
                                             NvU32        timeout);
 
 /**
- * Poll for the rx sublink to reach the specified state upto the given timeout. The
+ * Poll for the rx sublink to reach the specified state up to the given timeout. The
  * sublink state transition is considered failed once timeout occurs
  */
 NvlStatus nvlink_core_poll_rx_sublink_state(nvlink_link *link,
