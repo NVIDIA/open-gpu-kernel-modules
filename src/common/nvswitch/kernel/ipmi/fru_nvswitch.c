@@ -45,7 +45,7 @@ _nvswitch_calculate_checksum
 }
 
 /*
- * @brief Retieves from bytes from src and stores into dest.
+ * @brief Retrieves from bytes from src and stores into dest.
  *
  * @return The size of the field including the type/length byte. 
  */
