@@ -1603,8 +1603,8 @@ NV_STATUS heapAlloc_IMPL
         }
         else
         {
-            // Convert bank grow up/down to mem grow up/down
-            currentBankInfo = (currentBankInfo & BANK_MEM_GROW_DOWN ? MEM_GROW_DOWN : MEM_GROW_UP);
+            // Flip current bank bit grow up/down to mem direction grow up/down
+            currentBankInfo &= BANK_MEM_GROW_DOWN ? MEM_GROW_DOWN : MEM_GROW_UP;
         }
     } // if (!ignoreBankPlacement)
 
