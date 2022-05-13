@@ -1016,7 +1016,7 @@ nvswitch_inforom_load_object
  * @brief Inforom State Initialization
  *
  * Initializes the filesystem layer of the InfoROM so that InfoROM objects can
- * be read. Also load certain InfoROM objects that are neded as early as possible
+ * be read. Also load certain InfoROM objects that are needed as early as possible
  * in the initialization path (See bug 992278).
  *
  * @param[in]     device    switch device pointer
