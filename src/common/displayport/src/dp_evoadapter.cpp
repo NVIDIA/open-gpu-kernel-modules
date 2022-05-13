@@ -278,16 +278,16 @@ void EvoMainLink::queryGPUCapability()
         // MST feature on particular sku, whenever requested through INF.
         //
         _hasMultistream         = (params.bIsMultistreamSupported == NV_TRUE) && !_isMstDisabledByRegkey;
-        _isDP1_2Supported       = (params.bIsDp12Supported == NV_TRUE) ? true : false;
-        _isDP1_4Supported       = (params.bIsDp14Supported == NV_TRUE) ? true : false;
-        _isStreamCloningEnabled = (params.bIsSCEnabled == NV_TRUE) ? true : false;
-        _hasIncreasedWatermarkLimits     = (params.bHasIncreasedWatermarkLimits == NV_TRUE) ? true : false;
+        _isDP1_2Supported       = (params.bIsDp12Supported == NV_TRUE);
+        _isDP1_4Supported       = (params.bIsDp14Supported == NV_TRUE);
+        _isStreamCloningEnabled = (params.bIsSCEnabled == NV_TRUE);
+        _hasIncreasedWatermarkLimits     = (params.bHasIncreasedWatermarkLimits == NV_TRUE);
 
-        _isFECSupported         = (params.bFECSupported == NV_TRUE) ? true : false;
+        _isFECSupported         = (params.bFECSupported == NV_TRUE);
 
-        _useDfpMaxLinkRateCaps  = (params.bOverrideLinkBw == NV_TRUE) ? true : false;
+        _useDfpMaxLinkRateCaps  = (params.bOverrideLinkBw == NV_TRUE);
 
-        _isLTPhyRepeaterSupported        = (params.bIsTrainPhyRepeater == NV_TRUE) ? true : false;
+        _isLTPhyRepeaterSupported        = (params.bIsTrainPhyRepeater == NV_TRUE);
 
         if (FLD_TEST_DRF(0073, _CTRL_CMD_DP_GET_CAPS, _MAX_LINK_RATE, _1_62, params.maxLinkRate))
             _maxLinkRateSupportedGpu = RBR; //in Hz
@@ -306,7 +306,7 @@ void EvoMainLink::queryGPUCapability()
 
         if (!_isDscDisabledByRegkey)
         {
-            _DSC.isDscSupported = params.DSC.bDscSupported ? true : false;
+            _DSC.isDscSupported = !!params.DSC.bDscSupported;
             _DSC.encoderColorFormatMask = params.DSC.encoderColorFormatMask;
             _DSC.lineBufferSizeKB = params.DSC.lineBufferSizeKB;
             _DSC.rateBufferSizeKB = params.DSC.rateBufferSizeKB;
