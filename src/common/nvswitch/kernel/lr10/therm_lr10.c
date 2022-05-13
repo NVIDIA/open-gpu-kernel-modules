@@ -77,7 +77,7 @@ _nvswitch_read_max_tsense_temperature
 
         // Temperature of the sensor reported equals calculation of the max temperature reported
         // from the TSENSE HUB plus the temperature offset programmed by SW. This offset needs to
-        // be substracted to get the actual temperature of the sensor.
+        // be subtracted to get the actual temperature of the sensor.
         temperature -= offset;
     }
 
@@ -206,7 +206,7 @@ nvswitch_monitor_thermal_alert_lr10
 }
 
 /*
- * @brief Callback function to recieve thermal messages from SOE.
+ * @brief Callback function to receive thermal messages from SOE.
  */
 void
 nvswitch_therm_soe_callback_lr10
