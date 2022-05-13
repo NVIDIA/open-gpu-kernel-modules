@@ -256,7 +256,7 @@
  *
  * The following regkeys are used to override MINION image in the driver.
  *
- * The ucode image is overriden from .js file given along the regkey -nvswitch_set_minion_ucode.
+ * The ucode image is overridden from .js file given along the regkey -nvswitch_set_minion_ucode.
  *
  * Private: Debug use only
  */
