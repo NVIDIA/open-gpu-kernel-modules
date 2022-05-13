@@ -65,7 +65,7 @@ extern "C" {
 #define NV_PRINTF_LEVEL_ENABLED(level)  ((level) >= NV_PRINTF_LEVEL)
 #endif
 
-#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64 && !NVOS_IS_LINUX)
 
 /**
  * GSPRM uses a different system for logging.
