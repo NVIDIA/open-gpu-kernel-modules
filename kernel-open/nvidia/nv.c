@@ -1,4 +1,4 @@
-/*
+3/*
  * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
@@ -139,15 +139,9 @@ static NvTristate nv_chipset_is_io_coherent = NV_TRISTATE_INDETERMINATE;
 
 // True if all the successfully probed devices support ATS
 // Assigned at device probe (module init) time
-NvBool nv_ats_supported = NVCPU_IS_PPC64LE
+NvBool nv_ats_supported = NVCPU_IS_PPC64LE;
 
-
-
-
-
-;
-
-// allow an easy way to convert all debug printfs related to events
+// Allow an easy way to convert all debug printfs related to events
 // back and forth between 'info' and 'errors'
 #if defined(NV_DBG_EVENTS)
 #define NV_DBG_EVENTINFO NV_DBG_ERRORS
@@ -190,7 +184,7 @@ static int           nvidia_close          (struct inode *, struct file *);
 static unsigned int  nvidia_poll           (struct file *, poll_table *);
 static int           nvidia_ioctl          (struct inode *, struct file *, unsigned int, unsigned long);
 
-/* character device entry points*/
+/* Character device entry points*/
 nvidia_module_t nv_fops = {
     .owner       = THIS_MODULE,
     .module_name = MODULE_NAME,
@@ -225,7 +219,7 @@ struct dev_pm_ops nv_pm_ops = {
 #endif
 
 /***
- *** see nv.h for functions exported to other parts of resman
+ *** See nv.h for functions exported to other parts of resman
  ***/
 
 /***
@@ -469,7 +463,6 @@ nvlink_drivers_init(void)
     }
 #endif
 
-
     return rc;
 }
 
@@ -593,9 +586,6 @@ nv_report_applied_patches(void)
 static void
 nv_drivers_exit(void)
 {
-
-
-
     nv_pci_unregister_driver();
 
     nvidia_unregister_module(&nv_fops);
@@ -621,16 +611,6 @@ nv_drivers_init(void)
         rc = -ENODEV;
         goto exit;
     }
-
-
-
-
-
-
-
-
-
-
 
 exit:
     if (rc < 0)
@@ -819,8 +799,8 @@ int __init nvidia_init_module(void)
             count - num_probed_nv_devices);
         nv_printf(NV_DBG_ERRORS,
             "NVRM: This can occur when a driver such as: \n"
-            "NVRM: nouveau, rivafb, nvidiafb or rivatv "
-            "\nNVRM: was loaded and obtained ownership of the NVIDIA device(s).\n");
+            "NVRM: nouveau, rivafb, nvidiafb or rivatv \n"
+            "NVRM: was loaded and obtained ownership of the NVIDIA device(s).\n");
         nv_printf(NV_DBG_ERRORS,
             "NVRM: Try unloading the conflicting kernel module (and/or\n"
             "NVRM: reconfigure your kernel without the conflicting\n"
@@ -1562,7 +1542,7 @@ nvidia_open(
     NV_SET_FILE_PRIVATE(file, nvlfp);
     nvlfp->sp = sp;
 
-    /* for control device, just jump to its open routine */
+    /* For control device, just jump to its open routine */
     /* after setting up the private data */
     if (nv_is_control_device(inode))
     {
@@ -1753,7 +1733,7 @@ static void nv_stop_device(nv_state_t *nv, nvidia_stack_t *sp)
         persistence_mode_notice_logged  = 1;
     }
 
-    /* leave INIT flag alone so we don't reinit every time */
+    /* Leave INIT flag alone so we don't reinit every time */
     nv->flags &= ~NV_FLAG_OPEN;
 
     nv_unregister_ibmnpu_devices(nv);
@@ -2128,7 +2108,7 @@ nvidia_ioctl(
             break;
         }
 
-        /* pass out info about the card */
+        /* Pass out info about the card */
         case NV_ESC_CARD_INFO:
         {
             size_t num_arg_devices = arg_size / sizeof(nv_ioctl_card_info_t);
@@ -2406,8 +2386,8 @@ nvidia_isr_msix(
 }
 
 /*
- * driver receives an interrupt
- *    if someone waiting, then hand it off.
+ * Driver receives an interrupt
+ * If someone waiting, then hand it off.
  */
 irqreturn_t
 nvidia_isr(
@@ -2429,19 +2409,19 @@ nvidia_isr(
     rm_fault_handling_needed = (rm_serviceable_fault_cnt != 0);
 
 #if defined (NV_UVM_ENABLE)
-    //
-    // Returns NV_OK if the UVM driver handled the interrupt
-    //
-    // Returns NV_ERR_NO_INTR_PENDING if the interrupt is not for
-    // the UVM driver.
-    //
-    // Returns NV_WARN_MORE_PROCESSING_REQUIRED if the UVM top-half ISR was
-    // unable to get its lock(s), due to other (UVM) threads holding them.
-    //
-    // RM can normally treat NV_WARN_MORE_PROCESSING_REQUIRED the same as
-    // NV_ERR_NO_INTR_PENDING, but in some cases the extra information may
-    // be helpful.
-    //
+    /* Returns NV_OK if the UVM driver handled the interrupt
+     * 
+     * Returns NV_ERR_NO_INTR_PENDING if the interrupt is not for
+     * the UVM driver.
+     * 
+     * Returns NV_WARN_MORE_PROCESSING_REQUIRED if the UVM top-half ISR was
+     * unable to get its lock(s), due to other (UVM) threads holding them.
+     * 
+     * RM can normally treat NV_WARN_MORE_PROCESSING_REQUIRED the same as
+     * NV_ERR_NO_INTR_PENDING, but in some cases the extra information may
+     * be helpful. 
+     */
+    
     if (nv_uvm_event_interrupt(nv_get_cached_uuid(nv)) == NV_OK)
         uvm_handled = NV_TRUE;
 #endif
@@ -2513,11 +2493,10 @@ nvidia_isr(
     }
     else
     {
-        //
-        // If rm_isr does not need to run a bottom half and mmu_faults_copied
-        // indicates that bottom half is needed, then we enqueue a kthread based
-        // bottom half, as this specific bottom_half will acquire the GPU lock
-        //
+        /* If rm_isr does not need to run a bottom halfand mmu_faults_copied
+         * indicates that bottom half is needed, then we enqueue a kthread based
+         * bottom half, as this specific bottom_half will acquire the GPU lock
+         */
         if (rm_fault_handling_needed)
             nv_kthread_q_schedule_q_item(&nvl->bottom_half_q, &nvl->bottom_half_q_item);
     }
@@ -2545,10 +2524,9 @@ nvidia_isr_msix_kthread_bh(
     nv_state_t *nv = (nv_state_t *) data;
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
-    //
-    // Synchronize kthreads servicing bottom halves for different MSI-X vectors
-    // as they share same pre-allocated alt-stack.
-    //
+    /* Synchronize kthreads servicing bottom halves for different MSI-X vectors
+     * as they share same pre-allocated alt-stack.
+     */
     status = os_acquire_mutex(nvl->msix_bh_mutex);
     // os_acquire_mutex can only fail if we cannot sleep and we can
     WARN_ON(status != NV_OK);
@@ -2593,10 +2571,9 @@ nvidia_isr_bh_unlocked(
     nvidia_stack_t *sp;
     NV_STATUS status;
 
-    //
-    // Synchronize kthreads servicing unlocked bottom half as they
-    // share same pre-allocated stack for alt-stack
-    //
+    /* Synchronize kthreads servicing unlocked bottom half as they
+     * share same pre-allocated stack for alt-stack
+     */
     status = os_acquire_mutex(nvl->isr_bh_unlocked_mutex);
     if (status != NV_OK)
     {
@@ -2641,16 +2618,16 @@ nvidia_rc_timer_callback(
 
     if (rm_run_rc_callback(sp, nv) == NV_OK)
     {
-        // set another timeout 1 sec in the future:
+        // Set another timeout 1 sec in the future:
         mod_timer(&nvl->rc_timer.kernel_timer, jiffies + HZ);
     }
 }
 
 /*
-** nvidia_ctl_open
-**
-** nv control driver open entry point.  Sessions are created here.
-*/
+ * nvidia_ctl_open
+ *
+ * nv control driver open entry point.  Sessions are created here.
+ */
 static int
 nvidia_ctl_open(
     struct inode *inode,
@@ -2666,7 +2643,7 @@ nvidia_ctl_open(
 
     down(&nvl->ldata_lock);
 
-    /* save the nv away in file->private_data */
+    /* Save the nv away in file->private_data */
     nvlfp->nvptr = nvl;
 
     if (NV_ATOMIC_READ(nvl->usage_count) == 0)
@@ -2689,8 +2666,8 @@ nvidia_ctl_open(
 
 
 /*
-** nvidia_ctl_close
-*/
+ * nvidia_ctl_close
+ */
 static int
 nvidia_ctl_close(
     struct inode *inode,
@@ -2791,7 +2768,8 @@ nv_set_dma_address_size(
         /* Certain kernels have a bug which causes pci_set_consistent_dma_mask
          * to call GPL sme_active symbol, this bug has already been fixed in a
          * minor release update but detect the failure scenario here to prevent
-         * an installation regression */
+         * an installation regression 
+         */
 #if !NV_IS_EXPORT_SYMBOL_GPL_sme_active
         dma_set_coherent_mask(&nvl->pci_dev->dev, new_mask);
 #endif
@@ -2878,7 +2856,7 @@ nv_alias_pages(
 
         page_ptr->phys_addr = page_ptr->dma_addr;
 
-        /* aliased pages will be mapped on demand. */
+        /* Aliased pages will be mapped on demand. */
         page_ptr->virt_addr = 0x0;
     }
 
@@ -3363,7 +3341,7 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
         contiguous, cache_type);
 
     //
-    // system memory allocation can be associated with a client instead of a gpu
+    // System memory allocation can be associated with a client instead of a GPU
     // handle the case where per device state is NULL
     //
     if(nv)
@@ -3619,7 +3597,7 @@ const void* NV_API_CALL nv_get_firmware(
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
     const struct firmware *fw;
 
-    // path is relative to /lib/firmware
+    // Path is relative to /lib/firmware
     // if this fails it will print an error to dmesg
     if (request_firmware(&fw, nv_firmware_path(fw_type), nvl->dev) != 0)
         return NULL;
@@ -3839,11 +3817,7 @@ static int __init
 nvos_count_devices(void)
 {
     int count;
-
     count = nv_pci_count_devices();
-
-
-
 
     return count;
 }
@@ -3895,7 +3869,7 @@ nv_power_management(
     switch (pm_action)
     {
         case NV_PM_ACTION_STANDBY:
-            /* fall through */
+            /* Fall through */
         case NV_PM_ACTION_HIBERNATE:
         {
             status = rm_power_management(sp, nv, pm_action);
@@ -4952,35 +4926,6 @@ NV_STATUS NV_API_CALL nv_get_device_memory_config(
     status = NV_OK;
 #endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     return status;
 }
 
@@ -5192,7 +5137,6 @@ NvU32 NV_API_CALL nv_get_dev_minor(nv_state_t *nv)
 
 NV_STATUS NV_API_CALL nv_acquire_fabric_mgmt_cap(int fd, int *duped_fd)
 {
-
     *duped_fd = nvlink_cap_acquire(fd, NVLINK_CAP_FABRIC_MANAGEMENT);
     if (*duped_fd < 0)
     {
@@ -5200,9 +5144,6 @@ NV_STATUS NV_API_CALL nv_acquire_fabric_mgmt_cap(int fd, int *duped_fd)
     }
 
     return NV_OK;
-
-
-
 }
 
 /*
