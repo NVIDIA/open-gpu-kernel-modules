@@ -365,7 +365,7 @@ _nvswitch_soe_bootstrap
     nvswitch_timeout_create(NVSWITCH_INTERVAL_1SEC_IN_NS * 20, &timeout);
 
     //
-    // We will exit this if we recieve bootstrap signal OR
+    // We will exit this if we receive bootstrap signal OR
     // if we timeout waiting for bootstrap signal       OR
     // if bootstrap fails
     //
@@ -672,7 +672,7 @@ nvswitch_soe_unregister_events_lr10
     PSOE   pSoe  = (PSOE)device->pSoe;
     NV_STATUS status;
 
-    // un-register thermal callback funcion
+    // un-register thermal callback function
     status = flcnQueueEventUnregister(device, pFlcn,
                                       pSoe->thermEvtDesc);
     if (status != NV_OK)
@@ -697,7 +697,7 @@ nvswitch_soe_register_event_callbacks_lr10
     PSOE   pSoe  = (PSOE)device->pSoe;
     NV_STATUS status;
 
-    // Register Thermal callback funcion
+    // Register Thermal callback function
     status = flcnQueueEventRegister(
                  device, pFlcn,
                  RM_SOE_UNIT_THERM,
@@ -1756,7 +1756,7 @@ _soeDmaSelfTest
     // data. In the case of this test the reads only occur from the start of
     // a DMA mapped buffer which is larger than 16B, hence the selftest does
     // not need special handling for this behavior. However this will need to
-    // be handled for other cases where SW cannot guarentee that the overfetch
+    // be handled for other cases where SW cannot guarantee that the overfetch
     // will not exceed mapped regions.
     //
     //
