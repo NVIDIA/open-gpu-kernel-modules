@@ -420,7 +420,7 @@ static void RmIsrBottomHalf(
         pDisp = GPU_GET_DISP(pGpu);
 
         //
-        // Call disp service incase of SOC Display,
+        // Call disp service in case of SOC Display,
         // TODO : with multi interrupt handling based on irq aux interrupts are serviced by dpAuxService
         // See JIRA task TDS-4253.
         //
