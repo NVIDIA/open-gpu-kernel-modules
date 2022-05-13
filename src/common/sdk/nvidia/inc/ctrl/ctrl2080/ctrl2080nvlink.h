@@ -2450,7 +2450,7 @@ typedef struct NV2080_CTRL_NVLINK_RESET_LINKS_PARAMS {
  * NV2080_CTRL_CMD_NVLINK_DISABLE_DL_INTERRUPTS
  *
  * [In] linkMask
- *     Mask of links for which DL interrrupts need to be disabled
+ *     Mask of links for which DL interrupts need to be disabled
  */
 #define NV2080_CTRL_NVLINK_DISABLE_DL_INTERRUPTS_PARAMS_MESSAGE_ID (0x31U)
 
@@ -2532,7 +2532,7 @@ typedef struct NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_INFO_PARAMS {
 /*
  * NV2080_CTRL_CMD_NVLINK_SETUP_NVLINK_SYSMEM
  *
- * Updates the HSHUB sysmem config resgister state to reflect sysmem NVLinks
+ * Updates the HSHUB sysmem config register state to reflect sysmem NVLinks
  *
  * [In] sysmemLinkMask
  *     Mask of discovered sysmem NVLinks
