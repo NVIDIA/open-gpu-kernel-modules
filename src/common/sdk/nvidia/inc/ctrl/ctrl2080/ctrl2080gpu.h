@@ -191,7 +191,7 @@ typedef struct NV2080_CTRL_GPU_INFO {
 #define NV2080_CTRL_GPU_INFO_INDEX_CMP_SKU_YES                         (0x00000001)
 
 
-/* valid dma-buf suport values */
+/* valid dma-buf support values */
 #define NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_NO                (0x00000000)
 #define NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_YES               (0x00000001)
 
