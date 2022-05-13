@@ -30,7 +30,7 @@
  * @file   soeiftherm.h
  * @brief  SOE Thermal Command Queue
  *          
- *         The Therm unit ID will be used for sending and recieving
+ *         The Therm unit ID will be used for sending and receiving
  *         Command Messages between driver and Thermal unt of SOE
  */
 
