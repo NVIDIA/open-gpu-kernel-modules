@@ -117,12 +117,6 @@ typedef struct
 static ENGLIST_ITER gpuGetEngineOrderListIter(OBJGPU *pGpu, NvU32 flags);
 static NvBool gpuGetNextInEngineOrderList(OBJGPU *pGpu, ENGLIST_ITER *pIt, PENGDESCRIPTOR pEngDesc);
 
-static inline void _setPlatformNoHostbridgeDetect(NvBool bValue)
-{
-    OBJPFM *pPfm = SYS_GET_PFM(SYS_GET_INSTANCE());
-    pPfm->setProperty(pPfm, PDB_PROP_PFM_NO_HOSTBRIDGE_DETECT, bValue);
-}
-
 // Forward declare all the class definitions so that we don't need to pull in all the headers
 #define GPU_CHILD(className, accessorName, numInstances, bConstructEarly, bAlwaysCreate, gpuField) \
     extern const struct NVOC_CLASS_DEF NV_CONCATENATE(__nvoc_class_def_, className);

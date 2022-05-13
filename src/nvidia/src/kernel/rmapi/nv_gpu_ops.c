@@ -1633,7 +1633,7 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
     NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus;
     NvU32 nvlinkVersion;
     NvU32 sysmemLink;
-    NvU32 linkBandwidthMBps;
+    NvU32 linkBandwidthMBps = 0;
     NvU32 sysmemConnType;
     NvBool atomicSupported;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
@@ -4654,7 +4654,7 @@ static NV_STATUS engineAllocate(struct gpuChannel *channel, gpuChannelInfo *chan
         return NV_ERR_NO_MEMORY;
 
     object->handle = NV01_NULL_OBJECT;
-    
+
     if (engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE)
     {
         ceAllocParams.version = NVB0B5_ALLOCATION_PARAMETERS_VERSION_1;
@@ -7214,7 +7214,7 @@ static NV_STATUS nvGpuOpsGetChannelInstanceMemInfo(gpuRetainedChannel *retainedC
     CHID_MGR *pChidMgr = kfifoGetChidMgr(retainedChannel->pGpu,
                                          pKernelFifo,
                                          retainedChannel->runlistId);
-    
+
     pKernelChannel = kfifoChidMgrGetKernelChannel(retainedChannel->pGpu,
                                                   pKernelFifo,
                                                   pChidMgr,

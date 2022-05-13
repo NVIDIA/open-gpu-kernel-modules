@@ -82,8 +82,8 @@ pmaAddrtreePrintLevel(ADDRTREE_LEVEL *pLevel)
                   pNode->seeChild[mapIndex], i, pNode->state[mapIndex]);
 
         // In case compiler complains when the above print is compiled out
-        pNode = pNode;
-        mapIndex = mapIndex;
+        pNode = pNode + 0;
+        mapIndex = mapIndex + 0;
     }
 }
 

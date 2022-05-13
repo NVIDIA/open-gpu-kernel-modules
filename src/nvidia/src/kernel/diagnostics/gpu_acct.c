@@ -721,18 +721,15 @@ gpuacctStopGpuAccounting_IMPL
 
     vmIndex = NV_INVALID_VM_INDEX;
 
-    if (vmIndex == NV_INVALID_VM_INDEX)
+    // Delete the pid from live process list only if subpid is zero.
+    if (subPid != 0)
     {
-        // Delete the pid from live process list only if subpid is zero.
-        if (subPid != 0)
-        {
-            return NV_OK;
-        }
-        pLiveDS = &pGpuInstanceInfo->liveProcAcctInfo;
-        pDeadDS = &pGpuInstanceInfo->deadProcAcctInfo;
-
-        searchPid = pid;
+        return NV_OK;
     }
+    pLiveDS = &pGpuInstanceInfo->liveProcAcctInfo;
+    pDeadDS = &pGpuInstanceInfo->deadProcAcctInfo;
+
+    searchPid = pid;
 
     status = gpuacctLookupProcEntry(pLiveDS, searchPid, &pEntry);
     if (status != NV_OK)
@@ -1050,11 +1047,7 @@ gpuacctGetAcctPids_IMPL
     count = 0;
     vmIndex = NV_INVALID_VM_INDEX;
 
-    if (vmIndex == NV_INVALID_VM_INDEX)
-    {
-        pList = &pGpuInstanceInfo->deadProcAcctInfo.procList;
-    }
-    NV_ASSERT_OR_RETURN(pList != NULL, NV_ERR_INVALID_STATE);
+    pList = &pGpuInstanceInfo->deadProcAcctInfo.procList;
 
     GPU_ACCT_PROC_LISTIter iter = listIterAll(pList);
     while (listIterNext(&iter))

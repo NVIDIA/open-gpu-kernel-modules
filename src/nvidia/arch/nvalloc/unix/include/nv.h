@@ -175,9 +175,9 @@ extern const char *pNVRM_ID;
 
 typedef union
 {
-    volatile NvV8 Reg008[1];
-    volatile NvV16 Reg016[1];
-    volatile NvV32 Reg032[1];
+    volatile NvV8 Reg008[2564];
+    volatile NvV16 Reg016[1282];
+    volatile NvV32 Reg032[641];
 } nv_hwreg_t, * nv_phwreg_t;
 
 

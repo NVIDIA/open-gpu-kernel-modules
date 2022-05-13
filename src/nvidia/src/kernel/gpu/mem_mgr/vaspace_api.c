@@ -219,7 +219,7 @@ vaspaceapiConstruct_IMPL
             {
                 // In case of SR-IOV, the BAR1 and FLA is managed by the guest. So, no need
                 // to communicate with the host for BAR1 and FLA VA.
-                if ((pNvVASpaceAllocParams->index == NV_VASPACE_ALLOCATION_INDEX_GPU_HOST))
+                if (pNvVASpaceAllocParams->index == NV_VASPACE_ALLOCATION_INDEX_GPU_HOST)
                     bSendRPC = NV_FALSE;
             }
 

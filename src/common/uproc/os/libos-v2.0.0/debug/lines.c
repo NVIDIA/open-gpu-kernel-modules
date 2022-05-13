@@ -877,7 +877,7 @@ static void dwarfSetARangeTableLineUnit(libosDebugResolver *pThis, DwarfStream u
     }
 
     // Walk forwards setting the line unit info for all entries with the same arange unit.
-    for (; (foundUnit == pThis->arangeTable[i].arangeUnit); i++)
+    for (; foundUnit == pThis->arangeTable[i].arangeUnit; i++)
     {
         pThis->arangeTable[i].lineUnitBuffer = unit.buffer;
         pThis->arangeTable[i].lineUnitSize   = (NvU32)unit.size;
