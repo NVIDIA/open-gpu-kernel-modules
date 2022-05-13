@@ -254,7 +254,7 @@ typedef struct HYPERV_SHARED_MEMORY_DESCRIPTOR
 #define NV2080_CTRL_PERF_MAX_LIMITS_v1C_0B 0x100
 
 // Maximum guest address that can we queried in one RPC.
-// Below number is calculated as per Max. Guest Adrresses and their
+// Below number is calculated as per Max. Guest Addresses and their
 // state can be returned in a single 4K (RPC Page size) iteration
 #define GET_PLCABLE_MAX_GUEST_ADDRESS_v1D_05    60
 
