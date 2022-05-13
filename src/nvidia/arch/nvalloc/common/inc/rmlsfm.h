@@ -31,7 +31,7 @@
 
 /*!
  * @file   rmlsfm.h
- * @brief  Top-level header-file that defines Light Secure Falcon Managment
+ * @brief  Top-level header-file that defines Light Secure Falcon Management
            SW shared interfaces.
  */
 
@@ -42,8 +42,8 @@
 #define LSF_WPR_REGION_WMASK                    (0xCU) // Writable only from level 2 and 3 client
 #define LSF_WPR_REGION_RMASK_SUB_WPR_ENABLED    (0x8) // Readable only from level 3 client
 #define LSF_WPR_REGION_WMASK_SUB_WPR_ENABLED    (0x8) // Writable only from level 3 client
-#define LSF_WPR_REGION_ALLOW_READ_MISMATCH_NO   (0x0) // Disallow read mis-match for all clients
-#define LSF_WPR_REGION_ALLOW_WRITE_MISMATCH_NO  (0x0) // Disallow write mis-match for all clients
+#define LSF_WPR_REGION_ALLOW_READ_MISMATCH_NO   (0x0) // Disallow read mismatch for all clients
+#define LSF_WPR_REGION_ALLOW_WRITE_MISMATCH_NO  (0x0) // Disallow write mismatch for all clients
 
 /*!
  * READ mask for WPR region on Tegra
@@ -89,7 +89,7 @@
 #define LSF_LS_BLDATA_EXPECTED_SIZE (0x100U)
 
 /*!
- * since we dont check signatures in GC6 exit, we need to hardcode the WPR offset
+ * since we don't check signatures in GC6 exit, we need to hardcode the WPR offset
  */
 #define LSF_WPR_EXPECTED_OFFSET     (0x0U)
 
@@ -181,7 +181,7 @@
 
 /*!
  * Light Secure Falcon Ucode Description Defines
- * This stucture is prelim and may change as the ucode signing flow evolves.
+ * This structure is prelim and may change as the ucode signing flow evolves.
  */
 typedef struct
 {
