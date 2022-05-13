@@ -55,7 +55,7 @@ _flcnCoreRevisionGet_IMPL
 /*!
  *  @brief Mark the falcon as not ready and inaccessible from RM.
  *  osHandleGpuSurpriseRemoval will use this routine to prevent access to the
- *  Falcon, which could crash due to absense of GPU, during driver cleanup.
+ *  Falcon, which could crash due to absence of GPU, during driver cleanup.
  *
  *  @param[in] device nvswitch_device pointer
  *  @param[in] pFlcn  FLCN pointer
