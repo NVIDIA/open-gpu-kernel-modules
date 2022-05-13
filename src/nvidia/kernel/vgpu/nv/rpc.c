@@ -854,7 +854,7 @@ NV_STATUS rpcGpuExecRegOps_v12_01(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, 
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    /* RPC message buffer can accomodate a maximum of VGPU_MAX_REGOPS_PER_RPC regops only.
+    /* RPC message buffer can accommodate a maximum of VGPU_MAX_REGOPS_PER_RPC regops only.
      * This value must be adjusted(if required) in case of any change to the internal
      * RegOps RPC structures.
      */
