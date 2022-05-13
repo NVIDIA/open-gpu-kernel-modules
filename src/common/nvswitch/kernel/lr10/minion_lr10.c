@@ -545,7 +545,7 @@ _nvswitch_minion_bootstrap
         }
 
         //
-        // We will exit this if we recieve bootstrap signal OR
+        // We will exit this if we receive bootstrap signal OR
         // if we timeout waiting for bootstrap signal       OR
         // if bootstrap fails
         //
