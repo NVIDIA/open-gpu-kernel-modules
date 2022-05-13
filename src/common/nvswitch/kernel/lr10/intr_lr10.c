@@ -627,7 +627,7 @@ _nvswitch_initialize_tstate_interrupts
     NvU32 report_nonfatal;
     NvU32 contain;
 
-    // TD_TID errors are disbaled on both fatal & non-fatal trees since TD_TID RAM is no longer used.
+    // TD_TID errors are disabled on both fatal & non-fatal trees since TD_TID RAM is no longer used.
 
     report_fatal =
         DRF_DEF(_TSTATE, _ERR_FATAL_REPORT_EN_0, _TAGPOOLBUFERR, _ENABLE)              |
@@ -807,7 +807,7 @@ nvswitch_initialize_interrupt_tree_lr10
 
 /*
  * @brief Service MINION Falcon interrupts on the requested interrupt tree
- *        Falcon Interrupts are a little in unqiue in how they are handled:#include <assert.h>
+ *        Falcon Interrupts are a little in unique in how they are handled:#include <assert.h>
  *        IRQSTAT is used to read in interrupt status from FALCON
  *        IRQMASK is used to read in mask of interrupts
  *        IRQDEST is used to read in enabled interrupts that are routed to the HOST
@@ -3086,7 +3086,7 @@ nvswitch_service_minion_link_lr10
         }
         nvswitch_clear_flags(&unhandled, bit);
 
-        // Disable interrupt bit for the given link - fatal error ocurred before
+        // Disable interrupt bit for the given link - fatal error occurred before
         if (device->link[link].fatal_error_occurred)
         {
             enabledLinks &= ~bit;
@@ -3177,7 +3177,7 @@ _nvswitch_service_nvldl_nonfatal_link_lr10
         nvswitch_clear_flags(&unhandled, bit);
 
         //
-        // Mask CRC counter after first occurrance - otherwise, this interrupt
+        // Mask CRC counter after first occurrence - otherwise, this interrupt
         // will continue to fire once the CRC counter has hit the threshold
         // See Bug 3341528
         //
