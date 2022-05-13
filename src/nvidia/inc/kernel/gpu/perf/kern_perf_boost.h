@@ -47,7 +47,7 @@
 typedef struct
 {
     /*!
-     * Specifices the handle of the client who requested this boost
+     * Specifies the handle of the client who requested this boost
      */
     NvHandle    hClient;
 
