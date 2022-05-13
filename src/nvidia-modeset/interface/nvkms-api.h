@@ -4013,7 +4013,7 @@ struct NvKmsExportVrrSemaphoreSurfaceParams {
  *
  * If a vblank syncpt is currently enabled on a head, and a modeset request is
  * issued to reconfigure that head with a new set of mode timings, NVKMS will
- * automatically reenable the vblank syncpt so it continues to trigger with the
+ * automatically re-enable the vblank syncpt so it continues to trigger with the
  * new mode timings.
  *
  * Clients can use these IOCTLs only if both NvKmsAllocDeviceReply::
