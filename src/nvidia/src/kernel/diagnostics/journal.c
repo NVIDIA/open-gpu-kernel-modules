@@ -266,7 +266,7 @@ rcdbConstruct_IMPL(Journal *pRcDB)
 }
 
 //
-// Retrieve the previous driver version from volatile registry entires
+// Retrieve the previous driver version from volatile registry entries
 // and then save the current driver version for next time.
 //
 NV_STATUS rcdbSavePreviousDriverVersion_IMPL
@@ -613,7 +613,7 @@ rcdbGetRcDiagRecBoundaries_IMPL
     NvBool                      foundEnd = NV_FALSE;
 
     // scan the buffer to find all the qualified records & return the
-    // first & last indicies of the qualified records found.
+    // first & last indices of the qualified records found.
 
     // Get the Diag Report Ring buffer.
     rcdbFindRingBufferForType(pRcDB, RmRcDiagReport, &pRingBuffer);
@@ -839,7 +839,7 @@ rcdbUpdateRcDiagRecContext_IMPL
     NvU16                       i;
 
     // go from the start index thru the end index.
-    // note we use != because the indicies will wrap.
+    // note we use != because the indices will wrap.
     for (i = rangeStartIdx; i != (NvU16)(rangeEndIdx + 1U); i++)
     {
         recStatus = rcdbGetRcDiagRec(pRcDB, i, &pCommon, RCDB_RCDIAG_DEFAULT_OWNER, NV0000_CTRL_CMD_NVD_RCERR_RPT_ANY_PROCESS_ID);
@@ -1811,7 +1811,7 @@ rcdbInsertRingBufferToList(
 
     //
     // Order does not matter here because the record will be inserted into the
-    // list based on the time of the record, not its postion in the buffer.
+    // list based on the time of the record, not its position in the buffer.
     //
     for (i = 0; i < pRingBuffer->numEntries; i++)
     {
@@ -2027,7 +2027,7 @@ rcdbDumpErrorCounters_IMPL(Journal *pRcDB, OBJGPU *pGpu, PRB_ENCODER *pPrbEnc)
     // Close NVDEBUG_NVDUMP_DCL_MSG handled by prbEncUnwindNesting.
 
 cleanupAndExit:
-    // Unwind the protobuff to inital depth
+    // Unwind the protobuff to initial depth
     NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(nvStatus, LEVEL_ERROR,
         prbEncUnwindNesting(pPrbEnc, startingDepth));
 
@@ -3511,7 +3511,7 @@ rcdbGetNocatOutstandingCount(Journal *pRcdb)
 ** _rcdbSendNocatJournalNotification sends an ETW Notification that a NOCAT Journal record has been posted.
 **
 **  parameters:
-**      pGpu -- a pointer to the GPU object associated with teh new entry
+**      pGpu -- a pointer to the GPU object associated with the new entry
 **              (may be NULL)
 **      pRcdb -- a pointer to the Journal object NOCAT is using.
 **      posted -- the number of records posted since the last record that was retrieved.
