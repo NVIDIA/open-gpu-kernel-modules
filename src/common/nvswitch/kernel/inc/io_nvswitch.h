@@ -321,7 +321,7 @@ typedef enum nvswitch_engine_id
 //
 struct nvswitch_inband_data
 {
-    // Inband bufer at sender Minion
+    // Inband buffer at sender Minion
     NvU32  sendBuffer[NVSWITCH_MAX_INBAND_BUFFER_ENTRIES];
 
     // Inband buffer at receiver Minion
