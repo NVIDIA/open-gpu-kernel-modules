@@ -72,7 +72,7 @@
  *                   |                     |
  *        0x00000000 \---------------------/
  *
- * To simplify the RM PMU bootstrap process and decrease IFR maintainence
+ * To simplify the RM PMU bootstrap process and decrease IFR maintenance
  * cost, the bootstrap process is encoded as a sequence script, leveraging
  * a small subset of RM's PMU_SEQ_INST interface (see pmuseqinst.h).
  * Register writes are captured during the initial (CPU-driven) RM PMU bootstrap
