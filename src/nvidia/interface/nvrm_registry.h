@@ -106,7 +106,7 @@
 // this is spread across several DWORD registry keys.
 //
 // The registry keys are defined in nvrm_registry.
-// Specific overrrides are defined here.
+// Specific overrides are defined here.
 //
 // Type DWORD
 // Encoding:
