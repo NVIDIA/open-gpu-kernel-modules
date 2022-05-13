@@ -408,7 +408,7 @@ NvU32 nvEvoReadCRC32Notifier(volatile NvU32 *pCRC32Notifier,
             case NVEvoCrc32NotifierFlagCrcOverflow:
                 if (flag) {
                     count = 0;
-                    nvEvoLog(EVO_LOG_ERROR, "CRC Overflow occured, "
+                    nvEvoLog(EVO_LOG_ERROR, "CRC Overflow occurred, "
                              "CRC value unable to be processed fast enough.\n"
                              "Failing flag index in status_info array: %d",
                               k);
