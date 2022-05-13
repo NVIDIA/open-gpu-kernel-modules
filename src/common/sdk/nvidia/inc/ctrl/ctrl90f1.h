@@ -232,7 +232,7 @@ typedef struct NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS {
 } NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS;
 
 /*!
- * Get VAS page level information without kernel priviledge. This will internally call
+ * Get VAS page level information without kernel privilege. This will internally call
  * NV90F1_CTRL_CMD_VASPACE_GET_PAGE_LEVEL_INFO.
  */
 #define NV90F1_CTRL_CMD_VASPACE_GET_PAGE_LEVEL_INFO_VERIF (0x90f10105) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | 0x5" */
