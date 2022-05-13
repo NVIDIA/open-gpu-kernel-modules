@@ -55,9 +55,93 @@ append_conftest() {
     done
 }
 
-translate_and_preprocess_header_files() {
-    # Inputs:
-    #   $1: list of relative file paths
+test_headers() {
+    #
+    # Determine which header files (of a set that may or may not be
+    # present) are provided by the target kernel.
+    #
+    FILES=(
+    "asm/system.h"
+    "drm/drmP.h"
+    "drm/drm_auth.h"
+    "drm/drm_gem.h"
+    "drm/drm_crtc.h"
+    "drm/drm_atomic.h"
+    "drm/drm_atomic_helper.h"
+    "drm/drm_encoder.h"
+    "drm/drm_atomic_uapi.h"
+    "drm/drm_drv.h"
+    "drm/drm_framebuffer.h"
+    "drm/drm_connector.h"
+    "drm/drm_probe_helper.h"
+    "drm/drm_blend.h"
+    "drm/drm_fourcc.h"
+    "drm/drm_prime.h"
+    "drm/drm_plane.h"
+    "drm/drm_vblank.h"
+    "drm/drm_file.h"
+    "drm/drm_ioctl.h"
+    "drm/drm_device.h"
+    "drm/drm_mode_config.h"
+    "dt-bindings/interconnect/tegra_icc_id.h"
+    "generated/autoconf.h"
+    "generated/compile.h"
+    "generated/utsrelease.h"
+    "linux/efi.h"
+    "linux/kconfig.h"
+    "linux/platform/tegra/mc_utils.h"
+    "linux/semaphore.h"
+    "linux/printk.h"
+    "linux/ratelimit.h"
+    "linux/prio_tree.h"
+    "linux/log2.h"
+    "linux/of.h"
+    "linux/bug.h"
+    "linux/sched/signal.h"
+    "linux/sched/task.h"
+    "linux/sched/task_stack.h"
+    "xen/ioemu.h"
+    "linux/fence.h"
+    "linux/dma-resv.h"
+    "soc/tegra/chip-id.h"
+    "soc/tegra/fuse.h"
+    "soc/tegra/tegra_bpmp.h"
+    "video/nv_internal.h"
+    "linux/platform/tegra/dce/dce-client-ipc.h"
+    "linux/nvhost.h"
+    "linux/nvhost_t194.h"
+    "asm/book3s/64/hash-64k.h"
+    "asm/set_memory.h"
+    "asm/prom.h"
+    "asm/powernv.h"
+    "linux/atomic.h"
+    "asm/barrier.h"
+    "asm/opal-api.h"
+    "sound/hdaudio.h"
+    "asm/pgtable_types.h"
+    "linux/stringhash.h"
+    "linux/dma-map-ops.h"
+    "rdma/peer_mem.h"
+    "sound/hda_codec.h"
+    "linux/dma-buf.h"
+    "linux/time.h"
+    "linux/platform_device.h"
+    "linux/mutex.h"
+    "linux/reset.h"
+    "linux/of_platform.h"
+    "linux/of_device.h"
+    "linux/of_gpio.h"
+    "linux/gpio.h"
+    "linux/gpio/consumer.h"
+    "linux/interconnect.h"
+    "linux/pm_runtime.h"
+    "linux/clk.h"
+    "linux/clk-provider.h"
+    "linux/ioasid.h"
+    "linux/stdarg.h"
+    "linux/iosys-map.h"
+    "asm/coco.h"
+    )
     #
     # This routine creates an upper case, underscore version of each of the
     # relative file paths, and uses that as the token to either define or
@@ -73,7 +157,7 @@ translate_and_preprocess_header_files() {
     # strings, without special handling of the beginning or the end of the line.
     TEST_CFLAGS=`echo "-E -M $CFLAGS " | sed -e 's/\( -M[DG]\)* / /g'`
 
-    for file in $@; do
+    for file in ${FILES[@]}; do
         local file_define=NV_`echo $file | tr '/.' '_' | tr '-' '_' | tr 'a-z' 'A-Z'`_PRESENT
 
         CODE="#include <$file>"
@@ -93,95 +177,6 @@ translate_and_preprocess_header_files() {
             fi
         fi
     done
-}
-
-test_headers() {
-    #
-    # Determine which header files (of a set that may or may not be
-    # present) are provided by the target kernel.
-    #
-    FILES="asm/system.h"
-    FILES="$FILES drm/drmP.h"
-    FILES="$FILES drm/drm_auth.h"
-    FILES="$FILES drm/drm_gem.h"
-    FILES="$FILES drm/drm_crtc.h"
-    FILES="$FILES drm/drm_atomic.h"
-    FILES="$FILES drm/drm_atomic_helper.h"
-    FILES="$FILES drm/drm_encoder.h"
-    FILES="$FILES drm/drm_atomic_uapi.h"
-    FILES="$FILES drm/drm_drv.h"
-    FILES="$FILES drm/drm_framebuffer.h"
-    FILES="$FILES drm/drm_connector.h"
-    FILES="$FILES drm/drm_probe_helper.h"
-    FILES="$FILES drm/drm_blend.h"
-    FILES="$FILES drm/drm_fourcc.h"
-    FILES="$FILES drm/drm_prime.h"
-    FILES="$FILES drm/drm_plane.h"
-    FILES="$FILES drm/drm_vblank.h"
-    FILES="$FILES drm/drm_file.h"
-    FILES="$FILES drm/drm_ioctl.h"
-    FILES="$FILES drm/drm_device.h"
-    FILES="$FILES drm/drm_mode_config.h"
-    FILES="$FILES dt-bindings/interconnect/tegra_icc_id.h"
-    FILES="$FILES generated/autoconf.h"
-    FILES="$FILES generated/compile.h"
-    FILES="$FILES generated/utsrelease.h"
-    FILES="$FILES linux/efi.h"
-    FILES="$FILES linux/kconfig.h"
-    FILES="$FILES linux/platform/tegra/mc_utils.h"
-    FILES="$FILES linux/semaphore.h"
-    FILES="$FILES linux/printk.h"
-    FILES="$FILES linux/ratelimit.h"
-    FILES="$FILES linux/prio_tree.h"
-    FILES="$FILES linux/log2.h"
-    FILES="$FILES linux/of.h"
-    FILES="$FILES linux/bug.h"
-    FILES="$FILES linux/sched/signal.h"
-    FILES="$FILES linux/sched/task.h"
-    FILES="$FILES linux/sched/task_stack.h"
-    FILES="$FILES xen/ioemu.h"
-    FILES="$FILES linux/fence.h"
-    FILES="$FILES linux/dma-resv.h"
-    FILES="$FILES soc/tegra/chip-id.h"
-    FILES="$FILES soc/tegra/fuse.h"
-    FILES="$FILES soc/tegra/tegra_bpmp.h"
-    FILES="$FILES video/nv_internal.h"
-    FILES="$FILES linux/platform/tegra/dce/dce-client-ipc.h"
-    FILES="$FILES linux/nvhost.h"
-    FILES="$FILES linux/nvhost_t194.h"
-    FILES="$FILES asm/book3s/64/hash-64k.h"
-    FILES="$FILES asm/set_memory.h"
-    FILES="$FILES asm/prom.h"
-    FILES="$FILES asm/powernv.h"
-    FILES="$FILES linux/atomic.h"
-    FILES="$FILES asm/barrier.h"
-    FILES="$FILES asm/opal-api.h"
-    FILES="$FILES sound/hdaudio.h"
-    FILES="$FILES asm/pgtable_types.h"
-    FILES="$FILES linux/stringhash.h"
-    FILES="$FILES linux/dma-map-ops.h"
-    FILES="$FILES rdma/peer_mem.h"
-    FILES="$FILES sound/hda_codec.h"
-    FILES="$FILES linux/dma-buf.h"
-    FILES="$FILES linux/time.h"
-    FILES="$FILES linux/platform_device.h"
-    FILES="$FILES linux/mutex.h"
-    FILES="$FILES linux/reset.h"
-    FILES="$FILES linux/of_platform.h"
-    FILES="$FILES linux/of_device.h"
-    FILES="$FILES linux/of_gpio.h"
-    FILES="$FILES linux/gpio.h"
-    FILES="$FILES linux/gpio/consumer.h"
-    FILES="$FILES linux/interconnect.h"
-    FILES="$FILES linux/pm_runtime.h"
-    FILES="$FILES linux/clk.h"
-    FILES="$FILES linux/clk-provider.h"
-    FILES="$FILES linux/ioasid.h"
-    FILES="$FILES linux/stdarg.h"
-    FILES="$FILES linux/iosys-map.h"
-    FILES="$FILES asm/coco.h"
-
-    translate_and_preprocess_header_files $FILES
 }
 
 build_cflags() {
