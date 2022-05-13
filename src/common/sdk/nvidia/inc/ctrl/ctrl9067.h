@@ -63,7 +63,7 @@
  *
  *       numUsedTpc [in/out]
  *           Specifies the number of TPCs used by the subcontext
- *           While querying the enabled TPCs, this is an output paramter
+ *           While querying the enabled TPCs, this is an output parameter
  *           While configuring the TPCs, this is an input parameter
  *
  *       tpcList [in/out]
@@ -83,7 +83,7 @@
  *
  *       lmemBlockIndex
  *          Block index of the Local memory backing store for the enabled TPC.
- *          For GET command, we will return the current lmem block assigment for STATIC & DYNAMIC modes.
+ *          For GET command, we will return the current lmem block assignment for STATIC & DYNAMIC modes.
  *          For SET command, this index is relevant only for STATIC mode.
  *          HW automatically assign it for other modes. So should be zeroed out for other modes.
  *
