@@ -36,7 +36,7 @@ static void _nvlink_core_set_link_post_active_settings(nvlink_link *, NvU32);
  *   Train the internode connection link from SWCFG to ACTIVE
  *
  * @param[in]  conn         NVLink connection pointer
- * @param[in]  isMasterEnd  Is this the master end of the connection
+ * @param[in]  isMasterEnd  Is this the main end of the connection
  * @param[in]  flags        Flags to track if training is sync/async
  *
  * return NVL_SUCCESS if the link trains successfully
@@ -116,7 +116,7 @@ nvlink_core_train_internode_conns_from_swcfg_to_active
 
         _nvlink_core_set_link_pre_active_settings(conns[i]->local_end, flags);
 
-        // Change mode for master link. The other link end should transition to active.
+        // Change mode for main link. The other link end should transition to active.
         if (isMasterEnd[i] == NV_TRUE)
         {
             conns[i]->local_end->link_handlers->set_dl_link_mode(conns[i]->local_end,

@@ -551,7 +551,7 @@ static void nv_drm_unload(struct drm_device *dev)
 
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 
-static int __nv_drm_master_set(struct drm_device *dev,
+static int __nv_drm_main_set(struct drm_device *dev,
                                struct drm_file *file_priv, bool from_open)
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
@@ -564,16 +564,16 @@ static int __nv_drm_master_set(struct drm_device *dev,
 }
 
 #if defined(NV_DRM_DRIVER_SET_MASTER_HAS_INT_RETURN_TYPE)
-static int nv_drm_master_set(struct drm_device *dev,
+static int nv_drm_main_set(struct drm_device *dev,
                              struct drm_file *file_priv, bool from_open)
 {
-    return __nv_drm_master_set(dev, file_priv, from_open);
+    return __nv_drm_main_set(dev, file_priv, from_open);
 }
 #else
-static void nv_drm_master_set(struct drm_device *dev,
+static void nv_drm_main_set(struct drm_device *dev,
                               struct drm_file *file_priv, bool from_open)
 {
-    if (__nv_drm_master_set(dev, file_priv, from_open) != 0) {
+    if (__nv_drm_main_set(dev, file_priv, from_open) != 0) {
         NV_DRM_DEV_LOG_ERR(to_nv_device(dev), "Failed to grab modeset ownership");
     }
 }
@@ -582,11 +582,11 @@ static void nv_drm_master_set(struct drm_device *dev,
 
 #if defined(NV_DRM_MASTER_DROP_HAS_FROM_RELEASE_ARG)
 static
-void nv_drm_master_drop(struct drm_device *dev,
+void nv_drm_main_drop(struct drm_device *dev,
                         struct drm_file *file_priv, bool from_release)
 #else
 static
-void nv_drm_master_drop(struct drm_device *dev, struct drm_file *file_priv)
+void nv_drm_main_drop(struct drm_device *dev, struct drm_file *file_priv)
 #endif
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
@@ -622,21 +622,21 @@ void nv_drm_master_drop(struct drm_device *dev, struct drm_file *file_priv)
 
 #if defined(NV_DRM_BUS_PRESENT) || defined(NV_DRM_DRIVER_HAS_SET_BUSID)
 static int nv_drm_pci_set_busid(struct drm_device *dev,
-                                struct drm_master *master)
+                                struct drm_main *main)
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
 
-    master->unique = nv_drm_asprintf("pci:%04x:%02x:%02x.%d",
+    main->unique = nv_drm_asprintf("pci:%04x:%02x:%02x.%d",
                                           nv_dev->gpu_info.pci_info.domain,
                                           nv_dev->gpu_info.pci_info.bus,
                                           nv_dev->gpu_info.pci_info.slot,
                                           nv_dev->gpu_info.pci_info.function);
 
-    if (master->unique == NULL) {
+    if (main->unique == NULL) {
         return -ENOMEM;
     }
 
-    master->unique_len = strlen(master->unique);
+    main->unique_len = strlen(main->unique);
 
     return 0;
 }
@@ -877,8 +877,8 @@ static void nv_drm_update_drm_driver_features(void)
 
     nv_drm_driver.driver_features |= DRIVER_MODESET | DRIVER_ATOMIC;
 
-    nv_drm_driver.master_set       = nv_drm_master_set;
-    nv_drm_driver.master_drop      = nv_drm_master_drop;
+    nv_drm_driver.main_set       = nv_drm_main_set;
+    nv_drm_driver.main_drop      = nv_drm_main_drop;
 
     nv_drm_driver.dumb_create      = nv_drm_dumb_create;
     nv_drm_driver.dumb_map_offset  = nv_drm_dumb_map_offset;

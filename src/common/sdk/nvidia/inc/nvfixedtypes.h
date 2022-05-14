@@ -27,10 +27,10 @@
 #include "nvtypes.h"
 
 /*!
- * Fixed-point master data types.
+ * Fixed-point main data types.
  *
- * These are master-types represent the total number of bits contained within
- * the FXP type.  All FXP types below should be based on one of these master
+ * These are main-types represent the total number of bits contained within
+ * the FXP type.  All FXP types below should be based on one of these main
  * types.
  */
 typedef NvS16                                                         NvSFXP16;
@@ -49,7 +49,7 @@ typedef NvU64                                                         NvUFXP64;
  * size of the data type is calculated as num_bits_above_radix +
  * num_bit_below_radix.
  *
- * All of these FXP types should be based on one of the master types above.
+ * All of these FXP types should be based on one of the main types above.
  */
 typedef NvSFXP16                                                    NvSFXP11_5;
 typedef NvSFXP16                                                    NvSFXP4_12;

@@ -3414,7 +3414,7 @@ NV_STATUS nvGpuOpsGetExternalAllocPtes(struct gpuAddressSpace *vaSpace,
         // If GPUs are in the same SLI group, don't do peer mappings even if the GPUs are different. In SLI config,
         // if a caller can try to map a memory on a GPU other than the GPU which is associated with the memdesc,
         // always return local VIDMEM mapping because RM shares a memdesc among such GPUs for client allocations.
-        // Note: This check could be avoided if we could know that pMemDesc->pGpu is always the SLI master i.e. same
+        // Note: This check could be avoided if we could know that pMemDesc->pGpu is always the SLI main i.e. same
         // as the pGPU returned by CliSetGpuContext.
         //
         if (!pFlaMemory && pAdjustedMemDesc->pGpu->deviceInstance == pMappingGpu->deviceInstance)

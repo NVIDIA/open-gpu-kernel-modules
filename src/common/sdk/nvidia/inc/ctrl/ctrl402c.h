@@ -134,7 +134,7 @@ typedef struct NV402C_CTRL_I2C_GET_PORT_INFO_PARAMS {
  *   used.
  *   Possible values are:
  *     NV402C_CTRL_I2C_FLAGS_ADDRESS_MODE_7BIT
- *       The default, this value specifies the master to operate in the
+ *       The default, this value specifies the main to operate in the
  *       basic 7-bit addressing mode, which is available on all
  *       implementations.
  *     NV402C_CTRL_I2C_FLAGS_ADDRESS_MODE_10BIT
@@ -148,7 +148,7 @@ typedef struct NV402C_CTRL_I2C_GET_PORT_INFO_PARAMS {
 /*
  * NV402C_CTRL_I2C_FLAGS_SPEED_MODE
  *   A client uses this field to indicate the target speed at which the
- *   I2C master should attempt to drive the bus.  The master may throttle
+ *   I2C main should attempt to drive the bus.  The main may throttle
  *   its own speed for various reasons, and devices may slow the bus
  *   using clock-streching.  Neither of these possibilities are
  *   considered failures.
@@ -270,10 +270,10 @@ typedef struct NV402C_CTRL_I2C_GET_PORT_INFO_PARAMS {
  *     defined fields are described previously; see NV402C_I2C_FLAGS_*.
  *
  *   address
- *     The address of the I2C slave.  The address should be shifted left by
+ *     The address of the I2C client.  The address should be shifted left by
  *     one.  For example, the I2C address 0x50, often used for reading EDIDs,
  *     would be stored here as 0xA0.  This matches the position within the
- *     byte sent by the master, as the last bit is reserved to specify the
+ *     byte sent by the main, as the last bit is reserved to specify the
  *     read or write direction.
  *
  *   indexLength
@@ -287,11 +287,11 @@ typedef struct NV402C_CTRL_I2C_GET_PORT_INFO_PARAMS {
  *
  *   messageLength
  *     This parameter, required of the client, specifies the number of bytes to
- *     read or write from the slave after the index is written.
+ *     read or write from the client after the index is written.
  *
  *   pMessage
  *     This parameter, required of the client, specifies the data to be written
- *     to the slave.  The buffer should be arranged such that pMessage[0] will
+ *     to the client.  The buffer should be arranged such that pMessage[0] will
  *     be the first byte read or written.  If the transaction is a read, then
  *     it will follow the combined format described in the I2C specification.
  *     If the transaction is a write, the message will immediately follow the
@@ -401,7 +401,7 @@ typedef struct NV402C_CTRL_I2C_TABLE_GET_DEV_INFO_PARAMS {
 typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
    /*!
     * This transaction type is used to perform the Quick SMBus Read/write command 
-    * on a slave device. No data is sent or received, just used to verify the 
+    * on a client device. No data is sent or received, just used to verify the 
     * presence of the device.
     * Refer SMBus spec 2.0 (section 5.5.1 Quick Command)
     * SMBus Quick Write : S Addr|Wr [A] P
@@ -410,8 +410,8 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_QUICK_RW = 0,
    /*!
     * This transaction type is used to perform the I2C byte read/write from/to 
-    * a slave device. As per the spec last byte should be NA (Not Acknolwedged) 
-    * by slave.
+    * a client device. As per the spec last byte should be NA (Not Acknolwedged) 
+    * by client.
     * Refer I2CBus spec 3.0 (section 9 Fig 11 and Fig 12) or Refer SMBus spec 
     * 2.0 (section 5.5.2 Send Byte and 5.5.3 Receive Byte).
     * I2C Byte Write : S Addr|Wr [A] Data [NA] P
@@ -420,17 +420,17 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BYTE_RW = 1,
    /*!
     * This transaction type is used to perform the I2C block (buffer) 
-    * read/write from/to a slave device. As per the spec last byte should be NA
-    * (Not Acknolwedged) by slave.
+    * read/write from/to a client device. As per the spec last byte should be NA
+    * (Not Acknolwedged) by client.
     * Refer I2CBus spec 3.0 (section 9 Fig 11 and Fig 12)
     * I2C Byte Write : S Addr|Wr [A] Data1 [A]...Data(N-1) [A] DataN [NA] P
     * I2C Byte Read  : S Addr|Rd [A] Data1 A...Data(N-1) A DataN NA P
     *
     * Distinction between I2C_BLOCK and SMBUS_BLOCK protocol:
-    * In I2C Block write it is the slave device (and in I2C Block read it's 
-    * the master device) that determines the number of bytes to transfer by 
+    * In I2C Block write it is the client device (and in I2C Block read it's 
+    * the main device) that determines the number of bytes to transfer by 
     * asserting the NAK at last bit before stop. This differs from the SMBus 
-    * block mode write command in which the master determines the block 
+    * block mode write command in which the main determines the block 
     * write transfer size. In I2c Block read there is no limit to maximum size 
     * of data that could be transferred whereas in SMBus block it is restricted
     * to 255 bytes (0xFF).
@@ -438,7 +438,7 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BLOCK_RW = 2,
    /*!
     * This transaction type is used to perform the I2C Buffer read/write 
-    * from/to a register of a slave device. It does not send bytecount as 
+    * from/to a register of a client device. It does not send bytecount as 
     * part of data buffer.
     * Not a part of SMBus spec.
     * I2C Buffer Write : S Addr|Wr [A] cmd [A] Data1 [A]...DataN[A] P
@@ -458,7 +458,7 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW = 3,
    /*!
     * This transaction type is used to perform the I2C byte read/write from/to
-    * a slave device
+    * a client device
     * Refer SMBus spec 2.0 (section 5.5.4 Write Byte and 5.5.5 Read Byte)
     * SMBus Byte Write : S Addr|Wr [A] cmd [A] Data [A] P
     * SMBus Byte Read  : S Addr|Wr [A] cmd [A] Sr Addr|Rd [A] Data A P
@@ -466,7 +466,7 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW = 4,
    /*!
     * This transaction type is used to perform the SMBus byte read/write 
-    * from/to a register of a slave device
+    * from/to a register of a client device
     * Refer SMBus spec 2.0 (section 5.5.4 Write Word and 5.5.5 Read Word)
     * SMBus Word Write : S Addr|Wr [A] cmd [A] DataLow [A] DataHigh [A] P 
     * SMBus Word Read  : S Addr|Wr [A] cmd [A] Sr Addr|Rd [A] DataLow A 
@@ -475,7 +475,7 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW = 5,
    /*!
     * This transaction type is used to perform the SMBus Block read/write 
-    * from/to a register of a slave device
+    * from/to a register of a client device
     * Refer SMBus spec 2.0 (section 5.5.7 Block Write/Read)
     * SMBus Block Write : S Addr|Wr [A] cmd [A] ByteCount [A] Data1 [A]...
     *                     DataN-1 [A] DataN[A] P
@@ -483,10 +483,10 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     *                     Data1 A...DataN-1 A DataN A P
     *
     * Distinction between I2C_BLOCK and SMBUS_BLOCK protocol:
-    * In I2C Block write it is the slave device (and in I2C Block read it's 
-    * the master device) that determines the number of bytes to transfer by 
+    * In I2C Block write it is the client device (and in I2C Block read it's 
+    * the main device) that determines the number of bytes to transfer by 
     * asserting the NAK at last bit before stop. This differs from the SMBus 
-    * block mode write/Read command in which the master determines the block 
+    * block mode write/Read command in which the main determines the block 
     * write transfer size. In I2c Block read/Write there is no limit to maximum
     * size of data that could be transferred whereas in SMBus block it is 
     * restricted to 255 bytes (0xFF).
@@ -494,7 +494,7 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW = 6,
    /*!
     * This transaction type is used to perform the SMBus process call. It sends
-    * data and waits for the slave to return a value dependent on that data. 
+    * data and waits for the client to return a value dependent on that data. 
     * The protocol is simply a SMBus write Word followed by a SMBus Read Word 
     * without the Read-Word command field and the Write-Word STOP bit. 
     * Note that there is no STOP condition before the repeated START condition,
@@ -509,14 +509,14 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     * This transaction type is used to perform the SMBus Block Write Block Read
     * process call.
     * The block write-block read process call is a two-part message. The call 
-    * begins with a slave address and a write condition. After the command code
+    * begins with a client address and a write condition. After the command code
     * the host issues a write byte count (M) that describes how many more bytes
     * will be written in the first part of the message.
-    * If a master has 6 bytes to send, the byte count field will have the value
+    * If a main has 6 bytes to send, the byte count field will have the value
     * 6 (0000 0110b), followed by the 6 bytes of data. The write byte count (M)
     * cannot be zero. 
     * The second part of the message is a block of read data beginning with a 
-    * repeated start condition followed by the slave address and a Read bit.
+    * repeated start condition followed by the client address and a Read bit.
     * The next byte is the read byte count (N), which may differ from the write
     * byte count (M). The read byte count (N) cannot be zero. The combined data
     * payload must not exceed 32 bytes. 
@@ -536,12 +536,12 @@ typedef enum NV402C_CTRL_I2C_TRANSACTION_TYPE {
     NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_PROCESS_CALL = 8,
    /*!
     * This transaction type is used to perform SMBus buffer read/write 
-    * from/to multiple registers of a slave device known as Auto Increment.
+    * from/to multiple registers of a client device known as Auto Increment.
     * It is not a part of any standard I2C/SMBus spec but a feature of many
     * SMBus devices like EEPROM.
     * It is also used for reading a block of bytes from a designated register 
-    * that is specified through the two Comm bytes.of a slave device or writing
-    * a block of bytes from a designated register of a slave device (Note : The
+    * that is specified through the two Comm bytes.of a client device or writing
+    * a block of bytes from a designated register of a client device (Note : The
     * command byte in this case could be 0, 2 or 4 Bytes)
     * SMBus Multi-Byte Register Block Write : S Addr|Wr [A] cmd1 A cmd 2 [A]...
     *                cmdN [A] data1 [A] Data2 [A].....DataN [A] P
@@ -625,7 +625,7 @@ typedef struct NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW {
     NvBool bWrite;
    /*!
     * This parameter specifies the number of bytes to read or
-    * write from the slave after the register address is written.
+    * write from the client after the register address is written.
     */
     NvU32  messageLength;
    /*!
@@ -705,7 +705,7 @@ typedef struct NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW {
     NvU8   registerAddress;
    /*!
     * This parameter specifies the number of bytes to read or 
-    * write from the slave after the register address is written.
+    * write from the client after the register address is written.
     */
     NvU32  messageLength;
    /*!
@@ -735,7 +735,7 @@ typedef struct NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW {
     NvU8   registerAddress;
    /*!
     * This parameter specifies the number of bytes to read or 
-    * write from the slave after the register address is written.
+    * write from the client after the register address is written.
     */
     NvU32  messageLength;
    /*!
@@ -759,11 +759,11 @@ typedef struct NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL {
     */
     NvU8  registerAddress;
    /*!
-    * The message data to be written to the slave.
+    * The message data to be written to the client.
     */
     NvU16 writeMessage;
    /*!
-    * The message data to be read from the slave.
+    * The message data to be read from the client.
     */
     NvU16 readMessage;
 } NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL;
@@ -783,22 +783,22 @@ typedef struct NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL {
     */
     NvU8  registerAddress;
    /*!
-    * This parameter specifies the number of bytes to write the the slave 
-    * after the writeByteCount is sent to the slave.
+    * This parameter specifies the number of bytes to write the the client 
+    * after the writeByteCount is sent to the client.
     */
     NvU32 writeMessageLength;
    /*!
-    * The message buffer to be written to the slave.
+    * The message buffer to be written to the client.
     * C form: NvU8 writeMessage[NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX]
     */
     NvU8  writeMessage[NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX];
    /*!
-    * This parameter specifies the number of bytes to read from the slave 
-    * after the readByteCount is sent to the slave.
+    * This parameter specifies the number of bytes to read from the client 
+    * after the readByteCount is sent to the client.
     */
     NvU32 readMessageLength;
    /*!
-    * The message buffer to be read from the slave.
+    * The message buffer to be read from the client.
     * C form: NvU8 readMessage[NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX]
     */
     NvU8  readMessage[NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX];
@@ -834,7 +834,7 @@ typedef struct NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_R
     NvU8   index[NV402C_CTRL_I2C_INDEX_LENGTH_MAX];
    /*!
     * This parameter specifies the number of bytes to read or 
-    * write from the slave after the register address is written.
+    * write from the client after the register address is written.
     */
     NvU32  messageLength;
    /*!
@@ -862,7 +862,7 @@ typedef struct NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC {
     NvU8  registerAddress;
    /*!
     * This parameter specifies the number of bytes to read or
-    * write from the slave after the register address is written.
+    * write from the client after the register address is written.
     */
     NvU32 messageLength;
    /*!
@@ -956,7 +956,7 @@ typedef struct NV402C_CTRL_I2C_TRANSACTION_PARAMS {
     */
     NvU32                            flags;
    /*!
-    * The address of the I2C slave.
+    * The address of the I2C client.
     */
     NvU16                            deviceAddress;
    /*!

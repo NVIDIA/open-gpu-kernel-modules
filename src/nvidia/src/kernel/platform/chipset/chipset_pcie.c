@@ -2232,7 +2232,7 @@ clStoreBusTopologyCache_IMPL
                 {
                     if (func == 0)
                     {
-                        // If a read to function zero of a specified bus/device master aborts,
+                        // If a read to function zero of a specified bus/device main aborts,
                         // then it is assumed that no such device exists on the bus since
                         // devices are required to implement function number zero.
                         // In this case reads to the remaining functions are not necessary.

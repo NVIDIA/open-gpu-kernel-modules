@@ -38,7 +38,7 @@ typedef struct
 } nvswitch_i2c_algo_data;
 
 static int
-nvswitch_i2c_algo_master_xfer
+nvswitch_i2c_algo_main_xfer
 (
     struct i2c_adapter *adapter,
     struct i2c_msg msgs[],
@@ -73,14 +73,14 @@ nvswitch_i2c_algo_master_xfer
     {
         printk(KERN_INFO "%s: a stale fd detected\n", nvswitch_dev->name);
         status = NVL_ERR_INVALID_STATE;
-        goto nvswitch_i2c_algo_master_xfer_exit;
+        goto nvswitch_i2c_algo_main_xfer_exit;
     }
 
     i2c_algo_data = NVSWITCH_I2C_GET_ALGO_DATA(adapter);
     if (i2c_algo_data == NULL)
     {
         status = NVL_ERR_INVALID_STATE;
-        goto nvswitch_i2c_algo_master_xfer_exit;
+        goto nvswitch_i2c_algo_main_xfer_exit;
     }
 
     port = i2c_algo_data->port;
@@ -102,7 +102,7 @@ nvswitch_i2c_algo_master_xfer
         }
     }
 
-nvswitch_i2c_algo_master_xfer_exit:
+nvswitch_i2c_algo_main_xfer_exit:
     mutex_unlock(&nvswitch_dev->device_mutex);
 
     rc = nvswitch_map_status(status);
@@ -236,7 +236,7 @@ static u32 nvswitch_i2c_algo_functionality(struct i2c_adapter *adapter)
 }
 
 static struct i2c_algorithm nvswitch_i2c_algo = {
-    .master_xfer      = nvswitch_i2c_algo_master_xfer,
+    .main_xfer      = nvswitch_i2c_algo_main_xfer,
     .smbus_xfer       = nvswitch_i2c_algo_smbus_xfer,
     .functionality    = nvswitch_i2c_algo_functionality,
 };

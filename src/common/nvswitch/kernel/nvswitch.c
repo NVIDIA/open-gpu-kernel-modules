@@ -63,7 +63,7 @@
 
 //
 // HW's device id list can be found here -
-// P4hw:2001: hw\doc\engr\Dev_ID\DeviceID_master_list.txt
+// P4hw:2001: hw\doc\engr\Dev_ID\DeviceID_main_list.txt
 //
 
 const static NvU32 nvswitch_lr10_device_ids[] =

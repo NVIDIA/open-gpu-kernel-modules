@@ -950,7 +950,7 @@ struct OBJGPU {
     NvS32 computeModeRefCount;
     NvHandle hComputeModeReservation;
     NvBool bIsDebugModeEnabled;
-    NvU32 masterFromSLIConfig;
+    NvU32 mainFromSLIConfig;
     NvU32 sliStatus;
     PENG_INFO_LINK_NODE infoList;
     struct OBJOS *pOS;

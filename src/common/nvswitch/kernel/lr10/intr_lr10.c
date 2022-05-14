@@ -30,10 +30,10 @@
 #include "inforom/inforom_nvswitch.h"
 
 #include "nvswitch/lr10/dev_nvs.h"
-#include "nvswitch/lr10/dev_nvs_master.h"
+#include "nvswitch/lr10/dev_nvs_main.h"
 #include "nvswitch/lr10/dev_timer.h"
 #include "nvswitch/lr10/dev_nvlsaw_ip.h"
-#include "nvswitch/lr10/dev_pri_ringmaster.h"
+#include "nvswitch/lr10/dev_pri_ringmain.h"
 #include "nvswitch/lr10/dev_pri_ringstation_sys.h"
 #include "nvswitch/lr10/dev_pri_ringstation_prt.h"
 #include "nvswitch/lr10/dev_nv_xve.h"
@@ -1183,8 +1183,8 @@ _nvswitch_service_priv_ring_lr10
 
     // TODO reset the priv ring like GPU driver?
 
-    // acknowledge the interrupt to the ringmaster
-    nvswitch_ring_master_cmd_lr10(device,
+    // acknowledge the interrupt to the ringmain
+    nvswitch_ring_main_cmd_lr10(device,
         DRF_DEF(_PPRIV_MASTER, _RING_COMMAND, _CMD, _ACK_INTERRUPT));
 
     return NVL_SUCCESS;

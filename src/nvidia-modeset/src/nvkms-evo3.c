@@ -1518,7 +1518,7 @@ static void EvoSetHeadControlC3(NVDevEvoPtr pDevEvo, int sd, int head,
         pin = pHC->serverLockPin - NV_EVO_LOCK_PIN_INTERNAL_0;
         /*
          * nvdClass_01.mfs says:
-         * "master lock pin, if internal, must be set to the corresponding
+         * "main lock pin, if internal, must be set to the corresponding
          * internal pin for that head" (error check #12)
          */
         nvAssert(pin == head);
@@ -2535,10 +2535,10 @@ static NvBool AssignPerHeadImpParams(NVC372_CTRL_IMP_HEAD *pImpHead,
 
     /* XXX TODO: Fill in correct scanlock information (only needed for
      * MIN_VPSTATE). */
-    pImpHead->control.masterLockMode = NV_DISP_LOCK_MODE_NO_LOCK;
-    pImpHead->control.masterLockPin = NV_DISP_LOCK_PIN_UNSPECIFIED;
-    pImpHead->control.slaveLockMode = NV_DISP_LOCK_MODE_NO_LOCK;
-    pImpHead->control.slaveLockPin = NV_DISP_LOCK_PIN_UNSPECIFIED;
+    pImpHead->control.mainLockMode = NV_DISP_LOCK_MODE_NO_LOCK;
+    pImpHead->control.mainLockPin = NV_DISP_LOCK_PIN_UNSPECIFIED;
+    pImpHead->control.clientLockMode = NV_DISP_LOCK_MODE_NO_LOCK;
+    pImpHead->control.clientLockPin = NV_DISP_LOCK_PIN_UNSPECIFIED;
 
     if (!nvComputeScalingUsageBounds(pScalerCaps,
                                     pViewPort->in.width, pViewPort->in.height,

@@ -77,10 +77,10 @@
  *     ends on the second field of every pair for an interlaced raster.  This
  *     field is not used when the raster is progressive.
  *
- *   head.control.masterLockMode
- *   head.control.masterLockPin
- *   head.control.slaveLockMode
- *   head.control.slaveLockPin
+ *   head.control.mainLockMode
+ *   head.control.mainLockPin
+ *   head.control.clientLockMode
+ *   head.control.clientLockPin
  *     Heads that are raster locked or frame locked together will have
  *     synchronized timing.  For example, vblank will occur at the same time on
  *     all of the heads that are locked together.
@@ -88,9 +88,9 @@
  *     "LockMode" tells if a head is raster locked, frame locked, or not locked.
  *
  *     "LockPin" tells which heads are in a group of locked heads.  There
- *     should be one master per group, and all slave heads that are locked to
- *     that master should have the same slaveLockPin number as the master's
- *     masterLockPin number.
+ *     should be one main per group, and all client heads that are locked to
+ *     that main should have the same clientLockPin number as the main's
+ *     mainLockPin number.
  *
  *     Note: The LockModes and LockPins are used only if the min v-pstate is
  *     required (i.e., if NVC372_CTRL_IS_MODE_POSSIBLE_OPTIONS_NEED_MIN_VPSTATE
@@ -281,7 +281,7 @@
  *     the "options" field.
  *
  *     If the minimum v-pstate is required for a multi-head config, then
- *     masterLockMode, masterLockPin, slaveLockMode, and slaveLockPin must all
+ *     mainLockMode, mainLockPin, clientLockMode, and clientLockPin must all
  *     be initialized.
  *   minPState
  *     minPState returns the pstate value corresponding to minImpVPState.  It
@@ -387,10 +387,10 @@ typedef struct NVC372_CTRL_IMP_HEAD {
     } rasterVertBlank2;
 
     struct {
-        NV_DISP_LOCK_MODE masterLockMode;
-        NV_DISP_LOCK_PIN  masterLockPin;
-        NV_DISP_LOCK_MODE slaveLockMode;
-        NV_DISP_LOCK_PIN  slaveLockPin;
+        NV_DISP_LOCK_MODE mainLockMode;
+        NV_DISP_LOCK_PIN  mainLockPin;
+        NV_DISP_LOCK_MODE clientLockMode;
+        NV_DISP_LOCK_PIN  clientLockPin;
     } control;
 
     NvU32  maxDownscaleFactorH;

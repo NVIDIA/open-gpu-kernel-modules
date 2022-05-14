@@ -35,7 +35,7 @@
 
 #include "ctrl_dev_nvswitch.h"
 
-#include "nvswitch/lr10/dev_nvs_master.h"
+#include "nvswitch/lr10/dev_nvs_main.h"
 
 //
 // Re-direction to use new common link access wrappers
@@ -590,7 +590,7 @@ NvlStatus nvswitch_device_discovery_lr10(nvswitch_device *device, NvU32 discover
 void nvswitch_filter_discovery_lr10(nvswitch_device *device);
 NvlStatus nvswitch_process_discovery_lr10(nvswitch_device *device);
 nvswitch_device *nvswitch_get_device_by_pci_info_lr10(nvlink_pci_info *info);
-NvlStatus nvswitch_ring_master_cmd_lr10(nvswitch_device *device, NvU32 cmd);
+NvlStatus nvswitch_ring_main_cmd_lr10(nvswitch_device *device, NvU32 cmd);
 void nvswitch_initialize_interrupt_tree_lr10(nvswitch_device *device);
 void nvswitch_lib_enable_interrupts_lr10(nvswitch_device *device);
 void nvswitch_lib_disable_interrupts_lr10(nvswitch_device *device);

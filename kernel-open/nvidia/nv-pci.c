@@ -523,7 +523,7 @@ next_bar:
                       "Disabling ATS support for all the GPUs in the system!\n");
     }
 
-    pci_set_master(pci_dev);
+    pci_set_main(pci_dev);
 
 #if defined(CONFIG_VGA_ARB) && !defined(NVCPU_PPC64LE)
 #if defined(VGA_DEFAULT_DEVICE)
@@ -816,9 +816,9 @@ nv_pci_shutdown(struct pci_dev *pci_dev)
         return;
     }
 
-    /* pci_clear_master is not defined for !CONFIG_PCI */
+    /* pci_clear_main is not defined for !CONFIG_PCI */
 #ifdef CONFIG_PCI
-    pci_clear_master(pci_dev);
+    pci_clear_main(pci_dev);
 #endif
 
     /* SHH HW mandates 1us delay to realise the effects of

@@ -2741,12 +2741,12 @@ compile_test() {
             fi
         ;;
 
-        drm_master_drop_has_from_release_arg)
+        drm_main_drop_has_from_release_arg)
             #
-            # Determine if drm_driver::master_drop() has 'from_release' argument.
+            # Determine if drm_driver::main_drop() has 'from_release' argument.
             #
             # Last argument 'bool from_release' has been removed by commit
-            # d6ed682eba54 ("drm: Refactor drop/set master code a bit")
+            # d6ed682eba54 ("drm: Refactor drop/set main code a bit")
             # in v4.8 (2016-06-21)
             #
             CODE="
@@ -2754,8 +2754,8 @@ compile_test() {
             #include <drm/drmP.h>
             #endif
 
-            void conftest_drm_master_drop_has_from_release_arg(struct drm_driver *drv) {
-                drv->master_drop(NULL, NULL, false);
+            void conftest_drm_main_drop_has_from_release_arg(struct drm_driver *drv) {
+                drv->main_drop(NULL, NULL, false);
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_MASTER_DROP_HAS_FROM_RELEASE_ARG" "" "types"
@@ -4314,12 +4314,12 @@ compile_test() {
 
         ;;
 
-        drm_driver_master_set_has_int_return_type)
+        drm_driver_main_set_has_int_return_type)
             #
-            # Determine if drm_driver::master_set() returns integer value
+            # Determine if drm_driver::main_set() returns integer value
             #
             # Changed to void by commit 907f53200f98 ("drm: vmwgfx: remove
-            # drm_driver::master_set() return type") in v5.9-rc1.
+            # drm_driver::main_set() return type") in v5.9-rc1.
             #
             CODE="
             #if defined(NV_DRM_DRMP_H_PRESENT)
@@ -4330,10 +4330,10 @@ compile_test() {
             #include <drm/drm_drv.h>
             #endif
 
-            int conftest_drm_driver_master_set_has_int_return_type(struct drm_driver *drv,
+            int conftest_drm_driver_main_set_has_int_return_type(struct drm_driver *drv,
                 struct drm_device *dev, struct drm_file *file_priv, bool from_open) {
 
-                return drv->master_set(dev, file_priv, from_open);
+                return drv->main_set(dev, file_priv, from_open);
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_DRIVER_SET_MASTER_HAS_INT_RETURN_TYPE" "" "types"

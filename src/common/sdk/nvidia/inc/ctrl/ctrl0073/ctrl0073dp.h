@@ -117,7 +117,7 @@
  *       NV0073_CTRL_DP_AUXCH_REPLYTYPE_ACK
  *         In the case of a write,
  *         AUX: write transaction completed and all data bytes written.
- *         I2C: return size bytes has been written to i2c slave.
+ *         I2C: return size bytes has been written to i2c client.
  *         In the case of a read, return of ACK indicates ready to reply
  *         another read request.
  *       NV0073_CTRL_DP_AUXCH_REPLYTYPE_NACK
@@ -128,12 +128,12 @@
  *         Not ready for the write/read request and client should retry later.
  *       NV0073_CTRL_DP_DISPLAYPORT_AUXCH_REPLYTYPE_I2CNACK
  *         Applies to I2C transactions only.  For I2C write transaction:
- *         has written the first return size bytes to I2C slave before getting
- *         NACK.  For a read I2C transaction, the I2C slave has NACKED the I2C
+ *         has written the first return size bytes to I2C client before getting
+ *         NACK.  For a read I2C transaction, the I2C client has NACKED the I2C
  *         address.
  *       NV0073_CTRL_DP_AUXCH_REPLYTYPE_I2CDEFER
  *         Applicable to I2C transactions.  For I2C write and read
- *         transactions, I2C slave has yet to ACK or NACK the I2C transaction.
+ *         transactions, I2C client has yet to ACK or NACK the I2C transaction.
  *       NV0073_CTRL_DP_AUXCH_REPLYTYPE_TIMEOUT
  *         The receiver did not respond within the timeout period defined in
  *         the DisplayPort 1.1a specification.
@@ -2071,7 +2071,7 @@ typedef struct NV0073_CTRL_CMD_DP_SET_TRIGGER_SELECT_PARAMS {
 *     if FALSE clears the configuration of single head multi stream mode.
 *
 *   vbiosPrimaryDispIdIndex
-*    This parameter specifies vbios master displayID index in displayIDs input array.
+*    This parameter specifies vbios main displayID index in displayIDs input array.
 *
 *  Possible status values returned are:
 *   NV_OK
@@ -2555,7 +2555,7 @@ typedef struct NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS {
  * NV0073_CTRL_CMD_DP_GET_GENERIC_INFOFRAME
  *
  * This command is used to capture the display output packets for DP protocol.
- * Common supported packets are Dynamic Range and mastering infoframe SDP for HDR,
+ * Common supported packets are Dynamic Range and maining infoframe SDP for HDR,
  * VSC SDP for colorimetry and pixel encoding info.
  *
  *   displayID (in)

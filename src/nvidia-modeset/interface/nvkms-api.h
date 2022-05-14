@@ -733,14 +733,14 @@ struct NvKmsHDRStaticMetadata {
     } whitePoint;
 
     /**
-     * Maximum mastering display luminance.
+     * Maximum maining display luminance.
      * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
      * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
      */
     NvU16 maxDisplayMasteringLuminance;
 
     /*!
-     * Minimum mastering display luminance.
+     * Minimum maining display luminance.
      * This value is coded as an unsigned 16-bit value in units of
      * 0.0001 cd/m2, where 0x0001 represents 0.0001 cd/m2 and 0xFFFF
      * represents 6.5535 cd/m2.

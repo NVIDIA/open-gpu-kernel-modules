@@ -157,7 +157,7 @@ typedef struct NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS {
  * NV2080_CTRL_CMD_BIOS_GET_POST_TIME
 
  * This command is used to get the GPU POST time (in milliseconds).
- * If the associated GPU is the master GPU this value will be recorded
+ * If the associated GPU is the main GPU this value will be recorded
  * by the VBIOS and retrieved from the KDA buffer.  If the associated
  * GPU is a secondaryGPU then this value will reflect the devinit
  * processing time.

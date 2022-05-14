@@ -102,7 +102,7 @@
  * Very stable across generations.
  */
 
-/* dev_master.ref */
+/* dev_main.ref */
 #define NV_PMC_BOOT_0                                    0x00000000 /* R--4R */
 #define NV_PMC_BOOT_0_MINOR_REVISION                            3:0 /* R--VF */
 #define NV_PMC_BOOT_0_MAJOR_REVISION                            7:4 /* R--VF */

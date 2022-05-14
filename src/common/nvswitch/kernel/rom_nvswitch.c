@@ -628,7 +628,7 @@ _nvswitch_rom_parse_bit_dcb_gpio_table
         return;
     }
 
-    NVSWITCH_ELEMENT_CHECK(&gpio, ext_gpio_master, gpio.header_size, 0x0000);
+    NVSWITCH_ELEMENT_CHECK(&gpio, ext_gpio_main, gpio.header_size, 0x0000);
 
     gpio_table_offset += gpio.header_size;
     firmware->dcb.gpio_pin_count = 0;

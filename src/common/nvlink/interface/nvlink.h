@@ -127,8 +127,8 @@ enum nvlink_link_change_type
 // nvlink link_change parameters 
 struct nvlink_link_change
 {
-    struct nvlink_link *master;
-    struct nvlink_link *slave;
+    struct nvlink_link *main;
+    struct nvlink_link *client;
 
     enum nvlink_link_change_type change_type;
 };
@@ -147,8 +147,8 @@ struct nvlink_link
     // Uniquely identifies a link in the core
     NvU64 linkId;
 
-    // If this link is the master of its connection
-    NvBool master;
+    // If this link is the main of its connection
+    NvBool main;
 
     // Client supplied link name and number
     char  *linkName;
@@ -417,14 +417,14 @@ NvlStatus nvlink_lib_get_link(nvlink_device  *device,
                               nvlink_link   **link);
 
 /*
- * Set the link endpoint as the link master
+ * Set the link endpoint as the link main
  */
-NvlStatus nvlink_lib_set_link_master(nvlink_link *link);
+NvlStatus nvlink_lib_set_link_main(nvlink_link *link);
 
 /*
- * Get the link master associated with this endpoint
+ * Get the link main associated with this endpoint
  */
-NvlStatus nvlink_lib_get_link_master(nvlink_link *link, nvlink_link **master);
+NvlStatus nvlink_lib_get_link_main(nvlink_link *link, nvlink_link **main);
 
 /************************************************************************************************/
 /*************************** NVLink topology discovery functions ********************************/

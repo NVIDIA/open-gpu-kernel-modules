@@ -282,7 +282,7 @@ NVSWITCH_STRUCT_PACKED_ALIGNED(_NVSWITCH_GPIO_TABLE, 1)
     NvU8    header_size;
     NvU8    entry_count;
     NvU8    entry_size;
-    NvU16   ext_gpio_master;
+    NvU16   ext_gpio_main;
 } NVSWITCH_GPIO_TABLE;
 NVSWITCH_STRUCT_PACKED_ALIGNED_SUFFIX
 
