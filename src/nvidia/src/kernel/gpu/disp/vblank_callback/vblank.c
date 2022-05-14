@@ -152,7 +152,7 @@ kheadAddVblankCallback_IMPL
             {
                 //
                 // We set the target to the current plus one (the next vblank).
-                // We use this case when we dont know the request or legacy support.
+                // We use this case when we don't know the request or legacy support.
                 //
                 Count += 1;
                 pCallback->VBlankCount = Count;
@@ -298,7 +298,7 @@ kheadDeleteVblankCallback_IMPL
     {
         //
         // Found it.
-        // Unlink it now. If we call it, it may try to add itself again, and wont be able to.
+        // Unlink it now. If we call it, it may try to add itself again, and won't be able to.
         if (pCallback->Flags & VBLANK_CALLBACK_FLAG_LOW_LATENCY)
         {
             pKernelHead->Vblank.Callback.pListLL = pCallback->Next;
@@ -389,7 +389,7 @@ kheadDeleteVblankCallback_IMPL
     {
         //
         // Since there are no callbacks scheduled, then we don't need
-        // to reenable anything.
+        // to re-enable anything.
         //
         enabled = NV_FALSE;
     }
@@ -435,7 +435,7 @@ kheadProcessVblankCallbacks_IMPL
         // Select the next queue to process. Give priority to the low latency folks.
         if (newstate & VBLANK_STATE_PROCESS_LOW_LATENCY)
         {
-            // We dont want to come back here again.
+            // We don't want to come back here again.
             newstate &= ~VBLANK_STATE_PROCESS_LOW_LATENCY;
 
             // Grab the low latency queue and vblank count
@@ -445,7 +445,7 @@ kheadProcessVblankCallbacks_IMPL
         }
         else if (newstate & VBLANK_STATE_PROCESS_NORMAL_LATENCY)
         {
-            // We dont want to come back here again.
+            // We don't want to come back here again.
             newstate &= ~VBLANK_STATE_PROCESS_NORMAL_LATENCY;
 
             // Grab the normal latency queue and vblank count
@@ -459,7 +459,7 @@ kheadProcessVblankCallbacks_IMPL
             done = NV_TRUE;
         }
 
-        // If we are not done, proces the next callback queue
+        // If we are not done, process the next callback queue
         if (!done)
         {
             while (pCallback)
@@ -491,7 +491,7 @@ kheadProcessVblankCallbacks_IMPL
                     {
                         //
                         // Unlink it before we call it.  Otherwise, it may
-                        // try to add itself again, and wont be able to.
+                        // try to add itself again, and won't be able to.
                         //
                         pCallback->Next = NULL;
                         *ppPrev = pNext;
@@ -523,7 +523,7 @@ kheadProcessVblankCallbacks_IMPL
 
                         //
                         // If this is not a persistent callback, unlink it before we call it.
-                        // Otherwise, it may try to add itself again, and wont be able to.
+                        // Otherwise, it may try to add itself again, and won't be able to.
                         //
                         if ( !(pCallback->Flags & VBLANK_CALLBACK_FLAG_PERSISTENT) )
                         {
@@ -571,7 +571,7 @@ kheadProcessVblankCallbacks_IMPL
                         {
                             //
                             // So, it appears there are those that like to update vblank counts and such within the callback.
-                            // This is fine I suppose, but we dont promise that this order is sorted then.
+                            // This is fine I suppose, but we don't promise that this order is sorted then.
                             // Anyway, it may be that the callbacker updated the vblank offset also, so update that now.
                             // We should never see an OFFSET and PERSISTENT within the process loop.
                             //
