@@ -853,7 +853,7 @@ kchannelConstruct_IMPL
     }
 
     //
-    // If we alloced this group, we want to free KernelChannel first,
+    // If we allocated this group, we want to free KernelChannel first,
     // so we should set KernelChannel as its dependent.
     //
     if (bTsgAllocated)
@@ -1046,7 +1046,7 @@ kchannelDestruct_IMPL
         ctxBufPoolRelease(pKernelChannelGroup->pChannelBufPool);
     }
 
-    // Free the channel group, if we alloced it
+    // Free the channel group, if we allocated it
     if (pKernelChannelGroup->bAllocatedByRm)
     {
         pRmApi->Free(pRmApi, hClient,
@@ -3671,7 +3671,7 @@ kchannelMapEngineCtxBuf_IMPL
     NV_ASSERT_OR_ELSE(pTempMemDesc != NULL, status = NV_ERR_INVALID_STATE; goto fail);
 
     //
-    // For virtual context, UMD has already alloced/mapped the engine context.
+    // For virtual context, UMD has already allocated/mapped the engine context.
     // So simply get the vaddr
     //
 
