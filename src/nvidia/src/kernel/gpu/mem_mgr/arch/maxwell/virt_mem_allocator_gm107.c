@@ -64,8 +64,8 @@
  *  (1) Page Directory Entry
  *          An *ENTRY* within a page directory, containing the physical
  *          addresses and attributes of a single small/big page table pair.
- *  (2) !!!WRONG!!! The page direcory itself
- *          Somtimes also used in the plural form "PDEs".
+ *  (2) !!!WRONG!!! The page directory itself
+ *          Sometimes also used in the plural form "PDEs".
  *          Use "page directory" or "PD" instead.
  *
  * --------------------------
@@ -93,7 +93,7 @@
  *          An *ENTRY* within a page table, containing the physical
  *          address and attributes of a single page (small or big).
  *  (2) !!!WRONG!!! The page table itself
- *          Somtimes also used in the plural form "PTEs".
+ *          Sometimes also used in the plural form "PTEs".
  *          Use "page table" or "PT" instead.
  *
  * --------------------------
@@ -161,7 +161,7 @@ _dmaApplyWarForBug2720120
 //
 // Virtual Address Space Block - Data tracked per virtual allocation
 //
-// only used with NV_REG_STR_RESERVE_PTE_SYSMEM_MB.  Protential dead code.
+// only used with NV_REG_STR_RESERVE_PTE_SYSMEM_MB.  Potential dead code.
 typedef struct VASINFO_MAXWELL
 {
     PNODE pMapTree;      // Tree of current mappings.
@@ -553,7 +553,7 @@ dmaAllocMapping_GM107
         if (!FLD_TEST_DRF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE, flags))
         {
             // offset of the context dma passed in when ctxdma allocated
-            // Virtual memory don't have any SMMU mapping. It is still OK to use the engine MMU context; it dont have any effect.
+            // Virtual memory don't have any SMMU mapping. It is still OK to use the engine MMU context; it don't have any effect.
 
             pLocals->vaRangeLo = NV_MAX(targetSpaceBase, vaspaceGetVaStart(pVAS));
             pLocals->vaRangeHi = NV_MIN(targetSpaceLimit, vaspaceGetVaLimit(pVAS));
@@ -1652,7 +1652,7 @@ dmaUpdateVASpace_GF100
     // Compressed surfaces must be aligned to the compression page size
     // but don't check for LDDM which may pass in unaligned surfaces incrementally.
     // Chips that support full comp tag lines will support the VA being aligned to
-    // the big page size. This is because the PA alignement chooses between even/odd pages
+    // the big page size. This is because the PA alignment chooses between even/odd pages
     // and SW programs the PA alignment.
     //
     if (pDma->getProperty(pDma, PDB_PROP_DMA_ENABLE_FULL_COMP_TAG_LINE))
@@ -1661,7 +1661,7 @@ dmaUpdateVASpace_GF100
     }
 
     //
-    // VMM-TODO: Merge into PL1 traveral.
+    // VMM-TODO: Merge into PL1 traversal.
     //
     // If the pageSize of the mapping != 4K then be sure that the 4k pages
     // making up the big physical page are contiguous. This is currently
@@ -1841,7 +1841,7 @@ dmaUpdateVASpace_GF100
 
         //
         // FillPteMem case must be handled specially as it violates
-        // internal VAS alignment and constistency checks.
+        // internal VAS alignment and consistency checks.
         //
         if (bFillPteMem)
         {
