@@ -384,7 +384,7 @@ _kfifoChidMgrInitChannelGroupMgr
         return NV_OK;
     }
 
-    // Rounds up to dword alignemnt, then converts bits to bytes.
+    // Rounds up to dword alignment, then converts bits to bytes.
     allocSize = RM_ALIGN_UP(numChannelGroups, 32)/8;
 
     pFifoHwID->pHwIdInUse = portMemAllocNonPaged(allocSize);
@@ -446,7 +446,7 @@ _kfifoChidMgrFreeIsolationId
 }
 
 /*!
- * @breif Fifo defined call back comparator to compare eheap block ownership ID
+ * @brief Fifo defined call back comparator to compare eheap block ownership ID
  *
  * @param[in]  pRequesterID  Ownership ID constructed by caller
  * @param[in]  pIsolationID
@@ -1431,7 +1431,7 @@ NV_STATUS kfifoGetNextKernelChannel_IMPL
  * @param[in] pGpu
  * @param[in] pKernelFifo
  *
- * @return NV_OK if succcessful,
+ * @return NV_OK if successful,
  *         NV_ERR_NOT_SUPPORTED if Host RM calls this interface
  *         NV_ERR_INVALID_STATE if host supplied invalid data
  *         NV_STATUS supplied by RPC response from Host
@@ -1611,7 +1611,7 @@ cleanup:
  * @param[in] pGpu
  * @param[in] pKernelFifo
  *
- * @return NV_OK if succcessful,
+ * @return NV_OK if successful,
  *         NV_STATUS supplied by HALs called
  */
 NV_STATUS
