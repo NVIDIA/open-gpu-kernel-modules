@@ -508,7 +508,7 @@ _freeRmApertureMap_VBAR2
 /*!
  * Second level of the RmAperture support for when a mapping is going to be in BAR2.
  *
- * Multiple mappings of a single MEMORY_DESCRIPTOR is now refernced counted in
+ * Multiple mappings of a single MEMORY_DESCRIPTOR is now referenced counted in
  * the memory descriptor code.
  *
  * If this requests needs to update PTEs, call kbusUpdateRmAperture().
