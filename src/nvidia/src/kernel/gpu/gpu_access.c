@@ -1532,7 +1532,7 @@ gpuRegWr32Uc_dumpinfo(const char *func, const char *addrStr, const char *vreg, O
  *
  * @param[in]  pGpu       OBJGPU pointer
  * @param[in]  addr       Address of the register to be sanity checked
- * @param[out] pRetVal    Default return value for read accesses incase of sanity check failure. Only for U032 hals.
+ * @param[out] pRetVal    Default return value for read accesses in case of sanity check failure. Only for U032 hals.
  *
  * @returns NV_ERR_GPU_IN_FULLCHIP_RESET    if GPU is in reset
  *          NV_ERR_GPU_IS_LOST              if GPU is inaccessible
