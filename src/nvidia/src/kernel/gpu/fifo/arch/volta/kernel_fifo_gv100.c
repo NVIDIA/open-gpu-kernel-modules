@@ -139,7 +139,7 @@ kfifoEngineInfoXlate_GV100
 }
 
 /*
- * @brief Gives the maxinum number of channels allowed per channel group
+ * @brief Gives the maximum number of channels allowed per channel group
  */
 NvU32
 kfifoGetMaxChannelGroupSize_GV100
