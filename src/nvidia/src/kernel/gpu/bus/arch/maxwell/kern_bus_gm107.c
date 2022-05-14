@@ -567,7 +567,7 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
             // We are restricting this feature only to those SKUs which
             // has BAR1 aperture within 4gig range, because this feature is
             // notebook only, and the expectation is the BAR1 va range will
-            // not be that huge. Once BAR1 va range crosses 4gig (eventhough smaller?
+            // not be that huge. Once BAR1 va range crosses 4gig (even though smaller?
             // than 16 gig), we may have to revisit p2p mailbox and expand it to
             // full fb range - as there will be new features such as dynamic BAR1.
             //
@@ -3067,7 +3067,7 @@ kbusUnlinkP2P_GM107
  * Size calculation is optimized  for @ref GMMU_FMT_VER_1 due to
  * large % overhead of full Page Table size over the size
  * actually needed for BAR2. UVM replayable fault buffer size is
- * also accomodated in this calculation.
+ * also accommodated in this calculation.
  *
  * @return Size in Bytes, needed for BAR2 Page Tables.
  */
@@ -3117,7 +3117,7 @@ kbusGetSizeOfBar2PageTables_GM107
     numPgTblsFloor = (NvU32)vaLimit / NVBIT64(pPgTbl->virtAddrBitHi + 1);
 
     //
-    // Let's optimize the space caculation on GMMU_FMT_VER_1
+    // Let's optimize the space calculation on GMMU_FMT_VER_1
     // if the Page Table is not fully used.
     //
     if (0 == numPgTblsFloor)
@@ -3386,7 +3386,7 @@ kbusVerifyBar2_GM107
               (NvU8 *)(pOffset - pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping),
               testMemorySize);
     NV_PRINTF_COND(IS_EMULATION(pGpu), LEVEL_NOTICE, LEVEL_INFO,
-                   "MMUTest The physical address being targetted is 0x%llx\n",
+                   "MMUTest The physical address being targeted is 0x%llx\n",
                    testMemoryOffset);
     for(index = 0; index < testMemorySize; index += 4)
     {
