@@ -95,7 +95,7 @@ findRegionID(PMA *pPma, NvU64 address)
 void
 pmaPrintBlockStatus(PMA_PAGESTATUS blockStatus)
 {
-    // Use DBG_PRINTF so as not to prepend "NVRM:" everytime, as NV_PRINTF does
+    // Use DBG_PRINTF so as not to prepend "NVRM:" every time, as NV_PRINTF does
     if ((blockStatus & STATE_MASK) == STATE_FREE) {
         NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "STATE_FREE         ");
     }
@@ -462,7 +462,7 @@ _pmaEvictContiguous
         if ((status = _pmaCheckScrubbedPages(pPma, evictSize, &evictStart, 1)) != NV_OK)
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;
-            goto scrub_exit; // just incase someone adds anything below.
+            goto scrub_exit; // just in case someone adds anything below.
         }
 
 scrub_exit:
