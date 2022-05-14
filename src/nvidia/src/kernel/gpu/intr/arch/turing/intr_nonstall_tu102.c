@@ -483,7 +483,7 @@ intrServiceNonStall_TU102
 
     //
     // Special handling for the FIFO "non-stall" interrupt that does not report
-    // into the non-stall subtree (unfortunately, by HW design) ane hence, is
+    // into the non-stall subtree (unfortunately, by HW design) and hence, is
     // not handled above.
     //
     // This is a physical-only interrupt
