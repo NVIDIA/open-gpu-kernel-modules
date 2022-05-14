@@ -398,10 +398,10 @@ static NV_INLINE NvU32 _checkSum32(void *pData, NvU32 uLen)
  * Move a command record from our staging area to the command queue.
  *
  * Returns
- *  NV_OK                       - Record sucessfully sent.
+ *  NV_OK                       - Record successfully sent.
  *  NV_ERR_INVALID_PARAM_STRUCT - Bad record length.
  *  NV_ERR_BUSY_RETRY           - No space in the queue.
- *  NV_ERR_INVALID_STATE        - Something really bad happenned.
+ *  NV_ERR_INVALID_STATE        - Something really bad happened.
  */
 NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
 {
@@ -502,10 +502,10 @@ done:
  * staging area.
  *
  * Returns
- *  NV_OK                       - Record sucessfully read.
+ *  NV_OK                       - Record successfully read.
  *  NV_ERR_INVALID_PARAM_STRUCT - Bad record length.
  *  NV_ERR_NOT_READY            - Partial read.
- *  NV_ERR_INVALID_STATE        - Something really bad happenned.
+ *  NV_ERR_INVALID_STATE        - Something really bad happened.
  */
 NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI)
 {
