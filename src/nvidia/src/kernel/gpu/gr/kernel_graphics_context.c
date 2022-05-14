@@ -999,7 +999,7 @@ kgrctxAllocMainCtxBuffer_IMPL
     //
     // Allocate space for per-subcontext headers in the context buffer.
     // With subcontext, per-subcontext context header is programmed in the channel instance block.
-    // Per-subcontext headers can be seperate from the context buffer.
+    // Per-subcontext headers can be separate from the context buffer.
     // For the initial phase, we allocate them at the end of the context buffers for easier tracking.
     // This will waste some memory (256 KB), if the number of subcontexts are sparse.
     // Will cleanup this up later to be on-demand.
@@ -2730,7 +2730,7 @@ void kgrctxFreeLocalGlobalCtxBuffers_IMPL
 /**
  * @brief Free all associated ctx buffers (main, patch, PM and private global buffers for cases like VPR).
  *
- * This function is called on every channel free and thefore can't assume any
+ * This function is called on every channel free and therefore can't assume any
  * graphics objects actually exist on the given channel.
  */
 void kgrctxFreeAssociatedCtxBuffers_IMPL
