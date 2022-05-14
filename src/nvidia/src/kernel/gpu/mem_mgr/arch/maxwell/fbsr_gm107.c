@@ -35,7 +35,7 @@
 //
 // This file implements two mechanisms for FB save / restore on Fermi. I
 // would've liked to split the implementation for Begin()/End()/CopyMemory()
-// into seperate subclasses but our current object model makes inheritance a tad
+// into separate subclasses but our current object model makes inheritance a tad
 // cumbersome.
 //
 // Mechanism #1 (TYPE_DMA): The data is DMA'ed (via CE) to a large non-paged
@@ -58,7 +58,7 @@
 // transitions. Sys_mem allocations are done at first S3 cycle and release during
 // driver unload. this approach reduces system VM fragmentation. Optimus systems,
 // keeps GPU in D3 state, as long as there is no work for GPU. Because of frequent
-// transitions between D0 & D3, system is running out of *CONTIGOUS* VM, with this
+// transitions between D0 & D3, system is running out of *CONTIGUOUS* VM, with this
 // approach Optimus system could avoid the above problem.
 //
 // Mechanism #4 (TYPE_PAGED_DMA): It is basically the same with the TYPE_DMA
@@ -66,7 +66,7 @@
 // buffer is allocated, we need to use memdescLock to lock the buffer in physical
 // memory so that CE can access it and then use memdescUnlock to unlock it.
 //
-// Mechanisms #5 and #6 are targetted for WDDM, a large VA section (Paged region)
+// Mechanisms #5 and #6 are targeted for WDDM, a large VA section (Paged region)
 // and  a small pinned region are committed on boot.
 //
 // Mechanism #5 (TYPE_WDDM_FAST_DMA_DEFERRED_NONPAGED):
