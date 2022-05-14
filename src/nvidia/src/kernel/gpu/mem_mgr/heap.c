@@ -830,7 +830,7 @@ static NV_STATUS _heapGetBankPlacement
 
         //
         // NV50+ doesn't care about bank placement since the fb has bank
-        // striding and we dont need to care about allocating primary surfaces
+        // striding and we don't need to care about allocating primary surfaces
         // in special areas to avoid bank conflicts. This strategy management
         // should be removed in the future.
         //
@@ -1675,7 +1675,7 @@ NV_STATUS heapAlloc_IMPL
         }
 
         //
-        // When scanning upwards, start at the bottom - 1 so the following loop looks symetrical.
+        // When scanning upwards, start at the bottom - 1 so the following loop looks symmetrical.
         //
         if ( ! (currentBankInfo & MEM_GROW_DOWN))
             pBlockFirstFree = pBlockFirstFree->u0.prevFree;
