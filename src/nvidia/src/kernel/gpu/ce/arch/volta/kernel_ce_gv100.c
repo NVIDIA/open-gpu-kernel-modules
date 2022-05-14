@@ -206,7 +206,7 @@ void kceGetSysmemRWLCEs_GV100(KernelCE* pKCe, NvU32 *rd, NvU32 *wr)
  * @param[out] pExposeCeMask        NvU32 pointer
  *
  * Returns: NV_TRUE if entry is found
- *        NV_FALSE otheriwse
+ *        NV_FALSE otherwise
 */
 NvBool
 kceGetAutoConfigTableEntry_GV100
