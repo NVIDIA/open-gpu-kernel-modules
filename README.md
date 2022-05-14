@@ -3,8 +3,19 @@
 This is the source release of the NVIDIA Linux open GPU kernel modules,
 version 515.43.04.
 
+## Table of contents
+  - [How to Build ](#how-to-build)
+  - [Supported Target CPU Architectures ](#supported-target-cpu-architectures)
+  - [Other Build Knobs ](#other-build-knobs)
+  - [Supported Toolchains ](#supported-toolchains)
+  - [Supported Linux Kernel Versions ](#supported-linux-kernel-versions)
+  - [How to Contribute ](#how-to-contribute)
+  - [How to Report Issues ](#how-to-report-issues)
+  - [Kernel Interface and OS-Agnostic Components of Kernel Modules ](#kernel-interface-and-os-agnostic-components-of-kernel-modules)
+  - [Directory Structure Layout ](#directory-structure-layout)
+  
 
-## How to Build
+## How to Build <a id="how-to-build"></a>
 
 To build:
 
@@ -24,7 +35,7 @@ option.  E.g.,
     sh ./NVIDIA-Linux-[...].run --no-kernel-modules
 
 
-## Supported Target CPU Architectures
+## Supported Target CPU Architectures <a id="supported-target-cpu-architectures"></a>
 
 Currently, the kernel modules can be built for x86_64 or aarch64.
 If cross-compiling, set these variables on the make command line:
@@ -48,7 +59,7 @@ E.g.,
         OBJCOPY=aarch64-linux-gnu-objcopy
 
 
-## Other Build Knobs
+## Other Build Knobs <a id="other-build-knobs"></a>
 
 NV_VERBOSE - Set this to "1" to print each complete command executed;
     otherwise, a succinct "CC" line is printed.
@@ -62,7 +73,7 @@ These variables can be set on the make command line.  E.g.,
     make modules -j`nproc` NV_VERBOSE=1
 
 
-## Supported Toolchains
+## Supported Toolchains <a id="supported-toolchains"></a>
 
 Any reasonably modern version of GCC or Clang can be used to build the
 kernel modules.  Note that the kernel interface layers of the kernel
@@ -70,14 +81,14 @@ modules must be built with the toolchain that was used to build the
 kernel.
 
 
-## Supported Linux Kernel Versions
+## Supported Linux Kernel Versions <a id="supported-linux-kernel-versions"></a>
 
 The NVIDIA open kernel modules support the same range of Linux kernel
 versions that are supported with the proprietary NVIDIA kernel modules.
 This is currently Linux kernel 3.10 or newer.
 
 
-## How to Contribute
+## How to Contribute <a id="how-to-contribute"></a>
 
 Contributions can be made by creating a pull request on
 https://github.com/NVIDIA/open-gpu-kernel-modules
@@ -107,7 +118,7 @@ published here.  This has several implications for the foreseeable future:
   refactoring to suggest, please contact us in advance, so we can coordinate.
 
 
-## How to Report Issues
+## How to Report Issues <a id="how-to-report-issues"></a>
 
 Problems specific to the Open GPU Kernel Modules can be reported in the
 Issues section of the https://github.com/NVIDIA/open-gpu-kernel-modules
@@ -127,7 +138,7 @@ Please see the separate [SECURITY.md](SECURITY.md) document if you
 believe you have discovered a security vulnerability in this software.
 
 
-## Kernel Interface and OS-Agnostic Components of Kernel Modules
+## Kernel Interface and OS-Agnostic Components of Kernel Modules <a id="kernel-interface-and-os-agnostic-components-of-kernel-modules"></a>
 
 Most of NVIDIA's kernel modules are split into two components:
 
@@ -150,7 +161,7 @@ The kernel interface layer component for each kernel module must be built
 for the target kernel.
 
 
-## Directory Structure Layout
+## Directory Structure Layout <a id="directory-structure-layout"></a>
 
 - `kernel-open/`                The kernel interface layer
 - `kernel-open/nvidia/`         The kernel interface layer for nvidia.ko
