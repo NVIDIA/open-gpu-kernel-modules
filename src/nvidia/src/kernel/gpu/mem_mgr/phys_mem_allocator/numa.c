@@ -398,7 +398,7 @@ scrub_exit:
     {
         NvU32 regionIdx;
 
-        // Check if there is atleast one evictable page
+        // Check if there is at least one evictable page
         status = _pmaNumaAvailableEvictablePage(pPma, validRegionList);
 
         if (status != NV_OK)
