@@ -13,10 +13,10 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.  IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+# FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
 #
@@ -222,7 +222,7 @@ TEST_CC_ARG = \
 
 
 ##############################################################################
-# define variables used when installing the open source utilities from
+# define variables used when installing the open-source utilities from
 # the source tarball
 ##############################################################################
 
@@ -234,7 +234,7 @@ MANDIR = $(DESTDIR)$(PREFIX)/share/man/man1
 
 
 ##############################################################################
-# default build rule, so that nothing here in utils.mk accidentally
+# default build rule so that nothing here in utils.mk accidentally
 # gets selected as the default rule
 ##############################################################################
 
@@ -293,7 +293,7 @@ host_target = $(patsubst HOST,HOST_,$(patsubst TARGET,,$(1)))
 #
 # - Also, "-MMD" will cause the compiler to name the target as if it were in the
 #   current directory ("foo.o: "); use -MT to rename the target in the output
-#   directory ("_out/Linux_x86/foo.o: ") so that the target actually applies to
+#   directory ("_out/Linux_x86/foo.o: ") so that the target applies to
 #   the object files produced in the build.
 #
 # - Use -MP to generate a phony target for each of those prerequisites (except
@@ -304,7 +304,7 @@ host_target = $(patsubst HOST,HOST_,$(patsubst TARGET,,$(1)))
 #   so that the makefile can handle incremental builds after a prerequisite has
 #   been deleted from source control.
 #
-# - Use sed to remove the source file from the list of prerequisties in the
+# - Use sed to remove the source file from the list of prerequisites in the
 #   above, so that the makefile can handle increment builds after the source has
 #   moved from one directory to another.  The DEFINE_OBJECT_RULE macro spells
 #   out the obj: src dependency, so we don't require it here.
@@ -341,7 +341,7 @@ endif
 
 # define LINK and HOST_LINK to be the same as CC; this is so that,
 # even though we use CC to link programs, we can have a different
-# quiet rule that uses '$@' as it's arg, rather than '$<'
+# quiet rule that uses '$@' as its arg, rather than '$<'
 LINK = $(CC)
 HOST_LINK = $(HOST_CC)
 
@@ -413,11 +413,11 @@ BUILD_DEPENDENCY_LIST = \
 # An order-only dependency is added on any generated header files listed in
 # $(NV_GENERATED_HEADERS), to ensure they're present before invoking the
 # compiler.  For incremental builds where the object file already exists, a
-# real (not order-only) dependency will be created by automatic dependency
+# real (not order-only) dependency will be created by the automatic dependency
 # tracking if needed.
 #
 # The _WITH_OBJECT_NAME and _WITH_DIR function name suffixes describe
-# the third and possibly fourth arguments based on order. The
+# the third and possibly fourth arguments based on the order. The
 # _WITH_OBJECT_NAME argument is the object filename to produce while
 # the _WITH_DIR argument is the destination path for the object file.
 #
@@ -477,7 +477,7 @@ define DEFINE_OBJECT_RULE
 endef
 
 # This is a function that will generate rules to build
-# files with separate debug information, if so requested.
+# files with separate debug information if so requested.
 # 
 # It takes one parameter: (1) Name of unstripped binary
 #
@@ -504,7 +504,7 @@ define DEBUG_INFO_RULES
 endef
 
 ##############################################################################
-# Define rule for generating a source file containing identification information
+# Define a rule for generating a source file containing identification information
 # for the build.
 #
 # $(1) string name
