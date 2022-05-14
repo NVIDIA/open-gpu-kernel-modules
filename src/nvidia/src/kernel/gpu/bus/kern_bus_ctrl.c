@@ -218,7 +218,7 @@ subdeviceCtrlCmdBusGetAspmDisableFlags_IMPL
     }
 
     pParams->aspmDisableFlags[NV2080_CTRL_ASPM_DISABLE_FLAGS_L1_MASK_REGKEY_OVERRIDE]                = bCyaMaskL1;
-    // This flag correnpond to an deprecated PDB_PROP_OS_RM_MAKES_POLICY_DECISIONS property which is always returing TURE on non-MACOSX.
+    // This flag correspond to a deprecated PDB_PROP_OS_RM_MAKES_POLICY_DECISIONS property which is always returning TRUE on non-MACOSX.
     pParams->aspmDisableFlags[NV2080_CTRL_ASPM_DISABLE_FLAGS_OS_RM_MAKES_POLICY_DECISIONS]           = NV_TRUE;
     pParams->aspmDisableFlags[NV2080_CTRL_ASPM_DISABLE_FLAGS_GPU_BEHIND_BRIDGE]                      = pGpu->getProperty(pGpu, PDB_PROP_GPU_BEHIND_BRIDGE);
     pParams->aspmDisableFlags[NV2080_CTRL_ASPM_DISABLE_FLAGS_GPU_UPSTREAM_PORT_L1_UNSUPPORTED]       = pGpu->getProperty(pGpu, PDB_PROP_GPU_UPSTREAM_PORT_L1_UNSUPPORTED);
@@ -390,7 +390,7 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
                     //
                     // On SOC Display all of the (system) memory that nvdisplay HW needs
                     // to read from/write to be allocated as non-coherent. it doesn't matter
-                    // whether this system memory is accessed over the NISO inteface
+                    // whether this system memory is accessed over the NISO interface
                     // (e.g., for pushbuffers, semaphores, notifiers, etc) or
                     // over the ISO interface (for window/cursor surface pixel data,
                     // LUT entries, etc). on Orin, there's an ISO2AXI SHIM that ISOHUB will
@@ -430,7 +430,7 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
                     //
                     // On SOC Display all of the (system) memory that nvdisplay HW needs
                     // to read from/write to be allocated as non-coherent. it doesn't matter
-                    // whether this system memory is accessed over the NISO inteface
+                    // whether this system memory is accessed over the NISO interface
                     // (e.g., for pushbuffers, semaphores, notifiers, etc) or
                     // over the ISO interface (for window/cursor surface pixel data,
                     // LUT entries, etc). on Orin, there's an ISO2AXI SHIM that ISOHUB will
