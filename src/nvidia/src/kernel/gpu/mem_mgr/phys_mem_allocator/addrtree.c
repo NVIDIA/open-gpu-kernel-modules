@@ -32,7 +32,7 @@
 #include "nvport/nvport.h"
 #include "nvmisc.h"
 
-// Returns if (x, x+y-1) contains (u, u+v-1) in one dimention
+// Returns if (x, x+y-1) contains (u, u+v-1) in one dimension
 #define RANGE_CONTAINS(x, y, u, v) ((x <= u) && ((x + y - 1) >= (u + v - 1)))
 
 static PMA_PAGESTATUS pmaAddrtreeReadLevel(void *pMap, NvU32 levelNum, NvU64 frameNum, NvBool bReadAttrib);
@@ -789,7 +789,7 @@ _pmaAddrtreeContigSearchLoop
                 if (_pmaAddrtreeAvailable(pTree, level, state, freeStart, numFrames, &diff))
                 {
                     found = NV_TRUE;
-                    // Substract off padding when returning
+                    // Subtract off padding when returning
                     *freeList = addrBase + ((freeStart << pTree->levels[level+1].pageSizeShift) -
                                 (pTree->numPaddingFrames << PMA_PAGE_SHIFT));
                     //NV_PRINTF(LEVEL_INFO, "found! 0x%llx\n", freeStart);
@@ -1005,7 +1005,7 @@ _pmaAddrtreeDiscontigSearchLoop
 
         if (startStatus == state)
         {
-            // Substract off padding when returning
+            // Subtract off padding when returning
             freeList[found++] = addrBase + ((freeStart << pTree->levels[level+1].pageSizeShift) -
                                 (pTree->numPaddingFrames << PMA_PAGE_SHIFT));
         }
