@@ -23,7 +23,7 @@
 
 /********************************* VMA Manager *****************************\
 *                                                                           *
-*   The VirtMemAllocator is managed in this module.  All priviledged        *
+*   The VirtMemAllocator is managed in this module.  All privileged         *
 *   state and object interaction is handled here.                           *
 *                                                                           *
 ****************************************************************************/
