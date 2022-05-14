@@ -561,7 +561,7 @@ _class5080DeferredApiV2
 
             // In case of deferred API, the parameters are already copied
             // from user space to kernel space when the deferred API is registered
-            // So the IRQL_RAISED flag is set to avoid to second copy of paramaters
+            // So the IRQL_RAISED flag is set to avoid to second copy of parameters
             if ((RMCFG_FEATURE_RM_BASIC_LOCK_MODEL && osIsRaisedIRQL()) ||
                 hypervisorIsVgxHyper())
             {
