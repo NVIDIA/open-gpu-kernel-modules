@@ -59,7 +59,7 @@ modules_install:
 
 
 ###########################################################################
-# clean
+# Clean.
 ###########################################################################
 
 .PHONY: clean nvidia.clean nvidia-modeset.clean kernel-open.clean
