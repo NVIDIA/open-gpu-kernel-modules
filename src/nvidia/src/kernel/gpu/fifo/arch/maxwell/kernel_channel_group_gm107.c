@@ -52,7 +52,7 @@ kchangrpGetDefaultRunlist_GM107
                                               &engDesc));
     }
 
-    // if translation fails, defualt is INVALID_RUNLIST_ID
+    // if translation fails, default is INVALID_RUNLIST_ID
     NV_ASSERT_OK(
         kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                  ENGINE_INFO_TYPE_ENG_DESC, engDesc,
