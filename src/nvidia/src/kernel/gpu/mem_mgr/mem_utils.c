@@ -752,7 +752,7 @@ memmgrAllocResources_IMPL
     if (status != NV_OK)
     {
         //
-        // Two possibilties: either some attribute was set to REQUIRED, ran out of resources,
+        // Two possibilities: either some attribute was set to REQUIRED, ran out of resources,
         // or unaligned address / size was passed down. Free up memory and fail this call.
         // heapFree will fix up heap pointers.
         //
