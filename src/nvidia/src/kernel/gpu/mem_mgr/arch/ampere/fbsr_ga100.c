@@ -94,7 +94,7 @@ fbsrEnd_GA100(OBJGPU *pGpu, OBJFBSR *pFbsr)
         pFbsr->bRawModeWasEnabled)
     {
         /*
-         * Reenable raw mode if it was disabled by fbsrBegin_GA100.
+         * Re-enable raw mode if it was disabled by fbsrBegin_GA100.
          */
         NV_ASSERT_OK(fbsrSendMemsysProgramRawCompressionMode(pGpu, NV_TRUE));
     }
