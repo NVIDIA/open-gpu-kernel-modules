@@ -495,8 +495,8 @@ _portMemGetTracking
 {
     if (pAlloc == NULL)
         return &portMemGlobals.mainTracking;
-    else
-        return pAlloc->pTracking;
+    
+    return pAlloc->pTracking;
 }
 
 

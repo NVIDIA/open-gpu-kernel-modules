@@ -53,9 +53,8 @@ float32_t f32_sub( float32_t a, float32_t b )
     uiB = uB.ui;
     if ( signF32UI( uiA ^ uiB ) ) {
         return softfloat_addMagsF32( uiA, uiB );
-    } else {
-        return softfloat_subMagsF32( uiA, uiB );
     }
 
+    return softfloat_subMagsF32( uiA, uiB );
 }
 

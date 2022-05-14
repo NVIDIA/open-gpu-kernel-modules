@@ -161,8 +161,8 @@ static NvU64 alignUpToMod(NvU64 frame, NvU64 alignment, NvU64 mod)
 {
     if ((frame & (alignment - 1)) <= mod)
         return NV_ALIGN_DOWN(frame, alignment) + mod;
-    else
-        return NV_ALIGN_UP(frame, alignment) + mod;
+    
+    return NV_ALIGN_UP(frame, alignment) + mod;
 }
 
 //

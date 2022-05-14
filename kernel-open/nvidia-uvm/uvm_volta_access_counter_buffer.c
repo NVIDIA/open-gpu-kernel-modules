@@ -128,8 +128,8 @@ static uvm_access_counter_type_t get_access_counter_type(NvU32 *access_counter_e
     NvU32 type_value = READ_HWVALUE_MW(access_counter_entry, C365, NOTIFY_BUF_ENTRY, TYPE);
     if (type_value == NVC365_NOTIFY_BUF_ENTRY_TYPE_CPU)
         return UVM_ACCESS_COUNTER_TYPE_MOMC;
-    else
-        return UVM_ACCESS_COUNTER_TYPE_MIMC;
+    
+    return UVM_ACCESS_COUNTER_TYPE_MIMC;
 }
 
 static NvU32 *get_access_counter_buffer_entry(uvm_parent_gpu_t *parent_gpu, NvU32 index)

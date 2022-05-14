@@ -293,8 +293,8 @@ static char uvm_digit_to_hex(unsigned value)
 {
     if (value >= 10)
         return value - 10 + 'a';
-    else
-        return value + '0';
+    
+    return value + '0';
 }
 
 int format_uuid_to_buffer(char *buffer, unsigned bufferLength, const NvProcessorUuid *pUuidStruct)

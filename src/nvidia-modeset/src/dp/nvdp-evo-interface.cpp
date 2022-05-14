@@ -78,9 +78,9 @@ NvU32 EvoInterface::getRegkeyValue(const char *key)
 
     if (found) {
         return val;
-    } else {
-        return 0;
     }
+    
+    return 0;
 }
 
 bool EvoInterface::isInbandStereoSignalingSupported()

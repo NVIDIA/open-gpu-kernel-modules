@@ -491,8 +491,8 @@ iovaspaceAcquireMapping_IMPL
 
     if (memdescIsSubMemoryMemDesc(pPhysMemDesc))
         return _iovaspaceCreateSubmapping(pIOVAS, pPhysMemDesc);
-    else
-        return _iovaspaceCreateMapping(pIOVAS, pPhysMemDesc);
+    
+    return _iovaspaceCreateMapping(pIOVAS, pPhysMemDesc);
 }
 
 static void

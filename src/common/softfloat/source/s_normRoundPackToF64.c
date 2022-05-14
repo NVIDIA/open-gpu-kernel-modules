@@ -50,9 +50,8 @@ float64_t
     if ( (10 <= shiftDist) && ((unsigned int) exp < 0x7FD) ) {
         uZ.ui = packToF64UI( sign, sig ? exp : 0, sig<<(shiftDist - 10) );
         return uZ.f;
-    } else {
-        return softfloat_roundPackToF64( sign, exp, sig<<shiftDist );
     }
-
+    
+    return softfloat_roundPackToF64( sign, exp, sig<<shiftDist );
 }
 

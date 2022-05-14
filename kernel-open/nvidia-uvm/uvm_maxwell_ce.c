@@ -171,8 +171,8 @@ static NvU32 ce_aperture(uvm_aperture_t aperture)
 
     if (aperture == UVM_APERTURE_SYS)
         return HWCONST(B0B5, SET_SRC_PHYS_MODE, TARGET, COHERENT_SYSMEM);
-    else
-        return HWCONST(B0B5, SET_SRC_PHYS_MODE, TARGET, LOCAL_FB);
+    
+    return HWCONST(B0B5, SET_SRC_PHYS_MODE, TARGET, LOCAL_FB);
 }
 
 // Push SET_{SRC,DST}_PHYS mode if needed and return LAUNCH_DMA_{SRC,DST}_TYPE

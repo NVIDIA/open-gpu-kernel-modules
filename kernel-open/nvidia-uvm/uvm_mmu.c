@@ -197,8 +197,8 @@ static NV_STATUS phys_mem_allocate(uvm_page_tree_t *tree,
 
     if (location == UVM_APERTURE_SYS)
         return phys_mem_allocate_sysmem(tree, size, out);
-    else
-        return phys_mem_allocate_vidmem(tree, size, pmm_flags, out);
+    
+    return phys_mem_allocate_vidmem(tree, size, pmm_flags, out);
 }
 
 static void phys_mem_deallocate_vidmem(uvm_page_tree_t *tree, uvm_mmu_page_table_alloc_t *ptr)

@@ -165,8 +165,8 @@ static NvLength entry_size_pascal(NvU32 depth)
     UVM_ASSERT(depth < 5);
     if (depth == 3)
         return 16;
-    else
-        return 8;
+    
+    return 8;
 }
 
 static NvU32 index_bits_pascal(NvU32 depth, NvU32 page_size)
@@ -208,8 +208,8 @@ static NvU32 page_table_depth_pascal(NvU32 page_size)
 {
     if (page_size == UVM_PAGE_SIZE_2M)
         return 3;
-    else
-        return 4;
+    
+    return 4;
 }
 
 static NvU32 page_sizes_pascal(void)

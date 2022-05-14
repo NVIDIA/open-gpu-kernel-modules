@@ -49,9 +49,8 @@ float32_t ui32_to_f32( uint32_t a )
     }
     if ( a & 0x80000000 ) {
         return softfloat_roundPackToF32( 0, 0x9D, a>>1 | (a & 1) );
-    } else {
-        return softfloat_normRoundPackToF32( 0, 0x9C, a );
     }
-
+    
+    return softfloat_normRoundPackToF32( 0, 0x9C, a );
 }
 

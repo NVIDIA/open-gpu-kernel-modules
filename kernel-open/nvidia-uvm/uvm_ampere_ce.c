@@ -70,11 +70,10 @@ static NvU32 ce_aperture(uvm_aperture_t aperture)
     else if (aperture == UVM_APERTURE_VID) {
         return HWCONST(C6B5, SET_SRC_PHYS_MODE, TARGET, LOCAL_FB);
     }
-    else {
-        return HWCONST(C6B5, SET_SRC_PHYS_MODE, TARGET, PEERMEM) |
-               HWVALUE(C6B5, SET_SRC_PHYS_MODE, FLA, 0) |
-               HWVALUE(C6B5, SET_SRC_PHYS_MODE, PEER_ID, UVM_APERTURE_PEER_ID(aperture));
-    }
+    
+    return HWCONST(C6B5, SET_SRC_PHYS_MODE, TARGET, PEERMEM) |
+           HWVALUE(C6B5, SET_SRC_PHYS_MODE, FLA, 0) |
+           HWVALUE(C6B5, SET_SRC_PHYS_MODE, PEER_ID, UVM_APERTURE_PEER_ID(aperture));
 }
 
 // Push SET_{SRC,DST}_PHYS mode if needed and return LAUNCH_DMA_{SRC,DST}_TYPE

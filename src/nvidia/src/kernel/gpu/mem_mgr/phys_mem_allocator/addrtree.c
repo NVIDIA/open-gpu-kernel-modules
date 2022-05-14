@@ -47,8 +47,8 @@ static NvU64 alignUpToMod(NvU64 frame, NvU64 alignment, NvU64 mod)
 {
     if ((frame & (alignment - 1)) <= mod)
         return NV_ALIGN_DOWN(frame, alignment) + mod;
-    else
-        return NV_ALIGN_UP(frame, alignment) + mod;
+    
+    return NV_ALIGN_UP(frame, alignment) + mod;
 }
 
 static NvU32
@@ -897,8 +897,8 @@ _pmaAddrtreeScanContiguous
                                          numPages, frameAlignment, freeList);
     if (found)
         return NV_ERR_IN_USE;
-    else
-        return NV_ERR_NO_MEMORY;
+    
+    return NV_ERR_NO_MEMORY;
 }
 
 //
@@ -1097,8 +1097,8 @@ _pmaAddrtreeScanDiscontiguous
 
     if ((foundFree + foundEvictable) == numPages)
         return NV_ERR_IN_USE;
-    else
-        return NV_ERR_NO_MEMORY;
+    
+    return NV_ERR_NO_MEMORY;
 }
 
 //

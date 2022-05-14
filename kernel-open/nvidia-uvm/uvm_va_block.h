@@ -1627,8 +1627,8 @@ static uvm_page_index_t uvm_va_block_first_page_in_mask(uvm_va_block_region_t re
 {
     if (page_mask)
         return find_next_bit(page_mask->bitmap, region.outer, region.first);
-    else
-        return region.first;
+    
+    return region.first;
 }
 
 static uvm_page_index_t uvm_va_block_next_page_in_mask(uvm_va_block_region_t region,
@@ -1649,8 +1649,8 @@ static uvm_page_index_t uvm_va_block_first_unset_page_in_mask(uvm_va_block_regio
 {
     if (page_mask)
         return find_next_zero_bit(page_mask->bitmap, region.outer, region.first);
-    else
-        return region.first;
+    
+    return region.first;
 }
 
 static uvm_page_index_t uvm_va_block_next_unset_page_in_mask(uvm_va_block_region_t region,
@@ -1863,8 +1863,8 @@ static NvU32 uvm_va_block_page_size_processor(uvm_va_block_t *va_block,
 {
     if (UVM_ID_IS_CPU(processor_id))
         return uvm_va_block_page_size_cpu(va_block, page_index);
-    else
-        return uvm_va_block_page_size_gpu(va_block, processor_id, page_index);
+    
+    return uvm_va_block_page_size_gpu(va_block, processor_id, page_index);
 }
 
 // Returns the big page size for the GPU VA space of the block

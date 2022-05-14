@@ -88,9 +88,8 @@ NvU8 uvm_hal_volta_fault_buffer_get_ve_id(NvU16 mmu_engine_id, uvm_mmu_engine_ty
 
         return (NvU8)ve_id;
     }
-    else {
-        return 0;
-    }
+    
+    return 0;
 }
 
 static uvm_fault_access_type_t get_fault_access_type(const NvU32 *fault_entry)

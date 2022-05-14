@@ -311,9 +311,9 @@ static enum NvYuv420Mode GetYUV420Value(
         } else {
             return NV_YUV420_MODE_NONE;
         }
-    } else {
-        return NV_YUV420_MODE_NONE;
     }
+    
+    return NV_YUV420_MODE_NONE;
 }
 
 

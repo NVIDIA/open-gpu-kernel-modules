@@ -1185,8 +1185,8 @@ static UVM_BUFFER_LOCATION string_to_buffer_location(const char *loc)
         return UVM_BUFFER_LOCATION_SYS;
     else if (strcmp(loc, "vid") == 0)
         return UVM_BUFFER_LOCATION_VID;
-    else
-        return UVM_BUFFER_LOCATION_DEFAULT;
+    
+    return UVM_BUFFER_LOCATION_DEFAULT;
 }
 
 static const char *buffer_location_to_string(UVM_BUFFER_LOCATION loc)

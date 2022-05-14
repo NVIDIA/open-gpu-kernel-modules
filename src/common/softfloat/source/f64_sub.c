@@ -57,9 +57,8 @@ float64_t f64_sub( float64_t a, float64_t b )
     signB = signF64UI( uiB );
     if ( signA == signB ) {
         return softfloat_subMagsF64( uiA, uiB, signA );
-    } else {
-        return softfloat_addMagsF64( uiA, uiB, signA );
     }
-
+    
+    return softfloat_addMagsF64( uiA, uiB, signA );
 }
 

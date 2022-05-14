@@ -90,8 +90,8 @@ NvU32 memdescAddrSpaceListToU32(const NV_ADDRESS_SPACE *addrlist)
         return 3;
     else if (addrlist == ADDRLIST_SYSMEM_ONLY)
         return 4;
-    else
-        return 0;
+    
+    return 0;
 }
 
 const NV_ADDRESS_SPACE *memdescU32ToAddrSpaceList(NvU32 index)

@@ -550,8 +550,8 @@ NV_STATUS rmclientUserClientSecurityCheckByHandle(NvHandle hClient, const API_SE
     {
         return _rmclientUserClientSecurityCheck(pClient, pSecInfo);
     }
-    else
-        return NV_ERR_INVALID_CLIENT;
+    
+    return NV_ERR_INVALID_CLIENT;
 }
 
 /**

@@ -782,10 +782,10 @@ NvBool nvFrameLockSetUseHouseSyncEvo(NVFrameLockEvoPtr pFrameLockEvo, NvU32 val)
      */
     if (val && !houseSyncOutputMode) {
         return FrameLockSetPolarity(pFrameLockEvo, pFrameLockEvo->polarity);
-    } else {
-        return FrameLockSetPolarity(pFrameLockEvo,
-                                    NV_KMS_FRAMELOCK_ATTRIBUTE_POLARITY_RISING_EDGE);
     }
+    
+    return FrameLockSetPolarity(pFrameLockEvo,
+                                NV_KMS_FRAMELOCK_ATTRIBUTE_POLARITY_RISING_EDGE);
 }
 
 /*!
@@ -1095,9 +1095,9 @@ static NvBool FrameLockSetEnable(NVDispEvoPtr pDispEvo, NvS64 val)
            display cannot arm. Prevent this by idling all channels */
 
         return nvEnableFrameLockEvo(pDispEvo);
-    } else {
-        return nvDisableFrameLockEvo(pDispEvo);
     }
+    
+    return nvDisableFrameLockEvo(pDispEvo);
 }
 
 static NvBool FrameLockSetWatchdog(NVFrameLockEvoPtr pFrameLockEvo, NvU32 val)

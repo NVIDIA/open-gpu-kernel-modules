@@ -283,9 +283,9 @@ static NVLutSurfaceEvoPtr AllocLutSurfaceEvo(NVDevEvoPtr pDevEvo)
 {
     if (pDevEvo->requiresAllAllocationsInSysmem) {
         return AllocLutSurfaceEvoInSysmem(pDevEvo);
-    } else {
-        return AllocLutSurfaceEvoInVidmem(pDevEvo);
     }
+    
+    return AllocLutSurfaceEvoInVidmem(pDevEvo);
 }
 
 NvBool nvAllocLutSurfacesEvo(NVDevEvoPtr pDevEvo)

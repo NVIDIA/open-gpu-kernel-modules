@@ -198,8 +198,8 @@ bool DeviceImpl::isPendingHDCPCapDone()
 {
     if ((isHDCPCap != Indeterminate) && !shadow.hdcpCapDone)
         return true;
-    else
-        return false;
+    
+    return false;
 }
 
 bool DeviceImpl::isPendingCableOk()
@@ -627,8 +627,8 @@ unsigned DeviceImpl::transactionSize()
     //
     if (this->address.size() >= 2)
         return 255;
-    else
-        return this->connector->auxBus->transactionSize();
+    
+    return this->connector->auxBus->transactionSize();
 }
 
 static AuxBus::status _QueryFecStatus

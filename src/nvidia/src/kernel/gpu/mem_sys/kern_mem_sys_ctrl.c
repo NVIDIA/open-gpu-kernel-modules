@@ -914,8 +914,8 @@ subdeviceCtrlCmdFbGetCliManagedOfflinedPages_IMPL
         }
         return NV_OK;
     }
-    else
-        return NV_ERR_NOT_SUPPORTED;
+    
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 /*!

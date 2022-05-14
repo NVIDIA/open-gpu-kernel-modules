@@ -509,9 +509,9 @@ static int nv_drm_plane_atomic_set_property(
         nv_drm_plane_state->fd_user_ptr = u64_to_user_ptr(val);
 #endif
         return 0;
-    } else {
-        return -EINVAL;
     }
+
+    return -EINVAL;
 }
 
 static int nv_drm_plane_atomic_get_property(
@@ -524,9 +524,9 @@ static int nv_drm_plane_atomic_get_property(
 
     if (property == nv_dev->nv_out_fence_property) {
         return 0;
-    } else {
-        return -EINVAL;
     }
+    
+    return -EINVAL;
 }
 
 static struct drm_plane_state *

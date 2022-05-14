@@ -38,8 +38,8 @@ gpuGetVirtRegPhysOffset_TU102(OBJGPU *pGpu)
     // No offset is needed, only in case of VF in SR-IOV
     if (IS_VIRTUAL_WITH_SRIOV(pGpu))
         return 0;
-    else
-        return DRF_BASE(NV_VIRTUAL_FUNCTION_FULL_PHYS_OFFSET);
+    
+    return DRF_BASE(NV_VIRTUAL_FUNCTION_FULL_PHYS_OFFSET);
 }
 
 /*!

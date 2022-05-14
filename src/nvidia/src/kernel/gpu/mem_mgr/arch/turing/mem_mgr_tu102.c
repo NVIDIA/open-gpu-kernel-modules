@@ -489,8 +489,8 @@ memmgrGetHwPteKindFromSwPteKind_TU102
 {
     if (pteKind == RM_DEFAULT_PTE_KIND)
         return NV_MMU_PTE_KIND_GENERIC_MEMORY;
-    else
-        return pteKind;
+    
+    return pteKind;
 }
 
 /*!
@@ -511,8 +511,8 @@ memmgrGetSwPteKindFromHwPteKind_TU102
 {
     if (pteKind == NV_MMU_PTE_KIND_GENERIC_MEMORY)
         return RM_DEFAULT_PTE_KIND;
-    else
-        return pteKind;
+    
+    return pteKind;
 }
 
 /*!

@@ -209,8 +209,8 @@ bool Edid::verifyCRC()
         this->validateCheckSum();
         return this->checkSumValid;
     }
-    else
-        return false;
+    
+    return false;
 }
 
 // this routine patches the edid crc after it has been overridden for WARs.
@@ -246,8 +246,8 @@ NvU8 Edid::getFirstPageChecksum()
     DP_ASSERT(buffer.getLength() >= 128);
     if (buffer.getLength() < 128)
         return 0;
-    else
-        return buffer.data[127];
+    
+    return buffer.data[127];
 }
 
 NvU8 Edid::getLastPageChecksum()

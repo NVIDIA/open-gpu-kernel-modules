@@ -58,8 +58,8 @@ static NvU32 page_table_depth_ampere(NvU32 page_size)
         return 3;
     else if (page_size == UVM_PAGE_SIZE_512M)
         return 2;
-    else
-        return 4;
+    
+    return 4;
 }
 
 static NvU32 page_sizes_ampere(void)

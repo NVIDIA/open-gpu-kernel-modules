@@ -2132,9 +2132,9 @@ NVT_STATUS NvTiming_EDIDValidation (NvU8 *pEdid, NvU32 length, NvBool bIsStrongV
 {
     if (NvTiming_EDIDValidationMask(pEdid, length, bIsStrongValidation) != 0) {
         return NVT_STATUS_ERR;
-    } else {
-        return NVT_STATUS_SUCCESS;
-    }
+    } 
+    
+    return NVT_STATUS_SUCCESS;
 }
 
 // Function Description: Get the first Detailed Timing Descriptor

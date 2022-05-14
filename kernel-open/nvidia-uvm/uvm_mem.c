@@ -1240,8 +1240,8 @@ static bool mem_can_be_phys_mapped_on_gpu(uvm_mem_t *mem, uvm_gpu_t *gpu)
 {
     if (uvm_mem_is_sysmem(mem))
         return sysmem_can_be_mapped(mem);
-    else
-        return uvm_mem_is_local_vidmem(mem, gpu);
+    
+    return uvm_mem_is_local_vidmem(mem, gpu);
 }
 
 NV_STATUS uvm_mem_map_gpu_phys(uvm_mem_t *mem, uvm_gpu_t *gpu)

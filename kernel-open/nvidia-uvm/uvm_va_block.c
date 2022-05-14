@@ -167,8 +167,8 @@ static const uvm_processor_mask_t *block_get_uvm_lite_gpus(uvm_va_block_t *va_bl
 
     if (uvm_va_block_is_hmm(va_block))
         return &uvm_lite_gpus;
-    else
-        return &va_block->va_range->uvm_lite_gpus;
+    
+    return &va_block->va_range->uvm_lite_gpus;
 }
 
 void uvm_va_block_retry_init(uvm_va_block_retry_t *retry)
@@ -1534,9 +1534,8 @@ bool uvm_va_block_is_processor_authorized_on_whole_region(uvm_va_block_t *va_blo
 
         return uvm_page_mask_region_full(&va_block->cpu.pte_bits[search_cpu_bit], region);
     }
-    else {
-        return uvm_va_block_is_gpu_authorized_on_whole_region(va_block, region, processor_id, required_prot);
-    }
+    
+    return uvm_va_block_is_gpu_authorized_on_whole_region(va_block, region, processor_id, required_prot);
 }
 
 bool uvm_va_block_page_is_gpu_authorized(uvm_va_block_t *va_block,
@@ -3328,8 +3327,8 @@ static uvm_prot_t block_page_prot(uvm_va_block_t *block, uvm_processor_id_t id, 
 {
     if (UVM_ID_IS_CPU(id))
         return block_page_prot_cpu(block, page_index);
-    else
-        return block_page_prot_gpu(block, block_get_gpu(block, id), page_index);
+    
+    return block_page_prot_gpu(block, block_get_gpu(block, id), page_index);
 }
 
 // Returns true if the block has any valid CPU PTE mapping in the block region.

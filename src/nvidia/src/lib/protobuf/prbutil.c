@@ -76,8 +76,8 @@ done:
     statusEnd = prbEncNestedEnd(pPrbEnc);
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 
@@ -118,8 +118,8 @@ done:
     statusEnd = prbEncNestedEnd(pPrbEnc);
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!
@@ -208,8 +208,8 @@ done:
 
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!
@@ -299,8 +299,8 @@ done:
 
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!
@@ -459,8 +459,8 @@ done:
     statusEnd = prbEncNestedEnd(pPrbEnc);
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!
@@ -503,8 +503,8 @@ done:
     statusEnd = prbEncNestedEnd(pPrbEnc);
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!
@@ -548,8 +548,8 @@ done:
     statusEnd = prbEncNestedEnd(pPrbEnc);
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!
@@ -596,8 +596,8 @@ done:
     statusEnd = prbEncNestedEnd(pPrbEnc);
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!
@@ -636,8 +636,8 @@ done:
     statusEnd = prbEncNestedEnd(pPrbEnc);
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!
@@ -682,8 +682,8 @@ done:
     statusEnd = prbEncNestedEnd(pPrbEnc);
     if (status != NV_OK)
         return status;
-    else
-        return statusEnd;
+    
+    return statusEnd;
 }
 
 /*!

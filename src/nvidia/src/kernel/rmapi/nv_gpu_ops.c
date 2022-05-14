@@ -4280,8 +4280,8 @@ static NvU32 channelEngineType(const struct gpuChannel *channel)
         return NV2080_ENGINE_TYPE_COPY(channel->engineIndex);
     else if (channel->engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2)
         return NV2080_ENGINE_TYPE_SEC2;
-    else
-        return NV2080_ENGINE_TYPE_GR(channel->engineIndex);
+    
+    return NV2080_ENGINE_TYPE_GR(channel->engineIndex);
 }
 
 static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,

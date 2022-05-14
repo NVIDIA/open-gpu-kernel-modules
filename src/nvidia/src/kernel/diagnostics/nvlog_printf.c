@@ -91,8 +91,8 @@ nvDbgInit(void)
     _nv_dbg_lock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
     if (_nv_dbg_lock == NULL)
         return NV_FALSE;
-    else
-        return NV_TRUE;
+    
+    return NV_TRUE;
 }
 
 //

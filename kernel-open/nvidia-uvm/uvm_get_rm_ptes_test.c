@@ -74,8 +74,8 @@ static NvU32 get_protection(UvmGpuExternalMappingInfo *ext_mapping_info)
         return UVM_PROT_READ_WRITE_ATOMIC;
     else if (ext_mapping_info->mappingType == UvmRmGpuMappingTypeReadWrite)
         return UVM_PROT_READ_WRITE;
-    else
-        return UVM_PROT_READ_ONLY;
+    
+    return UVM_PROT_READ_ONLY;
 }
 
 static NV_STATUS verify_mapping_info(uvm_va_space_t *va_space,

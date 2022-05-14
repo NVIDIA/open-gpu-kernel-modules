@@ -285,8 +285,8 @@ static NvU32 chunk_get_cpu_put(uvm_pushbuffer_t *pushbuffer, uvm_pushbuffer_chun
 
     if (gpfifo != NULL)
         return gpfifo->pushbuffer_offset + gpfifo->pushbuffer_size - chunk_get_offset(pushbuffer, chunk);
-    else
-        return 0;
+    
+    return 0;
 }
 
 // Get the gpu get within the chunk (in range [0, UVM_PUSHBUFFER_CHUNK_SIZE))
@@ -298,8 +298,8 @@ static NvU32 chunk_get_gpu_get(uvm_pushbuffer_t *pushbuffer, uvm_pushbuffer_chun
 
     if (gpfifo != NULL)
         return gpfifo->pushbuffer_offset - chunk_get_offset(pushbuffer, chunk);
-    else
-        return 0;
+    
+    return 0;
 }
 
 static void update_chunk(uvm_pushbuffer_t *pushbuffer, uvm_pushbuffer_chunk_t *chunk)

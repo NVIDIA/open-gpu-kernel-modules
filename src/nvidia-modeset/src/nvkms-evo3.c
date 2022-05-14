@@ -681,9 +681,9 @@ static const NvU32* EvoGetFMTMatrixC5(
 
     if (pFormatInfo->isYUV) {
         return YCbCrRec709_8bpcFMTMatrix;
-    } else {
-        return IdentityFMTMatrix;
     }
+    
+    return IdentityFMTMatrix;
 }
 
 static void EvoSetFMTMatrixC5(

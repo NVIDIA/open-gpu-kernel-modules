@@ -50,9 +50,8 @@ float32_t
     if ( (7 <= shiftDist) && ((unsigned int) exp < 0xFD) ) {
         uZ.ui = packToF32UI( sign, sig ? exp : 0, sig<<(shiftDist - 7) );
         return uZ.f;
-    } else {
-        return softfloat_roundPackToF32( sign, exp, sig<<shiftDist );
     }
 
+    return softfloat_roundPackToF32( sign, exp, sig<<shiftDist );
 }
 

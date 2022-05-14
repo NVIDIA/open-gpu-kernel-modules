@@ -71,9 +71,9 @@ static inline NvU16 NV_NVT_TIMING_HVISIBLE(const NVT_TIMING *pTiming)
 {
     if (pTiming->etc.rep > 1) {
         return pTiming->HVisible / pTiming->etc.rep;
-    } else {
-        return pTiming->HVisible;
     }
+    
+    return pTiming->HVisible;
 }
 
 /*

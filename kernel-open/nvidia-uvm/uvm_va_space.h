@@ -391,8 +391,8 @@ static const char *uvm_va_space_processor_name(uvm_va_space_t *va_space, uvm_pro
 {
     if (UVM_ID_IS_CPU(id))
         return "0: CPU";
-    else
-        return uvm_gpu_name(uvm_va_space_get_gpu(va_space, id));
+    
+    return uvm_gpu_name(uvm_va_space_get_gpu(va_space, id));
 }
 
 static void uvm_va_space_processor_uuid(uvm_va_space_t *va_space, NvProcessorUuid *uuid, uvm_processor_id_t id)

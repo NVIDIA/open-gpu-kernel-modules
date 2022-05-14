@@ -96,8 +96,8 @@ halmgrGetHal_IMPL
 {
     if (halImpl < HAL_IMPL_MAXIMUM)
         return pHalMgr->pHalList[halImpl];
-    else
-        return NULL;
+    
+    return NULL;
 }
 
 static NvBool

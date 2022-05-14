@@ -49,8 +49,8 @@ uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr)
 
         return node ? &node->policy : &uvm_va_policy_default;
     }
-    else
-        return uvm_va_range_get_policy(va_block->va_range);
+    
+    return uvm_va_range_get_policy(va_block->va_range);
 }
 
 #if UVM_IS_CONFIG_HMM()

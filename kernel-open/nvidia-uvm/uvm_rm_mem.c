@@ -106,8 +106,8 @@ NvU64 uvm_rm_mem_get_gpu_va(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, bool is_proxy_
 {
     if (is_proxy_va_space)
         return uvm_rm_mem_get_gpu_proxy_va(rm_mem, gpu);
-    else
-        return uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu);
+    
+    return uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu);
 }
 
 void *uvm_rm_mem_get_cpu_va(uvm_rm_mem_t *rm_mem)

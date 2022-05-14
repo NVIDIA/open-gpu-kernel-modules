@@ -1003,8 +1003,8 @@ Device * ConnectorImpl::enumDevices(Device * previousDevice)
 
     if ((DeviceImpl*)previousDevice == deviceList.end())
         return 0;
-    else
-        return (DeviceImpl *)previousDevice;
+    
+    return (DeviceImpl *)previousDevice;
 }
 
 LinkConfiguration ConnectorImpl::getMaxLinkConfig()

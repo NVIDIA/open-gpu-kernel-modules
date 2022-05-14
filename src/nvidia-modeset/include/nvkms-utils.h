@@ -61,9 +61,9 @@ static inline NvS32 clamp_S32(NvS32 val, NvS32 lo, NvS32 hi)
         return lo;
     } else if (val > hi) {
         return hi;
-    } else {
-        return val;
     }
+    
+    return val;
 }
 
 /*!

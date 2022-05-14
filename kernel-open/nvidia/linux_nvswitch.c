@@ -2142,8 +2142,8 @@ _nvswitch_to_pci_dma_direction
         return DMA_FROM_DEVICE;
     else if (direction == NVSWITCH_DMA_DIR_FROM_SYSMEM)
         return DMA_TO_DEVICE;
-    else
-        return DMA_BIDIRECTIONAL;
+    
+    return DMA_BIDIRECTIONAL;
 }
 
 NvlStatus

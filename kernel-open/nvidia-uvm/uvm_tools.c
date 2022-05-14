@@ -1962,12 +1962,9 @@ static NV_STATUS tools_access_va_block(uvm_va_block_t *va_block,
                                        NULL,
                                        uvm_va_block_write_from_cpu(va_block, block_context, target_va, stage_mem, size));
     }
-    else {
-        return UVM_VA_BLOCK_LOCK_RETRY(va_block,
+    return UVM_VA_BLOCK_LOCK_RETRY(va_block,
                                        NULL,
                                        uvm_va_block_read_to_cpu(va_block, stage_mem, target_va, size));
-
-    }
 }
 
 static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,

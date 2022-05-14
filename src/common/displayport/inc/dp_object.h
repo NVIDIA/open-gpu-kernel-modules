@@ -71,8 +71,8 @@ static inline bool dpMemCmp(void *pvBuf1, void *pvBuf2, size_t size)
 
     if(!size)
         return true;
-    else
-        return false;
+    
+    return false;
 }
 
 namespace DisplayPort

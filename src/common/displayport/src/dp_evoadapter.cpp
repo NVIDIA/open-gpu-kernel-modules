@@ -1571,8 +1571,8 @@ bool EvoMainLink::getDpTestPattern(NV0073_CTRL_DP_TESTPATTERN * testPattern)
         testPattern->testPattern = params.testPattern.testPattern;
         return true;
     }
-    else
-        return false;
+    
+    return false;
 }
 
 bool EvoMainLink::setDpTestPattern(NV0073_CTRL_DP_TESTPATTERN testPattern, NvU8 laneMask, NV0073_CTRL_DP_CSTM cstm, NvBool bIsHBR2, NvBool bSkipLaneDataOverride)
@@ -1589,8 +1589,8 @@ bool EvoMainLink::setDpTestPattern(NV0073_CTRL_DP_TESTPATTERN testPattern, NvU8 
 
     if (!(provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_TESTPATTERN, &params, sizeof params)))
         return true;
-    else
-        return false;
+    
+    return false;
 }
 
 bool EvoMainLink::getDpLaneData(NvU32 *numLanes, NvU32 *data)
@@ -1606,8 +1606,8 @@ bool EvoMainLink::getDpLaneData(NvU32 *numLanes, NvU32 *data)
         dpMemCopy(data, params.data, NV0073_CTRL_MAX_LANES*4);
         return true;
     }
-    else
-        return false;
+    
+    return false;
 }
 
 bool EvoMainLink::setDpLaneData(NvU32 numLanes, NvU32 *data)
@@ -1621,8 +1621,8 @@ bool EvoMainLink::setDpLaneData(NvU32 numLanes, NvU32 *data)
 
     if (!(provider->rmControl0073(NV0073_CTRL_CMD_DP_SET_LANE_DATA, &params, sizeof params)))
         return true;
-    else
-        return false;
+    
+    return false;
 }
 
 NvU32 EvoMainLink::monitorDenylistInfo(NvU32 ManufacturerID, NvU32 ProductID, DpMonitorDenylistData *pDenylistData)
@@ -1645,8 +1645,8 @@ bool EvoMainLink::rmUpdateDynamicDfpCache(NvU32 headIndex, RmDfpCache* dfpCache,
 
     if (!(provider->rmControl0073(NV0073_CTRL_CMD_DFP_UPDATE_DYNAMIC_DFP_CACHE, &params, sizeof params)))
         return true;
-    else
-        return false;
+    
+    return false;
 }
 
 NvU32 EvoMainLink::allocDisplayId()
