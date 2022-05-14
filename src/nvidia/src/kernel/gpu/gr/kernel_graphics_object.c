@@ -317,7 +317,7 @@ kgrobjConstruct_IMPL
             KernelGraphicsContext *pKernelGraphicsContext = pKernelGraphicsObject->pKernelGraphicsContext;
 
             //
-            // Add each gr object as a dependant of the context such that all
+            // Add each gr object as a dependent of the context such that all
             // objects are guaranteed to be torn down before the context
             //
             refAddDependant(RES_GET_REF(pKernelGraphicsContext),
