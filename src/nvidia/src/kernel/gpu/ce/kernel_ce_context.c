@@ -45,7 +45,7 @@
  * This function returns an engine descriptor corresponding to the class
  * and engine instance passed in.
  *
- * @params[in] externalClassId  Id of classs being allocated
+ * @params[in] externalClassId  Id of class being allocated
  * @params[in] pAllocParams     void pointer containing creation parameters.
  *
  * @returns
