@@ -97,7 +97,7 @@ ct_assert(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF__SIZE_1 == NV_VIRTUAL_FUNCTION_
 //
 // Q: If the alternate tree does not respect locks taken by osAcquireRmSema then how do we prevent
 //    race conditions?
-// A: We dont!! The plan here is to *manually* inspect every piece of code that gets executed on the ISR/DPC
+// A: We don't!! The plan here is to *manually* inspect every piece of code that gets executed on the ISR/DPC
 //    for this tree and make sure concurrent actions from elsewhere do not lead us in an inconsistent state.
 //    In future before adding code to this tree, **carefully inspect it yourself**.
 //
@@ -1030,10 +1030,10 @@ intrGetPendingDisplayIntr_TU102
 /**
  * @brief Enable or disable the display interrupt.
  * This implements the missing functionality of PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING
- * for Turing+: The ability to leave display interrrupts unmasked while the GPU lock is held
+ * for Turing+: The ability to leave display interrupts unmasked while the GPU lock is held
  * The PMC_INTR_MASK HW registers were deprecated in Pascal, but the Pascal-Volta interrupt
  * code still emulates them in SW. The Turing+ code did not implement any of the masking code,
- * but as seen in bug 3152190, the ability to leave the display interupt unmasked is still
+ * but as seen in bug 3152190, the ability to leave the display interrupt unmasked is still
  * needed. The ability to unmask the interrupts to enable them to show up in interrupt registers
  * is not needed, so this call is not needed at callsites that just do that
  * (_intrEnterCriticalSection / _intrExitCriticalSection)
