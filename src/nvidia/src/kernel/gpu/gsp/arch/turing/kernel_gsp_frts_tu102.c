@@ -178,7 +178,7 @@ s_vbiosPatchFrtsInterfaceData
     pIntFaceHdr = (FALCON_APPLICATION_INTERFACE_HEADER_V1 *) (pMappedData + interfaceOffset);
     if (pIntFaceHdr->entryCount < 2)
     {
-        NV_PRINTF(LEVEL_ERROR, "too few interface entires found for FRTS\n");
+        NV_PRINTF(LEVEL_ERROR, "too few interface entries found for FRTS\n");
         return NV_ERR_INVALID_DATA;
     }
 
@@ -251,7 +251,7 @@ s_vbiosPatchFrtsInterfaceData
 }
 
 /*!
- * Excecute FWSEC for FRTS and wait for completion.
+ * Execute FWSEC for FRTS and wait for completion.
  *
  * @param[in]   pGpu           OBJGPU pointer
  * @param[in]   pKernelGsp     KernelGsp pointer
