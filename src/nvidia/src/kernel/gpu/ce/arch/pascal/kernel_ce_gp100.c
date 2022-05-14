@@ -172,7 +172,7 @@ kceGetNvlinkMaxTopoForTable_GP100
     //
     // If exposeCeMask from current config is a subset of the cached topology,
     // then use the cached topology data.
-    // We do this to ensure that we don't revoke CEs that we have exposed prevously.
+    // We do this to ensure that we don't revoke CEs that we have exposed previously.
     //
     gpumgrGetSystemNvlinkTopo(gpuGetDBDF(pGpu), &cachedTopo);
 
