@@ -29,16 +29,16 @@
 ##############################################################################
 # The calling Makefile (when building as part of the NVIDIA graphics
 # driver) may export any of the following variables; we assign default
-# values if they are not exported by the caller
+# values if they are not exported by the caller.
 ##############################################################################
 
 CC                    ?= gcc
 CXX                   ?= g++
 LD                    ?= ld
 AR                    ?= ar
-# only set these warnings if CFLAGS is unset
+# Only set these warnings if CFLAGS is unset.
 CFLAGS                ?= -Wall
-# always set these -f CFLAGS
+# Always set these -f CFLAGS.
 CFLAGS                += -fno-strict-aliasing -fno-omit-frame-pointer -Wformat=2
 CC_ONLY_CFLAGS        ?=
 CXX_ONLY_CFLAGS       ?=
@@ -56,13 +56,13 @@ HOST_CXX_ONLY_CFLAGS  ?=
 HOST_LDFLAGS          ?= $(LDFLAGS)
 HOST_BIN_LDFLAGS      ?=
 
-# always disable warnings that will break the build
+# Always disable warnings that will break the build.
 CC_ONLY_CFLAGS        += -Wno-format-zero-length
 CFLAGS                += -Wno-unused-parameter
 HOST_CC_ONLY_CFLAGS   += -Wno-format-zero-length
 HOST_CFLAGS           += -Wno-unused-parameter
 
-# Treat warnings as errors, if requested
+# Treat warnings as errors, if requested.
 WARNINGS_AS_ERRORS    ?=
 CFLAGS                += $(if $(WARNINGS_AS_ERRORS),-Werror)
 
@@ -162,7 +162,7 @@ else
   LIBDL_LIBS =
 endif
 
-# This variable controls which floating-point ABI is targeted.  For ARM, it
+# This variable controls which floating-point ABI is targeted. For ARM, it
 # defaults to "gnueabi" for softfp.  Another option is "gnueabihf" for
 # hard(fp).  This is necessary to pick up the correct rtld_test binary.
 # All other architectures default to empty.
@@ -194,8 +194,8 @@ PCIACCESS_LDFLAGS     ?=
 
 ##############################################################################
 # This makefile uses the $(eval) builtin function, which was added in
-# GNU make 3.80.  Check that the current make version recognizes it.
-# Idea suggested by:  http://www.jgc.org/blog/cookbook-sample.pdf
+# GNU make 3.80. Check that the current make version recognizes it.
+# Idea suggested by: http://www.jgc.org/blog/cookbook-sample.pdf
 ##############################################################################
 
 _eval_available :=
@@ -222,8 +222,8 @@ TEST_CC_ARG = \
 
 
 ##############################################################################
-# define variables used when installing the open source utilities from
-# the source tarball
+# Define variables used when installing the open source utilities from
+# the source tarball.
 ##############################################################################
 
 PREFIX ?= /usr/local
@@ -234,19 +234,19 @@ MANDIR = $(DESTDIR)$(PREFIX)/share/man/man1
 
 
 ##############################################################################
-# default build rule, so that nothing here in utils.mk accidentally
-# gets selected as the default rule
+# Default build rule, so that nothing here in utils.mk accidentally
+# gets selected as the default rule.
 ##############################################################################
 
 default build: all
 
 
 ##############################################################################
-# get the definition of NVIDIA_VERSION from version.mk
+# Get the definition of NVIDIA_VERSION from version.mk.
 #
 # version.mk may be in one of two places: either in $(OUTPUTDIR) when
 # building as part of the NVIDIA driver build, or directly in the
-# source directory when building from the source tarball
+# source directory when building from the source tarball.
 #
 # Throw an error if one of these two places did not define NVIDIA_VERSION.
 ##############################################################################
@@ -275,7 +275,7 @@ NV_GET_SOURCE_TYPE = $(strip \
 # Several of the functions below take an argument that indicates if
 # the expression is for the target platform (the system the built
 # program is going to run on) or the host platform (the system
-# performing the build).  The argument is either "HOST" or "TARGET"
+# performing the build). The argument is either "HOST" or "TARGET"
 # and needs to be converted:
 #
 # "HOST" -> "HOST_"
@@ -297,7 +297,7 @@ host_target = $(patsubst HOST,HOST_,$(patsubst TARGET,,$(1)))
 #   the object files produced in the build.
 #
 # - Use -MP to generate a phony target for each of those prerequisites (except
-#   the source file being compiled).  E.g.,
+#   the source file being compiled). E.g.,
 #     "foo.o : foo.c foo.h bar.h
 #      foo.h:
 #      bar.h:"
@@ -319,10 +319,10 @@ endif
 
 
 ##############################################################################
-# echo minimal compile information in the non-NV_VERBOSE case
+# Echo minimal compile information in the non-NV_VERBOSE case.
 #
 # NV_MODULE_LOGGING_NAME can be set to prepend quiet build output with a
-# label of which build component is being built
+# label of which build component is being built.
 ##############################################################################
 
 NV_MODULE_LOGGING_NAME ?=
@@ -339,16 +339,16 @@ else
   quiet_cmd = $($(1))
 endif
 
-# define LINK and HOST_LINK to be the same as CC; this is so that,
+# Define LINK and HOST_LINK to be the same as CC; this is so that,
 # even though we use CC to link programs, we can have a different
-# quiet rule that uses '$@' as it's arg, rather than '$<'
+# quiet rule that uses '$@' as it's arg, rather than '$<'.
 LINK = $(CC)
 HOST_LINK = $(HOST_CC)
 
-# strip NV_QUIET_COMMAND_REMOVED_TARGET_PREFIX from the target string
+# Strip NV_QUIET_COMMAND_REMOVED_TARGET_PREFIX from the target string.
 define_quiet_cmd = $(1) $(patsubst $(NV_QUIET_COMMAND_REMOVED_TARGET_PREFIX)/%,%,$(2))
 
-# define the quiet commands:
+# Define the quiet commands:
 quiet_CC           = $(call define_quiet_cmd,CC          ,$<)
 quiet_CXX          = $(call define_quiet_cmd,CXX         ,$<)
 quiet_HOST_CC      = $(call define_quiet_cmd,HOST_CC     ,$<)
@@ -371,10 +371,10 @@ quiet_XZ           = $(call define_quiet_cmd,XZ          ,$@)
 
 
 ##############################################################################
-# function to generate a list of object files from their corresponding
+# Function to generate a list of object files from their corresponding
 # source files using the specified path. The _WITH_DIR variant takes an
 # output path as the second argument while the BUILD_OBJECT_LIST defaults
-# to using the value of OUTPUTDIR as the output path. example usage:
+# to using the value of OUTPUTDIR as the output path. Example usage:
 #
 # OBJS = $(call BUILD_OBJECT_LIST_WITH_DIR,$(SRC),$(DIR))
 ##############################################################################
@@ -388,7 +388,7 @@ BUILD_OBJECT_LIST = \
 $(call BUILD_OBJECT_LIST,nvpci-utils.c): CFLAGS += $(PCIACCESS_CFLAGS)
 
 ##############################################################################
-# function to generate a list of dependency files from their
+# Function to generate a list of dependency files from their
 # corresponding source files using the specified path. The _WITH_DIR
 # variant takes an output path as the second argument while the
 # BUILD_DEPENDENCY_LIST default to using the value of OUTPUTDIR as the
@@ -405,14 +405,14 @@ BUILD_DEPENDENCY_LIST = \
 
 
 ##############################################################################
-# functions to define a rule to build an object file; the first
+# Functions to define a rule to build an object file; the first
 # argument for all functions is whether the rule is for the target or
 # host platform ("HOST" or "TARGET"), the second argument for all
 # functions is the source file to compile.
 #
 # An order-only dependency is added on any generated header files listed in
 # $(NV_GENERATED_HEADERS), to ensure they're present before invoking the
-# compiler.  For incremental builds where the object file already exists, a
+# compiler. For incremental builds where the object file already exists, a
 # real (not order-only) dependency will be created by automatic dependency
 # tracking if needed.
 #
@@ -454,10 +454,10 @@ define DEFINE_OBJECT_RULE_WITH_OBJECT_NAME_WITH_DIR
 
   -include $$(call BUILD_DEPENDENCY_LIST_WITH_DIR,$(3),$(4))
 
-  # declare empty rule for generating dependency file; we generate the
+  # Declare empty rule for generating dependency file; we generate the
   # dependency files implicitly when compiling the source file (see
   # AUTO_DEP_SUFFIX above), so we don't want gmake to spend time searching
-  # for an explicit rule to generate the dependency file
+  # for an explicit rule to generate the dependency file.
   $$(call BUILD_DEPENDENCY_LIST_WITH_DIR,$(3),$(4)): ;
 
 endef
@@ -479,7 +479,7 @@ endef
 # This is a function that will generate rules to build
 # files with separate debug information, if so requested.
 # 
-# It takes one parameter: (1) Name of unstripped binary
+# It takes one parameter: (1) Name of unstripped binary.
 #
 # When used, the target for linking should be named (1).unstripped
 #
@@ -539,7 +539,7 @@ endef
 #
 #   $(eval $(call $(READ_ONLY_OBJECT_FROM_FILE_RULE),a/b/c))
 #
-# will create an object named $(OUTPUTDIR)/c.o with the symbols _binary_c_start,
+# Will create an object named $(OUTPUTDIR)/c.o with the symbols _binary_c_start,
 # _binary_c_end, and _binary_c_size.
 #
 # Arguments:
