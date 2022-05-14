@@ -433,7 +433,7 @@ memmgrRegionSetupCommon_IMPL
     }
 
     //
-    // If FB size is being overriden, PMA should only own
+    // If FB size is being overridden, PMA should only own
     // memory below overrideHeapMax.
     // Also note on Pascal&&+ with FB override which below
     // code takes care of:
