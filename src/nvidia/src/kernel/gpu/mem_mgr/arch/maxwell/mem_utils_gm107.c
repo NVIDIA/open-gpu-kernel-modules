@@ -951,7 +951,7 @@ memmgrMemUtilsScrubInitRegisterCallback
                 &subDeviceHandle))
     {
         NV_PRINTF(LEVEL_WARNING, "Unable to get subdevice handle.\n");
-        //Allocate a sub device if we dont have it created before hand
+        //Allocate a sub device if we don't have it created before hand
         NV2080_ALLOC_PARAMETERS nv2080AllocParams;
 
         portMemSet(&nv2080AllocParams, 0, sizeof(NV2080_ALLOC_PARAMETERS));
@@ -1680,7 +1680,7 @@ memmgrMemUtilsMemCopyBatched_GM107
             if (timeoutStatus == NV_ERR_TIMEOUT)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out wating for CE semaphore in blocking scrub!\n");
+                          "Timed Out waiting for CE semaphore in blocking scrub!\n");
 
                 NV_PRINTF(LEVEL_ERROR,
                           "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPET=0x%x\n",
@@ -2010,7 +2010,7 @@ _ceChannelScheduleWork_GM107
             blockSize  = (size > pChannel->maxBlockSize) ?
                          pChannel->maxBlockSize : (NvU32) size;
 
-            // add a non-stall interupt every (8th of the size) or when we insert the last block
+            // add a non-stall interrupt every (8th of the size) or when we insert the last block
             if((semaCount > (pChannel->channelPbSize >> 3)) || (size <= pChannel->maxBlockSize))
             {
                 addNonStallIntr = NV_TRUE;
