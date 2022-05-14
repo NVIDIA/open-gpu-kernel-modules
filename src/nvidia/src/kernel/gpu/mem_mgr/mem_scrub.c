@@ -651,7 +651,7 @@ scrubCheckAndWaitForSize
         _scrubWaitAndSave(pScrubber, pList, requiredItemsToSave);
     }
     else {
-        // since there is no scrub remaining, its upto the user about how to handle that.
+        // since there is no scrub remaining, its up to the user about how to handle that.
         status = NV_ERR_NO_MEMORY;
     }
 
