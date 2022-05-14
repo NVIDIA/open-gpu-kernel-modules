@@ -219,7 +219,7 @@ memmgrAllocDetermineAlignment_GM107
     // alignment is still aligned to the hw requirements
     if ((*pAlign) &&
         (((*pAlign > hwAlignment) && !(*pAlign % (hwAlignment+1))) ||   // align is >=1 multiple of hwAlignment
-         ((*pAlign <= hwAlignment+1) && !((hwAlignment+1) % *pAlign)))) // hwAlignment is a >= mulitple of align
+         ((*pAlign <= hwAlignment+1) && !((hwAlignment+1) % *pAlign)))) // hwAlignment is a >= multiple of align
     {
         if ( *pAlign <= hwAlignment+1 )
         {
@@ -962,7 +962,7 @@ memmgrInitReservedMemory_GM107
  * @param[in] target1
  * @param[in] address1
  *
- * @return NV_TRUE if adresses refer to same memory location, NV_FALSE otherwise
+ * @return NV_TRUE if addresses refer to same memory location, NV_FALSE otherwise
  */
 NvBool
 memmgrComparePhysicalAddresses_GM107
@@ -1057,7 +1057,7 @@ memmgrGetPteKindPitch_GM107
 #define PAGE_ALIGN_MATCH(value, pageSize) ((value & (pageSize - 1)) == 0)
 
 //
-// Try to determine the optimial page size.  See if both the aligment of the
+// Try to determine the optimial page size.  See if both the alignment of the
 // physical address and the alignment of the allocation size fit one of the
 // larger page sizes.
 //
@@ -1441,7 +1441,7 @@ memmgrGetBankPlacementData_GM107
 
 //
 // memmgrDirtyForPmTest
-// Developed soley for testing suspend/resume path. Goal here is before
+// Developed solely for testing suspend/resume path. Goal here is before
 // resuming the GPU, we want to dirty the entire FB to verify whether
 // RM has saved and restored all the critical data structures and states
 // during suspend/resume. Called using the RMCTRL NV208F_CTRL_CMD_SUSPEND_RESUME_QUICK.
