@@ -487,7 +487,7 @@ memmgrStateUnload_IMPL
         !(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
     {
         //
-        // Initialiation scrubs only happen during StateLoad on non-GC6
+        // Initialization scrubs only happen during StateLoad on non-GC6
         // transitions.
         //
         memmgrScrubDestroy_HAL(pGpu, pMemoryManager);
@@ -810,7 +810,7 @@ memmgrGetUsedRamSize_IMPL
     NvU64   heapFreeSpace, heapTotalSpace, pmaFreeSpace;
 
     //
-    // Determine free memory in FB and substract with total FB memory.
+    // Determine free memory in FB and subtract with total FB memory.
     // If PMA is initialized, then use the free memory size in PMA and
     // heap otherwise only use heap free memory for calculation.
     //
@@ -1151,7 +1151,7 @@ memmgrDeterminePageSize_IMPL
         // On Tegra, we don't have a carveout/FB in production. So, we're
         // not guaranteed to get BIG page sized or contiguous allocations
         // from OS. But we need BIG page sized allocations for efficient Big GPU
-        // operation. We use the SMMU unit within the Tegra Memory Contoller (MC),
+        // operation. We use the SMMU unit within the Tegra Memory Controller (MC),
         // to construct BIG pages from the 4KB small page allocations from OS.
         // SMMU will linearize the discontiguous 4KB allocations into what will
         // appear to the GPU as a large contiguous physical allocation.
@@ -1608,7 +1608,7 @@ NV_STATUS memmgrFree_IMPL
     if (owner == NVOS32_BLOCK_TYPE_FREE)
         return NV_ERR_INVALID_ARGUMENT;
 
-    // Virtual heap allocs are tagged vitual and always own the memdesc
+    // Virtual heap allocs are tagged virtual and always own the memdesc
     if (memdescGetAddressSpace(pMemDesc) == ADDR_VIRTUAL)
     {
         OBJVASPACE  *pVAS = NULL;
@@ -1755,7 +1755,7 @@ memmgrSetPartitionableMem_IMPL
     //
     // Find out the first and the last region for which internal heap or
     // bRsvdRegion is true. In Ampere we should never have more than two
-    // discontigous RM reserved region
+    // discontiguous RM reserved region
     // To-Do - Bug 2301972 - Make sure that reserved memory is aligned to VMMU
     // segments
     //
@@ -1777,29 +1777,29 @@ memmgrSetPartitionableMem_IMPL
                               pMemoryManager->Ram.fbRegion[i-1].bRsvdRegion) &&
                     (pMemoryManager->Ram.fbRegion[i].base == pMemoryManager->Ram.fbRegion[i - 1].limit + 1))
             {
-                // See if this is the contigous region with previous discovery
+                // See if this is the contiguous region with previous discovery
                 if (bottomRegionIdx == (i - 1))
                 {
-                    // Contigous bottom region
+                    // Contiguous bottom region
                     bottomRsvdSize += rsvdSize;
                 }
                 else
                 {
-                    // Contigous top region
+                    // Contiguous top region
                     topRsvdSize += rsvdSize;
                 }
             }
             else
             {
                 //
-                // Make sure we don't have discontigous reserved regions as
+                // Make sure we don't have discontiguous reserved regions as
                 // they are not supported by HW also and we need to support
                 // these by using blacklisting mechanism.
                 //
                 if (topRegionIdx != 0xFFFF)
                 {
                     NV_PRINTF(LEVEL_ERROR,
-                              "More than two discontigous rsvd regions found. "
+                              "More than two discontiguous rsvd regions found. "
                               "Rsvd region base - 0x%llx, Rsvd region Size - 0x%llx\n",
                               pMemoryManager->Ram.fbRegion[i].base, rsvdSize);
                     NV_ASSERT(0);
@@ -2566,7 +2566,7 @@ memmgrInitFbRegions_IMPL
 {
     NV_ASSERT_OR_RETURN(pMemoryManager->Ram.numFBRegions == 0, NV_ERR_INVALID_STATE);
 
-    // Dont setup regions if FB is broken and we aren't using L2 cache as "FB".
+    // Don't setup regions if FB is broken and we aren't using L2 cache as "FB".
     if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) &&
          !gpuIsCacheOnlyModeEnabled(pGpu)))
         return NV_OK;
@@ -2657,7 +2657,7 @@ memmgrPmaRegisterRegions_IMPL
     for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
     {
         //
-        // Skip all regions that are completely outside the heap boundry
+        // Skip all regions that are completely outside the heap boundary
         // OR marked as internal(used for internal RM allocations)
         // OR marked as reserved(used for console, display, link training buffer etc.)
         //
@@ -2937,7 +2937,7 @@ memmgrInitSavedTopLevelScrubber_IMPL
 }
 
 /*!
- * @brief       Return the full address range for the partition assigend for the vGPU.
+ * @brief       Return the full address range for the partition assigned for the vGPU.
  *
  * @param[in]   pGpu
  * @param[in]   pMemoryManager
