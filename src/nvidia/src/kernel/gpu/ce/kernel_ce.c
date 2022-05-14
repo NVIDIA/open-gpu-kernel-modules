@@ -66,7 +66,7 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
 
 NvBool kceIsPresent_IMPL(OBJGPU *pGpu, KernelCE *kce)
 {
-    // Use bus/fifo to detemine if LCE(i) is present.
+    // Use bus/fifo to determine if LCE(i) is present.
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvBool present = NV_FALSE;
 
@@ -506,7 +506,7 @@ NV_STATUS kceGetFaultMethodBufferSize_IMPL(OBJGPU *pGpu, NvU32 *size)
  * @param[in]  pTopoParams  Pointer to NVLINK_TOPOLOGY_PARAMS
  *
  * Returns NV_OK if array is filled successfully.
- *         NV_ERR_INVALID_ARGUMENT if pTopoParams is NULL or aray size is not equal.
+ *         NV_ERR_INVALID_ARGUMENT if pTopoParams is NULL or array size is not equal.
  */
 NV_STATUS
 kceGetAvailableHubPceMask_IMPL
