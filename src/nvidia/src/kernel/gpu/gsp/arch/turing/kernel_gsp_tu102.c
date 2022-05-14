@@ -771,7 +771,7 @@ kgspService_TU102
     if (intrStatus & DRF_DEF(_PFALCON, _FALCON_IRQSTAT, _SWGEN0, _TRUE))
     {
         //
-        // Clear edge triggered interupt BEFORE (and never after)
+        // Clear edge triggered interrupt BEFORE (and never after)
         // servicing it to avoid race conditions.
         //
         kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_IRQSCLR,
