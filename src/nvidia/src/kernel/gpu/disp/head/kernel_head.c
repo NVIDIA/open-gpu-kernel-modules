@@ -306,8 +306,8 @@ kheadWriteVblankIntrState_IMPL
 )
 {
     NvU32 previous;
-    NvBool enablehw = NV_FALSE; // Dont update the hw by default
-    NvBool updatehw = NV_FALSE; // Dont enable the hw by default
+    NvBool enablehw = NV_FALSE; // Don't update the hw by default
+    NvBool updatehw = NV_FALSE; // Don't enable the hw by default
 
     // Get the previous state for various other stuff
     previous = pKernelHead->Vblank.IntrState;
