@@ -377,14 +377,14 @@ kfifoGetDefaultRunlist_GM107
 
     if (NV2080_ENGINE_TYPE_IS_VALID(engineType))
     {
-        // if translation fails, defualt is ENG_GR(0)
+        // if translation fails, default is ENG_GR(0)
         NV_ASSERT_OK(
             kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                     ENGINE_INFO_TYPE_NV2080, engineType,
                                     ENGINE_INFO_TYPE_ENG_DESC, &engDesc));
     }
 
-    // if translation fails, defualt is INVALID_RUNLIST_ID
+    // if translation fails, default is INVALID_RUNLIST_ID
     NV_ASSERT_OK(
         kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                 ENGINE_INFO_TYPE_ENG_DESC, engDesc,
@@ -925,7 +925,7 @@ kfifoGetEnginePbdmaIds_GM107
  *
  * @param pGpu
  * @param pKernelFifo
- * @param[in/out] pPartnerListParams engineType is input, partnerList/numPartners are ouput
+ * @param[in/out] pPartnerListParams engineType is input, partnerList/numPartners are output
  *
  * @returns NV_OK if successful, error otherwise
  */
