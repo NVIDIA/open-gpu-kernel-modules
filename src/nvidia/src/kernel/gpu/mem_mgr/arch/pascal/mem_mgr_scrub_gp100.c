@@ -58,7 +58,7 @@ memmgrScrubInit_GP100
 }
 
 /*!
- * Performs initialization that is dependant on work done in gpuStateLoad() such
+ * Performs initialization that is dependent on work done in gpuStateLoad() such
  * as channel initialization.
  *
  * @param[in] pGpu        OBJGPU pointer
