@@ -63,7 +63,7 @@ dbgSessionRemoveDependant_IMPL
 {
     RsSession *pSession = dynamicCast(pDbgSession, RsSession);
 
-    // Freeing a KernelSMDebuggerSession dependant should just call the destructor normally
+    // Freeing a KernelSMDebuggerSession dependent should just call the destructor normally
     if (pSession->bValid && (pResourceRef->externalClassId == GT200_DEBUGGER))
         ksmdbgssnFreeCallback(dynamicCast(pResourceRef->pResource, KernelSMDebuggerSession));
 
@@ -82,7 +82,7 @@ dbgSessionRemoveDependency_IMPL
     //
     // Call all registered KernelSMDebuggerSessions' free callbacks (destructor basically)
     // when the underlying KernelGraphicsObject goes away. This invalidates the KernelSMDebuggerSession
-    // and causes all control calls on it to fail since the KernelGraphicsObject dependancy has disappeared.
+    // and causes all control calls on it to fail since the KernelGraphicsObject dependency has disappeared.
     //
     if (pSession->bValid)
     {
@@ -368,7 +368,7 @@ _ShareDebugger
         // Add KernelGraphicsObject as a dependency
         sessionAddDependency(pRsSession, pGrResourceRef);
 
-        // Add debugger object as a dependant of the new RsSession object
+        // Add debugger object as a dependent of the new RsSession object
         sessionAddDependant(pRsSession, pDebuggerRef);
 
         //
@@ -388,7 +388,7 @@ _ShareDebugger
             return NV_ERR_INVALID_STATE;
         }
 
-        // Add debugger object as a dependant of the existing RsSession object
+        // Add debugger object as a dependent of the existing RsSession object
         pRsSession = staticCast(pKernelSMDebuggerSession->pDebugSession, RsSession);
         sessionAddDependant(pRsSession, pDebuggerRef);
     }
@@ -399,7 +399,7 @@ _ShareDebugger
 //
 // Empty destructor since the destruction is done in the free callback which is invoked
 // by Resource Server when the RmDebuggerSession shared object is invalidated due to either
-// the KernelSMDebuggerSession being freed or the underlying KernelGraphicsObject dependancy being freed.
+// the KernelSMDebuggerSession being freed or the underlying KernelGraphicsObject dependency being freed.
 //
 void
 ksmdbgssnDestruct_IMPL
@@ -411,7 +411,7 @@ ksmdbgssnDestruct_IMPL
 //
 // The free callback will always be invoked before the destructor for either the KernelSMDebuggerSession
 // (empty since we clean up here) and before the KernelGraphicsObject dependancy's destructor. This is a bit
-// different from how other Resource Server classes clean up since there is a dependancy owned
+// different from how other Resource Server classes clean up since there is a dependency owned
 // by a different RM client.
 //
 void
