@@ -386,7 +386,7 @@ _kgspRpcPerfGpuBoostSyncLimitsCallback
 }
 
 /*!
- * Recieves RPC events containing latest change of bridgeless information
+ * Receives RPC events containing latest change of bridgeless information
  */
 static void
 _kgspRpcPerfBridgelessInfoUpdate
