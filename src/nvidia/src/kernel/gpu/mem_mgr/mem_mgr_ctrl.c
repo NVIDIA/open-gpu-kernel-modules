@@ -516,7 +516,7 @@ subdeviceCtrlCmdFbGetClientAllocationInfo_IMPL(Subdevice *pSubdevice,
 
             curAllocCount += nPages;
 
-            // Only do client setup on first addded memdesc
+            // Only do client setup on first added memdesc
             if (bFirstPass)
             {
                 curClientCount++;
@@ -640,7 +640,7 @@ subdeviceCtrlCmdFbGetFBRegionInfo_IMPL
     NvU32 regionIndex, i;
     NV_STATUS status = NV_OK;
 
-    // Make sure the exported structure can accomodate the necessary informtion
+    // Make sure the exported structure can accommodate the necessary information
     ct_assert(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES >= NVOS32_NUM_MEM_TYPES);
     ct_assert(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MAX_ENTRIES >= MAX_FB_REGIONS);
 
