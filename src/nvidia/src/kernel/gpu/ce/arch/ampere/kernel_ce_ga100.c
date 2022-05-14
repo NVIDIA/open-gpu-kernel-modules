@@ -500,7 +500,7 @@ _ceGetAlgorithmPceIndex
  * @param[out]  pLocalGrceMap          Pointer to GRCE array
  * @param[out]  pLocalExposeCeMask     Pointer to LCE Mask
  *
- * Returns NV_TRUE if algorithm ran to completion with no erros
+ * Returns NV_TRUE if algorithm ran to completion with no errors
  */
 
 NV_STATUS
@@ -884,7 +884,7 @@ kceMapPceLceForNvlinkPeers_GA100
         // Now, assign the PCE-LCE association for the current peer
         if (pceMask != 0)
         {
-            // We just need atleast one peer to set this to TRUE
+            // We just need at least one peer to set this to TRUE
             bPeerAssigned = NV_TRUE;
 
             FOR_EACH_INDEX_IN_MASK(32, pceIndex, pceMask)
