@@ -2025,7 +2025,7 @@ kgraphicsGetCaps_IMPL
 }
 
 /*!
- * @brief Return whether unrestricted register access bufffer is supported or not.
+ * @brief Return whether unrestricted register access buffer is supported or not.
  */
 NvBool
 kgraphicsIsUnrestrictedAccessMapSupported_PF
