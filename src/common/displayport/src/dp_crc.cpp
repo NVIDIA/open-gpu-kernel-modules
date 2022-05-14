@@ -68,7 +68,7 @@ unsigned DisplayPort::dpCalculateHeaderCRC(BitStreamReader * reader)
 unsigned DisplayPort::dpCalculateBodyCRC(BitStreamReader * reader)
 {
     unsigned remainder = 0;
-    unsigned bit, i;
+    unsigned bit;
 
     while (reader->read(&bit, 1))
     {
@@ -80,7 +80,7 @@ unsigned DisplayPort::dpCalculateBodyCRC(BitStreamReader * reader)
         }
     }
 
-    for (i = 8; i != 0; i--)
+    for (int i = 8; i != 0; i--)
     {
         remainder <<= 1;
         if ((remainder & 0x100) != 0)
