@@ -186,7 +186,7 @@ _kmcDumpEngineFunc(OBJGPU *pGpu, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, 
     }
 
 External_Cleanup:
-    // Unwind the protobuff to inital depth
+    // Unwind the protobuff to initial depth
     NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(rmStatus, LEVEL_ERROR,
         prbEncUnwindNesting(pPrbEnc, startingDepth));
 
