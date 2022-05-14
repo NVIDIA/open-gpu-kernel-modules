@@ -37,7 +37,7 @@
  * @param[in]   pKernelBus1    (remote GPU)
  * @param[out]  peer0  Peer ID (local to remote)
  * @param[out]  peer1  Peer ID (remote to local)
- * @param[in]   attributes Sepcial attributes for the mapping
+ * @param[in]   attributes Special attributes for the mapping
  *
  * return NV_OK on success
  */
@@ -78,7 +78,7 @@ kbusCreateP2PMapping_GP100
  * @param[in]   pKernelBus1    (remote GPU)
  * @param[out]  peer0  Peer ID (local to remote)
  * @param[out]  peer1  Peer ID (remote to local)
- * @param[in]   attributes Sepcial attributes for the mapping
+ * @param[in]   attributes Special attributes for the mapping
  * 
  * return NV_OK on success
  */
@@ -416,7 +416,7 @@ kbusRemoveNvlinkPeerMapping_GP100
  * @param[in]   pKernelBus1    (remote GPU)
  * @param[in]   peer0  Peer ID (local to remote)
  * @param[in]   peer1  Peer ID (remote to local)
- * @param[in]   attributes Sepcial attributes for the mapping
+ * @param[in]   attributes Special attributes for the mapping
  *
  * return NV_OK on success
  */
@@ -457,7 +457,7 @@ kbusRemoveP2PMapping_GP100
  * @param[in]   pKernelBus1    (remote GPU)
  * @param[in]   peer0          Peer ID (local to remote)
  * @param[in]   peer1          Peer ID (remote to local)
- * @param[in]   attributes     Sepcial attributes for the mapping
+ * @param[in]   attributes     Special attributes for the mapping
  */
 NV_STATUS
 kbusRemoveP2PMappingForNvlink_GP100
