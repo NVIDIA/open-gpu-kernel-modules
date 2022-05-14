@@ -226,7 +226,7 @@ kbusDestroyPeerAccess_GM200
 }
 
 /*!
- * @brief  Returns the P2P mailbox attributes such as size, aligment, max offset.
+ * @brief  Returns the P2P mailbox attributes such as size, alignment, max offset.
  *
  * @param[in]   pGpu
  * @param[in]   pKernelBus
@@ -236,7 +236,7 @@ kbusDestroyPeerAccess_GM200
  *
  *  Returns the P2P mailbox attributes such as:
  *  - pMailboxAreaSize: total size
- *  - pMailboxAlignment: aligment
+ *  - pMailboxAlignment: alignment
  *  - pMailboxMaxOffset: max supported offset
  *
  * return   void
@@ -307,7 +307,7 @@ kbusGetP2PMailboxAttributes_GM200
  * @param[in]   pKernelBus1    (remote GPU)
  * @param[out]  peer0          NvU32 pointer, peerId on pGpu0
  * @param[out]  peer1          NvU32 pointer, peerId on pGpu1
- * @param[in]   attributes     Sepcial attributes for the mapping
+ * @param[in]   attributes     Special attributes for the mapping
  *
  * @return NV_STATUS
  */
@@ -615,7 +615,7 @@ kbusNeedWarForBug999673_GM200
  * @param[in]   pKernelBus1    (remote GPU)
  * @param[in]   peer0  Peer ID (local to remote)
  * @param[in]   peer1  Peer ID (remote to local)
- * @param[in]   attributes Sepcial attributes for the mapping
+ * @param[in]   attributes Special attributes for the mapping
  *
  * return NV_OK on success
  */
@@ -650,7 +650,7 @@ kbusRemoveP2PMapping_GM200
  * @param[in]   pKernelBus1    (remote GPU)
  * @param[out]  peer0  Peer ID (local to remote)
  * @param[out]  peer1  Peer ID (remote to local)
- * @param[in]   attributes Sepcial attributes for the mapping
+ * @param[in]   attributes Special attributes for the mapping
  *
  * return NV_OK on success
  */
