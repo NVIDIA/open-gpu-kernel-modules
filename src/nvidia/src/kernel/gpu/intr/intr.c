@@ -69,7 +69,7 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
 
     //
     // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
-    // we wont know about GPU state until after we start processing DPCs for every
+    // we won't know about GPU state until after we start processing DPCs for every
     // pending engine. This is because, the reg read to determine pending engines
     // return 0xFFFFFFFF due to GPU being off the bus. To prevent further processing,
     // reading PMC_BOOT_0 register to check if the GPU was surprise removed/ off the bus
@@ -458,7 +458,7 @@ intrServiceStallListAllGpusCond_IMPL
         bBCState = gpumgrGetBcEnabledStatus(pGpu);
         gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
 
-        // Dont service interrupts if GPU is not powered up or is Surprise Removed
+        // Don't service interrupts if GPU is not powered up or is Surprise Removed
         if (gpuIsGpuFullPower(pGpu) && API_GPU_ATTACHED_SANITY_CHECK(pGpu))
         {
             intrServiceStallList_HAL(pGpu, pIntr, pEngines, NV_FALSE);
@@ -1292,7 +1292,7 @@ void intrProcessDPCQueue_IMPL
  *                          interrupt mask related information (intr enable and
  *                          intr mask) is to be stored. The information here
  *                          will be used to restore the original state of
- *                          interrup mask when we're allowing the ISR again.
+ *                          interrupt mask when we're allowing the ISR again.
  */
 static void
 _intrEnterCriticalSection
@@ -1352,7 +1352,7 @@ _intrEnterCriticalSection
  *                          interrupt mask related information (intr enable and
  *                          intr mask) is to be stored. The information here
  *                          will be used to restore the original state of
- *                          interrup mask when we're allowing the ISR again.
+ *                          interrupt mask when we're allowing the ISR again.
  */
 static void
 _intrExitCriticalSection
@@ -1547,7 +1547,7 @@ intrServiceStallList_IMPL
 
     //
     // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
-    // we wont know about GPU state until after we start processing DPCs for every
+    // we won't know about GPU state until after we start processing DPCs for every
     // pending engine. This is because, the reg read to determine pending engines
     // return 0xFFFFFFFF due to GPU being off the bus. To prevent further processing,
     // reading PMC_BOOT_0 register to check if the GPU was surprise removed/ off the bus
@@ -1565,7 +1565,7 @@ intrServiceStallList_IMPL
                   regReadValue);
     }
 
-    // Dont service interrupts if GPU is surprise removed
+    // Don't service interrupts if GPU is surprise removed
     if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu) || API_GPU_IN_RESET_SANITY_CHECK(pGpu))
     {
         return;
