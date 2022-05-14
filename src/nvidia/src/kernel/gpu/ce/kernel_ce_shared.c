@@ -47,7 +47,7 @@ NvBool ceIsCeGrce(OBJGPU *pGpu, NvU32 ceEngineType)
     status = kfifoGetEnginePartnerList_HAL(pGpu, pKernelFifo, &partnerParams);
     if (status != NV_OK)
     {
-        // For channels that the hal didnt handle, we should just return
+        // For channels that the hal didn't handle, we should just return
         // all of the supported engines except for the target engine.
         //
         // Update the engine Database
