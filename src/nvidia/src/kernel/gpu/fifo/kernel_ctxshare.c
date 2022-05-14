@@ -479,10 +479,10 @@ done:
 /**
  * @brief Frees a context share tracking structure if no references remain.
  *
- * This funtion should be used to free kctxshare rather than freeing object
+ * This function should be used to free kctxshare rather than freeing object
  * directly using serverFreeShare or objDelete.
  * Frees child ENGINE_CTX_DESCRIPTORs but does not free any memory pointed at
- * by pPrivCtxData.  It is the responsiblity of the user of that memory to
+ * by pPrivCtxData.  It is the responsibility of the user of that memory to
  * ensure it is freed before this function is called (or that another pointer
  * exists).
  *
