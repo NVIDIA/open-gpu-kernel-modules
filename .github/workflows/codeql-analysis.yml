@@ -44,7 +44,7 @@ jobs:
         # queries: security-extended,security-and-quality
 
     - run: |
-        make modules -j`nproc`  
+        make modules -j$(nproc)
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
