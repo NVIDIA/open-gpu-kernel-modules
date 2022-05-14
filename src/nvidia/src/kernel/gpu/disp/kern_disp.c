@@ -697,7 +697,7 @@ kdispServiceVblank_KERNEL
 
     //
     // We want to check for pending service now and then we check again each
-    // time through the loop. Keep these seperate.
+    // time through the loop. Keep these separate.
     //
     check_pending = pending;
 
@@ -753,7 +753,7 @@ kdispServiceVblank_KERNEL
             Head++;
         }
 
-        // Make sure we dont waste time on heads that dont exist
+        // Make sure we don't waste time on heads that don't exist
         if (Head >= OBJ_MAX_HEADS)
         {
             break;
