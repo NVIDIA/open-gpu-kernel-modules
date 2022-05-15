@@ -1111,7 +1111,7 @@ clHWBCGetUpstreamBAR0_IMPL
 
 
 //
-// Determine whether a set of GPUs are connected under a conjoint BR04 heirarchy
+// Determine whether a set of GPUs are connected under a conjoint BR04 hierarchy
 //
 // If flat is NV_TRUE test whether the GPUs are under the same BR04.
 //
@@ -1142,9 +1142,9 @@ clFindBR04_IMPL
     //
     // Make sure all GPUs' upstream ports are BR04.  Check also if root port is
     // the same as first GPU's.  If all root ports are the same we should have
-    // a conjunct BR04 heirarchy.
+    // a conjunct BR04 hierarchy.
     //
-    // If we're testing for a "flat" heirarchy, where all GPUs are attached
+    // If we're testing for a "flat" hierarchy, where all GPUs are attached
     // directly to the same BR04, check board downstream port.
     //
     for (i = 0; i < numGpus; i++)
@@ -1185,7 +1185,7 @@ clFindBR04_IMPL
 
 //
 // Nvidia_BR04_ShiftAliasingRegisters : Remaps the aliasing registers for
-// the targetted BR04 to the first available empty slot
+// the targeted BR04 to the first available empty slot
 //
 static NV_STATUS
 Nvidia_BR04_ShiftAliasingRegisters
