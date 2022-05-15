@@ -686,7 +686,7 @@ kgmmuGetSizeOfPageDirs_IMPL
     // If the lowest set bit corresponds to a leaf page table (4K or 64K), we"ll
     // calculate memory for all upper level page directories and if the set bit
     // corresponds to an upper level page directory we"ll factor in all levels
-    // from the root upto that level.
+    // from the root up to that level.
     //
     pageSizeLockMask = pageSizeLockMask & -((NvS64)pageSizeLockMask);
 
