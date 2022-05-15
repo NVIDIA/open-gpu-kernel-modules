@@ -119,7 +119,7 @@ _mmuWalkMap
     NV_ASSERT_OR_RETURN(NULL != pLevelInst, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(NULL != pLevel, NV_ERR_INVALID_ARGUMENT);
 
-    // If this level is not the targetted page level.
+    // If this level is not the targeted page level.
     if (pLevel->pFmt != pTarget->pLevelFmt)
     {
         NV_ASSERT_OR_RETURN(0 != pLevel->pFmt->numSubLevels, NV_ERR_INVALID_ARGUMENT);
