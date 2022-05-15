@@ -579,7 +579,7 @@ knvlinkCoreSetDlLinkModeCallback
                           "Thread state not initialized!\n");
 
                 //
-                // There is a possiblity that the entrypoint to the
+                // There is a possibility that the entrypoint to the
                 // callback does not setup threadstate (ie. MODs).
                 // If there is no thread state, then initialize it.
                 //
