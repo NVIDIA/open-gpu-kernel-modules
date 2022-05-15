@@ -848,7 +848,7 @@ struct DPCDHALImpl : DPCDHAL
         }
 
         // Next 6 bytes are Device Identification String.
-        for (unsigned int i = modelNameLength; i--;)
+        for (unsigned int i = 0; i < modelNameLength; i++)
         {
             ouiBuffer[3+i] = *model;
             if (*model)
@@ -898,8 +898,7 @@ struct DPCDHALImpl : DPCDHAL
         ouiId = ouiBuffer[0] | (ouiBuffer[1] << 8) | (ouiBuffer[2] << 16);
 
         // Next 6 bytes are Device Identification String, copy as much as we can (limited buffer case).
-        unsigned int i = modelNameBufferSize;
-        for (;i--;)
+        for (unsigned int i = 0; i < modelNameBufferSize; i++)
             modelName[i] = ouiBuffer[3+i];
 
         chipRevision = ouiBuffer[9];
@@ -937,7 +936,7 @@ struct DPCDHALImpl : DPCDHAL
 
         bus.read(NV_DPCD_GUID, &buffer[0], sizeof(buffer));
 
-        for (unsigned i = DPCD_GUID_SIZE; i--;)
+        for (unsigned i = 0; i < DPCD_GUID_SIZE; i++)
         {
             guid.data[i] = buffer[i];
         }
@@ -951,7 +950,7 @@ struct DPCDHALImpl : DPCDHAL
         if (caps.revisionMajor <= 0)
             DP_ASSERT(0 && "Something is wrong, revision major should be > 0");
 
-        for (unsigned i = DPCD_GUID_SIZE; i--;)
+        for (unsigned i = 0; i < DPCD_GUID_SIZE; i++)
         {
             buffer[i] = guid.data[i];
         }
@@ -984,7 +983,7 @@ struct DPCDHALImpl : DPCDHAL
             (legacyPort[0].type == ANALOG_VGA))
         )
         {
-            for (unsigned port = caps.downStreamPortCount; port--;)
+            for (unsigned port = 0; port < caps.downStreamPortCount; port++)
             {
                 //  The index to access detailed info byte 0
                 infoByte0 = port * bytesPerPort;
@@ -1263,7 +1262,7 @@ struct DPCDHALImpl : DPCDHAL
 
     virtual bool getIsPostLtAdjRequestInProgress()               // DPCD offset 204
     {
-        NvU8 buffer = 0;
+        NvU8 buffer;
 
         if (AuxRetry::ack != bus.read(NV_DPCD_LANE_ALIGN_STATUS_UPDATED, &buffer, 1))
         {
@@ -1316,7 +1315,7 @@ struct DPCDHALImpl : DPCDHAL
         if (caps.revisionMajor <= 0)
             DP_ASSERT(0 && "Something is wrong, revision major should be > 0");
 
-        for (laneIndex = numLanes; laneIndex--;)
+        for (laneIndex = 0; laneIndex < numLanes; laneIndex++)
         {
             if (voltSwingSet[laneIndex] <= NV_DPCD_MAX_VOLTAGE_SWING)
             {
@@ -1402,7 +1401,7 @@ struct DPCDHALImpl : DPCDHAL
             AuxRetry::status requestStatus = AuxRetry::nack ;
 
             // Set test patterns for all requested lanes
-            for (unsigned i = laneCount; i--;)
+            for (unsigned i = 0; i < laneCount; i++)
             {
                 requestStatus = setLinkQualLaneSet(i, linkQualPattern);
                 if (requestStatus != AuxRetry::ack)
@@ -1660,7 +1659,7 @@ struct DPCDHALImpl : DPCDHAL
                 return false;
             }
 
-            for (unsigned i = NV_DPCD_TEST_80BIT_CUSTOM_PATTERN__SIZE; i--;)
+            for (unsigned i = 0; i < NV_DPCD_TEST_80BIT_CUSTOM_PATTERN__SIZE; i++)
             {
                 interrupts.eightyBitCustomPat[i] = buffer[i];
             }
@@ -1724,7 +1723,7 @@ struct DPCDHALImpl : DPCDHAL
         this->setDirtyLinkStatus(true);
         this->refreshLinkStatus();
 
-        for (unsigned lane = lanes; lane--;)
+        for (unsigned lane = 0; lane < lanes; lane++)
         {
             linkStatus = linkStatus && interrupts.laneStatusIntr.laneStatus[lane].clockRecoveryDone &&
                          interrupts.laneStatusIntr.laneStatus[lane].channelEqualizationDone &&
@@ -1759,7 +1758,7 @@ struct DPCDHALImpl : DPCDHAL
     void parseAndReadInterruptsESI()
     {
         NvU8 buffer[16] = {0};
-        bool automatedTestRequest = 0;
+        bool automatedTestRequest = false;
 
         if (AuxRetry::ack != bus.read(NV_DPCD_SINK_COUNT_ESI, &buffer[2], 0x2005 - 0x2002 + 1))
             return;
@@ -1881,7 +1880,7 @@ struct DPCDHALImpl : DPCDHAL
                 bus.read(NV_DPCD_LANE0_1_STATUS_ESI, &buffer[0xC], bytesToRead);
             }
 
-            for (int lane = 4; lane--;)
+            for (int lane = 0; lane < 4; lane++)
             {
                 unsigned laneBits = buffer[0xC+lane/2] >> (4*(lane & 1));
                 interrupts.laneStatusIntr.laneStatus[lane].clockRecoveryDone        &= !!(laneBits & 1);
@@ -1920,7 +1919,7 @@ struct DPCDHALImpl : DPCDHAL
                 bus.read(NV_DPCD_LANE0_1_STATUS, &buffer[2], bytesToRead);
             }
 
-            for (int lane = 4; lane--;)
+            for (int lane = 0; lane < 4; lane++)
             {
                 unsigned laneBits = buffer[2+lane/2] >> (4*(lane & 1));
                 interrupts.laneStatusIntr.laneStatus[lane].clockRecoveryDone        &= !!(laneBits & 1);
@@ -1981,8 +1980,9 @@ struct DPCDHALImpl : DPCDHAL
                 return false;
             }
 
-            for (int i = 4; i--;) {
-               postCursor[i] = DRF_IDX_VAL(_DPCD, _ADJUST_REQ_POST_CURSOR2, _LANE, i, buffer[0xc]); 
+            for (int i = 0; i < 4; i++)
+            {
+                postCursor[i] = DRF_IDX_VAL(_DPCD, _ADJUST_REQ_POST_CURSOR2, _LANE, i, buffer[0xc]);
             }
         }
         return true;
@@ -1994,7 +1994,7 @@ struct DPCDHALImpl : DPCDHAL
                                        NvU8* newPreemphasisLane,
                                        NvU8 activeLaneCount)
     {
-        for (unsigned i = activeLaneCount; i--;)
+        for (unsigned i = 0; i < activeLaneCount; i++)
         {
             if (oldVoltageSwingLane[i] != newVoltageSwingLane[i] ||
                 oldPreemphasisLane[i] != newPreemphasisLane[i] )
@@ -2191,7 +2191,7 @@ struct DPCDHALImpl : DPCDHAL
 
     virtual inline void getCustomTestPattern(NvU8 *testPattern)                         // DPCD offset 250 - 259
     {
-        for (int i = 10; i--;)
+        for (int i = 0; i < 10; i++)
         {
             testPattern[i] = interrupts.eightyBitCustomPat[i];
         }
