@@ -42,10 +42,10 @@
  * @params[in/out] pControlParams
  *
  * @return NV_OK
- *     Client control action successfuly applied.
+ *     Client control action successfully applied.
  * @return NV_ERR_NOT_SUPPORTED
  *     RATED_TDP functionality not supported on this GPU.
- * @reutrn NV_ERR_INVALID_ARGUMENT
+ * @return NV_ERR_INVALID_ARGUMENT
  *     Invalid client specified.
  */
 NV_STATUS
