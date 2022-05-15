@@ -243,7 +243,7 @@ mmuWalkFindLevel
 /*!
  * @brief This function traverses the topology described by @ref
  * MMU_FMT_LEVEL and @ref MMU_DESC_PDE. The @ref MmuOpFunc
- * opFunc implements the actions needed to be perfomed at each
+ * opFunc implements the actions needed to be performed at each
  * sublevel in the recursion.
  *
  * @param[in]  vaLo          The lower end of the Virtual Address range that is
@@ -648,7 +648,7 @@ NV_STATUS mmuWalkProcessPdes
 cleanupIter:
 
             //
-            // In the recrusive MMU Walker, when a sublevel failed, that level would pdeRelease,
+            // In the recursive MMU Walker, when a sublevel failed, that level would pdeRelease,
             // return to the parent, and the parent would pdeRelease and return to its parent and so on.
             // Here emulate that and pdeRelease all parents.
             //
@@ -1065,7 +1065,7 @@ mmuWalkSetEntryHybrid
  *             15. 4K PTE 1 to 18 will be covered by 64K PTE 0 to 1.
  *             
  *             It is introduced by NV4K encoding. Updating big page table
- *             according to small page table requires index transfering
+ *             according to small page table requires index transferring
  *
  * @param[in]  pPageFmtIn   Source format
  * @param[in]  indexLoIn    The index lower in
@@ -1192,7 +1192,7 @@ _mmuWalkLevelDestroy
  *                          SmallPTE[18 - 61]: invalid, will later be mapped
  *                          SmallPTE[62 - 63]: sparse   
  *
- * @example    If we are to mmuWalkMap on big PT instead of samll PT,
+ * @example    If we are to mmuWalkMap on big PT instead of small PT,
  * and sparse state was on small PT, we just need to invalidate the small PTEs.
  * 
  * Before:
@@ -1225,9 +1225,9 @@ _mmuWalkResolveSubLevelConflicts
     const MMU_FMT_LEVEL *pLevelFmtSmall     = pLevel->subLevels[1].pFmt;
     MMU_WALK_LEVEL_INST *pLevelBigInst      = pSubLevelInsts[0];
     MMU_WALK_LEVEL_INST *pLevelSmallInst    = pSubLevelInsts[1];
-    // Entry indicies for target page table
+    // Entry indices for target page table
     NvU32 entryIndexLo, entryIndexHi;
-    // Entry indicies involved in both page tables
+    // Entry indices involved in both page tables
     NvU32 indexLo_Small, indexHi_Small, indexLo_Big, indexHi_Big;
 
     if (0 == subLevelIdx)
@@ -1641,7 +1641,7 @@ _mmuWalkPdeAcquire
 }
 
 /*!
- * Frees the sub levels of the PDE passed in if thier refcount is 0. It
+ * Frees the sub levels of the PDE passed in if their refcount is 0. It
  * also clears the PDE if both sublevels are released.
  */
 static void NV_NOINLINE
