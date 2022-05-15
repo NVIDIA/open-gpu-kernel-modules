@@ -1762,7 +1762,7 @@ clSearchBR04_IMPL
         // If it is a GX2 GPU, then skip.
         // BR04 has one upstream port and 2 to 4 downstream ports.
         // We look at the downstream ports of BR04.
-        // We explicitely look for at least 2 BR04 downstream ports.
+        // We explicitly look for at least 2 BR04 downstream ports.
         //
         pBusTopologyInfoBR04DS = pCl->pBusTopologyInfo;
         BR04DSPorts = 0;
@@ -2404,7 +2404,7 @@ clPcieReadAerCapability_IMPL
         if ( status != NV_OK ) // if cap id read fails, then there's no AER
             return status;
 
-        // sucess, read the rest of the struct
+        // success, read the rest of the struct
         clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort, CL_AER_UNCORRECTABLE_STATUS,  &pAER->UncorrErrStatusReg);
         clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort, CL_AER_UNCORRECTABLE_MASK,    &pAER->UncorrErrMaskReg);
         clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort, CL_AER_UNCORRECTABLE_SEVERITY,&pAER->UncorrErrSeverityReg);
@@ -2442,7 +2442,7 @@ clPcieReadL1SsCapability_IMPL
         if ( status != NV_OK ) // if cap id read fails, then there's no L1 PM Substates Capability
             return status;
 
-        // sucess, read the rest of the struct
+        // success, read the rest of the struct
         clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort, CL_L1_SS_CAP_REG, &pL1Ss->Capabilities);
         clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort, CL_L1_SS_CTRL1_REG, &pL1Ss->Control1Reg);
         clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort, CL_L1_SS_CTRL2_REG, &pL1Ss->Control2Reg);
@@ -3739,7 +3739,7 @@ static NV_STATUS storePcieGetConfigSpaceBaseFromMcfgTable(OBJOS *pOS, OBJCL *pCl
     NV_STATUS status = NV_OK;
 
     //
-    // Get the Exteneded PCI config space address by parsing
+    // Get the Extended PCI config space address by parsing
     // MCFG table through all config space base address
     // structures of length 44 bytes each.
     //
@@ -3823,7 +3823,7 @@ static NV_STATUS storePcieGetConfigSpaceBaseFromMcfgTable(OBJOS *pOS, OBJCL *pCl
  *
  * @param[in]  pCl            OBJCL pointer
  *
- * @returns NV_OK if successfull, NV_ERR_* otherwise.
+ * @returns NV_OK if successful, NV_ERR_* otherwise.
  */
 NV_STATUS
 clStorePcieConfigSpaceBaseFromMcfg_IMPL(OBJCL *pCl)
