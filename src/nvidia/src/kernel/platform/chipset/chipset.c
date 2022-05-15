@@ -53,7 +53,7 @@ clConstruct_IMPL(OBJCL *pCl)
     //
     // We set this property by default.
     // Chipset setup function can override this.
-    // Right now only Tegra chipsets overide this setting.
+    // Right now only Tegra chipsets override this setting.
     //
     pCl->setProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT, NV_TRUE);
 
@@ -316,7 +316,7 @@ clFindFHBAndGetChipsetInfoIndex_IMPL
             //
             // IBM Wildhorse system has NV chipset attached to secondary K8 at bus 0x80
             // (bug 227308).
-            // Do not change the algorithm for older chipsets where the devcie at bus%0x40 ==0, 0, 0 is
+            // Do not change the algorithm for older chipsets where the device at bus%0x40 ==0, 0, 0 is
             // considered as a host bridge.
             //
             if (((pBusTopologyInfo->pciSubBaseClass & 0xFF) == PCI_SUBCLASS_BR_HOST) ||
