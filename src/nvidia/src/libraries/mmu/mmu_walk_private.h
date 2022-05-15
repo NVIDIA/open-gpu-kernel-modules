@@ -98,7 +98,7 @@ typedef struct
 } MMU_ENTRY_INFO;
 
 /*!
- * Describes an entire (horizontal) level of an MMU level hiearchy.
+ * Describes an entire (horizontal) level of an MMU level hierarchy.
  */
 struct MMU_WALK_LEVEL
 {
