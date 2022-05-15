@@ -74,7 +74,7 @@ countZeros
     NvU64 bits
 )
 {
-    // Flip the bits to covert zeros to ones.
+    // Flip the bits to convert zeros to ones.
     bits = ~bits;
     return nvPopCount64(bits);
 }
