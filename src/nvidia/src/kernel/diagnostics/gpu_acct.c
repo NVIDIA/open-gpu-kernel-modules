@@ -627,8 +627,6 @@ gpuacctStartGpuAccounting_IMPL
 )
 {
     OBJGPU *pGpu;
-    NvU32 vmIndex;
-    NvU32 searchPid;
     NV_STATUS status = NV_OK;
     GPUACCT_PROC_ENTRY *pEntry = NULL;
     GPU_ACCT_PROC_DATA_STORE *pDS = NULL;
@@ -638,14 +636,11 @@ gpuacctStartGpuAccounting_IMPL
 
     GPUACCT_GPU_INSTANCE_INFO *gpuInstanceInfo = &pGpuAcct->gpuInstanceInfo[gpuInstance];
 
-    vmIndex = NV_INVALID_VM_INDEX;
     pDS = &gpuInstanceInfo->liveProcAcctInfo;
 
     NV_ASSERT_OR_RETURN(pDS != NULL, NV_ERR_INVALID_STATE);
 
-    searchPid = (vmIndex == NV_INVALID_VM_INDEX) ? pid : subPid;
-
-    status = gpuacctLookupProcEntry(pDS, searchPid, &pEntry);
+    status = gpuacctLookupProcEntry(pDS, pid, &pEntry);
     // If pid entry already exists, increment refcount and return.
     if (pEntry != NULL)
     {
@@ -653,19 +648,19 @@ gpuacctStartGpuAccounting_IMPL
     }
 
     // Create entry for the incoming pid.
-    status = gpuacctAllocProcEntry(pDS, searchPid,
+    status = gpuacctAllocProcEntry(pDS, pid,
                                    NV_GPUACCT_PROC_TYPE_CPU, &pEntry);
     NV_ASSERT_OR_RETURN(status == NV_OK, status);
     NV_ASSERT_OR_RETURN(pEntry != NULL, NV_ERR_NO_MEMORY);
 
-    pEntry->isGuestProcess = (vmIndex == NV_INVALID_VM_INDEX) ? NV_FALSE : NV_TRUE;
+    pEntry->isGuestProcess = NV_FALSE;
 
     pEntry->startTime = gpuacctGetCurrTime();
 
     pEntry->startSampleCount = gpuInstanceInfo->totalSampleCount;
 
     NV_PRINTF(LEVEL_INFO, "pid=%d startSampleCount=%u\n",
-              searchPid, pEntry->startSampleCount);
+              pid, pEntry->startSampleCount);
 
 out:
     if (subPid != NV_INVALID_VM_PID)
@@ -712,14 +707,11 @@ gpuacctStopGpuAccounting_IMPL
     GPUACCT_PROC_ENTRY *pOldEntry;
     NV_STATUS status;
     NvU32 searchPid;
-    NvU32 vmIndex;
 
     pGpu = gpumgrGetGpu(gpuInstance);
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
 
     pGpuInstanceInfo = &pGpuAcct->gpuInstanceInfo[gpuInstance];
-
-    vmIndex = NV_INVALID_VM_INDEX;
 
     // Delete the pid from live process list only if subpid is zero.
     if (subPid != 0)
