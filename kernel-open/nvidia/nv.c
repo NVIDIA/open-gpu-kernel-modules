@@ -1385,7 +1385,7 @@ failed:
         if(nvl->irq_count)
             NV_KFREE(nvl->irq_count, nvl->num_intr * sizeof(nv_irq_count_info_t));
     }
-    if (nv->flags & NV_FLAG_USES_MSIX)
+    else if (nv->flags & NV_FLAG_USES_MSIX)
     {
         nv->flags &= ~NV_FLAG_USES_MSIX;
         pci_disable_msix(nvl->pci_dev);
