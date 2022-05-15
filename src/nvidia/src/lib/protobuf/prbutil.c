@@ -214,7 +214,7 @@ done:
 
 /*!
  * @brief Encode Gpu registers, table slice indexed version.
- *        Adds a base address and an index multipled by the table length
+ *        Adds a base address and an index multiplied by the table length
  *        to each offset. Useful for register sets like the smc registers.
  * @param [in] pGpu The Gpu
  * @param [in] tbl The start of the table
