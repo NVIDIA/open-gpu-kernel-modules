@@ -44,7 +44,7 @@ kgmmuFmtFamiliesInit_GV100(OBJGPU *pGpu, KernelGmmu *pKernelGmmu)
     NV_STATUS        result;
     GMMU_FMT_FAMILY *pFam;
 
-    // setup nv4kPte endcoding: v - 0, vol - 1, priv - 1
+    // setup nv4kPte encoding: v - 0, vol - 1, priv - 1
     for (v = 0; v < GMMU_FMT_MAX_VERSION_COUNT; ++v)
     {
         pFam = pKernelGmmu->pFmtFamilies[v];
