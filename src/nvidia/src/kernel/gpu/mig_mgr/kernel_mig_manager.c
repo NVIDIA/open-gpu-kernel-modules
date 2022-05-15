@@ -675,7 +675,7 @@ _kmigmgrHandlePostSchedulingEnableCallback
         // retry mechanism that will allow us to get called back after all of the
         // other callbacks in the list are completed. We signal for retry by
         // returning NV_WARN_MORE_PROCESSING_REQUIRED if the scrubber is enabled but
-        // hasn't been intialized yet. The warning will be quashed on the first
+        // hasn't been initialized yet. The warning will be quashed on the first
         // attempt, but will then be reported and trigger initialization failure if
         // it happens again on the retry.
         //
@@ -1780,7 +1780,7 @@ kmigmgrRestoreFromPersistence_PF
         //
         // If we ended up here, we have inconsistent state in that there are instances to be restored
         // but MIG is disabled. This also means, that /proc filesystem is populated with nodes for the
-        // instances that we are expected to restore, but wont do so. Clean them up.
+        // instances that we are expected to restore, but won't do so. Clean them up.
         //
         gpumgrUnregisterRmCapsForMIGGI(gpuGetDBDF(pGpu));
         return NV_OK;
@@ -5302,7 +5302,7 @@ kmigmgrInitGPUInstanceRunlistBufPools_IMPL
         NV_ASSERT_OR_RETURN(pKernelFifo->pRunlistBufPool[engineType] != NULL, NV_ERR_INVALID_STATE);
 
         //
-        // Skip scrubber for runlist buffer alloctions since gpu instance scrubber is not setup yet
+        // Skip scrubber for runlist buffer allocations since gpu instance scrubber is not setup yet
         // and it will be destroyed before deleting the runlist buffer pool.
         //
         ctxBufPoolSetScrubSkip(pKernelFifo->pRunlistBufPool[engineType], NV_TRUE);
@@ -5389,7 +5389,7 @@ kmigmgrInitGPUInstanceGrBufPools_IMPL
         }
 
         //
-        // Skip scrubber for GR buffer alloctions since gpu instance scrubber is not setup yet
+        // Skip scrubber for GR buffer allocations since gpu instance scrubber is not setup yet
         // and it will be destroyed before deleting the GR buffer pool.
         //
         ctxBufPoolSetScrubSkip(pGrCtxBufPool, NV_TRUE);
