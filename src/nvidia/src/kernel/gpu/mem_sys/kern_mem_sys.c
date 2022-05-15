@@ -276,7 +276,7 @@ kmemsysSwizzIdToMIGMemSize_IMPL
 {
     //
     // To handle the straddling issue we always consider memory for different
-    // swizzIds as addition of minimum sized segements allowed in partitioning
+    // swizzIds as addition of minimum sized segments allowed in partitioning
     //
     NvU64 memSize = rangeLength(totalRange) / KMIGMGR_MAX_GPU_INSTANCES;
 
