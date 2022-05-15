@@ -2863,7 +2863,7 @@ struct DPCDHALImpl : DPCDHAL
     {
         NvU8        data = 0;
 
-        if (bLinkReady == NULL && bLinkReady == NULL)
+        if (bLinkReady == NULL && bLinkActive == NULL)
             return false;
 
         if (AuxRetry::ack != bus.read(NV_DPCD20_PCON_HDMI_TX_LINK_STATUS, &data, sizeof(data)))
