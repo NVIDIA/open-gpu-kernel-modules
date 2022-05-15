@@ -161,7 +161,7 @@ kPerfPerfmonClientDeviceSet
                 params.bClientHandlesGrGating = bClientHandlesGrGating;
                 params.bRmHandlesIdleSlow     = bRmHandlesIdleSlow;
                 //
-                // Ignoring the status here intentionaly since no mater if this release failed,
+                // Ignoring the status here intentionally since no mater if this release failed,
                 // we want to try and release perfmon HW for all the GPUs that acquired it.
                 //
                 NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status,
@@ -245,7 +245,7 @@ kClientPerfPerfmonDeviceSet_exit:
  * @param[in]      pSubdevice
  * @param[in,out]  pPerfmonParams
  *
- * @returns NV_OK if the HW Performance monitoring capabilities is sucessfully
+ * @returns NV_OK if the HW Performance monitoring capabilities is successfully
  *          acquired by the client.
  */
 NV_STATUS
