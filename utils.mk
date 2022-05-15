@@ -261,8 +261,8 @@ endif
 
 ##############################################################################
 # NV_GET_SOURCE_TYPE: if the source file $(1) should be compiled as C, this
-# evalutes to "CC"; if the source file $(1) should be compiled as C++, this
-# evalutes to "CXX".
+# evaluates to "CC"; if the source file $(1) should be compiled as C++, this
+# evaluates to "CXX".
 ##############################################################################
 
 NV_GET_SOURCE_TYPE = $(strip \
