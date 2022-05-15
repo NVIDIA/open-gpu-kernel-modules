@@ -83,7 +83,7 @@ kmigmgrCreateGPUInstanceCheck_GA100
         if (kmigmgrIsEnginePartitionable(pGpu, pKernelMIGManager, pGpu->engineDB.pType[i]))
         {
             //
-            // If memory partitioning isnt needed, scrubber channel will be active, and
+            // If memory partitioning isn't needed, scrubber channel will be active, and
             // partitioning isn't really a destructive operation anyway, so
             // skip checking for copy engines
             //
