@@ -740,7 +740,7 @@ vidmemConstruct_IMPL
 
     //
     // Video memory is always locally transparently cached.  It does not require
-    // any cache managment.  Marked cached unconditionally.  Non-coherent peer
+    // any cache management.  Marked cached unconditionally.  Non-coherent peer
     // caching is handled with an override at mapping time.
     //
     if (DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pAllocData->attr2) ==
@@ -754,7 +754,7 @@ vidmemConstruct_IMPL
     // ClientDB can set the pagesize for memdesc.
     // With GPU SMMU mapping, this needs to be set on the SMMU memdesc.
     // So SMMU allocation should happen before memConstructCommon()
-    // Eventaully SMMU allocation will be part of memdescAlloc().
+    // Eventually SMMU allocation will be part of memdescAlloc().
 
     //
     // There are a few cases where the heap will return an existing
@@ -940,7 +940,7 @@ vidmemDestruct_IMPL
 
     memDestructCommon(pMemory);
 
-    // free the video memory based on how it was alloced ... a non-zero
+    // free the video memory based on how it was allocated ... a non-zero
     // heapOwner indicates it was heapAlloc-ed.
     if (!memdescGetCustomHeap(pMemDesc))
     {
@@ -1326,7 +1326,7 @@ vidmemCheckCopyPermissions_IMPL
                                                                   &dstInstRef));
 
             //
-            // Memory duping is allowed accross compute instances. so ignore
+            // Memory duping is allowed across compute instances. so ignore
             // compute instance differences
             //
             srcInstRef = kmigmgrMakeGIReference(srcInstRef.pKernelMIGGpuInstance);
