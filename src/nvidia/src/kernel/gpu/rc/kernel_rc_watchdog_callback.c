@@ -167,7 +167,7 @@ krcWatchdog_IMPL
 
     //
     // If the device has been reset then we can skip this sometimes after a
-    // reset we can have a reenable make sure that this is a one time event
+    // reset we can have a re-enable make sure that this is a one time event
     //
     if (pKernelRc->watchdog.deviceResetRd != pKernelRc->watchdog.deviceResetWr)
     {
