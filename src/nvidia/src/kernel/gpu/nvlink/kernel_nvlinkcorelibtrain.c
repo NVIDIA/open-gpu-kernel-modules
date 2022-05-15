@@ -1199,7 +1199,7 @@ _knvlinkActivateDiscoveredConns
                 // information for the remote link and enabling the post topology
                 // steps on both the ends of the link.
                 //
-                // NOTE: HSHUB will nott be setup for the discovered peer link here
+                // NOTE: HSHUB will not be setup for the discovered peer link here
                 //       and will only be configured when a P2P object is created
                 //
                 status = _knvlinkActivateDiscoveredP2pConn(pGpu, pKernelNvlink, linkId);
