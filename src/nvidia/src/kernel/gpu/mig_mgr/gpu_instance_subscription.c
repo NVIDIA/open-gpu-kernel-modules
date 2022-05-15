@@ -992,7 +992,7 @@ gisubscriptionCleanupOnUnsubscribe_IMPL
 
     //
     // Free all of the handles we flagged for deletion.
-    // Note - some of these resources will free other dependant resources, so
+    // Note - some of these resources will free other dependent resources, so
     // some of these free calls will do nothing. That's fine for our purposes.
     //
     NV_ASSERT_OR_GOTO(i == handleCount, cleanup);
