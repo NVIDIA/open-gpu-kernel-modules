@@ -130,7 +130,7 @@ krcWatchdogChangeState_IMPL
     //
     // -- Normally, some clients (such as X) wants the watchdog running.
     // -- Normally, CUDA wants the watchdog disabled.
-    // -- When the RM initializes, it sets the watchog to disabled.
+    // -- When the RM initializes, it sets the watchdog to disabled.
     // -- X will normally tell the RM, for each GPU that it manages, to enable
     //    the watchdog.
     // -- Each CUDA client normally will tell the RM, for each GPU that it
@@ -873,7 +873,7 @@ krcWatchdogInit_IMPL
             WATCHDOG_GPFIFO_OFFSET(pKernelRc->watchdogChannelInfo.pbBytes));
         pChannelGPFifo->gpFifoEntries = WATCHDOG_GPFIFO_ENTRIES;
 
-        // 2d object is only suppported on GR0
+        // 2d object is only supported on GR0
         pChannelGPFifo->engineType = NV2080_ENGINE_TYPE_GR0;
 
         if (bClientUserd)
@@ -1085,12 +1085,12 @@ krcWatchdogInitPushbuffer_IMPL
 
     //
     // Set up the pushbuffer.
-    // Create two seperate pushbuffer segments
+    // Create two separate pushbuffer segments
     // First -  Set object on graphics class
     // Second - Notifier, setref
     // Create GPFIFO
     // Point to setobject pushbuffer, gp_put++
-    // Then keep on pointing gp_entry to second pushbuffer segment everytime we
+    // Then keep on pointing gp_entry to second pushbuffer segment every time we
     // need a notifier
     //
     pbOffset = WATCHDOG_PUSHBUFFER_OFFSET(
