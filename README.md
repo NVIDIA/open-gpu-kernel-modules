@@ -157,6 +157,8 @@ for the target kernel.
 - `kernel-open/nvidia-drm/`     The kernel interface layer for nvidia-drm.ko
 - `kernel-open/nvidia-modeset/` The kernel interface layer for nvidia-modeset.ko
 - `kernel-open/nvidia-uvm/`     The kernel interface layer for nvidia-uvm.ko
+- `kernel-open/nvidia-peermem/` A kernel module that provides NVIDIA InfiniBand based HCAs (Host Channel Adapters) direct peer-to-peer read and write access to the NVIDIA GPU's video memory.
+- 
 
 - `src/`                        The OS-agnostic code
 - `src/nvidia/`                 The OS-agnostic code for nvidia.ko
