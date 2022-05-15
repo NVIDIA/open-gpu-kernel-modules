@@ -218,7 +218,7 @@ _kmemsysSwizzIdToFbMemRange_GA100
     //
     // If pAddrRange->lo is vmmuSegment aligned, then alignedUp
     // by one segment else simply align it. We need to make sure we have
-    // atleast 1 VMMU segment delta between consecutive segments
+    // at least 1 VMMU segment delta between consecutive segments
     //
     if (pAddrRange->lo != 0)
     {
