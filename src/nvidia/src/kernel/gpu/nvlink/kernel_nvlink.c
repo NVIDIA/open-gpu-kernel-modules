@@ -69,7 +69,7 @@ knvlinkIsNvlinkDefaultEnabled_IMPL
     //
     // Currently it is critical that the following lib check be present.
     // Burying this in the hal below it may get lost as the stub is all
-    // thats required for POR (always true from the hals perspective)
+    // that's required for POR (always true from the hals perspective)
     //
 #if !defined(INCLUDE_NVLINK_LIB)
 
@@ -243,7 +243,7 @@ knvlinkCheckNvswitchP2pConfig_IMPL
     {
         if (gpuIsSriovEnabled(pGpu))
         {
-            // currently vgpu + switch doesn't support GPA addresing.
+            // currently vgpu + switch doesn't support GPA addressing.
             return NV_TRUE;
         }
 
@@ -880,7 +880,7 @@ knvlinkSetPowerFeatures_IMPL
     KernelNvlink *pKernelNvlink
 )
 {
-    // Get the Ip Verion from the First available IOCTRL.
+    // Get the Ip Version from the First available IOCTRL.
     switch (pKernelNvlink->ipVerNvlink)
     {
         case NVLINK_VERSION_22:
