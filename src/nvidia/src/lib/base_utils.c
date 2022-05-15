@@ -35,13 +35,10 @@
 //
 NvU32 nvLogBase2(NvU64 val)
 {
-    // Use two NV_ASSERTs for better error identification
     NV_ASSERT(val != 0);
     NV_ASSERT(((val) & (val - 1)) == 0);
 
-    NvU32 i = portUtilCountTrailingZeros64(val);
-
-    return i;
+    return portUtilCountTrailingZeros64(val);
 }
 
 
