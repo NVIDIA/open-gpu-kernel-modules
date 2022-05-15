@@ -255,7 +255,7 @@ struct DPCDHALImpl : DPCDHAL
         return dpcdOffline;
     }
 
-    inline void setDPCDOffline(bool bOffline)
+    inline void setDPCDOffline(const bool bOffline)
     {
         dpcdOffline = bOffline;
     }
@@ -275,12 +275,12 @@ struct DPCDHALImpl : DPCDHAL
         }
     }
 
-    inline void setPC2Disabled(bool disabled)
+    inline void setPC2Disabled(const bool disabled)
     {
         pc2Disabled = disabled;
     }
 
-    inline void setLttprSupported(bool isLttprSupported)
+    inline void setLttprSupported(const bool isLttprSupported)
     {
         bLttprSupported = isLttprSupported;
     }
@@ -418,7 +418,7 @@ struct DPCDHALImpl : DPCDHAL
             if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _1_62_GBPS, buffer[1]))
                 caps.maxLinkRate = RBR;
             else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _2_70_GBPS, buffer[1]))
-               caps.maxLinkRate = HBR;
+                caps.maxLinkRate = HBR;
             else if (FLD_TEST_DRF(_DPCD, _MAX_LINK_BANDWIDTH, _VAL, _5_40_GBPS, buffer[1]))
                 caps.maxLinkRate = HBR2;
             else if (FLD_TEST_DRF(_DPCD14, _MAX_LINK_BANDWIDTH, _VAL, _8_10_GBPS, buffer[1]))
@@ -829,7 +829,7 @@ struct DPCDHALImpl : DPCDHAL
         return bSDPExtnForColorimetry;
     }
 
-    virtual AuxRetry::status setOuiSource(unsigned ouiId, const char * model, size_t modelNameLength, NvU8 chipRevision)
+    virtual AuxRetry::status setOuiSource(unsigned ouiId, const char * model, size_t modelNameLength, const NvU8 chipRevision)
     {
         NvU8 ouiBuffer[16];
 
@@ -911,7 +911,7 @@ struct DPCDHALImpl : DPCDHAL
         return caps.supportsMultistream && (!caps.overrideToSST);
     }
 
-    virtual inline void setSupportsESI(bool bIsESISupported)
+    virtual inline void setSupportsESI(const bool bIsESISupported)
     {
         caps.supportsESI = bIsESISupported;
     }
@@ -1148,7 +1148,7 @@ struct DPCDHALImpl : DPCDHAL
     }
 
     // DPCD override routine: Max link rate override.
-    void inline overrideMaxLinkRate(NvU32 overrideMaxLinkRate)
+    void inline overrideMaxLinkRate(const NvU32 overrideMaxLinkRate)
     {
         if (overrideMaxLinkRate)
         {
@@ -1157,34 +1157,33 @@ struct DPCDHALImpl : DPCDHAL
     }
 
     // DPCD override routine: Max lane count override.
-    void inline overrideMaxLaneCount(NvU32 maxLaneCount)
+    void inline overrideMaxLaneCount(const NvU32 maxLaneCount)
     {
         caps.maxLaneCount = maxLaneCount;
         overrideDpcdMaxLaneCount = maxLaneCount;
     }
 
     // DPCD override routine: Max lane count override at a given link rate.
-    void inline skipCableBWCheck(NvU32 maxLaneAtHighRate, NvU32 maxLaneAtLowRate)
+    void inline skipCableBWCheck(const NvU32 maxLaneAtHighRate, const NvU32 maxLaneAtLowRate)
     {
         caps.maxLanesAtHBR = maxLaneAtHighRate;
         caps.maxLanesAtRBR = maxLaneAtLowRate;
     }
 
     // DPCD override routine: Optimal link config (link rate and lane count) override.
-    void inline overrideOptimalLinkCfg(LinkRate optimalLinkRate,
-                                NvU32 optimalLaneCount)
+    void inline overrideOptimalLinkCfg(const LinkRate optimalLinkRate, const NvU32 optimalLaneCount)
     {
         caps.maxLinkRate = optimalLinkRate;
         caps.maxLaneCount = optimalLaneCount;
     }
 
     // DPCD override routine: Optimal link rate
-    void inline overrideOptimalLinkRate(LinkRate optimalLinkRate)
+    void inline overrideOptimalLinkRate(const LinkRate optimalLinkRate)
     {
         caps.maxLinkRate = optimalLinkRate;
     }
 
-    virtual void notifyHPD(bool status, bool bSkipDPCDRead)
+    virtual void notifyHPD(const bool status, const bool bSkipDPCDRead)
     {
         if (!status)
         {
@@ -1238,7 +1237,7 @@ struct DPCDHALImpl : DPCDHAL
         return bGrantsPostLtRequest && !bTps4Supported;
     }
 
-    virtual void setPostLtAdjustRequestGranted(bool bGrantPostLtRequest)
+    virtual void setPostLtAdjustRequestGranted(const bool bGrantPostLtRequest)
     {
         NvU8 data = 0;
 
@@ -1304,9 +1303,9 @@ struct DPCDHALImpl : DPCDHAL
         return pattern;
     }
 
-    virtual bool setTrainingMultiLaneSet(NvU8 numLanes,
-                                         NvU8 *voltSwingSet,
-                                         NvU8 *preEmphasisSet)
+    virtual bool setTrainingMultiLaneSet(const NvU8 numLanes,
+                                               NvU8 *voltSwingSet,
+                                               NvU8 *preEmphasisSet)
     {
         NvU8 trainingCtrl[DP_MAX_LANES] = {0};
         unsigned writeAddress = NV_DPCD_TRAINING_LANE_SET(0);
@@ -1375,7 +1374,7 @@ struct DPCDHALImpl : DPCDHAL
         return bus.write(NV_DPCD_DOWNSPREAD_CTRL, &downspreadCtrl, sizeof downspreadCtrl);
     }
 
-    virtual AuxRetry::status setLinkQualPatternSet(LinkQualityPatternType linkQualPattern, unsigned laneCount)
+    virtual AuxRetry::status setLinkQualPatternSet(const LinkQualityPatternType linkQualPattern, const unsigned laneCount)
     {
         if (caps.revisionMajor <= 0)
         {
@@ -1417,7 +1416,7 @@ struct DPCDHALImpl : DPCDHAL
         }
     }
 
-    virtual AuxRetry::status setLinkQualLaneSet(unsigned lane, LinkQualityPatternType linkQualPattern)
+    virtual AuxRetry::status setLinkQualLaneSet(const unsigned lane, const LinkQualityPatternType linkQualPattern)
     {
         NvU8 linkQuality = 0;
         unsigned writeAddress = NV_DPCD_LINK_QUAL_LANE_SET(lane);
@@ -1465,7 +1464,7 @@ struct DPCDHALImpl : DPCDHAL
         return bus.write(writeAddress, &linkQuality, sizeof linkQuality);
     }
 
-    virtual AuxRetry::status setMessagingEnable(bool _uprequestEnable, bool _upstreamIsSource)
+    virtual AuxRetry::status setMessagingEnable(const bool _uprequestEnable, const bool _upstreamIsSource)
     {
         NvU8 mstmCtrl = 0;
 
@@ -1507,7 +1506,7 @@ struct DPCDHALImpl : DPCDHAL
         return bus.write(NV_DPCD_MSTM_CTRL, &mstmCtrl, sizeof mstmCtrl);
     }
 
-    virtual AuxRetry::status setMultistreamLink(bool enable)
+    virtual AuxRetry::status setMultistreamLink(const bool enable)
     {
         NvU8 mstmCtrl = 0;
 
@@ -1529,7 +1528,7 @@ struct DPCDHALImpl : DPCDHAL
         return bus.write(NV_DPCD_MSTM_CTRL, &mstmCtrl, sizeof mstmCtrl);
     }
 
-    virtual AuxRetry::status setMultistreamHotplugMode(MultistreamHotplugMode notifyType)
+    virtual AuxRetry::status setMultistreamHotplugMode(const MultistreamHotplugMode notifyType)
     {
         NvU8 deviceCtrl = 0;
 
@@ -1544,7 +1543,7 @@ struct DPCDHALImpl : DPCDHAL
     }
 
 
-    bool parseTestRequestTraining(NvU8 * buffer /* 0x18-0x28 valid */)
+    bool parseTestRequestTraining(const NvU8 * buffer /* 0x18-0x28 valid */)
     {
         switch (buffer[1]) {
             case 0x6:
@@ -1569,7 +1568,7 @@ struct DPCDHALImpl : DPCDHAL
         return true;
     }
 
-    void parseAutomatedTestRequest(bool testRequestPending)
+    void parseAutomatedTestRequest(const bool testRequestPending)
     {
         NvU8 buffer[16];
 
@@ -1823,7 +1822,7 @@ struct DPCDHALImpl : DPCDHAL
         parseAutomatedTestRequest(automatedTestRequest);
     }
 
-    void readLTTPRLinkStatus(NvS32 rxIndex, NvU8 *buffer)
+    void readLTTPRLinkStatus(const NvS32 rxIndex, NvU8 *buffer)
     {
         int addrLane01Status = 0;
         // LINK_STATUS for LTTPR is 3 bytes. (NV_DPCD14_PHY_REPEATER_START(i) + 0x20 ~ 0x22)
@@ -1847,7 +1846,7 @@ struct DPCDHALImpl : DPCDHAL
         // the corresponding bit to true. Set to true as init value, and later will do &=
         // through all the lanes.
         //
-        for (int lane = 4; lane--;)
+        for (int lane = 0; lane < 4; lane++)
         {
             interrupts.laneStatusIntr.laneStatus[lane].clockRecoveryDone        = true;
             interrupts.laneStatusIntr.laneStatus[lane].channelEqualizationDone  = true;
@@ -1861,7 +1860,7 @@ struct DPCDHALImpl : DPCDHAL
     void fetchLinkStatusESI()
     {
         NvU8 buffer[16] = {0};
-        NvS32 rxIndex;
+        NvS32 rxIndex = 0;
 
         // LINK_STATUS_ESI from 0x200C to 0x200E
         int bytesToRead = 3;
@@ -1901,7 +1900,7 @@ struct DPCDHALImpl : DPCDHAL
     void fetchLinkStatusLegacy()
     {
         NvU8 buffer[16] = {0};
-        NvS32 rxIndex;
+        NvS32 rxIndex = 0;
         // LINK_STATUS from 0x202 to 0x204
         int bytesToRead = 3;
 
@@ -2046,7 +2045,7 @@ struct DPCDHALImpl : DPCDHAL
     // TCON sets DPCD 0x200 SINK_COUNT=0. It should never be called to
     // set the SinkCount in other cases since SinkCount comes from DPCD.
     //
-    virtual inline void setSinkCount(int sinkCount)
+    virtual inline void setSinkCount(const int sinkCount)
     {
         interrupts.sinkCount = sinkCount;
     }
@@ -2138,12 +2137,12 @@ struct DPCDHALImpl : DPCDHAL
         }
     }
 
-    virtual inline bool getLaneStatusSymbolLock(int lane)
+    virtual inline bool getLaneStatusSymbolLock(const int lane)
     {
         return interrupts.laneStatusIntr.laneStatus[lane].symbolLocked;
     }
 
-    virtual inline bool getLaneStatusClockRecoveryDone(int lane)
+    virtual inline bool getLaneStatusClockRecoveryDone(const int lane)
     {
         return interrupts.laneStatusIntr.laneStatus[lane].clockRecoveryDone;
     }
@@ -2330,7 +2329,7 @@ struct DPCDHALImpl : DPCDHAL
         return DP_MESSAGEBOX_SIZE;
     }
 
-    virtual AuxRetry::status writeUpReplyMessageBox(NvU8 * data, size_t length)
+    virtual AuxRetry::status writeUpReplyMessageBox(NvU8 * data, const size_t length)
     {
         if (caps.revisionMajor <= 0)
             DP_ASSERT(0 && "Something is wrong, revision major should be > 0");
@@ -2519,7 +2518,7 @@ struct DPCDHALImpl : DPCDHAL
     virtual bool payloadAllocate(const unsigned streamId, const unsigned begin, const unsigned count)
     {
         bool bResult = false;
-        NvU8 payloadAllocate[3];
+        NvU8 payloadAllocate[3] = {0};
         DP_ASSERT(streamId < 64 && "Invalid stream location");
         payloadAllocate[0] = (NvU8)streamId;
         payloadAllocate[1] = (NvU8)begin;
@@ -2584,7 +2583,7 @@ struct DPCDHALImpl : DPCDHAL
         return caps.supportsMultistream;
     }
 
-    void setGpuDPSupportedVersions(bool supportDp1_2, bool supportDp1_4)
+    void setGpuDPSupportedVersions(const bool supportDp1_2, const bool supportDp1_4)
     {
         if (supportDp1_4)
             DP_ASSERT(supportDp1_2 && "GPU supports DP1.4 should also support DP1.2!");
@@ -2593,7 +2592,7 @@ struct DPCDHALImpl : DPCDHAL
         gpuDP1_4Supported = supportDp1_4;
     }
 
-    inline void setGpuFECSupported(bool bSupportFEC)
+    inline void setGpuFECSupported(const bool bSupportFEC)
     {
         bGpuFECSupported = bSupportFEC;
     }
@@ -2655,7 +2654,7 @@ struct DPCDHALImpl : DPCDHAL
         return false;
     }
 
-    virtual inline void setIndexedLinkrateEnabled(bool val)
+    virtual inline void setIndexedLinkrateEnabled(const bool val)
     {
         bIndexedLinkrateEnabled = val;
     }
@@ -2704,7 +2703,7 @@ struct DPCDHALImpl : DPCDHAL
         bus.write(NV_DPCD20_PCON_FRL_LINK_CONFIG_2, &data, sizeof(data));
     }
 
-    virtual bool setSourceControlMode(bool bEnableSourceControlMode, bool bEnableFRLMode)
+    virtual bool setSourceControlMode(const bool bEnableSourceControlMode, const bool bEnableFRLMode)
     {
         NvU8 data = 0;
 
@@ -2779,9 +2778,9 @@ struct DPCDHALImpl : DPCDHAL
         return true;
     }
 
-    virtual bool setupPCONFrlLinkAssessment(NvU32   linkBwMask,
-                                            bool    bEnableExtendLTMode = false,
-                                            bool    bEnableConcurrentMode = false)
+    virtual bool setupPCONFrlLinkAssessment(const NvU32   linkBwMask,
+                                            const bool    bEnableExtendLTMode = false,
+                                            const bool    bEnableConcurrentMode = false)
     {
         NvU8 data = 0;
 
@@ -2907,8 +2906,8 @@ struct DPCDHALImpl : DPCDHAL
     }
 
     virtual NvU32 restorePCONFrlLink(NvU32   linkBwMask,
-                                     bool    bEnableExtendLTMode     = false,
-                                     bool    bEnableConcurrentMode   = false)
+                                     const bool    bEnableExtendLTMode     = false,
+                                     const bool    bEnableConcurrentMode   = false)
     {
         // Restore HDMI Link.
         // 1. Clear HDMI link enable bit (305A bit 7)
@@ -2979,7 +2978,7 @@ struct DPCDHALImpl : DPCDHAL
         dpMemCopy(caps, &this->caps.psrCaps, sizeof(vesaPsrSinkCaps));
     }
 
-    virtual bool updatePsrConfiguration(vesaPsrConfig psrcfg)
+    virtual bool updatePsrConfiguration(const vesaPsrConfig psrcfg)
     {
         NvU8 config = 0U;
 
@@ -3132,8 +3131,7 @@ struct DPCDHALImpl : DPCDHAL
     virtual bool readPsrErrorStatus(vesaPsrErrorStatus *psrErr)
     {
         NvU8 config = 0U;
-        bool retVal;
-        retVal = AuxRetry::ack == bus.read(
+        bool retVal = AuxRetry::ack == bus.read(
                                      NV_DPCD_PANEL_SELF_REFRESH_ERR_STATUS,
                                      &config, sizeof(config));
 
@@ -3153,7 +3151,7 @@ struct DPCDHALImpl : DPCDHAL
         return retVal;
     }
 
-    virtual bool writePsrEvtIndicator(vesaPsrEventIndicator psrEvt)
+    virtual bool writePsrEvtIndicator(const vesaPsrEventIndicator psrEvt)
     {
         NvU8 config = 0U;
 
@@ -3171,8 +3169,7 @@ struct DPCDHALImpl : DPCDHAL
     virtual bool readPsrEvtIndicator(vesaPsrEventIndicator *psrEvt)
     {
         NvU8 config = 0U;
-        bool retVal;
-        retVal = AuxRetry::ack == bus.read(
+        bool retVal = AuxRetry::ack == bus.read(
             NV_DPCD_PANEL_SELF_REFRESH_EVENT_STATUS,
             &config, sizeof(config));
 
