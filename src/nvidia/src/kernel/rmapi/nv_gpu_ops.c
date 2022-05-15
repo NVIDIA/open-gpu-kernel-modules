@@ -143,7 +143,7 @@ typedef struct
 
 typedef struct
 {
-    NvU64    vaStart;                    // Needs to be alinged to pagesize
+    NvU64    vaStart;                    // Needs to be aligned to pagesize
     NvBool   bFixedAddressAllocate;      // rangeBegin & rangeEnd both included
     NvU32    pageSize;                   // default is 4k or 64k else use pagesize= 2M
 } gpuVaAllocInfo;
@@ -3534,7 +3534,7 @@ static NV_STATUS nvGpuOpsAllocPhysical(struct gpuDevice *device,
                                        DRF_DEF(OS32, _ATTR, _COHERENCY, _CACHED):
                                        DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
 
-    // Allocate contigous allocation if requested by client
+    // Allocate contiguous allocation if requested by client
     memAllocParams.attr |= allocInfo->bContiguousPhysAlloc ?
                                        DRF_DEF(OS32, _ATTR, _PHYSICALITY, _CONTIGUOUS):
                                        DRF_DEF(OS32, _ATTR, _PHYSICALITY, _DEFAULT);
@@ -4395,7 +4395,7 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
     // If the allocation is vidmem ask RM to allocate persistent vidmem
     pAllocInfo->gpuAllocInfo.bPersistentVidmem = NV_TRUE;
 
-    // 1. Allocate the GPFIFO entries. Dont pass any special flags.
+    // 1. Allocate the GPFIFO entries. Don't pass any special flags.
     flags.bGetKernelVA = NV_FALSE;
     status = nvGpuOpsGpuMalloc(vaSpace,
                                gpFifoLoc == UVM_BUFFER_LOCATION_SYS,
@@ -6423,7 +6423,7 @@ NV_STATUS nvGpuOpsSetPageDirectory(struct gpuAddressSpace *vaSpace,
         if (status != NV_OK)
         {
             //
-            // If stopping any channels failed, reenable the channels which were
+            // If stopping any channels failed, re-enable the channels which were
             // able to be stopped before bailing
             //
             nvGpuOpsEnableVaSpaceChannels(vaSpace);
@@ -6518,7 +6518,7 @@ NV_STATUS nvGpuOpsUnsetPageDirectory(struct gpuAddressSpace *vaSpace)
         if (status != NV_OK)
         {
             //
-            // If stopping any channels failed, reenable the channels which were
+            // If stopping any channels failed, re-enable the channels which were
             // able to be stopped before bailing
             //
             nvGpuOpsEnableVaSpaceChannels(vaSpace);
