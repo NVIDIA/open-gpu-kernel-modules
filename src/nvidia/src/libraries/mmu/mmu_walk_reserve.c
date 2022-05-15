@@ -161,7 +161,7 @@ _mmuWalkReserveEntries
 {
     const MMU_FMT_LEVEL *pLevelFmt = (const MMU_FMT_LEVEL *) pOpParams->pOpCtx;
 
-    // If this level is not the targetted page level.
+    // If this level is not the targeted page level.
     if (pLevel->pFmt != pLevelFmt)
     {
         NV_ASSERT_OR_RETURN(0 != pLevel->pFmt->numSubLevels, NV_ERR_INVALID_ARGUMENT);
@@ -212,7 +212,7 @@ _mmuWalkReleaseEntries
 {
     const MMU_FMT_LEVEL *pLevelFmt = (const MMU_FMT_LEVEL *) pOpParams->pOpCtx;
 
-    // If this level is not the targetted page level.
+    // If this level is not the targeted page level.
     if (pLevel->pFmt != pLevelFmt)
     {
         NV_ASSERT_OR_RETURN(0 != pLevel->pFmt->numSubLevels, NV_ERR_INVALID_ARGUMENT);
