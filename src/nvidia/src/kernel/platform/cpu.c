@@ -566,7 +566,7 @@ typedef struct _def_CPUID_info
     NvU32 BrandId;
 } CPUIDINFO, *PCPUIDINFO;
 
-// Forward refernces.
+// Forward references.
 //
 
 static void getCpuCounts(OBJSYS *pSys, PCPUIDINFO pCpuidInfo);
@@ -763,7 +763,7 @@ void RmInitCpuInfo(void)
     else
     {
         // We are clueless.  If the processor had an embedded name, its already in there.
-        // If not, use the foundary name as the processor name.
+        // If not, use the foundry name as the processor name.
         if (pSys->cpuInfo.name[0] == 0)
             portMemCopy(pSys->cpuInfo.name, sizeof(cpuinfo.Foundry.String), cpuinfo.Foundry.String, sizeof(cpuinfo.Foundry.String));
     }
@@ -976,7 +976,7 @@ static NvBool DecodePrescottCache(OBJSYS *pSys)
     NvU32   eax, ebx, ecx, edx;
     OBJOS  *pOS = SYS_GET_OS(pSys);
 
-    // Decode the cache desciptors.
+    // Decode the cache descriptors.
 
     if (pOS->osNv_cpuid(pOS, 0, 0, &eax, &ebx, &ecx, &edx))
     {
@@ -1324,7 +1324,7 @@ static void cpuidInfoIntel(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
             pSys->cpuInfo.platformID = (edx >> 18) & 7;        // edx[20:18]   PlatformID (package type)
     }
 
-    // Decode the cache desciptors.
+    // Decode the cache descriptors.
     if (!DecodePrescottCache(pSys))
     {
 #if defined(_M_IX86) || defined(NVCPU_X86)
