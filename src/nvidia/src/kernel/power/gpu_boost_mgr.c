@@ -71,7 +71,7 @@ gpuboostmgrCreateGroup_IMPL
     NvBool     bCleanup    = NV_FALSE;
     NvU32      i;
 
-    // See if we can accomodate one more SGBG
+    // See if we can accommodate one more SGBG
     NV_ASSERT_OR_RETURN(pBoostMgr->groupCount < NV0000_SYNC_GPU_BOOST_MAX_GROUPS,
                           NV_ERR_INSUFFICIENT_RESOURCES);
 
@@ -195,7 +195,7 @@ gpuboostmgrDestroyGroup_IMPL
     NV_ASSERT_OR_RETURN(NV0000_SYNC_GPU_BOOST_MAX_GROUPS > boostGroupId, NV_ERR_OUT_OF_RANGE);
     NV_ASSERT_OR_RETURN(0 != pBoostMgr->pBoostGroups[boostGroupId].gpuCount, NV_ERR_ILLEGAL_ACTION);
 
-    // Remove each GPU ID from the ID tree before destorying the group.
+    // Remove each GPU ID from the ID tree before destroying the group.
     for(i = 0; i < pBoostMgr->pBoostGroups[boostGroupId].gpuCount; i++)
     {
         status = btreeSearch(pBoostMgr->pBoostGroups[boostGroupId].gpuIds[i],
