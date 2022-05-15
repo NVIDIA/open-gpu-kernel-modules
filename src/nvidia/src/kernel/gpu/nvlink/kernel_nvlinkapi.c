@@ -443,7 +443,7 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
 
         //
         // Get clock related state
-        // NOTE: to be depricated HW terminology conforming versions
+        // NOTE: to be deprecated HW terminology conforming versions
         //
         pParams->linkInfo[i].nvlinkLinkClockKHz        = pLinkAndClockValues->nvlinkLinkClockKHz;
         pParams->linkInfo[i].nvlinkRefClkSpeedKHz      = nvlinkLinkAndClockInfoParams.nvlinkRefClkSpeedKHz;
