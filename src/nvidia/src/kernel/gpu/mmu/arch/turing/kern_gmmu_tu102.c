@@ -188,7 +188,7 @@ kgmmuFmtFamiliesInit_TU102(OBJGPU *pGpu, KernelGmmu *pKernelGmmu)
  * is committed.
  *
  * During PTE downgrades, tlb invalidates should be followed by
- * sysmembar. Since Turing doesnt have HSHUB we dont need any
+ * sysmembar. Since Turing doesnt have HSHUB we don't need any
  * additional flushes.
  *
  * Use invalidate units SYSMEMBAR and return flushCount 0.
@@ -244,7 +244,7 @@ kgmmuGetFaultRegisterMappings_TU102
                  GPU_GET_VREG_OFFSET(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_GET(index)));
     *pFaultBufferPut = NvP64_PLUS_OFFSET(bar0Mapping,
                  GPU_GET_VREG_OFFSET(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_PUT(index)));
-    // Note: this variable is deprecated since buffer overflow is not a seperate register from Volta
+    // Note: this variable is deprecated since buffer overflow is not a separate register from Volta
     *pFaultBufferInfo = 0;
     *pHubIntr = NvP64_PLUS_OFFSET(bar0Mapping, GPU_GET_VREG_OFFSET(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(leafReg)));
     *pHubIntrEnSet = NvP64_PLUS_OFFSET(bar0Mapping, GPU_GET_VREG_OFFSET(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET(leafReg)));
