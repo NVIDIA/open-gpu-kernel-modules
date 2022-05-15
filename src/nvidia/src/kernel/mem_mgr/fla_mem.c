@@ -251,7 +251,7 @@ flamemConstruct_IMPL
     if (!bLoopback && pAllocParams->hExportHandle)
     {
         //
-        // TODO: This might break SMC assumption whenver we support FLA in SMC (currently not supported for Ampere)
+        // TODO: This might break SMC assumption whenever we support FLA in SMC (currently not supported for Ampere)
         // Duping the exported handle under device on the import side
         // we need this to make sure that the export handle doesn't get reused after FM crash or app crash
         //
