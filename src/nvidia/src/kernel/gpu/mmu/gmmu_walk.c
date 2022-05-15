@@ -149,7 +149,7 @@ _gmmuWalkCBLevelAlloc
     {
         newMemSize = kgmmuGetPDBAllocSize_HAL(pKernelGmmu, pLevelFmt, pGVAS->vaLimitInternal);
 
-        // TODO: PDB alignemnt.
+        // TODO: PDB alignment.
         alignment = RM_PAGE_SIZE;
 
         // Determine level aperture and memory attributes.
