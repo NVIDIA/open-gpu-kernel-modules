@@ -1026,7 +1026,7 @@ _gvaspaceAddPartialPtRange
 
 /*!
  * Construct unicast GPU state associated with a VAS and reconcile
- * differences between GMMU settings (currently must be homogenous).
+ * differences between GMMU settings (currently must be homogeneous).
  */
 static NV_STATUS
 _gvaspaceGpuStateConstruct
@@ -1117,7 +1117,7 @@ _gvaspaceGpuStateConstruct
     }
     else
     {
-        // Otherwise ensure requested limit does not exeed max HW limit.
+        // Otherwise ensure requested limit does not exceed max HW limit.
         NV_ASSERT_OR_RETURN(vaLimit <= vaLimitMax, NV_ERR_INVALID_ARGUMENT);
 
         vaLimitExt = vaLimit;
@@ -1511,7 +1511,7 @@ gvaspaceAlloc_IMPL
             rangeHi = NV_MIN(rangeHi, pGVAS->vaLimitInternal -
                                       UVM_KERNEL_PRIVILEGED_REGION_LENGTH);
 
-            // Verify range is not in the priviledged region.
+            // Verify range is not in the privileged region.
             NV_ASSERT_OR_RETURN(rangeHi < UVM_KERNEL_PRIVILEGED_REGION_START,
                               NV_ERR_OUT_OF_RANGE);
         }
@@ -2384,7 +2384,7 @@ gvaspaceGetVasInfo_IMPL
 
     NV_ASSERT_OR_RETURN(NULL != pParams, NV_ERR_INVALID_PARAM_STRUCT);
 
-    // Retrive the number of VA bits for this format.
+    // Retrieve the number of VA bits for this format.
     pParams->vaBitCount = pFmt->pRoot->virtAddrBitHi + 1;
 
     // Check if the page sizes are supported
@@ -2624,7 +2624,7 @@ gvaspaceGetPteInfo_IMPL
 
     //
     // We will try all available page sizes for valid allocation a the give VA.
-    // Will flag error if mutiple valid allocations exist.
+    // Will flag error if multiple valid allocations exist.
     //
 
     for (i = 0; i <= (_gvaspacePageSizeToIdx(maxPageSizeSupported)); i++)
@@ -2781,7 +2781,7 @@ gvaspaceSetPteInfo_IMPL
 
             //
             // Ignore the index if a page size of 0 is specified. This is a valid
-            // check as the caller may send down 0 page size for indxes
+            // check as the caller may send down 0 page size for indexes
             // which are not of interest.
             //
             if (0 == pParams->pteBlocks[i].pageSize)
@@ -3842,7 +3842,7 @@ gvaspaceUnregisterAllChanGrps_IMPL
 {
     KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
 
-    // TODO: This function should be made Physcial only
+    // TODO: This function should be made Physical only
     if(IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
     {
         return NV_OK;
