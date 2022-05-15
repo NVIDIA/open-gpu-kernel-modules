@@ -376,7 +376,7 @@ kperfGpuBoostSyncStateUpdate
                                 }
                             }
                         }
-                        // Intentionaly ignoring the status as we want to rollback the algorithm 
+                        // Intentionally ignoring the status as we want to rollback the algorithm 
                         // activation and return previously failing status
 
                         if (pGpuItr == pGpuItr2)
