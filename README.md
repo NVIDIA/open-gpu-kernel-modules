@@ -48,6 +48,13 @@ E.g.,
         OBJCOPY=aarch64-linux-gnu-objcopy
 
 
+## Supported GPU models
+
+- NVIDIA Ampere and Turing architecture GPUs are supported.
+- Datacenter GPUs are supported for production.
+- GeForce and Workstation GPUs support is currently alpha quality.
+
+
 ## Other Build Knobs
 
 NV_VERBOSE - Set this to "1" to print each complete command executed;
