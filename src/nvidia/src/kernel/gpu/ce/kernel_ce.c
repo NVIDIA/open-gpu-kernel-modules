@@ -188,9 +188,9 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
 
     if (IS_MIG_IN_USE(pGpu))
     {
-        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
 
+        pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         NV_CHECK_OK_OR_RETURN(
             LEVEL_ERROR,
             kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
