@@ -50,8 +50,42 @@ E.g.,
 
 ## Supported GPU models
 
-- NVIDIA Ampere and Turing architecture GPUs are supported.
-- Datacenter GPUs are supported for production.
+- <details>
+  <summary>Turing Architecture</summary>
+
+  - RTX 30 Series
+  - RTX 3090 Ti / 3090
+  - RTX 3080 Ti / 3080
+  - RTX 3070 Ti / 3070
+  - RTX 3060 Ti / 3060
+  - RTX 3050
+  - RTX 20 Series
+  - GTX 16 Series
+
+  [Nvidia Turing Website](https://www.nvidia.com/en-in/geforce/turing/)
+
+</details>
+
+- <details>
+  <summary>Ampere Architecture</summary>
+
+  - H100CNX
+  - H100
+  - A100
+  - A2
+  - A10
+  - A16
+  - A30
+  - A40
+  - V100
+  - RTX6000
+  - RTX8000
+  - Test Drive
+
+  [Nvidia Ampere Website](https://www.nvidia.com/en-in/data-center/ampere-architecture/)
+  
+  </details>
+
 - GeForce and Workstation GPUs support is currently alpha quality.
 
 
