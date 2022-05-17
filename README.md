@@ -21,7 +21,7 @@ firmware and user-space NVIDIA GPU driver components from a corresponding
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
-    sh ./NVIDIA-Linux-[...].run --no-kernel-modules
+    sh ./NVIDIA-Linux-[...].run --no-kernel-module
 
 
 ## Supported Target CPU Architectures
