@@ -93,7 +93,7 @@ bindataAcquire
                                      &(pBinInfo->pGzState))) != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "gz state allocation faileded, return code %u\n",
+                      "gz state allocation failed, return code %u\n",
                       status);
             DBG_BREAKPOINT();
             goto FAIL;
