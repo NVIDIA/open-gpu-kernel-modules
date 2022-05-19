@@ -1,6 +1,6 @@
 ## What does this PR do? Explain briefly.
 
-## What category does it fall in?
+## What category does it fall under?
 - [ ] Bug fix
 - [ ] Feature
 - [ ] Enhancement
