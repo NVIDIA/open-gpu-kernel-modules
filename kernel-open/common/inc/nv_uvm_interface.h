@@ -80,7 +80,7 @@ NV_STATUS nvUvmInterfaceRegisterGpu(const NvProcessorUuid *gpuUuid, UvmGpuPlatfo
     nvUvmInterfaceUnregisterGpu
 
     Unregisters the GPU with the provided UUID. This drops the ref count from
-    nvUvmInterfaceRegisterGpu. Once the reference count goes to 0 the device may
+    nvUvmInterfaceRegisterGpu. Once the reference count goes to 0, the device may
     no longer be accessible until the next nvUvmInterfaceRegisterGpu call. No
     automatic resource freeing is performed, so only make the last unregister
     call after destroying all your allocations associated with that UUID (such
@@ -394,8 +394,8 @@ NV_STATUS nvUvmInterfacePmaAllocPages(void *pPma,
     nvUvmInterfacePmaPinPages
 
     This function will pin the physical memory allocated using PMA. The pages
-    passed as input must be unpinned else this function will return an error and
-    rollback any change if any page is not previously marked "unpinned".
+    passed as input must be unpinned, else this function will return an error and
+    rollback any changes if any page was not previously marked as "unpinned".
 
     Arguments:
         pPma[IN]             - Pointer to PMA object.
