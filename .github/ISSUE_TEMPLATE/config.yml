@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a cosmetic issue
+    url: https://github.com/NVIDIA/open-gpu-kernel-modules/discussions/categories/general
+    about: We are not currently accepting cosmetic-only changes such as whitespace, typos, or simple renames. You can still discuss and collect them on the boards.
+  - name: Ask a question
+    url: https://github.com/NVIDIA/open-gpu-kernel-modules/discussions/categories/q-a
+    about: Unsure of what to click, where to go, what the process for your thing is? We're happy to help. Click to visit the discussion board and say hello!
+  - name: Report a bug with the proprietary driver
+    url: https://forums.developer.nvidia.com/c/gpu-graphics/linux/148
+    about: Bugs that aren't specific to the open source driver in this repository should be reported with the linked forums instead. If you are unsure on what kind of bug you have, feel free to open a thread in Discussions. We're here to help!
+  - name: Suggest a feature
+    url: https://github.com/NVIDIA/open-gpu-kernel-modules/discussions/categories/ideas
+    about: Please do not open Issues for feature requests; instead, suggest and discuss new features on the Github discussion board. If you have a feature you worked on and want to PR it, please also open a discussion before doing so.
