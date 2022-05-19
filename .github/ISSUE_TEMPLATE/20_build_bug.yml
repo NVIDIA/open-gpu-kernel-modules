@@ -1,5 +1,7 @@
 name: Report a build bug 🛠
 description: Bugs related to the build system, compiler or OS support.
+labels:
+- "build-problem"
 body:
 - type: markdown
   attributes:

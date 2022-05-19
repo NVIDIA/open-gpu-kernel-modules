@@ -1,5 +1,7 @@
 name: Report a functional bug 🐛
 description: Functional bugs affect operation or stability of the driver and/or hardware.
+labels:
+  - "bug"
 body:
 - type: markdown
   attributes:
