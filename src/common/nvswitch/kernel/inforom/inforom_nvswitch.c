@@ -623,11 +623,6 @@ ifr_dma_unmap_and_exit:
 ifr_dma_free_and_exit:
     nvswitch_os_free_contig_memory(device->os_handle, pDmaBuf, transferSize);
 
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
     return status;
 }
 
@@ -691,7 +686,6 @@ nvswitch_inforom_write_object
 
     if (packedObjectSize > INFOROM_MAX_PACKED_SIZE)
     {
-        NVSWITCH_ASSERT(packedObjectSize > INFOROM_MAX_PACKED_SIZE);
         return -NVL_ERR_INVALID_STATE;
     }
 
