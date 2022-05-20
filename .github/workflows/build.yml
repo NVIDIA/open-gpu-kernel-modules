@@ -21,6 +21,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      # NOTE: GitHub hosted runners does not support aarch. See https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#cloud-hosts-for-github-hosted-runners for more info.
       - uses: uraimo/run-on-arch-action@v2
         name: Build on aarch64
         with:
