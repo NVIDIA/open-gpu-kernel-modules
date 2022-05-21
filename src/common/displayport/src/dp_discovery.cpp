@@ -45,7 +45,7 @@ void DiscoveryManager::notifyLongPulse(bool status)
 
         detectBranch(device);
     }
-    else if (!status)
+    else
     {
         removeDeviceTree(Address());
     }
