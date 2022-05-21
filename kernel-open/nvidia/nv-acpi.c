@@ -717,6 +717,7 @@ acpi_status nv_acpi_find_methods(
 
 void NV_API_CALL nv_acpi_methods_uninit(void)
 {
+    acpi_status status;
     struct acpi_device *device = NULL;
 
     nvif_handle = NULL;
@@ -735,12 +736,17 @@ void NV_API_CALL nv_acpi_methods_uninit(void)
         return;
 
 #if defined(NV_ACPI_BUS_GET_DEVICE_PRESENT)
-    acpi_bus_get_device(nvif_parent_gpu_handle, &device);
+    status = acpi_bus_get_device(nvif_parent_gpu_handle, &device);
 
-    nv_uninstall_notifier(device->driver_data, nv_acpi_event);
+    if (!(ACPI_FAILURE(status) || !device)) {
+        nv_uninstall_notifier(device->driver_data, nv_acpi_event);
+    }
 #endif
 
-    device->driver_data = NULL;
+    if (device != NULL) {
+        device->driver_data = NULL;
+    }
+
     nvif_parent_gpu_handle = NULL;
 
     return;
