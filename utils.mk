@@ -37,7 +37,7 @@ CXX                   ?= g++
 LD                    ?= ld
 AR                    ?= ar
 # only set these warnings if CFLAGS is unset
-CFLAGS                ?= -Wall
+CFLAGS                ?= -Wall -Werror
 # always set these -f CFLAGS
 CFLAGS                += -fno-strict-aliasing -fno-omit-frame-pointer -Wformat=2
 CC_ONLY_CFLAGS        ?=
