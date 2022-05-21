@@ -1633,14 +1633,17 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
     NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus;
     NvU32 nvlinkVersion;
     NvU32 sysmemLink;
-    NvU32 linkBandwidthMBps;
+    NvU32 linkBandwidthMBps = 0;
     NvU32 sysmemConnType;
     NvBool atomicSupported;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
 
     device = portMemAllocNonPaged(sizeof(*device));
-    if (device == NULL)
+
+    if (device == NULL) {
         return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+
     portMemSet(device, 0, sizeof(*device));
     device->session = session;
 
@@ -1652,45 +1655,57 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
                              NV0000_CTRL_CMD_GPU_GET_UUID_INFO,
                              &gpuIdInfoParams,
                              sizeof(gpuIdInfoParams));
-    if (status != NV_OK)
+
+    if (status != NV_OK) {
         goto cleanup_device_obj;
+    }
 
     device->deviceInstance = gpuIdInfoParams.deviceInstance;
     device->subdeviceInstance = gpuIdInfoParams.subdeviceInstance;
     device->gpuId = gpuIdInfoParams.gpuId;
 
     status = nvGpuOpsRmDeviceCreate(device);
-    if (status != NV_OK)
+
+    if (status != NV_OK) {
         goto cleanup_device_obj;
+    }
 
     status = nvGpuOpsRmSubDeviceCreate(device);
-    if (status != NV_OK)
-        goto cleanup_rm_device;
 
-    if (bCreateSmcPartition)
-    {
+    if (status != NV_OK) {
+        goto cleanup_rm_device;
+    }
+
+    if (bCreateSmcPartition){
         status = nvGpuOpsRmSmcPartitionCreate(device, pGpuInfo);
-        if (status != NV_OK)
+
+        if (status != NV_OK) {
             goto cleanup_rm_subdevice;
+        }
     }
 
     // Create the work submission info mapping:
     //  * SMC is disabled, we create for the device.
     //  * SMC is enabled, we create only for SMC partitions.
-    if (isDeviceVoltaPlus(device) && (!pGpuInfo->smcEnabled || bCreateSmcPartition))
-    {
+    if (isDeviceVoltaPlus(device) && (!pGpuInfo->smcEnabled || bCreateSmcPartition)) {
         status = gpuDeviceMapUsermodeRegion(device);
-        if (status != NV_OK)
+
+        if (status != NV_OK) {
             goto cleanup_smc_partition;
+        }
     }
 
     status = gpuDeviceRmSubDeviceInitEcc(device);
-    if (status != NV_OK)
+
+    if (status != NV_OK) {
         goto cleanup_subdevice_usermode;
+    }
 
     status = queryFbInfo(device);
-    if (status != NV_OK)
+
+    if (status != NV_OK) {
         goto cleanup_ecc;
+    }
 
     device->isTccMode = NV_FALSE;
 
@@ -1706,15 +1721,19 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
                                &device->faultBufferClass,
                                &device->accessCounterBufferClass,
                                &device->sec2Class);
-    if (status != NV_OK)
-        goto cleanup_ecc;
 
-    busInfoParams = portMemAllocNonPaged(sizeof(*busInfoParams));
-    if (busInfoParams == NULL)
-    {
-        status = NV_ERR_INSUFFICIENT_RESOURCES;
+    if (status != NV_OK) {
         goto cleanup_ecc;
     }
+
+    busInfoParams = portMemAllocNonPaged(sizeof(*busInfoParams));
+
+    if (busInfoParams == NULL) {
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
+
+        goto cleanup_ecc;
+    }
+
     portMemSet(busInfoParams, 0, sizeof(*busInfoParams));
     busInfoParams->busInfoListSize = 1;
     busInfoParams->busInfoList[0].index = NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE;
@@ -1724,9 +1743,10 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
                              NV2080_CTRL_CMD_BUS_GET_INFO_V2,
                              busInfoParams,
                              sizeof(*busInfoParams));
-    if (status != NV_OK)
-    {
+
+    if (status != NV_OK) {
         portMemFree(busInfoParams);
+
         goto cleanup_ecc;
     }
 
@@ -1734,13 +1754,15 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
     portMemFree(busInfoParams);
 
     sysmemLink = UVM_LINK_TYPE_NONE;
-    switch (sysmemConnType)
-    {
+
+    switch (sysmemConnType) {
         case NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE_NVLINK:
         {
             status = allocNvlinkStatusForSubdevice(device, &nvlinkStatus);
-            if (status != NV_OK)
+
+            if (status != NV_OK) {
                 goto cleanup_ecc;
+            }
 
             nvlinkVersion = getNvlinkConnectionToNpu(nvlinkStatus,
                                                      &atomicSupported,
@@ -1750,21 +1772,25 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
 
             portMemFree(nvlinkStatus);
             nvlinkStatus = NULL;
+
             break;
         }
         case NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE_PCIE:
         {
             sysmemLink = UVM_LINK_TYPE_PCIE;
             status = getPCIELinkRateMBps(device, &linkBandwidthMBps);
-            if (status != NV_OK)
+
+            if (status != NV_OK) {
                 goto cleanup_ecc;
+            }
+
             break;
         }
         default:
         {
-            NV_PRINTF(LEVEL_ERROR, "Unsupported sysmem connection type: %d\n",
-                     sysmemConnType);
+            NV_PRINTF(LEVEL_ERROR, "Unsupported sysmem connection type: %d\n", sysmemConnType);
             NV_ASSERT(0);
+
             break;
         }
     }
@@ -1776,13 +1802,15 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
     device->sysmemLinkRateMBps = linkBandwidthMBps;
 
     status = allocNvlinkStatusForSubdevice(device, &nvlinkStatus);
-    if (status != NV_OK)
+
+    if (status != NV_OK) {
         goto cleanup_ecc;
+    }
+
     nvlinkVersion = getNvlinkConnectionToSwitch(nvlinkStatus,
                                                 &linkBandwidthMBps);
 
-    if (rmControlToUvmNvlinkVersion(nvlinkVersion) != UVM_LINK_TYPE_NONE)
-    {
+    if (rmControlToUvmNvlinkVersion(nvlinkVersion) != UVM_LINK_TYPE_NONE) {
         NV_ASSERT(rmControlToUvmNvlinkVersion(nvlinkVersion) != UVM_LINK_TYPE_NVLINK_1);
 
         // If the GPU is ever connected to the CPU via a switch, sysmemLink
@@ -1801,31 +1829,36 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
 
 cleanup_ecc:
     gpuDeviceRmSubDeviceDeinitEcc(device);
+
 cleanup_subdevice_usermode:
     gpuDeviceDestroyUsermodeRegion(device);
+
 cleanup_smc_partition:
     nvGpuOpsRmSmcPartitionDestroy(device);
+
 cleanup_rm_subdevice:
     nvGpuOpsDeviceDestroy(device);
     device = NULL;
+
 cleanup_rm_device:
-    if (device)
+    if (device) {
         nvGpuOpsRmDeviceDestroy(device);
+    }
+
 cleanup_device_obj:
     portMemFree(device);
+
     return status;
 }
 
-NV_STATUS nvGpuOpsDeviceDestroy(struct gpuDevice *device)
-{
+NV_STATUS nvGpuOpsDeviceDestroy(struct gpuDevice *device) {
     deviceDesc *rmDevice = device->rmDevice;
     subDeviceDesc *rmSubDevice = device->rmSubDevice;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
 
     rmSubDevice->refCount--;
 
-    if (rmSubDevice->refCount == 0)
-    {
+    if (rmSubDevice->refCount == 0) {
         gpuDeviceDestroyUsermodeRegion(device);
 
         gpuDeviceRmSubDeviceDeinitEcc(device);
@@ -2229,20 +2262,21 @@ static NvU32 getNvlinkConnectionToGpu(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK_ST
     NvU16 device   = gpuGetDevice(pGpu);
     NvU32 bwMBps   = 0;
 
-    for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i)
-    {
-        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0)
+    for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i) {
+        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0) {
             continue;
+        }
 
-        if (!nvlinkStatus->linkInfo[i].connected)
+        if (!nvlinkStatus->linkInfo[i].connected) {
             continue;
+        }
 
         // Skip loopback/loopout connections
-        if (nvlinkStatus->linkInfo[i].loopProperty != NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_NONE)
+        if (nvlinkStatus->linkInfo[i].loopProperty != NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_NONE) {
             continue;
+        }
 
-        if (nvlinkStatus->linkInfo[i].remoteDeviceInfo.deviceType == NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_GPU)
-        {
+        if (nvlinkStatus->linkInfo[i].remoteDeviceInfo.deviceType == NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_GPU) {
             if ((nvlinkStatus->linkInfo[i].remoteDeviceInfo.deviceIdFlags &
                  NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_ID_FLAGS_PCI) == 0)
             {
@@ -2269,8 +2303,10 @@ static NvU32 getNvlinkConnectionToGpu(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK_ST
     }
 
     *linkBandwidthMBps = bwMBps;
-    if (version == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID)
+
+    if (version == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID) {
         NV_ASSERT(*linkBandwidthMBps == 0);
+    }
 
     return version;
 }
@@ -2289,28 +2325,29 @@ static NvU32 getNvlinkConnectionToNpu(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK_ST
 
     *atomicSupported = NV_FALSE;
 
-    for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i)
-    {
-        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0)
+    for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i) {
+        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0) {
             continue;
+        }
 
-        if (!nvlinkStatus->linkInfo[i].connected)
+        if (!nvlinkStatus->linkInfo[i].connected) {
             continue;
+        }
 
         // Skip loopback/loopout connections
-        if (nvlinkStatus->linkInfo[i].loopProperty != NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_NONE)
+        if (nvlinkStatus->linkInfo[i].loopProperty != NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_NONE) {
             continue;
+        }
 
-        if (nvlinkStatus->linkInfo[i].remoteDeviceInfo.deviceType == NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_NPU)
-        {
+        if (nvlinkStatus->linkInfo[i].remoteDeviceInfo.deviceType == NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_NPU) {
             NvU32 capsTbl = nvlinkStatus->linkInfo[i].capsTbl;
             NvBool atomicCap = !!NV2080_CTRL_NVLINK_GET_CAP(((NvU8 *)&capsTbl), NV2080_CTRL_NVLINK_CAPS_SYSMEM_ATOMICS);
 
-            if (bwMBps == 0)
-            {
+            if (bwMBps == 0) {
                 *atomicSupported = atomicCap;
                 version = nvlinkStatus->linkInfo[i].nvlinkVersion;
             }
+
             bwMBps += nvlinkStatus->linkInfo[i].nvlinkLineRateMbps;
             NV_ASSERT(version == nvlinkStatus->linkInfo[i].nvlinkVersion);
             NV_ASSERT(*atomicSupported == atomicCap);
@@ -2318,6 +2355,7 @@ static NvU32 getNvlinkConnectionToNpu(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK_ST
     }
 
     *linkBandwidthMBps = bwMBps;
+
     if (version == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID)
         NV_ASSERT(*linkBandwidthMBps == 0);
 
@@ -2335,22 +2373,24 @@ static NvU32 getNvlinkConnectionToSwitch(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK
     NvU32 bwMBps   = 0;
     NvU32 version  = NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID;
 
-    for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i)
-    {
-        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0)
+    for (i = 0; i < NV2080_CTRL_NVLINK_MAX_LINKS; ++i) {
+        if (((1 << i) & nvlinkStatus->enabledLinkMask) == 0) {
             continue;
+        }
 
-        if (!nvlinkStatus->linkInfo[i].connected)
+        if (!nvlinkStatus->linkInfo[i].connected) {
             continue;
+        }
 
         // Skip loopback/loopout connections
-        if (nvlinkStatus->linkInfo[i].loopProperty != NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_NONE)
+        if (nvlinkStatus->linkInfo[i].loopProperty != NV2080_CTRL_NVLINK_STATUS_LOOP_PROPERTY_NONE) {
             continue;
+        }
 
-        if (nvlinkStatus->linkInfo[i].remoteDeviceInfo.deviceType == NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_SWITCH)
-        {
-            if (bwMBps == 0)
+        if (nvlinkStatus->linkInfo[i].remoteDeviceInfo.deviceType == NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_SWITCH) {
+            if (bwMBps == 0) {
                 version = nvlinkStatus->linkInfo[i].nvlinkVersion;
+            }
 
             bwMBps += nvlinkStatus->linkInfo[i].nvlinkLineRateMbps;
             NV_ASSERT(version == nvlinkStatus->linkInfo[i].nvlinkVersion);
@@ -2358,8 +2398,10 @@ static NvU32 getNvlinkConnectionToSwitch(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK
     }
 
     *linkBandwidthMBps = bwMBps;
-    if (version == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID)
+
+    if (version == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID) {
         NV_ASSERT(*linkBandwidthMBps == 0);
+    }
 
     return version;
 }
@@ -2385,8 +2427,9 @@ static NV_STATUS gpusHaveNpuNvlink(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARA
                                               &tmpLinkBandwidthMBps);
 
     if (nvlinkVersion1 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID ||
-        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID)
+        nvlinkVersion2 == NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID) {
         return NV_OK;
+    }
 
     // Non-peer GPU communication over NPU is only supported on NVLink 2.0 or
     // greater
