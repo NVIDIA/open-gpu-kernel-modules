@@ -31,22 +31,14 @@
 #include "compute/mps_api.h"
 #include "class/cl900e.h"
 
-NV_STATUS
-mpsApiConstruct_IMPL
-(
+NV_STATUS mpsApiConstruct_IMPL(
     MpsApi *pMpsApi,
     CALL_CONTEXT *pCallContext,
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
-)
-{
+) {
     return NV_OK;
 }
 
-void
-mpsApiDestruct_IMPL
-(
-    MpsApi *pMpsApi
-)
-{
+void mpsApiDestruct_IMPL(MpsApi *pMpsApi) {
     return;
 }

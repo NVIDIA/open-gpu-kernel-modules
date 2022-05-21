@@ -41,9 +41,7 @@
 #include "ctrl/ctrl2080/ctrl2080internal.h"
 #include "rmapi/client.h"
 
-static void
-_clearOutstandingComputeChannels(void)
-{
+static void _clearOutstandingComputeChannels(void) {
     OBJGPU *pGpu = NULL;
     NvU32 gpuMask = 0;
     NvU32 gpuCount = 0;
@@ -54,56 +52,47 @@ _clearOutstandingComputeChannels(void)
 
     gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
 
-    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
-    {
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL) {
         pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        if (pRmApi->Control(pRmApi,
-                            pGpu->hInternalClient,
-                            pGpu->hInternalSubdevice,
-                            NV2080_CTRL_CMD_INTERNAL_RECOVER_ALL_COMPUTE_CONTEXTS,
-                            NULL,
-                            0) != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Failed to recover all compute channels for GPU %d\n",
-                      pGpu->gpuInstance);
+        if (pRmApi->Control(
+            pRmApi,
+            pGpu->hInternalClient,
+            pGpu->hInternalSubdevice,
+            NV2080_CTRL_CMD_INTERNAL_RECOVER_ALL_COMPUTE_CONTEXTS,
+            NULL,
+            0
+        ) != NV_OK) {
+            NV_PRINTF(LEVEL_ERROR, "failed to recover all compute channels for gpu %d\n", pGpu->gpuInstance);
         }
     }
 }
 
-static void
-_clearFmState(void)
-{
+static void _clearFmState(void) {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     Fabric *pFabric = SYS_GET_FABRIC(pSys);
     NvU32 flags = fabricGetFmSessionFlags(pFabric);
 
-    if (!pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_INITIALIZED))
-    {
-        NV_PRINTF(LEVEL_INFO,
-                  "Fabric manager state is already cleared.\n");
+    if (!pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_INITIALIZED)) {
+        NV_PRINTF(LEVEL_INFO, "fabric manager state is already cleared\n");
+
         return;
     }
 
     pSys->setProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_INITIALIZED, NV_FALSE);
 
-    NV_PRINTF(LEVEL_INFO, "Fabric manager state is cleared.\n");
+    NV_PRINTF(LEVEL_INFO, "fabric manager state is cleared\n");
 
-    if (FLD_TEST_REF(NV000F_FLAGS_CHANNEL_RECOVERY, _ENABLED, flags))
-    {
+    if (FLD_TEST_REF(NV000F_FLAGS_CHANNEL_RECOVERY, _ENABLED, flags)) {
         _clearOutstandingComputeChannels();
     }
 }
 
-NV_STATUS
-fmsessionapiConstruct_IMPL
-(
-    FmSessionApi                 *pFmSessionApi,
-    CALL_CONTEXT                 *pCallContext,
+NV_STATUS fmsessionapiConstruct_IMPL(
+    FmSessionApi *pFmSessionApi,
+    CALL_CONTEXT *pCallContext,
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
-)
-{
+) {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     Fabric *pFabric = SYS_GET_FABRIC(pSys);
     NvHandle hClient = pCallContext->pClient->hClient;
@@ -114,48 +103,44 @@ fmsessionapiConstruct_IMPL
 
     osRmCapInitDescriptor(&pFmSessionApi->dupedCapDescriptor);
 
-    if ((pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL) && !RMCFG_FEATURE_PLATFORM_MODS)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "only supported for usermode clients\n");
+    if ((pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL) && !RMCFG_FEATURE_PLATFORM_MODS) {
+        NV_PRINTF(LEVEL_ERROR, "only supported for usermode clients\n");
+
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if (pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_REGISTERED))
-    {
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_REGISTERED)) {
         NV_PRINTF(LEVEL_ERROR, "duplicate object creation\n");
+
         return NV_ERR_STATE_IN_USE;
     }
 
-    status = osRmCapAcquire(NULL, NV_RM_CAP_EXT_FABRIC_MGMT,
-                            pAllocParams->capDescriptor,
-                            &pFmSessionApi->dupedCapDescriptor);
+    status = osRmCapAcquire(
+        NULL,
+        NV_RM_CAP_EXT_FABRIC_MGMT,
+        pAllocParams->capDescriptor,
+        &pFmSessionApi->dupedCapDescriptor
+    );
 
     //
     // On platforms where capability isn't implemented,
     // enforce the admin-only check.
     //
-    if (status == NV_ERR_NOT_SUPPORTED)
-    {
-        if (rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
-        {
+    if (status == NV_ERR_NOT_SUPPORTED) {
+        if (rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel)) {
             status = NV_OK;
-        }
-        else
-        {
+        } else {
             NV_PRINTF(LEVEL_ERROR, "insufficient permissions\n");
+
             return NV_ERR_INSUFFICIENT_PERMISSIONS;
         }
-    }
-    else if (status != NV_OK)
-    {
-         NV_PRINTF(LEVEL_ERROR, "Capability validation failed\n");
+    } else if (status != NV_OK) {
+         NV_PRINTF(LEVEL_ERROR, "capability validation failed\n");
+
          return status;
     }
 
-    if (pFabric != NULL)
-    {
-
+    if (pFabric != NULL) {
         fabricSetFmSessionFlags(pFabric, pAllocParams->flags);
     }
 
@@ -164,15 +149,10 @@ fmsessionapiConstruct_IMPL
     return NV_OK;
 }
 
-void
-fmsessionapiDestruct_IMPL
-(
-    FmSessionApi *pFmSessionApi
-)
-{
+void fmsessionapiDestruct_IMPL(FmSessionApi *pFmSessionApi) {
     OBJSYS *pSys = SYS_GET_INSTANCE();
 
-    NV_PRINTF(LEVEL_INFO, "Fabric manager is shutting down.\n");
+    NV_PRINTF(LEVEL_INFO, "fabric manager is shutting down\n");
 
     _clearFmState();
 
@@ -180,36 +160,24 @@ fmsessionapiDestruct_IMPL
     pSys->setProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_REGISTERED, NV_FALSE);
 }
 
-NV_STATUS
-fmsessionapiCtrlCmdSetFmState_IMPL
-(
-    FmSessionApi *pFmSessionApi
-)
-{
+NV_STATUS fmsessionapiCtrlCmdSetFmState_IMPL(FmSessionApi *pFmSessionApi) {
     OBJSYS *pSys = SYS_GET_INSTANCE();
 
-    if (pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_INITIALIZED))
-    {
-        NV_PRINTF(LEVEL_INFO,
-                  "Fabric manager state is already set.\n");
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_INITIALIZED)) {
+        NV_PRINTF(LEVEL_INFO, "fabric manager state is already set\n");
+
         return NV_OK;
     }
 
     pSys->setProperty(pSys, PDB_PROP_SYS_FABRIC_MANAGER_IS_INITIALIZED, NV_TRUE);
 
-    NV_PRINTF(LEVEL_INFO, "Fabric manager state is set.\n");
+    NV_PRINTF(LEVEL_INFO, "fabric manager state is set\n");
 
     return NV_OK;
 }
 
-NV_STATUS
-fmsessionapiCtrlCmdClearFmState_IMPL
-(
-    FmSessionApi *pFmSessionApi
-)
-{
+NV_STATUS fmsessionapiCtrlCmdClearFmState_IMPL(FmSessionApi *pFmSessionApi) {
     _clearFmState();
 
     return NV_OK;
 }
-
