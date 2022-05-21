@@ -70,7 +70,7 @@ $(foreach _module, $(NV_KERNEL_MODULES), \
 
 EXTRA_CFLAGS += -I$(src)/common/inc
 EXTRA_CFLAGS += -I$(src)
-EXTRA_CFLAGS += -Wall -MD $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
+EXTRA_CFLAGS += -Wall -Werror -MD $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
 EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
 EXTRA_CFLAGS += -DNV_VERSION_STRING=\"515.43.04\"
 
