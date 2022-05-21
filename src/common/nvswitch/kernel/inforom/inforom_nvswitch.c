@@ -373,7 +373,7 @@ NvlStatus
 nvswitch_inforom_read_object
 (
     nvswitch_device *device,
-    const char   objectName[3],
+    const char   *objectName,
     const char  *pObjectFormat,
     NvU8        *pPackedObject,
     void        *pObject
@@ -661,7 +661,7 @@ NvlStatus
 nvswitch_inforom_write_object
 (
     nvswitch_device *device,
-    const char   objectName[3],
+    const char   *objectName,
     const char  *pObjectFormat,
     void        *pObject,
     NvU8        *pOldPackedObject
@@ -808,7 +808,7 @@ NvlStatus
 nvswitch_inforom_get_object_version_info
 (
     nvswitch_device *device,
-    const char  objectName[3],
+    const char  *objectName,
     NvU8       *pVersion,
     NvU8       *pSubVersion
 )
@@ -976,7 +976,7 @@ nvswitch_inforom_load_object
 (
     nvswitch_device *device,
     struct inforom  *pInforom,
-    const char   objectName[3],
+    const char   *objectName,
     const char  *pObjectFormat,
     NvU8        *pPackedObject,
     void        *pObject
