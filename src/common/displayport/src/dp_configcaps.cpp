@@ -402,7 +402,7 @@ struct DPCDHALImpl : DPCDHAL
                 if (caps.linkRateTable[0] != 0)
                 {
                     bIndexedLinkrateCapable = true;
-                    for (int i = 0; caps.linkRateTable[i] && (i < NV_DPCD_SUPPORTED_LINK_RATES__SIZE); i++)
+                    for (int i = 0; (i < NV_DPCD_SUPPORTED_LINK_RATES__SIZE) && caps.linkRateTable[i]; i++)
                     {
                         if (linkRate < caps.linkRateTable[i])
                             linkRate = caps.linkRateTable[i];

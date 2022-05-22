@@ -64,7 +64,7 @@ These variables can be set on the make command line.  E.g.,
 
 ## Supported Toolchains
 
-Any reasonably modern version of gcc or clang can be used to build the
+Any reasonably modern version of GCC or Clang can be used to build the
 kernel modules.  Note that the kernel interface layers of the kernel
 modules must be built with the toolchain that was used to build the
 kernel.
@@ -81,7 +81,7 @@ This is currently Linux kernel 3.10 or newer.
 
 Contributions can be made by creating a pull request on
 https://github.com/NVIDIA/open-gpu-kernel-modules
-We'll respond via github.
+We'll respond via GitHub.
 
 Note that when submitting a pull request, you will be prompted to accept
 a Contributor License Agreement.
@@ -90,7 +90,7 @@ This code base is shared with NVIDIA's proprietary drivers, and various
 processing is performed on the shared code to produce the source code that is
 published here.  This has several implications for the foreseeable future:
 
-* The github repository will function mostly as a snapshot of each driver
+* The GitHub repository will function mostly as a snapshot of each driver
   release.
 
 * We do not expect to be able to provide revision history for individual
@@ -98,7 +98,7 @@ published here.  This has several implications for the foreseeable future:
   only be one git commit per driver release.
 
 * We may not be able to reflect individual contributions as separate
-  git commits in the github repository.
+  git commits in the GitHub repository.
 
 * Because the code undergoes various processing prior to publishing here,
   contributions made here require manual merging to be applied to the shared
