@@ -8,7 +8,7 @@ version 515.43.04.
 
 To build:
 
-    make modules -j`nproc`
+    make modules -j$(nproc)
 
 To install, first uninstall any existing NVIDIA kernel modules.  Then,
 as root:
