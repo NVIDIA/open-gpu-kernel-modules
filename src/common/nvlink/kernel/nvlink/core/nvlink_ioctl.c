@@ -248,7 +248,10 @@ _nvlink_core_get_enabled_link_mask
 
     nvListForEachEntry(link, &dev->link_list, node)
     {
-        linkMask |= NVBIT64(link->linkNumber);
+        if(link != NULL)
+        {
+            linkMask |= NVBIT64(link->linkNumber);
+        }
     }
 
     return linkMask;
@@ -346,6 +349,11 @@ nvlink_core_get_device_by_devinfo
 
     FOR_EACH_DEVICE_REGISTERED(tmpDev, nvlinkLibCtx.nv_devicelist_head, node)
     {
+        if(!tmpDev)
+        {
+            continue;
+        }
+
         if ( (tmpDev->nodeId           == devInfo->nodeId)         &&
              (tmpDev->pciInfo.domain   == devInfo->pciInfo.domain) &&
              (tmpDev->pciInfo.bus      == devInfo->pciInfo.bus)    &&
@@ -379,6 +387,11 @@ nvlink_core_get_link_by_endpoint
 
     FOR_EACH_DEVICE_REGISTERED(tmpDev, nvlinkLibCtx.nv_devicelist_head, node)
     {
+        if(!tmpDev)
+        {
+            continue;
+        }
+
         if ((tmpDev->nodeId           == endPoint->nodeId)         &&
             (tmpDev->pciInfo.domain   == endPoint->pciInfo.domain) &&
             (tmpDev->pciInfo.bus      == endPoint->pciInfo.bus)    &&
@@ -387,6 +400,11 @@ nvlink_core_get_link_by_endpoint
         {
             FOR_EACH_LINK_REGISTERED(tmpLink, tmpDev, node)
             {
+                if(!tmpLink)
+                {
+                    continue;
+                }
+                
                 if (tmpLink->linkNumber == endPoint->linkIndex)
                 {
                     *link = tmpLink;

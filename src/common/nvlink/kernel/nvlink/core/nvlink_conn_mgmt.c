@@ -44,7 +44,7 @@ nvlink_core_get_intranode_conn
 
     FOR_EACH_CONNECTION(tmpConn, nvlinkLibCtx.nv_intraconn_head, node)
     {
-        if (tmpConn->end0 == endpoint || tmpConn->end1 == endpoint)
+        if (tmpConn != NULL && (tmpConn->end0 == endpoint || tmpConn->end1 == endpoint))
         {
             *conn = tmpConn;
             break;
@@ -69,7 +69,7 @@ nvlink_core_get_internode_conn
 
     FOR_EACH_CONNECTION(tmpConn, nvlinkLibCtx.nv_interconn_head, node)
     {
-        if (tmpConn->local_end == localLink)
+        if (tmpConn != NULL && tmpConn->local_end == localLink)
         {
             *conn = tmpConn;
             break;

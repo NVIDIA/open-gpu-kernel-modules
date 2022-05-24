@@ -131,6 +131,10 @@ _nvlink_core_discover_topology(void)
     {
         FOR_EACH_LINK_REGISTERED(end0, dev0, node)
         {
+            if(!end0)
+            {
+                continue;
+            }
             //
             // If receiver detect failed for the link or if clocks could not be set
             // up for the link, then move to next link

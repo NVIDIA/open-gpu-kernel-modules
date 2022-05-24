@@ -470,6 +470,11 @@ _nvlink_lib_is_device_registered
 
     FOR_EACH_DEVICE_REGISTERED(tmpDev, nvlinkLibCtx.nv_devicelist_head, node)
     {
+        if(!dev)
+        {
+            continue;
+        }
+
         if (dev->deviceId == tmpDev->deviceId)
         {
             return NV_TRUE;
@@ -498,6 +503,11 @@ _nvlink_lib_is_link_registered
 
     FOR_EACH_LINK_REGISTERED(tmpLink, dev, node)
     {
+        if(!link)
+        {
+            continue;
+        }
+
         if (link->linkId == tmpLink->linkId)
         {
             return NV_TRUE;

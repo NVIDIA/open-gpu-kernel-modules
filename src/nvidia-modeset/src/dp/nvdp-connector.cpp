@@ -573,6 +573,10 @@ void NotifyAttachBegin(NVDPLibConnectorPtr pDpLibConnector,
     /* Insert active dpys into group */
     pDpLibConnector->dpyIdList[head] = pDpLibModesetState->dpyIdList;
     FOR_ALL_EVO_DPYS(pDpyEvo, pDpLibConnector->dpyIdList[head], pDispEvo) {
+        if(!pDpyEvo)
+        {
+            continue;
+        }
         if (pDpyEvo->dp.pDpLibDevice) {
             pDpLibConnector->pGroup[head]->insert(
                     pDpyEvo->dp.pDpLibDevice->device);
