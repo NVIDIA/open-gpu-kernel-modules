@@ -247,6 +247,11 @@ kperfDoSyncGpuBoostLimits_IMPL
         {
             RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
+            if(!pGpuItr)
+            {
+                continue;
+            }
+            
             status = pRmApi->Control(pRmApi,
                                      pGpuItr->hInternalClient,
                                      pGpuItr->hInternalSubdevice,
