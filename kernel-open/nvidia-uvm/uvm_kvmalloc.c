@@ -85,8 +85,8 @@ static int uvm_leak_checker = (UVM_IS_DEBUG() || UVM_IS_DEVELOP()) ?
                                 UVM_KVMALLOC_LEAK_CHECK_BYTES :
                                 UVM_KVMALLOC_LEAK_CHECK_NONE;
 
-module_param(uvm_leak_checker, int, S_IRUGO);
-MODULE_PARM_DESC(uvm_leak_checker,
+int module_param(uvm_leak_checker, int, S_IRUGO);
+int MODULE_PARM_DESC(uvm_leak_checker,
                  "Enable uvm memory leak checking. "
                  "0 = disabled, 1 = count total bytes allocated and freed, 2 = per-allocation origin tracking.");
 
