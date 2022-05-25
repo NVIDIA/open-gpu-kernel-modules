@@ -1304,7 +1304,7 @@ knvlinkCopyNvlinkDeviceInfo_IMPL
         pKernelNvlink->nvlinkLinks[i].linkId   = nvlinkInfoParams.linkInfo[i].linkId;
         pKernelNvlink->nvlinkLinks[i].ioctrlId = nvlinkInfoParams.linkInfo[i].ioctrlId;
 
-        // Copy over the link PLL master and slave relationship for each link
+        // Copy over the link PLL main and client relationship for each link
         pKernelNvlink->nvlinkLinks[i].pllMasterLinkId = nvlinkInfoParams.linkInfo[i].pllMasterLinkId;
         pKernelNvlink->nvlinkLinks[i].pllSlaveLinkId  = nvlinkInfoParams.linkInfo[i].pllSlaveLinkId;
 

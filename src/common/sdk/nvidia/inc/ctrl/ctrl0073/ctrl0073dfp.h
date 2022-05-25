@@ -536,9 +536,9 @@ typedef struct NV0073_CTRL_DFP_ASSIGN_SOR_INFO {
  *   sorExcludeMask
  *     sorMask of the SORs which should not be used for assignment. If this is 0,
  *     then SW is free to allocate any available SOR.
- *   slaveDisplayId
- *      displayId of the slave device in case of dualSST mode. This ctrl call will
- *      allocate SORs to both slave and the master if slaveDisplayId is set.
+ *   clientDisplayId
+ *      displayId of the client device in case of dualSST mode. This ctrl call will
+ *      allocate SORs to both client and the main if clientDisplayId is set.
  *   forceSublinkConfig
  *      forces RM to configure primary or secondary sor sublink on the given diaplayId.
  *      If not set, then RM will do the default configurations.
@@ -589,7 +589,7 @@ typedef struct NV0073_CTRL_DFP_ASSIGN_SOR_PARAMS {
     NvU32                                 subDeviceInstance;
     NvU32                                 displayId;
     NvU8                                  sorExcludeMask;
-    NvU32                                 slaveDisplayId;
+    NvU32                                 clientDisplayId;
     NV0073_CTRL_DFP_ASSIGN_SOR_LINKCONFIG forceSublinkConfig;
     NvBool                                bIs2Head1Or;
     NvU32                                 sorAssignList[NV0073_CTRL_CMD_DFP_ASSIGN_SOR_MAX_SORS];
@@ -707,9 +707,9 @@ typedef struct NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS {
  *      Display Id of the panel for which Two Head One OR is going to be used
  *   bEnable
  *      Enable/Disable 2 Head 1 OR
- *   masterSorIdx
+ *   mainSorIdx
  *      Master SOR Index which will send pixels to panel
- *   slaveSorIdx
+ *   clientSorIdx
  *      Slave SOR Index which will take feedback clock from Master SOR's
  *      padlink
  *  Possible status values returned are:
@@ -727,8 +727,8 @@ typedef struct NV0073_CTRL_DFP_CONFIG_TWO_HEAD_ONE_OR_PARAMS {
     NvU32  subDeviceInstance;
     NvU32  displayId;
     NvBool bEnable;
-    NvU32  masterSorIdx;
-    NvU32  slaveSorIdx;
+    NvU32  mainSorIdx;
+    NvU32  clientSorIdx;
 } NV0073_CTRL_DFP_CONFIG_TWO_HEAD_ONE_OR_PARAMS;
 
 /*

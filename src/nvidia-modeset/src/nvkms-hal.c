@@ -115,7 +115,7 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
 
 /*
  * The file
- * https://github.com/NVIDIA/open-gpu-doc/blob/master/manuals/volta/gv100/dev_display_withoffset.ref.txt
+ * https://github.com/NVIDIA/open-gpu-doc/blob/main/manuals/volta/gv100/dev_display_withoffset.ref.txt
  * defines:
  *
  *   #define NV_UDISP_FE_CHN_ASSY_BASEADR_CORE               0x00680000
@@ -135,13 +135,13 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
 
 /*
  * The file
- * https://github.com/NVIDIA/open-gpu-doc/blob/master/manuals/turing/tu104/dev_mmu.ref.txt
+ * https://github.com/NVIDIA/open-gpu-doc/blob/main/manuals/turing/tu104/dev_mmu.ref.txt
  * defines:
  *
  *   #define NV_MMU_PTE_KIND_GENERIC_MEMORY                0x06
  *
  * The file
- * https://github.com/NVIDIA/open-gpu-doc/blob/master/manuals/volta/gv100/dev_mmu.ref.txt
+ * https://github.com/NVIDIA/open-gpu-doc/blob/main/manuals/volta/gv100/dev_mmu.ref.txt
  * defines:
  *
  *   #define NV_MMU_PTE_KIND_GENERIC_16BX2                 0xfe

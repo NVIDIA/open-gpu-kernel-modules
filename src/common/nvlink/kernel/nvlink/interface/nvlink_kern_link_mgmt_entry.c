@@ -113,11 +113,11 @@ nvlink_lib_get_link
 }
 
 /**
- * Set the given link as the link master.
+ * Set the given link as the link main.
  *   This requires that the remote end of the link is known, and that it
- *   hasn't set itself to be the master.
+ *   hasn't set itself to be the main.
  *
- *   Note: This function is used by RM to set master attribute to a link
+ *   Note: This function is used by RM to set main attribute to a link
  *         in order to handle GPU lock inversion problem while servicing
  *         link interrupts(re-training). With external fabric management
  *         enabled, we don't have the issue. Also we don't have to worry
@@ -125,10 +125,10 @@ nvlink_lib_get_link
  *
  * @param[in]  link  NVLink Link pointer
  *
- * return NVL_SUCCESS if the master was set
+ * return NVL_SUCCESS if the main was set
  */
 NvlStatus
-nvlink_lib_set_link_master
+nvlink_lib_set_link_main
 (
     nvlink_link *link
 )
@@ -196,20 +196,20 @@ nvlink_lib_set_link_master
     nvlink_lib_top_lock_release();
 
     // Early return if we've already done this
-    if (link->master)
+    if (link->main)
     {
         status = NVL_SUCCESS;
     }
     else
     {
-        // Make sure the remote end exists and hasn't claimed the master yet
-        if (remote_end == NULL || remote_end->master)
+        // Make sure the remote end exists and hasn't claimed the main yet
+        if (remote_end == NULL || remote_end->main)
         {
             status = NVL_ERR_INVALID_STATE;
         }
         else
         {
-            link->master = NV_TRUE;
+            link->main = NV_TRUE;
         }
     }
 
@@ -220,21 +220,21 @@ nvlink_lib_set_link_master
 }
 
 /**
- * Get the link master associated with the given link.
+ * Get the link main associated with the given link.
  *   This may be the given link, or it may be the remote end. In the case
- *   when no master is assigned or the remote end is not known, this will
+ *   when no main is assigned or the remote end is not known, this will
  *   return an error.
  *
  * @param[in]  link    NVLink Link pointer
- * @param[out] master  Master endpoint for the link
+ * @param[out] main  Master endpoint for the link
  *
- * return NVL_SUCCESS if the master was found
+ * return NVL_SUCCESS if the main was found
  */
 NvlStatus
-nvlink_lib_get_link_master
+nvlink_lib_get_link_main
 (
     nvlink_link  *link,
-    nvlink_link **master
+    nvlink_link **main
 )
 {
     nvlink_link           *remote_end = NULL;
@@ -243,7 +243,7 @@ nvlink_lib_get_link_master
     nvlink_link           *links[2]   = {0};
     NvU32                  numLinks   = 0;
 
-    if (link == NULL || master == NULL)
+    if (link == NULL || main == NULL)
     {
         NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
             "%s: Bad link pointer specified.\n",
@@ -299,19 +299,19 @@ nvlink_lib_get_link_master
     //
     nvlink_lib_top_lock_release();
 
-    if (link->master)
+    if (link->main)
     {
-        *master = link;
+        *main = link;
     }
     else
     {
-        // Make sure the remote end exists and hasn't claimed the master yet
+        // Make sure the remote end exists and hasn't claimed the main yet
         if (remote_end == NULL)
         {
             status = NVL_ERR_INVALID_STATE;
         }
 
-        *master = remote_end;
+        *main = remote_end;
     }
 
     // Release the per-link locks

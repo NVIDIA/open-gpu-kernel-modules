@@ -3851,7 +3851,7 @@ static bool block_check_mappings(uvm_va_block_t *block)
     uvm_page_index_t page_index;
     uvm_processor_id_t id;
 
-    // Verify the master masks, since block_check_mappings_page relies on them
+    // Verify the main masks, since block_check_mappings_page relies on them
     for_each_processor_id(id) {
         const uvm_page_mask_t *resident_mask, *map_mask;
 

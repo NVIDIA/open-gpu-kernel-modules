@@ -2893,7 +2893,7 @@ typedef struct
 #define NVSWITCH_CTRL_I2C_FLAGS_STOP_NONE                        0
 #define NVSWITCH_CTRL_I2C_FLAGS_STOP_SEND                        1
 
-/*! The slave addressing mode: 7-bit (most common) or 10-bit.  It is possible
+/*! The client addressing mode: 7-bit (most common) or 10-bit.  It is possible
  *  but not recommended to send no address at all using _NONE.
  */
 #define NVSWITCH_CTRL_I2C_FLAGS_ADDRESS_MODE                   4:3
@@ -2918,7 +2918,7 @@ typedef struct
 
 /*! The target speed at which to drive the transaction at.
  *
- *  Note: The lib reserves the right to lower the speed mode if the I2C master
+ *  Note: The lib reserves the right to lower the speed mode if the I2C main
  *  implementation cannot handle the speed given.
  */
 #define NVSWITCH_CTRL_I2C_FLAGS_SPEED_MODE                    11:9
@@ -2956,10 +2956,10 @@ typedef struct
 
 /*!
  * Block Reads/Writes: There are two different protocols for reading/writing >2
- * byte sets of data to/from a slave device.  The SMBus specification section
+ * byte sets of data to/from a client device.  The SMBus specification section
  * 5.5.7 defines "Block Reads/Writes" in which the first byte of the payload
  * specifies the size of the data to be read/written s.t. payload_size =
- * data_size + 1.  However, many other devices depend on the master to already
+ * data_size + 1.  However, many other devices depend on the main to already
  * know the size of the data being accessed (i.e. SW written with knowledge of
  * the device's I2C register spec) and skip this overhead.  This second behavior
  * is actually the default behavior of all the lib's I2C interfaces.
@@ -3001,10 +3001,10 @@ typedef struct
  *     The ID of the client that is trying to take control of the I2C module.
  *
  *   address
- *     The address of the I2C slave.  The address should be shifted left by
+ *     The address of the I2C client.  The address should be shifted left by
  *     one.  For example, the I2C address 0x50, often used for reading EDIDs,
  *     would be stored here as 0xA0.  This matches the position within the
- *     byte sent by the master, as the last bit is reserved to specify the
+ *     byte sent by the main, as the last bit is reserved to specify the
  *     read or write direction.
  *
  *   index
@@ -3014,11 +3014,11 @@ typedef struct
  *
  *   messageLength
  *     This parameter, required of the client, specifies the number of bytes to
- *     read or write from the slave after the index is written.
+ *     read or write from the client after the index is written.
  *
  *   message
  *     This parameter, required of the client, specifies the data to be written
- *     to the slave.  The buffer should be arranged such that message[0] will
+ *     to the client.  The buffer should be arranged such that message[0] will
  *     be the first byte read or written.  If the transaction is a read, then
  *     it will follow the combined format described in the I2C specification.
  *     If the transaction is a write, the message will immediately follow the

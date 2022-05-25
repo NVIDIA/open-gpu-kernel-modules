@@ -40,7 +40,7 @@
  * NV2080_CTRL_CMD_MC_GET_ARCH_INFO
  *
  * This command returns chip architecture information from the
- * master control engine in the specified GPU.
+ * main control engine in the specified GPU.
  *
  *   architecture
  *       This parameter specifies the architecture level for the GPU.

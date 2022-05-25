@@ -786,7 +786,7 @@ kdispServiceVblank_KERNEL
         kheadSetVblankTotalCounter_HAL(pKernelHead, Count);
 
         //
-        // Update the vblank counter if we are single chip or multichip master.
+        // Update the vblank counter if we are single chip or multichip main.
         // We now have two queues, so we need to have two vblank counters.
         //
 

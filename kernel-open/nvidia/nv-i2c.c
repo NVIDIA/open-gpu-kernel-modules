@@ -30,7 +30,7 @@
 
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 
-static int nv_i2c_algo_master_xfer(struct i2c_adapter *adapter, struct i2c_msg msgs[], int num)
+static int nv_i2c_algo_main_xfer(struct i2c_adapter *adapter, struct i2c_msg msgs[], int num)
 {
     nv_state_t *nv = (nv_state_t *)adapter->algo_data;
     unsigned int i = 0;
@@ -203,7 +203,7 @@ static u32 nv_i2c_algo_functionality(struct i2c_adapter *adapter)
 }
 
 static struct i2c_algorithm nv_i2c_algo = {
-    .master_xfer      = nv_i2c_algo_master_xfer,
+    .main_xfer      = nv_i2c_algo_main_xfer,
     .smbus_xfer       = nv_i2c_algo_smbus_xfer,
     .functionality    = nv_i2c_algo_functionality,
 };

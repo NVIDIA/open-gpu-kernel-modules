@@ -1158,7 +1158,7 @@ static NvBool FrameLockDpyCanBeServer(const NVDpyEvoRec *pDpyEvo)
         return FALSE;
     }
 
-    if (gsyncGetControlSyncParams.master &&
+    if (gsyncGetControlSyncParams.main &&
         nvFrameLockServerPossibleEvo(pDpyEvo)) {
         return TRUE;
     }

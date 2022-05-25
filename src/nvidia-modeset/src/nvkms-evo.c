@@ -2282,7 +2282,7 @@ static NvBool FramelockSetControlSync(NVDispEvoPtr pDispEvo, const NvU32 headMas
     nvAssert(!server || (nvPopCount32(headMask) == 1));
 
     gsyncSetControlSyncParams.gpuId = nvGpuIdOfDispEvo(pDispEvo);
-    gsyncSetControlSyncParams.master = server;
+    gsyncSetControlSyncParams.main = server;
     gsyncSetControlSyncParams.displays =
         HeadMaskToActiveRmIdMask(pDispEvo, headMask);
 
@@ -2314,7 +2314,7 @@ NvBool nvFramelockSetControlUnsyncEvo(NVDispEvoPtr pDispEvo, const NvU32 headMas
     NvU32 ret;
 
     gsyncSetControlUnsyncParams.gpuId = nvGpuIdOfDispEvo(pDispEvo);
-    gsyncSetControlUnsyncParams.master = server;
+    gsyncSetControlUnsyncParams.main = server;
     gsyncSetControlUnsyncParams.displays =
         HeadMaskToActiveRmIdMask(pDispEvo, headMask);
 
@@ -6252,12 +6252,12 @@ static void GetRasterLockPin(NVDispEvoPtr pDispEvo0, NvU32 head0,
     if (serverPin) {
         if (FLD_TEST_DRF(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
                                _MASTER_SCAN_LOCK_CONNECTED, _NO,
-                               params.masterScanLock)) {
+                               params.mainScanLock)) {
             *serverPin = NV_EVO_LOCK_PIN_ERROR;
         } else {
             int pin = DRF_VAL(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
                               _MASTER_SCAN_LOCK_PIN,
-                              params.masterScanLock);
+                              params.mainScanLock);
             *serverPin = NV_EVO_LOCK_PIN_0 + pin;
         }
     }
@@ -6265,12 +6265,12 @@ static void GetRasterLockPin(NVDispEvoPtr pDispEvo0, NvU32 head0,
     if (clientPin) {
         if (FLD_TEST_DRF(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
                                _SLAVE_SCAN_LOCK_CONNECTED, _NO,
-                               params.slaveScanLock)) {
+                               params.clientScanLock)) {
             *clientPin = NV_EVO_LOCK_PIN_ERROR;
         } else {
             int pin = DRF_VAL(5070, _CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STATELESS,
                               _SLAVE_SCAN_LOCK_PIN,
-                              params.slaveScanLock);
+                              params.clientScanLock);
             *clientPin = NV_EVO_LOCK_PIN_0 + pin;
         }
     }

@@ -478,9 +478,9 @@ static void EvoSetHeadControl90(NVDevEvoPtr pDevEvo, int sd, int head,
         pin = pHC->serverLockPin - NV_EVO_LOCK_PIN_INTERNAL_0;
         /*
          * dispClass_02.mfs says:
-         * "master lock pin, if internal, must be set to the corresponding
+         * "main lock pin, if internal, must be set to the corresponding
          * internal pin for that head" (error check #12)
-         * (Note that this is only enforced when scanlock master is enabled)
+         * (Note that this is only enforced when scanlock main is enabled)
          */
         nvAssert(pHC->serverLock == NV_EVO_NO_LOCK || pin == head);
         data |= DRF_NUM(917D, _HEAD_SET_CONTROL, _MASTER_LOCK_PIN,

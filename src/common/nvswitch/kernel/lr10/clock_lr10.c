@@ -37,7 +37,7 @@
 #include "nvswitch/lr10/dev_nport_ip.h"
 #include "nvswitch/lr10/dev_minion_ip.h"
 #include "nvswitch/lr10/dev_timer.h"
-#include "nvswitch/lr10/dev_pri_ringmaster.h"
+#include "nvswitch/lr10/dev_pri_ringmain.h"
 #include "nvswitch/lr10/dev_pri_ringstation_prt.h"
 
 //

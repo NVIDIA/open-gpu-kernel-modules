@@ -1230,7 +1230,7 @@ typedef enum
 //
 // Classes:
 //     _GPU_REQ - Class of capability bits corresponding 1:1 with the GPU-
-//                Request opcodes the master supports.
+//                Request opcodes the main supports.
 //
 #define NV_MSGBOX_CMD_SET_MASTER_CAPS_ARG1_CLASS                               7:0
 #define NV_MSGBOX_CMD_SET_MASTER_CAPS_ARG1_CLASS_GPU_REQ                0x00000000
@@ -1472,7 +1472,7 @@ typedef enum
 // This memory buffer is allocated by the host CPU in its system memory
 // and is used for passing additional arguments and results, that don't
 // fit in the command/status  and data registers due to their size.
-// This memory can be accessed by the BMC SMBus master through
+// This memory can be accessed by the BMC SMBus main through
 // dedicated requests.
 //
 // Page size is various on different SMBPBI servers.

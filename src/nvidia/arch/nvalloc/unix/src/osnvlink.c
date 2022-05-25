@@ -200,7 +200,7 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_queue_link_change
     void *fp;
     NvlStatus status;
     THREAD_STATE_NODE threadState = {0};
-    KNVLINK_RM_LINK *pLink = link_change->master->link_info;
+    KNVLINK_RM_LINK *pLink = link_change->main->link_info;
     nvidia_stack_t *sp = (nvidia_stack_t *)pLink->pOsInfo;
 
     NV_ENTER_RM_RUNTIME(sp, fp);

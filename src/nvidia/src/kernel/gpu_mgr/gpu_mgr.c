@@ -2143,12 +2143,12 @@ gpumgrGetDefaultPrimaryGpu
         return 0;
     }
 
-    // Find  masterFromSLIConfig, set when a RM client passes a primary GPU
+    // Find  mainFromSLIConfig, set when a RM client passes a primary GPU
     // index from a SLI config
     gpuInstance = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
-        if (pGpu->masterFromSLIConfig)
+        if (pGpu->mainFromSLIConfig)
         {
             break;
         }

@@ -869,7 +869,7 @@ typedef struct NV5070_CTRL_CMD_SET_PIOR_OP_MODE_PARAMS {
     NvU32                       dataMuxing;
     NvU32                       clkDelay;
     NvU32                       dataDelay;
-    NvU32                       dro_master;
+    NvU32                       dro_main;
     NvU32                       dro_drive_pin_set;
 } NV5070_CTRL_CMD_SET_PIOR_OP_MODE_PARAMS;
 

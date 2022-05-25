@@ -3769,20 +3769,20 @@ typedef struct _NV_ESC_MONITOR_CAPS_VCDB
 //
 typedef struct tagNVT_HDR_INFOFRAME_MASTERING_DATA
 {
-    NvU16    displayPrimary_x0;                //!< x coordinate of color primary 0 (e.g. Red) of mastering display ([0x0000-0xC350] = [0.0 - 1.0])
-    NvU16    displayPrimary_y0;                //!< y coordinate of color primary 0 (e.g. Red) of mastering display ([0x0000-0xC350] = [0.0 - 1.0])
+    NvU16    displayPrimary_x0;                //!< x coordinate of color primary 0 (e.g. Red) of maining display ([0x0000-0xC350] = [0.0 - 1.0])
+    NvU16    displayPrimary_y0;                //!< y coordinate of color primary 0 (e.g. Red) of maining display ([0x0000-0xC350] = [0.0 - 1.0])
     
-    NvU16    displayPrimary_x1;                //!< x coordinate of color primary 1 (e.g. Green) of mastering display ([0x0000-0xC350] = [0.0 - 1.0])
-    NvU16    displayPrimary_y1;                //!< y coordinate of color primary 1 (e.g. Green) of mastering display ([0x0000-0xC350] = [0.0 - 1.0])
+    NvU16    displayPrimary_x1;                //!< x coordinate of color primary 1 (e.g. Green) of maining display ([0x0000-0xC350] = [0.0 - 1.0])
+    NvU16    displayPrimary_y1;                //!< y coordinate of color primary 1 (e.g. Green) of maining display ([0x0000-0xC350] = [0.0 - 1.0])
 
-    NvU16    displayPrimary_x2;                //!< x coordinate of color primary 2 (e.g. Blue) of mastering display ([0x0000-0xC350] = [0.0 - 1.0])
-    NvU16    displayPrimary_y2;                //!< y coordinate of color primary 2 (e.g. Blue) of mastering display ([0x0000-0xC350] = [0.0 - 1.0])
+    NvU16    displayPrimary_x2;                //!< x coordinate of color primary 2 (e.g. Blue) of maining display ([0x0000-0xC350] = [0.0 - 1.0])
+    NvU16    displayPrimary_y2;                //!< y coordinate of color primary 2 (e.g. Blue) of maining display ([0x0000-0xC350] = [0.0 - 1.0])
 
-    NvU16    displayWhitePoint_x;              //!< x coordinate of white point of mastering display ([0x0000-0xC350] = [0.0 - 1.0])
-    NvU16    displayWhitePoint_y;              //!< y coordinate of white point of mastering display ([0x0000-0xC350] = [0.0 - 1.0])
+    NvU16    displayWhitePoint_x;              //!< x coordinate of white point of maining display ([0x0000-0xC350] = [0.0 - 1.0])
+    NvU16    displayWhitePoint_y;              //!< y coordinate of white point of maining display ([0x0000-0xC350] = [0.0 - 1.0])
 
-    NvU16    max_display_mastering_luminance;  //!< Maximum display mastering luminance ([0x0001-0xFFFF] = [1.0 - 65535.0] cd/m^2)
-    NvU16    min_display_mastering_luminance;  //!< Minimum display mastering luminance ([0x0001-0xFFFF] = [1.0 - 6.55350] cd/m^2)
+    NvU16    max_display_maining_luminance;  //!< Maximum display maining luminance ([0x0001-0xFFFF] = [1.0 - 65535.0] cd/m^2)
+    NvU16    min_display_maining_luminance;  //!< Minimum display maining luminance ([0x0001-0xFFFF] = [1.0 - 6.55350] cd/m^2)
 
     NvU16    max_content_light_level;          //!< Maximum Content Light level (MaxCLL) ([0x0001-0xFFFF] = [1.0 - 65535.0] cd/m^2)
     NvU16    max_frame_average_light_level;    //!< Maximum Frame-Average Light Level (MaxFALL) ([0x0001-0xFFFF] = [1.0 - 65535.0] cd/m^2)

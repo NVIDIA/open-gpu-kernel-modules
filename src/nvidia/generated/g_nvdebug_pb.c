@@ -713,7 +713,7 @@ const PRB_FIELD_DESC prb_fields_nvdebug_systeminfo_config[] = {
         },
         0,
         0,
-        PRB_MAYBE_FIELD_NAME("master_id")
+        PRB_MAYBE_FIELD_NAME("main_id")
         PRB_MAYBE_FIELD_DEFAULT(0)
     },
     {

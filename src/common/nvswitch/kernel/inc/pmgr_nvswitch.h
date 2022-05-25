@@ -246,7 +246,7 @@ typedef struct __NVSWITCH_NVSWITCH_I2CTIMING
 typedef struct NVSWITCH_I2C_DEVICE_DESCRIPTOR
 {
     NVSWITCH_I2C_PORT_TYPE      i2cPortLogical;     //<! Logical I2C port where the device sits
-    NvU32                       i2cAddress;         //<! I2C slave address
+    NvU32                       i2cAddress;         //<! I2C client address
     NVSWITCH_I2C_DEVICE_TYPE    i2cDeviceType;
     NvU8                        i2cRdWrAccessMask;
 } NVSWITCH_I2C_DEVICE_DESCRIPTOR_TYPE;

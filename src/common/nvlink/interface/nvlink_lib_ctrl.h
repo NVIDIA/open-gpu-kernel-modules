@@ -615,7 +615,7 @@ typedef struct
  *      Desired link state as defined in nvlink_link_train_type.
  *
  *   isMasterEnd [IN]
- *      True if the endpoint is the master endpoint of the connection.
+ *      True if the endpoint is the main endpoint of the connection.
  *
  *   endPoint [IN]
  *      Specify endpoint details of the nvlink connection.
@@ -661,7 +661,7 @@ typedef struct
  *       Desired sublink state as defined in nvlink_sublink_train_type.
  *
  *   isMasterEnd [IN]
- *      True if the endpoint is master endpoint of the connection.
+ *      True if the endpoint is main endpoint of the connection.
  *
  *   endPoint [IN]
  *      Specify endpoint details of the nvlink connection.
@@ -1031,7 +1031,7 @@ typedef struct
  *      Desired link state as defined in nvlink_link_train_type.
  *
  *   isMasterEnd [IN]
- *      True if the endpoint is the master endpoint of the connection.
+ *      True if the endpoint is the main endpoint of the connection.
  *
  *   endPoints [IN]
  *      Specify endpoint details of the nvlink connections.

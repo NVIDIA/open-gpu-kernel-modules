@@ -1814,7 +1814,7 @@ NvBool RmInitAdapter(
         goto shutdown;
     }
 
-    // i2c only on master device??
+    // i2c only on main device??
     RmI2cAddGpuPorts(nv);
     nvp->flags |= NV_INIT_FLAG_PUBLIC_I2C;
 

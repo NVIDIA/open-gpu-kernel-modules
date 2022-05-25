@@ -114,7 +114,7 @@ typedef struct NV0000_CTRL_GPU_GET_ID_INFO_PARAMS {
  *       NV0000_CTRL_GPU_ID_INFO_MOBILE
  *         When true this flag indicates the GPU is a mobile GPU.
  *       NV0000_CTRL_GPU_ID_BOOT_MASTER
- *         When true this flag indicates the GPU is the boot master GPU.
+ *         When true this flag indicates the GPU is the boot main GPU.
  *       NV0000_CTRL_GPU_ID_INFO_SOC
  *         When true this flag indicates the GPU is part of a
  *         System-on-Chip (SOC).

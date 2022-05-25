@@ -399,7 +399,7 @@ memMap_IMPL
         {
             //
             // For Multi-Board, the BC area has a NULL address range.  So we have
-            // to bring in the master.
+            // to bring in the main.
             //
             bcState = gpumgrGetBcEnabledStatus(pGpu);
             if (bcState)

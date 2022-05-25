@@ -745,10 +745,10 @@ knvlinkEnterExitSleep_IMPL
     // Links that share a PLL must enter/exit L2 together
     FOR_EACH_INDEX_IN_MASK(32, linkId, linkMask)
     {
-        // If the link is a PLL master, consider the slave link
+        // If the link is a PLL main, consider the client link
         if (pKernelNvlink->nvlinkLinks[linkId].pllMasterLinkId == linkId)
         {
-            // If the slave link exists and is not init-disabled, it should be included
+            // If the client link exists and is not init-disabled, it should be included
             if ( (pKernelNvlink->nvlinkLinks[linkId].pllSlaveLinkId != NVLINK_MAX_LINKS_SW)               &&
                  (NVBIT(pKernelNvlink->nvlinkLinks[linkId].pllSlaveLinkId) & pKernelNvlink->enabledLinks) &&
                 !(NVBIT(pKernelNvlink->nvlinkLinks[linkId].pllSlaveLinkId) & linkMask) )
@@ -762,7 +762,7 @@ knvlinkEnterExitSleep_IMPL
         }
         else
         {
-            // For a slave link, its PLL master should be included if not init-disabled
+            // For a client link, its PLL main should be included if not init-disabled
             if ( (NVBIT(pKernelNvlink->nvlinkLinks[linkId].pllMasterLinkId) & pKernelNvlink->enabledLinks) &&
                 !(NVBIT(pKernelNvlink->nvlinkLinks[linkId].pllMasterLinkId) & linkMask) )
             {
@@ -1033,40 +1033,40 @@ knvlinkRetrainLink_IMPL
 
 #if defined(INCLUDE_NVLINK_LIB)
     //
-    // If this is a slave endpoint requesting the retrain, kick off a request
-    // to the master instead. There is no need to (and indeed, we should not)
-    // hold the master endpoint lock here.
+    // If this is a client endpoint requesting the retrain, kick off a request
+    // to the main instead. There is no need to (and indeed, we should not)
+    // hold the main endpoint lock here.
     //
-    if (!pKernelNvlink->nvlinkLinks[linkId].core_link->master)
+    if (!pKernelNvlink->nvlinkLinks[linkId].core_link->main)
     {
         nvlink_link_change *link_change;
-        nvlink_link *slave, *master;
+        nvlink_link *client, *main;
 
-        slave = pKernelNvlink->nvlinkLinks[linkId].core_link;
-        if (nvlink_lib_get_link_master(slave, &master) != NVL_SUCCESS)
+        client = pKernelNvlink->nvlinkLinks[linkId].core_link;
+        if (nvlink_lib_get_link_main(client, &main) != NVL_SUCCESS)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "link master could not be found from GPU%u link %u\n",
+                      "link main could not be found from GPU%u link %u\n",
                       gpuGetInstance(pGpu), linkId);
 
             return NV_ERR_INVALID_STATE;
         }
 
-        NV_ASSERT_OR_RETURN(master != slave, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(main != client, NV_ERR_INVALID_STATE);
 
-        link_change         = &slave->link_change;
-        link_change->slave  = slave;
-        link_change->master = master;
+        link_change         = &client->link_change;
+        link_change->client  = client;
+        link_change->main = main;
         link_change->change_type = bFromOff ? nvlink_retrain_from_off :
                                                   nvlink_retrain_from_safe;
 
-        if (master->link_handlers->queue_link_change(link_change) != NVL_SUCCESS)
+        if (main->link_handlers->queue_link_change(link_change) != NVL_SUCCESS)
         {
             return NV_ERR_GENERIC;
         }
 
         //
-        // Because the link retrain request to the master is asynchronous,
+        // Because the link retrain request to the main is asynchronous,
         // tell the caller they'll need to wait.
         //
         return NV_WARN_MORE_PROCESSING_REQUIRED;
@@ -1210,7 +1210,7 @@ _knvlinkActivateDiscoveredConns
                 status = _knvlinkActivateDiscoveredSwitchConn(pGpu, pKernelNvlink, linkId);
 
                 //
-                // There is no need to mark link as a master. On NVSwitch systems,
+                // There is no need to mark link as a main. On NVSwitch systems,
                 // External Fabric Management should be enabled by default.
                 //
                 switchLinkMasks |= NVBIT(linkId);
@@ -1404,8 +1404,8 @@ _knvlinkActivateDiscoveredP2pConn
                             NV_UUID_LEN);
 
                 //
-                // The master of a GPU <-> GPU link depends on instance number. This is so that when locking
-                // (which requires the master to be locked before the slave), the lower GPU instance number
+                // The main of a GPU <-> GPU link depends on instance number. This is so that when locking
+                // (which requires the main to be locked before the client), the lower GPU instance number
                 // will always be locked first, which is how rmGpuLocksAcquire acquires them. For loopback,
                 // fall back to link ID instead.
                 //
@@ -1413,14 +1413,14 @@ _knvlinkActivateDiscoveredP2pConn
                     ((gpuGetInstance(pGpu0) == gpuGetInstance(pGpu1)) &&
                      (linkId < remoteLinkId)))
                 {
-                    NV_ASSERT(NVL_SUCCESS == nvlink_lib_set_link_master(
+                    NV_ASSERT(NVL_SUCCESS == nvlink_lib_set_link_main(
                             pKernelNvlink0->nvlinkLinks[linkId].core_link));
                 }
                 else if ((gpuGetInstance(pGpu1) < gpuGetInstance(pGpu0)) ||
                          ((gpuGetInstance(pGpu1) == gpuGetInstance(pGpu0)) &&
                           (remoteLinkId < linkId)))
                 {
-                    NV_ASSERT(NVL_SUCCESS == nvlink_lib_set_link_master(
+                    NV_ASSERT(NVL_SUCCESS == nvlink_lib_set_link_main(
                             pKernelNvlink1->nvlinkLinks[remoteLinkId].core_link));
                 }
 
@@ -1502,8 +1502,8 @@ _knvlinkActivateDiscoveredSysmemConn
         return status;
     }
 
-    // Always make the GPU side the master for NPU connections
-    NV_ASSERT(NVL_SUCCESS == nvlink_lib_set_link_master(
+    // Always make the GPU side the main for NPU connections
+    NV_ASSERT(NVL_SUCCESS == nvlink_lib_set_link_main(
         pKernelNvlink->nvlinkLinks[linkId].core_link));
 
     // Train SYSMEM links to Active, and only then enable traffic

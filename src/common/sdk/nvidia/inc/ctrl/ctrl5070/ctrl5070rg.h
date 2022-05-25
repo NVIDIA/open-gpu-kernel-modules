@@ -254,11 +254,11 @@ typedef struct NV5070_CTRL_CMD_SET_RG_FLIPLOCK_PROP_PARAMS {
  *      head
  *          The head for which the locking is associated with
  *
- *      masterScanLock
- *          Indicate the connection status and pin number of master scanlock
+ *      mainScanLock
+ *          Indicate the connection status and pin number of main scanlock
  *
- *      slaveScanLock
- *          Indicate the connection status and pin number of slave scanlock
+ *      clientScanLock
+ *          Indicate the connection status and pin number of client scanlock
  *
  *      flipLock
  *          Indicate the connection status and pin number of fliplock
@@ -298,8 +298,8 @@ typedef struct NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_PARAMS {
     NV5070_CTRL_CMD_BASE_PARAMS base;
     NvU32                       head;
 
-    NvU32                       masterScanLock;
-    NvU32                       slaveScanLock;
+    NvU32                       mainScanLock;
+    NvU32                       clientScanLock;
     NvU32                       flipLock;
     NvU32                       stereoLock;
 } NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_PARAMS;
@@ -409,9 +409,9 @@ typedef struct NV5070_CTRL_DFP_SET_VIDEO_STATUS_PARAMS {
  *   peer.head
  *     The peer head to be locked with the local head.
  *
- *   masterScanLockPin
- *   slaveScanLockPin
- *     Returns the master and slave scanlock pins that would need to
+ *   mainScanLockPin
+ *   clientScanLockPin
+ *     Returns the main and client scanlock pins that would need to
  *     be used to lock the specified heads together, if any.
  *
  * Possible status values returned are:
@@ -445,8 +445,8 @@ typedef struct NV5070_CTRL_GET_RG_CONNECTED_LOCKPIN_STATELESS_PARAMS {
         NvU32    head;
     } peer;
 
-    NvU32 masterScanLock;
-    NvU32 slaveScanLock;
+    NvU32 mainScanLock;
+    NvU32 clientScanLock;
 } NV5070_CTRL_GET_RG_CONNECTED_LOCKPIN_STATELESS_PARAMS;
 
 /*
@@ -460,7 +460,7 @@ typedef struct NV5070_CTRL_GET_RG_CONNECTED_LOCKPIN_STATELESS_PARAMS {
  *
  *   scanLockPin [out]
  *     The scanlock lockpin (rasterlock or framelock) index, which can be
- *     either master or slave, is returned in this parameter.
+ *     either main or client, is returned in this parameter.
  *
  *   flipLockPin [out]
  *     The fliplock lockpin index, is returned in this parameter.

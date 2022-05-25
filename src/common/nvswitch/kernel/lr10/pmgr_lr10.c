@@ -32,7 +32,7 @@
 
 void _nvswitch_i2c_set_port_pmgr(nvswitch_device *device, NvU32 port);
 
-/*! The number of nanoseconds we will wait for slave clock stretching.
+/*! The number of nanoseconds we will wait for client clock stretching.
  *  Previously, this was set to 100us, but proved too
  *  short (see bug 630691) so was increased to 2ms.
  */

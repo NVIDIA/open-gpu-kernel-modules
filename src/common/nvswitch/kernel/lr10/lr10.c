@@ -37,11 +37,11 @@
 #include "soe/soe_nvswitch.h"
 
 #include "nvswitch/lr10/dev_nvs_top.h"
-#include "nvswitch/lr10/dev_pri_ringmaster.h"
+#include "nvswitch/lr10/dev_pri_ringmain.h"
 #include "nvswitch/lr10/dev_pri_ringstation_sys.h"
 #include "nvswitch/lr10/dev_nvlsaw_ip.h"
 #include "nvswitch/lr10/dev_nvlsaw_ip_addendum.h"
-#include "nvswitch/lr10/dev_nvs_master.h"
+#include "nvswitch/lr10/dev_nvs_main.h"
 #include "nvswitch/lr10/dev_nvltlc_ip.h"
 #include "nvswitch/lr10/dev_nvldl_ip.h"
 #include "nvswitch/lr10/dev_nvlipt_lnk_ip.h"
@@ -3221,7 +3221,7 @@ nvswitch_ctrl_set_routing_lan_valid_lr10
  * @param[in] cmd           encoded priv ring command
  */
 NvlStatus
-nvswitch_ring_master_cmd_lr10
+nvswitch_ring_main_cmd_lr10
 (
     nvswitch_device *device,
     NvU32 cmd
@@ -3821,7 +3821,7 @@ nvswitch_pri_ring_init_lr10
     for (i = 0; !enumerated && (i < 3); i++)
     {
         value = DRF_DEF(_PPRIV_MASTER, _RING_COMMAND, _CMD, _ENUMERATE_AND_START_RING);
-        retval = nvswitch_ring_master_cmd_lr10(device, value);
+        retval = nvswitch_ring_main_cmd_lr10(device, value);
         if (retval != NVL_SUCCESS)
         {
             NVSWITCH_PRINT(device, ERROR,
@@ -3858,7 +3858,7 @@ nvswitch_pri_ring_init_lr10
                     __FUNCTION__);
             }
 
-            (void)nvswitch_ring_master_cmd_lr10(device,
+            (void)nvswitch_ring_main_cmd_lr10(device,
                     DRF_DEF(_PPRIV_MASTER, _RING_COMMAND, _CMD, _ACK_INTERRUPT));
 
             continue;

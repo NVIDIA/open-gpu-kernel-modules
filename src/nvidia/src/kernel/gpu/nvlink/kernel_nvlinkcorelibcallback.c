@@ -204,7 +204,7 @@ knvlinkCoreLockLinkCallback
     }
 
     //
-    // We track the lock state of this API via the master/parent GPU of the
+    // We track the lock state of this API via the main/parent GPU of the
     // subdevice, since the locking APIs currently available to us operate at
     // the device level.
     //
@@ -275,7 +275,7 @@ knvlinkCoreUnlockLinkCallback
     }
 
     //
-    // We track the lock state of this API via the master/parent GPU of the
+    // We track the lock state of this API via the main/parent GPU of the
     // subdevice, since the locking APIs currently available to us operate at
     // the device level.
     //
@@ -312,7 +312,7 @@ knvlinkCoreUnlockLinkCallback
 }
 
 /*!
- * @brief Function to be executed when the master end
+ * @brief Function to be executed when the main end
  *        of a link triggers the retraining of the link
  *
  * @param[in]  gpuInstance    Master GPU instance
@@ -331,13 +331,13 @@ _knvlinkCorePassiveLinkChangeCallback
 
     KNVLINK_RM_LINK    *pNvlinkLink;
     nvlink_link_change *link_change;
-    nvlink_link        *slave;
-    nvlink_link        *master;
+    nvlink_link        *client;
+    nvlink_link        *main;
 
     link_change = *(nvlink_link_change **)linkChangeData;
-    master      = link_change->master;
-    slave       = link_change->slave;
-    pNvlinkLink = (KNVLINK_RM_LINK *)master->link_info;
+    main      = link_change->main;
+    client       = link_change->client;
+    pNvlinkLink = (KNVLINK_RM_LINK *)main->link_info;
 
     pGpu = gpumgrGetGpu(gpuInstance);
     NV_ASSERT(pGpu == pNvlinkLink->pGpu);
@@ -358,9 +358,9 @@ _knvlinkCorePassiveLinkChangeCallback
 
     if (osAcquireRmSema(pSys->pSema) == NV_OK)
     {
-        if (master->link_handlers->lock(master) == NVL_SUCCESS)
+        if (main->link_handlers->lock(main) == NVL_SUCCESS)
         {
-            if (slave->link_handlers->lock(slave) == NVL_SUCCESS)
+            if (client->link_handlers->lock(client) == NVL_SUCCESS)
             {
                 if (pKernelNvlink != NULL)
                 {
@@ -368,10 +368,10 @@ _knvlinkCorePassiveLinkChangeCallback
 
                     //
                     // TODO: we should probably be smarter about detecting if
-                    //       the master has already taken its own action in
+                    //       the main has already taken its own action in
                     //       retraining the link that would remove the need to
                     //       process this one. But for now, just blindly process
-                    //       the link change request from the slave.
+                    //       the link change request from the client.
                     //
                     knvlinkRetrainLink(pGpu, pKernelNvlink, linkId,
                         link_change->change_type == nvlink_retrain_from_off);
@@ -379,20 +379,20 @@ _knvlinkCorePassiveLinkChangeCallback
                 else
                 {
                     NV_PRINTF(LEVEL_ERROR,
-                              "master GPU does not support NVLINK!\n");
+                              "main GPU does not support NVLINK!\n");
                     DBG_BREAKPOINT();
                 }
-                slave->link_handlers->unlock(slave);
+                client->link_handlers->unlock(client);
             }
             else
             {
-                NV_PRINTF(LEVEL_ERROR, "failed to acquire slave lock!\n");
+                NV_PRINTF(LEVEL_ERROR, "failed to acquire client lock!\n");
             }
-            master->link_handlers->unlock(master);
+            main->link_handlers->unlock(main);
         }
         else
         {
-            NV_PRINTF(LEVEL_ERROR, "failed to acquire the master lock!\n");
+            NV_PRINTF(LEVEL_ERROR, "failed to acquire the main lock!\n");
         }
         osReleaseRmSema(pSys->pSema, NULL);
     }
@@ -406,13 +406,13 @@ _knvlinkCorePassiveLinkChangeCallback
 
 /*!
  * @brief Callback function for queuing a link change request from the
- *        link slave.
+ *        link client.
  *
- * This function is only called for links which are the master of the
+ * This function is only called for links which are the main of the
  * connection.
  *
- * The master link is NOT locked at the time this callback is called,
- * and this callback must not attempt to acquire the master link lock.
+ * The main link is NOT locked at the time this callback is called,
+ * and this callback must not attempt to acquire the main link lock.
  *
  * @param[in]  nvlink_link_change pointer
  *
@@ -431,7 +431,7 @@ knvlinkCoreQueueLinkChangeCallback
     NV_STATUS        status = NV_OK;
     void            *pWorkItemData;
 
-    pNvlinkLink = (KNVLINK_RM_LINK *)link_change->master->link_info;
+    pNvlinkLink = (KNVLINK_RM_LINK *)link_change->main->link_info;
     pGpu        = pNvlinkLink->pGpu;
 
     if (pGpu == NULL)
@@ -439,8 +439,8 @@ knvlinkCoreQueueLinkChangeCallback
         return NVL_ERR_INVALID_STATE;
     }
 
-    // The master should be marked as such
-    NV_ASSERT_OR_RETURN(link_change->master->master, NV_ERR_INVALID_STATE);
+    // The main should be marked as such
+    NV_ASSERT_OR_RETURN(link_change->main->main, NV_ERR_INVALID_STATE);
 
     pOS = GPU_GET_OS(pGpu);
 

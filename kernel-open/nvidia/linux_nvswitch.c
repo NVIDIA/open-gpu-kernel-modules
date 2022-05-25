@@ -1315,7 +1315,7 @@ nvswitch_probe
         goto pci_enable_device_failed;
     }
 
-    pci_set_master(pci_dev);
+    pci_set_main(pci_dev);
 
     rc = pci_request_regions(pci_dev, nvswitch_dev->name);
     if (rc)
@@ -1402,7 +1402,7 @@ pci_iomap_failed:
 
 pci_request_regions_failed:
 #ifdef CONFIG_PCI
-    pci_clear_master(pci_dev);
+    pci_clear_main(pci_dev);
 #endif
     pci_disable_device(pci_dev);
 
@@ -1467,7 +1467,7 @@ nvswitch_remove
     pci_release_regions(pci_dev);
 
 #ifdef CONFIG_PCI
-    pci_clear_master(pci_dev);
+    pci_clear_main(pci_dev);
 #endif
 
     pci_disable_device(pci_dev);

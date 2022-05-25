@@ -197,7 +197,7 @@ typedef struct NV30F1_CTRL_GSYNC_GET_STATUS_SIGNALS_PARAMS {
  *   in respective header files of gsync boards. e.g. For P2060 board value
  *   is defined in drivers/resman/kernel/inc/dacp2060.h
  * syncStartDelay
- *   In master mode, the amount of time to wait before generating the first
+ *   In main mode, the amount of time to wait before generating the first
  *   sync pulse in units of 7.81 us, max 512 ms (i.e 65535 units).
  * useHouseSync
  *   When a house sync signal is detected, this parameter indicates that it 
@@ -399,7 +399,7 @@ typedef struct NV30F1_CTRL_GSYNC_GET_CAPS_PARAMS {
  *     If the 'connector' field indicates that the GPU is not connected to
  *     a G-Sync device directly, then this field contains the ID of the
  *     GPU that acts as a proxy, i.e. the GPU to which this GPU should be
- *     a RasterLock slave.
+ *     a RasterLock client.
  * connectorCount
  *    This parameter indicates the number of GPU connectors available on
  *    the gsync device.  The connector count of the gsync device may be
@@ -449,20 +449,20 @@ typedef struct NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS {
  * gpuId
  *   The parameter is set by the client to indicate the gpuId on which
  *   frame lock will be enabled.
- * master
+ * main
  *   This parameter is set by the client to specify whether this/these 
- *   displays should be set as the master or as slaves. If this is a GET
+ *   displays should be set as the main or as clients. If this is a GET
  *   and displays is not 0, this will be set by the RM to indicate if
- *   the display can be the master.
+ *   the display can be the main.
  * displays
  *   This is a device mask set by the client to indicate which display(s)
- *   are to be synched. Note that only one display may be set as master.
+ *   are to be synched. Note that only one display may be set as main.
  *   If this is a GET, this set by the client to indicate which display
  *   is to be queried. If the display cannot be synched to this device, 
  *   the RM will overwrite the mask with a 0.
  * validateExternal
  *   This parameter is set by the client to tell the RM to validate the
- *   presence of an external sync source when enabling a master.
+ *   presence of an external sync source when enabling a main.
  * refresh
  *   This parameter is set by the client to indicate the desired refresh rate
  *   The value is in 0.0001 Hertz (i.e. it has been multiplied by 10000).
@@ -470,7 +470,7 @@ typedef struct NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS {
  *   contains flags for specific options. So far only 
  *   NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_CONFIG_FLAGS_KEEP_MASTER_SWAPBARRIER_DISABLED
  *   is supported which allows the caller to prevent the rm code to automatically
- *   enable the swapbarrier on framelock masters on fpga revisions <= 5.
+ *   enable the swapbarrier on framelock mains on fpga revisions <= 5.
  * 
  * Possible status values returned are:
  *   NV_OK
@@ -482,14 +482,14 @@ typedef struct NV30F1_CTRL_GET_GSYNC_GPU_TOPOLOGY_PARAMS {
 
 #define NV30F1_CTRL_CMD_GSYNC_SET_CONTROL_SYNC                                           (0x30f10111) /* finn: Evaluated from "(FINN_NV30_GSYNC_GSYNC_INTERFACE_ID << 8) | NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_PARAMS_MESSAGE_ID" */
 
-// If set the swapbarrier is not enable automatically when enablign a framelock master on fpga revs <= 5.
+// If set the swapbarrier is not enable automatically when enablign a framelock main on fpga revs <= 5.
 #define NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_CONFIG_FLAGS_KEEP_MASTER_SWAPBARRIER_DISABLED (0x00000001)
 
 #define NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS_MESSAGE_ID (0x10U)
 
 typedef struct NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS {
     NvU32 gpuId;
-    NvU32 master;
+    NvU32 main;
     NvU32 displays;
     NvU32 validateExternal;
     NvU32 refresh;
@@ -507,14 +507,14 @@ typedef NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS NV30F1_CTRL_GSYNC_SET_CONTROL_
  * gpuId
  *   The parameter is set by the client to indicate the gpuId on which
  *   frame lock will be disabled.
- * master
+ * main
  *   This parameter is set by the client to specify whether this/these
- *   display(s) to be unset is a master/are slaves.
+ *   display(s) to be unset is a main/are clients.
  * displays
  *   This is a device mask set by the client to indicate which display(s)
  *   are to be unsynched.
  * retainMaster
- *   Retain the designation as master, but unsync the displays. 
+ *   Retain the designation as main, but unsync the displays. 
  *
  * Possible status values returned are:
  *   NV_OK
@@ -527,7 +527,7 @@ typedef NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS NV30F1_CTRL_GSYNC_SET_CONTROL_
 
 typedef struct NV30F1_CTRL_GSYNC_SET_CONTROL_UNSYNC_PARAMS {
     NvU32 gpuId;
-    NvU32 master;
+    NvU32 main;
     NvU32 displays;
     NvU32 retainMaster;
 } NV30F1_CTRL_GSYNC_SET_CONTROL_UNSYNC_PARAMS;
@@ -545,11 +545,11 @@ typedef struct NV30F1_CTRL_GSYNC_SET_CONTROL_UNSYNC_PARAMS {
  *   queried.
  * bTiming
  *   This parameter is set by the RM to indicate that timing on the GPU is
- *   in sync with the master sync signal.
+ *   in sync with the main sync signal.
  * bStereoSync 
  *   This parameter is set by the RM to indicate whether the phase of the
  *   timing signal coming from the GPU is the same as the phase of the 
- *   master sync signal.
+ *   main sync signal.
  * bSyncReady
  *   This parameter is set by the RM to indicate if a sync signal has
  *   been detected.
@@ -599,7 +599,7 @@ typedef struct NV30F1_CTRL_GSYNC_GET_STATUS_SYNC_PARAMS {
  *   0.0001 Hertz (i.e. it has been multiplied by 10000). This is not the refresh
  *   rate of display device. This is same as incoming house sync rate if
  *   framelocked to an external house sync signal. Otherwise, this is same
- *   as the refresh rate of the master display device.
+ *   as the refresh rate of the main display device.
  * houseSyncIncomming
  *   This parameter is set by the RM to indicate the rate of an incomming 
  *   house sync signal in 0.0001 Hertz (i.e. it has been multiplied by 10000).
@@ -633,7 +633,7 @@ typedef struct NV30F1_CTRL_GSYNC_GET_STATUS_SYNC_PARAMS {
  *   Universal frame counter.
  * bInternalSlave
  *   This parameter is set by the RM to indicate that a p2061 has been
- *   configured as internal slave.
+ *   configured as internal client.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -1256,13 +1256,13 @@ typedef struct NV30F1_CTRL_GSYNC_SET_EVENT_NOTIFICATION_PARAMS {
  *    (a) using local stereo edge if stereo is toggle or
  *    (b) counting lines and generate the missing VS.
  * 2] Master GSYNC card recreates the stereo and passes it along to
- *    the slave GSYNC cards.
+ *    the client GSYNC cards.
  * 3] Slave GSYNC cards generates the stereo raster sync structure to
  *    synchronize the GPU.
  * 4] For stereo sync status reporting, under this mode, the GSYNC automatically
- *    reports stereo lock whenever it gets the master stereo signal. The
+ *    reports stereo lock whenever it gets the main stereo signal. The
  *    assumption is local stereo will be in synced with the new structure.
- * 5] If the slave GSYNC card does not observed master stereo for any reason,
+ * 5] If the client GSYNC card does not observed main stereo for any reason,
  *    (a) it clears the stereo sync bit and
  *    (b) it generates its own version of stereo and sync the GPU.
  *
@@ -1388,14 +1388,14 @@ typedef struct NV30F1_CTRL_GSYNC_WRITE_REGISTER_PARAMS {
  *   Timing Source gpu for specified mosaic group.
  * gpuTimingSlaves[]
  *   This parameter is set by the client to indicate the gpuIds of the
- *   timing slave gpus for specified mosaic group. It should not contain
- *   more gpuids than slaveGpuCount.
- * slaveGpuCount
+ *   timing client gpus for specified mosaic group. It should not contain
+ *   more gpuids than clientGpuCount.
+ * clientGpuCount
  *   This parameter is set by the client to indicate the count of timing
- *   slave gpus under specified group.
- *   Referring to gsync3-P2060, slaveGpuCount can vary from 0x01 to 0x03
+ *   client gpus under specified group.
+ *   Referring to gsync3-P2060, clientGpuCount can vary from 0x01 to 0x03
  *   as maximum possible connected gpus are four and one gpu must be
- *   timing master for mosaic group.
+ *   timing main for mosaic group.
  * mosaicGroupNumber
  *   This parameter is set by the client to tell the RM to which mosaic
  *   group it should refer.
@@ -1418,7 +1418,7 @@ typedef struct NV30F1_CTRL_GSYNC_WRITE_REGISTER_PARAMS {
 typedef struct NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS {
     NvU32  gpuTimingSource;
     NvU32  gpuTimingSlaves[NV30F1_CTRL_MAX_GPUS_PER_GSYNC];
-    NvU32  slaveGpuCount;
+    NvU32  clientGpuCount;
     NvU32  mosaicGroupNumber;
     NvBool enableMosaic;
 } NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS;
