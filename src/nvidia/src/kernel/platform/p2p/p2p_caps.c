@@ -336,7 +336,17 @@ _kp2pCapsGetStatusOverPcie
         return NV_OK;
     }
 
+    pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        if (gpumgrGetPcieP2PCapsFromCache(gpuMask, pP2PWriteCapStatus, pP2PReadCapStatus))
+        {
+            return NV_OK;
+        }
+    }
+
     // PCI-E topology checks
+    gpuInstance = 0;
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
         //
@@ -374,7 +384,7 @@ _kp2pCapsGetStatusOverPcie
                 {
                     *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_IOH_TOPOLOGY_NOT_SUPPORTED;
                     *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_IOH_TOPOLOGY_NOT_SUPPORTED;
-                    return NV_OK;
+                    goto done;
                 }
             }
         }
@@ -390,7 +400,7 @@ _kp2pCapsGetStatusOverPcie
         {
             *pP2PReadCapStatus  = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
             *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
-            return NV_OK;
+            goto done;
         }
 
         // This call returns the most upper bridge
@@ -496,6 +506,16 @@ done:
         }
     }
 
+    //
+    // Not fatal if failing, effect would be perf degradation as we would not hit the cache.
+    // So just assert.
+    //
+    gpuInstance = 0;
+    pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+    if (IS_GSP_CLIENT(pGpu))
+    {
+       NV_ASSERT_OK(gpumgrStorePcieP2PCapsCache(gpuMask, *pP2PWriteCapStatus, *pP2PReadCapStatus));
+    }
     return status;
 }
 

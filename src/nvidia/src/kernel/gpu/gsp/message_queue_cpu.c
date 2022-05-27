@@ -514,11 +514,13 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI)
     int         nRet;
     int         i;
     int         nRetries;
+    int         nMaxRetries  = 3;
     int         nElements    = 1;  // Assume record fits in one 256-byte queue element for now.
     NvU32       uElementSize = 0;
+    NvU32       seqMismatchDiff = NV_U32_MAX;
     NV_STATUS   nvStatus     = NV_OK;
 
-    for (nRetries = 0; nRetries < 3; nRetries++)
+    for (nRetries = 0; nRetries < nMaxRetries; nRetries++)
     {
         pTgt      = (NvU8 *)pMQI->pCmdQueueElement;
         nvStatus  = NV_OK;
@@ -587,10 +589,29 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI)
 
         // Retry if sequence number is wrong.
         if (pMQI->pCmdQueueElement->seqNum != pMQI->rxSeqNum)
-
         {
-            NV_PRINTF(LEVEL_ERROR, "Bad sequence number.  Expected %u got %u.\n",
+            NV_PRINTF(LEVEL_ERROR, "Bad sequence number.  Expected %u got %u. Possible memory corruption.\n",
                 pMQI->rxSeqNum, pMQI->pCmdQueueElement->seqNum);
+
+            // If we read an old piece of data, try to ignore it and move on..
+            if (pMQI->pCmdQueueElement->seqNum < pMQI->rxSeqNum)
+            {
+                // Make sure we're converging to the desired pMQI->rxSeqNum
+                if ((pMQI->rxSeqNum - pMQI->pCmdQueueElement->seqNum) < seqMismatchDiff)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Attempting recovery: ignoring old package with seqNum=%u of %u elements.\n",
+                        pMQI->pCmdQueueElement->seqNum, nElements);
+
+                    seqMismatchDiff = pMQI->rxSeqNum - pMQI->pCmdQueueElement->seqNum;
+                    nRet = msgqRxMarkConsumed(pMQI->hQueue, nElements);
+                    if (nRet < 0)
+                    {
+                        NV_PRINTF(LEVEL_ERROR, "msgqRxMarkConsumed failed: %d\n", nRet);
+                    }
+                    nMaxRetries++;
+                }
+            }
+
             nvStatus = NV_ERR_INVALID_DATA;
             continue;
         }

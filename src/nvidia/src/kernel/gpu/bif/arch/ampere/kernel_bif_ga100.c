@@ -24,6 +24,7 @@
 
 /* ------------------------ Includes ---------------------------------------- */
 #include "gpu/bif/kernel_bif.h"
+#include "ampere/ga100/dev_nv_xve_addendum.h"
 
 
 /* ------------------------ Public Functions -------------------------------- */
@@ -46,4 +47,27 @@ kbifApplyWARBug3208922_GA100
         pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED,  NV_TRUE);
         pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED, NV_TRUE);
     }
+}
+
+/*!
+ * @brief Check for RO enablement request in emulated config space.
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  BIF object pointer
+ */
+void
+kbifInitRelaxedOrderingFromEmulatedConfigSpace_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 passthroughEmulatedConfig = osPciReadDword(osPciInitHandle(gpuGetDomain(pGpu),
+                                                                     gpuGetBus(pGpu),
+                                                                     gpuGetDevice(pGpu),
+                                                                     0, NULL, NULL),
+                                                     NV_XVE_PASSTHROUGH_EMULATED_CONFIG);
+    NvBool roEnabled = DRF_VAL(_XVE, _PASSTHROUGH_EMULATED_CONFIG, _RELAXED_ORDERING_ENABLE, passthroughEmulatedConfig);
+
+    pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_PCIE_RELAXED_ORDERING_SET_IN_EMULATED_CONFIG_SPACE, roEnabled);
 }

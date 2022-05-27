@@ -1339,6 +1339,12 @@ gpuDestruct_IMPL
 
     pGpu->regopScratchBufferMaxOffsets = 0;
 
+    NV_ASSERT(pGpu->numSubdeviceBackReferences == 0);
+    portMemFree(pGpu->pSubdeviceBackReferences);
+    pGpu->pSubdeviceBackReferences = NULL;
+    pGpu->numSubdeviceBackReferences = 0;
+    pGpu->maxSubdeviceBackReferences = 0;
+
     gpuDestructPhysical(pGpu);
 }
 

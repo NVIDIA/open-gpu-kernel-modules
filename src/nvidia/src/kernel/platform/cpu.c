@@ -246,7 +246,7 @@ void RmInitCpuInfo(void)
 /*
  * Documentation:
  *
- * http://infocenter.arm.com/help/topic/com.arm.doc.ddi0388f/CIHHDACH.html
+ * https://developer.arm.com/documentation/ddi0388/f/CIHHDACH
  */
 static void DecodeCortexA9Cache(OBJSYS *pSys)
 {

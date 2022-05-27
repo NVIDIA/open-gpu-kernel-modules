@@ -255,7 +255,6 @@ struct KernelGsp {
     NV_STATUS (*__kgspExecuteFwsecFrts__)(struct OBJGPU *, struct KernelGsp *, KernelGspFlcnUcode *, const NvU64);
     NV_STATUS (*__kgspExecuteHsFalcon__)(struct OBJGPU *, struct KernelGsp *, KernelGspFlcnUcode *, struct KernelFalcon *, NvU32 *, NvU32 *);
     const BINDATA_ARCHIVE *(*__kgspGetBinArchiveBooterLoadUcode__)(struct KernelGsp *);
-    const BINDATA_ARCHIVE *(*__kgspGetBinArchiveBooterReloadUcode__)(struct KernelGsp *);
     const BINDATA_ARCHIVE *(*__kgspGetBinArchiveBooterUnloadUcode__)(struct KernelGsp *);
     const char *(*__kgspGetSignatureSectionName__)(struct OBJGPU *, struct KernelGsp *);
     void (*__kgspStateDestroy__)(POBJGPU, struct KernelGsp *);
@@ -282,7 +281,6 @@ struct KernelGsp {
     struct OBJRPC *pRpc;
     KernelGspFlcnUcode *pFwsecUcode;
     KernelGspFlcnUcode *pBooterLoadUcode;
-    KernelGspFlcnUcode *pBooterReloadUcode;
     KernelGspFlcnUcode *pBooterUnloadUcode;
     MEMORY_DESCRIPTOR *pWprMetaDescriptor;
     GspFwWprMeta *pWprMeta;
@@ -368,8 +366,6 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspExecuteHsFalcon_HAL(pGpu, pKernelGsp, pFlcnUcode, pKernelFlcn, pMailbox0, pMailbox1) kgspExecuteHsFalcon_DISPATCH(pGpu, pKernelGsp, pFlcnUcode, pKernelFlcn, pMailbox0, pMailbox1)
 #define kgspGetBinArchiveBooterLoadUcode(pKernelGsp) kgspGetBinArchiveBooterLoadUcode_DISPATCH(pKernelGsp)
 #define kgspGetBinArchiveBooterLoadUcode_HAL(pKernelGsp) kgspGetBinArchiveBooterLoadUcode_DISPATCH(pKernelGsp)
-#define kgspGetBinArchiveBooterReloadUcode(pKernelGsp) kgspGetBinArchiveBooterReloadUcode_DISPATCH(pKernelGsp)
-#define kgspGetBinArchiveBooterReloadUcode_HAL(pKernelGsp) kgspGetBinArchiveBooterReloadUcode_DISPATCH(pKernelGsp)
 #define kgspGetBinArchiveBooterUnloadUcode(pKernelGsp) kgspGetBinArchiveBooterUnloadUcode_DISPATCH(pKernelGsp)
 #define kgspGetBinArchiveBooterUnloadUcode_HAL(pKernelGsp) kgspGetBinArchiveBooterUnloadUcode_DISPATCH(pKernelGsp)
 #define kgspGetSignatureSectionName(pGpu, pKernelGsp) kgspGetSignatureSectionName_DISPATCH(pGpu, pKernelGsp)
@@ -511,6 +507,19 @@ static inline NV_STATUS kgspExtractVbiosFromRom(struct OBJGPU *pGpu, struct Kern
 
 #define kgspExtractVbiosFromRom_HAL(pGpu, pKernelGsp, ppVbiosImg) kgspExtractVbiosFromRom(pGpu, pKernelGsp, ppVbiosImg)
 
+NV_STATUS kgspExecuteFwsecSb_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, KernelGspFlcnUcode *pFwsecUcode);
+
+#ifdef __nvoc_kernel_gsp_h_disabled
+static inline NV_STATUS kgspExecuteFwsecSb(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, KernelGspFlcnUcode *pFwsecUcode) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_gsp_h_disabled
+#define kgspExecuteFwsecSb(pGpu, pKernelGsp, pFwsecUcode) kgspExecuteFwsecSb_TU102(pGpu, pKernelGsp, pFwsecUcode)
+#endif //__nvoc_kernel_gsp_h_disabled
+
+#define kgspExecuteFwsecSb_HAL(pGpu, pKernelGsp, pFwsecUcode) kgspExecuteFwsecSb(pGpu, pKernelGsp, pFwsecUcode)
+
 NV_STATUS kgspExecuteBooterLoad_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, const NvU64 gspFwWprMetaOffset);
 
 #ifdef __nvoc_kernel_gsp_h_disabled
@@ -523,19 +532,6 @@ static inline NV_STATUS kgspExecuteBooterLoad(struct OBJGPU *pGpu, struct Kernel
 #endif //__nvoc_kernel_gsp_h_disabled
 
 #define kgspExecuteBooterLoad_HAL(pGpu, pKernelGsp, gspFwWprMetaOffset) kgspExecuteBooterLoad(pGpu, pKernelGsp, gspFwWprMetaOffset)
-
-NV_STATUS kgspExecuteBooterReload_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
-
-#ifdef __nvoc_kernel_gsp_h_disabled
-static inline NV_STATUS kgspExecuteBooterReload(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_gsp_h_disabled
-#define kgspExecuteBooterReload(pGpu, pKernelGsp) kgspExecuteBooterReload_TU102(pGpu, pKernelGsp)
-#endif //__nvoc_kernel_gsp_h_disabled
-
-#define kgspExecuteBooterReload_HAL(pGpu, pKernelGsp) kgspExecuteBooterReload(pGpu, pKernelGsp)
 
 NV_STATUS kgspExecuteBooterUnloadIfNeeded_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
 
@@ -562,6 +558,19 @@ static inline NV_STATUS kgspWaitForGfwBootOk(struct OBJGPU *pGpu, struct KernelG
 #endif //__nvoc_kernel_gsp_h_disabled
 
 #define kgspWaitForGfwBootOk_HAL(pGpu, pKernelGsp) kgspWaitForGfwBootOk(pGpu, pKernelGsp)
+
+NV_STATUS kgspWaitForProcessorSuspend_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
+
+#ifdef __nvoc_kernel_gsp_h_disabled
+static inline NV_STATUS kgspWaitForProcessorSuspend(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_gsp_h_disabled
+#define kgspWaitForProcessorSuspend(pGpu, pKernelGsp) kgspWaitForProcessorSuspend_TU102(pGpu, pKernelGsp)
+#endif //__nvoc_kernel_gsp_h_disabled
+
+#define kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp) kgspWaitForProcessorSuspend(pGpu, pKernelGsp)
 
 NV_STATUS kgspConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, ENGDESCRIPTOR arg0);
 
@@ -739,22 +748,6 @@ static inline const BINDATA_ARCHIVE *kgspGetBinArchiveBooterLoadUcode_80f438(str
 
 static inline const BINDATA_ARCHIVE *kgspGetBinArchiveBooterLoadUcode_DISPATCH(struct KernelGsp *pKernelGsp) {
     return pKernelGsp->__kgspGetBinArchiveBooterLoadUcode__(pKernelGsp);
-}
-
-const BINDATA_ARCHIVE *kgspGetBinArchiveBooterReloadUcode_TU102(struct KernelGsp *pKernelGsp);
-
-const BINDATA_ARCHIVE *kgspGetBinArchiveBooterReloadUcode_TU116(struct KernelGsp *pKernelGsp);
-
-const BINDATA_ARCHIVE *kgspGetBinArchiveBooterReloadUcode_GA100(struct KernelGsp *pKernelGsp);
-
-const BINDATA_ARCHIVE *kgspGetBinArchiveBooterReloadUcode_GA102(struct KernelGsp *pKernelGsp);
-
-static inline const BINDATA_ARCHIVE *kgspGetBinArchiveBooterReloadUcode_80f438(struct KernelGsp *pKernelGsp) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
-}
-
-static inline const BINDATA_ARCHIVE *kgspGetBinArchiveBooterReloadUcode_DISPATCH(struct KernelGsp *pKernelGsp) {
-    return pKernelGsp->__kgspGetBinArchiveBooterReloadUcode__(pKernelGsp);
 }
 
 const BINDATA_ARCHIVE *kgspGetBinArchiveBooterUnloadUcode_TU102(struct KernelGsp *pKernelGsp);
@@ -1011,16 +1004,6 @@ static inline NV_STATUS kgspAllocateBooterLoadUcodeImage(struct OBJGPU *pGpu, st
 }
 #else //__nvoc_kernel_gsp_h_disabled
 #define kgspAllocateBooterLoadUcodeImage(pGpu, pKernelGsp, ppBooterLoadUcode) kgspAllocateBooterLoadUcodeImage_IMPL(pGpu, pKernelGsp, ppBooterLoadUcode)
-#endif //__nvoc_kernel_gsp_h_disabled
-
-NV_STATUS kgspAllocateBooterReloadUcodeImage_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, KernelGspFlcnUcode **ppBooterReloadUcode);
-#ifdef __nvoc_kernel_gsp_h_disabled
-static inline NV_STATUS kgspAllocateBooterReloadUcodeImage(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, KernelGspFlcnUcode **ppBooterReloadUcode) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_gsp_h_disabled
-#define kgspAllocateBooterReloadUcodeImage(pGpu, pKernelGsp, ppBooterReloadUcode) kgspAllocateBooterReloadUcodeImage_IMPL(pGpu, pKernelGsp, ppBooterReloadUcode)
 #endif //__nvoc_kernel_gsp_h_disabled
 
 NV_STATUS kgspAllocateBooterUnloadUcodeImage_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, KernelGspFlcnUcode **ppBooterUnloadUcode);

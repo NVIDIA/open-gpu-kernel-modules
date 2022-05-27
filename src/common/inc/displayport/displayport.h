@@ -262,6 +262,10 @@ typedef struct DscCaps
     unsigned dscPeakThroughputMode1;
     unsigned dscMaxSliceWidth;
 
+    unsigned branchDSCOverallThroughputMode0;
+    unsigned branchDSCOverallThroughputMode1;
+    unsigned branchDSCMaximumLineBufferWidth;
+
     BITS_PER_PIXEL_INCREMENT dscBitsPerPixelIncrement;
 } DscCaps;
 

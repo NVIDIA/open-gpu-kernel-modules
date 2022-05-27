@@ -218,6 +218,9 @@ kdispStatePreInitLocked_IMPL(OBJGPU        *pGpu,
     NvU32   hSubdevice = pGpu->hInternalSubdevice;
     NV2080_CTRL_INTERNAL_DISPLAY_GET_IP_VERSION_PARAMS ctrlParams;
 
+    if (!gpuFuseSupportsDisplay_HAL(pGpu))
+       return NV_ERR_NOT_SUPPORTED;
+ 
     status = pRmApi->Control(pRmApi, hClient, hSubdevice,
                              NV2080_CTRL_CMD_INTERNAL_DISPLAY_GET_IP_VERSION,
                              &ctrlParams, sizeof(ctrlParams));

@@ -1120,6 +1120,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MDEV_SET_IOMMU_DEVICE_PRESENT" "" "functions"
         ;;
 
+        mdev_parent_ops_has_open_device)
+            # Determine if 'mdev_parent_ops' structure has a 'open_device'
+            # field.
+            #
+            # Added by commit 2fd585f4ed9d ("vfio: Provide better generic support
+            # for open/release vfio_device_ops") in 5.15 (2021-08-05)
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/mdev.h>
+            int conftest_mdev_parent_ops_has_open_device(void) {
+                return offsetof(struct mdev_parent_ops, open_device);
+            }"
+
+            compile_check_conftest "$CODE" "NV_MDEV_PARENT_OPS_HAS_OPEN_DEVICE" "" "types"
+        ;;
+
         pci_irq_vector_helpers)
             #
             # Determine if pci_alloc_irq_vectors(), pci_free_irq_vectors()
@@ -1152,23 +1169,6 @@ compile_test() {
             struct vfio_device_gfx_plane_info info;"
 
             compile_check_conftest "$CODE" "NV_VFIO_DEVICE_GFX_PLANE_INFO_PRESENT" "" "types"
-        ;;
-
-        vfio_device_migration_info)
-            #
-            # determine if the 'struct vfio_device_migration_info' type is present.
-            #
-            # Proposed interface for vGPU Migration
-            # ("[PATCH v3 0/5] Add migration support for VFIO device ")
-            # https://lists.gnu.org/archive/html/qemu-devel/2019-02/msg05176.html
-            # Upstreamed commit a8a24f3f6e38 (vfio: UAPI for migration interface
-            # for device state) in v5.8 (2020-05-29)
-            #
-            CODE="
-            #include <linux/vfio.h>
-            struct vfio_device_migration_info info;"
-
-            compile_check_conftest "$CODE" "NV_VFIO_DEVICE_MIGRATION_INFO_PRESENT" "" "types"
         ;;
 
         vfio_device_migration_has_start_pfn)
@@ -5302,6 +5302,67 @@ compile_test() {
                 return acpi_bus_get_device();
             }"
             compile_check_conftest "$CODE" "NV_ACPI_BUS_GET_DEVICE_PRESENT" "" "functions"
+        ;;
+
+        dma_resv_add_fence)
+            #
+            # Determine if the dma_resv_add_fence() function is present.
+            #
+            # dma_resv_add_excl_fence() and dma_resv_add_shared_fence() were
+            # removed and replaced with dma_resv_add_fence() by commit
+            # 73511edf8b19 ("dma-buf: specify usage while adding fences to
+            # dma_resv obj v7") in linux-next, expected in v5.19-rc1.
+            #
+            CODE="
+            #if defined(NV_LINUX_DMA_RESV_H_PRESENT)
+            #include <linux/dma-resv.h>
+            #endif
+            void conftest_dma_resv_add_fence(void) {
+                dma_resv_add_fence();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMA_RESV_ADD_FENCE_PRESENT" "" "functions"
+        ;;
+
+        dma_resv_reserve_fences)
+            #
+            # Determine if the dma_resv_reserve_fences() function is present.
+            #
+            # dma_resv_reserve_shared() was removed and replaced with
+            # dma_resv_reserve_fences() by commit c8d4c18bfbc4
+            # ("dma-buf/drivers: make reserving a shared slot mandatory v4") in
+            # linux-next, expected in v5.19-rc1.
+            #
+            CODE="
+            #if defined(NV_LINUX_DMA_RESV_H_PRESENT)
+            #include <linux/dma-resv.h>
+            #endif
+            void conftest_dma_resv_reserve_fences(void) {
+                dma_resv_reserve_fences();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DMA_RESV_RESERVE_FENCES_PRESENT" "" "functions"
+        ;;
+
+        reservation_object_reserve_shared_has_num_fences_arg)
+            #
+            # Determine if reservation_object_reserve_shared() has 'num_fences'
+            # argument.
+            #
+            # reservation_object_reserve_shared() function prototype was updated
+            # to take 'num_fences' argument by commit ca05359f1e64 ("dma-buf:
+            # allow reserving more than one shared fence slot") in v4.21-rc1
+            # (2018-12-14).
+            #
+            CODE="
+            #include <linux/reservation.h>
+            void conftest_reservation_object_reserve_shared_has_num_fences_arg(
+                    struct reservation_object *obj,
+                    unsigned int num_fences) {
+                (void) reservation_object_reserve_shared(obj, num_fences);
+            }"
+
+            compile_check_conftest "$CODE" "NV_RESERVATION_OBJECT_RESERVE_SHARED_HAS_NUM_FENCES_ARG" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

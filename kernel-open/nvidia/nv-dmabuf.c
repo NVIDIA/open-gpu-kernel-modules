@@ -48,6 +48,7 @@ typedef struct nv_dma_buf_file_private
     nv_dma_buf_mem_handle_t *handles;
     NvU64                    bar1_va_ref_count;
     void                    *mig_info;
+    NvBool                   can_mmap;
 } nv_dma_buf_file_private_t;
 
 static void
@@ -562,6 +563,8 @@ nv_dma_buf_mmap(
     struct vm_area_struct *vma
 )
 {
+    // TODO: Check can_mmap flag
+
     return -ENOTSUPP;
 }
 
@@ -674,6 +677,7 @@ nv_dma_buf_create(
     priv->total_objects = params->totalObjects;
     priv->total_size    = params->totalSize;
     priv->nv            = nv;
+    priv->can_mmap      = NV_FALSE;
 
     rc = nv_kmem_cache_alloc_stack(&sp);
     if (rc != 0)
@@ -791,6 +795,15 @@ nv_dma_buf_reuse(
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to get dma-buf\n");
         return NV_ERR_OPERATING_SYSTEM;
     }
+
+
+
+
+
+
+
+
+
 
     priv = buf->priv;
 

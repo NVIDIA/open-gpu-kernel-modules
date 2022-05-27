@@ -27,7 +27,20 @@
 #include "published/maxwell/gm107/dev_bus.h"
 #include "published/maxwell/gm107/dev_nv_xve.h"
 #include "published/maxwell/gm107/dev_nv_xve1.h"
+#include "published/maxwell/gm107/dev_fuse.h"
 
+/*!
+ * @brief Read fuse for display supported status.
+ *        Some chips not marked displayless do not support display
+ */
+NvBool
+gpuFuseSupportsDisplay_GM107
+(
+    OBJGPU *pGpu
+)
+{
+    return GPU_FLD_TEST_DRF_DEF(pGpu, _FUSE, _STATUS_OPT_DISPLAY, _DATA, _ENABLE);
+}
 
 /*!
  * @brief gpuReadBusConfigRegEx_GM107

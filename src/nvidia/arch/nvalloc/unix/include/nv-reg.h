@@ -302,23 +302,6 @@
 #define NV_REG_ENABLE_MSI NV_REG_STRING(__NV_ENABLE_MSI)
 
 /*
- * Option: RegisterForACPIEvents
- *
- * Description:
- *
- * When this option is enabled, the NVIDIA driver will register with the
- * ACPI subsystem to receive notification of ACPI events.
- *
- * Possible values:
- *
- *  1 - register for ACPI events (default)
- *  0 - do not register for ACPI events
- */
-
-#define __NV_REGISTER_FOR_ACPI_EVENTS  RegisterForACPIEvents
-#define NV_REG_REGISTER_FOR_ACPI_EVENTS NV_REG_STRING(__NV_REGISTER_FOR_ACPI_EVENTS)
-
-/*
  * Option: EnablePCIeGen3
  *
  * Description:
@@ -817,6 +800,30 @@
 #define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_ENABLE  0x00000001
 #define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DEFAULT NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DISABLE
 
+/*
+ * Option: NVreg_DmaRemapPeerMmio
+ *
+ * Description:
+ *
+ * When this option is enabled, the NVIDIA driver will use device driver
+ * APIs provided by the Linux kernel for DMA-remapping part of a device's
+ * MMIO region to another device, creating e.g., IOMMU mappings as necessary.
+ * When this option is disabled, the NVIDIA driver will instead only apply a
+ * fixed offset, which may be zero, to CPU physical addresses to produce the
+ * DMA address for the peer's MMIO region, and no IOMMU mappings will be
+ * created.
+ *
+ * This option only affects peer MMIO DMA mappings, and not system memory
+ * mappings.
+ *
+ * Possible Values:
+ *  0 = disable dynamic DMA remapping of peer MMIO regions
+ *  1 = enable dynamic DMA remapping of peer MMIO regions (default)
+ */
+#define __NV_DMA_REMAP_PEER_MMIO DmaRemapPeerMmio
+#define NV_DMA_REMAP_PEER_MMIO NV_REG_STRING(__NV_DMA_REMAP_PEER_MMIO)
+#define NV_DMA_REMAP_PEER_MMIO_DISABLE  0x00000000
+#define NV_DMA_REMAP_PEER_MMIO_ENABLE   0x00000001
 
 #if defined(NV_DEFINE_REGISTRY_KEY_TABLE)
 
@@ -832,7 +839,6 @@ NV_DEFINE_REG_ENTRY(__NV_DEVICE_FILE_GID, 0);
 NV_DEFINE_REG_ENTRY(__NV_DEVICE_FILE_MODE, 0666);
 NV_DEFINE_REG_ENTRY(__NV_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS, 1);
 NV_DEFINE_REG_ENTRY(__NV_USE_PAGE_ATTRIBUTE_TABLE, ~0);
-NV_DEFINE_REG_ENTRY(__NV_REGISTER_FOR_ACPI_EVENTS, 1);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_PCIE_GEN3, 0);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_MSI, 1);
 NV_DEFINE_REG_ENTRY(__NV_TCE_BYPASS_MODE, NV_TCE_BYPASS_MODE_DEFAULT);
@@ -863,6 +869,7 @@ NV_DEFINE_REG_STRING_ENTRY(__NV_RM_MSG, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_GPU_BLACKLIST, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_TEMPORARY_FILE_PATH, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_EXCLUDED_GPUS, NULL);
+NV_DEFINE_REG_ENTRY(__NV_DMA_REMAP_PEER_MMIO, NV_DMA_REMAP_PEER_MMIO_ENABLE);
 
 /*
  *----------------registry database definition----------------------
@@ -885,7 +892,6 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_USE_PAGE_ATTRIBUTE_TABLE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_MSI),
-    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_REGISTER_FOR_ACPI_EVENTS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_PCIE_GEN3),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_MEMORY_POOL_SIZE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_KMALLOC_HEAP_MAX_SIZE),
@@ -908,6 +914,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_GPU_FIRMWARE_LOGS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_DBG_BREAKPOINT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DMA_REMAP_PEER_MMIO),
     {NULL, NULL}
 };
 

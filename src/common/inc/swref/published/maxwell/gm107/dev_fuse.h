@@ -21,17 +21,11 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __ga102_dev_gc6_island_h__
-#define __ga102_dev_gc6_island_h__
+#ifndef __gm107_dev_fuse_h__
+#define __gm107_dev_fuse_h__
 
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK                                     0x00118128 /* RW-4R */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION                            3:0 /* RWIVF */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION_LEVEL0                     0:0 /*       */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION_LEVEL0_ENABLE       0x00000001 /*       */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION_LEVEL0_DISABLE      0x00000000 /*       */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_03(i)                                          (0x00118214+(i)*4) /* RW-4A */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05(i)                                          (0x00118234+(i)*4) /* RW-4A */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_42                                                     0x001183a4 /* RW-4R */
-#define NV_PGC6_BSI_SECURE_SCRATCH_14                                                           0x001180f8 /* RW-4R */
+#define NV_FUSE_STATUS_OPT_DISPLAY                                                                  0x00021C04 /* R-I4R */
+#define NV_FUSE_STATUS_OPT_DISPLAY_DATA                                                                    0:0 /* R-IVF */
+#define NV_FUSE_STATUS_OPT_DISPLAY_DATA_ENABLE                                                      0x00000000 /* R---V */
 
-#endif // __ga102_dev_gc6_island_h__
+#endif // __gm107_dev_fuse_h__

@@ -1083,6 +1083,7 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_EDP_DISPLAY_CTL_COLOR_ENGINE_EN_DISABLED            (0x00000000) /* RWXUV */
 #define NV_DPCD_EDP_DISPLAY_CTL_OVERDRIVE_CTL                               5:4  /* RWXUF */
 #define NV_DPCD_EDP_DISPLAY_CTL_OVERDRIVE_CTL_AUTONOMOUS            (0x00000000) /* RWXUV */
+#define NV_DPCD_EDP_DISPLAY_CTL_OVERDRIVE_CTL_AUTONOMOUS_1          (0x00000001) /* RWXUV */
 #define NV_DPCD_EDP_DISPLAY_CTL_OVERDRIVE_CTL_DISABLE               (0x00000002) /* RWXUV */
 #define NV_DPCD_EDP_DISPLAY_CTL_OVERDRIVE_CTL_ENABLE                (0x00000003) /* RWXUV */
 #define NV_DPCD_EDP_DISPLAY_CTL_VBLANK_BKLGHT_UPDATE_EN                     7:7  /* RWXUF */

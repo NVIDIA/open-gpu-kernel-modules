@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,5 +41,12 @@
 // See bug 2927491 for more details.
 //
 #define NV_XVE_PASSTHROUGH_EMULATED_CONFIG_ROOT_PORT_SPEED               3:0
+
+//
+// On some platforms it's beneficial to enable relaxed ordering after vetting
+// it's safe to do so. To automate this process on virtualized platforms, allow
+// RO to be requested through this emulated config space bit.
+//
+#define NV_XVE_PASSTHROUGH_EMULATED_CONFIG_RELAXED_ORDERING_ENABLE       4:4
 
 #endif

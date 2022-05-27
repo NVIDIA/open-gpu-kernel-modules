@@ -116,6 +116,8 @@ namespace DisplayPort
         bool                isBeingDestroyed;
         bool                isPaused;
 
+        bool                bNoReplyTimerForBusyWaiting;
+
         List                messageReceivers;
         List                notYetSentDownRequest;    // Down Messages yet to be processed
         List                notYetSentUpReply;        // Up Reply Messages yet to be processed
@@ -151,6 +153,13 @@ namespace DisplayPort
         void IRQDownReply()
         {
             mergerDownReply.mailboxInterrupt();
+        }
+
+        void applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatabase)
+        {
+            DP_ASSERT(dpRegkeyDatabase.bInitialized &&
+                      "All regkeys are invalid because dpRegkeyDatabase is not initialized!");
+            bNoReplyTimerForBusyWaiting = dpRegkeyDatabase.bNoReplyTimerForBusyWaiting;
         }
 
         MessageManager(DPCDHAL * hal, Timer * timer)
@@ -236,6 +245,7 @@ namespace DisplayPort
             MessageManager * parent;
             bool             transmitReply;
             bool             bTransmitted;
+            bool             bBusyWaiting;
             unsigned         requestIdentifier;
             unsigned         messagePriority;
             unsigned         sinkPort;
@@ -261,6 +271,7 @@ namespace DisplayPort
                   parent(0),
                   transmitReply(false),
                   bTransmitted(false),
+                  bBusyWaiting(false),
                   requestIdentifier(requestIdentifier),
                   messagePriority(messagePriority),
                   sinkPort(0xFF)

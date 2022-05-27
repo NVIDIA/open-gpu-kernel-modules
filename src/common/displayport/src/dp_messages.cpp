@@ -63,6 +63,11 @@ bool MessageManager::send(MessageManager::Message * message, NakData & nakData)
     DP_USED(sb);
 
     NvU64 startTime, elapsedTime;
+
+    if (bNoReplyTimerForBusyWaiting)
+    {
+        message->bBusyWaiting = true;
+    }
     post(message, &completion);
     startTime = timer->getTimeUs();
     do
@@ -152,14 +157,13 @@ void MessageManager::Message::splitterTransmitted(OutgoingTransactionManager * f
 
     if (from == &parent->splitterDownRequest)
     {
-        //
-        //     Start the countdown timer for the reply
-        //
-        parent->timer->queueCallback(this, "SPLI", DPCD_MESSAGE_REPLY_TIMEOUT);
-
-        //
+        // Client will busy-waiting for the message to complete, we don't need the countdown timer.
+        if (!bBusyWaiting)
+        {
+            // Start the countdown timer for the reply
+            parent->timer->queueCallback(this, "SPLI", DPCD_MESSAGE_REPLY_TIMEOUT);
+        }
         // Tell the message manager he may begin sending the next message
-        //
         parent->transmitAwaitingDownRequests();
     }
     else    // UpReply

@@ -36,7 +36,9 @@
 #include "published/ampere/ga102/dev_falcon_second_pri.h"
 #include "published/ampere/ga102/dev_gsp.h"
 #include "published/ampere/ga102/dev_gsp_addendum.h"
-
+#include "published/ampere/ga102/dev_gc6_island.h"
+#include "published/ampere/ga102/dev_gc6_island_addendum.h"
+#include "gpu/sec2/kernel_sec2.h"
 
 #define RISCV_BR_ADDR_ALIGNMENT                 (8)
 
@@ -85,6 +87,23 @@ _kgspResetIntoRiscv
     kflcnRiscvProgramBcr_HAL(pGpu, pKernelFlcn, NV_TRUE);
 
     return NV_OK;
+}
+
+/*!
+ * Determine if GSP reload via SEC2 is completed.
+ */
+static NvBool
+_kgspIsReloadCompleted
+(
+    OBJGPU  *pGpu,
+    void    *pVoid
+)
+{
+    NvU32 reg;
+
+    reg = GPU_REG_RD32(pGpu, NV_PGC6_BSI_SECURE_SCRATCH_14);
+
+    return FLD_TEST_DRF(_PGC6, _BSI_SECURE_SCRATCH_14, _BOOT_STAGE_3_HANDOFF, _VALUE_DONE, reg);
 }
 
 /*!
@@ -265,6 +284,7 @@ kgspExecuteSequencerCommand_GA102
 {
     NV_STATUS       status        = NV_OK;
     KernelFalcon   *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
+    NvU32           secMailbox0   = 0;
 
     switch (opCode)
     {
@@ -301,14 +321,26 @@ kgspExecuteSequencerCommand_GA102
             NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
 
             {
+                KernelFalcon *pKernelSec2Falcon = staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
+
                 NV_ASSERT_OK_OR_RETURN(_kgspResetIntoRiscv(pGpu, pKernelGsp));
                 kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
 
-                status = kgspExecuteBooterReload_HAL(pGpu, pKernelGsp);
-                if (status != NV_OK)
+                NV_PRINTF(LEVEL_INFO, "---------------Starting SEC2 to resume GSP-RM------------\n");
+                // Start SEC2 in order to resume GSP-RM
+                kflcnStartCpu_HAL(pGpu, pKernelSec2Falcon);
+
+                // Wait for reload to be completed.
+                status = gpuTimeoutCondWait(pGpu, _kgspIsReloadCompleted, NULL, NULL);
+
+                // Check SEC mailbox. 
+                secMailbox0 = kflcnRegRead_HAL(pGpu, pKernelSec2Falcon, NV_PFALCON_FALCON_MAILBOX0);
+
+                if ((status != NV_OK) || (secMailbox0 != NV_OK))
                 {
-                    NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Reload (ucode for resume from sequencer): 0x%x\n", status);
-                    break;
+                    NV_PRINTF(LEVEL_ERROR, "Timeout waiting for SEC2-RTOS to resume GSP-RM. SEC2 Mailbox0 is : 0x%x\n", secMailbox0);
+                    DBG_BREAKPOINT();
+                    return NV_ERR_TIMEOUT;
                 }
             }
 
