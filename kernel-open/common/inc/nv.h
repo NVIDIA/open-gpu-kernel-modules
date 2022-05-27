@@ -454,8 +454,6 @@ typedef struct nv_state_t
     /* Bool to check if dma-buf is supported */
     NvBool dma_buf_supported;
 
-    NvBool printed_openrm_enable_unsupported_gpus_error;
-
 } nv_state_t;
 
 // These define need to be in sync with defines in system.h

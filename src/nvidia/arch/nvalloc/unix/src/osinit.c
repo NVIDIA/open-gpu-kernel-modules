@@ -1877,37 +1877,6 @@ NvBool RmInitAdapter(
         }
     }
 
-    {
-        // OpenRM support for features beyond what is used on Data Center GPUs
-        // is still fairly immature, so for now require users to opt into use of
-        // OpenRM with a special registry key, if not on a Data Center GPU.
-        const GspStaticConfigInfo *pSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-
-        if (pSCI->computeBranding != COMPUTE_BRANDING_TYPE_TESLA)
-        {
-            NvU32 data = NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DEFAULT;
-            RmReadRegistryDword(nv, NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS, &data);
-
-            if (data == NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DISABLE)
-            {
-                if (!nv->printed_openrm_enable_unsupported_gpus_error)
-                {
-                    nv_printf(NV_DBG_ERRORS,
-                        "NVRM: Open nvidia.ko is only ready for use on Data Center GPUs.\n");
-                    nv_printf(NV_DBG_ERRORS,
-                        "NVRM: To force use of Open nvidia.ko on other GPUs, see the\n");
-                    nv_printf(NV_DBG_ERRORS,
-                        "NVRM: 'OpenRmEnableUnsupportedGpus' kernel module parameter described\n");
-                    nv_printf(NV_DBG_ERRORS,
-                        "NVRM: in the README.\n");
-                    nv->printed_openrm_enable_unsupported_gpus_error = NV_TRUE;
-                }
-                RM_SET_ERROR(status, RM_INIT_FIRMWARE_INIT_FAILED);
-                goto shutdown;
-            }
-        }
-    }
-
     NV_DEV_PRINTF(NV_DBG_SETUP, nv, "RmInitAdapter succeeded!\n");
 
     retVal = NV_TRUE;
