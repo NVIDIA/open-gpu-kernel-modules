@@ -28,16 +28,6 @@
 // Source file: nvlimits.finn
 //
 
-
-
-
-
-
-
-
-
-
-
 /*
  * This is the maximum number of GPUs supported in a single system.
  */
