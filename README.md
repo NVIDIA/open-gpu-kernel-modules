@@ -8,12 +8,12 @@ version 515.43.04.
 
 To build:
 
-    make modules -j`nproc`
+    make modules -j$(nproc)
 
 To install, first uninstall any existing NVIDIA kernel modules.  Then,
 as root:
 
-    make modules_install -j`nproc`
+    make modules_install -j $(nproc)
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
@@ -39,7 +39,7 @@ If cross-compiling, set these variables on the make command line:
 E.g.,
 
     # compile on x86_64 for aarch64
-    make modules -j`nproc`          \
+    make modules -j$(nproc)          \
         TARGET_ARCH=aarch64         \
         CC=aarch64-linux-gnu-gcc    \
         LD=aarch64-linux-gnu-ld     \
@@ -59,7 +59,7 @@ DEBUG - Set this to "1" to build the kernel modules as debug.  By default, the
 
 These variables can be set on the make command line.  E.g.,
 
-    make modules -j`nproc` NV_VERBOSE=1
+    make modules -j$(nproc) NV_VERBOSE=1
 
 
 ## Supported Toolchains
