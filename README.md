@@ -13,7 +13,7 @@ To build:
 To install, first uninstall any existing NVIDIA kernel modules.  Then,
 as root:
 
-    make modules_install -j $(nproc)
+    make modules_install -j$(nproc)
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
