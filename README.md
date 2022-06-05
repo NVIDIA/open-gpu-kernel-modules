@@ -18,7 +18,7 @@ as root:
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
 515.48.07 driver release.  This can be achieved by installing
-the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
+the [NVIDIA GPU driver](https://www.nvidia.com/Download/index.aspx?lang=en-us) from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
     sh ./NVIDIA-Linux-[...].run --no-kernel-modules
