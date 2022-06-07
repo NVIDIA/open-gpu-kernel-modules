@@ -20,7 +20,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "nvidia-drm.h"
+#import "nvidia-drm.h"
 
 #if defined(NV_DRM_AVAILABLE)
 
@@ -35,8 +35,10 @@ const struct NvKmsKapiFunctionsTable* const nvKms = &nvKmsFuncsTable;
 
 #endif
 
-int nv_drm_init(void)
-{
+
+@implementation NvDRM
+
++ (int)nvDrmInit {
 #if defined(NV_DRM_AVAILABLE)
     if (!nvKmsKapiGetFunctionsTable(&nvKmsFuncsTable)) {
         NV_DRM_LOG_ERR(
@@ -51,9 +53,21 @@ int nv_drm_init(void)
 #endif
 }
 
-void nv_drm_exit(void)
-{
++ (void)nvDrmExit {
 #if defined(NV_DRM_AVAILABLE)
     nv_drm_remove_devices();
 #endif
+}
+
+@end
+
+
+int nv_drm_init(void)
+{
+    [NvDRM nvDrmInit];
+}
+
+void nv_drm_exit(void)
+{
+    [NvDRM nvDrmExit];
 }

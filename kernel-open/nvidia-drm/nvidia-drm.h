@@ -25,6 +25,20 @@
 
 #include "nvidia-drm-conftest.h"
 
+#ifdef __clang__
+#define NS_ROOT_CLASS __attribute__((objc_root_class))
+#else
+#define NS_ROOT_CLASS
+#endif
+
+NS_ROOT_CLASS
+@interface NvDRM {}
+
++ (int)nvDrmInit;
++ (void)nvDrmExit;
+
+@end
+
 int nv_drm_init(void);
 void nv_drm_exit(void);
 
