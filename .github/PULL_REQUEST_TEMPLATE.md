@@ -5,6 +5,7 @@
 - [ ] Feature
 - [ ] Enhancement
 - [ ] Documentation
+- [ ] Cosmetic
 - [ ] Other
 
 ## Why is this valuable?
