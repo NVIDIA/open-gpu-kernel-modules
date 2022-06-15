@@ -36,7 +36,8 @@
 
 #include "published/turing/tu102/dev_bus.h" // for NV_PBUS_VBIOS_SCRATCH
 #include "published/turing/tu102/dev_fb.h"  // for NV_PFB_PRI_MMU_WPR2_ADDR_HI
-#include "published/turing/tu102/dev_gc6_island_addendum.h"  // for NV_PGC6_AON_FRTS_INPUT_WPR_SIZE_SECURE_SCRATCH_GROUP_03_0_WPR_SIZE_1MB_IN_4K
+#include "published/turing/tu102/dev_gc6_island.h"
+#include "published/turing/tu102/dev_gc6_island_addendum.h"
 
 /*!
  * Get size of FRTS data.
@@ -98,6 +99,7 @@ typedef struct
 } FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3;
 
 #define FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS (0x15)
+#define FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_SB   (0x19)
 
 typedef struct
 {
@@ -132,25 +134,33 @@ typedef struct
 #define NV_VBIOS_FWSECLIC_FRTS_ERR_CODE         31:16
 #define NV_VBIOS_FWSECLIC_FRTS_ERR_CODE_NONE    0x00000000
 
+#define NV_VBIOS_FWSECLIC_SCRATCH_INDEX_15      0x15
+#define NV_VBIOS_FWSECLIC_SB_ERR_CODE           15:0
+#define NV_VBIOS_FWSECLIC_SB_ERR_CODE_NONE      0x00000000
+
 
 // ---------------------------------------------------------------------------
 // Functions for preparing and executing FWSEC commands
 // ---------------------------------------------------------------------------
 
 /*!
- * Patch DMEM of FWSEC for FRTS command
+ * Patch DMEM of FWSEC for a given command
  *
  * @param[inout]  pMappedData      Pointer to mapped DMEM of FWSEC
  * @param[in]     mappedDataSize   Number of bytes valid under pMappedData
- * @param[in]     pFrtsCmd         FRTS command to patch in
+ * @param[in]     cmd              FWSEC command to invoke
+ * @param[in]     pCmdBuffer       Buffer containing command arguments to patch in
+ * @param[in]     cmdBufferSize    Size of buffer pointed by pCmdBuffer
  * @param[in]     interfaceOffset  Interface offset given by VBIOS for FWSEC
  */
-NV_STATUS
-s_vbiosPatchFrtsInterfaceData
+static NV_STATUS
+s_vbiosPatchInterfaceData
 (
     NvU8 *pMappedData,  // inout
     const NvU32 mappedDataSize,
-    const FWSECLIC_FRTS_CMD *pFrtsCmd,
+    const NvU32 cmd,
+    const void *pCmdBuffer,
+    const NvU32 cmdBufferSize,
     const NvU32 interfaceOffset
 )
 {
@@ -178,7 +188,7 @@ s_vbiosPatchFrtsInterfaceData
     pIntFaceHdr = (FALCON_APPLICATION_INTERFACE_HEADER_V1 *) (pMappedData + interfaceOffset);
     if (pIntFaceHdr->entryCount < 2)
     {
-        NV_PRINTF(LEVEL_ERROR, "too few interface entires found for FRTS\n");
+        NV_PRINTF(LEVEL_ERROR, "too few interface entires found for FWSEC cmd 0x%x\n", cmd);
         return NV_ERR_INVALID_DATA;
     }
 
@@ -222,15 +232,15 @@ s_vbiosPatchFrtsInterfaceData
 
     if (!pDmemMapper)
     {
-        NV_PRINTF(LEVEL_ERROR, "failed to find required interface entry for FRTS\n");
+        NV_PRINTF(LEVEL_ERROR, "failed to find required interface entry for FWSEC cmd 0x%x\n", cmd);
         return NV_ERR_INVALID_DATA;
     }
 
-    pDmemMapper->init_cmd = FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS;
+    pDmemMapper->init_cmd = cmd;
 
-    if (pDmemMapper->cmd_in_buffer_size < sizeof(FWSECLIC_FRTS_CMD))
+    if (pDmemMapper->cmd_in_buffer_size < cmdBufferSize)
     {
-        NV_PRINTF(LEVEL_ERROR, "insufficient cmd buffer for FRTS interface\n");
+        NV_PRINTF(LEVEL_ERROR, "insufficient cmd buffer for FWSEC interface cmd 0x%x\n", cmd);
     }
 
     if (pDmemMapper->cmd_in_buffer_offset >= mappedDataSize)
@@ -238,60 +248,88 @@ s_vbiosPatchFrtsInterfaceData
         return NV_ERR_INVALID_OFFSET;
     }
 
-    bSafe = portSafeAddU32(pIntFaceEntry->dmemOffset, sizeof(*pFrtsCmd), &nextOffset);
+    bSafe = portSafeAddU32(pIntFaceEntry->dmemOffset, cmdBufferSize, &nextOffset);
     if (!bSafe || nextOffset > mappedDataSize)
     {
         return NV_ERR_INVALID_OFFSET;
     }
 
-    portMemCopy(pMappedData + pDmemMapper->cmd_in_buffer_offset, sizeof(*pFrtsCmd),
-                pFrtsCmd, sizeof(*pFrtsCmd));
+    portMemCopy(pMappedData + pDmemMapper->cmd_in_buffer_offset, cmdBufferSize,
+                pCmdBuffer, cmdBufferSize);
 
     return NV_OK;
 }
 
 /*!
- * Excecute FWSEC for FRTS and wait for completion.
+ * Excecute a given FWSEC cmd and wait for completion.
  *
  * @param[in]   pGpu           OBJGPU pointer
  * @param[in]   pKernelGsp     KernelGsp pointer
  * @param[in]   pFwsecUcode    KernelGspFlcnUcode structure of FWSEC ucode
- * @param[in]   frtsOffset     Desired offset in FB of FRTS data and WPR2
+ * @param[in]   cmd            FWSEC cmd (FRTS or SB)
+ * @param[in]   frtsOffset     (if cmd is FRTS) desired FB offset of FRTS data
  */
-NV_STATUS
-kgspExecuteFwsecFrts_TU102
+static NV_STATUS
+s_executeFwsec_TU102
 (
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
     KernelGspFlcnUcode *pFwsecUcode,
+    const NvU32 cmd,
     const NvU64 frtsOffset
 )
 {
     NV_STATUS status;
 
-    NvU32 blockSizeIn4K;
+    FWSECLIC_READ_VBIOS_DESC readVbiosDesc;
     FWSECLIC_FRTS_CMD frtsCmd;
+
+    void *pCmdBuffer;
+    NvU32 cmdBufferSize;
 
     NV_ASSERT_OR_RETURN(!IS_VIRTUAL(pGpu), NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(pGpu), NV_ERR_NOT_SUPPORTED);
 
     NV_ASSERT_OR_RETURN(pFwsecUcode != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(frtsOffset > 0, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN((cmd != FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS) ||
+                        (frtsOffset > 0), NV_ERR_INVALID_ARGUMENT);
 
-    // Build up FRTS args
-    blockSizeIn4K = NV_PGC6_AON_FRTS_INPUT_WPR_SIZE_SECURE_SCRATCH_GROUP_03_0_WPR_SIZE_1MB_IN_4K;
+    if ((cmd != FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS) &&
+        (cmd != FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_SB))
+    {
+        NV_ASSERT(0);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
-    frtsCmd.frtsRegionDesc.version = 1;
-    frtsCmd.frtsRegionDesc.size = sizeof(frtsCmd.frtsRegionDesc);
-    frtsCmd.frtsRegionDesc.frtsRegionOffset4K = (NvU32) (frtsOffset >> 12);
-    frtsCmd.frtsRegionDesc.frtsRegionSize = blockSizeIn4K;
-    frtsCmd.frtsRegionDesc.frtsRegionMediaType = FWSECLIC_FRTS_REGION_MEDIA_FB;
+    readVbiosDesc.version = 1;
+    readVbiosDesc.size = sizeof(readVbiosDesc);
+    readVbiosDesc.gfwImageOffset = 0;
+    readVbiosDesc.gfwImageSize = 0;
+    readVbiosDesc.flags = FWSECLIC_READ_VBIOS_STRUCT_FLAGS;
 
-    frtsCmd.readVbiosDesc.version = 1;
-    frtsCmd.readVbiosDesc.size = sizeof(frtsCmd.readVbiosDesc);
-    frtsCmd.readVbiosDesc.gfwImageOffset = 0;
-    frtsCmd.readVbiosDesc.gfwImageSize = 0;
-    frtsCmd.readVbiosDesc.flags = FWSECLIC_READ_VBIOS_STRUCT_FLAGS;
+    if (cmd == FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS)
+    {
+        // FRTS takes an FRTS_CMD, here we build that up
+        NvU32 blockSizeIn4K = NV_PGC6_AON_FRTS_INPUT_WPR_SIZE_SECURE_SCRATCH_GROUP_03_0_WPR_SIZE_1MB_IN_4K;
+
+        frtsCmd.frtsRegionDesc.version = 1;
+        frtsCmd.frtsRegionDesc.size = sizeof(frtsCmd.frtsRegionDesc);
+        frtsCmd.frtsRegionDesc.frtsRegionOffset4K = (NvU32) (frtsOffset >> 12);
+        frtsCmd.frtsRegionDesc.frtsRegionSize = blockSizeIn4K;
+        frtsCmd.frtsRegionDesc.frtsRegionMediaType = FWSECLIC_FRTS_REGION_MEDIA_FB;
+
+        frtsCmd.readVbiosDesc = readVbiosDesc;
+
+        pCmdBuffer = &frtsCmd;
+        cmdBufferSize = sizeof(frtsCmd);
+
+    }
+    else  // i.e. FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_SB
+    {
+        // SB takes READ_VBIOS_DESC directly
+        pCmdBuffer = &readVbiosDesc;
+        cmdBufferSize = sizeof(readVbiosDesc);
+    }
 
     if (pFwsecUcode->bootType == KGSP_FLCN_UCODE_BOOT_FROM_HS)
     {
@@ -345,8 +383,8 @@ kgspExecuteFwsecFrts_TU102
         }
         pMappedData = pMappedImage + pUcode->dataOffset;
 
-        status = s_vbiosPatchFrtsInterfaceData(pMappedData, pUcode->dmemSize,
-                                               &frtsCmd, pUcode->interfaceOffset);
+        status = s_vbiosPatchInterfaceData(pMappedData, pUcode->dmemSize, cmd,
+                                           pCmdBuffer, cmdBufferSize, pUcode->interfaceOffset);
 
         portMemCopy(pMappedData + pUcode->hsSigDmemAddr, pUcode->sigSize,
                     ((NvU8 *) pUcode->pSignatures) + sigOffset, pUcode->sigSize);
@@ -358,7 +396,8 @@ kgspExecuteFwsecFrts_TU102
 
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "failed to prepare interface data for FRTS: 0x%x\n", status);
+            NV_PRINTF(LEVEL_ERROR, "failed to prepare interface data for FWSEC cmd 0x%x: 0x%x\n",
+                      cmd, status);
             return status;
         }
     }
@@ -376,8 +415,8 @@ kgspExecuteFwsecFrts_TU102
             return NV_ERR_INSUFFICIENT_RESOURCES;
         }
 
-        status = s_vbiosPatchFrtsInterfaceData(pMappedData, pUcode->dmemSize,
-                                               &frtsCmd, pUcode->interfaceOffset);
+        status = s_vbiosPatchInterfaceData(pMappedData, pUcode->dmemSize, cmd,
+                                           pCmdBuffer, cmdBufferSize, pUcode->interfaceOffset);
 
         memdescUnmapInternal(pGpu, pUcode->pDataMemDesc,
                             TRANSFER_FLAGS_DESTROY_MAPPING);
@@ -385,7 +424,8 @@ kgspExecuteFwsecFrts_TU102
 
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "failed to prepare interface data for FRTS: 0x%x\n", status);
+            NV_PRINTF(LEVEL_ERROR, "failed to prepare interface data for FWSEC cmd 0x%x: 0x%x\n",
+                      cmd, status);
             return status;
         }
     }
@@ -399,10 +439,11 @@ kgspExecuteFwsecFrts_TU102
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for FRTS: status 0x%x\n", status);
+        NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC cmd 0x%x: status 0x%x\n", cmd, status);
         return status;
     }
 
+    if (cmd == FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS)
     {
         NvU32 data;
         NvU32 frtsErrCode;
@@ -437,6 +478,73 @@ kgspExecuteFwsecFrts_TU102
             return NV_ERR_GENERIC;
         }
     }
+    else  // i.e. FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_SB
+    {
+        NvU32 data;
+        NvU32 sbErrCode;
+
+        if (!GPU_FLD_TEST_DRF_DEF(pGpu, _PGC6, _AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK,
+                                  _READ_PROTECTION_LEVEL0, _ENABLE))
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for SB: GFW PLM not lowered\n");
+            return NV_ERR_GENERIC;
+        }
+
+        if (!GPU_FLD_TEST_DRF_DEF(pGpu, _PGC6, _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
+                                  _PROGRESS, _COMPLETED))
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for SB: GFW progress not completed\n");
+            return NV_ERR_GENERIC;
+        }
+
+        data = GPU_REG_RD32(pGpu, NV_PBUS_VBIOS_SCRATCH(NV_VBIOS_FWSECLIC_SCRATCH_INDEX_15));
+        sbErrCode = DRF_VAL(_VBIOS, _FWSECLIC, _SB_ERR_CODE, data);
+        if (sbErrCode != NV_VBIOS_FWSECLIC_SB_ERR_CODE_NONE)
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for SB: SB error code 0x%x\n", sbErrCode);
+            return NV_ERR_GENERIC;
+        }
+    }
 
     return status;
+}
+
+/*!
+ * Excecute FWSEC for FRTS and wait for completion.
+ *
+ * @param[in]   pGpu           OBJGPU pointer
+ * @param[in]   pKernelGsp     KernelGsp pointer
+ * @param[in]   pFwsecUcode    KernelGspFlcnUcode structure of FWSEC ucode
+ * @param[in]   frtsOffset     Desired offset in FB of FRTS data and WPR2
+ */
+NV_STATUS
+kgspExecuteFwsecFrts_TU102
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspFlcnUcode *pFwsecUcode,
+    const NvU64 frtsOffset
+)
+{
+    return s_executeFwsec_TU102(pGpu, pKernelGsp, pFwsecUcode,
+                                FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS, frtsOffset);
+}
+
+/*!
+ * Excecute FWSEC's SB command and wait for completion.
+ *
+ * @param[in]   pGpu           OBJGPU pointer
+ * @param[in]   pKernelGsp     KernelGsp pointer
+ * @param[in]   pFwsecUcode    KernelGspFlcnUcode structure of FWSEC ucode
+ */
+NV_STATUS
+kgspExecuteFwsecSb_TU102
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspFlcnUcode *pFwsecUcode
+)
+{
+    return s_executeFwsec_TU102(pGpu, pKernelGsp, pFwsecUcode,
+                                FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_SB, 0);
 }

@@ -84,6 +84,7 @@
 #define MAX_BITS_PER_PIXEL 32
 // Max HBlank pixel count
 #define MAX_HBLANK_PIXELS 7680
+#define MHZ_TO_HZ 1000000
 
 /* ------------------------ Datatypes -------------------------------------- */
 
@@ -1570,9 +1571,23 @@ _validateInput
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
+    if ((pDscInfo->branchCaps.overallThroughputMode0 != 0) && 
+        (pModesetInfo->pixelClockHz > pDscInfo->branchCaps.overallThroughputMode0 * MHZ_TO_HZ))
+    {
+        DSC_Print("ERROR - Pixel clock cannot be greater than Branch DSC Overall Throughput Mode 0");
+        return NVT_STATUS_INVALID_PARAMETER;
+    }
+
     if (pModesetInfo->activeWidth == 0)
     {
         DSC_Print("ERROR - Invalid active width for mode.");
+        return NVT_STATUS_INVALID_PARAMETER;
+    }
+
+    if (pDscInfo->branchCaps.maxLineBufferWidth != 0 &&
+        pModesetInfo->activeWidth > pDscInfo->branchCaps.maxLineBufferWidth)
+    {
+        DSC_Print("ERROR - Active width cannot be greater than DSC Decompressor max line buffer width");
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
@@ -1919,7 +1934,13 @@ DSC_GeneratePPS
     if (*pBitsPerPixelX16 != 0)
     {
         *pBitsPerPixelX16 = DSC_AlignDownForBppPrecision(*pBitsPerPixelX16, pDscInfo->sinkCaps.bitsPerPixelPrecision);
-        if (*pBitsPerPixelX16 > in->bits_per_pixel)
+
+        // The calculation of in->bits_per_pixel here in PPSlib, which is the maximum bpp that is allowed by available bandwidth, 
+        // which is applicable to DP alone and not to HDMI FRL. 
+        // Before calling PPS lib to generate PPS data, HDMI library has done calculation according to HDMI2.1 spec 
+        // to determine if FRL rate is sufficient for the requested bpp. So restricting the condition to DP alone.
+        if ((pWARData && (pWARData->connectorType == DSC_DP)) &&
+            (*pBitsPerPixelX16 > in->bits_per_pixel))
         {
             DSC_Print("ERROR - Invalid bits per pixel value specified.");
             ret = NVT_STATUS_INVALID_PARAMETER;

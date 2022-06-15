@@ -233,7 +233,7 @@ s_romImgFindPciHeader_TU102
             default:
                 NV_PRINTF(LEVEL_ERROR, "Error: IFR version not supported = 0x%08x.\n",
                           ifrVersion);
-                return NV_ERR_NOT_SUPPORTED;
+                return NV_ERR_INVALID_DATA;
         }
     }
 

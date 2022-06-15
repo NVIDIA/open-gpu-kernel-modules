@@ -511,33 +511,6 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     {
     }
 
-    // Hal function -- kgspGetBinArchiveBooterReloadUcode
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
-    {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000000e0UL) )) /* ChipHal: TU102 | TU104 | TU106 */ 
-        {
-            pThis->__kgspGetBinArchiveBooterReloadUcode__ = &kgspGetBinArchiveBooterReloadUcode_TU102;
-        }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000300UL) )) /* ChipHal: TU116 | TU117 */ 
-        {
-            pThis->__kgspGetBinArchiveBooterReloadUcode__ = &kgspGetBinArchiveBooterReloadUcode_TU116;
-        }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000400UL) )) /* ChipHal: GA100 */ 
-        {
-            pThis->__kgspGetBinArchiveBooterReloadUcode__ = &kgspGetBinArchiveBooterReloadUcode_GA100;
-        }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 */ 
-        {
-            pThis->__kgspGetBinArchiveBooterReloadUcode__ = &kgspGetBinArchiveBooterReloadUcode_GA102;
-        }
-        else if (0)
-        {
-        }
-    }
-    else if (0)
-    {
-    }
-
     // Hal function -- kgspGetBinArchiveBooterUnloadUcode
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
     {

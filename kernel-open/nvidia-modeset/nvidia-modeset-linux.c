@@ -976,6 +976,7 @@ NvBool nvkms_allow_write_combining(void)
     return __rm_ops.system_info.allow_write_combining;
 }
 
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE)
 /*************************************************************************
  * Implementation of sysfs interface to control backlight
  *************************************************************************/
@@ -1034,11 +1035,13 @@ static const struct backlight_ops nvkms_backlight_ops = {
     .update_status = nvkms_update_backlight_status,
     .get_brightness = nvkms_get_backlight_brightness,
 };
+#endif /* IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) */
 
 struct nvkms_backlight_device*
 nvkms_register_backlight(NvU32 gpu_id, NvU32 display_id, void *drv_priv,
                          NvU32 current_brightness)
 {
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE)
     char name[18];
     struct backlight_properties props = {
         .brightness = current_brightness,
@@ -1093,15 +1096,20 @@ done:
     nvkms_free(gpu_info, NV_MAX_GPUS * sizeof(*gpu_info));
 
     return nvkms_bd;
+#else
+    return NULL;
+#endif /* IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) */
 }
 
 void nvkms_unregister_backlight(struct nvkms_backlight_device *nvkms_bd)
 {
+#if IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE)
     if (nvkms_bd->dev) {
         backlight_device_unregister(nvkms_bd->dev);
     }
 
     nvkms_free(nvkms_bd, sizeof(*nvkms_bd));
+#endif /* IS_ENABLED(CONFIG_BACKLIGHT_CLASS_DEVICE) */
 }
 
 /*************************************************************************

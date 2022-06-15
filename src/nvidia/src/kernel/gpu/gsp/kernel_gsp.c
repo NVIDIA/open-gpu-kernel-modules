@@ -1256,43 +1256,52 @@ kgspInitRm_IMPL
      *
      * Here, we extract a VBIOS image from ROM, and parse it for FWSEC.
      */
-    if (kgspGetFrtsSize_HAL(pGpu, pKernelGsp) > 0)
+    if (pKernelGsp->pFwsecUcode == NULL)
     {
-        if (pKernelGsp->pFwsecUcode == NULL)
+        KernelGspVbiosImg *pVbiosImg = NULL;
+
+		// Try and extract a VBIOS image.
+        status = kgspExtractVbiosFromRom_HAL(pGpu, pKernelGsp, &pVbiosImg);
+
+        if (status == NV_OK)
         {
-            KernelGspVbiosImg *pVbiosImg = NULL;
-
-            status = kgspExtractVbiosFromRom_HAL(pGpu, pKernelGsp, &pVbiosImg);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "failed to extract VBIOS image from ROM: 0x%x\n",
-                          status);
-                goto done;
-            }
-
+            // Got a VBIOS image, now parse it for FWSEC.
             status = kgspParseFwsecUcodeFromVbiosImg(pGpu, pKernelGsp, pVbiosImg,
-                                                     &pKernelGsp->pFwsecUcode);
+                                                        &pKernelGsp->pFwsecUcode);
             kgspFreeVbiosImg(pVbiosImg);
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR, "failed to parse FWSEC ucode from VBIOS image: 0x%x\n",
-                          status);
+                            status);
                 goto done;
             }
         }
+        else if (status == NV_ERR_NOT_SUPPORTED)
+        {
+            //
+            // Extracting VBIOS image from ROM is not supported.
+            // Sanity check we don't depend on it for FRTS, and proceed without FWSEC.
+            //
+            NV_ASSERT_OR_GOTO(kgspGetFrtsSize(pGpu, pKernelGsp) == 0, done);
+            status = NV_OK;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to extract VBIOS image from ROM: 0x%x\n",
+                        status);
+            goto done;
+        }
+
     }
 
     /*
      * We use a set of Booter ucodes to boot GSP-RM as well as manage its lifecycle.
      *
      * Booter Load loads, verifies, and boots GSP-RM in WPR2.
-     * Booter Reload resumes GSP-RM after it has suspended for running GSP sequencer.
      * Booter Unload tears down WPR2 for driver unload.
      *
      * Here we prepare the Booter ucode images in SYSMEM so they may be loaded onto
      * SEC2 (Load / Unload) and NVDEC0 (Unload).
-     *
-     * GSPRM-TODO: remove Reload (and Reload comment) once reload is handled by SEC2-RTOS
      */
     {
         if (pKernelGsp->pBooterLoadUcode == NULL)
@@ -1302,25 +1311,6 @@ kgspInitRm_IMPL
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR, "failed to allocate Booter Load ucode: 0x%x\n", status);
-                goto done;
-            }
-        }
-
-        if (pKernelGsp->pBooterReloadUcode == NULL)
-        {
-            KernelNvdec *pKernelNvdec = GPU_GET_KERNEL_NVDEC(pGpu);
-            if (pKernelNvdec == NULL)
-            {
-                NV_PRINTF(LEVEL_ERROR, "missing NVDEC0 engine, cannot initialize GSP-RM\n");
-                status = NV_ERR_NOT_SUPPORTED;
-                goto done;
-            }
-
-            status = kgspAllocateBooterReloadUcodeImage(pGpu, pKernelGsp,
-                                                        &pKernelGsp->pBooterReloadUcode);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "failed to allocate Booter Reload ucode: 0x%x\n", status);
                 goto done;
             }
         }
@@ -1438,6 +1428,21 @@ kgspUnloadRm_IMPL
     NV_PRINTF(LEVEL_INFO, "unloading GSP-RM\n");
     NV_RM_RPC_UNLOADING_GUEST_DRIVER(pGpu, rpcStatus, NV_FALSE, NV_FALSE, 0);
 
+    // Wait for GSP-RM processor to suspend
+    kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp);
+
+    // Dump GSP-RM logs and reset before invoking FWSEC-SB
+    kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+    kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+
+    // Invoke FWSEC-SB to put back PreOsApps during driver unload
+    status = kgspExecuteFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC-SB for PreOsApps during driver unload: 0x%x\n", status);
+        NV_ASSERT(0);
+    }
+
     {
         // After instructing GSP-RM to unload itself, run Booter Unload to teardown WPR2
         status = kgspExecuteBooterUnloadIfNeeded_HAL(pGpu, pKernelGsp);
@@ -1470,9 +1475,6 @@ kgspDestruct_IMPL
 
     kgspFreeFlcnUcode(pKernelGsp->pBooterLoadUcode);
     pKernelGsp->pBooterLoadUcode = NULL;
-
-    kgspFreeFlcnUcode(pKernelGsp->pBooterReloadUcode);
-    pKernelGsp->pBooterReloadUcode = NULL;
 
     kgspFreeFlcnUcode(pKernelGsp->pBooterUnloadUcode);
     pKernelGsp->pBooterUnloadUcode = NULL;

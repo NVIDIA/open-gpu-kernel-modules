@@ -107,7 +107,11 @@ CHMOD                 ?= chmod
 OBJCOPY               ?= objcopy
 XZ                    ?= xz
 WHOAMI                ?= whoami
-HOSTNAME              ?= hostname
+
+ifndef HOSTNAME
+  HOSTNAME             = $(shell hostname)
+endif
+
 
 NV_AUTO_DEPEND        ?= 1
 NV_VERBOSE            ?= 0
@@ -195,7 +199,7 @@ PCIACCESS_LDFLAGS     ?=
 ##############################################################################
 # This makefile uses the $(eval) builtin function, which was added in
 # GNU make 3.80.  Check that the current make version recognizes it.
-# Idea suggested by:  http://www.jgc.org/blog/cookbook-sample.pdf
+# Idea suggested by "The GNU Make Book" by John Graham-Cumming.
 ##############################################################################
 
 _eval_available :=
@@ -524,7 +528,7 @@ define GENERATE_NVIDSTRING
   # g_nvid_string.c depends on all objects except g_nvid_string.o, and version.mk
   $(NVIDSTRING): $$(filter-out $$(call BUILD_OBJECT_LIST,$$(NVIDSTRING)), $(3)) $$(VERSION_MK)
 	$(at_if_quiet)$$(MKDIR) $$(dir $$@)
-	$(at_if_quiet)$$(ECHO) "const char $(1)[] = \"nvidia id: NVIDIA $$(strip $(2)) for $$(TARGET_ARCH)  $$(NVIDIA_VERSION)  $$(NVIDSTRING_BUILD_TYPE_STRING)  (`$$(WHOAMI)`@`$$(HOSTNAME)`)  `$$(DATE)`\";" > $$@
+	$(at_if_quiet)$$(ECHO) "const char $(1)[] = \"nvidia id: NVIDIA $$(strip $(2)) for $$(TARGET_ARCH)  $$(NVIDIA_VERSION)  $$(NVIDSTRING_BUILD_TYPE_STRING)  (`$$(WHOAMI)`@$$(HOSTNAME))  `$$(DATE)`\";" > $$@
 	$(at_if_quiet)$$(ECHO) "const char *const p$$(strip $(1)) = $(1) + 11;" >> $$@;
 endef
 

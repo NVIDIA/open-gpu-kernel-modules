@@ -829,6 +829,7 @@ struct OBJGPU {
     struct OBJGPU *__nvoc_pbase_OBJGPU;
     const GPUCHILDPRESENT *(*__gpuGetChildrenPresent__)(struct OBJGPU *, NvU32 *);
     const CLASSDESCRIPTOR *(*__gpuGetClassDescriptorList__)(struct OBJGPU *, NvU32 *);
+    NvBool (*__gpuFuseSupportsDisplay__)(struct OBJGPU *);
     NV_STATUS (*__gpuClearFbhubPoisonIntrForBug2924523__)(struct OBJGPU *);
     NV_STATUS (*__gpuConstructDeviceInfoTable__)(struct OBJGPU *);
     NvU64 (*__gpuGetFlaVasSize__)(struct OBJGPU *, NvBool);
@@ -1019,6 +1020,9 @@ struct OBJGPU {
     struct Subdevice *pCachedSubdevice;
     struct RsClient *pCachedRsClient;
     RM_API physicalRmApi;
+    struct Subdevice **pSubdeviceBackReferences;
+    NvU32 numSubdeviceBackReferences;
+    NvU32 maxSubdeviceBackReferences;
     NV2080_CTRL_INTERNAL_GPU_GET_CHIP_INFO_PARAMS *pChipInfo;
     NV2080_CTRL_GPU_GET_OEM_BOARD_INFO_PARAMS *boardInfo;
     NvBool bBar2MovedByVtd;
@@ -1049,6 +1053,7 @@ struct OBJGPU {
     NvU32 instLocOverrides4;
     NvBool bInstLoc47bitPaWar;
     NvU32 instVprOverrides;
+    NvBool bdisableTconOd;
     NvU32 optimizeUseCaseOverride;
     NvS16 fecsCtxswLogConsumerCount;
     NvS16 videoCtxswLogConsumerCount;
@@ -1245,6 +1250,8 @@ NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU**, Dynamic*, NvU32, NvU32, NvU32, NvU32
 #define gpuGetChildrenPresent_HAL(pGpu, pNumEntries) gpuGetChildrenPresent_DISPATCH(pGpu, pNumEntries)
 #define gpuGetClassDescriptorList(pGpu, arg0) gpuGetClassDescriptorList_DISPATCH(pGpu, arg0)
 #define gpuGetClassDescriptorList_HAL(pGpu, arg0) gpuGetClassDescriptorList_DISPATCH(pGpu, arg0)
+#define gpuFuseSupportsDisplay(pGpu) gpuFuseSupportsDisplay_DISPATCH(pGpu)
+#define gpuFuseSupportsDisplay_HAL(pGpu) gpuFuseSupportsDisplay_DISPATCH(pGpu)
 #define gpuClearFbhubPoisonIntrForBug2924523(pGpu) gpuClearFbhubPoisonIntrForBug2924523_DISPATCH(pGpu)
 #define gpuClearFbhubPoisonIntrForBug2924523_HAL(pGpu) gpuClearFbhubPoisonIntrForBug2924523_DISPATCH(pGpu)
 #define gpuConstructDeviceInfoTable(pGpu) gpuConstructDeviceInfoTable_DISPATCH(pGpu)
@@ -2255,6 +2262,18 @@ static inline const CLASSDESCRIPTOR *gpuGetClassDescriptorList_DISPATCH(struct O
     return pGpu->__gpuGetClassDescriptorList__(pGpu, arg0);
 }
 
+NvBool gpuFuseSupportsDisplay_GM107(struct OBJGPU *pGpu);
+
+NvBool gpuFuseSupportsDisplay_GA100(struct OBJGPU *pGpu);
+
+static inline NvBool gpuFuseSupportsDisplay_491d52(struct OBJGPU *pGpu) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool gpuFuseSupportsDisplay_DISPATCH(struct OBJGPU *pGpu) {
+    return pGpu->__gpuFuseSupportsDisplay__(pGpu);
+}
+
 NV_STATUS gpuClearFbhubPoisonIntrForBug2924523_GA100_KERNEL(struct OBJGPU *pGpu);
 
 static inline NV_STATUS gpuClearFbhubPoisonIntrForBug2924523_56cd7a(struct OBJGPU *pGpu) {
@@ -3196,6 +3215,25 @@ static inline void gpuNotifySubDeviceEvent(struct OBJGPU *pGpu, NvU32 notifyInde
 }
 #else //__nvoc_gpu_h_disabled
 #define gpuNotifySubDeviceEvent(pGpu, notifyIndex, pNotifyParams, notifyParamsSize, info32, info16) gpuNotifySubDeviceEvent_IMPL(pGpu, notifyIndex, pNotifyParams, notifyParamsSize, info32, info16)
+#endif //__nvoc_gpu_h_disabled
+
+NV_STATUS gpuRegisterSubdevice_IMPL(struct OBJGPU *pGpu, struct Subdevice *pSubdevice);
+#ifdef __nvoc_gpu_h_disabled
+static inline NV_STATUS gpuRegisterSubdevice(struct OBJGPU *pGpu, struct Subdevice *pSubdevice) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuRegisterSubdevice(pGpu, pSubdevice) gpuRegisterSubdevice_IMPL(pGpu, pSubdevice)
+#endif //__nvoc_gpu_h_disabled
+
+void gpuUnregisterSubdevice_IMPL(struct OBJGPU *pGpu, struct Subdevice *pSubdevice);
+#ifdef __nvoc_gpu_h_disabled
+static inline void gpuUnregisterSubdevice(struct OBJGPU *pGpu, struct Subdevice *pSubdevice) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuUnregisterSubdevice(pGpu, pSubdevice) gpuUnregisterSubdevice_IMPL(pGpu, pSubdevice)
 #endif //__nvoc_gpu_h_disabled
 
 NV_STATUS gpuGetProcWithObject_IMPL(struct OBJGPU *pGpu, NvU32 elementID, NvU32 internalClassId, NvU32 *pPidArray, NvU32 *pPidArrayCount, MIG_INSTANCE_REF *pRef);

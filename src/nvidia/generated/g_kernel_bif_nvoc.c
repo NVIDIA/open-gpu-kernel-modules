@@ -78,6 +78,10 @@ static NV_STATUS __nvoc_thunk_KernelBif_engstateStateLoad(struct OBJGPU *pGpu, s
     return kbifStateLoad(pGpu, (struct KernelBif *)(((unsigned char *)pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
 }
 
+static NV_STATUS __nvoc_thunk_KernelBif_engstateStatePostLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, NvU32 arg0) {
+    return kbifStatePostLoad(pGpu, (struct KernelBif *)(((unsigned char *)pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
+}
+
 static NV_STATUS __nvoc_thunk_KernelBif_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelBif, NvU32 arg0) {
     return kbifStateUnload(pGpu, (struct KernelBif *)(((unsigned char *)pKernelBif) - __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
 }
@@ -128,10 +132,6 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifCompareTunableState(POBJGPU pGpu, 
 
 static void __nvoc_thunk_OBJENGSTATE_kbifFreeTunableState(POBJGPU pGpu, struct KernelBif *pEngstate, void *pTunableState) {
     engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifStatePostLoad(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg0) {
-    return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBif_OBJENGSTATE.offset), arg0);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbifAllocTunableState(POBJGPU pGpu, struct KernelBif *pEngstate, void **ppTunableState) {
@@ -274,6 +274,15 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifStateLoad__ = &kbifStateLoad_IMPL;
     }
 
+    // Hal function -- kbifStatePostLoad
+    if (0)
+    {
+    }
+    else if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    {
+        pThis->__kbifStatePostLoad__ = &kbifStatePostLoad_IMPL;
+    }
+
     // Hal function -- kbifStateUnload
     if (0)
     {
@@ -296,6 +305,23 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifIsPciIoAccessEnabled__ = &kbifIsPciIoAccessEnabled_491d52;
     }
 
+    // Hal function -- kbifInitRelaxedOrderingFromEmulatedConfigSpace
+    if (0)
+    {
+    }
+    else if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 */ 
+        {
+            pThis->__kbifInitRelaxedOrderingFromEmulatedConfigSpace__ = &kbifInitRelaxedOrderingFromEmulatedConfigSpace_GA100;
+        }
+        // default
+        else
+        {
+            pThis->__kbifInitRelaxedOrderingFromEmulatedConfigSpace__ = &kbifInitRelaxedOrderingFromEmulatedConfigSpace_b3696a;
+        }
+    }
+
     // Hal function -- kbifApplyWARBug3208922
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 */ 
     {
@@ -311,6 +337,8 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelBif_engstateStateInitLocked;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_KernelBif_engstateStateLoad;
+
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_thunk_KernelBif_engstateStatePostLoad;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_thunk_KernelBif_engstateStateUnload;
 
@@ -337,8 +365,6 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
     pThis->__kbifCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_kbifCompareTunableState;
 
     pThis->__kbifFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_kbifFreeTunableState;
-
-    pThis->__kbifStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_kbifStatePostLoad;
 
     pThis->__kbifAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_kbifAllocTunableState;
 

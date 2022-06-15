@@ -306,7 +306,7 @@ typedef NvUFXP64                                                   NvUFXP52_12;
  *         2^(_EXPONENT - _EXPONENT_BIAS) *
  *         (1 + _MANTISSA / (1 << 23))
  */
-// [1] : http://en.wikipedia.org/wiki/Single_precision_floating-point_format
+// [1] : https://en.wikipedia.org/wiki/Single_precision_floating-point_format
 #define NV_TYPES_SINGLE_SIGN                                               31:31
 #define NV_TYPES_SINGLE_SIGN_POSITIVE                                 0x00000000
 #define NV_TYPES_SINGLE_SIGN_NEGATIVE                                 0x00000001

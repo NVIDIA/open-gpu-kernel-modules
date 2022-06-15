@@ -35,8 +35,6 @@ extern nvidia_module_t nv_fops;
 
 void        nv_acpi_register_notifier   (nv_linux_state_t *);
 void        nv_acpi_unregister_notifier (nv_linux_state_t *);
-int         nv_acpi_init                (void);
-int         nv_acpi_uninit              (void);
 
 NvU8        nv_find_pci_capability      (struct pci_dev *, NvU8);
 

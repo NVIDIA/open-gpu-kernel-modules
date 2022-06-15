@@ -65,11 +65,57 @@ static inline void nv_dma_resv_fini(nv_dma_resv_t *obj)
 #endif
 }
 
+static inline void nv_dma_resv_lock(nv_dma_resv_t *obj,
+                                    struct ww_acquire_ctx *ctx)
+{
+#if defined(NV_LINUX_DMA_RESV_H_PRESENT)
+    dma_resv_lock(obj, ctx);
+#else
+    ww_mutex_lock(&obj->lock, ctx);
+#endif
+}
+
+static inline void nv_dma_resv_unlock(nv_dma_resv_t *obj)
+{
+#if defined(NV_LINUX_DMA_RESV_H_PRESENT)
+    dma_resv_unlock(obj);
+#else
+    ww_mutex_unlock(&obj->lock);
+#endif
+}
+
+static inline int nv_dma_resv_reserve_fences(nv_dma_resv_t *obj,
+                                             unsigned int num_fences,
+                                             NvBool shared)
+{
+#if defined(NV_DMA_RESV_RESERVE_FENCES_PRESENT)
+    return dma_resv_reserve_fences(obj, num_fences);
+#else
+    if (shared) {
+#if defined(NV_LINUX_DMA_RESV_H_PRESENT)
+        return dma_resv_reserve_shared(obj, num_fences);
+#elif defined(NV_RESERVATION_OBJECT_RESERVE_SHARED_HAS_NUM_FENCES_ARG)
+        return reservation_object_reserve_shared(obj, num_fences);
+#else
+        unsigned int i;
+        for (i = 0; i < num_fences; i++) {
+            reservation_object_reserve_shared(obj);
+        }
+#endif
+    }
+    return 0;
+#endif
+}
+
 static inline void nv_dma_resv_add_excl_fence(nv_dma_resv_t *obj,
                                               nv_dma_fence_t *fence)
 {
 #if defined(NV_LINUX_DMA_RESV_H_PRESENT)
+#if defined(NV_DMA_RESV_ADD_FENCE_PRESENT)
+    dma_resv_add_fence(obj, fence, DMA_RESV_USAGE_WRITE);
+#else
     dma_resv_add_excl_fence(obj, fence);
+#endif
 #else
     reservation_object_add_excl_fence(obj, fence);
 #endif

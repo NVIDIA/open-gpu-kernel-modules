@@ -487,7 +487,7 @@ Intel_Core_Nehalem_Processor_setupFunc
     // config space BAR in a Core i7 CPU.
     //
     // Current link for i7:
-    // http://download.intel.com/design/processor/datashts/320835.pdf
+    // https://download.intel.com/design/processor/datashts/320835.pdf
     // Link for i5 not found. It has been reverse engineered.
 
     // We need to find the pci functions, "Intel QuickPath

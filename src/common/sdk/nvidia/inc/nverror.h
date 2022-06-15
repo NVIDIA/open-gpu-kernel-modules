@@ -99,7 +99,11 @@
 #define GSP_RPC_TIMEOUT                                 (119)
 #define GSP_ERROR                                       (120)
 #define C2C_ERROR                                       (121)
-#define ROBUST_CHANNEL_LAST_ERROR                       (C2C_ERROR)
+#define SPI_PMU_RPC_READ_FAIL                           (122)
+#define SPI_PMU_RPC_WRITE_FAIL                          (123)
+#define SPI_PMU_RPC_ERASE_FAIL                          (124)
+#define INFOROM_FS_ERROR                                (125)
+#define ROBUST_CHANNEL_LAST_ERROR                       (INFOROM_FS_ERROR)
 
 
 // Indexed CE reference

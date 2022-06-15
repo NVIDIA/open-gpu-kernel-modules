@@ -1805,11 +1805,11 @@ nvswitch_exit
         return;
     }
 
-    nvswitch_procfs_exit();
-
     nvswitch_ctl_exit();
 
     pci_unregister_driver(&nvswitch_pci_driver);
+
+    nvswitch_procfs_exit();
 
     cdev_del(&nvswitch.cdev);
 

@@ -1285,21 +1285,14 @@ _memdescFreeInternal
                 // we're plenty off the rails already, but avoid using the pGpu
                 // and carry on as best we can
                 //
-                if (gpumgrGetGpuGrpFromGpu(pGpu) != NULL)
+                if (gpumgrIsGpuPointerValid(pGpu))
                 {
                     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
                     {
                         KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-                        if (pKernelMemorySystem == NULL)
-                        {
-                            NV_ASSERT_FAILED("Sysmemdesc outlived its attached Gpu Memory System");
-                        }
-                        else
-                        {
-                            NV_ASSERT_OK(kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, pMemDesc, 
+                        NV_ASSERT_OK(kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, pMemDesc, 
                                                                   FB_CACHE_SYSTEM_MEMORY, 
                                                                   FB_CACHE_INVALIDATE));
-                        }
                     }
                     SLI_LOOP_END
                 }

@@ -41,7 +41,7 @@ extern "C" {
  *
  * @details Order of values is not necessarily increasing or sorted, but order is
  * preserved across mutation. Please see
- * http://en.wikipedia.org/wiki/Sequence for a formal definition.
+ * https://en.wikipedia.org/wiki/Sequence for a formal definition.
  *
  * The provided interface is abstract, decoupling the user from the underlying
  * list implementation. Two options are available with regard to memory
