@@ -10,8 +10,6 @@
 # variables
 ###########################################################################
 
-include utils.mk
-
 nv_kernel_o                = src/nvidia/$(OUTPUTDIR)/nv-kernel.o
 nv_kernel_o_binary         = kernel-open/nvidia/nv-kernel.o_binary
 
@@ -22,14 +20,16 @@ nv_modeset_kernel_o_binary = kernel-open/nvidia-modeset/nv-modeset-kernel.o_bina
 # rules
 ###########################################################################
 
-PHONY := all
+include utils.mk
+
+.PHONY: all
 all: modules
 
 ###########################################################################
 # nv-kernel.o is the OS agnostic portion of nvidia.ko
 ###########################################################################
 
-PHONY += $(nv_kernel_o)
+.PHONY: $(nv_kernel_o)
 $(nv_kernel_o):
 	$(MAKE) -C src/nvidia
 
@@ -41,7 +41,7 @@ $(nv_kernel_o_binary): $(nv_kernel_o)
 # nv-modeset-kernel.o is the OS agnostic portion of nvidia-modeset.ko
 ###########################################################################
 
-PHONY += $(nv_modeset_kernel_o)
+.PHONY: $(nv_modeset_kernel_o)
 $(nv_modeset_kernel_o):
 	$(MAKE) -C src/nvidia-modeset
 
@@ -54,7 +54,7 @@ $(nv_modeset_kernel_o_binary): $(nv_modeset_kernel_o)
 # the kernel modules with kbuild.
 ###########################################################################
 
-PHONY += modules
+.PHONY: modules
 modules: $(nv_kernel_o_binary) $(nv_modeset_kernel_o_binary)
 	$(MAKE) -C kernel-open modules
 
@@ -62,7 +62,7 @@ modules: $(nv_kernel_o_binary) $(nv_modeset_kernel_o_binary)
 # Install the built kernel modules using kbuild.
 ###########################################################################
 
-PHONY += modules_install
+.PHONY: modules_install
 modules_install:
 	$(MAKE) -C kernel-open modules_install
 
@@ -70,23 +70,16 @@ modules_install:
 # clean
 ###########################################################################
 
-PHONY += clean
+.PHONY: clean
 clean: nvidia.clean nvidia-modeset.clean kernel-open.clean
 
-PHONY += nvidia.clean
+.PHONY: nvidia.clean
 nvidia.clean:
 	$(MAKE) -C src/nvidia clean
 
-PHONY += nvidia-modeset.clean
+.PHONY: nvidia-modeset.clean
 nvidia-modeset.clean:
 	$(MAKE) -C src/nvidia-modeset clean
 
-PHONY += kernel-open.clean
+.PHONY: kernel-open.clean
 kernel-open.clean:
-	$(MAKE) -C kernel-open clean
-
-###########################################################################
-# PHONY
-###########################################################################
-
-.PHONY: $(PHONY)
