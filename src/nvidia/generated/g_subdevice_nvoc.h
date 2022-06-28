@@ -519,6 +519,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalPerfCfControllerSetMaxVGpuVMCount__)(struct Subdevice *, NV2080_CTRL_INTERNAL_PERF_CF_CONTROLLERS_SET_MAX_VGPU_VM_COUNT_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdBifGetStaticInfo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_GET_STATIC_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdBifGetAspmL1Flags__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_GET_ASPM_L1_FLAGS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdBifSetPcieRo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubPeerConnConfig__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubFirstLinkPeerId__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_FIRST_LINK_PEER_ID_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubGetHshubIdForLinks__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS *);
@@ -998,6 +999,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalPerfCfControllerSetMaxVGpuVMCount(pSubdevice, pParams) subdeviceCtrlCmdInternalPerfCfControllerSetMaxVGpuVMCount_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBifGetStaticInfo(pSubdevice, pParams) subdeviceCtrlCmdBifGetStaticInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBifGetAspmL1Flags(pSubdevice, pParams) subdeviceCtrlCmdBifGetAspmL1Flags_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdBifSetPcieRo(pSubdevice, pParams) subdeviceCtrlCmdBifSetPcieRo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubPeerConnConfig(pSubdevice, pParams) subdeviceCtrlCmdHshubPeerConnConfig_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubFirstLinkPeerId(pSubdevice, pParams) subdeviceCtrlCmdHshubFirstLinkPeerId_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubGetHshubIdForLinks(pSubdevice, pParams) subdeviceCtrlCmdHshubGetHshubIdForLinks_DISPATCH(pSubdevice, pParams)
@@ -3389,6 +3391,12 @@ NV_STATUS subdeviceCtrlCmdBifGetAspmL1Flags_IMPL(struct Subdevice *pSubdevice, N
 
 static inline NV_STATUS subdeviceCtrlCmdBifGetAspmL1Flags_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_BIF_GET_ASPM_L1_FLAGS_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdBifGetAspmL1Flags__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdBifSetPcieRo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdBifSetPcieRo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdBifSetPcieRo__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdHshubPeerConnConfig_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS *pParams);

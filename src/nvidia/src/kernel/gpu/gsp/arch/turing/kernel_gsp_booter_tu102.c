@@ -25,7 +25,6 @@
 
 #include "gpu/gpu.h"
 #include "gpu/falcon/kernel_falcon.h"
-#include "gpu/nvdec/kernel_nvdec.h"
 #include "gpu/sec2/kernel_sec2.h"
 
 #include "published/turing/tu102/dev_fb.h"  // for NV_PFB_PRI_MMU_WPR2_ADDR_HI
@@ -111,34 +110,6 @@ kgspExecuteBooterLoad_TU102
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Load: 0x%x\n", status);
-        return status;
-    }
-
-    return status;
-}
-
-NV_STATUS
-kgspExecuteBooterReload_TU102
-(
-    OBJGPU *pGpu,
-    KernelGsp *pKernelGsp
-)
-{
-    NV_STATUS status;
-
-    KernelNvdec *pKernelNvdec = GPU_GET_KERNEL_NVDEC(pGpu);
-
-    NV_PRINTF(LEVEL_INFO, "executing Booter Reload\n");
-    NV_ASSERT_OR_RETURN(pKernelGsp->pBooterReloadUcode != NULL, NV_ERR_INVALID_STATE);
-
-    kflcnReset_HAL(pGpu, staticCast(pKernelNvdec, KernelFalcon));
-    status = s_executeBooterUcode_TU102(pGpu, pKernelGsp,
-                                        pKernelGsp->pBooterReloadUcode,
-                                        staticCast(pKernelNvdec, KernelFalcon),
-                                        0xFF, 0xFF);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Reload: 0x%x\n", status);
         return status;
     }
 

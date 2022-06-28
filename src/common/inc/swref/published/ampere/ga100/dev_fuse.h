@@ -130,4 +130,8 @@
 #define NV_FUSE_OPT_FPF_GSP_UCODE16_VERSION                                                         0x008241FC /* RW-4R */
 #define NV_FUSE_OPT_FPF_GSP_UCODE16_VERSION_DATA                                                          15:0 /* RWIVF */
 
+#define NV_FUSE_STATUS_OPT_DISPLAY                                                                  0x00820C04 /* R-I4R */
+#define NV_FUSE_STATUS_OPT_DISPLAY_DATA                                                                    0:0 /* R-IVF */
+#define NV_FUSE_STATUS_OPT_DISPLAY_DATA_ENABLE                                                      0x00000000 /* R---V */
+
 #endif // __ga100_dev_fuse_h__

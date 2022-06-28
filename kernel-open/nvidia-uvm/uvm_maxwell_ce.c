@@ -151,7 +151,7 @@ static void maxwell_membar_after_transfer(uvm_push_t *push)
 
     // Flush on transfers only works when paired with a semaphore release. Use a
     // host WFI + MEMBAR.
-    // http://nvbugs/1709888
+    // Bug 1709888
     gpu->parent->host_hal->wait_for_idle(push);
 
     if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU))

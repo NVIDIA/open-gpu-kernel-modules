@@ -1647,23 +1647,12 @@ extern NvBool nv_ats_supported;
  * and any other baggage we want to carry along
  *
  */
-#define NV_MAXNUM_DISPLAY_DEVICES 8
-
-typedef struct
-{
-    acpi_handle dev_handle;
-    int dev_id;
-} nv_video_t;
-
 typedef struct
 {
     nvidia_stack_t *sp;
     struct acpi_device *device;
-
-    nv_video_t pNvVideo[NV_MAXNUM_DISPLAY_DEVICES];
-
+    struct acpi_handle *handle;
     int notify_handler_installed;
-    int default_display_mask;
 } nv_acpi_t;
 
 #endif

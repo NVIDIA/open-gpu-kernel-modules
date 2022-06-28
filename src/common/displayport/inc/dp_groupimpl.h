@@ -53,6 +53,8 @@ namespace DisplayPort
         bool            bWaitForDeAllocACT;
         bool            bDeferredPayloadAlloc;
         ModesetInfo     lastModesetInfo;
+        DSC_MODE        dscModeRequest;             // DSC mode requested during NAB
+        DSC_MODE        dscModeActive;              // DSC mode currently active, set in NAE
         DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID singleHeadMultiStreamID;
         DP_SINGLE_HEAD_MULTI_STREAM_MODE        singleHeadMultiStreamMode;
         DP_COLORFORMAT  colorFormat;
@@ -76,6 +78,8 @@ namespace DisplayPort
               hdcpEnabled(false),
               hdcpPreviousStatus(false), 
               bWaitForDeAllocACT(false),
+              dscModeRequest(DSC_MODE_NONE),
+              dscModeActive(DSC_MODE_NONE),
               singleHeadMultiStreamID(DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY),
               singleHeadMultiStreamMode(DP_SINGLE_HEAD_MULTI_STREAM_MODE_NONE),
               bIsCurrentModesetGroup(false),

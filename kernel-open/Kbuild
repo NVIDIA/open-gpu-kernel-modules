@@ -94,6 +94,7 @@ EXTRA_CFLAGS += -ffreestanding
 
 ifeq ($(ARCH),arm64)
  EXTRA_CFLAGS += -mgeneral-regs-only -march=armv8-a
+ EXTRA_CFLAGS += $(call cc-option,-mno-outline-atomics,)
 endif
 
 ifeq ($(ARCH),x86_64)

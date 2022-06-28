@@ -48,6 +48,8 @@
 #include "published/turing/tu102/dev_gc6_island.h"
 #include "published/turing/tu102/dev_gc6_island_addendum.h"
 
+#include "gpu/sec2/kernel_sec2.h"
+
 #define RPC_STRUCTURES
 #define RPC_GENERIC_UNION
 #include "g_rpc-structures.h"
@@ -262,6 +264,23 @@ kgspFreeBootArgs_TU102
 }
 
 /*!
+ * Determine if GSP reload via SEC2 is completed.
+ */
+static NvBool
+_kgspIsReloadCompleted
+(
+    OBJGPU  *pGpu,
+    void    *pVoid
+)
+{
+    NvU32 reg;
+
+    reg = GPU_REG_RD32(pGpu, NV_PGC6_BSI_SECURE_SCRATCH_14);
+
+    return FLD_TEST_DRF(_PGC6, _BSI_SECURE_SCRATCH_14, _BOOT_STAGE_3_HANDOFF, _VALUE_DONE, reg);
+}
+
+/*!
  * Set command queue head for CPU to GSP message queue
  *
  * @param[in]   pGpu            GPU object pointer
@@ -464,6 +483,7 @@ kgspCalculateFbLayout_TU102
 )
 {
     KernelMemorySystem  *pKernelMemorySystem  = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    KernelDisplay       *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     MemoryManager       *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     GspFwWprMeta        *pWprMeta = pKernelGsp->pWprMeta;
     RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
@@ -488,9 +508,8 @@ kgspCalculateFbLayout_TU102
     // Figure out where VGA workspace is located.  We do not have to adjust
     // it ourselves (see vgaRelocateWorkspaceBase_HAL()).
     //
-    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
-
-    if (kdispGetVgaWorkspaceBase(pGpu, pKernelDisplay, &pWprMeta->vgaWorkspaceOffset))
+    if (gpuFuseSupportsDisplay_HAL(pGpu) &&
+        kdispGetVgaWorkspaceBase(pGpu, pKernelDisplay, &pWprMeta->vgaWorkspaceOffset))
     {
         if (pWprMeta->vgaWorkspaceOffset < (pWprMeta->fbSize - DRF_SIZE(NV_PRAMIN)))
         {
@@ -629,22 +648,46 @@ kgspExecuteSequencerCommand_TU102
 {
     NV_STATUS       status        = NV_OK;
     KernelFalcon   *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
+    NvU32           secMailbox0   = 0;
+
     switch (opCode)
     {
         case GSP_SEQ_BUF_OPCODE_CORE_RESUME:
         {
             {
+                KernelFalcon *pKernelSec2Falcon = staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
+
                 kflcnSecureReset_HAL(pGpu, pKernelFalcon);
                 kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
 
-                status = kgspExecuteBooterReload_HAL(pGpu, pKernelGsp);
-                if (status != NV_OK)
+                NV_PRINTF(LEVEL_INFO, "---------------Starting SEC2 to resume GSP-RM------------\n");
+                // Start SEC2 in order to resume GSP-RM
+                kflcnStartCpu_HAL(pGpu, pKernelSec2Falcon);
+
+                // Wait for reload to be completed.
+                status = gpuTimeoutCondWait(pGpu, _kgspIsReloadCompleted, NULL, NULL);
+
+                // Check SEC mailbox. 
+                secMailbox0 = kflcnRegRead_HAL(pGpu, pKernelSec2Falcon, NV_PFALCON_FALCON_MAILBOX0);
+
+                if ((status != NV_OK) || (secMailbox0 != NV_OK))
                 {
-                    NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Reload (ucode for resume from sequencer): 0x%x\n", status);
-                    break;
+                    NV_PRINTF(LEVEL_ERROR, "Timeout waiting for SEC2-RTOS to resume GSP-RM. SEC2 Mailbox0 is : 0x%x\n", secMailbox0);
+                    DBG_BREAKPOINT();
+                    return NV_ERR_TIMEOUT;
                 }
             }
 
+            // Ensure the CPU is started
+            if (kflcnIsRiscvActive_HAL(pGpu, pKernelFalcon))
+            {
+                NV_PRINTF(LEVEL_INFO, "GSP ucode loaded and RISCV started.\n");
+            }
+            else
+            {
+                NV_ASSERT_FAILED("Failed to boot GSP");
+                status = NV_ERR_NOT_READY;
+            }
             break;
         }
 
@@ -789,6 +832,33 @@ kgspService_TU102
 
     return intrStatus;
 }
+
+static NvBool
+_kgspIsProcessorSuspended
+(
+    OBJGPU  *pGpu,
+    void    *pVoid
+)
+{
+    KernelGsp *pKernelGsp = reinterpretCast(pVoid, KernelGsp *);
+    NvU32 mailbox;
+
+    // Check for LIBOS_INTERRUPT_PROCESSOR_SUSPENDED in mailbox
+    mailbox = kflcnRegRead_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon),
+                               NV_PFALCON_FALCON_MAILBOX0);
+    return (mailbox & 0x80000000) == 0x80000000;
+}
+
+NV_STATUS
+kgspWaitForProcessorSuspend_TU102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    return gpuTimeoutCondWait(pGpu, _kgspIsProcessorSuspended, pKernelGsp, NULL);
+}
+
 
 #define FWSECLIC_PROG_START_TIMEOUT     50000    // 50ms
 #define FWSECLIC_PROG_COMPLETE_TIMEOUT  2000000  // 2s

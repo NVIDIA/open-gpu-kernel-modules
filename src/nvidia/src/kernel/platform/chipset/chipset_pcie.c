@@ -3308,7 +3308,7 @@ gpuIsMultiGpuBoard
  * RSDT or XSDT ACPI table.
  *
  * We will use these tables to find the addresses of other tables.
- * http://www.acpi.info/DOWNLOADS/ACPIspec40.pdf sections 5.2.5.1 and 5.2.5.3.
+ * https://www.acpi.info/DOWNLOADS/ACPIspec40.pdf sections 5.2.5.1 and 5.2.5.3.
  *
  * @param[in]  pOS          OBJOS pointer
  * @param[in]  start        RmPhysAddr starting point from where to look for the RDSP table
@@ -3423,7 +3423,7 @@ clGetRsdtXsdtTablesAddr_IMPL
     }
 
     //
-    // Sections from http://www.acpi.info/DOWNLOADS/ACPIspec40.pdf referenced below.
+    // Sections from https://www.acpi.info/DOWNLOADS/ACPIspec40.pdf referenced below.
     // 1. Section 5.2.5.1 and 5.2.5.2 - get the Root System Description Pointer (RSDP)
     // Search physical memory ranges on 16-byte boundaries for a valid
     // Root System Description Pointer structure signature and checksum
@@ -3560,7 +3560,7 @@ clGetMcfgTableFromOS_IMPL
  * @brief Scans the RSDT and/or XSDT tables to get the address of the table matching the
  *        signature.
  *
- * http://www.acpi.info/DOWNLOADS/ACPIspec40.pdf sections 5.2.7 and 5.2.8
+ * https://www.acpi.info/DOWNLOADS/ACPIspec40.pdf sections 5.2.7 and 5.2.8
  * The description header addresses start at offset 36.
  *
  * @param[in]  POS            OBJOS pointer

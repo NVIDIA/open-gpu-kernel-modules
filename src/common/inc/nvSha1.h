@@ -26,7 +26,7 @@
  * byte array, using the Secure Hashing Algorithm 1 (SHA-1) as defined
  * in FIPS PUB 180-1 published April 17, 1995:
  *
- *   http://www.itl.nist.gov/fipspubs/fip180-1.htm
+ *   https://www.itl.nist.gov/fipspubs/fip180-1.htm
  *
  * Some common test cases (see Appendices A and B of the above document):
  *

@@ -233,6 +233,18 @@ typedef struct GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY
     GPUMGR_SAVE_GPU_INSTANCE saveGI[GPUMGR_MAX_GPU_INSTANCES];
 } GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY;
 
+
+#include "containers/list.h"
+typedef struct PCIEP2PCAPSINFO
+{
+    NvU32    gpuId[GPUMGR_MAX_GPU_INSTANCES]; // Group of GPUs
+    NvU32    gpuCount;                        // GPU count in gpuId[]
+    NvU8     p2pWriteCapsStatus;              // PCIE P2P CAPS status for this group of GPUs
+    NvU8     p2pReadCapsStatus;
+    ListNode node;                            // For intrusive lists
+} PCIEP2PCAPSINFO;
+MAKE_INTRUSIVE_LIST(pcieP2PCapsInfoList, PCIEP2PCAPSINFO, node);
+
 #ifdef NVOC_GPU_MGR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
@@ -260,6 +272,8 @@ struct OBJGPUMGR {
     GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY MIGTopologyInfo[32];
     GPU_HANDLE_ID gpuHandleIDList[32];
     NvU32 numGpuHandles;
+    pcieP2PCapsInfoList pcieP2PCapsInfoCache;
+    void *pcieP2PCapsInfoLock;
 };
 
 #ifndef __NVOC_CLASS_OBJGPUMGR_TYPEDEF__
@@ -289,6 +303,31 @@ NV_STATUS __nvoc_objCreateDynamic_OBJGPUMGR(OBJGPUMGR**, Dynamic*, NvU32, va_lis
 NV_STATUS __nvoc_objCreate_OBJGPUMGR(OBJGPUMGR**, Dynamic*, NvU32);
 #define __objCreate_OBJGPUMGR(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJGPUMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+
+NV_STATUS gpumgrInitPcieP2PCapsCache_IMPL(struct OBJGPUMGR *pGpuMgr);
+
+#define gpumgrInitPcieP2PCapsCache(pGpuMgr) gpumgrInitPcieP2PCapsCache_IMPL(pGpuMgr)
+#define gpumgrInitPcieP2PCapsCache_HAL(pGpuMgr) gpumgrInitPcieP2PCapsCache(pGpuMgr)
+
+void gpumgrDestroyPcieP2PCapsCache_IMPL(struct OBJGPUMGR *pGpuMgr);
+
+#define gpumgrDestroyPcieP2PCapsCache(pGpuMgr) gpumgrDestroyPcieP2PCapsCache_IMPL(pGpuMgr)
+#define gpumgrDestroyPcieP2PCapsCache_HAL(pGpuMgr) gpumgrDestroyPcieP2PCapsCache(pGpuMgr)
+
+NV_STATUS gpumgrStorePcieP2PCapsCache_IMPL(NvU32 gpuMask, NvU8 p2pWriteCapStatus, NvU8 p2pReadCapStatus);
+
+#define gpumgrStorePcieP2PCapsCache(gpuMask, p2pWriteCapStatus, p2pReadCapStatus) gpumgrStorePcieP2PCapsCache_IMPL(gpuMask, p2pWriteCapStatus, p2pReadCapStatus)
+#define gpumgrStorePcieP2PCapsCache_HAL(gpuMask, p2pWriteCapStatus, p2pReadCapStatus) gpumgrStorePcieP2PCapsCache(gpuMask, p2pWriteCapStatus, p2pReadCapStatus)
+
+void gpumgrRemovePcieP2PCapsFromCache_IMPL(NvU32 gpuId);
+
+#define gpumgrRemovePcieP2PCapsFromCache(gpuId) gpumgrRemovePcieP2PCapsFromCache_IMPL(gpuId)
+#define gpumgrRemovePcieP2PCapsFromCache_HAL(gpuId) gpumgrRemovePcieP2PCapsFromCache(gpuId)
+
+NvBool gpumgrGetPcieP2PCapsFromCache_IMPL(NvU32 gpuMask, NvU8 *pP2PWriteCapStatus, NvU8 *pP2PReadCapStatus);
+
+#define gpumgrGetPcieP2PCapsFromCache(gpuMask, pP2PWriteCapStatus, pP2PReadCapStatus) gpumgrGetPcieP2PCapsFromCache_IMPL(gpuMask, pP2PWriteCapStatus, pP2PReadCapStatus)
+#define gpumgrGetPcieP2PCapsFromCache_HAL(gpuMask, pP2PWriteCapStatus, pP2PReadCapStatus) gpumgrGetPcieP2PCapsFromCache(gpuMask, pP2PWriteCapStatus, pP2PReadCapStatus)
 
 NV_STATUS gpumgrConstruct_IMPL(struct OBJGPUMGR *arg_);
 #define __nvoc_gpumgrConstruct(arg_) gpumgrConstruct_IMPL(arg_)

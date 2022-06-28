@@ -44,8 +44,9 @@
 #include "gpu/mem_sys/kern_mem_sys.h"
 
 // local static funcs
-static void  gpumgrSetAttachInfo(OBJGPU *, GPUATTACHARG *);
-static void  gpumgrGetGpuHalFactor(NvU32 *pChipId0, NvU32 *pChipId1, RM_RUNTIME_VARIANT *pRmVariant, GPUATTACHARG *pAttachArg);
+static void   gpumgrSetAttachInfo(OBJGPU *, GPUATTACHARG *);
+static void   gpumgrGetGpuHalFactor(NvU32 *pChipId0, NvU32 *pChipId1, RM_RUNTIME_VARIANT *pRmVariant, GPUATTACHARG *pAttachArg);
+static NvBool _gpumgrGetPcieP2PCapsFromCache(NvU32 gpuMask, NvU8* pP2PWriteCapsStatus, NvU8* pP2PReadCapsStatus);
 
 static void
 _gpumgrUnregisterRmCapsForGpuUnderLock(NvU64 gpuDomainBusDevice)
@@ -157,6 +158,8 @@ gpumgrConstruct_IMPL(OBJGPUMGR *pGpuMgr)
 
     pGpuMgr->powerDisconnectedGpuCount = 0;
 
+    NV_ASSERT_OK_OR_RETURN(gpumgrInitPcieP2PCapsCache(pGpuMgr));
+
     return NV_OK;
 }
 
@@ -167,6 +170,9 @@ gpumgrDestruct_IMPL(OBJGPUMGR *pGpuMgr)
     NV_PRINTF(LEVEL_INFO, "gpumgrDestruct\n");
 
     portSyncMutexDestroy(pGpuMgr->probedGpusLock);
+
+    gpumgrDestroyPcieP2PCapsCache(pGpuMgr);
+
 }
 
 //
@@ -538,6 +544,7 @@ gpumgrUnregisterGpuId(NvU32 gpuId)
 
         if (pProbedGpu->gpuId == gpuId)
         {
+            gpumgrRemovePcieP2PCapsFromCache(pProbedGpu->gpuId);
             _gpumgrUnregisterRmCapsForGpuUnderLock(pProbedGpu->gpuDomainBusDevice);
             pProbedGpu->gpuId = NV0000_CTRL_GPU_INVALID_ID;
             pProbedGpu->bDrainState = NV_FALSE;
@@ -3136,3 +3143,251 @@ gpumgrGetGpuBridgeType(void)
     
     return pGpuMgr->gpuBridgeType;
 }
+
+/**
+* @brief Init the PCIE P2P info cache
+*/
+NV_STATUS
+gpumgrInitPcieP2PCapsCache_IMPL(OBJGPUMGR* pGpuMgr)
+{
+    listInitIntrusive(&pGpuMgr->pcieP2PCapsInfoCache);
+    pGpuMgr->pcieP2PCapsInfoLock = portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+    if (pGpuMgr->pcieP2PCapsInfoLock == NULL)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+    return NV_OK;
+}
+
+/**
+* @brief Destroy the PCIE P2P info cache
+*/
+void 
+gpumgrDestroyPcieP2PCapsCache_IMPL(OBJGPUMGR* pGpuMgr)
+{
+    PCIEP2PCAPSINFO *pPcieCapsInfo, *pPcieCapsInfoNext;
+
+    portSyncMutexAcquire(pGpuMgr->pcieP2PCapsInfoLock);
+
+    // Remove and free all entries that have this GPU
+    for (pPcieCapsInfo = listHead(&(pGpuMgr->pcieP2PCapsInfoCache));
+         pPcieCapsInfo != NULL;
+         pPcieCapsInfo = pPcieCapsInfoNext)
+    {
+        pPcieCapsInfoNext = listNext(&(pGpuMgr->pcieP2PCapsInfoCache), pPcieCapsInfo);
+        portMemFree(pPcieCapsInfo);
+    }
+
+    listDestroy(&pGpuMgr->pcieP2PCapsInfoCache);
+    portSyncMutexRelease(pGpuMgr->pcieP2PCapsInfoLock);
+
+    portSyncMutexDestroy(pGpuMgr->pcieP2PCapsInfoLock);
+}
+
+/**
+* @brief Add an entry in the PCIE P2P info cache
+ * @param[in]   gpuMask             NvU32 value
+ * @param[in]   p2pWriteCapsStatus  NvU8 value
+ * @param[in]   pP2PReadCapsStatus  NvU8 value
+ * 
+ * @return      NV_OK or NV_ERR_NO_MEMORY
+ */
+NV_STATUS
+gpumgrStorePcieP2PCapsCache_IMPL
+(
+    NvU32  gpuMask,
+    NvU8   p2pWriteCapsStatus,
+    NvU8   p2pReadCapsStatus
+)
+{
+    OBJSYS          *pSys     = SYS_GET_INSTANCE();
+    OBJGPUMGR       *pGpuMgr  = SYS_GET_GPUMGR(pSys);
+    PCIEP2PCAPSINFO *pPcieCapsInfo;
+    NvU32            gpuInstance;
+    OBJGPU          *pGpu;
+    NvU32            gpuCount = 0;
+    NvU32            status   = NV_OK;
+
+    portSyncMutexAcquire(pGpuMgr->pcieP2PCapsInfoLock);
+    if (_gpumgrGetPcieP2PCapsFromCache(gpuMask, NULL, NULL))
+    {
+        // Entry already present in cache
+        goto exit;
+    }
+
+    pPcieCapsInfo = portMemAllocNonPaged(sizeof(PCIEP2PCAPSINFO));
+    if (pPcieCapsInfo == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto exit;
+    }
+    listAppendExisting(&(pGpuMgr->pcieP2PCapsInfoCache), pPcieCapsInfo);
+
+    gpuInstance = 0;
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        pPcieCapsInfo->gpuId[gpuCount] = pGpu->gpuId;
+        gpuCount++;
+    }
+
+    pPcieCapsInfo->gpuCount = gpuCount;
+    pPcieCapsInfo->p2pWriteCapsStatus = p2pWriteCapsStatus;
+    pPcieCapsInfo->p2pReadCapsStatus = p2pReadCapsStatus;
+
+exit:
+    portSyncMutexRelease(pGpuMgr->pcieP2PCapsInfoLock);
+    return status;
+}
+
+/**
+ * @brief Get the PCIE P2P info from cache if present
+ * - Helper function
+ *
+ * @param[in]   gpuMask             NvU32 value
+ * @param[out]  pP2PWriteCapsStatus NvU8* pointer
+ *                  Can be NULL
+ * @param[out]  pP2PReadCapsStatus  NvU8* pointer
+ *                  Can be NULL
+ * Return       bFound              NvBool
+ */
+static NvBool
+_gpumgrGetPcieP2PCapsFromCache
+(
+    NvU32   gpuMask,
+    NvU8   *pP2PWriteCapsStatus,
+    NvU8   *pP2PReadCapsStatus)
+{
+    OBJSYS          *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR       *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    PCIEP2PCAPSINFO *pPcieCapsInfo;
+    pcieP2PCapsInfoListIter it;
+    NvU32            gpuInstance;
+    NvU32            gpuCount;
+    NvU32            remainingGpuCount;
+    OBJGPU          *pGpu;
+    NvU32            gpuIdLoop;
+    NvBool           bFound = NV_FALSE;
+
+    gpuCount = gpumgrGetSubDeviceCount(gpuMask);
+
+    it = listIterAll(&pGpuMgr->pcieP2PCapsInfoCache);
+    while (listIterNext(&it))
+    {
+        pPcieCapsInfo = it.pValue;
+        if (gpuCount != pPcieCapsInfo->gpuCount)
+        {
+            continue;
+        }
+
+        //
+        // Same count  of GPUs in gpuId array  and GPU mask.
+        // All GPU in the gpuMask must have a match in gpuId[]
+        //
+        gpuInstance = 0;
+        remainingGpuCount = gpuCount;
+        while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+        {
+            gpuIdLoop = 0;
+            while (gpuIdLoop < gpuCount)
+            {
+                if (pPcieCapsInfo->gpuId[gpuIdLoop] == pGpu->gpuId)
+                {
+                    remainingGpuCount--;
+                    break;
+                }
+                gpuIdLoop++;
+            }
+            if (remainingGpuCount == 0)
+            {
+                break;
+            }
+        }
+
+        if (remainingGpuCount == 0)
+        {
+            if (pP2PWriteCapsStatus != NULL)
+                *pP2PWriteCapsStatus = pPcieCapsInfo->p2pWriteCapsStatus;
+            if (pP2PReadCapsStatus != NULL)
+                *pP2PReadCapsStatus = pPcieCapsInfo->p2pReadCapsStatus;
+            bFound = NV_TRUE;
+            break;
+        }
+    }
+    return bFound;
+}
+
+/**
+ * @brief Get the PCIE P2P info from cache if present
+ * - Take cache locks
+ *
+ * @param[in]   gpuMask             NvU32 value
+ * @param[out]  pP2PWriteCapsStatus NvU8* pointer
+ *                  Can be NULL
+ * @param[out]  pP2PReadCapsStatus  NvU8* pointer
+ *                  Can be NULL
+ *
+ * return       bFound              NvBool
+ */
+NvBool
+gpumgrGetPcieP2PCapsFromCache_IMPL
+(
+    NvU32   gpuMask,
+    NvU8   *pP2PWriteCapsStatus,
+    NvU8   *pP2PReadCapsStatus
+)
+{
+    OBJSYS    *pSys    = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvBool     bFound;
+        
+    portSyncMutexAcquire(pGpuMgr->pcieP2PCapsInfoLock);
+
+    bFound = _gpumgrGetPcieP2PCapsFromCache(gpuMask, pP2PWriteCapsStatus, pP2PReadCapsStatus);
+
+    portSyncMutexRelease(pGpuMgr->pcieP2PCapsInfoLock);
+
+    return bFound;
+}
+
+
+/**
+ * @brief Remove the PCIE P2P info from cache if present
+ *
+ * @param[in]   gpuId             NvU32 value
+ */
+void
+gpumgrRemovePcieP2PCapsFromCache_IMPL
+(
+   NvU32 gpuId
+)
+{
+    OBJSYS          *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR       *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    PCIEP2PCAPSINFO *pPcieCapsInfo, *pPcieCapsInfoNext;
+    NvU32            gpuIdLoop;
+
+    portSyncMutexAcquire(pGpuMgr->pcieP2PCapsInfoLock);
+
+    // Remove and free all entries that have this GPU
+    for (pPcieCapsInfo = listHead(&(pGpuMgr->pcieP2PCapsInfoCache));
+         pPcieCapsInfo != NULL;
+         pPcieCapsInfo = pPcieCapsInfoNext)
+    {
+        // As we potentially remove an entry we need to save off the next one.
+        pPcieCapsInfoNext = listNext(&(pGpuMgr->pcieP2PCapsInfoCache), pPcieCapsInfo);
+        gpuIdLoop = 0;
+        while (gpuIdLoop < pPcieCapsInfo->gpuCount)
+        {
+            if (pPcieCapsInfo->gpuId[gpuIdLoop] == gpuId)
+            {
+                listRemove(&pGpuMgr->pcieP2PCapsInfoCache, pPcieCapsInfo);
+                portMemFree(pPcieCapsInfo);
+                // Go to next entry (for loop)
+                break;
+            }
+            gpuIdLoop++;
+        }
+    }
+    portSyncMutexRelease(pGpuMgr->pcieP2PCapsInfoLock);
+}
+

@@ -26,6 +26,20 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "published/ampere/ga100/dev_fb.h"
 #include "published/ampere/ga100/dev_vm.h"
+#include "published/ampere/ga100/dev_fuse.h"
+
+/*!
+ * @brief Read fuse for display supported status.
+ *        Some chips not marked displayless do not support display
+ */
+NvBool
+gpuFuseSupportsDisplay_GA100
+(
+    OBJGPU *pGpu
+)
+{
+    return GPU_FLD_TEST_DRF_DEF(pGpu, _FUSE, _STATUS_OPT_DISPLAY, _DATA, _ENABLE);
+}
 
 /*!
  * @brief Clear FBHUB POISON Interrupt state for Bug 2924523.

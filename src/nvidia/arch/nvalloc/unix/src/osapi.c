@@ -1112,10 +1112,6 @@ NV_STATUS RmSystemEvent(
 
     switch (event_type)
     {
-        case NV_SYSTEM_ACPI_DISPLAY_SWITCH_EVENT:
-            // Legacy kepler case, do nothing.
-            break;
-
         case NV_SYSTEM_ACPI_BATTERY_POWER_EVENT:
         {
             Nv2080PowerEventNotification powerParams;
@@ -3052,6 +3048,38 @@ NV_STATUS rm_update_device_mapping_info(
     return RmStatus;
 }
 
+static void rm_is_device_rm_firmware_capable(
+    nv_state_t *pNv,
+    NvU32       pmcBoot42,
+    NvBool     *pbIsFirmwareCapable,
+    NvBool     *pbEnableByDefault
+)
+{
+    NvBool bIsFirmwareCapable = NV_FALSE;
+    NvBool bEnableByDefault = NV_FALSE;
+    NvU16 pciDeviceId = pNv->pci_info.device_id;
+
+    if (NV_IS_SOC_DISPLAY_DEVICE(pNv))
+    {
+        bIsFirmwareCapable = NV_TRUE;
+    }
+    else
+    {
+        bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pciDeviceId,
+                                                             pmcBoot42,
+                                                             &bEnableByDefault);
+    }
+
+    if (pbIsFirmwareCapable != NULL)
+    {
+        *pbIsFirmwareCapable = bIsFirmwareCapable;
+    }
+    if (pbEnableByDefault != NULL)
+    {
+        *pbEnableByDefault = bEnableByDefault;
+    }
+}
+
 static NvBool NV_API_CALL rm_is_legacy_device(
     NvU16       device_id,
     NvU16       subsystem_vendor,
@@ -3138,7 +3166,31 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
     rmStatus = halmgrGetHalForGpu(pHalMgr, pmc_boot_0, pmc_boot_42, &myHalPublicID);
 
     if (rmStatus != NV_OK)
+    {
+        NvBool bIsFirmwareCapable;
+
+        rm_is_device_rm_firmware_capable(pNv,
+                                         pmc_boot_42,
+                                         &bIsFirmwareCapable,
+                                         NULL);
+        if (!bIsFirmwareCapable)
+        {
+            nv_printf(NV_DBG_ERRORS,
+               "NVRM: The NVIDIA GPU %04x:%02x:%02x.%x (PCI ID: %04x:%04x)\n"
+               "NVRM: installed in this system is not supported by open\n"
+               "NVRM: nvidia.ko because it does not include the required GPU\n"
+               "NVRM: System Processor (GSP).\n"
+               "NVRM: Please see the 'Open Linux Kernel Modules' and 'GSP\n"
+               "NVRM: Firmware' sections in the driver README, available on\n"
+               "NVRM: the Linux graphics driver download page at\n"
+               "NVRM: www.nvidia.com.\n",
+               pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
+               pNv->pci_info.function, pNv->pci_info.vendor_id,
+               pNv->pci_info.device_id, NV_VERSION_STRING);
+            goto threadfree;
+        }
         goto print_unsupported;
+    }
 
     goto threadfree;
 

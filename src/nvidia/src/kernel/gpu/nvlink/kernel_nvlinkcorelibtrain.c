@@ -451,6 +451,30 @@ knvlinkTrainP2pLinksToActive_IMPL
         return NV_OK;
     }
 
+    //
+    // Bug# 3601144: On Ampere+ systems, return if links are already initialized,
+    // since that implies links are already trained.
+    //
+    if (IsAMPEREorBetter(pGpu0))
+    {
+        NvU32 linkMask = 0;
+
+        FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink0->enabledLinks)
+        {
+            if (KNVLINK_IS_LINK_CONNECTED_TO_GPU(pKernelNvlink0, i, pGpu1))
+            {
+                linkMask |= BIT(i);
+            }
+        }
+        FOR_EACH_INDEX_IN_MASK_END;
+
+        if ((linkMask & pKernelNvlink0->initializedLinks) == linkMask)
+        {
+            NV_PRINTF(LEVEL_INFO, "P2P links are all trained already, return\n");
+            return NV_OK;
+        }
+    }
+
     // Get the link train status for the enabled link masks
     NV2080_CTRL_NVLINK_ARE_LINKS_TRAINED_PARAMS linkTrainedParams;
 

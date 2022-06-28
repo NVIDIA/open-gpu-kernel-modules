@@ -232,7 +232,7 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #define __GFP_NORETRY 0
 #endif
 
-#define NV_UVM_GFP_FLAGS (GFP_KERNEL | __GFP_NORETRY)
+#define NV_UVM_GFP_FLAGS (GFP_KERNEL)
 
 #if !defined(NV_ADDRESS_SPACE_INIT_ONCE_PRESENT)
     void address_space_init_once(struct address_space *mapping);

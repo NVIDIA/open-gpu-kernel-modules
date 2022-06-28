@@ -104,7 +104,7 @@ prbBufLeft(PRB_BUF *buf)
 
 /*!
  * @brief Encodes a variable integer in base-128 format.
- * See http://code.google.com/apis/protocolbuffers/docs/encoding.html for more
+ * See https://code.google.com/apis/protocolbuffers/docs/encoding.html for more
  * information.
  * @param [in] buf Memory buffer
  * @param [in] varint Value to encode
@@ -136,7 +136,7 @@ encode_varint(PRB_BUF *buf, NvU64 varint, NvBool countOnly)
 
 /**
  * Decodes a variable integer in base-128 format.
- * See http://code.google.com/apis/protocolbuffers/docs/encoding.html for more
+ * See https://code.google.com/apis/protocolbuffers/docs/encoding.html for more
  * information.
  * @param [in] pBuff Buffer to decode
  * @param [in] len Length of input buffer

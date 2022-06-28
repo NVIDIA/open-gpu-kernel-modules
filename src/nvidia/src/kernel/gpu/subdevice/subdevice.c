@@ -116,6 +116,8 @@ subdeviceConstruct_IMPL
         }
     }
 
+    NV_ASSERT_OK_OR_RETURN(gpuRegisterSubdevice(pGpu, pSubdevice));
+
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
         NV_RM_RPC_ALLOC_SUBDEVICE(pPrimaryGpu, pRsClient->hClient, pParentRef->hResource,
@@ -206,6 +208,8 @@ subdeviceDestruct_IMPL
             pSubdevice->bSchedPolicySet = NV_FALSE;
         }
     }
+
+    gpuUnregisterSubdevice(pGpu, pSubdevice);
 }
 
 NV_STATUS

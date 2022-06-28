@@ -276,4 +276,11 @@ typedef NvU8 FLCN_STATUS;
 // Lane Margining errors
 #define FLCN_ERR_LM_INVALID_RECEIVER_NUMBER                                (0xF5U)
 
+// APM errors
+#define FLCN_ERR_APM_NOT_FUSED_FOR_EK                                      (0xF6U)
+#define FLCN_ERR_APM_BROM_SIGN_FAIL                                        (0xF7U)
+// Booter Reload on SEC2-RTOS errors
+#define FLCN_ERR_AUTH_GSP_RM_HANDOFF_FAILED                                (0xF8U)
+#define FLCN_ERR_INVALID_WPRMETA_MAGIC_OR_REVISION                         (0xF9U)
+
 #endif // FLCNRETVAL_H

@@ -25,7 +25,7 @@
 /***************************** Balanced Tree *******************************\
 *                                                                           *
 *   A generic library to red black tree -- every operation is O(log(n))     *
-*   check http://en.wikipedia.org/wiki/Red-black_tree or similar www pages  *
+*   check https://en.wikipedia.org/wiki/Red-black_tree or similar www pages  *
 *                                                                           *
 \***************************************************************************/
 

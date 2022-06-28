@@ -499,9 +499,18 @@ int nv_drm_gem_fence_attach_ioctl(struct drm_device *dev,
         goto fence_context_create_fence_failed;
     }
 
-    nv_dma_resv_add_excl_fence(&nv_gem->resv, fence);
+    nv_dma_resv_lock(&nv_gem->resv, NULL);
 
-    ret = 0;
+    ret = nv_dma_resv_reserve_fences(&nv_gem->resv, 1, false);
+    if (ret == 0) {
+        nv_dma_resv_add_excl_fence(&nv_gem->resv, fence);
+    } else {
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Failed to reserve fence. Error code: %d", ret);
+    }
+
+    nv_dma_resv_unlock(&nv_gem->resv);
 
 fence_context_create_fence_failed:
     nv_drm_gem_object_unreference_unlocked(&nv_gem_fence_context->base);
