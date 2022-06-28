@@ -106,7 +106,7 @@ nvidia_vma_release(struct vm_area_struct *vma)
             (count++ < NV_MAX_RECURRING_WARNING_MESSAGES))
         {
             nv_printf(NV_DBG_MEMINFO,
-                "NVRM: VM: %s: late unmap, comm: %s, 0x%p\n",
+                "novideo: VM: %s: late unmap, comm: %s, 0x%p\n",
                 __FUNCTION__, current->comm, at);
         }
     }
@@ -134,7 +134,7 @@ nvidia_vma_access(
 
     if (!mmap_context->valid)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap context\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: VM: invalid mmap context\n");
         return -EINVAL;
     }
 
@@ -248,7 +248,7 @@ static vm_fault_t nvidia_fault(
         if (status != NV_OK)
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: VM: rm_schedule_gpu_wakeup failed: %x\n", status);
+                      "novideo: VM: rm_schedule_gpu_wakeup failed: %x\n", status);
             up(&nvl->mmap_lock);
             up_read(&nv_system_pm_lock);
             return VM_FAULT_SIGBUS;
@@ -272,7 +272,7 @@ static vm_fault_t nvidia_fault(
         if (ret != VM_FAULT_NOPAGE)
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: VM: nv_insert_pfn failed: %x\n", ret);
+                      "novideo: VM: nv_insert_pfn failed: %x\n", ret);
             break;
         }
 
@@ -305,17 +305,18 @@ int nv_encode_caching(
         prot = &tmp;
     }
 
-    switch (cache_type)
-    {
+    switch (cache_type) {
         case NV_MEMORY_UNCACHED_WEAK:
 #if defined(NV_PGPROT_UNCACHED_WEAK)
             *prot = NV_PGPROT_UNCACHED_WEAK(*prot);
+            goto ok;
             break;
 #endif
         case NV_MEMORY_UNCACHED:
             *prot = (memory_type == NV_MEMORY_TYPE_SYSTEM) ?
                     NV_PGPROT_UNCACHED(*prot) :
                     NV_PGPROT_UNCACHED_DEVICE(*prot);
+            goto ok;
             break;
 #if defined(NV_PGPROT_WRITE_COMBINED) && \
     defined(NV_PGPROT_WRITE_COMBINED_DEVICE)
@@ -340,15 +341,20 @@ int nv_encode_caching(
             return 1;
 #endif
         case NV_MEMORY_CACHED:
-            if (NV_ALLOW_CACHING(memory_type))
-                break;
-            // Intentional fallthrough.
+            if (NV_ALLOW_CACHING(memory_type)) {
+                goto ok;
+            }
+
+            break;
+
         default:
-            nv_printf(NV_DBG_ERRORS,
-                "NVRM: VM: cache type %d not supported for memory type %d!\n",
-                cache_type, memory_type);
-            return 1;
+            break;
     }
+
+    nv_printf(NV_DBG_ERRORS, "novideo: VM: cache type %d not supported for memory type %d!\n", cache_type, memory_type);
+    return 1;
+
+ok:
     return 0;
 }
 
@@ -479,7 +485,7 @@ int nvidia_mmap_helper(
      */
     if (!mmap_context->valid)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: VM: invalid mmap\n");
         return -EINVAL;
     }
 

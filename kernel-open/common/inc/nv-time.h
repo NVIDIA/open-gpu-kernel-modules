@@ -156,7 +156,7 @@ static inline NV_STATUS nv_sleep_us(unsigned int us)
 #ifdef NV_CHECK_DELAY_ACCURACY
     ktime_get_raw_ts64(&tm2);
     tm_diff = timespec64_sub(tm2, tm1);
-    pr_info("NVRM: delay of %d usec results in actual delay of 0x%llu nsec\n",
+    pr_info("novideo: delay of %d usec results in actual delay of 0x%llu nsec\n",
              us, timespec64_to_ns(&tm_diff));
 #endif
     return NV_OK;
@@ -242,7 +242,7 @@ static inline NV_STATUS nv_sleep_ms(unsigned int ms)
 #ifdef NV_CHECK_DELAY_ACCURACY
     ktime_get_raw_ts64(&tm_aux);
     tm_aux = timespec64_sub(tm_aux, tm_start);
-    pr_info("NVRM: delay of %d msec results in actual delay of %lld.%09ld sec\n",
+    pr_info("novideo: delay of %d msec results in actual delay of %lld.%09ld sec\n",
              ms, tm_aux.tv_sec, tm_aux.tv_nsec);
 #endif
     return NV_OK;

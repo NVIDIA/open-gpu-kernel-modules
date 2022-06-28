@@ -85,7 +85,7 @@ bool DisplayPort::isModePossibleMST
 
     if (minHBlank > modesetInfo.rasterWidth - modesetInfo.surfaceWidth)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: Blanking Width is smaller than minimum permissible value."));
         return false;
     }
@@ -93,7 +93,7 @@ bool DisplayPort::isModePossibleMST
     // Bug 702290 - Active Width should be greater than 60
     if (modesetInfo.surfaceWidth <= 60)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: Minimum Horizontal Active Width <= 60 not supported."));
         return false;
     }
@@ -207,7 +207,7 @@ bool DisplayPort::isModePossibleSST
         // Print debug message and Assert. All calculations assume a max of 8 lanes
         // & any increase in lanes should cause these calculation to be updated
         //
-        DP_LOG(("NVRM: %s: ERROR: LaneCount - %d is not supported for waterMark calculations.",
+        DP_LOG(("novideo: %s: ERROR: LaneCount - %d is not supported for waterMark calculations.",
                 __FUNCTION__, linkConfig.lanes));
         DP_LOG(("Current support is only up to 4-Lanes & any change/increase in supported lanes "
                 "should be reflected in waterMark calculations algorithm. "
@@ -256,7 +256,7 @@ bool DisplayPort::isModePossibleSST
 
     if (dpInfo->waterMark > 39 || dpInfo->waterMark > numSymbolsPerLine)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: watermark should not be greater than 39."));
         return false;
     }
@@ -286,7 +286,7 @@ bool DisplayPort::isModePossibleSST
 
     if (MinHBlank > modesetInfo.rasterWidth - modesetInfo.surfaceWidth)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: Blanking Width is smaller than minimum permissible value."));
         return false;
     }
@@ -294,7 +294,7 @@ bool DisplayPort::isModePossibleSST
     // Bug 702290 - Active Width should be greater than 60
     if (modesetInfo.surfaceWidth <= 60)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: Minimum Horizontal Active Width <= 60 not supported."));
         return false;
     }
@@ -453,7 +453,7 @@ bool DisplayPort::isModePossibleSSTWithFEC
         // Print debug message and Assert. All calculations assume a max of 8 lanes
         // & any increase in lanes should cause these calculation to be updated
         //
-        DP_LOG(("NVRM: %s: ERROR: LaneCount - %d is not supported for waterMark calculations.",
+        DP_LOG(("novideo: %s: ERROR: LaneCount - %d is not supported for waterMark calculations.",
                 __FUNCTION__, linkConfig.lanes));
         DP_LOG(("Current support is only up to 4-Lanes & any change/increase in supported lanes "
                 "should be reflected in waterMark calculations algorithm. "
@@ -517,7 +517,7 @@ bool DisplayPort::isModePossibleSSTWithFEC
 
     if (dpInfo->waterMark > numSymbolsPerLine)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: watermark = %d should not be greater than numSymbolsPerLine = %d.", dpInfo->waterMark, numSymbolsPerLine));
         return false;
     }
@@ -592,7 +592,7 @@ bool DisplayPort::isModePossibleSSTWithFEC
 
     if (MinHBlank > HBlank)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: Blanking Width is smaller than minimum permissible value."));
         return false;
     }
@@ -600,7 +600,7 @@ bool DisplayPort::isModePossibleSSTWithFEC
     // Bug 702290 - Active Width should be greater than 60
     if (modesetInfo.surfaceWidth <= 60)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: Minimum Horizontal Active Width <= 60 not supported."));
         return false;
     }
@@ -830,7 +830,7 @@ bool DisplayPort::isModePossibleMSTWithFEC
 
     if (MinHBlank > HBlank)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: Blanking Width is smaller than minimum permissible value."));
         return false;
     }
@@ -838,7 +838,7 @@ bool DisplayPort::isModePossibleMSTWithFEC
     // Bug 702290 - Active Width should be greater than 60
     if (modesetInfo.surfaceWidth <= 60)
     {
-        DP_LOG(("NVRM: %s:", __FUNCTION__));
+        DP_LOG(("novideo: %s:", __FUNCTION__));
         DP_LOG(("\t\tERROR: Minimum Horizontal Active Width <= 60 not supported."));
         return false;
     }

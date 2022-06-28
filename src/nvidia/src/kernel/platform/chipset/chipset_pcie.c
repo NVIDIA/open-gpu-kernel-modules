@@ -272,7 +272,7 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
             if (armChipsetAllowListInfo[i].vendorID == 0)
             {
                 portDbgPrintf(
-                    "NVRM: Chipset not recognized (vendor ID 0x%04x, device ID 0x%04x)\n",
+                    "novideo: Chipset not recognized (vendor ID 0x%04x, device ID 0x%04x)\n",
                     pCl->FHBBusInfo.vendorID, pCl->FHBBusInfo.deviceID);
 
                 // Allow the driver to run on AARCH64 even when the chipset is not matched,

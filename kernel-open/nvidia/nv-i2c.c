@@ -57,7 +57,7 @@ static int nv_i2c_algo_master_xfer(struct i2c_adapter *adapter, struct i2c_msg m
         {
             /* we only support basic I2C reads/writes, reject any other commands */
             rc = -EINVAL;
-            nv_printf(NV_DBG_ERRORS, "NVRM: Unsupported I2C flags used. (flags:0x%08x)\n",
+            nv_printf(NV_DBG_ERRORS, "novideo: Unsupported I2C flags used. (flags:0x%08x)\n",
                       msgs[i].flags);
             rmStatus = NV_ERR_INVALID_ARGUMENT;
         }

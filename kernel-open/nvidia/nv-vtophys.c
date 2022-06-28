@@ -33,7 +33,7 @@ NvU64 NV_API_CALL nv_get_kern_phys_address(NvU64 address)
         return __pa(address);
 
     nv_printf(NV_DBG_ERRORS,
-        "NVRM: can't translate address in %s()!\n", __FUNCTION__);
+        "novideo: can't translate address in %s()!\n", __FUNCTION__);
     return 0;
 }
 

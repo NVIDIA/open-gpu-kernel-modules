@@ -125,7 +125,7 @@ static int nv_acpi_notify(struct notifier_block *nb,
         }
         else
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: nv_acpi_notify: failed to allocate stack\n");
+                "novideo: nv_acpi_notify: failed to allocate stack\n");
 
         /*
          * Special case for ACPI_VIDEO_NOTIFY_PROBE event: intentionally return
@@ -190,7 +190,7 @@ int nv_acpi_init(void)
     if (status < 0)
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_init: acpi_bus_register_driver() failed (%d)!\n", status);
+            "novideo: nv_acpi_init: acpi_bus_register_driver() failed (%d)!\n", status);
         os_free_mem(nv_acpi_driver);
         nv_acpi_driver = NULL;
     }
@@ -257,7 +257,7 @@ static int nv_acpi_add(struct acpi_device *device)
     {
         nv_kmem_cache_free_stack(sp);
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: nv_acpi_add: failed to allocate ACPI device management data!\n");
+            "novideo: nv_acpi_add: failed to allocate ACPI device management data!\n");
         return -ENOMEM;
     }
 
@@ -281,7 +281,7 @@ static int nv_acpi_add(struct acpi_device *device)
         if (device_counter == NV_MAXNUM_DISPLAY_DEVICES)
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: nv_acpi_add: Total number of devices cannot exceed %d\n",
+                      "novideo: nv_acpi_add: Total number of devices cannot exceed %d\n",
                       NV_MAXNUM_DISPLAY_DEVICES);
             break;
         }
@@ -326,7 +326,7 @@ static int nv_acpi_add(struct acpi_device *device)
     if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_add: failed to enable display switch events (%d)!\n", status);
+            "novideo: nv_acpi_add: failed to enable display switch events (%d)!\n", status);
     }
 
     status = acpi_install_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
@@ -335,7 +335,7 @@ static int nv_acpi_add(struct acpi_device *device)
     if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_add: failed to install event notification handler (%d)!\n", status);
+            "novideo: nv_acpi_add: failed to install event notification handler (%d)!\n", status);
     }
     else
     {
@@ -373,7 +373,7 @@ static int nv_acpi_remove(struct acpi_device *device)
     if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_remove: failed to disable display switch events (%d)!\n", status);
+            "novideo: nv_acpi_remove: failed to disable display switch events (%d)!\n", status);
     }
 
     if (pNvAcpiObject->notify_handler_installed)
@@ -386,7 +386,7 @@ static int nv_acpi_remove(struct acpi_device *device)
         ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_remove: failed to remove event notification handler (%d)!\n", status);
+            "novideo: nv_acpi_remove: failed to remove event notification handler (%d)!\n", status);
     }
     else
     {
@@ -448,7 +448,7 @@ static void nv_acpi_event(acpi_handle handle, u32 event_type, void *data)
                 if (ACPI_FAILURE(status))
                 {
                     nv_printf(NV_DBG_INFO,
-                    "NVRM: nv_acpi_event: failed to query _DGS method for display device 0x%x\n",
+                    "novideo: nv_acpi_event: failed to query _DGS method for display device 0x%x\n",
                     dev_id);
                 }
                 else if (state)
@@ -485,7 +485,7 @@ static void nv_acpi_event(acpi_handle handle, u32 event_type, void *data)
         }
 
         nv_printf(NV_DBG_INFO,
-        "NVRM: nv_acpi_event: Event-type 0x%x, Event-val 0x%x\n",
+        "novideo: nv_acpi_event: Event-type 0x%x, Event-val 0x%x\n",
         event_type, event_val);
 
         rm_system_event(pNvAcpiObject->sp, NV_SYSTEM_ACPI_DISPLAY_SWITCH_EVENT, event_val);
@@ -596,7 +596,7 @@ static void nv_uninstall_notifier(nv_acpi_t *pNvAcpiObject, acpi_notify_handler 
         if (ACPI_FAILURE(status))
         {
             nv_printf(NV_DBG_INFO,
-                "NVRM: nv_acpi_methods_uninit: failed to remove event notification handler (%d)!\n", status);
+                "novideo: nv_acpi_methods_uninit: failed to remove event notification handler (%d)!\n", status);
         }
         else
         {
@@ -717,7 +717,6 @@ acpi_status nv_acpi_find_methods(
 
 void NV_API_CALL nv_acpi_methods_uninit(void)
 {
-    acpi_status status;
     struct acpi_device *device = NULL;
 
     nvif_handle = NULL;
@@ -934,7 +933,7 @@ static NV_STATUS nv_acpi_nvif_method(
     {
 #if defined(DEBUG)
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: nv_acpi_nvif_method: invalid context!\n");
+            "novideo: nv_acpi_nvif_method: invalid context!\n");
 #endif
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -966,7 +965,7 @@ static NV_STATUS nv_acpi_nvif_method(
     if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_nvif_method: failed to get NVIF data, "
+            "novideo: nv_acpi_nvif_method: failed to get NVIF data, "
             "status 0x%x, function 0x%x, subFunction 0x%x!\n",
             status, function, subFunction);
         return NV_ERR_GENERIC;
@@ -1002,7 +1001,7 @@ static NV_STATUS nv_acpi_nvif_method(
     else
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_nvif_method: NVIF data invalid, function 0x%x, "
+            "novideo: nv_acpi_nvif_method: NVIF data invalid, function 0x%x, "
             "subFunction 0x%x!\n", function, subFunction);
         kfree(output.pointer);
         return NV_ERR_GENERIC;
@@ -1048,7 +1047,7 @@ NV_STATUS NV_API_CALL nv_acpi_dsm_method(
     if ((!pInParams) || (inParamSize > MAX_INPUT_PARAM_SIZE) || (!pOutData) || (!pSize))
     {
         nv_printf(NV_DBG_INFO,
-                  "NVRM: %s: invalid argument(s)!\n", __FUNCTION__);
+                  "novideo: %s: invalid argument(s)!\n", __FUNCTION__);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -1056,7 +1055,7 @@ NV_STATUS NV_API_CALL nv_acpi_dsm_method(
     {
 #if defined(DEBUG)
         nv_printf(NV_DBG_INFO,
-                  "NVRM: %s: invalid argument(s)!\n", __FUNCTION__);
+                  "novideo: %s: invalid argument(s)!\n", __FUNCTION__);
 #endif
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -1107,7 +1106,7 @@ NV_STATUS NV_API_CALL nv_acpi_dsm_method(
     if (ACPI_FAILURE(acpi_status))
     {
         nv_printf(NV_DBG_INFO,
-              "NVRM: %s: failed to evaluate _DSM method!\n", __FUNCTION__);
+              "novideo: %s: failed to evaluate _DSM method!\n", __FUNCTION__);
         goto exit;
     }
 
@@ -1130,7 +1129,7 @@ NV_STATUS NV_API_CALL nv_acpi_dsm_method(
     if (status != NV_OK)
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: %s: DSM data invalid!\n", __FUNCTION__);
+                  "novideo: %s: DSM data invalid!\n", __FUNCTION__);
     }
 
 exit:
@@ -1175,7 +1174,7 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
     {
 #if defined(DEBUG)
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: %s: invalid context!\n",
+                  "novideo: %s: invalid context!\n",
                   __FUNCTION__);
 #endif
         return NV_ERR_NOT_SUPPORTED;
@@ -1201,7 +1200,7 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
             case 0x0400:
             case 0xA420:
                 lcd_dev_handle = dev->handle;
-                nv_printf(NV_DBG_INFO, "NVRM: %s Found LCD: %x\n",
+                nv_printf(NV_DBG_INFO, "novideo: %s Found LCD: %x\n",
                           __FUNCTION__, device_id);
                 break;
             default:
@@ -1214,7 +1213,7 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
 
     if (lcd_dev_handle == NULL)
     {
-        nv_printf(NV_DBG_INFO, "NVRM: %s LCD not found\n", __FUNCTION__);
+        nv_printf(NV_DBG_INFO, "novideo: %s LCD not found\n", __FUNCTION__);
         return NV_ERR_GENERIC;
     }
 
@@ -1243,7 +1242,7 @@ NV_STATUS NV_API_CALL nv_acpi_ddc_method(
     if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-                  "NVRM: %s: failed status: %08x \n",
+                  "novideo: %s: failed status: %08x \n",
                   __FUNCTION__,
                   status);
         return NV_ERR_GENERIC;
@@ -1296,7 +1295,7 @@ NV_STATUS NV_API_CALL nv_acpi_rom_method(
     {
 #if defined(DEBUG)
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: %s: invalid context!\n", __FUNCTION__);
+                  "novideo: %s: invalid context!\n", __FUNCTION__);
 #endif
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -1313,7 +1312,7 @@ NV_STATUS NV_API_CALL nv_acpi_rom_method(
     if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-              "NVRM: %s: failed to evaluate _ROM method!\n", __FUNCTION__);
+              "novideo: %s: failed to evaluate _ROM method!\n", __FUNCTION__);
         return NV_ERR_GENERIC;
     }
     else
@@ -1328,7 +1327,7 @@ NV_STATUS NV_API_CALL nv_acpi_rom_method(
         else
         {
             nv_printf(NV_DBG_INFO,
-                  "NVRM: %s: Invalid _ROM data\n", __FUNCTION__);
+                  "novideo: %s: Invalid _ROM data\n", __FUNCTION__);
             kfree(output.pointer);
             return NV_ERR_GENERIC;
         }
@@ -1363,7 +1362,7 @@ NV_STATUS NV_API_CALL nv_acpi_dod_method(
     {
 #if defined(DEBUG)
         nv_printf(NV_DBG_ERRORS,
-              "NVRM: %s: invalid context!\n", __FUNCTION__);
+              "novideo: %s: invalid context!\n", __FUNCTION__);
 #endif
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -1373,7 +1372,7 @@ NV_STATUS NV_API_CALL nv_acpi_dod_method(
     if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-              "NVRM: %s: failed to evaluate _DOD method!\n", __FUNCTION__);
+              "novideo: %s: failed to evaluate _DOD method!\n", __FUNCTION__);
         return NV_ERR_GENERIC;
     }
     else
@@ -1389,7 +1388,7 @@ NV_STATUS NV_API_CALL nv_acpi_dod_method(
                 if (dod->package.elements[i].type != ACPI_TYPE_INTEGER)
                 {
                     nv_printf(NV_DBG_INFO,
-                            "NVRM: %s: _DOD entry invalid!\n", __FUNCTION__);
+                            "novideo: %s: _DOD entry invalid!\n", __FUNCTION__);
                     kfree(output.pointer);
                     return NV_ERR_GENERIC;
                 }
@@ -1401,7 +1400,7 @@ NV_STATUS NV_API_CALL nv_acpi_dod_method(
         else
         {
             nv_printf(NV_DBG_INFO,
-                      "NVRM: %s: _DOD data too large!\n", __FUNCTION__);
+                      "novideo: %s: _DOD data too large!\n", __FUNCTION__);
             kfree(output.pointer);
             return NV_ERR_GENERIC;
         }
@@ -1433,7 +1432,7 @@ static NV_STATUS  nv_acpi_wmmx_method(
     {
 #if defined(DEBUG)
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: nv_acpi_wmmx_method: invalid context!\n");
+            "novideo: nv_acpi_wmmx_method: invalid context!\n");
 #endif
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -1456,7 +1455,7 @@ static NV_STATUS  nv_acpi_wmmx_method(
     if (ACPI_FAILURE(status))
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_wmmx_method: failed to get WMMX data, "
+            "novideo: nv_acpi_wmmx_method: failed to get WMMX data, "
             "status 0x%x!\n", status);
         return NV_ERR_GENERIC;
     }
@@ -1481,7 +1480,7 @@ static NV_STATUS  nv_acpi_wmmx_method(
     else
     {
         nv_printf(NV_DBG_ERRORS,
-                "NVRM: nv_acpi_wmmx_method: WMMX data invalid.\n");
+                "novideo: nv_acpi_wmmx_method: WMMX data invalid.\n");
         kfree(output.pointer);
         return NV_ERR_GENERIC;
     }
@@ -1511,13 +1510,13 @@ NvBool nv_acpi_power_resource_method_present(
     status = acpi_evaluate_object(handle, "_PR3", NULL, &buf);
     if (ACPI_FAILURE(status))
     {
-        nv_printf(NV_DBG_INFO,"NVRM: Failed to evaluate _PR3 object\n");
+        nv_printf(NV_DBG_INFO,"novideo: Failed to evaluate _PR3 object\n");
         return NV_FALSE;
     }
 
     if (!buf.pointer)
     {
-       nv_printf(NV_DBG_INFO, "NVRM: output buffer pointer is null"
+       nv_printf(NV_DBG_INFO, "novideo: output buffer pointer is null"
                               " for _PR3 method\n");
        return NV_FALSE;
     }
@@ -1531,7 +1530,7 @@ NvBool nv_acpi_power_resource_method_present(
     if ((object_package->type != ACPI_TYPE_PACKAGE) &&
         (object_package->package.count != 0x1))
     {
-        nv_printf(NV_DBG_ERRORS,"NVRM: _PR3 object is not a type 'package'\n");
+        nv_printf(NV_DBG_ERRORS,"novideo: _PR3 object is not a type 'package'\n");
         return NV_FALSE;
     }
 
@@ -1542,7 +1541,7 @@ NvBool nv_acpi_power_resource_method_present(
         (object_reference->type !=  ACPI_TYPE_LOCAL_REFERENCE))
     {
         nv_printf(NV_DBG_ERRORS,
-                     "NVRM: _PR3 object does not contain POWER Reference\n");
+                     "novideo: _PR3 object does not contain POWER Reference\n");
         return NV_FALSE;
     }
     return NV_TRUE;
@@ -1572,13 +1571,13 @@ NV_STATUS NV_API_CALL nv_acpi_mux_method(
     if ((strcmp(pMethodName, "MXDS") != 0)
         && (strcmp(pMethodName, "MXDM") != 0))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: Unsupported ACPI method %s\n",
+        nv_printf(NV_DBG_ERRORS, "novideo: %s: Unsupported ACPI method %s\n",
                   __FUNCTION__, pMethodName);
         return NV_ERR_NOT_SUPPORTED;
     }
     else
     {
-        nv_printf(NV_DBG_INFO, "NVRM: %s: Call for %s ACPI method \n",
+        nv_printf(NV_DBG_INFO, "novideo: %s: Call for %s ACPI method \n",
                   __FUNCTION__, pMethodName);
     }
 
@@ -1601,7 +1600,7 @@ NV_STATUS NV_API_CALL nv_acpi_mux_method(
     if (!NV_MAY_SLEEP())
     {
 #if defined(DEBUG)
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: invalid context!\n", __FUNCTION__);
+        nv_printf(NV_DBG_ERRORS, "novideo: %s: invalid context!\n", __FUNCTION__);
 #endif
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -1628,7 +1627,7 @@ NV_STATUS NV_API_CALL nv_acpi_mux_method(
     if (mux_dev_handle == NULL)
     {
         nv_printf(NV_DBG_INFO,
-                  "NVRM: %s Mux device handle not found\n", __FUNCTION__);
+                  "novideo: %s Mux device handle not found\n", __FUNCTION__);
         return NV_ERR_GENERIC;
     }
 
@@ -1640,7 +1639,7 @@ NV_STATUS NV_API_CALL nv_acpi_mux_method(
 
     if (ACPI_FAILURE(status))
     {
-        nv_printf(NV_DBG_INFO, "NVRM: %s: Failed to evaluate %s method!\n",
+        nv_printf(NV_DBG_INFO, "novideo: %s: Failed to evaluate %s method!\n",
                   __FUNCTION__, pMethodName);
         return NV_ERR_GENERIC;
     }
@@ -1655,7 +1654,7 @@ NV_STATUS NV_API_CALL nv_acpi_mux_method(
         else
         {
             nv_printf(NV_DBG_INFO,
-                      "NVRM: %s: Invalid MUX data\n", __FUNCTION__);
+                      "novideo: %s: Invalid MUX data\n", __FUNCTION__);
             kfree(output.pointer);
             return NV_ERR_GENERIC;
         }
@@ -1679,13 +1678,13 @@ static acpi_status nv_acpi_find_battery_info(
 
     if (ACPI_FAILURE(status))
     {
-        nv_printf(NV_DBG_INFO, "NVRM: Failed to evaluate battery's object\n");
+        nv_printf(NV_DBG_INFO, "novideo: Failed to evaluate battery's object\n");
         return AE_OK;
     }
 
     if (!buf.pointer)
     {
-        nv_printf(NV_DBG_INFO, "NVRM: Battery object output buffer is null\n");
+        nv_printf(NV_DBG_INFO, "novideo: Battery object output buffer is null\n");
         return AE_OK;
     }
 
@@ -1693,7 +1692,7 @@ static acpi_status nv_acpi_find_battery_info(
 
     if (object_package->type != ACPI_TYPE_PACKAGE)
     {
-        nv_printf(NV_DBG_INFO, "NVRM: Battery method output is not package\n");
+        nv_printf(NV_DBG_INFO, "novideo: Battery method output is not package\n");
         return AE_OK;
     }
 

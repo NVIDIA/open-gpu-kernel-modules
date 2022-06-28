@@ -274,7 +274,7 @@ retry_alloc:
     pAllocRequest->pPmaAllocInfo[subdevInst]->refCount  = 1;
     pAllocRequest->pPmaAllocInfo[subdevInst]->flags     = allocOptions.flags;
 
-    NV_PRINTF(LEVEL_INFO, "\nNVRM:  Size requested: 0x%llx bytes\n", size);
+    NV_PRINTF(LEVEL_INFO, "\nnovideo:  Size requested: 0x%llx bytes\n", size);
     NV_PRINTF(LEVEL_INFO, "       PageSize: 0x%x bytes\n", pageSize);
     NV_PRINTF(LEVEL_INFO, "      PageCount: 0x%x\n", pageCount);
     NV_PRINTF(LEVEL_INFO, "    Actual Size: 0x%llx\n",

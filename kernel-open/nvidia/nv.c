@@ -292,7 +292,7 @@ nv_alloc_t *nvos_create_alloc(
     NV_KMALLOC(at, sizeof(nv_alloc_t));
     if (at == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate alloc info\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate alloc info\n");
         return NULL;
     }
 
@@ -302,7 +302,7 @@ nv_alloc_t *nvos_create_alloc(
     pt_size = num_pages *  sizeof(nvidia_pte_t *);
     if (os_alloc_mem((void **)&at->page_table, pt_size) != NV_OK)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate page table\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate page table\n");
         NV_KFREE(at, sizeof(nv_alloc_t));
         return NULL;
     }
@@ -317,7 +317,7 @@ nv_alloc_t *nvos_create_alloc(
         if (at->page_table[i] == NULL)
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: failed to allocate page table entry\n");
+                      "novideo: failed to allocate page table entry\n");
             nvos_free_alloc(at);
             return NULL;
         }
@@ -374,7 +374,7 @@ nv_module_resources_init(nv_stack_t **sp)
     if (nvidia_stack_t_cache == NULL)
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: nvidia_stack_t cache allocation failed.\n");
+                  "novideo: nvidia_stack_t cache allocation failed.\n");
         goto exit;
     }
 
@@ -383,7 +383,7 @@ nv_module_resources_init(nv_stack_t **sp)
     if (nvidia_pte_t_cache == NULL)
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: nvidia_pte_t cache allocation failed.\n");
+                  "novideo: nvidia_pte_t cache allocation failed.\n");
         goto exit;
     }
 
@@ -392,7 +392,7 @@ nv_module_resources_init(nv_stack_t **sp)
     if (nvidia_p2p_page_t_cache == NULL)
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: nvidia_p2p_page_t cache allocation failed.\n");
+                  "novideo: nvidia_p2p_page_t cache allocation failed.\n");
         goto exit;
     }
 
@@ -442,7 +442,7 @@ nvlink_drivers_init(void)
     rc = nvlink_core_init();
     if (rc < 0)
     {
-        nv_printf(NV_DBG_INFO, "NVRM: NVLink core init failed.\n");
+        nv_printf(NV_DBG_INFO, "novideo: NVLink core init failed.\n");
         return rc;
     }
 
@@ -450,7 +450,7 @@ nvlink_drivers_init(void)
     rc = ibmnpu_init();
     if (rc < 0)
     {
-        nv_printf(NV_DBG_INFO, "NVRM: IBM NPU init failed.\n");
+        nv_printf(NV_DBG_INFO, "novideo: IBM NPU init failed.\n");
         nvlink_core_exit();
         return rc;
     }
@@ -461,7 +461,7 @@ nvlink_drivers_init(void)
     rc = nvswitch_init();
     if (rc < 0)
     {
-        nv_printf(NV_DBG_INFO, "NVRM: NVSwitch init failed.\n");
+        nv_printf(NV_DBG_INFO, "novideo: NVSwitch init failed.\n");
 #if defined(NVCPU_PPC64LE)
         ibmnpu_exit();
 #endif
@@ -582,11 +582,11 @@ nv_report_applied_patches(void)
     {
         if (i == 0)
         {
-            nv_printf(NV_DBG_ERRORS, "NVRM: Applied patches:\n");
+            nv_printf(NV_DBG_ERRORS, "novideo: Applied patches:\n");
         }
 
         nv_printf(NV_DBG_ERRORS,
-            "NVRM:    Patch #%d: %s\n", i + 1, __nv_patches[i].short_description);
+            "novideo:    Patch #%d: %s\n", i + 1, __nv_patches[i].short_description);
     }
 }
 
@@ -610,14 +610,14 @@ nv_drivers_init(void)
     if (rc < 0)
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: failed to register character device.\n");
+                  "novideo: failed to register character device.\n");
         return rc;
     }
 
     rc = nv_pci_register_driver();
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: No NVIDIA PCI devices found.\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: No NVIDIA PCI devices found.\n");
         rc = -ENODEV;
         goto exit;
     }
@@ -672,7 +672,7 @@ nv_module_init(nv_stack_t **sp)
     rc = nv_cap_drv_init();
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: nv-cap-drv init failed.\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: nv-cap-drv init failed.\n");
         goto cap_drv_exit;
     }
 
@@ -689,7 +689,7 @@ nv_module_init(nv_stack_t **sp)
 
     if (!rm_init_rm(*sp))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: rm_init_rm() failed!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: rm_init_rm() failed!\n");
         rc = -EIO;
         goto nvlink_exit;
     }
@@ -780,28 +780,28 @@ int __init nvidia_init_module(void)
     rc = nv_procfs_init();
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to initialize procfs.\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to initialize procfs.\n");
         return rc;
     }
 
     rc = nv_caps_root_init();
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to initialize capabilities.\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to initialize capabilities.\n");
         goto procfs_exit;
     }
 
     rc = nv_module_init(&sp);
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to initialize module.\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to initialize module.\n");
         goto caps_root_exit;
     }
 
     count = nvos_count_devices();
     if ((count == 0) && (!is_nvswitch_present))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: No NVIDIA GPU found.\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: No NVIDIA GPU found.\n");
         rc = -ENODEV;
         goto module_exit;
     }
@@ -815,30 +815,30 @@ int __init nvidia_init_module(void)
     if (num_probed_nv_devices != count)
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: The NVIDIA probe routine was not called for %d device(s).\n",
+            "novideo: The NVIDIA probe routine was not called for %d device(s).\n",
             count - num_probed_nv_devices);
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: This can occur when a driver such as: \n"
-            "NVRM: nouveau, rivafb, nvidiafb or rivatv "
-            "\nNVRM: was loaded and obtained ownership of the NVIDIA device(s).\n");
+            "novideo: This can occur when a driver such as: \n"
+            "novideo: nouveau, rivafb, nvidiafb or rivatv "
+            "\nnovideo: was loaded and obtained ownership of the NVIDIA device(s).\n");
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: Try unloading the conflicting kernel module (and/or\n"
-            "NVRM: reconfigure your kernel without the conflicting\n"
-            "NVRM: driver(s)), then try loading the NVIDIA kernel module\n"
-            "NVRM: again.\n");
+            "novideo: Try unloading the conflicting kernel module (and/or\n"
+            "novideo: reconfigure your kernel without the conflicting\n"
+            "novideo: driver(s)), then try loading the NVIDIA kernel module\n"
+            "novideo: again.\n");
     }
 
     if ((num_probed_nv_devices == 0) && (!is_nvswitch_present))
     {
         rc = -ENODEV;
-        nv_printf(NV_DBG_ERRORS, "NVRM: No NVIDIA devices probed.\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: No NVIDIA devices probed.\n");
         goto drivers_exit;
     }
 
     if (num_probed_nv_devices != num_nv_devices)
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: The NVIDIA probe routine failed for %d device(s).\n",
+            "novideo: The NVIDIA probe routine failed for %d device(s).\n",
             num_probed_nv_devices - num_nv_devices);
     }
 
@@ -846,7 +846,7 @@ int __init nvidia_init_module(void)
     {
         rc = -ENODEV;
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: None of the NVIDIA devices were initialized.\n");
+            "novideo: None of the NVIDIA devices were initialized.\n");
         goto drivers_exit;
     }
 
@@ -859,7 +859,7 @@ int __init nvidia_init_module(void)
 
     nv_report_applied_patches();
 
-    nv_printf(NV_DBG_ERRORS, "NVRM: loading %s\n", pNVRM_ID);
+    nv_printf(NV_DBG_ERRORS, "novideo: %s\n", pNVRM_ID);
 
 #if defined(NV_UVM_ENABLE)
     rc = nv_uvm_init();
@@ -1141,7 +1141,7 @@ static int validate_numa_start_state(nv_linux_state_t *nvl)
     {
         if (nv_ctl_device.numa_memblock_size == 0)
         {
-            nv_printf(NV_DBG_ERRORS, "NVRM: numa memblock size of zero "
+            nv_printf(NV_DBG_ERRORS, "novideo: numa memblock size of zero "
                       "found during device start");
             rc = -EINVAL;
         }
@@ -1196,7 +1196,7 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
 
     if (nv_dev_is_pci(nvl->dev) && (nv->pci_info.device_id == 0))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: open of non-existent GPU with minor number %d\n", nvl->minor_num);
+        nv_printf(NV_DBG_ERRORS, "novideo: open of non-existent GPU with minor number %d\n", nvl->minor_num);
         rc = -ENXIO;
         goto failed;
     }
@@ -1224,7 +1224,7 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
     if (rc != 0)
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: failed to initialize ibmnpu devices attached to GPU with minor number %d\n",
+            "novideo: failed to initialize ibmnpu devices attached to GPU with minor number %d\n",
             nvl->minor_num);
         goto failed;
     }
@@ -1296,8 +1296,8 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
             NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
                 "Tried to get IRQ %d, but another driver\n",
                 (unsigned int) nv->interrupt_line);
-            nv_printf(NV_DBG_ERRORS, "NVRM: has it and is not sharing it.\n");
-            nv_printf(NV_DBG_ERRORS, "NVRM: You may want to verify that no audio driver");
+            nv_printf(NV_DBG_ERRORS, "novideo: has it and is not sharing it.\n");
+            nv_printf(NV_DBG_ERRORS, "novideo: You may want to verify that no audio driver");
             nv_printf(NV_DBG_ERRORS, " is using the IRQ.\n");
         }
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "request_irq() failed (%d)\n", rc);
@@ -1528,12 +1528,12 @@ nvidia_open(
     unsigned int i;
     unsigned int k;
 
-    nv_printf(NV_DBG_INFO, "NVRM: nvidia_open...\n");
+    nv_printf(NV_DBG_INFO, "novideo: nvidia_open...\n");
 
     nvlfp = nv_alloc_file_private();
     if (nvlfp == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate file private!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate file private!\n");
         return -ENOMEM;
     }
 
@@ -1747,7 +1747,7 @@ static void nv_stop_device(nv_state_t *nv, nvidia_stack_t *sp)
     if ((nv->flags & NV_FLAG_PERSISTENT_SW_STATE) &&
         (!persistence_mode_notice_logged) && (!os_is_vgx_hyper()))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: Persistence mode is deprecated and"
+        nv_printf(NV_DBG_ERRORS, "novideo: Persistence mode is deprecated and"
                   " will be removed in a future release. Please use"
                   " nvidia-persistenced instead.\n");
         persistence_mode_notice_logged  = 1;
@@ -1782,7 +1782,7 @@ static void nv_close_device(nv_state_t *nv, nvidia_stack_t *sp)
     if (NV_ATOMIC_READ(nvl->usage_count) == 0)
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: Attempting to close unopened minor device %u!\n",
+                  "novideo: Attempting to close unopened minor device %u!\n",
                   nvl->minor_num);
         WARN_ON(1);
         return;
@@ -2041,7 +2041,7 @@ nvidia_ioctl(
     size_t arg_size = 0;
     int arg_cmd;
 
-    nv_printf(NV_DBG_INFO, "NVRM: ioctl(0x%x, 0x%x, 0x%x)\n",
+    nv_printf(NV_DBG_INFO, "novideo: ioctl(0x%x, 0x%x, 0x%x)\n",
         _IOC_NR(cmd), (unsigned int) i_arg, _IOC_SIZE(cmd));
 
     status = nv_down_read_interruptible(&nv_system_pm_lock);
@@ -2054,7 +2054,7 @@ nvidia_ioctl(
     rmStatus = nv_check_gpu_state(nv);
     if (rmStatus == NV_ERR_GPU_IS_LOST)
     {
-        nv_printf(NV_DBG_INFO, "NVRM: GPU is lost, skipping nvidia_ioctl\n");
+        nv_printf(NV_DBG_INFO, "novideo: GPU is lost, skipping nvidia_ioctl\n");
         status = -EINVAL;
         goto done;
     }
@@ -2067,7 +2067,7 @@ nvidia_ioctl(
         if (arg_size != sizeof(nv_ioctl_xfer_t))
         {
             nv_printf(NV_DBG_ERRORS,
-                    "NVRM: invalid ioctl XFER structure size!\n");
+                    "novideo: invalid ioctl XFER structure size!\n");
             status = -EINVAL;
             goto done;
         }
@@ -2075,7 +2075,7 @@ nvidia_ioctl(
         if (NV_COPY_FROM_USER(&ioc_xfer, arg_ptr, sizeof(ioc_xfer)))
         {
             nv_printf(NV_DBG_ERRORS,
-                    "NVRM: failed to copy in ioctl XFER data!\n");
+                    "novideo: failed to copy in ioctl XFER data!\n");
             status = -EFAULT;
             goto done;
         }
@@ -2086,7 +2086,7 @@ nvidia_ioctl(
 
         if (arg_size > NV_ABSOLUTE_MAX_IOCTL_SIZE)
         {
-            nv_printf(NV_DBG_ERRORS, "NVRM: invalid ioctl XFER size!\n");
+            nv_printf(NV_DBG_ERRORS, "novideo: invalid ioctl XFER size!\n");
             status = -EINVAL;
             goto done;
         }
@@ -2095,14 +2095,14 @@ nvidia_ioctl(
     NV_KMALLOC(arg_copy, arg_size);
     if (arg_copy == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate ioctl memory\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate ioctl memory\n");
         status = -ENOMEM;
         goto done;
     }
 
     if (NV_COPY_FROM_USER(arg_copy, arg_ptr, arg_size))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to copy in ioctl data!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to copy in ioctl data!\n");
         status = -EFAULT;
         goto done;
     }
@@ -2370,7 +2370,7 @@ done:
         {
             if (NV_COPY_TO_USER(arg_ptr, arg_copy, arg_size))
             {
-                nv_printf(NV_DBG_ERRORS, "NVRM: failed to copy out ioctl data\n");
+                nv_printf(NV_DBG_ERRORS, "novideo: failed to copy out ioctl data\n");
                 status = -EFAULT;
             }
         }
@@ -2495,7 +2495,7 @@ nvidia_isr(
                 if (nvl->irq_count[index].total >= RM_THRESHOLD_TOTAL_IRQ_COUNT)
                 {
                     if (nvl->irq_count[index].unhandled > RM_THRESHOLD_UNAHNDLED_IRQ_COUNT)
-                        nv_printf(NV_DBG_ERRORS,"NVRM: Going over RM unhandled interrupt threshold for irq %d\n", irq);
+                        nv_printf(NV_DBG_ERRORS,"novideo: Going over RM unhandled interrupt threshold for irq %d\n", irq);
 
                     nvl->irq_count[index].total = 0;
                     nvl->irq_count[index].unhandled = 0;
@@ -2503,7 +2503,7 @@ nvidia_isr(
                 }
             }
             else
-                nv_printf(NV_DBG_ERRORS,"NVRM: IRQ number out of valid range\n");
+                nv_printf(NV_DBG_ERRORS,"novideo: IRQ number out of valid range\n");
         }
     }
 
@@ -2573,7 +2573,7 @@ nvidia_isr_common_bh(
     status = nv_check_gpu_state(nv);
     if (status == NV_ERR_GPU_IS_LOST)
     {
-        nv_printf(NV_DBG_INFO, "NVRM: GPU is lost, skipping ISR bottom half\n");
+        nv_printf(NV_DBG_INFO, "novideo: GPU is lost, skipping ISR bottom half\n");
     }
     else
     {
@@ -2600,7 +2600,7 @@ nvidia_isr_bh_unlocked(
     status = os_acquire_mutex(nvl->isr_bh_unlocked_mutex);
     if (status != NV_OK)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: Unable to take bottom_half mutex!\n",
+        nv_printf(NV_DBG_ERRORS, "novideo: %s: Unable to take bottom_half mutex!\n",
                   __FUNCTION__);
         WARN_ON(1);
     }
@@ -2611,7 +2611,7 @@ nvidia_isr_bh_unlocked(
     if (status == NV_ERR_GPU_IS_LOST)
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: GPU is lost, skipping unlocked ISR bottom half\n");
+            "novideo: GPU is lost, skipping unlocked ISR bottom half\n");
     }
     else
     {
@@ -2635,7 +2635,7 @@ nvidia_rc_timer_callback(
     if (status == NV_ERR_GPU_IS_LOST)
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: GPU is lost, skipping device timer callbacks\n");
+            "novideo: GPU is lost, skipping device timer callbacks\n");
         return;
     }
 
@@ -2662,7 +2662,7 @@ nvidia_ctl_open(
     nv_linux_file_private_t *nvlfp = NV_GET_LINUX_FILE_PRIVATE(file);
     static int count = 0;
 
-    nv_printf(NV_DBG_INFO, "NVRM: nvidia_ctl_open\n");
+    nv_printf(NV_DBG_INFO, "novideo: nvidia_ctl_open\n");
 
     down(&nvl->ldata_lock);
 
@@ -2677,7 +2677,7 @@ nvidia_ctl_open(
             (count++ < NV_MAX_RECURRING_WARNING_MESSAGES))
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: failed to register with the ACPI subsystem!\n");
+                "novideo: failed to register with the ACPI subsystem!\n");
         }
     }
 
@@ -2705,7 +2705,7 @@ nvidia_ctl_close(
     static int count = 0;
     unsigned int i;
 
-    nv_printf(NV_DBG_INFO, "NVRM: nvidia_ctl_close\n");
+    nv_printf(NV_DBG_INFO, "novideo: nvidia_ctl_close\n");
 
     down(&nvl->ldata_lock);
     if (NV_ATOMIC_DEC_AND_TEST(nvl->usage_count))
@@ -2716,7 +2716,7 @@ nvidia_ctl_close(
             (count++ < NV_MAX_RECURRING_WARNING_MESSAGES))
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: failed to unregister from the ACPI subsystem!\n");
+                "novideo: failed to unregister from the ACPI subsystem!\n");
         }
     }
     up(&nvl->ldata_lock);
@@ -2812,7 +2812,7 @@ nv_map_guest_pages(nv_alloc_t *at,
     if (pages == NULL)
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: failed to allocate vmap() page descriptor table!\n");
+                  "novideo: failed to allocate vmap() page descriptor table!\n");
         return 0;
     }
 
@@ -2972,7 +2972,7 @@ NV_STATUS NV_API_CALL nv_register_user_pages(
     nv_linux_state_t *nvl;
     nvidia_pte_t *page_ptr;
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_register_user_pages: 0x%x\n", page_count);
+    nv_printf(NV_DBG_MEMINFO, "novideo: VM: nv_register_user_pages: 0x%x\n", page_count);
     user_pages = *priv_data;
     nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
@@ -3033,7 +3033,7 @@ void NV_API_CALL nv_unregister_user_pages(
 {
     nv_alloc_t *at = *priv_data;
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_unregister_user_pages: 0x%x\n", page_count);
+    nv_printf(NV_DBG_MEMINFO, "novideo: VM: nv_unregister_user_pages: 0x%x\n", page_count);
 
     NV_PRINT_AT(NV_DBG_MEMINFO, at);
 
@@ -3166,7 +3166,7 @@ void NV_API_CALL nv_unregister_sgt(
 {
     nv_alloc_t *at = priv_data;
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_unregister_sgt\n");
+    nv_printf(NV_DBG_MEMINFO, "novideo: VM: nv_unregister_sgt\n");
 
     NV_PRINT_AT(NV_DBG_MEMINFO, at);
 
@@ -3289,7 +3289,7 @@ void* NV_API_CALL nv_alloc_kernel_mapping(
             if (pages == NULL)
             {
                 nv_printf(NV_DBG_ERRORS,
-                          "NVRM: failed to allocate vmap() page descriptor table!\n");
+                          "novideo: failed to allocate vmap() page descriptor table!\n");
                 return NULL;
             }
 
@@ -3303,7 +3303,7 @@ void* NV_API_CALL nv_alloc_kernel_mapping(
 
         if (virt_addr == 0)
         {
-            nv_printf(NV_DBG_ERRORS, "NVRM: failed to map pages!\n");
+            nv_printf(NV_DBG_ERRORS, "novideo: failed to map pages!\n");
             return NULL;
         }
 
@@ -3358,8 +3358,8 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
     NvU32 i;
     struct device *dev = NULL;
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_alloc_pages: %d pages\n", page_count);
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM:    contig %d  cache_type %d\n",
+    nv_printf(NV_DBG_MEMINFO, "novideo: VM: nv_alloc_pages: %d pages\n", page_count);
+    nv_printf(NV_DBG_MEMINFO, "novideo: VM:    contig %d  cache_type %d\n",
         contiguous, cache_type);
 
     //
@@ -3472,7 +3472,7 @@ NV_STATUS NV_API_CALL nv_free_pages(
     NV_STATUS rmStatus = NV_OK;
     nv_alloc_t *at = priv_data;
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_free_pages: 0x%x\n", page_count);
+    nv_printf(NV_DBG_MEMINFO, "novideo: VM: nv_free_pages: 0x%x\n", page_count);
 
     NV_PRINT_AT(NV_DBG_MEMINFO, at);
 
@@ -3751,7 +3751,7 @@ int NV_API_CALL nv_start_rc_timer(
     if (nv->rc_timer_enabled)
         return -1;
 
-    nv_printf(NV_DBG_INFO, "NVRM: initializing rc timer\n");
+    nv_printf(NV_DBG_INFO, "novideo: initializing rc timer\n");
 
     nv_timer_setup(&nvl->rc_timer, nvidia_rc_timer_callback);
 
@@ -3760,7 +3760,7 @@ int NV_API_CALL nv_start_rc_timer(
     // set the timeout for 1 second in the future:
     mod_timer(&nvl->rc_timer.kernel_timer, jiffies + HZ);
 
-    nv_printf(NV_DBG_INFO, "NVRM: rc timer initialized\n");
+    nv_printf(NV_DBG_INFO, "novideo: rc timer initialized\n");
 
     return 0;
 }
@@ -3774,10 +3774,10 @@ int NV_API_CALL nv_stop_rc_timer(
     if (!nv->rc_timer_enabled)
         return -1;
 
-    nv_printf(NV_DBG_INFO, "NVRM: stopping rc timer\n");
+    nv_printf(NV_DBG_INFO, "novideo: stopping rc timer\n");
     nv->rc_timer_enabled = 0;
     del_timer_sync(&nvl->rc_timer.kernel_timer);
-    nv_printf(NV_DBG_INFO, "NVRM: rc timer stopped\n");
+    nv_printf(NV_DBG_INFO, "novideo: rc timer stopped\n");
 
     return 0;
 }
@@ -3856,7 +3856,7 @@ NvBool nvos_is_chipset_io_coherent(void)
         if (nv_kmem_cache_alloc_stack(&sp) != 0)
         {
             nv_printf(NV_DBG_ERRORS,
-              "NVRM: cannot allocate stack for platform coherence check callback \n");
+              "novideo: cannot allocate stack for platform coherence check callback \n");
             WARN_ON(1);
             return NV_FALSE;
         }
@@ -4590,7 +4590,7 @@ NvU64 NV_API_CALL nv_get_dma_start_address(
          * the 32-bit line.
          */
         nv_printf(NV_DBG_WARNINGS,
-            "NVRM: DMA window limited by platform\n");
+            "novideo: DMA window limited by platform\n");
         pci_set_dma_mask(pci_dev, saved_dma_mask);
         goto done;
     }
@@ -4609,7 +4609,7 @@ NvU64 NV_API_CALL nv_get_dma_start_address(
              * we must fall back here.
              */
             nv_printf(NV_DBG_WARNINGS,
-                "NVRM: DMA window limited by memory size\n");
+                "novideo: DMA window limited by memory size\n");
             pci_set_dma_mask(pci_dev, saved_dma_mask);
             goto done;
         }
@@ -5012,7 +5012,7 @@ NV_STATUS NV_API_CALL nv_get_nvlink_line_rate(
     npuDev = nvl->npu->devs[0];
     if (!npuDev->dev.of_node)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: OF Node not found in IBM-NPU device node\n",
+        nv_printf(NV_DBG_ERRORS, "novideo: %s: OF Node not found in IBM-NPU device node\n",
                   __FUNCTION__);
         return NV_ERR_NOT_SUPPORTED;
     }

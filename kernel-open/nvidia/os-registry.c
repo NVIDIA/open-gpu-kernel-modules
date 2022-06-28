@@ -80,7 +80,7 @@ static NV_STATUS pci_str_to_bdf(char *pci_dev_str, NvU32 *pci_domain,
             (strlen(string) > 1)))
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: Invalid PCI function in token %s\n",
+                      "novideo: Invalid PCI function in token %s\n",
                       pci_dev_str);
             status = NV_ERR_INVALID_ARGUMENT;
             goto done;
@@ -99,7 +99,7 @@ static NV_STATUS pci_str_to_bdf(char *pci_dev_str, NvU32 *pci_domain,
         if ((string == NULL) || (*string != ':') || (*(string + 1) == '\0'))
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: Invalid PCI domain/bus in token %s\n",
+                      "novideo: Invalid PCI domain/bus in token %s\n",
                       pci_dev_str);
             status = NV_ERR_INVALID_ARGUMENT;
             goto done;
@@ -111,7 +111,7 @@ static NV_STATUS pci_str_to_bdf(char *pci_dev_str, NvU32 *pci_domain,
         if (string == NULL)
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: Invalid PCI bus/slot in token %s\n",
+                      "novideo: Invalid PCI bus/slot in token %s\n",
                       pci_dev_str);
             status = NV_ERR_INVALID_ARGUMENT;
             goto done;
@@ -122,7 +122,7 @@ static NV_STATUS pci_str_to_bdf(char *pci_dev_str, NvU32 *pci_domain,
             if ((*string != ':') || (*(string + 1) == '\0'))
             {
                 nv_printf(NV_DBG_ERRORS,
-                          "NVRM: Invalid PCI slot in token %s\n",
+                          "novideo: Invalid PCI slot in token %s\n",
                           pci_dev_str);
                 status = NV_ERR_INVALID_ARGUMENT;
                 goto done;
@@ -133,7 +133,7 @@ static NV_STATUS pci_str_to_bdf(char *pci_dev_str, NvU32 *pci_domain,
             if ((slot == 0) && ((token + 1) == string))
             {
                 nv_printf(NV_DBG_ERRORS,
-                          "NVRM: Invalid PCI slot in token %s\n",
+                          "novideo: Invalid PCI slot in token %s\n",
                           pci_dev_str);
                 status = NV_ERR_INVALID_ARGUMENT;
                 goto done;

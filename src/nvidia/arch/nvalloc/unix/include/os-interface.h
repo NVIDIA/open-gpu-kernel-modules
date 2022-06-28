@@ -219,10 +219,10 @@ void NV_API_CALL  out_string(const char *str);
 int  NV_API_CALL  nv_printf(NvU32 debuglevel, const char *printf_format, ...);
 
 #define NV_DEV_PRINTF(debuglevel, nv, format, ... ) \
-        nv_printf(debuglevel, "NVRM: GPU " NV_PCI_DEV_FMT ": " format, NV_PCI_DEV_FMT_ARGS(nv), ## __VA_ARGS__)
+        nv_printf(debuglevel, "novideo: GPU " NV_PCI_DEV_FMT ": " format, NV_PCI_DEV_FMT_ARGS(nv), ## __VA_ARGS__)
 
 #define NV_DEV_PRINTF_STATUS(debuglevel, nv, status, format, ... ) \
-        nv_printf(debuglevel, "NVRM: GPU " NV_PCI_DEV_FMT ": " format " (0x%x)\n", NV_PCI_DEV_FMT_ARGS(nv), ## __VA_ARGS__, status)
+        nv_printf(debuglevel, "novideo: GPU " NV_PCI_DEV_FMT ": " format " (0x%x)\n", NV_PCI_DEV_FMT_ARGS(nv), ## __VA_ARGS__, status)
 
 /*
  * Fields for os_lock_user_pages flags parameter

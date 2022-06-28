@@ -436,7 +436,7 @@ extern NvBool nvos_is_chipset_io_coherent(void);
 #if defined(NV_FLUSH_CACHE_ALL_PRESENT)
             flush_cache_all();
 #else
-            WARN_ONCE(0, "NVRM: kernel does not support flush_cache_all()\n");
+            WARN_ONCE(0, "novideo: kernel does not support flush_cache_all()\n");
 #endif
         }
     }
@@ -846,7 +846,7 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
 #define NV_PRINT_AT(nv_debug_level,at)                                           \
     {                                                                            \
         nv_printf(nv_debug_level,                                                \
-            "NVRM: VM: %s:%d: 0x%p, %d page(s), count = %d, flags = 0x%08x, "    \
+            "novideo: VM: %s:%d: 0x%p, %d page(s), count = %d, flags = 0x%08x, "    \
             "page_table = 0x%p\n",  __FUNCTION__, __LINE__, at,                  \
             at->num_pages, NV_ATOMIC_READ(at->usage_count),                      \
             at->flags, at->page_table);                                          \
@@ -855,7 +855,7 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
 #define NV_PRINT_VMA(nv_debug_level,vma)                                                 \
     {                                                                                    \
         nv_printf(nv_debug_level,                                                        \
-            "NVRM: VM: %s:%d: 0x%lx - 0x%lx, 0x%08x bytes @ 0x%016llx, 0x%p, 0x%p\n",    \
+            "novideo: VM: %s:%d: 0x%lx - 0x%lx, 0x%08x bytes @ 0x%016llx, 0x%p, 0x%p\n",    \
             __FUNCTION__, __LINE__, vma->vm_start, vma->vm_end, NV_VMA_SIZE(vma),        \
             NV_VMA_OFFSET(vma), NV_VMA_PRIVATE(vma), NV_VMA_FILE(vma));                  \
     }

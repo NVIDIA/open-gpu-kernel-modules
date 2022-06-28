@@ -152,7 +152,7 @@ NV_STATUS NV_API_CALL os_lookup_user_io_memory(
     if (!NV_MAY_SLEEP())
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: %s(): invalid context!\n", __FUNCTION__);
+            "novideo: %s(): invalid context!\n", __FUNCTION__);
         return NV_ERR_NOT_SUPPORTED;
     }
 
@@ -160,7 +160,7 @@ NV_STATUS NV_API_CALL os_lookup_user_io_memory(
     if (rmStatus != NV_OK)
     {
         nv_printf(NV_DBG_ERRORS,
-                "NVRM: failed to allocate page table!\n");
+                "novideo: failed to allocate page table!\n");
         return rmStatus;
     }
 
@@ -228,7 +228,7 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
     if (!NV_MAY_SLEEP())
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: %s(): invalid context!\n", __FUNCTION__);
+            "novideo: %s(): invalid context!\n", __FUNCTION__);
         return NV_ERR_NOT_SUPPORTED;
     }
 
@@ -237,7 +237,7 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
     if (rmStatus != NV_OK)
     {
         nv_printf(NV_DBG_ERRORS,
-                "NVRM: failed to allocate page table!\n");
+                "novideo: failed to allocate page table!\n");
         return rmStatus;
     }
 

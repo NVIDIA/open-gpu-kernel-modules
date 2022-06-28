@@ -816,7 +816,7 @@ nvswitch_corelib_set_dl_link_mode_lr10
             }
 
             NVSWITCH_PRINT(device, INFO,
-                "NVRM: %s : Changing Link state to Safe for (%s):(%s).\n",
+                "novideo: %s : Changing Link state to Safe for (%s):(%s).\n",
                 __FUNCTION__, device->name, link->linkName);
 
             if (link_state == NV_NVLDL_TOP_LINK_STATE_STATE_INIT)

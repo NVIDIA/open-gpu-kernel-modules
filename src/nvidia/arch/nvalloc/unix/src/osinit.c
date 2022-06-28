@@ -1893,13 +1893,13 @@ NvBool RmInitAdapter(
                 if (!nv->printed_openrm_enable_unsupported_gpus_error)
                 {
                     nv_printf(NV_DBG_ERRORS,
-                        "NVRM: Open nvidia.ko is only ready for use on Data Center GPUs.\n");
+                        "novideo: Open nvidia.ko is only ready for use on Data Center GPUs.\n");
                     nv_printf(NV_DBG_ERRORS,
-                        "NVRM: To force use of Open nvidia.ko on other GPUs, see the\n");
+                        "novideo: To force use of Open nvidia.ko on other GPUs, see the\n");
                     nv_printf(NV_DBG_ERRORS,
-                        "NVRM: 'OpenRmEnableUnsupportedGpus' kernel module parameter described\n");
+                        "novideo: 'OpenRmEnableUnsupportedGpus' kernel module parameter described\n");
                     nv_printf(NV_DBG_ERRORS,
-                        "NVRM: in the README.\n");
+                        "novideo: in the README.\n");
                     nv->printed_openrm_enable_unsupported_gpus_error = NV_TRUE;
                 }
                 RM_SET_ERROR(status, RM_INIT_FIRMWARE_INIT_FAILED);

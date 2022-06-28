@@ -323,7 +323,7 @@ nv_dma_buf_map(
         !attachment->peer2peer)
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: failed to map dynamic attachment with no P2P support\n");
+                  "novideo: failed to map dynamic attachment with no P2P support\n");
         return NULL;
     }
 #endif
@@ -667,7 +667,7 @@ nv_dma_buf_create(
     priv = nv_dma_buf_alloc_file_private(params->totalObjects);
     if (priv == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate dma-buf private\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate dma-buf private\n");
         return NV_ERR_NO_MEMORY;
     }
 
@@ -727,7 +727,7 @@ nv_dma_buf_create(
 
     if (IS_ERR(buf))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to create dma-buf\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to create dma-buf\n");
 
         status = NV_ERR_OPERATING_SYSTEM;
 
@@ -739,7 +739,7 @@ nv_dma_buf_create(
     rc = dma_buf_fd(buf, O_RDWR | O_CLOEXEC);
     if (rc < 0)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to get dma-buf file descriptor\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to get dma-buf file descriptor\n");
 
         //
         // If dma-buf is successfully created, the dup'd handles
@@ -788,7 +788,7 @@ nv_dma_buf_reuse(
     buf = dma_buf_get(params->fd);
     if (IS_ERR(buf))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to get dma-buf\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to get dma-buf\n");
         return NV_ERR_OPERATING_SYSTEM;
     }
 

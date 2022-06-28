@@ -242,7 +242,7 @@ nv_pci_probe
     NV_STATUS status;
     NvBool last_bar_64bit = NV_FALSE;
 
-    nv_printf(NV_DBG_SETUP, "NVRM: probing 0x%x 0x%x, class 0x%x\n",
+    nv_printf(NV_DBG_SETUP, "novideo: probing 0x%x 0x%x, class 0x%x\n",
         pci_dev->vendor, pci_dev->device, pci_dev->class);
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
@@ -258,7 +258,7 @@ nv_pci_probe
         nvl = pci_get_drvdata(pci_dev->physfn);
         if (!nvl)
         {
-            nv_printf(NV_DBG_ERRORS, "NVRM: Aborting probe for VF %04x:%02x:%02x.%x "
+            nv_printf(NV_DBG_ERRORS, "novideo: Aborting probe for VF %04x:%02x:%02x.%x "
                       "since PF is not bound to nvidia driver.\n",
                        NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                        NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
@@ -270,7 +270,7 @@ nv_pci_probe
             nv = NV_STATE_PTR(nvl);
             if (rm_is_iommu_needed_for_sriov(sp, nv))
             {
-                nv_printf(NV_DBG_ERRORS, "NVRM: Aborting probe for VF %04x:%02x:%02x.%x "
+                nv_printf(NV_DBG_ERRORS, "novideo: Aborting probe for VF %04x:%02x:%02x.%x "
                           "since IOMMU is not present on the system.\n",
                            NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                            NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
@@ -280,14 +280,14 @@ nv_pci_probe
 
         if (nvidia_vgpu_vfio_probe(pci_dev) != NV_OK)
         {
-            nv_printf(NV_DBG_ERRORS, "NVRM: Failed to register device to vGPU VFIO module");
+            nv_printf(NV_DBG_ERRORS, "novideo: Failed to register device to vGPU VFIO module");
             goto failed;
         }
 
         nv_kmem_cache_free_stack(sp);
         return 0;
 #else
-        nv_printf(NV_DBG_ERRORS, "NVRM: Ignoring probe for VF %04x:%02x:%02x.%x ",
+        nv_printf(NV_DBG_ERRORS, "novideo: Ignoring probe for VF %04x:%02x:%02x.%x ",
                   NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                   NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
 
@@ -306,7 +306,7 @@ nv_pci_probe
                 pci_dev->subsystem_device,
                 NV_FALSE /* print_legacy_warning */))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: ignoring the legacy GPU %04x:%02x:%02x.%x\n",
+        nv_printf(NV_DBG_ERRORS, "novideo: ignoring the legacy GPU %04x:%02x:%02x.%x\n",
                   NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
                   NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
         goto failed;
@@ -317,17 +317,17 @@ nv_pci_probe
     if (pci_enable_device(pci_dev) != 0)
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: pci_enable_device failed, aborting\n");
+            "novideo: pci_enable_device failed, aborting\n");
         goto failed;
     }
 
     if ((pci_dev->irq == 0 && !pci_find_capability(pci_dev, PCI_CAP_ID_MSIX))
         && nv_treat_missing_irq_as_error())
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: Can't find an IRQ for your NVIDIA card!\n");
-        nv_printf(NV_DBG_ERRORS, "NVRM: Please check your BIOS settings.\n");
-        nv_printf(NV_DBG_ERRORS, "NVRM: [Plug & Play OS] should be set to NO\n");
-        nv_printf(NV_DBG_ERRORS, "NVRM: [Assign IRQ to VGA] should be set to YES \n");
+        nv_printf(NV_DBG_ERRORS, "novideo: Can't find an IRQ for your NVIDIA card!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: Please check your BIOS settings.\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: [Plug & Play OS] should be set to NO\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: [Assign IRQ to VGA] should be set to YES \n");
         goto failed;
     }
 
@@ -340,10 +340,10 @@ nv_pci_probe
                 ((NV_PCI_RESOURCE_START(pci_dev, i) >> NV_PCI_MAX_MMIO_BITS_SUPPORTED)))
             {
                 nv_printf(NV_DBG_ERRORS,
-                    "NVRM: This is a 64-bit BAR mapped above %dGB by the system\n"
-                    "NVRM: BIOS or the %s kernel. This PCI I/O region assigned\n"
-                    "NVRM: to your NVIDIA device is not supported by the kernel.\n"
-                    "NVRM: BAR%d is %dM @ 0x%llx (PCI:%04x:%02x:%02x.%x)\n",
+                    "novideo: This is a 64-bit BAR mapped above %dGB by the system\n"
+                    "novideo: BIOS or the %s kernel. This PCI I/O region assigned\n"
+                    "novideo: to your NVIDIA device is not supported by the kernel.\n"
+                    "novideo: BAR%d is %dM @ 0x%llx (PCI:%04x:%02x:%02x.%x)\n",
                     (1 << (NV_PCI_MAX_MMIO_BITS_SUPPORTED - 30)),
                     NV_KERNEL_NAME, i,
                     (NV_PCI_RESOURCE_SIZE(pci_dev, i) >> 20),
@@ -379,15 +379,15 @@ nv_pci_probe
                     goto next_bar;
 
                 nv_printf(NV_DBG_ERRORS,
-                    "NVRM: This is a 64-bit BAR mapped above 4GB by the system\n"
-                    "NVRM: BIOS or the %s kernel, but the PCI bridge\n"
-                    "NVRM: immediately upstream of this GPU does not define\n"
-                    "NVRM: a matching prefetchable memory window.\n",
+                    "novideo: This is a 64-bit BAR mapped above 4GB by the system\n"
+                    "novideo: BIOS or the %s kernel, but the PCI bridge\n"
+                    "novideo: immediately upstream of this GPU does not define\n"
+                    "novideo: a matching prefetchable memory window.\n",
                     NV_KERNEL_NAME);
                 nv_printf(NV_DBG_ERRORS,
-                    "NVRM: This may be due to a known Linux kernel bug.  Please\n"
-                    "NVRM: see the README section on 64-bit BARs for additional\n"
-                    "NVRM: information.\n");
+                    "novideo: This may be due to a known Linux kernel bug.  Please\n"
+                    "novideo: see the README section on 64-bit BARs for additional\n"
+                    "novideo: information.\n");
                 goto failed;
             }
 
@@ -412,8 +412,8 @@ next_bar:
 
         // Invalid 32 or 64-bit BAR.
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: This PCI I/O region assigned to your NVIDIA device is invalid:\n"
-            "NVRM: BAR%d is %dM @ 0x%llx (PCI:%04x:%02x:%02x.%x)\n", i,
+            "novideo: This PCI I/O region assigned to your NVIDIA device is invalid:\n"
+            "novideo: BAR%d is %dM @ 0x%llx (PCI:%04x:%02x:%02x.%x)\n", i,
             (NV_PCI_RESOURCE_SIZE(pci_dev, i) >> 20),
             (NvU64)NV_PCI_RESOURCE_START(pci_dev, i),
             NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
@@ -426,9 +426,9 @@ next_bar:
                             nv_device_name))
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: request_mem_region failed for %dM @ 0x%llx. This can\n"
-            "NVRM: occur when a driver such as rivatv is loaded and claims\n"
-            "NVRM: ownership of the device's registers.\n",
+            "novideo: request_mem_region failed for %dM @ 0x%llx. This can\n"
+            "novideo: occur when a driver such as rivatv is loaded and claims\n"
+            "novideo: ownership of the device's registers.\n",
             (NV_PCI_RESOURCE_SIZE(pci_dev, NV_GPU_BAR_INDEX_REGS) >> 20),
             (NvU64)NV_PCI_RESOURCE_START(pci_dev, NV_GPU_BAR_INDEX_REGS));
         goto failed;
@@ -437,7 +437,7 @@ next_bar:
     NV_KMALLOC(nvl, sizeof(nv_linux_state_t));
     if (nvl == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate memory\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate memory\n");
         goto err_not_supported;
     }
 
@@ -551,12 +551,12 @@ next_bar:
     }
 
     nv_printf(NV_DBG_INFO,
-              "NVRM: PCI:%04x:%02x:%02x.%x (%04x:%04x): BAR0 @ 0x%llx (%lluMB)\n",
+              "novideo: PCI:%04x:%02x:%02x.%x (%04x:%04x): BAR0 @ 0x%llx (%lluMB)\n",
               nv->pci_info.domain, nv->pci_info.bus, nv->pci_info.slot,
               PCI_FUNC(pci_dev->devfn), nv->pci_info.vendor_id, nv->pci_info.device_id,
               nv->regs->cpu_address, (nv->regs->size >> 20));
     nv_printf(NV_DBG_INFO,
-              "NVRM: PCI:%04x:%02x:%02x.%x (%04x:%04x): BAR1 @ 0x%llx (%lluMB)\n",
+              "novideo: PCI:%04x:%02x:%02x.%x (%04x:%04x): BAR1 @ 0x%llx (%lluMB)\n",
               nv->pci_info.domain, nv->pci_info.bus, nv->pci_info.slot,
               PCI_FUNC(pci_dev->devfn), nv->pci_info.vendor_id, nv->pci_info.device_id,
               nv->fb->cpu_address, (nv->fb->size >> 20));
@@ -643,7 +643,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
     nv_state_t *nv;
     nvidia_stack_t *sp = NULL;
 
-    nv_printf(NV_DBG_SETUP, "NVRM: removing GPU %04x:%02x:%02x.%x\n",
+    nv_printf(NV_DBG_SETUP, "novideo: removing GPU %04x:%02x:%02x.%x\n",
               NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
               NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
 
@@ -683,7 +683,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
     if ((NV_ATOMIC_READ(nvl->usage_count) != 0) && !(nv->is_external_gpu))
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: Attempting to remove minor device %u with non-zero usage count!\n",
+                  "novideo: Attempting to remove minor device %u with non-zero usage count!\n",
                   nvl->minor_num);
 
         /*
@@ -709,7 +709,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
             {
                 /* The device was not found, which should not happen */
                 nv_printf(NV_DBG_ERRORS,
-                          "NVRM: Failed removal of minor device %u!\n",
+                          "novideo: Failed removal of minor device %u!\n",
                           nvl->minor_num);
                 WARN_ON(1);
                 goto done;
@@ -719,7 +719,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
         }
 
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: Continuing with GPU removal for minor device %u\n",
+                  "novideo: Continuing with GPU removal for minor device %u\n",
                   nvl->minor_num);
     }
 
@@ -975,7 +975,7 @@ nv_pci_error_detected(
 
     if ((nvl == NULL) || (nvl->pci_dev != pci_dev))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: invalid device!\n", __FUNCTION__);
+        nv_printf(NV_DBG_ERRORS, "novideo: %s: invalid device!\n", __FUNCTION__);
         return PCI_ERS_RESULT_NONE;
     }
 
@@ -998,7 +998,7 @@ nv_pci_mmio_enabled(
 
     if ((nvl == NULL) || (nvl->pci_dev != pci_dev))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: invalid device!\n", __FUNCTION__);
+        nv_printf(NV_DBG_ERRORS, "novideo: %s: invalid device!\n", __FUNCTION__);
         goto done;
     }
 
@@ -1006,7 +1006,7 @@ nv_pci_mmio_enabled(
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: %s: failed to allocate stack!\n",
+        nv_printf(NV_DBG_ERRORS, "novideo: %s: failed to allocate stack!\n",
             __FUNCTION__);
         goto done;
     }
@@ -1024,8 +1024,8 @@ nv_pci_mmio_enabled(
     {
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
             "The kernel has enabled MMIO for the device,\n"
-            "NVRM: but it still appears unreachable. The device\n"
-            "NVRM: will not function properly until it is reset.\n");
+            "novideo: but it still appears unreachable. The device\n"
+            "novideo: will not function properly until it is reset.\n");
     }
 
     status = rm_log_gpu_crash(sp, nv);

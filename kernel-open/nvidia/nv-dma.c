@@ -27,7 +27,7 @@
 #include "nv-linux.h"
 
 #define NV_DMA_DEV_PRINTF(debuglevel, dma_dev, format, ... )                \
-    nv_printf(debuglevel, "NVRM: %s: " format,                              \
+    nv_printf(debuglevel, "novideo: %s: " format,                              \
               (((dma_dev) && ((dma_dev)->dev)) ? dev_name((dma_dev)->dev) : \
                                                  NULL),                     \
               ## __VA_ARGS__)

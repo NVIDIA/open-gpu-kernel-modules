@@ -413,7 +413,7 @@ nvswitch_inforom_read_object
     if (packedSize != fileSize)
     {
         NVSWITCH_PRINT(device, ERROR,
-                    "NVRM: %s: object %c%c%c was found, but discarded due to "
+                    "novideo: %s: object %c%c%c was found, but discarded due to "
                     "a size mismatch! (Expected = 0x%X bytes, Actual = 0x%X "
                     "bytes)\n", __FUNCTION__,
                     objectName[0], objectName[1], objectName[2],
@@ -424,7 +424,7 @@ nvswitch_inforom_read_object
     if (!INFOROM_FS_FILE_NAMES_MATCH(pPackedObject, objectName))
     {
         NVSWITCH_PRINT(device, ERROR,
-                    "NVRM: %s: object %c%c%c was found, but discarded due to "
+                    "novideo: %s: object %c%c%c was found, but discarded due to "
                     "a type mismatch in the header!\n", __FUNCTION__,
                     objectName[0], objectName[1], objectName[2]);
         return -NVL_ERR_INVALID_STATE;

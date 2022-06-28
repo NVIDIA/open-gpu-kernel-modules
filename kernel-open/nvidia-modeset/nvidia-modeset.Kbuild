@@ -55,6 +55,7 @@ nvidia-modeset-y += $(NVIDIA_MODESET_BINARY_OBJECT_O)
 # Define nvidia-modeset.ko-specific CFLAGS.
 #
 
+NVIDIA_MODESET_CFLAGS += -Wall -Werror
 NVIDIA_MODESET_CFLAGS += -I$(src)/nvidia-modeset
 NVIDIA_MODESET_CFLAGS += -UDEBUG -U_DEBUG -DNDEBUG -DNV_BUILD_MODULE_INSTANCES=0
 

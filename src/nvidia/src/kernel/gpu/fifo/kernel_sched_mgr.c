@@ -68,7 +68,7 @@ _kschedmgrGetSchedulerPolicy
     if (bSupportSwScheduler && IS_MIG_ENABLED(pGpu))
     {
         bSupportSwScheduler = NV_FALSE;
-        portDbgPrintf("NVRM: Software Scheduler is not supported in MIG mode\n");
+        portDbgPrintf("novideo: Software Scheduler is not supported in MIG mode\n");
     }
 
     *pSchedPolicy = schedPolicy;
@@ -111,7 +111,7 @@ kschedmgrConstructPolicy_IMPL
     {
         pKernelSchedMgr->bIsSchedSwEnabled = (pKernelSchedMgr->configSchedPolicy != SCHED_POLICY_DEFAULT);
 
-        portDbgPrintf("NVRM: GPU at %04x:%02x:%02x.0 has software scheduler %s with policy %s.\n",
+        portDbgPrintf("novideo: GPU at %04x:%02x:%02x.0 has software scheduler %s with policy %s.\n",
                       domain, bus, device,
                       pKernelSchedMgr->bIsSchedSwEnabled ? "ENABLED" : "DISABLED",
                       schedPolicyName);

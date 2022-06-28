@@ -308,7 +308,7 @@ nvidia_register_cpu_hotplug_notifier(void)
     {
         nv_disable_pat_support();
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: CPU hotplug notifier registration failed!\n");
+            "novideo: CPU hotplug notifier registration failed!\n");
         return -EIO;
     }
     return 0;
@@ -360,7 +360,7 @@ static int nv_determine_pat_mode(void)
                 (boot_cpu_data.x86 != 6) || (boot_cpu_data.x86_model >= 15))
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: CPU does not support the PAT.\n");
+                "novideo: CPU does not support the PAT.\n");
             return NV_PAT_MODE_DISABLED;
         }
     }
@@ -390,7 +390,7 @@ static int nv_determine_pat_mode(void)
     else if (PAT_WC_index != 0xf)
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: PAT configuration unsupported.\n");
+            "novideo: PAT configuration unsupported.\n");
         return NV_PAT_MODE_DISABLED;
     }
     else
@@ -461,7 +461,7 @@ int nv_init_pat_support(nvidia_stack_t *sp)
     else
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: builtin PAT support disabled.\n");
+            "novideo: builtin PAT support disabled.\n");
     }
 
     return 0;

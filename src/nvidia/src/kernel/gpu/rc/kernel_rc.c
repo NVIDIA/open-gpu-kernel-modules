@@ -223,7 +223,7 @@ _krcLogUuidOnce
                  DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE,   _SHA1))) ==
             NV_OK)
         {
-            portDbgPrintf("NVRM: GPU at PCI:%04x:%02x:%02x: %s\n",
+            portDbgPrintf("novideo: GPU at PCI:%04x:%02x:%02x: %s\n",
                           gpuGetDomain(pGpu),
                           gpuGetBus(pGpu),
                           gpuGetDevice(pGpu),
@@ -233,7 +233,7 @@ _krcLogUuidOnce
 
         if (pGpu->boardInfo != NULL && pGpu->boardInfo->serialNumber[0] != '\0')
         {
-            portDbgPrintf("NVRM: GPU Board Serial Number: %s\n",
+            portDbgPrintf("novideo: GPU Board Serial Number: %s\n",
                           pGpu->boardInfo->serialNumber);
         }
 
@@ -313,7 +313,7 @@ krcReportXid_IMPL
         {
             // Attribute this XID to both GPU / Compute instance
             portDbgPrintf(
-                "NVRM: Xid (PCI:%04x:%02x:%02x GPU-I:%02u GPU-CI:%02u): %d, pid=%s, name=%s, %s\n",
+                "novideo: Xid (PCI:%04x:%02x:%02x GPU-I:%02u GPU-CI:%02u): %d, pid=%s, name=%s, %s\n",
                 gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu),
                 gpuPartitionId, computeInstanceId,
                 exceptType,
@@ -325,7 +325,7 @@ krcReportXid_IMPL
         {
             // Attribute this XID to GPU instance only
             portDbgPrintf(
-                "NVRM: Xid (PCI:%04x:%02x:%02x GPU-I:%02u): %d, pid=%s, name=%s, %s\n",
+                "novideo: Xid (PCI:%04x:%02x:%02x GPU-I:%02u): %d, pid=%s, name=%s, %s\n",
                 gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu),
                 gpuPartitionId,
                 exceptType,
@@ -336,7 +336,7 @@ krcReportXid_IMPL
         else
         {
             // Legacy (no attribution) XID reporting
-            portDbgPrintf("NVRM: Xid (PCI:%04x:%02x:%02x): %d, pid=%s, name=%s, %s\n",
+            portDbgPrintf("novideo: Xid (PCI:%04x:%02x:%02x): %d, pid=%s, name=%s, %s\n",
                 gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu),
                 exceptType,
                 pid_string,

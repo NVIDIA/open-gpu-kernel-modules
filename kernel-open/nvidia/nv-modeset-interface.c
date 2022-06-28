@@ -89,7 +89,7 @@ static NvU32 nvidia_modeset_enumerate_gpus(nv_gpu_info_t *gpu_info)
          * are more GPUs than that.
          */
         if (count >= NV_MAX_GPUS) {
-            nv_printf(NV_DBG_WARNINGS, "NVRM: More than %d GPUs found.",
+            nv_printf(NV_DBG_WARNINGS, "novideo: More than %d GPUs found.",
                       NV_MAX_GPUS);
             count = 0;
             break;

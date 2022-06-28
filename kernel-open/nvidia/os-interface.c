@@ -90,7 +90,7 @@ NV_STATUS NV_API_CALL os_alloc_mutex
     rmStatus = os_alloc_mem(ppMutex, sizeof(os_mutex_t));
     if (rmStatus != NV_OK)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate mutex!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate mutex!\n");
         return rmStatus;
     }
     os_mutex = (os_mutex_t *)*ppMutex;
@@ -181,7 +181,7 @@ void* NV_API_CALL os_alloc_semaphore
     rmStatus = os_alloc_mem((void *)&os_sema, sizeof(os_semaphore_t));
     if (rmStatus != NV_OK)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate semaphore!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate semaphore!\n");
         return NULL;
     }
 
@@ -852,7 +852,7 @@ void* NV_API_CALL os_map_kernel_space(
         if (mode != NV_MEMORY_CACHED)
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: os_map_kernel_space: won't map address 0x%0llx UC!\n", start);
+                "novideo: os_map_kernel_space: won't map address 0x%0llx UC!\n", start);
             return NULL;
         }
         else
@@ -862,7 +862,7 @@ void* NV_API_CALL os_map_kernel_space(
     if (!NV_MAY_SLEEP())
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: os_map_kernel_space: can't map 0x%0llx, invalid context!\n", start);
+            "novideo: os_map_kernel_space: can't map 0x%0llx, invalid context!\n", start);
         os_dbg_breakpoint();
         return NULL;
     }
@@ -883,7 +883,7 @@ void* NV_API_CALL os_map_kernel_space(
             break;
         default:
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: os_map_kernel_space: unsupported mode!\n");
+                "novideo: os_map_kernel_space: unsupported mode!\n");
             return NULL;
     }
 
@@ -969,7 +969,7 @@ void NV_API_CALL os_dbg_init(void)
 
 void NV_API_CALL os_dbg_set_level(NvU32 new_debuglevel)
 {
-    nv_printf(NV_DBG_SETUP, "NVRM: Changing debuglevel from 0x%x to 0x%x\n",
+    nv_printf(NV_DBG_SETUP, "novideo: Changing debuglevel from 0x%x to 0x%x\n",
         cur_debuglevel, new_debuglevel);
     cur_debuglevel = new_debuglevel;
 }
@@ -984,7 +984,7 @@ NV_STATUS NV_API_CALL os_schedule(void)
     }
     else
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: os_schedule: Attempted to yield"
+        nv_printf(NV_DBG_ERRORS, "novideo: os_schedule: Attempted to yield"
                                  " the CPU while in atomic or interrupt"
                                  " context\n");
         return NV_ERR_ILLEGAL_ACTION;
@@ -1024,7 +1024,7 @@ NV_STATUS NV_API_CALL os_queue_work_item(struct os_work_queue *queue, void *data
 
     /* Make sure the kthread is active */
     if (unlikely(!kthread->q_kthread)) {
-        nv_printf(NV_DBG_ERRORS, "NVRM: queue is not enabled\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: queue is not enabled\n");
         return NV_ERR_NOT_READY;
     }
 
@@ -1058,7 +1058,7 @@ NV_STATUS NV_API_CALL os_flush_work_queue(struct os_work_queue *queue)
     else
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: os_flush_work_queue: attempted to execute passive"
+                  "novideo: os_flush_work_queue: attempted to execute passive"
                   "work from an atomic or interrupt context.\n");
         return NV_ERR_ILLEGAL_ACTION;
     }
@@ -1167,7 +1167,7 @@ NV_STATUS NV_API_CALL os_alloc_spinlock(void **ppSpinlock)
     rmStatus = os_alloc_mem(ppSpinlock, sizeof(os_spinlock_t));
     if (rmStatus != NV_OK)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate spinlock!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate spinlock!\n");
         return rmStatus;
     }
 
@@ -1258,7 +1258,7 @@ NV_STATUS NV_API_CALL os_inject_vgx_msi(NvU16 guestID, NvU64 msiAddr, NvU32 msiD
     if (rc)
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: %s: can't inject MSI to guest:%d, addr:0x%x, data:0x%x, err:%d\n",
+            "novideo: %s: can't inject MSI to guest:%d, addr:0x%x, data:0x%x, err:%d\n",
             __FUNCTION__, guestID, msiAddr, msiData, rc);
         return NV_ERR_OPERATING_SYSTEM;
     }
@@ -1499,7 +1499,7 @@ NV_STATUS NV_API_CALL os_get_acpi_rsdp_from_uefi
     }
     else
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: RSDP Not found!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: RSDP Not found!\n");
         status = NV_ERR_OPERATING_SYSTEM;
     }
 #endif
@@ -1583,7 +1583,7 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
     if (alloc_addr == NULL)
     {
         nv_printf(NV_DBG_INFO,
-            "NVRM: alloc_pages_node(node = %d, order = %u) failed\n",
+            "novideo: alloc_pages_node(node = %d, order = %u) failed\n",
             nid, order);
         status = NV_ERR_NO_MEMORY;
     }
@@ -1594,7 +1594,7 @@ NV_STATUS NV_API_CALL os_alloc_pages_node
         // The needed patch is https://patchwork.kernel.org/patch/10427387/
         //
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: alloc_pages_node(node = %d, order = %u) wrong node ID.\n",
+            "novideo: alloc_pages_node(node = %d, order = %u) wrong node ID.\n",
             nid, order);
         __free_pages(alloc_addr, order);
         status = NV_ERR_NO_MEMORY;
@@ -1702,8 +1702,8 @@ NV_STATUS NV_API_CALL os_open_temporary_file
         if ((path != default_path) && (PTR_ERR(file) == -ENOENT))
         {
             nv_printf(NV_DBG_ERRORS,
-                      "NVRM: The temporary file path specified via the NVreg_TemporaryFilePath\n"
-                      "NVRM: module parameter does not exist. Defaulting to /tmp.\n");
+                      "novideo: The temporary file path specified via the NVreg_TemporaryFilePath\n"
+                      "novideo: module parameter does not exist. Defaulting to /tmp.\n");
 
             file = filp_open(default_path, flags, 0);
         }

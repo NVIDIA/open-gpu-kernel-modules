@@ -189,7 +189,7 @@ void RmInitCpuInfo(void)
         default:
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
             portDbgPrintf(
-                "NVRM: CPUID: unknown implementer/part 0x%x/0x%x.\n", impl, part);
+                "novideo: CPUID: unknown implementer/part 0x%x/0x%x.\n", impl, part);
             portDbgPrintf(
                 "The NVIDIA GPU driver for AArch64 has not been qualified on this CPU\n"
                 "and therefore it is not recommended or intended for use in any production\n"

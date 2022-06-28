@@ -95,7 +95,7 @@ findRegionID(PMA *pPma, NvU64 address)
 void
 pmaPrintBlockStatus(PMA_PAGESTATUS blockStatus)
 {
-    // Use DBG_PRINTF so as not to prepend "NVRM:" everytime, as NV_PRINTF does
+    // Use DBG_PRINTF so as not to prepend "novideo:" everytime, as NV_PRINTF does
     if ((blockStatus & STATE_MASK) == STATE_FREE) {
         NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "STATE_FREE         ");
     }

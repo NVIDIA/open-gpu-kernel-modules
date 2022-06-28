@@ -291,7 +291,7 @@ nv_procfs_open_file(
     NV_KMALLOC(nvpp, sizeof(nv_procfs_private_t));
     if (nvpp == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate procfs private!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to allocate procfs private!\n");
         return -ENOMEM;
     }
     memset(nvpp, 0, sizeof(*nvpp));
@@ -519,7 +519,7 @@ nv_procfs_write_file(
 
     if (copy_from_user(proc_buffer, buffer, count))
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to copy in proc data!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to copy in proc data!\n");
         status = -EFAULT;
     }
     else

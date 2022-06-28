@@ -202,7 +202,7 @@ const NvU8 * RmGetGpuUuidRaw(
     else if (rmStatus == NV_ERR_NOT_SUPPORTED)
     {
         nv_printf(NV_DBG_INFO,
-                  "NVRM: PBI is not supported for GPU " NV_PCI_DEV_FMT "\n",
+                  "novideo: PBI is not supported for GPU " NV_PCI_DEV_FMT "\n",
                   NV_PCI_DEV_FMT_ARGS(pNv));
     }
 
@@ -331,9 +331,9 @@ RmLogGpuCrash(OBJGPU *pGpu)
     {
         status = NV_OK;
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: A GPU crash dump has been created. If possible, please run\n"
-            "NVRM: nvidia-bug-report.sh as root to collect this data before\n"
-            "NVRM: the NVIDIA kernel module is unloaded.\n");
+            "novideo: A GPU crash dump has been created. If possible, please run\n"
+            "novideo: nvidia-bug-report.sh as root to collect this data before\n"
+            "novideo: the NVIDIA kernel module is unloaded.\n");
     }
 
     // Restore the disconnected properties, if they were reset
@@ -1089,10 +1089,10 @@ static NV_STATUS RmPerformVersionCheck(
     pParams->versionString[NV_RM_API_VERSION_STRING_LENGTH - 1] = '\0';
 
     nv_printf(NV_DBG_ERRORS,
-              "NVRM: API mismatch: the client has the version %s, but\n"
-              "NVRM: this kernel module has the version %s.  Please\n"
-              "NVRM: make sure that this kernel module and all NVIDIA driver\n"
-              "NVRM: components have the same version.\n",
+              "novideo: API mismatch: the client has the version %s, but\n"
+              "novideo: this kernel module has the version %s.  Please\n"
+              "novideo: make sure that this kernel module and all NVIDIA driver\n"
+              "novideo: components have the same version.\n",
               pParams->versionString, NV_VERSION_STRING);
 
     os_string_copy(pParams->versionString, rmStr);
@@ -3100,7 +3100,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
 
     if (reg_mapping == NULL)
     {
-        nv_printf(NV_DBG_ERRORS, "NVRM: failed to map registers!\n");
+        nv_printf(NV_DBG_ERRORS, "novideo: failed to map registers!\n");
         rmStatus = NV_ERR_OPERATING_SYSTEM;
         goto threadfree;
     }
@@ -3112,9 +3112,9 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
     if ((pmc_boot_0 == 0xFFFFFFFF) && (pmc_boot_42 == 0xFFFFFFFF))
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: The NVIDIA GPU %04x:%02x:%02x.%x\n"
-            "NVRM: (PCI ID: %04x:%04x) installed in this system has\n"
-            "NVRM: fallen off the bus and is not responding to commands.\n",
+            "novideo: The NVIDIA GPU %04x:%02x:%02x.%x\n"
+            "novideo: (PCI ID: %04x:%04x) installed in this system has\n"
+            "novideo: fallen off the bus and is not responding to commands.\n",
             pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
             pNv->pci_info.function, pNv->pci_info.vendor_id,
             pNv->pci_info.device_id);
@@ -3144,12 +3144,12 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
 
 print_unsupported:
     nv_printf(NV_DBG_ERRORS,
-       "NVRM: The NVIDIA GPU %04x:%02x:%02x.%x (PCI ID: %04x:%04x)\n"
-       "NVRM: installed in this system is not supported by the\n"
-       "NVRM: NVIDIA %s driver release.\n"
-       "NVRM: Please see 'Appendix A - Supported NVIDIA GPU Products'\n"
-       "NVRM: in this release's README, available on the operating system\n"
-       "NVRM: specific graphics driver download page at www.nvidia.com.\n",
+       "novideo: The NVIDIA GPU %04x:%02x:%02x.%x (PCI ID: %04x:%04x)\n"
+       "novideo: installed in this system is not supported by the\n"
+       "novideo: NVIDIA %s driver release.\n"
+       "novideo: Please see 'Appendix A - Supported NVIDIA GPU Products'\n"
+       "novideo: in this release's README, available on the operating system\n"
+       "novideo: specific graphics driver download page at www.nvidia.com.\n",
        pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
        pNv->pci_info.function, pNv->pci_info.vendor_id,
        pNv->pci_info.device_id, NV_VERSION_STRING);

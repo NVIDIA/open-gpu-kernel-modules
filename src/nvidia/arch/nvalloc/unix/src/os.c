@@ -3438,7 +3438,7 @@ osValidateClientTokens
         (pClientTokenUser->pid != pCurrentTokenUser->pid))
     {
         NV_PRINTF(LEVEL_INFO,
-                  "NVRM: %s: Current security token doesn't match the one in the client database. "
+                  "novideo: %s: Current security token doesn't match the one in the client database. "
                   "Current EUID: %d, PID: %d; Client DB EUID: %d, PID: %d\n",
                   __FUNCTION__, pCurrentTokenUser->euid, pCurrentTokenUser->pid,
                   pClientTokenUser->euid, pClientTokenUser->pid);

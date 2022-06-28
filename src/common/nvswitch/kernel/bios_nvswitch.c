@@ -189,7 +189,7 @@ nvswitch_bios_get_image
     if (device->biosImage.pImage != NULL)
     {
         NVSWITCH_PRINT(device, ERROR,
-                    "NVRM: %s: bios already available, skip reading"
+                    "novideo: %s: bios already available, skip reading"
                     "\n", __FUNCTION__);
 
         return NVL_SUCCESS;
@@ -207,13 +207,13 @@ nvswitch_bios_get_image
     if (status != NVL_SUCCESS || biosSize == 0)
     {
         NVSWITCH_PRINT(device, ERROR,
-                    "NVRM: %s: bios read size failed"
+                    "novideo: %s: bios read size failed"
                     "\n", __FUNCTION__);
         return status;
     }
 
     NVSWITCH_PRINT(device, SETUP,
-                    "NVRM: %s: BIOS Size = 0x%x"
+                    "novideo: %s: BIOS Size = 0x%x"
                     "\n", __FUNCTION__, biosSize);
 
     pBiosRawBuffer = (NvU8*) nvswitch_os_malloc(biosSize);

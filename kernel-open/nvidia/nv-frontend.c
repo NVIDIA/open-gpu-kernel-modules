@@ -154,7 +154,7 @@ int nvidia_register_module(nvidia_module_t *module)
     down(&nv_module_table_lock);
     if (module->instance >= NV_MAX_MODULE_INSTANCES)
     {
-        printk("NVRM: NVIDIA module instance %d registration failed.\n",
+        printk("novideo: NVIDIA module instance %d registration failed.\n",
                 module->instance);
         rc = -EINVAL;
         goto done;
@@ -180,7 +180,7 @@ int nvidia_unregister_module(nvidia_module_t *module)
     ctrl_minor_num = NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX - module->instance;
     if (nv_minor_num_table[ctrl_minor_num] == NULL)
     {
-        printk("NVRM: NVIDIA module for %d instance does not exist\n",
+        printk("novideo: NVIDIA module for %d instance does not exist\n",
                 module->instance);
         rc = -1;
     }
@@ -205,7 +205,7 @@ int nvidia_frontend_add_device(nvidia_module_t *module, nv_linux_state_t * devic
     ctrl_minor_num = NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX - module->instance;
     if (nv_minor_num_table[ctrl_minor_num] == NULL)
     {
-        printk("NVRM: NVIDIA module for %d instance does not exist\n",
+        printk("novideo: NVIDIA module for %d instance does not exist\n",
                 module->instance);
         rc = -1;
     }
@@ -228,7 +228,7 @@ int nvidia_frontend_remove_device(nvidia_module_t *module, nv_linux_state_t * de
     ctrl_minor_num = NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX - module->instance;
     if (nv_minor_num_table[ctrl_minor_num] == NULL)
     {
-        printk("NVRM: NVIDIA module for %d instance does not exist\n",
+        printk("novideo: NVIDIA module for %d instance does not exist\n",
                 module->instance);
         rc = -1;
     }
@@ -386,7 +386,7 @@ static int __init nvidia_frontend_init_module(void)
     status = register_chrdev(NV_MAJOR_DEVICE_NUMBER, "nvidia-frontend", &nv_frontend_fops);
     if (status < 0)
     {
-        printk("NVRM: register_chrdev() failed!\n");
+        printk("novideo: register_chrdev() failed!\n");
         nvidia_exit_module();
     }
 

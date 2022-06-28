@@ -152,7 +152,7 @@ void NV_API_CALL os_pci_remove(
     NV_PCI_STOP_AND_REMOVE_BUS_DEVICE(handle);
 #elif defined(DEBUG)
     nv_printf(NV_DBG_ERRORS,
-            "NVRM: %s() is called even though NV_PCI_STOP_AND_REMOVE_BUS_DEVICE is not defined\n",
+            "novideo: %s() is called even though NV_PCI_STOP_AND_REMOVE_BUS_DEVICE is not defined\n",
             __FUNCTION__);
     os_dbg_breakpoint();
 #endif

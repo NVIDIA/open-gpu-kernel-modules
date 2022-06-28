@@ -55,6 +55,7 @@ nvidia-y += $(NVIDIA_BINARY_OBJECT_O)
 # Define nvidia.ko-specific CFLAGS.
 #
 
+NVIDIA_CFLAGS += -Wall -Werror
 NVIDIA_CFLAGS += -I$(src)/nvidia
 NVIDIA_CFLAGS += -DNVIDIA_UNDEF_LEGACY_BIT_MACROS
 

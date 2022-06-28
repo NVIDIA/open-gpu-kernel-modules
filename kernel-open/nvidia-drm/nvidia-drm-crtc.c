@@ -84,9 +84,6 @@ cursor_plane_req_config_update(struct drm_plane *plane,
 {
     struct nv_drm_plane *nv_plane = to_nv_plane(plane);
     struct NvKmsKapiCursorRequestedConfig old_config = *req_config;
-    struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
-    struct nv_drm_plane_state *nv_drm_plane_state =
-        to_nv_drm_plane_state(plane_state);
 
     if (plane_state->fb == NULL) {
         cursor_req_config_disable(req_config);
@@ -186,7 +183,6 @@ plane_req_config_update(struct drm_plane *plane,
     struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
     struct nv_drm_plane_state *nv_drm_plane_state =
         to_nv_drm_plane_state(plane_state);
-    int ret = 0;
 
     if (plane_state->fb == NULL) {
         plane_req_config_disable(req_config);
@@ -501,8 +497,6 @@ static int nv_drm_plane_atomic_set_property(
     uint64_t val)
 {
     struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
-    struct nv_drm_plane_state *nv_drm_plane_state =
-        to_nv_drm_plane_state(state);
 
     if (property == nv_dev->nv_out_fence_property) {
 #if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
@@ -1080,6 +1074,7 @@ void nv_drm_enumerate_crtcs_and_planes(
     struct nv_drm_device *nv_dev,
     const struct NvKmsKapiDeviceResourcesInfo *pResInfo)
 {
+    struct drm_plane *overlay_plane;
     unsigned int i;
 
     for (i = 0; i < pResInfo->numHeads; i++) {
@@ -1145,8 +1140,7 @@ void nv_drm_enumerate_crtcs_and_planes(
                 continue;
             }
 
-            struct drm_plane *overlay_plane =
-                nv_drm_plane_create(nv_dev->dev,
+            overlay_plane = nv_drm_plane_create(nv_dev->dev,
                                     DRM_PLANE_TYPE_OVERLAY,
                                     layer,
                                     i,

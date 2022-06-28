@@ -67,7 +67,7 @@
     }                                                                           \
     if ((i * sizeof(NvU32)) < ((sp)->size / 8))                                 \
     {                                                                           \
-        nv_printf(NV_DBG_ERRORS, "NVRM: altstack: used %d of %d bytes!\n",      \
+        nv_printf(NV_DBG_ERRORS, "novideo: altstack: used %d of %d bytes!\n",      \
                   ((sp)->size - (i * sizeof(NvU32))), (sp)->size);              \
         NV_ASSERT_PRECOMP((i * sizeof(NvU32)) >= ((sp)->size / 8));             \
     }                                                                           \
@@ -89,7 +89,7 @@
     register void *__rbp __asm__ ("rbp");                                       \
     if (__rbp != (sp)->top)                                                     \
     {                                                                           \
-        nv_printf(NV_DBG_ERRORS, "NVRM: detected corrupted runtime stack!\n");  \
+        nv_printf(NV_DBG_ERRORS, "novideo: detected corrupted runtime stack!\n");  \
         NV_ASSERT_PRECOMP(__rbp == (sp)->top);                                  \
     }                                                                           \
     NV_ALTSTACK_CHECK_MARKERS(sp);                                              \

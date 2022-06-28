@@ -157,18 +157,18 @@ void nv_memdbg_remove(void *addr, NvU64 size, const char *file, int line)
         if ((size != 0) && (node->size != size))
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: size mismatch on free: %llu != %llu\n",
+                "novideo: size mismatch on free: %llu != %llu\n",
                 size, node->size);
             if (node->file)
             {
                 nv_printf(NV_DBG_ERRORS,
-                    "NVRM:     allocation: 0x%p @ %s:%d\n",
+                    "novideo:     allocation: 0x%p @ %s:%d\n",
                     node->addr, node->file, node->line);
             }
             else
             {
                 nv_printf(NV_DBG_ERRORS,
-                    "NVRM:     allocation: 0x%p\n",
+                    "novideo:     allocation: 0x%p\n",
                     node->addr);
             }
             os_dbg_breakpoint();
@@ -186,7 +186,7 @@ void nv_memdbg_exit(void)
     if (!RB_EMPTY_ROOT(&g_nv_memdbg.rb_root))
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: list of leaked memory allocations:\n");
+            "novideo: list of leaked memory allocations:\n");
     }
 
     while (!RB_EMPTY_ROOT(&g_nv_memdbg.rb_root))
@@ -199,13 +199,13 @@ void nv_memdbg_exit(void)
         if (node->file)
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM:    %llu bytes, 0x%p @ %s:%d\n",
+                "novideo:    %llu bytes, 0x%p @ %s:%d\n",
                 node->size, node->addr, node->file, node->line);
         }
         else
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM:    %llu bytes, 0x%p\n",
+                "novideo:    %llu bytes, 0x%p\n",
                 node->size, node->addr);
         }
 
@@ -218,14 +218,14 @@ void nv_memdbg_exit(void)
     if (num_leaked_allocs > 0 || g_nv_memdbg.num_untracked_allocs > 0)
     {
         nv_printf(NV_DBG_ERRORS,
-            "NVRM: total leaked memory: %llu bytes in %llu allocations\n",
+            "novideo: total leaked memory: %llu bytes in %llu allocations\n",
             leaked_bytes + g_nv_memdbg.untracked_bytes,
             num_leaked_allocs + g_nv_memdbg.num_untracked_allocs);
 
         if (g_nv_memdbg.num_untracked_allocs > 0)
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM:                      %llu bytes in %llu allocations untracked\n",
+                "novideo:                      %llu bytes in %llu allocations untracked\n",
                 g_nv_memdbg.untracked_bytes, g_nv_memdbg.num_untracked_allocs);
         }
     }

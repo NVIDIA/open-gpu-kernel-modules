@@ -97,7 +97,7 @@ static inline void nv_set_memory_array_type(
 #endif
         default:
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: %s(): type %d unimplemented\n",
+                "novideo: %s(): type %d unimplemented\n",
                 __FUNCTION__, type);
             break;
     }
@@ -121,7 +121,7 @@ static inline void nv_set_pages_array_type(
 #endif
         default:
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: %s(): type %d unimplemented\n",
+                "novideo: %s(): type %d unimplemented\n",
                 __FUNCTION__, type);
             break;
     }
@@ -143,7 +143,7 @@ static inline void nv_set_contig_memory_type(
             break;
         default:
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: %s(): type %d unimplemented\n",
+                "novideo: %s(): type %d unimplemented\n",
                 __FUNCTION__, type);
     }
 }
@@ -215,14 +215,12 @@ static inline void nv_set_memory_type(nv_alloc_t *at, NvU32 type)
     }
 }
 
-static NvU64 nv_get_max_sysmem_address(void)
-{
+static NvU64 nv_get_max_sysmem_address(void) {
     NvU64 global_max_pfn = 0ULL;
     int node_id;
 
-    for_each_online_node(node_id)
-    {
-        global_max_pfn = max(global_max_pfn, node_end_pfn(node_id));
+    for_each_online_node(node_id) {
+        global_max_pfn = max((int)global_max_pfn, (int)node_end_pfn(node_id));
     }
 
     return ((global_max_pfn + 1) << PAGE_SHIFT) - 1;
@@ -307,7 +305,7 @@ static NV_STATUS nv_alloc_coherent_pages(
     if (!virt_addr)
     {
         nv_printf(NV_DBG_MEMINFO,
-            "NVRM: VM: %s: failed to allocate memory\n", __FUNCTION__);
+            "novideo: VM: %s: failed to allocate memory\n", __FUNCTION__);
         return NV_ERR_NO_MEMORY;
     }
 
@@ -365,7 +363,7 @@ NV_STATUS nv_alloc_contig_pages(
     struct device *dev = at->dev;
 
     nv_printf(NV_DBG_MEMINFO,
-            "NVRM: VM: %s: %u pages\n", __FUNCTION__, at->num_pages);
+            "novideo: VM: %s: %u pages\n", __FUNCTION__, at->num_pages);
 
     // TODO: This is a temporary WAR, and will be removed after fixing bug 200732409.
     if (os_is_xen_dom0() || at->flags.unencrypted)
@@ -394,14 +392,14 @@ NV_STATUS nv_alloc_contig_pages(
         if (os_is_vgx_hyper())
         {
             nv_printf(NV_DBG_MEMINFO,
-                "NVRM: VM: %s: failed to allocate memory, trying coherent memory \n", __FUNCTION__);
+                "novideo: VM: %s: failed to allocate memory, trying coherent memory \n", __FUNCTION__);
 
             status = nv_alloc_coherent_pages(nv, at);
             return status;
         }
 
         nv_printf(NV_DBG_MEMINFO,
-            "NVRM: VM: %s: failed to allocate memory\n", __FUNCTION__);
+            "novideo: VM: %s: failed to allocate memory\n", __FUNCTION__);
         return NV_ERR_NO_MEMORY;
     }
 #if !defined(__GFP_ZERO)
@@ -415,7 +413,7 @@ NV_STATUS nv_alloc_contig_pages(
         if (phys_addr == 0)
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: VM: %s: failed to look up physical address\n",
+                "novideo: VM: %s: failed to look up physical address\n",
                 __FUNCTION__);
             status = NV_ERR_OPERATING_SYSTEM;
             goto failed;
@@ -462,7 +460,7 @@ void nv_free_contig_pages(
     unsigned int i;
 
     nv_printf(NV_DBG_MEMINFO,
-            "NVRM: VM: %s: %u pages\n", __FUNCTION__, at->num_pages);
+            "novideo: VM: %s: %u pages\n", __FUNCTION__, at->num_pages);
 
     if (at->flags.coherent)
         return nv_free_coherent_pages(at);
@@ -484,7 +482,7 @@ void nv_free_contig_pages(
             if (count++ < NV_MAX_RECURRING_WARNING_MESSAGES)
             {
                 nv_printf(NV_DBG_ERRORS,
-                    "NVRM: VM: %s: page count != initial page count (%u,%u)\n",
+                    "novideo: VM: %s: page count != initial page count (%u,%u)\n",
                     __FUNCTION__, NV_GET_PAGE_COUNT(page_ptr),
                     page_ptr->page_count);
             }
@@ -512,7 +510,7 @@ NV_STATUS nv_alloc_system_pages(
     dma_addr_t bus_addr;
 
     nv_printf(NV_DBG_MEMINFO,
-            "NVRM: VM: %u: %u pages\n", __FUNCTION__, at->num_pages);
+            "novideo: VM: %u: %u pages\n", __FUNCTION__, at->num_pages);
 
     gfp_mask = nv_compute_gfp_mask(nv, at);
 
@@ -538,7 +536,7 @@ NV_STATUS nv_alloc_system_pages(
         if (virt_addr == 0)
         {
             nv_printf(NV_DBG_MEMINFO,
-                "NVRM: VM: %s: failed to allocate memory\n", __FUNCTION__);
+                "novideo: VM: %s: failed to allocate memory\n", __FUNCTION__);
             status = NV_ERR_NO_MEMORY;
             goto failed;
         }
@@ -551,7 +549,7 @@ NV_STATUS nv_alloc_system_pages(
         if (phys_addr == 0)
         {
             nv_printf(NV_DBG_ERRORS,
-                "NVRM: VM: %s: failed to look up physical address\n",
+                "novideo: VM: %s: failed to look up physical address\n",
                 __FUNCTION__);
             NV_FREE_PAGES(virt_addr, 0);
             status = NV_ERR_OPERATING_SYSTEM;
@@ -563,7 +561,7 @@ NV_STATUS nv_alloc_system_pages(
                 (phys_addr < 0x400000))
         {
             nv_printf(NV_DBG_SETUP,
-                "NVRM: VM: %s: discarding page @ 0x%llx\n",
+                "novideo: VM: %s: discarding page @ 0x%llx\n",
                 __FUNCTION__, phys_addr);
             --i;
             continue;
@@ -625,7 +623,7 @@ void nv_free_system_pages(
     struct device *dev = at->dev;
 
     nv_printf(NV_DBG_MEMINFO,
-            "NVRM: VM: %s: %u pages\n", __FUNCTION__, at->num_pages);
+            "novideo: VM: %s: %u pages\n", __FUNCTION__, at->num_pages);
 
     if (at->cache_type != NV_MEMORY_CACHED)
         nv_set_memory_type(at, NV_MEMORY_WRITEBACK);
@@ -640,7 +638,7 @@ void nv_free_system_pages(
             if (count++ < NV_MAX_RECURRING_WARNING_MESSAGES)
             {
                 nv_printf(NV_DBG_ERRORS,
-                    "NVRM: VM: %s: page count != initial page count (%u,%u)\n",
+                    "novideo: VM: %s: page count != initial page count (%u,%u)\n",
                     __FUNCTION__, NV_GET_PAGE_COUNT(page_ptr),
                     page_ptr->page_count);
             }
@@ -671,7 +669,7 @@ NvUPtr nv_vm_map_pages(
     if (!NV_MAY_SLEEP())
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: %s: can't map %d pages, invalid context!\n",
+                  "novideo: %s: can't map %d pages, invalid context!\n",
                   __FUNCTION__, count);
         os_dbg_breakpoint();
         return virt_addr;
@@ -689,7 +687,7 @@ void nv_vm_unmap_pages(
     if (!NV_MAY_SLEEP())
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: %s: can't unmap %d pages at 0x%0llx, "
+                  "novideo: %s: can't unmap %d pages at 0x%0llx, "
                   "invalid context!\n", __FUNCTION__, count, virt_addr);
         os_dbg_breakpoint();
         return;
