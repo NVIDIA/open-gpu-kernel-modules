@@ -899,9 +899,14 @@ static NV_STATUS migrate_pageable(migrate_vma_state_t *state)
 
     // VMAs are validated and migrated one at a time, since migrate_vma works
     // on one vma at a time
-    for (; vma->vm_start <= prev_outer; vma = vma->vm_next) {
+    for (; vma->vm_start <= prev_outer; vma = find_vma_intersection(mm, prev_outer, outer)) {
         unsigned long next_addr = 0;
-        NV_STATUS status = migrate_pageable_vma(vma, start, outer, state, &next_addr);
+        NV_STATUS status;
+
+        // Callers have already validated the range so the vma should be valid.
+        UVM_ASSERT(vma);
+
+        status = migrate_pageable_vma(vma, start, outer, state, &next_addr);
         if (status == NV_WARN_NOTHING_TO_DO) {
             NV_STATUS populate_status = NV_OK;
             bool touch = uvm_migrate_args->touch;

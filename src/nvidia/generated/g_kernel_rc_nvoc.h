@@ -88,6 +88,7 @@ struct KernelRc {
     NvBool bRobustChannelsEnabled;
     NvBool bBreakOnRc;
     NvBool bLogEvents;
+    struct KernelChannel *pPreviousChannelInError;
     NvBool bGpuUuidLoggedOnce;
     KernelWatchdog watchdog;
     KernelWatchdogPersistent watchdogPersistent;
@@ -195,9 +196,7 @@ static inline void krcGetMigAttributionForError(struct KernelRc *pKernelRc, NvU3
 
 #define krcGetMigAttributionForError_HAL(pKernelRc, exceptType, pGpuPartitionId, pComputeInstanceId) krcGetMigAttributionForError(pKernelRc, exceptType, pGpuPartitionId, pComputeInstanceId)
 
-static inline struct KernelChannel *krcGetChannelInError_9e2234(struct KernelRc *pKernelRc) {
-    return ((void *)0);
-}
+struct KernelChannel *krcGetChannelInError_FWCLIENT(struct KernelRc *pKernelRc);
 
 #ifdef __nvoc_kernel_rc_h_disabled
 static inline struct KernelChannel *krcGetChannelInError(struct KernelRc *pKernelRc) {
@@ -205,7 +204,7 @@ static inline struct KernelChannel *krcGetChannelInError(struct KernelRc *pKerne
     return NULL;
 }
 #else //__nvoc_kernel_rc_h_disabled
-#define krcGetChannelInError(pKernelRc) krcGetChannelInError_9e2234(pKernelRc)
+#define krcGetChannelInError(pKernelRc) krcGetChannelInError_FWCLIENT(pKernelRc)
 #endif //__nvoc_kernel_rc_h_disabled
 
 #define krcGetChannelInError_HAL(pKernelRc) krcGetChannelInError(pKernelRc)

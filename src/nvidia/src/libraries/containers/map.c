@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -895,4 +895,18 @@ static NvBool _mapInsertBase
     NV_CHECKED_ONLY(pMap->versionNumber++);
     pMap->count++;
     return NV_TRUE;
+}
+
+NvBool mapIsValid_IMPL(void *pMap)
+{
+#if NV_TYPEOF_SUPPORTED
+    return NV_TRUE;
+#else
+    if (CONT_VTABLE_VALID((MapBase*)pMap))
+        return NV_TRUE;
+
+    NV_ASSERT_FAILED("vtable not valid!");
+    CONT_VTABLE_INIT(MapBase, (MapBase*)pMap);
+    return NV_FALSE;
+#endif
 }

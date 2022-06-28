@@ -298,7 +298,25 @@ _kgspRpcOsErrorLog
 {
     RPC_PARAMS(os_error_log, _v17_00);
 
+    KernelRc      *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
+    KernelChannel *pKernelChannel = NULL;
+    KernelFifo    *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    CHID_MGR      *pChidMgr;
+
+    if (rpc_params->chid != INVALID_CHID)
+    {
+        pChidMgr = kfifoGetChidMgr(pGpu, pKernelFifo, rpc_params->runlistId);
+        if (pChidMgr != NULL)
+        {
+            pKernelChannel = kfifoChidMgrGetKernelChannel(pGpu, pKernelFifo,
+                                                          pChidMgr,
+                                                          rpc_params->chid);
+        }
+    }
+
+    pKernelRc->pPreviousChannelInError = pKernelChannel;
     nvErrorLog_va(pGpu, rpc_params->exceptType, "%s", rpc_params->errString);
+    pKernelRc->pPreviousChannelInError = NULL;
 }
 
 /*!

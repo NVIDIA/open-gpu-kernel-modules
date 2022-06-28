@@ -407,3 +407,18 @@ static void _listInsertBase
     NV_CHECKED_ONLY(pList->versionNumber++);
     NV_CHECKED_ONLY(pNode->pList = pList);
 }
+
+NvBool listIsValid_IMPL(void *pList)
+{
+#if NV_TYPEOF_SUPPORTED
+    return NV_TRUE;
+#else
+    if (CONT_VTABLE_VALID((ListBase*)pList))
+        return NV_TRUE;
+
+    NV_ASSERT_FAILED("vtable not valid!");
+    CONT_VTABLE_INIT(ListBase, (ListBase*)pList);
+    return NV_FALSE;
+#endif
+}
+

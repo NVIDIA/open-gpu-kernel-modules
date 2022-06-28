@@ -568,18 +568,28 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
             }
             break;
 
-            //
-            // This panel advertise DSC capabilities, but panel doesn't support DSC
-            // So ignoring DSC capability on this panel
-            //
-            case 0x6F0E:
-                if (ProductID == 0x1609)
-                {
-                    this->WARFlags.bIgnoreDscCap = true;
-                    DP_LOG(("DP-WAR> Ignoring DSC capability on Lenovo CSOT 1609 Panel."));
-                    DP_LOG(("DP-WAR> Bug 3444252"));
-                }
-                break;
+        //
+        // This panel advertise DSC capabilities, but panel doesn't support DSC
+        // So ignoring DSC capability on this panel
+        //
+        case 0x6F0E:
+            if (ProductID == 0x1609)
+            {
+                this->WARFlags.bIgnoreDscCap = true;
+                DP_LOG(("DP-WAR> Ignoring DSC capability on Lenovo CSOT 1609 Panel."));
+                DP_LOG(("DP-WAR> Bug 3444252"));
+            }
+            break;
+
+        // Asus
+        case 0x6D1E:
+            if(ProductID == 0x7707)
+            {
+                this->WARFlags.bIgnoreDscCap = true;
+                DP_LOG(("DP-WAR> Panel incorrectly exposing DSC capability. Ignoring it."));
+                DP_LOG(("DP-WAR> Bug 3543158"));
+            }
+            break;
 
         default:
             break;
