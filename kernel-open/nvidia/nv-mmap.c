@@ -295,12 +295,10 @@ int nv_encode_caching(
     pgprot_t *prot,
     NvU32     cache_type,
     nv_memory_type_t memory_type
-)
-{
+) {
     pgprot_t tmp;
 
-    if (prot == NULL)
-    {
+    if (prot == NULL) {
         tmp = __pgprot(0);
         prot = &tmp;
     }
@@ -326,6 +324,7 @@ int nv_encode_caching(
                 *prot = (memory_type == NV_MEMORY_TYPE_FRAMEBUFFER) ?
                         NV_PGPROT_WRITE_COMBINED_DEVICE(*prot) :
                         NV_PGPROT_WRITE_COMBINED(*prot);
+                goto ok;
                 break;
             }
 

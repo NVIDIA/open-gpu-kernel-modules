@@ -192,7 +192,7 @@ clInitMappingPciBusDevice_IMPL
                || (bFoundDevice == NV_FALSE))
         {
             NV_PRINTF(LEVEL_ERROR,
-                    "NVRM initMappingPciBusDevice: can't find a device!\n");
+                    "novideo: initMappingPciBusDevice: can't find a device!\n");
             return NV0000_CTRL_GPU_INVALID_ID;    // couldn't find it
         }
     }
@@ -443,11 +443,11 @@ clFindFHBAndGetChipsetInfoIndex_IMPL
     }
 
         NV_PRINTF(LEVEL_INFO,
-                  "NVRM : Host bridge device not found. Looking for a PCI-to-PCI bridge device!!!\n");
+                  "novideo: Host bridge device not found. Looking for a PCI-to-PCI bridge device!!!\n");
     }
 
     NV_PRINTF(LEVEL_ERROR,
-              "NVRM : This is Bad. FHB not found in cached bus topology!!!\n");
+              "novideo: This is Bad. FHB not found in cached bus topology!!!\n");
 
     // HB is not present in cached bus topology.
     NV_ASSERT(0);
