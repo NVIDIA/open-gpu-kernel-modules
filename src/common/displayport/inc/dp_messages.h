@@ -116,7 +116,9 @@ namespace DisplayPort
         bool                isBeingDestroyed;
         bool                isPaused;
 
+        // Properties from regkey
         bool                bNoReplyTimerForBusyWaiting;
+        bool                bDpcdProbingForBusyWaiting;
 
         List                messageReceivers;
         List                notYetSentDownRequest;    // Down Messages yet to be processed
@@ -159,7 +161,8 @@ namespace DisplayPort
         {
             DP_ASSERT(dpRegkeyDatabase.bInitialized &&
                       "All regkeys are invalid because dpRegkeyDatabase is not initialized!");
-            bNoReplyTimerForBusyWaiting = dpRegkeyDatabase.bNoReplyTimerForBusyWaiting;
+            bNoReplyTimerForBusyWaiting  = dpRegkeyDatabase.bNoReplyTimerForBusyWaiting;
+            bDpcdProbingForBusyWaiting   = dpRegkeyDatabase.bDpcdProbingForBusyWaiting;
         }
 
         MessageManager(DPCDHAL * hal, Timer * timer)

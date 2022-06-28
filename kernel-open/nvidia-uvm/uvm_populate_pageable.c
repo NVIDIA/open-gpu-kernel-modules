@@ -158,7 +158,7 @@ NV_STATUS uvm_populate_pageable(struct mm_struct *mm,
     // VMAs are validated and populated one at a time, since they may have
     // different protection flags
     // Validation of VM_SPECIAL flags is delegated to get_user_pages
-    for (; vma->vm_start <= prev_end; vma = vma->vm_next) {
+    for (; vma && vma->vm_start <= prev_end; vma = find_vma_intersection(mm, prev_end, end)) {
         NV_STATUS status = uvm_populate_pageable_vma(vma, start, end - start, min_prot, touch, populate_permissions);
 
         if (status != NV_OK)

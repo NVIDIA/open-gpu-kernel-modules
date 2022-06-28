@@ -500,3 +500,13 @@ krcCheckBusError_KERNEL
 
     return NV_OK;
 }
+
+KernelChannel *
+krcGetChannelInError_FWCLIENT
+(
+    KernelRc *pKernelRc
+)
+{
+    NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(ENG_GET_GPU(pKernelRc)), NULL);
+    return pKernelRc->pPreviousChannelInError;
+}

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -103,7 +103,7 @@ typename T::ElemType *CONT_CHECK_ARG(T *pCont, typename T::ElemType *pValue)
 }
 
 template <class T>
-typename T::ElemType *CONT_CAST_ELEM(T *pCont, void *pValue)
+typename T::ElemType *CONT_CAST_ELEM(T *pCont, void *pValue, ...)
 {
     return (typename T::ElemType *)pValue;
 }
@@ -114,7 +114,8 @@ typename T::IterType CONT_ITER_RANGE
     T    *pCont,
     It  (*pFunc)(typename T::ContType *, void *, void *),
     void *pFirst,
-    void *pLast
+    void *pLast,
+    ...
 )
 {
     typename T::IterType temp;
@@ -128,7 +129,8 @@ typename T::IterType CONT_ITER_RANGE_INDEX
     T    *pCont,
     It  (*pFunc)(typename T::ContType *, NvU64, NvU64),
     NvU64 first,
-    NvU64 last
+    NvU64 last,
+    ...
 )
 {
     typename T::IterType temp;
@@ -155,30 +157,41 @@ typename T::IterType CONT_ITER_RANGE_INDEX
 //
 #if NV_TYPEOF_SUPPORTED
 
-#define CONT_CAST_ELEM(pCont, ret) ((typeof((pCont)->elem))(ret))
+#define CONT_CAST_ELEM(pCont, ret, validfunc) ((typeof((pCont)->elem))(ret))
 
 //
 // The dummy contId prevents compilers from warning about incompatible
 // function casts. This is safe since we know the two return structures
 // are identical (modulo alpha-conversion).
 //
-#define CONT_ITER_RANGE(pCont, pFunc, pFirst, pLast)                         \
+#define CONT_ITER_RANGE(pCont, pFunc, pFirst, pLast, validfunc)              \
     (((typeof(*(pCont)->iter)(*)(void *, void *, void *))contId(pFunc))(     \
         pCont, pFirst, pLast))
 
-#define CONT_ITER_RANGE_INDEX(pCont, pFunc, first, last)                     \
+#define CONT_ITER_RANGE_INDEX(pCont, pFunc, first, last, validfunc)          \
     (((typeof(*(pCont)->iter)(*)(void *, NvU64, NvU64))contId(pFunc))(       \
         pCont, first, last))
 
 #else
 
-#define CONT_CAST_ELEM(pCont, ret) ((pCont)->vtable->checkRet(ret))
+// Actual implementations
+#define CONT_CAST_ELEM2(pCont, ret) ((pCont)->vtable->checkRet(ret))
 
-#define CONT_ITER_RANGE(pCont, pFunc, pFirst, pLast)                         \
+#define CONT_ITER_RANGE2(pCont, pFunc, pFirst, pLast)                         \
     ((pCont)->vtable->iterRange(&(pCont)->real.base, pFirst, pLast))
 
-#define CONT_ITER_RANGE_RANGE(pCont, pFunc, first, last)                     \
+#define CONT_ITER_RANGE_RANGE2(pCont, pFunc, first, last)                     \
     ((pCont)->vtable->iterRangeIndex(&(pCont)->real.base, first, last))
+
+// Calls validfunc() first to initialize vtable
+#define CONT_CAST_ELEM(pCont, ret, validfunc)                                 \
+    (validfunc((pCont)) ? CONT_CAST_ELEM2(pCont, ret) : CONT_CAST_ELEM2(pCont, NULL))
+
+#define CONT_ITER_RANGE(pCont, pFunc, pFirst, pLast, validfunc)               \
+    (validfunc((pCont)) ? CONT_ITER_RANGE2(pCont, pFunc, pFirst, pLast) : CONT_ITER_RANGE2(pCont, NULL, NULL, NULL))
+
+#define CONT_ITER_RANGE_INDEX(pCont, pFunc, first, last, validfunc)           \
+    (validfunc((pCont)) ? CONT_ITER_RANGE_INDEX2(pCont, pFunc, first, last) : CONT_ITER_RANGE_INDEX2(pCont, NULL, 0, 0))
 
 #endif
 
@@ -222,6 +235,8 @@ typename T::IterType CONT_ITER_RANGE_INDEX
 
 #define CONT_VTABLE_INIT(contType, pCont)                                    \
     ((pCont)->vtable = &g_##contType##_VTABLE)
+
+#define CONT_VTABLE_VALID(pCont) ((pCont)->vtable != NULL)
 
 #endif
 

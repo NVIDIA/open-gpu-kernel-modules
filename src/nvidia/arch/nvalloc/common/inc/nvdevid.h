@@ -641,6 +641,7 @@ enum {
 ,     CS_HYGON_C86
 ,     CS_PHYTIUM_S2500
 ,     CS_MELLANOX_BLUEFIELD2
+,     CS_INTEL_1B81
 ,     CS_MAX_PCIE
 };
 

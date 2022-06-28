@@ -297,3 +297,10 @@ NvBool circularQueuePopAndCopy_IMPL(Queue *pQueue, void *pCopyTo)
 
     return circularQueuePopAndCopyNonManaged_IMPL(pQueue, &ctx, pCopyTo);
 }
+
+
+NvBool circularQueueIsValid_IMPL(void *pQueue)
+{
+    // No vtable for circularQueue
+    return NV_TRUE;
+}

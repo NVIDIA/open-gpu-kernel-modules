@@ -44,7 +44,7 @@ bool uvm_is_valid_vma_range(struct mm_struct *mm, NvU64 start, NvU64 length)
         if (vma->vm_end >= end)
             return true;
         start = vma->vm_end;
-        vma = vma->vm_next;
+        vma = find_vma_intersection(mm, start, end);
     }
 
     return false;

@@ -72,6 +72,9 @@
 #define NV_DP_DSC_OPTIMIZE_LT_BUG_3534707              "DP_DSC_OPTIMIZE_LT_BUG_3534707"
 
 #define NV_DP_REGKEY_NO_REPLY_TIMER_FOR_BUSY_WAITING   "NO_REPLY_TIMER_FOR_BUSY_WAITING"
+
+#define NV_DP_REGKEY_DPCD_PROBING_FOR_BUSY_WAITING     "DP_DPCD_PROBING_FOR_BUSY_WAITING"
+
 //
 // Data Base used to store all the regkey values.
 // The actual data base is declared statically in dp_evoadapter.cpp.
@@ -106,6 +109,7 @@ struct DP_REGKEY_DATABASE
     bool  bDscMstEnablePassThrough;
     bool  bDscOptimizeLTBug3534707;
     bool  bNoReplyTimerForBusyWaiting;
+    bool  bDpcdProbingForBusyWaiting;
 };
 
 #endif //INCLUDED_DP_REGKEYDATABASE_H

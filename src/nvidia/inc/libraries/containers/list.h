@@ -33,6 +33,7 @@ extern "C" {
 #include "nvtypes.h"
 #include "nvmisc.h"
 #include "nvport/nvport.h"
+#include "utils/nvassert.h"
 
 /**
  * @defgroup NV_CONTAINERS_LIST List
@@ -190,29 +191,29 @@ struct IntrusiveList
 #define listInsertNew(pList, pNext)                                          \
     CONT_CAST_ELEM(pList,                                                    \
         listInsertNew_IMPL(&(pList)->real,                                   \
-            CONT_CHECK_ARG(pList, pNext)))
+            CONT_CHECK_ARG(pList, pNext)), listIsValid_IMPL)
 
 #define listAppendNew(pList)                                                 \
-    CONT_CAST_ELEM(pList, listAppendNew_IMPL(&(pList)->real))
+    CONT_CAST_ELEM(pList, listAppendNew_IMPL(&(pList)->real), listIsValid_IMPL)
 
 #define listPrependNew(pList)                                                \
-    CONT_CAST_ELEM(pList, listPrependNew_IMPL(&(pList)->real))
+    CONT_CAST_ELEM(pList, listPrependNew_IMPL(&(pList)->real), listIsValid_IMPL)
 
 #define listInsertValue(pList, pNext, pValue)                                \
     CONT_CAST_ELEM(pList,                                                    \
         listInsertValue_IMPL(&(pList)->real,                                 \
             CONT_CHECK_ARG(pList, pNext),                                    \
-            CONT_CHECK_ARG(pList, pValue)))
+            CONT_CHECK_ARG(pList, pValue)), listIsValid_IMPL)
 
 #define listAppendValue(pList, pValue)                                       \
     CONT_CAST_ELEM(pList,                                                    \
         listAppendValue_IMPL(&(pList)->real,                                 \
-            CONT_CHECK_ARG(pList, pValue)))
+            CONT_CHECK_ARG(pList, pValue)), listIsValid_IMPL)
 
 #define listPrependValue(pList, pValue)                                      \
     CONT_CAST_ELEM(pList,                                                    \
         listPrependValue_IMPL(&(pList)->real,                                \
-            CONT_CHECK_ARG(pList, pValue)))
+            CONT_CHECK_ARG(pList, pValue)), listIsValid_IMPL)
 
 #define listInsertExisting(pList, pNext, pValue)                             \
     listInsertExisting_IMPL(&(pList)->real,                                  \
@@ -249,30 +250,30 @@ struct IntrusiveList
 #define listFindByValue(pList, pValue)                                       \
     CONT_CAST_ELEM(pList,                                                    \
         listFindByValue_IMPL(&(pList)->real,                                 \
-            CONT_CHECK_ARG(pList, pValue)))
+            CONT_CHECK_ARG(pList, pValue)), listIsValid_IMPL)
 
 #define listHead(pList)                                                      \
-    CONT_CAST_ELEM(pList, listHead_IMPL(&((pList)->real).base))
+    CONT_CAST_ELEM(pList, listHead_IMPL(&((pList)->real).base), listIsValid_IMPL)
 
 #define listTail(pList)                                                      \
-    CONT_CAST_ELEM(pList, listTail_IMPL(&((pList)->real).base))
+    CONT_CAST_ELEM(pList, listTail_IMPL(&((pList)->real).base), listIsValid_IMPL)
 
 #define listNext(pList, pValue)                                              \
     CONT_CAST_ELEM(pList,                                                    \
         listNext_IMPL(&((pList)->real).base,                                 \
-            CONT_CHECK_ARG(pList, pValue)))
+            CONT_CHECK_ARG(pList, pValue)), listIsValid_IMPL)
 
 #define listPrev(pList, pValue)                                              \
     CONT_CAST_ELEM(pList,                                                    \
         listPrev_IMPL(&((pList)->real).base,                                 \
-            CONT_CHECK_ARG(pList, pValue)))
+            CONT_CHECK_ARG(pList, pValue)), listIsValid_IMPL)
 
 #define listIterAll(pList)                                                   \
     listIterRange(pList, listHead(pList), listTail(pList))
 
 #define listIterRange(pList, pFirst, pLast)                                  \
     CONT_ITER_RANGE(pList, &listIterRange_IMPL,                              \
-        CONT_CHECK_ARG(pList, pFirst), CONT_CHECK_ARG(pList, pLast))
+        CONT_CHECK_ARG(pList, pFirst), CONT_CHECK_ARG(pList, pLast), listIsValid_IMPL)
 
 #define listIterNext(pIt)                                                    \
     listIterNext_IMPL(&((pIt)->iter))
@@ -323,6 +324,8 @@ listNodeToValue(ListBase *pList, ListNode *pNode)
     if (NULL == pNode) return NULL;
     return (NvU8*)pNode - pList->nodeOffset;
 }
+
+NvBool listIsValid_IMPL(void *pMap);
 
 #ifdef __cplusplus
 }
