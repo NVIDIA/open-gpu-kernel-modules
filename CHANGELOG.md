@@ -2,8 +2,6 @@
 
 ## Release 515 Entries
 
-### [515.57] 2022-06-28
-
 #### Fixed
 
 - Backtick is deprecated, [#273](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/273) by @arch-user-france1
