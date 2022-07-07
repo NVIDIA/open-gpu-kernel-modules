@@ -81,6 +81,8 @@ char *nv_drm_asprintf(const char *fmt, ...)
   #endif
 #elif defined(NVCPU_PPC64LE)
   #define WRITE_COMBINE_FLUSH()    asm volatile("sync":::"memory")
+#elif defined(NVCPU_RISCV64)
+  #define WRITE_COMBINE_FLUSH()    asm volatile("fence.i":::"memory")
 #endif
 
 void nv_drm_write_combine_flush(void)
