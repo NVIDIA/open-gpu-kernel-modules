@@ -449,6 +449,7 @@ int nv_drm_gem_alloc_nvkms_memory_ioctl(struct drm_device *dev,
     }
 
     if (p->__pad != 0) {
+        ret = -EINVAL;
         NV_DRM_DEV_LOG_ERR(nv_dev, "non-zero value in padding field");
         goto failed;
     }
