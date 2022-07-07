@@ -25,6 +25,10 @@
 
 #include <drm/drm.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /*
  * We should do our best to keep these values constant. Any change to these will
  * be backwards incompatible with client applications that might be using them
@@ -62,7 +66,7 @@
  *
  * 'warning: suggest parentheses around arithmetic in operand of |'
  */
-#if defined(NV_LINUX)
+#if defined(__linux__)
 #define DRM_IOCTL_NVIDIA_FENCE_SUPPORTED                         \
     DRM_IO(DRM_COMMAND_BASE + DRM_NVIDIA_FENCE_SUPPORTED)
 #else
@@ -228,5 +232,9 @@ struct drm_nvidia_gem_identify_object_params {
     uint32_t                    handle;         /* IN GEM handle*/
     drm_nvidia_gem_object_type  object_type;    /* OUT GEM object type */
 };
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* _UAPI_NVIDIA_DRM_IOCTL_H_ */
