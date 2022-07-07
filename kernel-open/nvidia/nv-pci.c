@@ -99,7 +99,7 @@ static void nv_init_dynamic_power_management
                    NV_PCI_DOMAIN_NUMBER(pci_dev),
                    NV_PCI_BUS_NUMBER(pci_dev),
                    NV_PCI_SLOT_NUMBER(pci_dev));
-    if (ret > 0 || ret < sizeof(filename))
+    if (ret > 0 && ret < sizeof(filename))
     {
         struct file *file = filp_open(filename, O_RDONLY, 0);
         if (!IS_ERR(file))
