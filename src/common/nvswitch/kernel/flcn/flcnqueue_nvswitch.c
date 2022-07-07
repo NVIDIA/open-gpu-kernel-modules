@@ -1578,7 +1578,7 @@ _flcnQueueCmdValidate
  * @return  NV_ERR_TIMEOUT
  *      A timeout occurred before the command completed.
  */
-NV_STATUS
+static NV_STATUS
 _flcnQueueCmdWait_IMPL
 (
     nvswitch_device *device,
