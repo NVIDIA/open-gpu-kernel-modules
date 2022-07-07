@@ -232,6 +232,10 @@ static NvBool InitModeOneHeadRequest(
     pFlip->layer[NVKMS_MAIN_LAYER].sizeOut.val =
         pFlip->layer[NVKMS_MAIN_LAYER].sizeIn.val;
 
+    pFlip->layer[NVKMS_MAIN_LAYER].outputPosition.specified = TRUE;
+    pFlip->layer[NVKMS_MAIN_LAYER].outputPosition.val.x = 0;
+    pFlip->layer[NVKMS_MAIN_LAYER].outputPosition.val.y = 0;
+
     /* Disable other layers except Main */
     for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
 

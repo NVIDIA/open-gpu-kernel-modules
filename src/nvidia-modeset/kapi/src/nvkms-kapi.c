@@ -339,6 +339,9 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
 
     device->hKmsDevice = paramsAlloc->reply.deviceHandle;
 
+    device->caps.mainLayerSupportsWindowMode =
+        paramsAlloc->reply.layerCaps[NVKMS_MAIN_LAYER].supportsWindowMode;
+
     device->caps.cursorCompositionCaps =
         paramsAlloc->reply.cursorCompositionCaps;
 
@@ -2430,6 +2433,18 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
         }
 
         changed = TRUE;
+    }
+
+    if (layerRequestedConfig->flags.dstXYChanged || bFromKmsSetMode) {
+        /* If the main layer doesn't support window mode,
+            * then return false here to fail the commit/test. */
+        if (!device->caps.mainLayerSupportsWindowMode &&
+                (layerConfig->dstX != 0 || layerConfig->dstY != 0))
+            return NV_FALSE;
+
+        params->layer[NVKMS_MAIN_LAYER].outputPosition.val.x = layerConfig->dstX;
+        params->layer[NVKMS_MAIN_LAYER].outputPosition.val.y = layerConfig->dstY;
+        params->layer[NVKMS_MAIN_LAYER].outputPosition.specified = TRUE;
     }
 
     if (layerRequestedConfig->flags.srcXYChanged || bFromKmsSetMode) {
