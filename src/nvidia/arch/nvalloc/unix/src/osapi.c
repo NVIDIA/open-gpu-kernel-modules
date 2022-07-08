@@ -4638,7 +4638,7 @@ NV_STATUS NV_API_CALL rm_get_gpu_numa_info(
     void               *fp;
     NV_STATUS           status = NV_OK;
 
-    if ((pNid == NULL) || (pNumaMemAddr == NULL) || (pNumaMemAddr == NULL))
+    if ((pNid == NULL) || (pNumaMemAddr == NULL) || (pNumaMemSize == NULL))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }

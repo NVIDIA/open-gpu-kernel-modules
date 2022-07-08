@@ -708,9 +708,9 @@ nv_pci_remove(struct pci_dev *pci_dev)
             if (!nvl)
             {
                 /* The device was not found, which should not happen */
-                nv_printf(NV_DBG_ERRORS,
-                          "NVRM: Failed removal of minor device %u!\n",
-                          nvl->minor_num);
+                nv_printf(NV_DBG_ERRORS, "NVRM: Failed removal of minor device! %04x:%02x:%02x.%x\n",
+                          NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+                          NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
                 WARN_ON(1);
                 goto done;
             }
