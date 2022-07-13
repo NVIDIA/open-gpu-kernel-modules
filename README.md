@@ -52,6 +52,12 @@ option.  E.g.,
 
     sh ./NVIDIA-Linux-[...].run --no-kernel-module
 
+The .run package could be downloaded selecting the proper version from this
+page:
+
+    https://www.nvidia.com/en-us/drivers/unix
+
+The versions of the kernel module and the .run package should be the same.
 
 ## Supported Target CPU Architectures
 
