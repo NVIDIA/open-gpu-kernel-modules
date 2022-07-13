@@ -56,7 +56,7 @@ static void libosDwarfBuildTables(libosDebugResolver *pThis);
 static void dwarfBuildARangeTable(libosDebugResolver *pThis);
 static void dwarfSetARangeTableLineUnit(libosDebugResolver *pThis, DwarfStream unit, NvU64 address);
 
-// http://www.dwarfstd.org/doc/dwarf-2.0.0.pdf
+// https://www.dwarfstd.org/doc/dwarf-2.0.0.pdf
 
 // Debug Line information related structures
 // (for branch history and call stacks)

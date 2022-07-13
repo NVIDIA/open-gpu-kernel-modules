@@ -571,11 +571,9 @@ typedef enum
         ((nv)->iso_iommu_present)
 
 /*
- * NVIDIA ACPI event IDs to be passed into the core NVIDIA
- * driver for various events like display switch events,
- * AC/battery events, etc..
+ * NVIDIA ACPI event ID to be passed into the core NVIDIA driver for
+ * AC/DC event.
  */
-#define NV_SYSTEM_ACPI_DISPLAY_SWITCH_EVENT  0x8001
 #define NV_SYSTEM_ACPI_BATTERY_POWER_EVENT   0x8002
 
 /*
@@ -583,14 +581,6 @@ typedef enum
  */
 #define NV_SYSTEM_GPU_ADD_EVENT             0x9001
 #define NV_SYSTEM_GPU_REMOVE_EVENT          0x9002
-
-/*
- * Status bit definitions for display switch hotkey events.
- */
-#define NV_HOTKEY_STATUS_DISPLAY_ENABLE_LCD 0x01
-#define NV_HOTKEY_STATUS_DISPLAY_ENABLE_CRT 0x02
-#define NV_HOTKEY_STATUS_DISPLAY_ENABLE_TV  0x04
-#define NV_HOTKEY_STATUS_DISPLAY_ENABLE_DFP 0x08
 
 /*
  * NVIDIA ACPI sub-event IDs (event types) to be passed into

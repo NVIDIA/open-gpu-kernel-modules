@@ -203,6 +203,7 @@ struct gpuSession
     PORT_RWLOCK *btreeLock;
 };
 
+
 MAKE_MAP(MemdescMap, PMEMORY_DESCRIPTOR);
 
 struct gpuDevice
@@ -249,7 +250,6 @@ struct gpuAddressSpace
     PORT_RWLOCK           *physAllocationsLock;
     NvU64                 vaBase;
     NvU64                 vaSize;
-
     // Dummy BAR1 allocation required on PCIe systems when GPPut resides in
     // sysmem.
     struct
@@ -1550,7 +1550,7 @@ out:
 // megabytes per seconds..
 static NV_STATUS getPCIELinkRateMBps(struct gpuDevice *device, NvU32 *pcieLinkRate)
 {
-    // PCI Express Base Specification: http://www.pcisig.com/specifications/pciexpress
+    // PCI Express Base Specification: https://www.pcisig.com/specifications/pciexpress
     const NvU32 PCIE_1_ENCODING_RATIO_TOTAL = 10;
     const NvU32 PCIE_1_ENCODING_RATIO_EFFECTIVE = 8;
     const NvU32 PCIE_2_ENCODING_RATIO_TOTAL = 10;
@@ -3690,6 +3690,7 @@ static NV_STATUS nvGpuOpsAllocVirtual(struct gpuAddressSpace *vaSpace,
     portSyncRwLockAcquireWrite(vaSpace->allocationsLock);
     status = trackDescriptor(&vaSpace->allocations, memDesc->address, memDesc);
     portSyncRwLockReleaseWrite(vaSpace->allocationsLock);
+
     if (status != NV_OK)
         goto done;
 
@@ -4654,7 +4655,7 @@ static NV_STATUS engineAllocate(struct gpuChannel *channel, gpuChannelInfo *chan
         return NV_ERR_NO_MEMORY;
 
     object->handle = NV01_NULL_OBJECT;
-    
+
     if (engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE)
     {
         ceAllocParams.version = NVB0B5_ALLOCATION_PARAMETERS_VERSION_1;
@@ -7214,7 +7215,7 @@ static NV_STATUS nvGpuOpsGetChannelInstanceMemInfo(gpuRetainedChannel *retainedC
     CHID_MGR *pChidMgr = kfifoGetChidMgr(retainedChannel->pGpu,
                                          pKernelFifo,
                                          retainedChannel->runlistId);
-    
+
     pKernelChannel = kfifoChidMgrGetKernelChannel(retainedChannel->pGpu,
                                                   pKernelFifo,
                                                   pChidMgr,
@@ -8701,6 +8702,7 @@ void nvGpuOpsPagingChannelsUnmap(struct gpuAddressSpace *srcVaSpace,
                   __FUNCTION__, nvstatusToString(status));
         return;
     }
+
 
     status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
     NV_ASSERT(status == NV_OK);

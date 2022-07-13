@@ -1687,6 +1687,50 @@ bool DeviceImpl::parseDscCaps(const NvU8 *buffer, NvU32 bufferSize)
     return true;
 }
 
+bool DeviceImpl::parseBranchSpecificDscCaps(const NvU8 *buffer, NvU32 bufferSize)
+{
+    if (bufferSize < 3)
+    {
+        DP_LOG((" Branch DSC caps buffer must be greater than or equal to 3"));
+        return false;
+    }
+
+    dscCaps.branchDSCOverallThroughputMode0 = DRF_VAL(_DPCD20, _BRANCH_DSC_OVERALL_THROUGHPUT_MODE_0, _VALUE, buffer[0x0]);
+    if (dscCaps.branchDSCOverallThroughputMode0 == 1)
+    {
+        dscCaps.branchDSCOverallThroughputMode0 = 680;
+    }
+    else if (dscCaps.branchDSCOverallThroughputMode0 >= 2)
+    {
+        dscCaps.branchDSCOverallThroughputMode0 = 600 + dscCaps.branchDSCOverallThroughputMode0 * 50;
+    }
+
+    dscCaps.branchDSCOverallThroughputMode1 = DRF_VAL(_DPCD20, _BRANCH_DSC_OVERALL_THROUGHPUT_MODE_1, _VALUE, buffer[0x1]);
+    if (dscCaps.branchDSCOverallThroughputMode1 == 1)
+    {
+        dscCaps.branchDSCOverallThroughputMode1 = 680;
+    }
+    else if (dscCaps.branchDSCOverallThroughputMode1 >= 2)
+    {
+        dscCaps.branchDSCOverallThroughputMode1 = 600 + dscCaps.branchDSCOverallThroughputMode1 * 50;
+    }
+
+    dscCaps.branchDSCMaximumLineBufferWidth = DRF_VAL(_DPCD20, _BRANCH_DSC_MAXIMUM_LINE_BUFFER_WIDTH, _VALUE, buffer[0x2]);
+    if (dscCaps.branchDSCMaximumLineBufferWidth != 0)
+    {
+        if (dscCaps.branchDSCMaximumLineBufferWidth >= 16)
+        {
+            dscCaps.branchDSCMaximumLineBufferWidth = dscCaps.branchDSCMaximumLineBufferWidth * 320;
+        }
+        else
+        {
+            dscCaps.branchDSCMaximumLineBufferWidth = 0;
+            DP_LOG(("Value of branch DSC maximum line buffer width is invalid, so setting it to 0."));
+        }
+    }
+    return true;
+}
+
 bool DeviceImpl::readAndParseDSCCaps()
 {
     // Allocate a buffer of 16 bytes to read DSC caps
@@ -1701,6 +1745,21 @@ bool DeviceImpl::readAndParseDSCCaps()
     }
 
     return parseDscCaps(&rawDscCaps[0], sizeof(rawDscCaps));
+}
+
+bool DeviceImpl::readAndParseBranchSpecificDSCCaps()
+{
+    unsigned sizeCompleted = 0;
+    unsigned nakReason = NakUndefined;
+    NvU8 rawBranchSpecificDscCaps[3];
+
+    if(AuxBus::success != this->getDpcdData(NV_DPCD20_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_0,
+        &rawBranchSpecificDscCaps[0], sizeof(rawBranchSpecificDscCaps), &sizeCompleted, &nakReason))
+    {
+        return false;
+    }
+
+    return parseBranchSpecificDscCaps(&rawBranchSpecificDscCaps[0], sizeof(rawBranchSpecificDscCaps));
 }
 
 bool DeviceImpl::getDscEnable(bool *pEnable)

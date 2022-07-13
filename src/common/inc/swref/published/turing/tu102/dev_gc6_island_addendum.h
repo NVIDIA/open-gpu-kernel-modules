@@ -30,6 +30,9 @@
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT                                                NV_PGC6_AON_SECURE_SCRATCH_GROUP_05(0)
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT_PROGRESS                                                                          7:0
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT_PROGRESS_COMPLETED                                                         0x000000FF
+#define NV_PGC6_BSI_SECURE_SCRATCH_14_BOOT_STAGE_3_HANDOFF                                  26:26
+#define NV_PGC6_BSI_SECURE_SCRATCH_14_BOOT_STAGE_3_HANDOFF_VALUE_INIT                         0x0
+#define NV_PGC6_BSI_SECURE_SCRATCH_14_BOOT_STAGE_3_HANDOFF_VALUE_DONE                         0x1
 
 #endif // __tu102_dev_gc6_island_addendum_h__
 

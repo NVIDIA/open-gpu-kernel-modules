@@ -519,6 +519,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalPerfCfControllerSetMaxVGpuVMCount__)(struct Subdevice *, NV2080_CTRL_INTERNAL_PERF_CF_CONTROLLERS_SET_MAX_VGPU_VM_COUNT_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdBifGetStaticInfo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_GET_STATIC_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdBifGetAspmL1Flags__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_GET_ASPM_L1_FLAGS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdBifSetPcieRo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubPeerConnConfig__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubFirstLinkPeerId__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_FIRST_LINK_PEER_ID_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubGetHshubIdForLinks__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS *);
@@ -527,6 +528,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkEnableComputePeerAddr__)(struct Subdevice *);
     NV_STATUS (*__subdeviceCtrlCmdInternalNvlinkGetSetNvswitchFabricAddr__)(struct Subdevice *, NV2080_CTRL_INTERNAL_NVLINK_GET_SET_NVSWITCH_FABRIC_ADDR_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalGetPcieP2pCaps__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GET_PCIE_P2P_CAPS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalGetCoherentFbApertureSize__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGetAvailableHshubMask__)(struct Subdevice *, NV2080_CTRL_CMD_HSHUB_GET_AVAILABLE_MASK_PARAMS *);
     NvBool (*__subdeviceShareCallback__)(struct Subdevice *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__subdeviceMapTo__)(struct Subdevice *, RS_RES_MAP_TO_PARAMS *);
@@ -998,6 +1000,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalPerfCfControllerSetMaxVGpuVMCount(pSubdevice, pParams) subdeviceCtrlCmdInternalPerfCfControllerSetMaxVGpuVMCount_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBifGetStaticInfo(pSubdevice, pParams) subdeviceCtrlCmdBifGetStaticInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBifGetAspmL1Flags(pSubdevice, pParams) subdeviceCtrlCmdBifGetAspmL1Flags_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdBifSetPcieRo(pSubdevice, pParams) subdeviceCtrlCmdBifSetPcieRo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubPeerConnConfig(pSubdevice, pParams) subdeviceCtrlCmdHshubPeerConnConfig_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubFirstLinkPeerId(pSubdevice, pParams) subdeviceCtrlCmdHshubFirstLinkPeerId_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubGetHshubIdForLinks(pSubdevice, pParams) subdeviceCtrlCmdHshubGetHshubIdForLinks_DISPATCH(pSubdevice, pParams)
@@ -1006,6 +1009,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalNvlinkEnableComputePeerAddr(pSubdevice) subdeviceCtrlCmdInternalNvlinkEnableComputePeerAddr_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdInternalNvlinkGetSetNvswitchFabricAddr(pSubdevice, pParams) subdeviceCtrlCmdInternalNvlinkGetSetNvswitchFabricAddr_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalGetPcieP2pCaps(pSubdevice, pParams) subdeviceCtrlCmdInternalGetPcieP2pCaps_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalGetCoherentFbApertureSize(pSubdevice, pParams) subdeviceCtrlCmdInternalGetCoherentFbApertureSize_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGetAvailableHshubMask(pSubdevice, pParams) subdeviceCtrlCmdGetAvailableHshubMask_DISPATCH(pSubdevice, pParams)
 #define subdeviceShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) subdeviceShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define subdeviceMapTo(pResource, pParams) subdeviceMapTo_DISPATCH(pResource, pParams)
@@ -3391,6 +3395,12 @@ static inline NV_STATUS subdeviceCtrlCmdBifGetAspmL1Flags_DISPATCH(struct Subdev
     return pSubdevice->__subdeviceCtrlCmdBifGetAspmL1Flags__(pSubdevice, pParams);
 }
 
+NV_STATUS subdeviceCtrlCmdBifSetPcieRo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdBifSetPcieRo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdBifSetPcieRo__(pSubdevice, pParams);
+}
+
 NV_STATUS subdeviceCtrlCmdHshubPeerConnConfig_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS *pParams);
 
 static inline NV_STATUS subdeviceCtrlCmdHshubPeerConnConfig_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS *pParams) {
@@ -3437,6 +3447,12 @@ NV_STATUS subdeviceCtrlCmdInternalGetPcieP2pCaps_IMPL(struct Subdevice *pSubdevi
 
 static inline NV_STATUS subdeviceCtrlCmdInternalGetPcieP2pCaps_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GET_PCIE_P2P_CAPS_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdInternalGetPcieP2pCaps__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalGetCoherentFbApertureSize_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalGetCoherentFbApertureSize_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalGetCoherentFbApertureSize__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdGetAvailableHshubMask_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_HSHUB_GET_AVAILABLE_MASK_PARAMS *pParams);

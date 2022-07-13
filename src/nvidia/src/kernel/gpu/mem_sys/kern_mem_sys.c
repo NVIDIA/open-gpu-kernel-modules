@@ -592,8 +592,17 @@ kmemsysSetupCoherentCpuLink_IMPL
                                                         &pGpu->numaNodeId));
         if (pKernelMemorySystem->coherentCpuFbBase != 0)
         {
+            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+            NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS params = {0};
+
+            NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                    pGpu->hInternalClient,
+                    pGpu->hInternalSubdevice,
+                    NV2080_CTRL_CMD_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE,
+                    &params,
+                    sizeof(NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS)));
             pKernelMemorySystem->coherentCpuFbEnd = pKernelMemorySystem->coherentCpuFbBase +
-                pMemoryManager->Ram.fbUsableMemSize;
+                                                    params.coherentFbApertureSize;
         }
     }
 

@@ -29,7 +29,8 @@
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION_LEVEL0                     0:0 /*       */
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION_LEVEL0_ENABLE       0x00000001 /*       */
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION_LEVEL0_DISABLE      0x00000000 /*       */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_03(i)                                   (0x00118214+(i)*4) /* RW-4A */
-#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05(i)                                   (0x00118234+(i)*4) /* RW-4A */
+#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_03(i)                                          (0x00118214+(i)*4) /* RW-4A */
+#define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05(i)                                          (0x00118234+(i)*4) /* RW-4A */
+#define NV_PGC6_BSI_SECURE_SCRATCH_14                                                           0x001180f8 /* RW-4R */
 
 #endif // __tu102_dev_gc6_island_h__

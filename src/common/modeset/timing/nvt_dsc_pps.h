@@ -196,6 +196,13 @@ typedef struct
         NvU32  maxBitsPerPixelX16;
     }sinkCaps;
 
+    struct BRANCH_DSC_CAPS
+    {
+        NvU32  overallThroughputMode0;
+        NvU32  overallThroughputMode1;
+        NvU32  maxLineBufferWidth;
+    }branchCaps;
+
     struct GPU_DSC_CAPS
     {
         // Mask of all color formats for which encoding supported by GPU

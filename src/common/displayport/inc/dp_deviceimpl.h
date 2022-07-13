@@ -425,7 +425,9 @@ namespace DisplayPort
         NvBool isDSCPossible();
         bool isFECSupported();
         bool readAndParseDSCCaps();
+        bool readAndParseBranchSpecificDSCCaps();
         bool parseDscCaps(const NvU8 *buffer, NvU32 bufferSize);
+        bool parseBranchSpecificDscCaps(const NvU8 *buffer, NvU32 bufferSize);
         bool setDscEnable(bool enable);
         bool getDscEnable(bool *pEnable);
         unsigned getDscVersionMajor();

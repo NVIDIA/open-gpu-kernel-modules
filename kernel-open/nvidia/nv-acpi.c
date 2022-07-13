@@ -35,29 +35,13 @@ static NV_STATUS   nv_acpi_extract_buffer  (const union acpi_object *, void *, N
 static NV_STATUS   nv_acpi_extract_package (const union acpi_object *, void *, NvU32, NvU32 *);
 static NV_STATUS   nv_acpi_extract_object  (const union acpi_object *, void *, NvU32, NvU32 *);
 
-static int         nv_acpi_add             (struct acpi_device *);
-static int         nv_acpi_remove          (struct acpi_device *device);
-static void        nv_acpi_event           (acpi_handle, u32, void *);
 static void        nv_acpi_powersource_hotplug_event(acpi_handle, u32, void *);
 static acpi_status nv_acpi_find_methods    (acpi_handle, u32, void *, void **);
 static NV_STATUS   nv_acpi_nvif_method     (NvU32, NvU32, void *, NvU16, NvU32 *, void *, NvU16 *);
 
 static NV_STATUS   nv_acpi_wmmx_method     (NvU32, NvU8 *, NvU16 *);
 
-static const struct acpi_device_id nv_video_device_ids[] = {
-    {
-        .id          = ACPI_VIDEO_HID,
-        .driver_data = 0,
-    },
-    {
-        .id          = "",
-        .driver_data = 0,
-    },
-};
-
-static struct acpi_driver *nv_acpi_driver;
 static acpi_handle nvif_handle = NULL;
-static acpi_handle nvif_parent_gpu_handle  = NULL;
 static acpi_handle wmmx_handle = NULL;
 
 // Used for AC Power Source Hotplug Handling
@@ -80,16 +64,6 @@ static NvBool battery_present = NV_FALSE;
 #ifndef ACPI_VIDEO_CLASS
 #define ACPI_VIDEO_CLASS    "video"
 #endif
-
-static const struct acpi_driver nv_acpi_driver_template = {
-    .name = "NVIDIA ACPI Video Driver",
-    .class = ACPI_VIDEO_CLASS,
-    .ids = nv_video_device_ids,
-    .ops = {
-        .add = nv_acpi_add,
-        .remove = nv_acpi_remove,
-    },
-};
 
 static int nv_acpi_get_device_handle(nv_state_t *nv, acpi_handle *dev_handle)
 {
@@ -151,351 +125,6 @@ void nv_acpi_unregister_notifier(nv_linux_state_t *nvl)
     unregister_acpi_notifier(&nvl->acpi_nb);
 }
 
-int nv_acpi_init(void)
-{
-    /*
-     * This function will register the RM with the Linux
-     * ACPI subsystem.
-     */
-    int status;
-    nvidia_stack_t *sp = NULL;
-    NvU32 acpi_event_config = 0;
-    NV_STATUS rmStatus;
-
-    status = nv_kmem_cache_alloc_stack(&sp);
-    if (status != 0)
-    {
-        return status;
-    }
-
-    rmStatus = rm_read_registry_dword(sp, NULL,
-                   NV_REG_REGISTER_FOR_ACPI_EVENTS, &acpi_event_config);
-    nv_kmem_cache_free_stack(sp);
-
-    if ((rmStatus == NV_OK) && (acpi_event_config == 0))
-        return 0;
-
-    if (nv_acpi_driver != NULL)
-        return -EBUSY;
-
-    rmStatus = os_alloc_mem((void **)&nv_acpi_driver,
-            sizeof(struct acpi_driver));
-    if (rmStatus != NV_OK)
-        return -ENOMEM;
-
-    memcpy((void *)nv_acpi_driver, (void *)&nv_acpi_driver_template,
-            sizeof(struct acpi_driver));
-
-    status = acpi_bus_register_driver(nv_acpi_driver);
-    if (status < 0)
-    {
-        nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_init: acpi_bus_register_driver() failed (%d)!\n", status);
-        os_free_mem(nv_acpi_driver);
-        nv_acpi_driver = NULL;
-    }
-
-    return status;
-}
-
-int nv_acpi_uninit(void)
-{
-    nvidia_stack_t *sp = NULL;
-    NvU32 acpi_event_config = 0;
-    NV_STATUS rmStatus;
-    int rc;
-
-    rc = nv_kmem_cache_alloc_stack(&sp);
-    if (rc != 0)
-    {
-        return rc;
-    }
-
-    rmStatus = rm_read_registry_dword(sp, NULL,
-                   NV_REG_REGISTER_FOR_ACPI_EVENTS, &acpi_event_config);
-    nv_kmem_cache_free_stack(sp);
-
-    if ((rmStatus == NV_OK) && (acpi_event_config == 0))
-        return 0;
-
-    if (nv_acpi_driver == NULL)
-        return -ENXIO;
-
-    acpi_bus_unregister_driver(nv_acpi_driver);
-    os_free_mem(nv_acpi_driver);
-
-    nv_acpi_driver = NULL;
-
-    return 0;
-}
-
-static int nv_acpi_add(struct acpi_device *device)
-{
-    /*
-     * This function will cause RM to initialize the things it needs for acpi interaction
-     * on the display device.
-     */
-    int status = -1;
-    NV_STATUS rmStatus = NV_ERR_GENERIC;
-    nv_acpi_t *pNvAcpiObject = NULL;
-    union acpi_object control_argument_0 = { ACPI_TYPE_INTEGER };
-    struct acpi_object_list control_argument_list = { 0, NULL };
-    nvidia_stack_t *sp = NULL;
-    struct list_head *node, *next;
-    unsigned long long device_id = 0;
-    int device_counter = 0;
-
-    status = nv_kmem_cache_alloc_stack(&sp);
-    if (status != 0)
-    {
-        return status;
-    }
-
-    // allocate data structure we need
-    rmStatus = os_alloc_mem((void **) &pNvAcpiObject, sizeof(nv_acpi_t));
-    if (rmStatus != NV_OK)
-    {
-        nv_kmem_cache_free_stack(sp);
-        nv_printf(NV_DBG_ERRORS,
-            "NVRM: nv_acpi_add: failed to allocate ACPI device management data!\n");
-        return -ENOMEM;
-    }
-
-    os_mem_set((void *)pNvAcpiObject, 0, sizeof(nv_acpi_t));
-
-    device->driver_data = pNvAcpiObject;
-    pNvAcpiObject->device = device;
-
-    pNvAcpiObject->sp = sp;
-
-    // grab handles to all the important nodes representing devices
-
-    list_for_each_safe(node, next, &device->children)
-    {
-        struct acpi_device *dev =
-            list_entry(node, struct acpi_device, node);
-
-        if (!dev)
-            continue;
-
-        if (device_counter == NV_MAXNUM_DISPLAY_DEVICES)
-        {
-            nv_printf(NV_DBG_ERRORS,
-                      "NVRM: nv_acpi_add: Total number of devices cannot exceed %d\n",
-                      NV_MAXNUM_DISPLAY_DEVICES);
-            break;
-        }
-
-        status =
-            acpi_evaluate_integer(dev->handle, "_ADR", NULL, &device_id);
-        if (ACPI_FAILURE(status))
-            /* Couldnt query device_id for this device */
-            continue;
-
-        device_id = (device_id & 0xffff);
-
-        if ((device_id != 0x100) && /* Not a known CRT device-id */
-            (device_id != 0x200) && /* Not a known TV device-id */
-            (device_id != 0x0110) && (device_id != 0x0118) && (device_id != 0x0400) && /* Not an LCD*/
-            (device_id != 0x0111) && (device_id != 0x0120) && (device_id != 0x0300)) /* Not a known DVI device-id */
-        {
-            /* This isnt a known device Id.
-               Do default switching on this system. */
-            pNvAcpiObject->default_display_mask = 1;
-            break;
-        }
-
-        pNvAcpiObject->pNvVideo[device_counter].dev_id = device_id;
-        pNvAcpiObject->pNvVideo[device_counter].dev_handle = dev->handle;
-
-        device_counter++;
-
-    }
-
-    // arg 0, bits 1:0, 0 = enable events
-    control_argument_0.integer.type = ACPI_TYPE_INTEGER;
-    control_argument_0.integer.value = 0x0;
-
-    // listify it
-    control_argument_list.count = 1;
-    control_argument_list.pointer = &control_argument_0;
-
-    // _DOS method takes 1 argument and returns nothing
-    status = acpi_evaluate_object(device->handle, "_DOS", &control_argument_list, NULL);
-
-    if (ACPI_FAILURE(status))
-    {
-        nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_add: failed to enable display switch events (%d)!\n", status);
-    }
-
-    status = acpi_install_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
-                    nv_acpi_event, pNvAcpiObject);
-
-    if (ACPI_FAILURE(status))
-    {
-        nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_add: failed to install event notification handler (%d)!\n", status);
-    }
-    else
-    {
-        try_module_get(THIS_MODULE);
-        pNvAcpiObject->notify_handler_installed = 1;
-    }
-
-    return 0;
-}
-
-static int nv_acpi_remove(struct acpi_device *device)
-{
-    /*
-     * This function will cause RM to relinquish control of the VGA ACPI device.
-     */
-    acpi_status status;
-    union acpi_object control_argument_0 = { ACPI_TYPE_INTEGER };
-    struct acpi_object_list control_argument_list = { 0, NULL };
-    nv_acpi_t *pNvAcpiObject = device->driver_data;
-
-
-    pNvAcpiObject->default_display_mask = 0;
-
-    // arg 0, bits 1:0, 1 = disable events
-    control_argument_0.integer.type = ACPI_TYPE_INTEGER;
-    control_argument_0.integer.value = 0x1;
-
-    // listify it
-    control_argument_list.count = 1;
-    control_argument_list.pointer = &control_argument_0;
-
-    // _DOS method takes 1 argument and returns nothing
-    status = acpi_evaluate_object(device->handle, "_DOS", &control_argument_list, NULL);
-
-    if (ACPI_FAILURE(status))
-    {
-        nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_remove: failed to disable display switch events (%d)!\n", status);
-    }
-
-    if (pNvAcpiObject->notify_handler_installed)
-    {
-        // remove event notifier
-        status = acpi_remove_notify_handler(device->handle, ACPI_DEVICE_NOTIFY, nv_acpi_event);
-    }
-
-    if (pNvAcpiObject->notify_handler_installed &&
-        ACPI_FAILURE(status))
-    {
-        nv_printf(NV_DBG_INFO,
-            "NVRM: nv_acpi_remove: failed to remove event notification handler (%d)!\n", status);
-    }
-    else
-    {
-        nv_kmem_cache_free_stack(pNvAcpiObject->sp);
-        os_free_mem((void *)pNvAcpiObject);
-        module_put(THIS_MODULE);
-        device->driver_data = NULL;
-    }
-
-    return status;
-}
-
-/*
- * The ACPI specification defines IDs for various ACPI video
- * extension events like display switch events, AC/battery
- * events, docking events, etc..
- * Whenever an ACPI event is received by the corresponding
- * event handler installed within the core NVIDIA driver, the
- * code can verify the event ID before processing it.
- */
-#define ACPI_DISPLAY_DEVICE_CHANGE_EVENT     0x80
-#define NVIF_NOTIFY_DISPLAY_DETECT           0xCB
-#define NVIF_DISPLAY_DEVICE_CHANGE_EVENT     NVIF_NOTIFY_DISPLAY_DETECT
-static void nv_acpi_event(acpi_handle handle, u32 event_type, void *data)
-{
-    /*
-     * This function will handle acpi events from the linux kernel, used
-     * to detect notifications from the VGA device.
-     */
-    nv_acpi_t *pNvAcpiObject = data;
-    u32 event_val = 0;
-    unsigned long long state;
-    int status = 0;
-    int device_counter = 0;
-
-    if (event_type == NVIF_DISPLAY_DEVICE_CHANGE_EVENT)
-    {
-        /* We are getting NVIF events on this machine. We arent putting a very
-           extensive handling in-place to communicate back with SBIOS, know
-           the next enabled devices, and then do the switch. We just
-           pass a default display switch event, so that X-driver decides
-           the switching policy itself. */
-        rm_system_event(pNvAcpiObject->sp, NV_SYSTEM_ACPI_DISPLAY_SWITCH_EVENT, 0);
-    }
-    if (event_type == ACPI_DISPLAY_DEVICE_CHANGE_EVENT)
-    {
-        if (pNvAcpiObject->default_display_mask != 1)
-        {
-            while ((device_counter < NV_MAXNUM_DISPLAY_DEVICES) &&
-                   (pNvAcpiObject->pNvVideo[device_counter].dev_handle))
-            {
-                acpi_handle dev_handle = pNvAcpiObject->pNvVideo[device_counter].dev_handle;
-                int dev_id = pNvAcpiObject->pNvVideo[device_counter].dev_id;
-
-                status = acpi_evaluate_integer(dev_handle,
-                                               "_DGS",
-                                               NULL,
-                                               &state);
-                if (ACPI_FAILURE(status))
-                {
-                    nv_printf(NV_DBG_INFO,
-                    "NVRM: nv_acpi_event: failed to query _DGS method for display device 0x%x\n",
-                    dev_id);
-                }
-                else if (state)
-                {
-                    /* Check if the device is a CRT ...*/
-                    if (dev_id == 0x0100)
-                    {
-                        event_val |= NV_HOTKEY_STATUS_DISPLAY_ENABLE_CRT;
-                    }
-                    /* device-id for a TV */
-                    else if (dev_id == 0x0200)
-                    {
-                        event_val |= NV_HOTKEY_STATUS_DISPLAY_ENABLE_TV;
-                    }
-                    else if ((dev_id == 0x0110) ||  /* device id for internal LCD */
-                             (dev_id == 0x0118) ||  /* alternate ACPI ID for the
-                                                                        internal LCD */
-                             (dev_id == 0x0400))    /* ACPI spec 3.0 specified
-                                                 device id for a internal LCD*/
-                    {
-                        event_val |= NV_HOTKEY_STATUS_DISPLAY_ENABLE_LCD;
-                    }
-                    else if ((dev_id == 0x0111) || /* the set
-                                                    of possible device-ids for a DFP */
-                             (dev_id == 0x0120) ||
-                             (dev_id == 0x0300))   /* ACPI spec 3.0 specified
-                                                    device id for non-LVDS DFP */
-                    {
-                        event_val |= NV_HOTKEY_STATUS_DISPLAY_ENABLE_DFP;
-                    }
-                }
-                device_counter++;
-            }
-        }
-
-        nv_printf(NV_DBG_INFO,
-        "NVRM: nv_acpi_event: Event-type 0x%x, Event-val 0x%x\n",
-        event_type, event_val);
-
-        rm_system_event(pNvAcpiObject->sp, NV_SYSTEM_ACPI_DISPLAY_SWITCH_EVENT, event_val);
-    }
-
-    // no unsubscription or re-enable necessary. Once DOD has been set, we are go.
-    // once we are subscribed to ACPI events, we don't have to re-subscribe unless
-    // unsubscribe.
-}
-
 NV_STATUS NV_API_CALL nv_acpi_get_powersource(NvU32 *ac_plugged)
 {
     unsigned long long val;
@@ -543,14 +172,14 @@ static void nv_acpi_powersource_hotplug_event(acpi_handle handle, u32 event_type
  */
 
 /* Do the necessary allocations and install notifier "handler" on the device-node "device" */
-static nv_acpi_t* nv_install_notifier(struct acpi_device *device, acpi_notify_handler handler)
+static nv_acpi_t* nv_install_notifier(struct acpi_handle *handle, acpi_notify_handler handler)
 {
     nvidia_stack_t *sp = NULL;
     nv_acpi_t *pNvAcpiObject = NULL;
     NV_STATUS rmStatus = NV_ERR_GENERIC;
     acpi_status status = -1;
 
-    if (!device)
+    if (!handle)
         return NULL;
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
@@ -564,11 +193,11 @@ static nv_acpi_t* nv_install_notifier(struct acpi_device *device, acpi_notify_ha
 
     os_mem_set((void *)pNvAcpiObject, 0, sizeof(nv_acpi_t));
 
-    // store a device reference in our object
-    pNvAcpiObject->device = device;
+    // store a handle reference in our object
+    pNvAcpiObject->handle = handle;
     pNvAcpiObject->sp = sp;
 
-    status = acpi_install_notify_handler(device->handle, ACPI_DEVICE_NOTIFY,
+    status = acpi_install_notify_handler(handle, ACPI_DEVICE_NOTIFY,
               handler, pNvAcpiObject);
     if (!ACPI_FAILURE(status))
     {
@@ -592,7 +221,7 @@ static void nv_uninstall_notifier(nv_acpi_t *pNvAcpiObject, acpi_notify_handler 
 
     if (pNvAcpiObject && pNvAcpiObject->notify_handler_installed)
     {
-        status = acpi_remove_notify_handler(pNvAcpiObject->device->handle, ACPI_DEVICE_NOTIFY, handler);
+        status = acpi_remove_notify_handler(pNvAcpiObject->handle, ACPI_DEVICE_NOTIFY, handler);
         if (ACPI_FAILURE(status))
         {
             nv_printf(NV_DBG_INFO,
@@ -616,56 +245,22 @@ static void nv_uninstall_notifier(nv_acpi_t *pNvAcpiObject, acpi_notify_handler 
 
 void NV_API_CALL nv_acpi_methods_init(NvU32 *handlesPresent)
 {
-#if defined(NV_ACPI_BUS_GET_DEVICE_PRESENT)
-    struct acpi_device *device = NULL;
-    int retVal = -1;
-#endif
-
-
     if (!handlesPresent) // Caller passed us invalid pointer.
         return;
-
 
     *handlesPresent = 0;
 
     NV_ACPI_WALK_NAMESPACE(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
                         ACPI_UINT32_MAX, nv_acpi_find_methods, NULL, NULL);
 
-#if defined(NV_ACPI_BUS_GET_DEVICE_PRESENT)
     if (nvif_handle)
     {
         *handlesPresent = NV_ACPI_NVIF_HANDLE_PRESENT;
-        do
-        {
-            if (!nvif_parent_gpu_handle) /* unknown error */
-                break;
-
-            retVal = acpi_bus_get_device(nvif_parent_gpu_handle, &device);
-
-            if (ACPI_FAILURE(retVal) || !device)
-                break;
-
-            if (device->driver_data)
-            {
-                nvif_parent_gpu_handle = NULL;
-                break;  /* Someone else has already populated this device
-                           nodes' structures. So nothing more to be done */
-            }
-
-            device->driver_data  = nv_install_notifier(device, nv_acpi_event);
-
-
-            if (!device->driver_data)
-                nvif_parent_gpu_handle = NULL;
-
-        } while (0);
     }
-#endif
 
     if (wmmx_handle)
         *handlesPresent = *handlesPresent | NV_ACPI_WMMX_HANDLE_PRESENT;
 
-#if defined(NV_ACPI_BUS_GET_DEVICE_PRESENT)
     if (psr_handle)
     {
         // Since _PSR is not a per-GPU construct we only need to register a
@@ -673,15 +268,9 @@ void NV_API_CALL nv_acpi_methods_init(NvU32 *handlesPresent)
         // devices
         if (psr_nv_acpi_object == NULL)
         {
-            retVal = acpi_bus_get_device(psr_device_handle, &device);
-
-            if (!(ACPI_FAILURE(retVal) || !device))
-            {
-                psr_nv_acpi_object = nv_install_notifier(device, nv_acpi_powersource_hotplug_event);
-            }
+            psr_nv_acpi_object = nv_install_notifier(psr_device_handle, nv_acpi_powersource_hotplug_event);
         }
     }
-#endif
 
     return;
 }
@@ -698,7 +287,6 @@ acpi_status nv_acpi_find_methods(
     if (!acpi_get_handle(handle, "NVIF", &method_handle))
     {
         nvif_handle = method_handle;
-        nvif_parent_gpu_handle = handle;
     }
 
     if (!acpi_get_handle(handle, "WMMX", &method_handle))
@@ -717,8 +305,6 @@ acpi_status nv_acpi_find_methods(
 
 void NV_API_CALL nv_acpi_methods_uninit(void)
 {
-    struct acpi_device *device = NULL;
-
     nvif_handle = NULL;
     wmmx_handle = NULL;
 
@@ -730,20 +316,6 @@ void NV_API_CALL nv_acpi_methods_uninit(void)
         psr_device_handle = NULL;
         psr_nv_acpi_object = NULL;
     }
-
-    if (nvif_parent_gpu_handle == NULL)
-        return;
-
-#if defined(NV_ACPI_BUS_GET_DEVICE_PRESENT)
-    acpi_bus_get_device(nvif_parent_gpu_handle, &device);
-
-    nv_uninstall_notifier(device->driver_data, nv_acpi_event);
-#endif
-
-    device->driver_data = NULL;
-    nvif_parent_gpu_handle = NULL;
-
-    return;
 }
 
 static NV_STATUS nv_acpi_extract_integer(
@@ -1762,16 +1334,6 @@ NvBool NV_API_CALL nv_acpi_is_battery_present(void)
 }
 
 #else // NV_LINUX_ACPI_EVENTS_SUPPORTED
-
-int nv_acpi_init(void)
-{
-    return 0;
-}
-
-int nv_acpi_uninit(void)
-{
-    return 0;
-}
 
 void NV_API_CALL nv_acpi_methods_init(NvU32 *handlePresent)
 {

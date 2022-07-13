@@ -1,0 +1,57 @@
+name: Report a build bug 🛠
+description: Bugs related to the build system, compiler or OS support.
+labels:
+- "build-problem"
+body:
+- type: markdown
+  attributes:
+    value: |
+      Before filling out, please check if your issue has already been reported.
+      
+      Also, please pead [CONTRIBUTING.md](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/main/CONTRIBUTING.md) for more details.
+      
+      Thank you!
+- type: input
+  id: sw_driver_version
+  attributes:
+    label: NVIDIA Open GPU Kernel Modules Version
+    description: "Which open-gpu-kernel-modules version are you running? Be as specific as possible: SHA is best when built from specific commit."
+  validations:
+    required: true
+- type: input
+  id: sw_host_os
+  attributes:
+    label: Operating System and Version
+    description: "Which OS are you running this on? (output of `lsb_release -d`)"
+  validations:
+    required: true
+- type: input
+  id: sw_host_kernel
+  attributes:
+    label: Kernel Release
+    description: "Which kernel are you running? (output of `uname -a`, say if you built it yourself)."
+  validations:
+    required: true
+- type: textarea
+  id: bug_description
+  attributes:
+    label: "Build Command"
+    description: "Please show what command(s) you ran that led to the issue."
+  validations:
+    required: true
+- type: textarea
+  id: bug_build_log
+  attributes:
+    label: Terminal output/Build Log
+    description: |
+      Please paste the build log here. You can wrap it into pairs of three backticks to blockquote it.
+  validations:
+    required: true
+- type: textarea
+  id: bug_more_info
+  attributes:
+    label: "More Info"
+    description: "If unclear from the above: What else we need to know? What did you expect to happen but did not?"
+  validations:
+    required: false
+    

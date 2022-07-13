@@ -64,7 +64,7 @@
 
 //
 // AT24CM02 EEPROM
-// http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8828-SEEPROM-AT24CM02-Datasheet.pdf
+// https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8828-SEEPROM-AT24CM02-Datasheet.pdf
 //
 
 #define AT24CM02_INDEX_SIZE     18          // Addressing bits
@@ -72,7 +72,7 @@
 
 //
 // AT24C02C EEPROM
-// http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8700-SEEPROM-AT24C01C-02C-Datasheet.pdf
+// https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-8700-SEEPROM-AT24C01C-02C-Datasheet.pdf
 //
 
 #define AT24C02C_INDEX_SIZE     8           // Addressing bits
@@ -80,7 +80,7 @@
 
 //
 // AT24C02D EEPROM
-// http://ww1.microchip.com/downloads/en/devicedoc/atmel-8871f-seeprom-at24c01d-02d-datasheet.pdf
+// https://ww1.microchip.com/downloads/en/devicedoc/atmel-8871f-seeprom-at24c01d-02d-datasheet.pdf
 // 2kb EEPROM used on LR10 P4790 B00 platform
 //
 

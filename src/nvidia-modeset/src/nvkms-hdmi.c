@@ -1492,7 +1492,7 @@ static void LogEdidCea861Info(NVEvoInfoStringPtr pInfoString,
 
     /*
      * IEEE vendor registration IDs are tracked here:
-     * http://standards.ieee.org/develop/regauth/oui/oui.txt
+     * https://standards.ieee.org/develop/regauth/oui/oui.txt
      */
     for (vsdbIndex = 0; vsdbIndex < pExt861->total_vsdb; vsdbIndex++) {
         const NvU32 ieeeId = pExt861->vsdb[vsdbIndex].ieee_id;

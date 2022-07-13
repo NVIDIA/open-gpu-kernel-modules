@@ -1,0 +1,92 @@
+name: Report a functional bug 🐛
+description: Functional bugs affect operation or stability of the driver and/or hardware.
+labels:
+  - "bug"
+body:
+- type: markdown
+  attributes:
+    value: |
+      Before filling out, please check if your issue has already been reported.
+      
+      Also, please pead [CONTRIBUTING.md](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/main/CONTRIBUTING.md) for more details.
+      
+      Thank you!
+- type: input
+  id: sw_driver_version
+  attributes:
+    label: NVIDIA Open GPU Kernel Modules Version
+    description: "Which open-gpu-kernel-modules version are you running? Be as specific as possible: SHA is best when built from specific commit."
+  validations:
+    required: true
+- type: dropdown
+  id: sw_driver_proprietary
+  attributes:
+    label: "Does this happen with the proprietary driver (of the same version) as well?"
+    options:
+    - "Yes"
+    - "No"
+    - "I cannot test this"
+  validations:
+    required: true
+- type: input
+  id: sw_host_os
+  attributes:
+    label: Operating System and Version
+    description: "Which OS are you running this on? (output of `lsb_release -d`)"
+  validations:
+    required: true
+- type: input
+  id: sw_host_kernel
+  attributes:
+    label: Kernel Release
+    description: "Which kernel are you running? (output of `uname -a`, say if you built it yourself)"
+  validations:
+    required: true
+- type: input
+  id: hw_gpu_type
+  attributes:
+    label: "Hardware: GPU"
+    description: "Which GPU is this bug manifesting on? (output of `nvidia-smi -L`)"
+  validations:
+    required: true
+- type: textarea
+  id: bug_description
+  attributes:
+    label: "Describe the bug"
+    description: "Please write a clear and concise description of what the bug is."
+  validations:
+    required: true
+- type: textarea
+  id: bug_repro
+  attributes:
+    label: "To Reproduce"
+    description: "Please provide bullet-pointed reproduction steps, so we can see the issue on our end. Name all required preconditions."
+  validations:
+    required: true
+- type: dropdown
+  id: bug_incidence
+  attributes:
+    label: "Bug Incidence"
+    description: "How often does the issue happen?"
+    options:
+    - Once
+    - Sometimes
+    - Always
+  validations:
+    required: true
+- type: textarea
+  id: bug_report_gz
+  attributes:
+    label: nvidia-bug-report.log.gz
+    description: "Please reproduce the problem, after that run `nvidia-bug-report.sh`, and attach the resulting nvidia-bug-report.log.gz here."
+    placeholder: You can usually just drag & drop the file into this textbox.
+  validations:
+    required: true
+- type: textarea
+  id: bug_more_info
+  attributes:
+    label: "More Info"
+    description: "If unclear from the above: What else we need to know? What did you expect to happen but did not?"
+  validations:
+    required: false
+    

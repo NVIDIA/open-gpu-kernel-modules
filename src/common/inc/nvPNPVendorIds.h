@@ -29,7 +29,7 @@
  * type const char*.
  *
  * References:
- *  http://www.uefi.org/pnp_id_list
+ *  https://uefi.org/pnp_id_list
  *
  */ 
 

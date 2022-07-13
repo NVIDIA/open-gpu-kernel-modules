@@ -31,7 +31,7 @@
  * @note Xorshift algorithms take either 128bit or 1024bit seeds. The algorithm
  * author suggests seeding a splitmix64.c with a 64bit value, and using its
  * output to seed xorshift.
- * See http://xorshift.di.unimi.it/ for details.
+ * See https://prng.di.unimi.it/ for details.
  *
  * @warning Xorshift algorithms are NOT CRYPTOGRAPHICALLY SECURE. They generally
  * perform really well on various randomness tests, but are not suitable for
@@ -84,7 +84,7 @@ void portCryptoShutdown()
  * @brief Initializes a xorshift state from a 64bit seed. Performed using a
  * splitmix64 PRNG.
  * 
- * Adapted from: http://xorshift.di.unimi.it/splitmix64.c
+ * Adapted from: https://xorshift.di.unimi.it/splitmix64.c
  */
 static void _initState(NvU64 seed64, NvU64 state[XORSHIFT_STATE_QWORDS]) 
 {
@@ -101,7 +101,7 @@ static void _initState(NvU64 seed64, NvU64 state[XORSHIFT_STATE_QWORDS])
 /**
  * @brief Get the next 64bit value using the xorshift128+ algorithm
  *
- * Adapted from: http://xorshift.di.unimi.it/xorshift128plus.c
+ * Adapted from: https://xorshift.di.unimi.it/xorshift128plus.c
  */
 static NvU64 _xorshift128plus_GetU64(NvU64 state[2]) 
 {

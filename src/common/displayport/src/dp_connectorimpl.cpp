@@ -189,6 +189,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bEnableFastLT                 = dpRegkeyDatabase.bFastLinkTrainingEnabled;
     this->bDscMstCapBug3143315          = dpRegkeyDatabase.bDscMstCapBug3143315;
     this->bDscMstEnablePassThrough      = dpRegkeyDatabase.bDscMstEnablePassThrough;
+    this->bDscOptimizeLTBug3534707      = dpRegkeyDatabase.bDscOptimizeLTBug3534707;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -630,6 +631,12 @@ create:
     {
         // Read and parse DSC caps only if panel supports DSC
         newDev->readAndParseDSCCaps();
+
+        // Read and Parse Branch Specific DSC Caps
+        if (!newDev->isVideoSink() && !newDev->isAudioSink())
+        {
+            newDev->readAndParseBranchSpecificDSCCaps();
+        }
     }
 
     // Decide if DSC stream can be sent to new device
@@ -655,13 +662,13 @@ create:
                 if (this->bDscMstEnablePassThrough)
                 {
                     //
-                    // Check the device's own and its parent's DSC capability. 
-                    // - Sink device will do DSC cecompression when 
+                    // Check the device's own and its parent's DSC capability.
+                    // - Sink device will do DSC cecompression when
                     //   1. Sink device is capable of DSC decompression and parent
                     //      supports DSC pass through.
                     //
-                    // - Sink device's parent will do DSC decompression 
-                    //   1. If sink device supports DSC decompression but it's parent does not support 
+                    // - Sink device's parent will do DSC decompression
+                    //   1. If sink device supports DSC decompression but it's parent does not support
                     //      DSC Pass through, but supports DSC decompression.
                     //   2. If the device does not support DSC decompression, but parent supports it.
                     //
@@ -672,7 +679,7 @@ create:
                             if (newDev->parent->isDSCPassThroughSupported())
                             {
                                 //
-                                // This condition takes care of DSC capable sink devices 
+                                // This condition takes care of DSC capable sink devices
                                 // connected behind a DSC Pass through capable branch
                                 //
                                 newDev->devDoingDscDecompression = newDev;
@@ -681,12 +688,12 @@ create:
                             else if (newDev->parent->isDSCSupported())
                             {
                                 //
-                                // This condition takes care of DSC capable sink devices 
+                                // This condition takes care of DSC capable sink devices
                                 // connected behind a branch device that is not capable
                                 // of DSC pass through but can do DSC decompression.
                                 //
                                 newDev->bDSCPossible = true;
-                                newDev->devDoingDscDecompression = newDev->parent;   
+                                newDev->devDoingDscDecompression = newDev->parent;
                             }
                         }
                         else
@@ -695,11 +702,11 @@ create:
                             newDev->devDoingDscDecompression = newDev;
                             newDev->bDSCPossible = true;
                         }
-                    }           
+                    }
                     else if (newDev->parent && newDev->parent->isDSCSupported())
                     {
                         //
-                        // This condition takes care of sink devices not capable of DSC 
+                        // This condition takes care of sink devices not capable of DSC
                         // but parent is capable of DSC decompression.
                         //
                         newDev->bDSCPossible = true;
@@ -709,7 +716,7 @@ create:
                 else
                 {
                     //
-                    // Revert to old code if DSC Pass through support is not requested. 
+                    // Revert to old code if DSC Pass through support is not requested.
                     // This code will be deleted once DSC Pass through support will be enabled
                     // by default which will be done when 2Head1OR MST (GR-133) will be in production.
                     //
@@ -1726,6 +1733,15 @@ void ConnectorImpl::populateDscGpuCaps(DSC_INFO* dscInfo)
     dscInfo->gpuCaps.lineBufferBitDepth = lineBufferBitDepth;
 }
 
+void ConnectorImpl::populateDscBranchCaps(DSC_INFO* dscInfo, DeviceImpl * dev)
+{
+    dscInfo->branchCaps.overallThroughputMode0 = dev->dscCaps.branchDSCOverallThroughputMode0;
+    dscInfo->branchCaps.overallThroughputMode1 = dev->dscCaps.branchDSCOverallThroughputMode1;
+    dscInfo->branchCaps.maxLineBufferWidth = dev->dscCaps.branchDSCMaximumLineBufferWidth;
+
+    return;
+}
+
 void ConnectorImpl::populateDscSinkCaps(DSC_INFO* dscInfo, DeviceImpl * dev)
 {
     // Early return if dscInfo or dev is NULL
@@ -1845,6 +1861,12 @@ void ConnectorImpl::populateDscCaps(DSC_INFO* dscInfo, DeviceImpl * dev, DSC_INF
 {
     // Sink DSC capabilities
     populateDscSinkCaps(dscInfo, dev);
+
+    // Branch Specific DSC Capabilities
+    if (!dev->isVideoSink() && !dev->isAudioSink())
+    {
+        populateDscBranchCaps(dscInfo, dev);
+    }
 
     // GPU DSC capabilities
     populateDscGpuCaps(dscInfo);
@@ -2621,11 +2643,6 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
         }
     }
 
-    if (bEnableDsc)
-    {
-        DP_LOG(("DPCONN> DSC Mode = %s", (modesetParams.modesetInfo.mode == DSC_SINGLE) ? "SINGLE" : "DUAL"));
-    }
-
     for (Device * dev = target->enumDevices(0); dev; dev = target->enumDevices(dev))
     {
         Address::StringBuffer buffer;
@@ -2640,6 +2657,12 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
 
     GroupImpl* targetImpl = (GroupImpl*)target;
     targetImpl->bIsCurrentModesetGroup = true;
+
+    if (bEnableDsc)
+    {
+        DP_LOG(("DPCONN> DSC Mode = %s", (modesetParams.modesetInfo.mode == DSC_SINGLE) ? "SINGLE" : "DUAL"));
+        targetImpl->dscModeRequest = modesetParams.modesetInfo.mode;
+    }
 
     DP_ASSERT(!(targetImpl->isHeadAttached() && targetImpl->bIsHeadShutdownNeeded) && "Head should have been shut down but it is still active!");
 
@@ -2788,6 +2811,10 @@ void ConnectorImpl::notifyAttachEnd(bool modesetCancelled)
         currentModesetDeviceGroup->setHeadAttached(false);
     }
 
+    // set dscModeActive to what was requested in NAB and clear dscModeRequest
+    currentModesetDeviceGroup->dscModeActive = currentModesetDeviceGroup->dscModeRequest;
+    currentModesetDeviceGroup->dscModeRequest = DSC_MODE_NONE;
+
     currentModesetDeviceGroup->setHeadAttached(true);
     RmDfpCache dfpCache = {0};
     dfpCache.updMask = 0;
@@ -2934,6 +2961,7 @@ void ConnectorImpl::notifyDetachEnd(bool bKeepOdAlive)
     dpMemZero(&currentModesetDeviceGroup->lastModesetInfo, sizeof(ModesetInfo));
     currentModesetDeviceGroup->setHeadAttached(false);
     currentModesetDeviceGroup->headInFirmware = false;
+    currentModesetDeviceGroup->dscModeActive = DSC_MODE_NONE;
 
     // Mark head as disconnected
     bNoLtDoneAfterHeadDetach = true;
@@ -3980,18 +4008,36 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
     GroupImpl * groupAttached = 0;
     for (ListElement * e = activeGroups.begin(); e != activeGroups.end(); e = e->next)
     {
-        DP_ASSERT(bIsUefiSystem || (!groupAttached && "Multiple attached heads"));
+        DP_ASSERT(bIsUefiSystem);
         groupAttached = (GroupImpl * )e;
 
-        if ((groupAttached->lastModesetInfo.mode == DSC_DUAL) && groupAttached->bIsCurrentModesetGroup)
+        if (bDscOptimizeLTBug3534707)
         {
-            //
-            // If current modeset group requires 2Head1OR mode, we should retrain link.
-            //   For SST, there will be only one group per connector.
-            //   For MST, we need to re-run LT in case the current modeset group requires DSC_DUAL.
-            //
-            bTwoHeadOneOrLinkRetrain = true;
-            break;
+            if ((groupAttached->dscModeRequest == DSC_DUAL) && (groupAttached->dscModeActive != DSC_DUAL))
+            {
+                //
+                // If current modeset group requires 2Head1OR and
+                //  - group is not active yet (first modeset on the group)
+                //  - group is active but not in 2Head1OR mode (last modeset on the group did not require 2Head1OR)
+                // then re-train the link
+                // This is because for 2Head1OR mode, we need to set some LT parametes for slave SOR after
+                // successful LT on primary SOR without which 2Head1OR modeset will lead to HW hang.
+                //
+                bTwoHeadOneOrLinkRetrain = true;
+                break;
+            }
+        }
+        else
+        {
+            if (groupAttached->lastModesetInfo.mode == DSC_DUAL && groupAttached->bIsCurrentModesetGroup)
+            {
+                //
+                // If current modeset group requires 2Head1OR mode, we should retrain link.
+                //   For SST, there will be only one group per connector.
+                //   For MST, we need to re-run LT in case the current modeset group requires DSC_DUAL.
+                bTwoHeadOneOrLinkRetrain = true;
+                break;
+            }
         }
     }
 
@@ -4077,10 +4123,10 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
         {
             //
             // Check if we are already trained to the desired link config?
-            // Even if we are, we need to redo LT if FEC is enabled or DSC mode is DSC_DUAL
-            // since if current modeset requires 2H1OR, LT done during assessLink will not
-            // have 2H1Or flag set or if last modeset required DSC but not 2H1OR, still 2H1Or
-            // flag will not be set and modeset will lead to HW hang.
+            // Make sure requested FEC state matches with the current FEC state of link.
+            // If 2Head1OR mode is requested, retrain if group is not active or
+            // last modeset on active group was not in 2Head1OR mode.
+            // bTwoHeadOneOrLinkRetrain tracks this requirement.
             //
 
             //
@@ -4093,7 +4139,8 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             if ((activeLinkConfig == lowestSelected) &&
                 (!isLinkInD3()) &&
                 (!isLinkLost()) &&
-                !(this->bFECEnable) &&
+                ((!bDscOptimizeLTBug3534707 && !this->bFECEnable) ||
+                 (bDscOptimizeLTBug3534707  && (this->bFECEnable == activeLinkConfig.bEnableFEC))) &&
                 !bTwoHeadOneOrLinkRetrain)
             {
                 if (bSkipRedundantLt || main->isInternalPanelDynamicMuxCapable())
@@ -4209,11 +4256,9 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
 
         //
         // Make sure link is physically active and healthy, otherwise re-train.
-        // We need to retrain if the link is in 2Head1OR MST mode. For example,
-        // if we plug in a 2Head1OR panel to an active link that is already driving
-        // a MST panel in DSC mode, RM will assign a secondary OR to the 2Head1OR panel.
-        // But since there is no change required in linkConfig DPlib will skip
-        // LT, resutling in not adding secondary OR to LT; this will lead to HW hang.
+        // Make sure requested FEC state matches with the current FEC state of link.
+        // If 2Head1OR mode is requested, retrain if group is not active or last modeset on active group
+        // was not in 2Head1OR mode. bTwoHeadOneOrLinkRetrain tracks this requirement.
         //
         bRetrainToEnsureLinkStatus = (isLinkActive() && isLinkInD3()) ||
                                      isLinkLost() ||
@@ -5660,7 +5705,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         if (hal->getSupportsMultistream() && main->hasMultistream())
         {
             bool bDeleteFirmwareVC = false;
-
+            const DP_REGKEY_DATABASE& dpRegkeyDatabase = main->getRegkeyDatabase();
             DP_LOG(("DP> Multistream panel detected, building message manager"));
 
             //
@@ -5669,6 +5714,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             //
             messageManager = new MessageManager(hal, timer);
             messageManager->registerReceiver(&ResStatus);
+            messageManager->applyRegkeyOverrides(dpRegkeyDatabase);
 
             //
             // Create a discovery manager to initiate detection

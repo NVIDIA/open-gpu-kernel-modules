@@ -63,10 +63,29 @@ bool MessageManager::send(MessageManager::Message * message, NakData & nakData)
     DP_USED(sb);
 
     NvU64 startTime, elapsedTime;
+
+    if (bNoReplyTimerForBusyWaiting)
+    {
+        message->bBusyWaiting = true;
+    }
     post(message, &completion);
     startTime = timer->getTimeUs();
     do
     {
+        if (bDpcdProbingForBusyWaiting)
+        {
+            hal->updateDPCDOffline();
+            if (hal->isDpcdOffline())
+            {
+                DP_LOG(("DP-MM> Device went offline while waiting for reply and so ignoring message %p (ID = %02X, target = %s)",
+                    (Message*)this, ((Message*)this)->requestIdentifier, (((Message*)this)->state.target).toString(sb)));
+
+                nakData = completion.nakData;
+                completion.failed = true;
+                break;
+            }
+        }
+
         hal->notifyIRQ();
         if (hal->interruptDownReplyReady())
             IRQDownReply();
@@ -76,6 +95,7 @@ bool MessageManager::send(MessageManager::Message * message, NakData & nakData)
             nakData = completion.nakData;
             break;
         }
+
         elapsedTime = timer->getTimeUs() - startTime;
 
         if (elapsedTime > (DPCD_MESSAGE_REPLY_TIMEOUT * 1000))
@@ -152,14 +172,13 @@ void MessageManager::Message::splitterTransmitted(OutgoingTransactionManager * f
 
     if (from == &parent->splitterDownRequest)
     {
-        //
-        //     Start the countdown timer for the reply
-        //
-        parent->timer->queueCallback(this, "SPLI", DPCD_MESSAGE_REPLY_TIMEOUT);
-
-        //
+        // Client will busy-waiting for the message to complete, we don't need the countdown timer.
+        if (!bBusyWaiting)
+        {
+            // Start the countdown timer for the reply
+            parent->timer->queueCallback(this, "SPLI", DPCD_MESSAGE_REPLY_TIMEOUT);
+        }
         // Tell the message manager he may begin sending the next message
-        //
         parent->transmitAwaitingDownRequests();
     }
     else    // UpReply

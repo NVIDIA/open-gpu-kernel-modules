@@ -45,7 +45,7 @@
 /* ------------------------ Static Function Prototypes ---------------------- */
 static void _kbifInitRegistryOverrides(OBJGPU *, KernelBif *);
 static void _kbifCheckIfGpuExists(OBJGPU *, void*);
-
+static NV_STATUS _kbifSetPcieRelaxedOrdering(OBJGPU *, KernelBif *, NvBool);
 
 /* ------------------------ Public Functions -------------------------------- */
 
@@ -155,6 +155,70 @@ kbifStateLoad_IMPL
         !IS_VIRTUAL(pGpu))
     {
         osSchedule1SecondCallback(pGpu, _kbifCheckIfGpuExists, NULL, NV_OS_1HZ_REPEAT);
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Configure PCIe Relaxed Ordering in BIF
+ *
+ * @param[in] pGpu        GPU object pointer
+ * @param[in] pKernelBif  KBIF object pointer
+ * @param[in] enableRo    Enable/disable RO
+ */
+static NV_STATUS
+_kbifSetPcieRelaxedOrdering
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvBool    enableRo
+)
+{
+    NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS pcieRo;
+    RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV_STATUS  status;
+
+    pcieRo.enableRo = enableRo;
+
+    status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_BIF_SET_PCIE_RO,
+                             &pcieRo, sizeof(pcieRo));
+    if (status != NV_OK) {
+        NV_PRINTF(LEVEL_ERROR, "NV2080_CTRL_CMD_INTERNAL_BIF_SET_PCIE_RO failed %s (0x%x)\n",
+                  nvstatusToString(status), status);
+        return status;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief KernelBif state post-load
+ *
+ * @param[in] pGpu        GPU object pointer
+ * @param[in] pKernelBif  KBIF object pointer
+ * @param[in] flags       GPU state flag
+ */
+NV_STATUS
+kbifStatePostLoad_IMPL
+(
+    OBJGPU      *pGpu,
+    KernelBif   *pKernelBif,
+    NvU32       flags
+)
+{
+    NV_STATUS status;
+
+    kbifInitRelaxedOrderingFromEmulatedConfigSpace(pGpu, pKernelBif);
+    if (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_PCIE_RELAXED_ORDERING_SET_IN_EMULATED_CONFIG_SPACE)) {
+        //
+        // This is done from StatePostLoad() to guarantee that BIF's StateLoad()
+        // is already completed for both monolithic RM and GSP RM.
+        //
+        status = _kbifSetPcieRelaxedOrdering(pGpu, pKernelBif, NV_TRUE);
+        if (status != NV_OK)
+            return NV_OK;
     }
 
     return NV_OK;

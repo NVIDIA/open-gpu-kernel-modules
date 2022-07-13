@@ -33,6 +33,9 @@
 #define NV_USABLE_FB_SIZE_IN_MB                                             NV_PGC6_AON_SECURE_SCRATCH_GROUP_42
 #define NV_USABLE_FB_SIZE_IN_MB_VALUE                                       31:0
 #define NV_USABLE_FB_SIZE_IN_MB_VALUE_INIT                                  0
+#define NV_PGC6_BSI_SECURE_SCRATCH_14_BOOT_STAGE_3_HANDOFF                                  26:26
+#define NV_PGC6_BSI_SECURE_SCRATCH_14_BOOT_STAGE_3_HANDOFF_VALUE_INIT                         0x0
+#define NV_PGC6_BSI_SECURE_SCRATCH_14_BOOT_STAGE_3_HANDOFF_VALUE_DONE                         0x1
 
 #endif // __ga102_dev_gc6_island_addendum_h__
 
