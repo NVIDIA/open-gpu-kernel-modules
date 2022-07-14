@@ -50,7 +50,7 @@ firmware and user-space NVIDIA GPU driver components from a corresponding
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
-    sh ./NVIDIA-Linux-[...].run --no-kernel-module
+    sh ./NVIDIA-Linux-[...].run --no-kernel-modules
 
 The .run package could be downloaded selecting the proper version from this
 page:
