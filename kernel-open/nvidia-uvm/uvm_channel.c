@@ -335,6 +335,24 @@ NV_STATUS uvm_channel_begin_push(uvm_channel_t *channel, uvm_push_t *push)
     return NV_OK;
 }
 
+NV_STATUS uvm_api_channel_push(UVM_CHANNEL_PUSH_PARAMS *params, struct file *filp)
+{
+    uvm_channel_t *channel = (uvm_channel_t *)filp->private_data;
+    int i; /* Im pretty sure that C90 needs this */
+    uvm_push_t push;
+
+    uvm_channel_begin_push(channel, &push);
+    push.next[0] = UVM_METHOD_INC(params->subch, params->a[0], params->count);
+    ++push.next;
+    for (i = 0; i < params->count; i++) {
+        push.next[0] = params->d[i];
+        ++push.next;
+    }
+    uvm_channel_end_push(&push);
+
+    return NV_OK;
+}
+
 static void internal_channel_submit_work(uvm_push_t *push, NvU32 push_size, NvU32 new_gpu_put)
 {
     NvU64 *gpfifo_entry;

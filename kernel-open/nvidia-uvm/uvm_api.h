@@ -252,5 +252,6 @@ NV_STATUS uvm_api_unmap_external(UVM_UNMAP_EXTERNAL_PARAMS *params, struct file 
 NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_populate_pageable(const UVM_POPULATE_PAGEABLE_PARAMS *params, struct file *filp);
+NV_STATUS uvm_api_channel_push(UVM_CHANNEL_PUSH_PARAMS *params, struct file *filp);
 
 #endif // __UVM_API_H__
