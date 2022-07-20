@@ -1065,6 +1065,15 @@ typedef struct
     NV_STATUS rmStatus;     // OUT
 } UVM_IS_8_SUPPORTED_PARAMS;
 
+#define UVM_CHANNEL_PUSH                                              UVM_IOCTL_BASE(75)
+typedef struct
+{
+    NV_STATUS       rmStatus;                        // OUT
+    unsigned        subch;
+    unsigned        count;
+    unsigned        a[6];
+    unsigned        d[6];
+} UVM_CHANNEL_PUSH_PARAMS;
 
 #ifdef __cplusplus
 }
