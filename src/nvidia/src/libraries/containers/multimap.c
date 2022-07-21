@@ -378,3 +378,17 @@ NvBool multimapItemIterNext_IMPL(MultimapIterBase *pIt)
 
     return NV_TRUE;
 }
+
+NvBool multimapIsValid_IMPL(void *pMap)
+{
+#if NV_TYPEOF_SUPPORTED
+    return NV_TRUE;
+#else
+    if (CONT_VTABLE_VALID((MultimapBase*)pMap))
+        return NV_TRUE;
+
+    NV_ASSERT_FAILED("vtable not valid!");
+    CONT_VTABLE_INIT(MultimapBase, (MultimapBase*)pMap);
+    return NV_FALSE;
+#endif
+}

@@ -1942,45 +1942,32 @@ static NV_STATUS cancel_faults_precise_va(uvm_gpu_t *gpu,
 
 // Function called when the system has found a global error and needs to
 // trigger RC in RM.
-// We cancel one entry per uTLB
 static void cancel_fault_batch_tlb(uvm_gpu_t *gpu,
                                    uvm_fault_service_batch_context_t *batch_context,
                                    UvmEventFatalReason reason)
 {
     NvU32 i;
 
-    // Fault filtering is not allowed in the TLB-based fault cancel path
-    UVM_ASSERT(batch_context->num_cached_faults == batch_context->num_coalesced_faults);
-
-    for (i = 0; i < batch_context->num_cached_faults; ++i) {
-        NV_STATUS status;
+    for (i = 0; i < batch_context->num_coalesced_faults; ++i) {
+        NV_STATUS status = NV_OK;
         uvm_fault_buffer_entry_t *current_entry;
-        uvm_fault_utlb_info_t *utlb;
+        uvm_fault_buffer_entry_t *coalesced_entry;
 
-        current_entry = &batch_context->fault_cache[i];
-        utlb = &batch_context->utlbs[current_entry->fault_source.utlb_id];
+        current_entry = batch_context->ordered_fault_cache[i];
 
-        // If this uTLB has been already cancelled, skip it
-        if (utlb->cancelled)
-            continue;
+        // The list iteration below skips the entry used as 'head'.
+        // Report the 'head' entry explicitly.
+        uvm_va_space_down_read(current_entry->va_space);
+        uvm_tools_record_gpu_fatal_fault(gpu->parent->id, current_entry->va_space, current_entry, reason);
 
-        record_fatal_fault_helper(gpu, current_entry, reason);
+        list_for_each_entry(coalesced_entry, &current_entry->merged_instances_list, merged_instances_list)
+            uvm_tools_record_gpu_fatal_fault(gpu->parent->id, current_entry->va_space, coalesced_entry, reason);
+        uvm_va_space_up_read(current_entry->va_space);
 
-        // Although the global cancellation method can be used here instead of
-        // targeted, we still use the targeted method since this function is
-        // only invoked in GPUs without support for VA fault cancellation, for
-        // which the targeted version is already required in
-        // cancel_faults_precise_tlb(). To maintain consistency, we use the
-        // targeted variant in both cases.
-        status = push_cancel_on_gpu_targeted(gpu,
-                                             current_entry->instance_ptr,
-                                             current_entry->fault_source.gpc_id,
-                                             current_entry->fault_source.client_id,
-                                             &batch_context->tracker);
+        // We need to cancel each instance pointer to correctly handle faults from multiple contexts.
+        status = push_cancel_on_gpu_global(gpu, current_entry->instance_ptr, &batch_context->tracker);
         if (status != NV_OK)
             break;
-
-        utlb->cancelled = true;
     }
 }
 

@@ -278,6 +278,8 @@ typedef rpc_rc_triggered_v17_02 rpc_rc_triggered_v;
 typedef struct rpc_os_error_log_v17_00
 {
     NvU32      exceptType;
+    NvU32      runlistId;
+    NvU32      chid;
     char       errString[0x100];
 } rpc_os_error_log_v17_00;
 
@@ -1313,6 +1315,16 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_os_error_log_v17_00[] = {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, exceptType),
         .name                 = "exceptType"
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, runlistId),
+        .name                 = "runlistId"
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, chid),
+        .name                 = "chid"
     },
     {
         .vtype                = vtype_char_array,

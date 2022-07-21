@@ -107,7 +107,7 @@ typedef enum
         CONT_CHECK_ARG(pQueue, pElements), numElements)
 
 #define queuePeek(pQueue)                                                    \
-    CONT_CAST_ELEM(pQueue, circularQueuePeek_IMPL(&((pQueue)->real)))
+    CONT_CAST_ELEM(pQueue, circularQueuePeek_IMPL(&((pQueue)->real)), circularQueueIsValid_IMPL)
 
 #define queuePop(pQueue)                                                     \
     circularQueuePop_IMPL(&((pQueue)->real))
@@ -136,6 +136,9 @@ void circularQueuePop_IMPL(Queue *pQueue);
 NvBool circularQueuePopAndCopy_IMPL(Queue *pQueue, void *pCopyTo);
 NvBool circularQueuePopAndCopyNonManaged_IMPL(Queue *pQueue, QueueContext *pCtx,
                                               void *pCopyTo);
+
+NvBool circularQueueIsValid_IMPL(void *pQueue);
+
 #ifdef __cplusplus
 }
 #endif

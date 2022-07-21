@@ -1,23 +1,23 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 515.48.07.
+version 515.57.
 
 
 ## How to Build
 
 To build:
 
-    make modules -j`nproc`
+    make modules -j$(nproc)
 
 To install, first uninstall any existing NVIDIA kernel modules.  Then,
 as root:
 
-    make modules_install -j`nproc`
+    make modules_install -j$(nproc)
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
-515.48.07 driver release.  This can be achieved by installing
+515.57 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -39,7 +39,7 @@ If cross-compiling, set these variables on the make command line:
 E.g.,
 
     # compile on x86_64 for aarch64
-    make modules -j`nproc`          \
+    make modules -j$(nproc)         \
         TARGET_ARCH=aarch64         \
         CC=aarch64-linux-gnu-gcc    \
         LD=aarch64-linux-gnu-ld     \
@@ -59,7 +59,7 @@ DEBUG - Set this to "1" to build the kernel modules as debug.  By default, the
 
 These variables can be set on the make command line.  E.g.,
 
-    make modules -j`nproc` NV_VERBOSE=1
+    make modules -j$(nproc) NV_VERBOSE=1
 
 
 ## Supported Toolchains
@@ -167,7 +167,7 @@ for the target kernel.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 515.48.07 release,
+(see the table below). However, in the 515.57 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -175,9 +175,9 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/515.48.07/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/515.57/README/kernel_open.html
 
-In the below table, if three IDs are listed, the first is the PCI Device
+In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
 Subsystem Device ID.
 
@@ -501,6 +501,7 @@ Subsystem Device ID.
 | Matrox D-Series D2450                           | 1F76 102B 2800 |
 | Matrox D-Series D2480                           | 1F76 102B 2900 |
 | NVIDIA GeForce GTX 1650                         | 1F82           |
+| NVIDIA GeForce GTX 1630                         | 1F83           |
 | NVIDIA GeForce GTX 1650                         | 1F91           |
 | NVIDIA GeForce GTX 1650 with Max-Q Design       | 1F91 103C 863E |
 | NVIDIA GeForce GTX 1650 with Max-Q Design       | 1F91 103C 86E7 |
@@ -703,8 +704,6 @@ Subsystem Device ID.
 | NVIDIA RTX A5500                                | 2233 10DE 165A |
 | NVIDIA RTX A5500                                | 2233 17AA 165A |
 | NVIDIA A40                                      | 2235 10DE 145A |
-| NVIDIA A10                                      | 2236 10DE 1482 |
-| NVIDIA A10G                                     | 2237 10DE 152F |
 | NVIDIA A10M                                     | 2238 10DE 1677 |
 | NVIDIA GeForce RTX 3060 Ti                      | 2414           |
 | NVIDIA GeForce RTX 3080 Ti Laptop GPU           | 2420           |
