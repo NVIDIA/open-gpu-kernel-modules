@@ -92,10 +92,9 @@ const NvBool nv_is_rm_firmware_supported_os = NV_TRUE;
 char *rm_firmware_active = NULL;
 NV_MODULE_STRING_PARAMETER(rm_firmware_active);
 
-#define NV_FIRMWARE_GSP_FILENAME     "nvidia/" NV_VERSION_STRING "/gsp.bin"
-#define NV_FIRMWARE_GSP_LOG_FILENAME "nvidia/" NV_VERSION_STRING "/gsp_log.bin"
+#define GSP_BIN "gsp.bin"
 
-MODULE_FIRMWARE(NV_FIRMWARE_GSP_FILENAME);
+MODULE_FIRMWARE(GSP_BIN);
 
 /*
  * Global NVIDIA capability state, for GPU driver
@@ -236,36 +235,33 @@ struct dev_pm_ops nv_pm_ops = {
 #if defined(NVCPU_X86_64)
 #define NV_AMD_SEV_BIT BIT(1)
 
-static
-NvBool nv_is_sev_supported(
-    void
-)
-{
+static NvBool nv_is_sev_supported(void) {
     unsigned int eax, ebx, ecx, edx;
 
     /* Check for the SME/SEV support leaf */
     eax = 0x80000000;
     ecx = 0;
     native_cpuid(&eax, &ebx, &ecx, &edx);
-    if (eax < 0x8000001f)
+
+    if (eax < 0x8000001f) {
         return NV_FALSE;
+    }
 
     eax = 0x8000001f;
     ecx = 0;
     native_cpuid(&eax, &ebx, &ecx, &edx);
+
     /* Check whether SEV is supported */
-    if (!(eax & NV_AMD_SEV_BIT))
+    if (!(eax & NV_AMD_SEV_BIT)) {
         return NV_FALSE;
+    }
 
     return NV_TRUE;
 }
 #endif
 
 static
-void nv_sev_init(
-    void
-)
-{
+void nv_sev_init(void) {
 #if defined(MSR_AMD64_SEV) && defined(NVCPU_X86_64)
     NvU32 lo_val, hi_val;
 
@@ -600,9 +596,6 @@ nv_report_applied_patches(void)
 static void
 nv_drivers_exit(void)
 {
-
-
-
     nv_pci_unregister_driver();
 
     nvidia_unregister_module(&nv_fops);
@@ -628,16 +621,6 @@ nv_drivers_init(void)
         rc = -ENODEV;
         goto exit;
     }
-
-
-
-
-
-
-
-
-
-
 
 exit:
     if (rc < 0)
@@ -3573,43 +3556,29 @@ NvBool NV_API_CALL nv_is_rm_firmware_active(
     nv_state_t *nv
 )
 {
-    if (rm_firmware_active)
-    {
+    if (rm_firmware_active) {
         // "all" here means all GPUs
         if (strcmp(rm_firmware_active, "all") == 0)
             return NV_TRUE;
     }
+
     return NV_FALSE;
 }
 
-const char *nv_firmware_path(
-    nv_firmware_t fw_type
-)
-{
-    switch (fw_type)
-    {
-        case NV_FIRMWARE_GSP:
-            return NV_FIRMWARE_GSP_FILENAME;
-        case NV_FIRMWARE_GSP_LOG:
-            return NV_FIRMWARE_GSP_LOG_FILENAME;
-    }
-    return "";
-}
-
-const void* NV_API_CALL nv_get_firmware(
+const void *NV_API_CALL nv_get_firmware(
     nv_state_t *nv,
     nv_firmware_t fw_type,
     const void **fw_buf,
     NvU32 *fw_size
-)
-{
-    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+) {
     const struct firmware *fw;
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
-    // path is relative to /lib/firmware
-    // if this fails it will print an error to dmesg
-    if (request_firmware(&fw, nv_firmware_path(fw_type), nvl->dev) != 0)
+    if (request_firmware(&fw, GSP_BIN, nvl->dev) != 0) {
+        printk(KERN_ERR GSP_BIN " failed to load");
+        panic("lol get memed on");
         return NULL;
+    }
 
     *fw_size = fw->size;
     *fw_buf = fw->data;

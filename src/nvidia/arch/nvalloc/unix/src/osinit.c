@@ -1464,78 +1464,6 @@ fail:
     return NV_FALSE;
 }
 
-static NvBool verifyGspFirmware(
-    const void *pGspFwBuf,
-    NvU32 gspFwBufSize
-)
-{
-    //
-    // This array will be populated with a sha256 hash of the GSP-RM firmware
-    // binary in a post-compile step.  We really want this array to be 'const',
-    // but adding that qualifier here makes the compiler perform undesirable
-    // optimization assuming the array is always going to be zero.  The
-    // .gspfwhash-rodata section is marked readonly when it is populated with
-    // the real hash in lieu of 'const'.
-    //
-    static NvU8 __attribute__((section(".gspfwhash-rodata")))
-        expectedFwHash[NV_SHA256_DIGEST_SIZE] = {};
-    NvU32 i;
-    NvBool bHashCheck = NV_FALSE;
-
-    //
-    // To allow for simple incremental build workflow, we will only
-    // perform the firmware hash check if the expected hash has been
-    // embedded into the kernel binary.
-    //
-    for (i = 0; i < NV_SHA256_DIGEST_SIZE; i++)
-    {
-        if (expectedFwHash[i] != 0)
-        {
-            bHashCheck = NV_TRUE;
-            break;
-        }
-    }
-
-    if (bHashCheck)
-    {
-        NvU8 gspFwHash[NV_SHA256_DIGEST_SIZE];
-
-        nv_sha256(pGspFwBuf, gspFwBufSize, gspFwHash);
-
-        #define NvU64_BIG_ENDIAN(buf) \
-            ((NvU64)(buf)[0] << 56) | ((NvU64)(buf)[1] << 48) | \
-            ((NvU64)(buf)[2] << 40) | ((NvU64)(buf)[3] << 32) | \
-            ((NvU64)(buf)[4] << 24) | ((NvU64)(buf)[5] << 16) | \
-            ((NvU64)(buf)[6] <<  8) | ((NvU64)(buf)[7] << 0)
-
-        if (portMemCmp(expectedFwHash, gspFwHash, NV_SHA256_DIGEST_SIZE) != 0)
-        {
-            NV_PRINTF(LEVEL_ERROR, "GSP firmware validation failed: hash mismatch\n");
-            NV_PRINTF(LEVEL_ERROR, "Expected GSP firmware hash: %016llx%016llx%016llx%016llx\n",
-                NvU64_BIG_ENDIAN(&expectedFwHash[0]),  NvU64_BIG_ENDIAN(&expectedFwHash[8]),
-                NvU64_BIG_ENDIAN(&expectedFwHash[16]), NvU64_BIG_ENDIAN(&expectedFwHash[24]));
-            NV_PRINTF(LEVEL_ERROR, "Got GSP firmware hash:      %016llx%016llx%016llx%016llx\n",
-                NvU64_BIG_ENDIAN(&gspFwHash[0]),  NvU64_BIG_ENDIAN(&gspFwHash[8]),
-                NvU64_BIG_ENDIAN(&gspFwHash[16]), NvU64_BIG_ENDIAN(&gspFwHash[24]));
-            NV_PRINTF(LEVEL_ERROR, "The GSP firmware version must exactly match the RM (nv-kernel.o) build.\n");
-            NV_PRINTF(LEVEL_ERROR, "Most likely cause of this error is an out of band update to one of the components\n");
-
-            return NV_FALSE;
-        }
-        else
-        {
-            NV_PRINTF(LEVEL_NOTICE, "GSP firmware hash: %016llx%016llx%016llx%016llx\n",
-                NvU64_BIG_ENDIAN(&gspFwHash[0]),  NvU64_BIG_ENDIAN(&gspFwHash[8]),
-                NvU64_BIG_ENDIAN(&gspFwHash[16]), NvU64_BIG_ENDIAN(&gspFwHash[24]));
-        }
-    }
-    else
-    {
-        NV_PRINTF(LEVEL_NOTICE, "GSP firmware hash not found.\n");
-    }
-    return NV_TRUE;
-}
-
 NvBool RmInitAdapter(
     nv_state_t *nv
 )
@@ -1597,60 +1525,36 @@ NvBool RmInitAdapter(
     // Get firmware from the OS, if requested, and decide if RM will run as a
     // firmware client.
     //
-    if (nv->request_firmware)
-    {
+    if (nv->request_firmware) {
         RmSetDeviceDmaAddressSize(nv, NV_GSP_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
 
-        gspFwHandle = nv_get_firmware(nv, NV_FIRMWARE_GSP,
-                                      &gspFw.pBuf,
-                                      &gspFw.size);
-        if (gspFwHandle == NULL &&
-            !nv->allow_fallback_to_monolithic_rm)
-        {
+        gspFwHandle = nv_get_firmware(
+            nv,
+            NV_FIRMWARE_GSP,
+            &gspFw.pBuf,
+            &gspFw.size
+        );
+
+        if (gspFwHandle == NULL) {
             RM_SET_ERROR(status, RM_INIT_FIRMWARE_FETCH_FAILED);
             goto shutdown;
         }
-        else if (gspFwHandle != NULL)
-        {
-            if (!verifyGspFirmware(gspFw.pBuf, gspFw.size))
-            {
-                RM_SET_ERROR(status, RM_INIT_FIRMWARE_VALIDATION_FAILED);
-                goto shutdown;
-            }
 
-#if LIBOS_LOG_DECODE_ENABLE
-            if (nv->enable_firmware_logs)
-            {
-                gspFwLogHandle = nv_get_firmware(nv, NV_FIRMWARE_GSP_LOG,
-                                                 &gspFw.pLogElf,
-                                                 &gspFw.logElfSize);
-                if (gspFwLogHandle == NULL)
-                {
-                    NV_PRINTF(LEVEL_ERROR, "Failed to load gsp_log.bin, no GSP-RM logs will be printed (non-fatal)\n");
-                }
-            }
-#endif
-
-            nv->request_fw_client_rm = NV_TRUE;
-        }
-        else
-        {
-            nv->request_fw_client_rm = NV_FALSE;
-        }
+        nv->request_fw_client_rm = NV_TRUE;
     }
 
     // initialize the RM device register mapping
     osInitNvMapping(nv, &devicereference, &status);
-    if (! RM_INIT_SUCCESS(status.initStatus) )
-    {
-        switch (status.rmStatus)
-        {
+
+    if (!RM_INIT_SUCCESS(status.initStatus)) {
+        switch (status.rmStatus) {
             case NV_ERR_NOT_SUPPORTED:
                 nvp->status = NV_ERR_NOT_SUPPORTED;
                 break;
         }
-        NV_PRINTF(LEVEL_ERROR,
-                  "osInitNvMapping failed, bailing out of RmInitAdapter\n");
+
+        NV_PRINTF(LEVEL_ERROR, "osInitNvMapping failed, bailing out of RmInitAdapter\n");
+
         goto shutdown;
     }
 
