@@ -434,14 +434,12 @@ next_bar:
         goto failed;
     }
 
-    NV_KMALLOC(nvl, sizeof(nv_linux_state_t));
+    NV_KZALLOC(nvl, sizeof(nv_linux_state_t));
     if (nvl == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate memory\n");
         goto err_not_supported;
     }
-
-    os_mem_set(nvl, 0, sizeof(nv_linux_state_t));
 
     nv  = NV_STATE_PTR(nvl);
 
