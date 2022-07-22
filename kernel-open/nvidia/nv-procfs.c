@@ -288,13 +288,12 @@ nv_procfs_open_file(
     nv_procfs_private_t *nvpp = NULL;
     nvidia_stack_t *sp = NULL;
 
-    NV_KMALLOC(nvpp, sizeof(nv_procfs_private_t));
+    NV_KZALLOC(nvpp, sizeof(nv_procfs_private_t));
     if (nvpp == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate procfs private!\n");
         return -ENOMEM;
     }
-    memset(nvpp, 0, sizeof(*nvpp));
 
     NV_INIT_MUTEX(&nvpp->sp_lock);
 

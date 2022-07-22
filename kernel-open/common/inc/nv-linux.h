@@ -605,6 +605,13 @@ static NvBool nv_numa_node_has_memory(int node_id)
             NV_MEMDBG_ADD(ptr, size); \
     }
 
+#define NV_KZALLOC(ptr, size) \
+    { \
+        (ptr) = kzalloc(size, NV_GFP_KERNEL); \
+        if (ptr) \
+            NV_MEMDBG_ADD(ptr, size); \
+    }
+
 #define NV_KMALLOC_ATOMIC(ptr, size) \
     { \
         (ptr) = kmalloc(size, NV_GFP_ATOMIC); \
