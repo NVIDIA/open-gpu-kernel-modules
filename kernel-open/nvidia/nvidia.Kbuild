@@ -200,6 +200,8 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_has_dynamic_attachment
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_buf_attachment_has_peer2peer
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += dma_set_mask_and_coherent
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += acpi_bus_get_device
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += pci_rebar_get_possible_sizes
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += pci_find_host_bridge
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_of_node_to_nid
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_gpl_sme_active
