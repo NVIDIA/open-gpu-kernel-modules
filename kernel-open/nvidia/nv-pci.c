@@ -222,7 +222,6 @@ static void nv_init_dynamic_power_management
 
 
 
-
 static int nv_resize_pcie_bars(struct pci_dev *pci_dev) {
     struct pci_host_bridge *host;
     u16 cmd;
@@ -230,7 +229,12 @@ static int nv_resize_pcie_bars(struct pci_dev *pci_dev) {
     int ret = 0;
 
     // Check if BAR1 has PCIe rebar capabilities
+#if defined(NV_PCI_REBAR_GET_POSSIBLE_SIZES_PRESENT)
     u32 sizes = pci_rebar_get_possible_sizes(pci_dev, NV_GPU_BAR1);
+#elif
+        nv_printf(NV_DBG_INFO, "NVRM: pci_rebar_get_possible_sizes not supported\n");
+    u32 sizes = 0;
+#endif
     if (sizes == 0) {
         /* ReBAR not available. Nothing to do. */
         return 0;
@@ -239,9 +243,23 @@ static int nv_resize_pcie_bars(struct pci_dev *pci_dev) {
     /* Try to resize the BAR to the largest supported size */
     requested_size = fls(sizes) - 1;
 
+    /* Save the current size, just in case things go wrong */
+    old_size = pci_rebar_bytes_to_size(pci_resource_len(pci_dev, NV_GPU_BAR1));
+
+    if (old_size == requested_size) {
+        nv_printf(NV_DBG_INFO, "NVRM: %04x:%02x:%02x.%x: BAR1 already at requested size.\n",
+            NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+            NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
+        return 0;
+    }
+
     /* If the kernel will refuse us, don't even try to resize,
        but give an informative error */
+#ifdef NV_PCI_FIND_HOST_BRIDGE_PRESENT
     host = pci_find_host_bridge(pci_dev->bus);
+#else
+    nv_printf(NV_DBG_INFO, "NVRM: pci_find_host_bridge not supported\n");
+#endif
     if (host->preserve_config) {
         nv_printf(NV_DBG_INFO, "NVRM: Not resizing BAR because the firmware forbids moving windows.\n");
         return 0;
@@ -261,8 +279,6 @@ static int nv_resize_pcie_bars(struct pci_dev *pci_dev) {
     /* Release BAR3 - we don't want to resize it, it's in the same bridge, so we'll want to move it */
     pci_release_resource(pci_dev, NV_GPU_BAR3);
 
-    /* Save the current size, just in case things go wrong */
-    old_size = pci_rebar_bytes_to_size(pci_resource_len(pci_dev, NV_GPU_BAR1));
 
 resize:
     /* Attempt to resize BAR1 to the largest supported size */
@@ -271,6 +287,8 @@ resize:
     if (r) {
         if (r == -ENOSPC)
             nv_printf(NV_DBG_ERRORS, "NVRM: No address space to allocate resized BAR1.\n");
+        else if (r == -EOPNOTSUPP)
+            nv_printf(NV_DBG_ERRORS, "NVRM: BAR resize resource not supported.\n");
         else if (r)
             nv_printf(NV_DBG_ERRORS, "NVRM: BAR resizing failed with error `%d`.\n", r);
     }

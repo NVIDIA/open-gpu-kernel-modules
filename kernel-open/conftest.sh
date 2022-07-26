@@ -652,6 +652,37 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_SET_PAGES_ARRAY_UC_PRESENT" "" "functions"
         ;;
 
+        pci_rebar_get_possible_sizes)
+            #
+            # Determine if the pci_rebar_get_possible_sizes() function is present.
+            #
+            # Added by commit 8fbdbb66f8c10 ("PCI: Add resizable BAR infrastructure
+            # ") in v5.12
+            #
+            CODE="
+            #include <linux/pci.h>
+            void conftest_pci_rebar_get_possible_sizes(void) {
+                pci_rebar_get_possible_sizes();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PCI_REBAR_GET_POSSIBLE_SIZES_PRESENT" "" "functions"
+        ;;
+
+        pci_find_host_bridge)
+            #
+            # Determine if the pci_find_host_bridge() function is present.
+            #
+            # Added by commit 59dc33252ee77 in v5.15.
+            #
+            CODE="
+            #include <linux/pci.h>
+            void conftest_pci_find_host_bridge(void) {
+                pci_find_host_bridge();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PCI_find_host_bridge_PRESENT" "" "functions"
+        ;;
+
         flush_cache_all)
             #
             # Determine if flush_cache_all() function is present
