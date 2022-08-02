@@ -178,6 +178,7 @@
 --undefined=rm_schedule_gpu_wakeup
 --undefined=rm_init_dynamic_power_management
 --undefined=rm_cleanup_dynamic_power_management
+--undefined=rm_enable_dynamic_power_management
 --undefined=rm_ref_dynamic_power
 --undefined=rm_unref_dynamic_power
 --undefined=rm_transition_dynamic_power

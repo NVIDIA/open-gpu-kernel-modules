@@ -1084,7 +1084,8 @@ _clientUnmapResourceRefMappings
             : pCpuMapping->pContextRef->hResource;
         params.hMemory = pResourceRef->hResource;
         params.pLinearAddress = pCpuMapping->pLinearAddress;
-        params.processId = pCpuMapping->processId; 
+        params.processId = pCpuMapping->processId;
+        params.bTeardown = NV_TRUE;
         params.flags = pCpuMapping->flags;
         params.pSecInfo = &pCallContext->secInfo;
         params.pLockInfo = &lockInfo;
@@ -1147,6 +1148,7 @@ _clientUnmapBackRefMappings
         params.hMemory = pBackRef->hResource;
         params.pLinearAddress = pCpuMapping->pLinearAddress;
         params.processId = pCpuMapping->processId;
+        params.bTeardown = NV_TRUE;
         params.flags = pCpuMapping->flags;
         params.pSecInfo = &pCallContext->secInfo;
         params.pLockInfo = &lockInfo;

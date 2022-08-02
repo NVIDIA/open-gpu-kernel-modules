@@ -56,6 +56,8 @@ dispsfConstruct_IMPL
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelDisplay != NULL, NV_ERR_NOT_SUPPORTED);
+
     // Set sf user RegBase offset
     kdispGetDisplaySfUserBaseAndSize_HAL(pGpu, pKernelDisplay,
                                          &pDispSfUser->ControlOffset,

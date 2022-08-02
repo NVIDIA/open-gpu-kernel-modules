@@ -868,6 +868,8 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x2233, 0x165a, 0x10de, "NVIDIA RTX A5500" },
     { 0x2233, 0x165a, 0x17aa, "NVIDIA RTX A5500" },
     { 0x2235, 0x145a, 0x10de, "NVIDIA A40" },
+    { 0x2236, 0x1482, 0x10de, "NVIDIA A10" },
+    { 0x2237, 0x152f, 0x10de, "NVIDIA A10G" },
     { 0x2238, 0x1677, 0x10de, "NVIDIA A10M" },
     { 0x2414, 0x0000, 0x0000, "NVIDIA GeForce RTX 3060 Ti" },
     { 0x2420, 0x0000, 0x0000, "NVIDIA GeForce RTX 3080 Ti Laptop GPU" },

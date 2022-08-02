@@ -50,6 +50,13 @@ void NV_API_CALL rm_cleanup_dynamic_power_management(
 {
 }
 
+void NV_API_CALL rm_enable_dynamic_power_management(
+    nvidia_stack_t *sp,
+    nv_state_t     *nv
+)
+{
+}
+
 NV_STATUS NV_API_CALL rm_ref_dynamic_power(
     nvidia_stack_t          *sp,
     nv_state_t              *nv,

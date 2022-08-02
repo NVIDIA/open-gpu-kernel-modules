@@ -797,12 +797,12 @@ nv_dma_buf_reuse(
     }
 
 
-
-
-
-
-
-
+    if (buf->ops != &nv_dma_buf_ops)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Invalid dma-buf fd\n");
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto cleanup_dmabuf;
+    }
 
 
     priv = buf->priv;

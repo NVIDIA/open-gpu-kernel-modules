@@ -110,6 +110,8 @@ mmuWalkReleaseEntries
     MMU_WALK_OP_PARAMS   opParams = {0};
     NV_STATUS            status   = NV_OK;
 
+    NV_ASSERT_OR_RETURN(NULL != pWalk, NV_ERR_INVALID_ARGUMENT);
+
     NV_ASSERT_OR_RETURN(NULL != mmuWalkFindLevel(pWalk, pLevelFmt),
                      NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(NV_IS_ALIGNED(vaLo, mmuFmtLevelPageSize(pLevelFmt)),

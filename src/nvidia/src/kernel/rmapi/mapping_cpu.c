@@ -974,10 +974,23 @@ serverUnmap_Prologue
     {
         rmStatus = osAttachToProcess(&pProcessHandle, ProcessId);
         if (rmStatus != NV_OK)
-            return rmStatus;
+        {
+            if (pUnmapParams->bTeardown)
+                pProcessHandle = NULL;
+            else
+                return rmStatus;
+        }
 
         pUnmapParams->pProcessHandle = pProcessHandle;
     }
+
+    // Don't do any filtering if this is a tear-down path
+    if (pUnmapParams->bTeardown)
+    {
+        pUnmapParams->fnFilter = NULL;
+        return NV_OK;
+    }
+
 
     pUnmapParams->fnFilter = bKernel
         ? serverutilMappingFilterKernel
