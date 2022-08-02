@@ -880,6 +880,18 @@ Intel_7A82_setupFunc
     return NV_OK;
 }
 
+// Intel Z790 platform (Raptor Lake)
+static NV_STATUS
+Intel_7A04_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    pCl->setProperty(pCl, PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE, NV_TRUE);
+
+    return NV_OK;
+}
+
 static NV_STATUS
 Nvidia_T210_setupFunc
 (

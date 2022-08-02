@@ -3713,6 +3713,7 @@ gvaspaceWalkUserCtxRelease_IMPL
 {
     // If current context doesn't match, must have nested acquires (not allowed).
     NV_ASSERT_OR_RETURN_VOID(pUserCtx->pGpuState);
+    NV_ASSERT_OR_RETURN_VOID(pUserCtx->pGpuState->pWalk);
     NV_ASSERT(pUserCtx == mmuWalkGetUserCtx(pUserCtx->pGpuState->pWalk));
     mmuWalkSetUserCtx(pUserCtx->pGpuState->pWalk, NULL);
 }

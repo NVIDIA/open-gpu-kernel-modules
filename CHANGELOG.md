@@ -2,6 +2,15 @@
 
 ## Release 515 Entries
 
+### [515.65.01] 2022-08-02
+
+#### Fixed
+
+- Collection of minor fixes to issues, [#6](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/61) by @Joshua-Ashton
+- Remove unnecessary use of acpi_bus_get_device().
+
+### [515.57] 2022-06-28
+
 #### Fixed
 
 - Backtick is deprecated, [#273](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/273) by @arch-user-france1

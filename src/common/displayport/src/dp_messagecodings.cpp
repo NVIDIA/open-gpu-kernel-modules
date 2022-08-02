@@ -82,8 +82,6 @@ ParseResponseStatus LinkAddressMessage::parseResponseAck(EncodedMessage * messag
         else
         {
             reader->readOrDefault(6 /*zeroes*/, 0x0);
-            reply.res[i].dpcdRevisionMajor = 1;
-            reply.res[i].dpcdRevisionMinor = 2;
         }
     }
 

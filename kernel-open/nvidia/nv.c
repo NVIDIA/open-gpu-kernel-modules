@@ -5443,7 +5443,19 @@ NvBool NV_API_CALL nv_s2idle_pm_configured(void)
         return NV_FALSE;
     }
 
+    /*
+     * init_sync_kiocb() internally uses GPL licensed __get_task_ioprio() from
+     * v5.20-rc1.
+     */
+#if defined(NV_GET_TASK_IOPRIO_PRESENT)
+    memset(&kiocb, 0, sizeof(kiocb));
+    kiocb.ki_filp = file;
+    kiocb.ki_flags = iocb_flags(file);
+    kiocb.ki_ioprio = IOPRIO_DEFAULT;
+#else
     init_sync_kiocb(&kiocb, file);
+#endif
+
     kiocb.ki_pos = 0;
     iov_iter_kvec(&iter, READ, &iov, 1, sizeof(buf));
 

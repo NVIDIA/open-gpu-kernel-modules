@@ -122,6 +122,8 @@ namespace DisplayPort
         ConnectorType     connectorType;
         Address           address;
         GUID              guid;
+        GUID              guid2;
+        bool              bVirtualPeerDevice;
         NvU8              peerDevice;
         NvU8              dpcdRevisionMajor;
         NvU8              dpcdRevisionMinor;
@@ -357,6 +359,29 @@ namespace DisplayPort
             return hal->setIgnoreMSATimingParamters(msaTimingParamIgnoreEn);
         }
 
+        bool isVirtualPeerDevice()
+        {
+            return bVirtualPeerDevice;
+        }
+
+        bool isBranchDevice()
+        {
+            return !isVideoSink() && !isAudioSink();
+        }
+
+        bool  isAtLeastVersion(unsigned major, unsigned minor)
+        {
+            if (dpcdRevisionMajor > major)
+                return true;
+
+            if (dpcdRevisionMajor < major)
+                return false;
+
+            return dpcdRevisionMinor >= minor;
+        }
+
+        virtual void queryGUID2();
+
         virtual bool getSDPExtnForColorimetrySupported();
 
         virtual bool isPowerSuspended();
@@ -447,6 +472,7 @@ namespace DisplayPort
         unsigned getDscPeakThroughputModel();
         unsigned getDscMaxSliceWidth();
         unsigned getDscDecoderColorDepthSupportMask();
+        void setDscDecompressionDevice(bool bDscCapBasedOnParent);
     };
     class DeviceHDCPDetection : public Object, MessageManager::Message::MessageEventSink, Timer::TimerCallback
     {

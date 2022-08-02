@@ -704,6 +704,8 @@ Subsystem Device ID.
 | NVIDIA RTX A5500                                | 2233 10DE 165A |
 | NVIDIA RTX A5500                                | 2233 17AA 165A |
 | NVIDIA A40                                      | 2235 10DE 145A |
+| NVIDIA A10                                      | 2236 10DE 1482 |
+| NVIDIA A10G                                     | 2237 10DE 152F |
 | NVIDIA A10M                                     | 2238 10DE 1677 |
 | NVIDIA GeForce RTX 3060 Ti                      | 2414           |
 | NVIDIA GeForce RTX 3080 Ti Laptop GPU           | 2420           |

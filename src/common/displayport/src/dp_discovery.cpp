@@ -651,9 +651,19 @@ void DiscoveryManager::BranchDetection::handleLinkAddressDownReply()
         if (child[i].isInputPort)
         {
             parentDevice.peerDevice = child[i].peerDeviceType;
-            parentDevice.dpcdRevisionMajor = child[i].dpcdRevisionMajor;
-            parentDevice.dpcdRevisionMinor = child[i].dpcdRevisionMinor;
             parentDevice.portMap.inputMap |= (1 << child[i].portNumber);
+            if (address == Address(0))
+            {
+                //
+                // For immediate branch device, we will have already read DPCD version
+                // in notifyHPD. So we can just use that to populate here. 
+                // For the remaining devices, LAM to parent branch will report the child 
+                // DPCD version in reply and we are populating it in 
+                // BranchDetection::detectCompleted.
+                //
+                parentDevice.dpcdRevisionMajor = parent->hal->getRevisionMajor();
+                parentDevice.dpcdRevisionMinor = parent->hal->getRevisionMinor();
+            }
         }
     }
 
