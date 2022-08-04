@@ -16,7 +16,7 @@ XEN_PRESENT=1
 PREEMPT_RT_PRESENT=0
 KERNEL_ARCH="$ARCH"
 
-if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]; then
+if [ "$ARCH" = "i386" -o "$ARCH" = "i486" -o "$ARCH" = "i586" -o "$ARCH" = "i686" -o "$ARCH" = "x86" -o "$ARCH" = "x86_64" ]; then
     if [ -d "$SOURCES/arch/x86" ]; then
         KERNEL_ARCH="x86"
     fi
