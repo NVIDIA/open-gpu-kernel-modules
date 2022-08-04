@@ -491,6 +491,7 @@ struct RS_CPU_UNMAP_PARAMS
     NvP64                   pLinearAddress; ///< [in] Address of mapped memory
     NvU32                   flags;          ///< [in] Resource-specific flags
     NvU32                   processId;
+    NvBool                  bTeardown;      ///< [in] Unmap operation is due to client teardown
 
     /// [in] hContext Handle of resource that provides a context for the mapping (e.g., subdevice for channel map)
     NvHandle                hContext;

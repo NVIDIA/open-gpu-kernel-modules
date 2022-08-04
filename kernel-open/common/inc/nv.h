@@ -989,6 +989,7 @@ NvBool     NV_API_CALL rm_disable_iomap_wc(void);
 
 void       NV_API_CALL rm_init_dynamic_power_management(nvidia_stack_t *, nv_state_t *, NvBool);
 void       NV_API_CALL rm_cleanup_dynamic_power_management(nvidia_stack_t *, nv_state_t *);
+void       NV_API_CALL rm_enable_dynamic_power_management(nvidia_stack_t *, nv_state_t *);
 NV_STATUS  NV_API_CALL rm_ref_dynamic_power(nvidia_stack_t *, nv_state_t *, nv_dynamic_power_mode_t);
 void       NV_API_CALL rm_unref_dynamic_power(nvidia_stack_t *, nv_state_t *, nv_dynamic_power_mode_t);
 NV_STATUS  NV_API_CALL rm_transition_dynamic_power(nvidia_stack_t *, nv_state_t *, NvBool);

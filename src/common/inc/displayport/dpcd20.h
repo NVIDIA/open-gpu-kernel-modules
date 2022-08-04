@@ -31,6 +31,8 @@
 #define NV_DPCD20_DSC_PASS_THROUGH_ENABLE_NO                                    (0x00000000) /* R-XUV */
 #define NV_DPCD20_DSC_PASS_THROUGH_ENABLE_YES                                   (0x00000001) /* R-XUV */
 
+#define NV_DPCD20_GUID_2                                                        (0x00000040) /* R-XUR */
+
 // PANEL REPLAY RELATED DPCD
 #define NV_DPCD20_PANEL_REPLAY_CAPABILITY                                         (0x000000B0)
 #define NV_DPCD20_PANEL_REPLAY_CAPABILITY_SUPPORTED                                       0:0

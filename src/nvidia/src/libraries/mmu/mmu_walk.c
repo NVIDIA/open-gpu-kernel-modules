@@ -205,7 +205,10 @@ mmuWalkLevelInstancesForceFree
     MMU_WALK *pWalk
 )
 {
-    _mmuWalkLevelInstancesForceFree(pWalk, &pWalk->root);
+    if (pWalk != NULL)
+    {
+        _mmuWalkLevelInstancesForceFree(pWalk, &pWalk->root);
+    }
 }
 
 /*----------------------------Private Functions--------------------------------*/

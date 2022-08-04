@@ -608,6 +608,13 @@ next_bar:
     dev_pm_set_driver_flags(nvl->dev, DPM_FLAG_NEVER_SKIP);
 #endif
 
+    /*
+     * Dynamic power management should be enabled as the last step.
+     * Kernel runtime power management framework can put the device
+     * into the suspended state. Hardware register access should not be done
+     * after enabling dynamic power management.
+     */
+    rm_enable_dynamic_power_management(sp, nv);
     nv_kmem_cache_free_stack(sp);
 
     return 0;
@@ -683,8 +690,9 @@ nv_pci_remove(struct pci_dev *pci_dev)
     if ((NV_ATOMIC_READ(nvl->usage_count) != 0) && !(nv->is_external_gpu))
     {
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: Attempting to remove minor device %u with non-zero usage count!\n",
-                  nvl->minor_num);
+                  "NVRM: Attempting to remove device %04x:%02x:%02x.%x with non-zero usage count!\n",
+                  NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+                  NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
 
         /*
          * We can't return from this function without corrupting state, so we wait for
@@ -709,8 +717,9 @@ nv_pci_remove(struct pci_dev *pci_dev)
             {
                 /* The device was not found, which should not happen */
                 nv_printf(NV_DBG_ERRORS,
-                          "NVRM: Failed removal of minor device %u!\n",
-                          nvl->minor_num);
+                          "NVRM: Failed removal of device %04x:%02x:%02x.%x!\n",
+                          NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+                          NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));  
                 WARN_ON(1);
                 goto done;
             }
@@ -719,8 +728,9 @@ nv_pci_remove(struct pci_dev *pci_dev)
         }
 
         nv_printf(NV_DBG_ERRORS,
-                  "NVRM: Continuing with GPU removal for minor device %u\n",
-                  nvl->minor_num);
+                  "NVRM: Continuing with GPU removal for device %04x:%02x:%02x.%x\n",
+                  NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+                  NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
     }
 
     rm_check_for_gpu_surprise_removal(sp, nv);

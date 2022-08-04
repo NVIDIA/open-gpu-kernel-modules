@@ -624,132 +624,36 @@ create:
     if (existingDev && existingDev->complianceDeviceEdidReadTest)
         existingDev->lazyExitNow = true;
 
+    if(newDev->isBranchDevice() && newDev->isAtLeastVersion(1,4))
+    {
+        //
+        // GUID_2 will be non-zero for a virtual peer device and 0 for others.
+        // This will help identify if a device is virtual peer device or not.
+        //
+        newDev->queryGUID2();
+    }
+
     // Read panel DSC support only if GPU supports DSC
     bool bGpuDscSupported;
     main->getDscCaps(&bGpuDscSupported);
-    if (bGpuDscSupported && newDev->getDSCSupport())
+    if (bGpuDscSupported)
     {
-        // Read and parse DSC caps only if panel supports DSC
-        newDev->readAndParseDSCCaps();
-
-        // Read and Parse Branch Specific DSC Caps
-        if (!newDev->isVideoSink() && !newDev->isAudioSink())
+        if (newDev->getDSCSupport())
         {
-            newDev->readAndParseBranchSpecificDSCCaps();
-        }
-    }
+            // Read and parse DSC caps only if panel supports DSC
+            newDev->readAndParseDSCCaps();
 
-    // Decide if DSC stream can be sent to new device
-    newDev->bDSCPossible = false;
-    newDev->devDoingDscDecompression = NULL;
-    if (bGpuDscSupported && !processedEdid.WARFlags.bIgnoreDscCap)
-    {
-        if (newDev->multistream)
-        {
-            if ((newDev->peerDevice == Dongle) &&
-                (newDev->dpcdRevisionMajor != 0) &&
-                !bDscCapBasedOnParent)
+            // Read and Parse Branch Specific DSC Caps
+            if (!newDev->isVideoSink() && !newDev->isAudioSink())
             {
-                // For Peer Type 4 device with LAM DPCD rev != 0.0, check only the device's own DSC capability.
-                if (newDev->isDSCSupported())
-                {
-                    newDev->bDSCPossible = true;
-                    newDev->devDoingDscDecompression = newDev;
-                }
-            }
-            else
-            {
-                if (this->bDscMstEnablePassThrough)
-                {
-                    //
-                    // Check the device's own and its parent's DSC capability.
-                    // - Sink device will do DSC cecompression when
-                    //   1. Sink device is capable of DSC decompression and parent
-                    //      supports DSC pass through.
-                    //
-                    // - Sink device's parent will do DSC decompression
-                    //   1. If sink device supports DSC decompression but it's parent does not support
-                    //      DSC Pass through, but supports DSC decompression.
-                    //   2. If the device does not support DSC decompression, but parent supports it.
-                    //
-                    if (newDev->isDSCSupported())
-                    {
-                        if (newDev->videoSink && newDev->parent)
-                        {
-                            if (newDev->parent->isDSCPassThroughSupported())
-                            {
-                                //
-                                // This condition takes care of DSC capable sink devices
-                                // connected behind a DSC Pass through capable branch
-                                //
-                                newDev->devDoingDscDecompression = newDev;
-                                newDev->bDSCPossible = true;
-                            }
-                            else if (newDev->parent->isDSCSupported())
-                            {
-                                //
-                                // This condition takes care of DSC capable sink devices
-                                // connected behind a branch device that is not capable
-                                // of DSC pass through but can do DSC decompression.
-                                //
-                                newDev->bDSCPossible = true;
-                                newDev->devDoingDscDecompression = newDev->parent;
-                            }
-                        }
-                        else
-                        {
-                            // This condition takes care of branch device capable of DSC.
-                            newDev->devDoingDscDecompression = newDev;
-                            newDev->bDSCPossible = true;
-                        }
-                    }
-                    else if (newDev->parent && newDev->parent->isDSCSupported())
-                    {
-                        //
-                        // This condition takes care of sink devices not capable of DSC
-                        // but parent is capable of DSC decompression.
-                        //
-                        newDev->bDSCPossible = true;
-                        newDev->devDoingDscDecompression = newDev->parent;
-                    }
-                }
-                else
-                {
-                    //
-                    // Revert to old code if DSC Pass through support is not requested.
-                    // This code will be deleted once DSC Pass through support will be enabled
-                    // by default which will be done when 2Head1OR MST (GR-133) will be in production.
-                    //
-                    // Check the device's own and its parent's DSC capability. Parent of the device can do
-                    // DSC decompression and send uncompressed stream to downstream device
-                    //
-                    if (newDev->isDSCSupported() || (newDev->parent && newDev->parent->isDSCSupported()))
-                    {
-                        newDev->bDSCPossible = true;
-                    }
-
-                    // For multistream device, determine who will do the DSC decompression
-                    if (newDev->bDSCPossible)
-                    {
-                        if(!newDev->isDSCSupported())
-                        {
-                            newDev->devDoingDscDecompression = newDev->parent;
-                        }
-                        else
-                        {
-                            newDev->devDoingDscDecompression = newDev;
-                        }
-                    }
-                }
+                newDev->readAndParseBranchSpecificDSCCaps();
             }
         }
-        else
+
+        if (!processedEdid.WARFlags.bIgnoreDscCap)
         {
-            if (newDev->isDSCSupported())
-            {
-                newDev->bDSCPossible = true;
-                newDev->devDoingDscDecompression = newDev;
-            }
+            // Check if DSC is possible for the device and if so, set DSC Decompression device.
+            newDev->setDscDecompressionDevice(this->bDscCapBasedOnParent);
         }
     }
 
@@ -1772,34 +1676,23 @@ void ConnectorImpl::populateDscSinkCaps(DSC_INFO* dscInfo, DeviceImpl * dev)
         dscInfo->sinkCaps.decoderColorFormatMask |= DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420;
     }
 
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_16)
+    switch (dev->dscCaps.dscBitsPerPixelIncrement)
     {
-        dscInfo->sinkCaps.bitsPerPixelPrecision |= DSC_BITS_PER_PIXEL_PRECISION_1_16;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_16)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_16;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_8)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_8;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_4)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_4;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1_2)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_2;
-    }
-
-    if (dev->dscCaps.dscBitsPerPixelIncrement == BITS_PER_PIXEL_PRECISION_1)
-    {
-        dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1;
+        case BITS_PER_PIXEL_PRECISION_1_16:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_16;
+            break;
+        case BITS_PER_PIXEL_PRECISION_1_8:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_8;
+            break;
+        case BITS_PER_PIXEL_PRECISION_1_4:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_4;
+            break;
+        case BITS_PER_PIXEL_PRECISION_1_2:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1_2;
+            break;
+        case BITS_PER_PIXEL_PRECISION_1:
+            dscInfo->sinkCaps.bitsPerPixelPrecision = DSC_BITS_PER_PIXEL_PRECISION_1;
+            break;
     }
 
     // Decoder color depth mask
@@ -1964,8 +1857,9 @@ void ConnectorImpl::fireEvents()
 void ConnectorImpl::fireEventsInternal()
 {
     ListElement * next;
-    Address::StringBuffer sb;
+    Address::StringBuffer sb, sb1;
     DP_USED(sb);
+    DP_USED(sb1);
     for (ListElement * e = deviceList.begin(); e != deviceList.end(); e = next)
     {
         next = e->next;
@@ -2107,7 +2001,7 @@ void ConnectorImpl::fireEventsInternal()
                 DP_LOG(("DPCONN> New device %s | Native DSC Capability - %s | DSC Decompression Device - %s",
                         dev->address.toString(sb),
                         (dev->isDSCSupported() ? "Capable" : "Not Capable"),
-                        (dev->devDoingDscDecompression) ? dev->devDoingDscDecompression->address.toString(sb):"NA"));
+                        (dev->devDoingDscDecompression) ? dev->devDoingDscDecompression->address.toString(sb1):"NA"));
             }
             else
             {
