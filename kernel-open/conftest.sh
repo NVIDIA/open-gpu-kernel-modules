@@ -122,6 +122,7 @@ test_headers() {
     FILES="$FILES drm/drm_ioctl.h"
     FILES="$FILES drm/drm_device.h"
     FILES="$FILES drm/drm_mode_config.h"
+    FILES="$FILES drm/drm_fb_helper.h"
     FILES="$FILES dt-bindings/interconnect/tegra_icc_id.h"
     FILES="$FILES generated/autoconf.h"
     FILES="$FILES generated/compile.h"
