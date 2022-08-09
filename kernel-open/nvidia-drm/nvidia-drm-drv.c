@@ -60,6 +60,10 @@
 #include <drm/drm_ioctl.h>
 #endif
 
+#if defined(NV_DRM_DRM_FB_HELPER_H_PRESENT)
+#include <drm/drm_fb_helper.h>
+#endif
+
 #include <linux/pci.h>
 
 /*
@@ -83,6 +87,10 @@
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 #include <drm/drm_atomic_helper.h>
 #endif
+
+static int NvDrmEnableFbcon = 0;
+module_param(NvDrmEnableFbcon, int, S_IRUGO);
+
 
 static struct nv_drm_device *dev_list = NULL;
 
@@ -946,6 +954,12 @@ static void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
 
     nv_dev->next = dev_list;
     dev_list = nv_dev;
+
+    #if defined(NV_DRM_DRM_FB_HELPER_H_PRESENT)
+    if (NvDrmEnableFbcon)
+       drm_fbdev_generic_setup(dev, 0);
+
+    #endif
 
     return; /* Success */
 
