@@ -108,6 +108,7 @@ nv_drm_prime_pages_to_sg(struct drm_device *dev,
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <drm/drm_crtc.h>
+#include <drm/drm_framebuffer.h>
 
 #if defined(drm_for_each_plane)
 #define nv_drm_for_each_plane(plane, dev) \
