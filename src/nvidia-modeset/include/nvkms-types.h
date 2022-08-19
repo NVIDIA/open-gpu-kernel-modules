@@ -134,6 +134,7 @@ typedef struct _NVVblankSyncObjectRec *NVVblankSyncObjectPtr;
 typedef struct _NVDispHeadStateEvoRec *NVDispHeadStateEvoPtr;
 typedef struct _NVDispEvoRec *NVDispEvoPtr;
 typedef struct _NVParsedEdidEvoRec *NVParsedEdidEvoPtr;
+typedef struct _NVVBlankCallbackRec *NVVBlankCallbackPtr;
 typedef struct _NVDpyEvoRec *NVDpyEvoPtr;
 typedef struct _NVLutSurfaceEvo *NVLutSurfaceEvoPtr;
 typedef struct _NVFrameLockEvo *NVFrameLockEvoPtr;
@@ -1567,6 +1568,9 @@ typedef struct _NVDispHeadStateEvoRec {
     NvU8 numVblankSyncObjectsCreated;
     NVVblankSyncObjectRec vblankSyncObjects[NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD];
     NVDispHeadAudioStateEvoRec audio;
+
+    NvU32 rmVBlankCallbackHandle;
+    NVListRec vblankCallbackList;
 } NVDispHeadStateEvoRec;
 
 typedef struct _NVDispEvoRec {
@@ -1681,6 +1685,16 @@ typedef struct _NVParsedEdidEvoRec {
     char                 monitorName[NVT_EDID_MONITOR_NAME_STRING_LENGTH];
     char                 serialNumberString[NVT_EDID_LDD_PAYLOAD_SIZE+1];
 } NVParsedEdidEvoRec;
+
+typedef void (*NVVBlankCallbackProc)(NVDispEvoRec *pDispEvo,
+                                     const NvU32 head,
+                                     NVVBlankCallbackPtr pCallbackData);
+
+typedef struct _NVVBlankCallbackRec {
+    NVListRec vblankCallbackListEntry;
+    NVVBlankCallbackProc pCallback;
+    void *pUserData;
+} NVVBlankCallbackRec;
 
 typedef struct _NVDpyEvoRec {
     NVListRec dpyListEntry;

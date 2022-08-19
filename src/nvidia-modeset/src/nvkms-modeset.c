@@ -932,7 +932,35 @@ tryAgain:
     return bResult;
 }
 
+static void VBlankCallbackDeferredWork(void *dataPtr, NvU32 data32)
+{
+    NVVBlankCallbackPtr pVBlankCallbackTmp = NULL;
+    NVVBlankCallbackPtr pVBlankCallback = NULL;
+    NVDispEvoPtr pDispEvo = dataPtr;
+    NvU32 head = data32;
 
+    if (!nvHeadIsActive(pDispEvo, head)) {
+        return;
+    }
+
+    nvListForEachEntry_safe(pVBlankCallback,
+                            pVBlankCallbackTmp,
+                            &pDispEvo->headState[head].vblankCallbackList,
+                            vblankCallbackListEntry) {
+        pVBlankCallback->pCallback(pDispEvo, head, pVBlankCallback);
+    }
+}
+
+static void VBlankCallback(void *pParam1, void *pParam2)
+{
+    const NvU32 head = (NvU32)(NvUPtr)pParam2;
+
+    (void) nvkms_alloc_timer_with_ref_ptr(
+               VBlankCallbackDeferredWork,
+               pParam1, /* ref_ptr to pDispEvo */
+               head,    /* dataU32 */
+               0);      /* timeout: schedule the work immediately */
+}
 
 /*!
  * Validate the proposed configuration on the specified disp.
@@ -2623,6 +2651,71 @@ done:
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_MODE_SET_WORK_AREA);
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_PROPOSED_MODESET_HW_STATE);
     return ret;
+}
+
+/*!
+ * Register a callback to activate when vblank is reached on a given head.
+ *
+ * \param[in,out]  pDispEvo  The display engine to register the callback on.
+ * \param[in]      head      The head to register the callback on.
+ * \param[in]      pCallback The function to call when vblank is reached on the
+ *                           provided pDispEvo+head combination.
+ * \param[in]      pUserData A pointer to caller-provided custom data.
+ *
+ * \return         Returns a pointer to a NVVBlankCallbackRec structure if the
+ *                 registration was successful.  Otherwise, return NULL.
+ */
+NVVBlankCallbackPtr nvRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                             NvU32 head,
+                                             NVVBlankCallbackProc pCallback,
+                                             void *pUserData)
+{
+    NVVBlankCallbackPtr pVBlankCallback = NULL;
+
+    pVBlankCallback = nvCalloc(1, sizeof(*pVBlankCallback));
+    if (pVBlankCallback == NULL) {
+        return NULL;
+    }
+
+    pVBlankCallback->pCallback = pCallback;
+    pVBlankCallback->pUserData = pUserData;
+
+    nvListAppend(&pVBlankCallback->vblankCallbackListEntry,
+                 &pDispEvo->headState[head].vblankCallbackList);
+
+    // If this is the first entry in the list, register the vblank callback
+    if (pDispEvo->headState[head].rmVBlankCallbackHandle == 0) {
+
+        pDispEvo->headState[head].rmVBlankCallbackHandle =
+            nvRmAddVBlankCallback(pDispEvo,
+                                  head,
+                                  VBlankCallback);
+    }
+    return pVBlankCallback;
+}
+
+/*!
+ * Un-register a vblank callback for a given head.
+ *
+ * \param[in,out]  pDispEvo  The display engine to register the callback on.
+ * \param[in]      head      The head to register the callback on.
+ * \param[in]      pCallback A pointer to the NVVBlankCallbackRec to un-register.
+ *
+ */
+void nvUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                NvU32 head,
+                                NVVBlankCallbackPtr pCallback)
+{
+    nvListDel(&pCallback->vblankCallbackListEntry);
+    nvFree(pCallback);
+
+    // If there are no more callbacks, disable the RM-level callback
+    if (nvListIsEmpty(&pDispEvo->headState[head].vblankCallbackList)) {
+        nvRmRemoveVBlankCallback(pDispEvo,
+                                 pDispEvo->headState[head].rmVBlankCallbackHandle);
+
+        pDispEvo->headState[head].rmVBlankCallbackHandle = 0;
+    }
 }
 
 /*!

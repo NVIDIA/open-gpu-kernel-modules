@@ -110,6 +110,19 @@ enum NvKmsPerOpenType {
     NvKmsPerOpenTypeUndefined,
 };
 
+enum NvKmsUnicastEventType {
+    /* Used by:
+     *  NVKMS_IOCTL_JOIN_SWAP_GROUP */
+    NvKmsUnicastEventTypeDeferredRequest,
+
+    /* Used by:
+     *  NVKMS_IOCTL_NOTIFY_VBLANK */
+    NvKmsUnicastEventTypeVblankNotification,
+
+    /* Undefined, this indicates the unicast fd is available for use. */
+    NvKmsUnicastEventTypeUndefined,
+};
+
 struct NvKmsPerOpenConnector {
     NVConnectorEvoPtr            pConnectorEvo;
     NvKmsConnectorHandle         nvKmsApiHandle;
@@ -128,6 +141,7 @@ struct NvKmsPerOpenDisp {
     NVEvoApiHandlesRec           connectorHandles;
     struct NvKmsPerOpenConnector connector[NVKMS_MAX_CONNECTORS_PER_DISP];
     NVEvoApiHandlesRec           vblankSyncObjectHandles[NVKMS_MAX_HEADS_PER_DISP];
+    NVEvoApiHandlesRec           vblankCallbackHandles[NVKMS_MAX_HEADS_PER_DISP];
 };
 
 struct NvKmsPerOpenDev {
@@ -183,13 +197,19 @@ struct NvKmsPerOpen {
              * that object can generate events on the unicast event.  Store a
              * pointer to that object, so that we can clear the pointer when the
              * unicast event NvKmsPerOpen is closed.
-             *
-             * So far, deferred request fifos with swap groups are the only
-             * users of unicast events.  When we add more users, we can add an
-             * enum or similar to know which object type is using this unicast
-             * event.
              */
-            NVDeferredRequestFifoPtr pDeferredRequestFifo;
+            enum NvKmsUnicastEventType type;
+            union {
+                struct {
+                    NVDeferredRequestFifoPtr pDeferredRequestFifo;
+                } deferred;
+
+                struct {
+                    NvKmsGenericHandle       hCallback;
+                    struct NvKmsPerOpenDisp *pOpenDisp;
+                    NvU32                    head;
+                } vblankNotification;
+            } e;
         } unicastEvent;
     };
 };
@@ -647,6 +667,9 @@ static void ClearPerOpenDisp(
     struct NvKmsPerOpenConnector *pOpenConnector;
     NvKmsGenericHandle connector;
 
+    NVVBlankCallbackPtr pCallbackData;
+    NvKmsGenericHandle callback;
+
     FreePerOpenFrameLock(pOpen, pOpenDisp);
 
     FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->connectorHandles,
@@ -659,6 +682,12 @@ static void ClearPerOpenDisp(
 
     for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
         nvEvoDestroyApiHandles(&pOpenDisp->vblankSyncObjectHandles[i]);
+
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->vblankCallbackHandles[i],
+                                            pCallbackData, callback) {
+            nvRemoveUnicastEvent(pCallbackData->pUserData);
+        }
+        nvEvoDestroyApiHandles(&pOpenDisp->vblankCallbackHandles[i]);
     }
 
     nvEvoDestroyApiHandle(&pOpenDev->dispHandles, pOpenDisp->nvKmsApiHandle);
@@ -719,6 +748,17 @@ static NvBool InitPerOpenDisp(
     /* Initialize the vblankSyncObjectHandles for each head. */
     for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
         if (!nvEvoInitApiHandles(&pOpenDisp->vblankSyncObjectHandles[i],
+                                 NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
+            goto fail;
+        }
+    }
+
+    /* Initialize the vblankCallbackHandles for each head.
+     *
+     * The limit of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply here, but
+     * we need something. */
+    for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
+        if (!nvEvoInitApiHandles(&pOpenDisp->vblankCallbackHandles[i],
                                  NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
             goto fail;
         }
@@ -1154,6 +1194,30 @@ static NvBool AssignNvKmsPerOpenType(struct NvKmsPerOpen *pOpen,
 
     pOpen->type = type;
     return TRUE;
+}
+
+/*!
+ * Return whether the PerOpen can be used as a unicast event.
+ */
+static inline NvBool PerOpenIsValidForUnicastEvent(
+    const struct NvKmsPerOpen *pOpen)
+{
+    /* If the type is Undefined, it can be made a unicast event. */
+
+    if (pOpen->type == NvKmsPerOpenTypeUndefined) {
+        return TRUE;
+    }
+
+    /*
+     * If the type is already UnicastEvent but there is no active user, it can
+     * be made a unicast event.
+     */
+    if ((pOpen->type == NvKmsPerOpenTypeUnicastEvent) &&
+        (pOpen->unicastEvent.type == NvKmsUnicastEventTypeUndefined)) {
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /*!
@@ -3390,6 +3454,70 @@ static NvBool DisableVblankSyncObject(
     return TRUE;
 }
 
+static void NotifyVblankCallback(NVDispEvoRec *pDispEvo,
+                                 const NvU32 head,
+                                 NVVBlankCallbackPtr pCallbackData)
+{
+    struct NvKmsPerOpen *pEventOpenFd = pCallbackData->pUserData;
+
+    /*
+     * NOTIFY_VBLANK events are single-shot so notify the unicast FD, then
+     * immediately unregister the callback. The unregister step is done in
+     * nvRemoveUnicastEvent which resets the unicast event data.
+     */
+    nvSendUnicastEvent(pEventOpenFd);
+    nvRemoveUnicastEvent(pEventOpenFd);
+}
+
+static NvBool NotifyVblank(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsNotifyVblankParams *pParams = pParamsVoid;
+    struct NvKmsPerOpen *pEventOpenFd = NULL;
+    NVVBlankCallbackPtr pCallbackData = NULL;
+    struct NvKmsPerOpenDisp* pOpenDisp =
+        GetPerOpenDisp(pOpen, pParams->request.deviceHandle,
+                       pParams->request.dispHandle);
+    NvU32 head = pParams->request.head;
+
+    pEventOpenFd = nvkms_get_per_open_data(pParams->request.unicastEvent.fd);
+
+    if (pEventOpenFd == NULL) {
+        return NV_FALSE;
+    }
+
+    if (!PerOpenIsValidForUnicastEvent(pEventOpenFd)) {
+        return NV_FALSE;
+    }
+
+    pEventOpenFd->type = NvKmsPerOpenTypeUnicastEvent;
+
+    pCallbackData = nvRegisterVBlankCallback(pOpenDisp->pDispEvo,
+                                  head,
+                                  NotifyVblankCallback,
+                                  pEventOpenFd);
+    if (pCallbackData == NULL) {
+        return NV_FALSE;
+    }
+
+    pEventOpenFd->unicastEvent.type = NvKmsUnicastEventTypeVblankNotification;
+    pEventOpenFd->unicastEvent.e.vblankNotification.pOpenDisp = pOpenDisp;
+    pEventOpenFd->unicastEvent.e.vblankNotification.head = head;
+    pEventOpenFd->unicastEvent.e.vblankNotification.hCallback
+        = nvEvoCreateApiHandle(&pOpenDisp->vblankCallbackHandles[head],
+                               pCallbackData);
+
+    if (pEventOpenFd->unicastEvent.e.vblankNotification.hCallback == 0) {
+        nvUnregisterVBlankCallback(pOpenDisp->pDispEvo,
+                                   head,
+                                   pCallbackData);
+        return NV_FALSE;
+    }
+
+    return NV_TRUE;
+}
+
 /*!
  * Perform the ioctl operation requested by the client.
  *
@@ -3502,6 +3630,7 @@ NvBool nvKmsIoctl(
         ENTRY(NVKMS_IOCTL_EXPORT_VRR_SEMAPHORE_SURFACE, ExportVrrSemaphoreSurface),
         ENTRY(NVKMS_IOCTL_ENABLE_VBLANK_SYNC_OBJECT, EnableVblankSyncObject),
         ENTRY(NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT, DisableVblankSyncObject),
+        ENTRY(NVKMS_IOCTL_NOTIFY_VBLANK, NotifyVblank),
     };
 
     struct NvKmsPerOpen *pOpen = pOpenVoid;
@@ -3701,6 +3830,18 @@ static const char *ProcFsPerOpenTypeString(
     return "unknown";
 }
 
+static const char *ProcFsUnicastEventTypeString(
+    enum NvKmsUnicastEventType type)
+{
+    switch (type) {
+    case NvKmsUnicastEventTypeDeferredRequest:      return "DeferredRequest";
+    case NvKmsUnicastEventTypeVblankNotification:   return "VblankNotification";
+    case NvKmsUnicastEventTypeUndefined:            return "undefined";
+    }
+
+    return "unknown";
+}
+
 static const char *ProcFsPerOpenClientTypeString(
     enum NvKmsClientType clientType)
 {
@@ -3851,10 +3992,23 @@ ProcFsPrintClients(
                 pOpen->grantSwapGroup.pSwapGroup);
 
         } else if (pOpen->type == NvKmsPerOpenTypeUnicastEvent) {
-
             nvEvoLogInfoString(&infoString,
-                "  pDeferredRequestFifo      : %p",
-                pOpen->unicastEvent.pDeferredRequestFifo);
+                "  unicastEvent type         : %s",
+                ProcFsUnicastEventTypeString(pOpen->unicastEvent.type));
+            switch(pOpen->unicastEvent.type) {
+                case NvKmsUnicastEventTypeDeferredRequest:
+                    nvEvoLogInfoString(&infoString,
+                        "  pDeferredRequestFifo      : %p",
+                        pOpen->unicastEvent.e.deferred.pDeferredRequestFifo);
+                    break;
+                case NvKmsUnicastEventTypeVblankNotification:
+                    nvEvoLogInfoString(&infoString,
+                        "  head      : %x",
+                        pOpen->unicastEvent.e.vblankNotification.head);
+                    break;
+                default:
+                    break;
+            }
         }
 
         nvEvoLogInfoString(&infoString, "");
@@ -4612,6 +4766,7 @@ void nvSendUnicastEvent(struct NvKmsPerOpen *pOpen)
     }
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeUnicastEvent);
+    nvAssert(pOpen->unicastEvent.type != NvKmsUnicastEventTypeUndefined);
 
     nvkms_event_queue_changed(pOpen->pOpenKernel, TRUE);
 }
@@ -4619,6 +4774,10 @@ void nvSendUnicastEvent(struct NvKmsPerOpen *pOpen)
 void nvRemoveUnicastEvent(struct NvKmsPerOpen *pOpen)
 {
     NVDeferredRequestFifoPtr pDeferredRequestFifo;
+    NvKmsGenericHandle callbackHandle;
+    NVVBlankCallbackPtr pCallbackData;
+    struct NvKmsPerOpenDisp *pOpenDisp;
+    NvU32 head;
 
     if (pOpen == NULL) {
         return;
@@ -4626,12 +4785,46 @@ void nvRemoveUnicastEvent(struct NvKmsPerOpen *pOpen)
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeUnicastEvent);
 
-    pDeferredRequestFifo = pOpen->unicastEvent.pDeferredRequestFifo;
+    switch(pOpen->unicastEvent.type)
+    {
+        case NvKmsUnicastEventTypeDeferredRequest:
+            pDeferredRequestFifo =
+                pOpen->unicastEvent.e.deferred.pDeferredRequestFifo;
 
-    if (pDeferredRequestFifo != NULL) {
-        pDeferredRequestFifo->swapGroup.pOpenUnicastEvent = NULL;
-        pOpen->unicastEvent.pDeferredRequestFifo = NULL;
+            pDeferredRequestFifo->swapGroup.pOpenUnicastEvent = NULL;
+            pOpen->unicastEvent.e.deferred.pDeferredRequestFifo = NULL;
+            break;
+        case NvKmsUnicastEventTypeVblankNotification:
+            /* grab fields from the unicast fd */
+            callbackHandle =
+                pOpen->unicastEvent.e.vblankNotification.hCallback;
+            pOpenDisp =
+                pOpen->unicastEvent.e.vblankNotification.pOpenDisp;
+            head = pOpen->unicastEvent.e.vblankNotification.head;
+
+            /* Unregister the vblank callback */
+            pCallbackData =
+                nvEvoGetPointerFromApiHandle(&pOpenDisp->vblankCallbackHandles[head],
+                                             callbackHandle);
+
+            nvUnregisterVBlankCallback(pOpenDisp->pDispEvo,
+                                       head,
+                                       pCallbackData);
+
+            nvEvoDestroyApiHandle(&pOpenDisp->vblankCallbackHandles[head],
+                                  callbackHandle);
+
+            /* invalidate the pOpen data */
+            pOpen->unicastEvent.e.vblankNotification.hCallback = 0;
+            pOpen->unicastEvent.e.vblankNotification.pOpenDisp = NULL;
+            pOpen->unicastEvent.e.vblankNotification.head = NV_INVALID_HEAD;
+            break;
+        default:
+            nvAssert("Invalid Unicast Event Type!");
+            break;
     }
+
+    pOpen->unicastEvent.type = NvKmsUnicastEventTypeUndefined;
 }
 
 static void AllocSurfaceCtxDmasForAllOpens(NVDevEvoRec *pDevEvo)

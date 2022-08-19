@@ -270,6 +270,7 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_EXPORT_VRR_SEMAPHORE_SURFACE,
     NVKMS_IOCTL_ENABLE_VBLANK_SYNC_OBJECT,
     NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT,
+    NVKMS_IOCTL_NOTIFY_VBLANK,
 };
 
 
@@ -4058,6 +4059,34 @@ struct NvKmsDisableVblankSyncObjectReply {
 struct NvKmsDisableVblankSyncObjectParams {
     struct NvKmsDisableVblankSyncObjectRequest request; /*! in */
     struct NvKmsDisableVblankSyncObjectReply reply;     /*! out */
+};
+
+/*!
+ * NVKMS_IOCTL_NOTIFY_VBLANK:
+ *
+ * Register a unicast event fd to be notified when the next vblank event occurs
+ * on the specified head. This is a one-shot notification, and in order to be
+ * notified of subsequent vblank events the caller must clear and re-register
+ * the unicast event fd.
+ */
+
+struct NvKmsNotifyVblankRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvU32 head;
+
+    struct {
+        int fd;
+    } unicastEvent;
+};
+
+struct NvKmsNotifyVblankReply {
+    NvU32 padding;
+};
+
+struct NvKmsNotifyVblankParams {
+    struct NvKmsNotifyVblankRequest request; /*! in */
+    struct NvKmsNotifyVblankReply reply;     /*! out */
 };
 
 #endif /* NVKMS_API_H */

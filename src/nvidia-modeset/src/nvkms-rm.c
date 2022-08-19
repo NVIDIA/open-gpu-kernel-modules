@@ -238,6 +238,7 @@ static void FreeDisplay(NVDispEvoPtr pDispEvo)
 
     for (head = 0; head < ARRAY_LEN(pDispEvo->pSwapGroup); head++) {
         nvAssert(pDispEvo->pSwapGroup[head] == NULL);
+        nvAssert(nvListIsEmpty(&pDispEvo->headState[head].vblankCallbackList));
     }
 
     nvAssert(nvListIsEmpty(&pDispEvo->dpyList));
@@ -269,6 +270,7 @@ static inline NVDispEvoPtr AllocDisplay(NVDevEvoPtr pDevEvo)
     for (head = 0; head < ARRAY_LEN(pDispEvo->headState); head++) {
         pDispEvo->headState[head].activeDpys = nvEmptyDpyIdList();
         pDispEvo->headState[head].attributes = NV_EVO_DEFAULT_ATTRIBUTES_SET;
+        nvListInit(&pDispEvo->headState[head].vblankCallbackList);
     }
 
     pDispEvo->ref_ptr = nvkms_alloc_ref_ptr(pDispEvo);
