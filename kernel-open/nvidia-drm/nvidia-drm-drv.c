@@ -84,6 +84,14 @@
 #include <drm/drm_atomic_helper.h>
 #endif
 
+#if defined(NV_DRM_DRM_APERTURE_H_PRESENT)
+#include <drm/drm_aperture.h>
+#endif
+
+#if defined(NV_LINUX_APERTURE_H_PRESENT)
+#include <linux/aperture.h>
+#endif
+
 static struct nv_drm_device *dev_list = NULL;
 
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
@@ -941,6 +949,17 @@ static void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
         NV_DRM_DEV_LOG_ERR(nv_dev, "Failed to register device");
         goto failed_drm_register;
     }
+/*
+ * Remove conflicting framebuffers, some framebuffers might interfere
+ * with the operation of nvidia-drm(eg. nouveau) so remove all that
+ * might.
+ */
+#if defined(NV_LINUX_APERTURE_H_PRESENT)
+    /* Linux 6.0-rc1 has this, the drm apreture func wraps this */
+    aperture_remove_conflicting_pci_devices(to_pci_dev(device), "nvidia-drm");
+#elif defined(NV_DRM_DRM_APERTURE_H_PRESENT)
+    drm_aperture_remove_conflicting_pci_framebuffers(to_pci_dev(device), dev);
+#endif
 
     /* Add NVIDIA-DRM device into list */
 
