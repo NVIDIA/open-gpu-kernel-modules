@@ -6,6 +6,10 @@ version 515.65.01.
 
 ## How to Build
 
+Clone the repository to your local machine:
+
+    git clone https://github.com/NVIDIA/open-gpu-kernel-modules
+ 
 To build:
 
     make modules -j$(nproc)
