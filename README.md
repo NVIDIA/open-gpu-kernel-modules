@@ -643,6 +643,8 @@ Subsystem Device ID.
 | NVIDIA A100-PG509-200                           | 20B0 10DE 1450 |
 | NVIDIA A100-SXM4-80GB                           | 20B2 10DE 1463 |
 | NVIDIA A100-SXM4-80GB                           | 20B2 10DE 147F |
+| NVIDIA A100-SXM4-80GB                           | 20B2 10DE 1622 |
+| NVIDIA A100-SXM4-80GB                           | 20B2 10DE 1623 |
 | NVIDIA PG506-242                                | 20B3 10DE 14A7 |
 | NVIDIA PG506-243                                | 20B3 10DE 14A8 |
 | NVIDIA A100 80GB PCIe                           | 20B5 10DE 1533 |
@@ -743,6 +745,7 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 3050                         | 2507           |
 | NVIDIA GeForce RTX 3050 OEM                     | 2508           |
 | NVIDIA GeForce RTX 3060 Laptop GPU              | 2520           |
+| NVIDIA GeForce RTX 3060 Laptop GPU              | 2521           |
 | NVIDIA GeForce RTX 3050 Ti Laptop GPU           | 2523           |
 | NVIDIA RTX A2000                                | 2531 1028 151D |
 | NVIDIA RTX A2000                                | 2531 103C 151D |

@@ -301,6 +301,7 @@ struct KernelGsp {
     LIBOS_LOG_DECODE logDecode;
     RM_LIBOS_LOG_MEM rmLibosLogMem[2];
     void *pLogElf;
+    NvBool bInInit;
     MEMORY_DESCRIPTOR *pMemDesc_simAccessBuf;
     SimAccessBuffer *pSimAccessBuf;
     NvP64 pSimAccessBufPriv;

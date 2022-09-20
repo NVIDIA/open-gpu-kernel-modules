@@ -78,13 +78,8 @@ static inline pgprot_t pgprot_modify_writecombine(pgprot_t old_prot)
 
 #define NV_PGPROT_UNCACHED_DEVICE(old_prot)     pgprot_noncached(old_prot)
 #if defined(NVCPU_AARCH64)
-#if defined(NV_MT_DEVICE_GRE_PRESENT)
-#define NV_PROT_WRITE_COMBINED_DEVICE   (PROT_DEFAULT | PTE_PXN | PTE_UXN |   \
-                                         PTE_ATTRINDX(MT_DEVICE_GRE))
-#else
 #define NV_PROT_WRITE_COMBINED_DEVICE   (PROT_DEFAULT | PTE_PXN | PTE_UXN |   \
                                          PTE_ATTRINDX(MT_DEVICE_nGnRE))
-#endif
 #define NV_PGPROT_WRITE_COMBINED_DEVICE(old_prot)                             \
     __pgprot_modify(old_prot, PTE_ATTRINDX_MASK, NV_PROT_WRITE_COMBINED_DEVICE)
 #define NV_PGPROT_WRITE_COMBINED(old_prot)      NV_PGPROT_UNCACHED(old_prot)

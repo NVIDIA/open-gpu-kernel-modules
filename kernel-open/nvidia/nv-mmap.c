@@ -132,6 +132,13 @@ nvidia_vma_access(
     pageIndex = ((addr - vma->vm_start) >> PAGE_SHIFT);
     pageOffset = (addr & ~PAGE_MASK);
 
+
+
+
+
+
+
+
     if (!mmap_context->valid)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap context\n");
@@ -430,7 +437,7 @@ static int nvidia_mmap_numa(
     const nv_alloc_mapping_context_t *mmap_context)
 {
     NvU64 start, addr;
-    unsigned int pages;
+    NvU64 pages;
     NvU64 i;
 
     pages = NV_VMA_SIZE(vma) >> PAGE_SHIFT;
@@ -508,6 +515,13 @@ int nvidia_mmap_helper(
         NvU64 mmap_length = mmap_context->mmap_size;
         NvU64 access_start = mmap_context->access_start;
         NvU64 access_len = mmap_context->access_size;
+
+
+
+
+
+
+
 
         if (IS_REG_OFFSET(nv, access_start, access_len))
         {

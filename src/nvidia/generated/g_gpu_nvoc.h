@@ -60,6 +60,7 @@ typedef struct GPUATTACHARG GPUATTACHARG;
  * */
 #include "ctrl/ctrl0080/ctrl0080gpu.h" // NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS (form hal)
 #include "ctrl/ctrl2080/ctrl2080internal.h" // NV2080_CTRL_CMD_INTERNAL_MAX_BSPS/NVENCS
+#include "ctrl/ctrl2080/ctrl2080ecc.h"
 #include "ctrl/ctrl2080/ctrl2080nvd.h"
 #include "class/cl2080.h"
 #include "class/cl90cd.h"

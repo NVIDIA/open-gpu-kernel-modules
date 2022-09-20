@@ -1467,6 +1467,11 @@ static int nv_open_device(nv_state_t *nv, nvidia_stack_t *sp)
         return -ENODEV;
     }
 
+
+
+
+
+
     if ( ! (nv->flags & NV_FLAG_OPEN))
     {
         /* Sanity check: !NV_FLAG_OPEN requires usage_count == 0 */

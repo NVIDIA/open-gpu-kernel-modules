@@ -27,6 +27,18 @@
 #include "uvm_va_space.h"
 #include "uvm_kvmalloc.h"
 
+static NV_STATUS set_and_test(uvm_gpu_tracking_semaphore_t *tracking_sem, NvU64 new_value)
+{
+    uvm_gpu_semaphore_set_payload(&tracking_sem->semaphore, (NvU32)new_value);
+    TEST_CHECK_RET(uvm_gpu_tracking_semaphore_update_completed_value(tracking_sem) == new_value);
+    TEST_CHECK_RET(uvm_gpu_tracking_semaphore_is_value_completed(tracking_sem, new_value));
+    TEST_CHECK_RET(uvm_gpu_tracking_semaphore_is_value_completed(tracking_sem, new_value - 1));
+    TEST_CHECK_RET(!uvm_gpu_tracking_semaphore_is_value_completed(tracking_sem, new_value + 1));
+    TEST_CHECK_RET(uvm_gpu_tracking_semaphore_is_completed(tracking_sem));
+
+    return NV_OK;
+}
+
 static NV_STATUS add_and_test(uvm_gpu_tracking_semaphore_t *tracking_sem, NvU32 increment_by)
 {
     NvU64 new_value;
@@ -43,13 +55,45 @@ static NV_STATUS add_and_test(uvm_gpu_tracking_semaphore_t *tracking_sem, NvU32 
     TEST_CHECK_RET(!uvm_gpu_tracking_semaphore_is_value_completed(tracking_sem, new_value));
     TEST_CHECK_RET(!uvm_gpu_tracking_semaphore_is_completed(tracking_sem));
 
-    uvm_gpu_semaphore_set_payload(&tracking_sem->semaphore, (NvU32)new_value);
-    TEST_CHECK_RET(uvm_gpu_tracking_semaphore_update_completed_value(tracking_sem) == new_value);
+    TEST_NV_CHECK_RET(set_and_test(tracking_sem, new_value));
     TEST_CHECK_RET(uvm_gpu_tracking_semaphore_is_value_completed(tracking_sem, completed));
-    TEST_CHECK_RET(uvm_gpu_tracking_semaphore_is_value_completed(tracking_sem, new_value));
-    TEST_CHECK_RET(uvm_gpu_tracking_semaphore_is_value_completed(tracking_sem, new_value - 1));
-    TEST_CHECK_RET(!uvm_gpu_tracking_semaphore_is_value_completed(tracking_sem, new_value + 1));
-    TEST_CHECK_RET(uvm_gpu_tracking_semaphore_is_completed(tracking_sem));
+
+    return NV_OK;
+}
+
+// Set the current state of the sema, avoiding UVM_GPU_SEMAPHORE_MAX_JUMP
+// detection.
+static void manual_set(uvm_gpu_tracking_semaphore_t *tracking_sem, NvU64 value)
+{
+    uvm_gpu_semaphore_set_payload(&tracking_sem->semaphore, (NvU32)value);
+    atomic64_set(&tracking_sem->completed_value, value);
+    tracking_sem->queued_value = value;
+}
+
+// Set the starting value and payload and expect a global error
+static NV_STATUS set_and_expect_error(uvm_gpu_tracking_semaphore_t *tracking_sem, NvU64 starting_value, NvU32 payload)
+{
+    manual_set(tracking_sem, starting_value);
+    uvm_gpu_semaphore_set_payload(&tracking_sem->semaphore, payload);
+
+    TEST_CHECK_RET(uvm_global_get_status() == NV_OK);
+    uvm_gpu_tracking_semaphore_update_completed_value(tracking_sem);
+    TEST_CHECK_RET(uvm_global_reset_fatal_error() == NV_ERR_INVALID_STATE);
+
+    return NV_OK;
+}
+
+static NV_STATUS test_invalid_jumps(uvm_gpu_tracking_semaphore_t *tracking_sem)
+{
+    int i;
+    for (i = 0; i < 10; ++i) {
+        NvU64 base = (1ULL<<32) * i;
+        TEST_NV_CHECK_RET(set_and_expect_error(tracking_sem, base, UVM_GPU_SEMAPHORE_MAX_JUMP + 1));
+        TEST_NV_CHECK_RET(set_and_expect_error(tracking_sem, base, UINT_MAX));
+        TEST_NV_CHECK_RET(set_and_expect_error(tracking_sem, base + i + 1, i));
+        TEST_NV_CHECK_RET(set_and_expect_error(tracking_sem, base + UINT_MAX / 2, UINT_MAX / 2 + UVM_GPU_SEMAPHORE_MAX_JUMP + 1));
+        TEST_NV_CHECK_RET(set_and_expect_error(tracking_sem, base + UINT_MAX / 2, UINT_MAX / 2 - i - 1));
+    }
 
     return NV_OK;
 }
@@ -73,10 +117,30 @@ static NV_STATUS test_tracking(uvm_va_space_t *va_space)
         goto done;
 
     for (i = 0; i < 100; ++i) {
-        status = add_and_test(&tracking_sem, UINT_MAX - 1);
+        status = add_and_test(&tracking_sem, UVM_GPU_SEMAPHORE_MAX_JUMP - i);
         if (status != NV_OK)
             goto done;
     }
+
+    // Test wrap-around cases
+    for (i = 0; i < 100; ++i) {
+        // Start with a value right before wrap-around
+        NvU64 starting_value = (1ULL<<32) * (i + 1) - i - 1;
+        manual_set(&tracking_sem, starting_value);
+
+        // And set payload to after wrap-around
+        status = set_and_test(&tracking_sem, (1ULL<<32) * (i + 1) + i);
+        if (status != NV_OK)
+            goto done;
+    }
+
+    g_uvm_global.disable_fatal_error_assert = true;
+    uvm_release_asserts_set_global_error_for_tests = true;
+    status = test_invalid_jumps(&tracking_sem);
+    uvm_release_asserts_set_global_error_for_tests = false;
+    g_uvm_global.disable_fatal_error_assert = false;
+    if (status != NV_OK)
+        goto done;
 
 done:
     uvm_gpu_tracking_semaphore_free(&tracking_sem);

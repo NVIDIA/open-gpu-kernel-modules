@@ -2502,15 +2502,19 @@ kbusFlushSingle_GM107
             if (IS_GSP_CLIENT(pGpu))
             {
                 //
-                // on GSP client, we only support PCIE_READ to do flush
-                // a sysmembar flush should call kbusSendSysmembarSingle_HAL explicitly
+                // on GSP client, we should use PCIE_READ to do video memory flush.
+                // A sysmembar flush that touches registers is done through RPC and has
+                // lower effeciency.  For cases where it needs sysmembar, the caller site
+                // should use kbusSendSysmembarSingle_HAL explicitly.
                 //
-                NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_PATH);
+                NV_ASSERT(0);
+
+                // This will dump a stack trace to assist debug on certain
+                // platforms.
+                osAssertFailed();
             }
-            else
-            {
-                return kbusSendSysmembarSingle_HAL(pGpu, pKernelBus);
-            }
+
+            return kbusSendSysmembarSingle_HAL(pGpu, pKernelBus);
         }
     }
 

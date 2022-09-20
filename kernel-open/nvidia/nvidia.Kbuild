@@ -219,6 +219,7 @@ NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_dram_clk_to_mc_clk
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_get_dram_num_channels
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_tegra_dram_types
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_pxm_to_node
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_screen_info
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += file_operations
 NV_CONFTEST_TYPE_COMPILE_TESTS += kuid_t
@@ -242,9 +243,9 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += vmalloc_has_pgprot_t_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += mm_has_mmap_lock
 NV_CONFTEST_TYPE_COMPILE_TESTS += pci_channel_state
 NV_CONFTEST_TYPE_COMPILE_TESTS += pci_dev_has_ats_enabled
-NV_CONFTEST_TYPE_COMPILE_TESTS += mt_device_gre
 NV_CONFTEST_TYPE_COMPILE_TESTS += remove_memory_has_nid_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += add_memory_driver_managed_has_mhp_flags_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += num_registered_fb
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

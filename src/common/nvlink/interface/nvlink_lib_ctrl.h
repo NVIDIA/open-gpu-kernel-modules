@@ -64,7 +64,7 @@
  * Total number of nvlink endpoints core library can have
  *  This is mapped to NVLINK_MAX_SYSTEM_LINK_NUM in drivers/nvlink/interface/nvlink.h
  */
-#define NVLINK_MAX_NVLINK_ENDPOINTS 312
+#define NVLINK_MAX_NVLINK_ENDPOINTS 624
 
 #define NVLINK_VERSION_STRING_LENGTH    64
 

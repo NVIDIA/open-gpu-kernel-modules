@@ -28,6 +28,7 @@
 #include "../nvlink_ctx.h"
 #include "../nvlink_helper.h"
 #include "nvlink_lock.h"
+#include "nvctassert.h"
 
 #define NVLINK_IOC_GET_BUF(ctrlParams, type) (ctrlParams)->size >= sizeof(type) ? (type *) (ctrlParams)->buf : NULL
 
@@ -3422,6 +3423,8 @@ nvlink_lib_ctrl_get_device_link_states
     NvlStatus     status    = NVL_SUCCESS;
     NvU32         numLinks  = 0;
     NvU32         i         = 0;
+
+    ct_assert(NVLINK_MAX_SYSTEM_LINK_NUM == NVLINK_MAX_NVLINK_ENDPOINTS);
 
     nvlink_link   **links = (nvlink_link **)nvlink_malloc(
                             sizeof(nvlink_link *) * NVLINK_MAX_SYSTEM_LINK_NUM);
