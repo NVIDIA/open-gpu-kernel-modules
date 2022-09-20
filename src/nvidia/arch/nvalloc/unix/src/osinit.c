@@ -362,10 +362,6 @@ osHandleGpuLost
     pmc_boot_0 = NV_PRIV_REG_RD32(nv->regs->map_u, NV_PMC_BOOT_0);
     if (pmc_boot_0 != nvp->pmc_boot_0)
     {
-        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        NV2080_CTRL_GPU_GET_OEM_BOARD_INFO_PARAMS *pBoardInfoParams;
-        NV_STATUS status;
-
         //
         // This doesn't support PEX Reset and Recovery yet.
         // This will help to prevent accessing registers of a GPU
@@ -376,24 +372,11 @@ osHandleGpuLost
 
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "GPU has fallen off the bus.\n");
 
-        pBoardInfoParams = portMemAllocNonPaged(sizeof(*pBoardInfoParams));
-        if (pBoardInfoParams != NULL)
+        if (pGpu->boardInfo != NULL && pGpu->boardInfo->serialNumber[0] != '\0')
         {
-            portMemSet(pBoardInfoParams, 0, sizeof(*pBoardInfoParams));
-
-            status = pRmApi->Control(pRmApi, nv->rmapi.hClient,
-                                     nv->rmapi.hSubDevice,
-                                     NV2080_CTRL_CMD_GPU_GET_OEM_BOARD_INFO,
-                                     pBoardInfoParams,
-                                     sizeof(*pBoardInfoParams));
-            if (status == NV_OK)
-            {
-                NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
-                              "GPU serial number is %s.\n",
-                              pBoardInfoParams->serialNumber);
-            }
-
-            portMemFree(pBoardInfoParams);
+            NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
+                          "GPU serial number is %s.\n",
+                          pGpu->boardInfo->serialNumber);
         }
 
         gpuSetDisconnectedProperties(pGpu);

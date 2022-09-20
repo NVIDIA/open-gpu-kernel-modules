@@ -265,8 +265,11 @@ static NV_STATUS _issueRpcLarge
     // should not be called in broadcast mode
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
+    //
     // Copy the initial buffer
-    entryLength = NV_MIN(bufSize, pRpc->maxRpcSize);
+    // Temporary black magic WAR for bug 3594082: reducing the size by 1
+    //
+    entryLength = NV_MIN(bufSize, pRpc->maxRpcSize - 1);
 
     if ((NvU8 *)vgpu_rpc_message_header_v != pBuf8)
         portMemCopy(vgpu_rpc_message_header_v, entryLength, pBuf8, entryLength);
@@ -291,8 +294,11 @@ static NV_STATUS _issueRpcLarge
     remainingSize -= entryLength;
     pBuf8   += entryLength;
 
+    //
     // Copy the remaining buffers
-    entryLength = pRpc->maxRpcSize - sizeof(rpc_message_header_v);
+    // Temporary black magic WAR for bug 3594082: reducing the size by 1
+    //
+    entryLength = pRpc->maxRpcSize - sizeof(rpc_message_header_v) - 1;
     while (remainingSize != 0)
     {
         if (entryLength > remainingSize)

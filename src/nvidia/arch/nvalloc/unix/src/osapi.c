@@ -780,10 +780,8 @@ static NV_STATUS RmAccessRegistry(
             RmStatus = NV_ERR_INVALID_STRING_LENGTH;
             goto done;
         }
-
         // get access to client's parmStr
         RMAPI_PARAM_COPY_INIT(parmStrParamCopy, tmpParmStr, clientParmStrAddress, ParmStrLength, 1);
-        parmStrParamCopy.flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
         RmStatus = rmapiParamsAcquire(&parmStrParamCopy, NV_TRUE);
         if (RmStatus != NV_OK)
         {
@@ -2026,6 +2024,7 @@ static NV_STATUS RmGetAllocPrivate(
     PMEMORY_DESCRIPTOR pMemDesc;
     NvU32 pageOffset;
     NvU64 pageCount;
+    NvU64 endingOffset;
     RsResourceRef *pResourceRef;
     RmResource *pRmResource;
     void *pMemData;
@@ -2086,8 +2085,9 @@ static NV_STATUS RmGetAllocPrivate(
     if (rmStatus != NV_OK)
         goto done;
 
-    pageCount = ((pageOffset + length) / os_page_size);
-    pageCount += (*pPageIndex + (((pageOffset + length) % os_page_size) ? 1 : 0));
+    endingOffset = pageOffset + length;
+    pageCount = (endingOffset / os_page_size);
+    pageCount += (*pPageIndex + ((endingOffset % os_page_size) ? 1 : 0));
 
     if (pageCount > NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount))
     {

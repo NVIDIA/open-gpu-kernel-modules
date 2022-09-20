@@ -46,6 +46,21 @@
 // wait for a GPFIFO entry to free up.
 //
 
+#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_DEFAULT 1024
+#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MIN 32
+#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MAX (1024 * 1024)
+
+// Semaphore payloads cannot advance too much between calls to
+// uvm_gpu_tracking_semaphore_update_completed_value(). In practice the jumps
+// are bound by gpfifo sizing as we have to update the completed value to
+// reclaim gpfifo entries. Set a limit based on the max gpfifo entries we could
+// ever see.
+//
+// Logically this define belongs to uvm_gpu_semaphore.h but it depends on the
+// channel GPFIFO sizing defined here so it's easiest to just have it here as
+// uvm_channel.h includes uvm_gpu_semaphore.h.
+#define UVM_GPU_SEMAPHORE_MAX_JUMP (2 * UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MAX)
+
 // Channel types
 typedef enum
 {

@@ -4091,6 +4091,8 @@ typedef struct tagNVT_GAMUT_METADATA
 #define NVT_DPCD_ADDRESS_DOWN_REP_BUFFER_FIELD              0x01400
 #define NVT_DPCD_ADDRESS_UP_REQ_BUFFER_FIELD                0x01600
 #define NVT_DPCD_ADDRESS_DEVICE_SERVICE_IRQ_VECTOR_ESI0     0x02003
+#define NVT_DPCD_ADDRESS_DP_TUNNELING_DEVICE_IEEE_OUI       0xE0000
+#define NVT_DPCD_ADDRESS_DP_TUNNELING_DEVICE_ID_STRING      0xE0003
 #define NVT_DPCD_ADDRESS_DP_TUNNELING_CAPS_SUPPORT_FIELD    0xE000D
 #define NVT_DPCD_ADDRESS_DP_IN_ADAPTER_INFO_FIELD           0xE000E
 #define NVT_DPCD_ADDRESS_USB4_DRIVER_ID_FIELD               0xE000F
@@ -5079,7 +5081,7 @@ typedef struct tagNVT_DPCD_CONFIG
 
 typedef struct tagNVT_DPCD_DP_TUNNELING_CAPS
 {
-    NvU8 dpTunnelingSupport               : 1; // DP Tunneling through USB4 Support
+    NvU8 dpTunneling                      : 1; // DP Tunneling through USB4 Support
     NvU8 reserved                         : 5; // Reserved.
     NvU8 dpPanelReplayTunnelingOptSupport : 1; // Panel Replay Tunneling Optimization Support
     NvU8 dpInBwAllocationModeSupport      : 1; // DP IN Bandwidth Allocation Mode Support

@@ -1047,7 +1047,7 @@ _kgspInitLibosLoggingStructures
 
         //
         // Setup logging memory for each task.
-        // Use MEMDESC_FLAGS_CPU_ONLY -- to early to call memdescMapIommu.
+        // Use MEMDESC_FLAGS_CPU_ONLY -- too early to call memdescMapIommu.
         //
         NV_ASSERT_OK_OR_GOTO(nvStatus,
             memdescCreate(&pLog->pTaskLogDescriptor,
@@ -1258,6 +1258,8 @@ kgspInitRm_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+    pKernelGsp->bInInit = NV_TRUE;
+
     // Need to hold the GPU instance lock in order to write to the RPC queue
     NV_ASSERT_OK_OR_GOTO(status,
         rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
@@ -1278,7 +1280,7 @@ kgspInitRm_IMPL
     {
         KernelGspVbiosImg *pVbiosImg = NULL;
 
-		// Try and extract a VBIOS image.
+        // Try and extract a VBIOS image.
         status = kgspExtractVbiosFromRom_HAL(pGpu, pKernelGsp, &pVbiosImg);
 
         if (status == NV_OK)
@@ -1403,6 +1405,14 @@ kgspInitRm_IMPL
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspStartLogPolling(pGpu, pKernelGsp), done);
 
 done:
+    pKernelGsp->bInInit = NV_FALSE;
+
+    if (status != NV_OK)
+    {
+        // Preserve any captured gsp-rm logs
+        libosPreserveLogs(&pKernelGsp->logDecode);
+    }
+
     if (gpusLockedMask != 0)
     {
         rmGpuGroupLockRelease(gpusLockedMask, GPUS_LOCK_FLAGS_NONE);
@@ -1520,7 +1530,7 @@ kgspDumpGspLogs_IMPL
     NvBool bSyncNvLog
 )
 {
-    if (pKernelGsp->pLogElf || bSyncNvLog)
+    if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog)
         libosExtractLogs(&pKernelGsp->logDecode, bSyncNvLog);
 }
 

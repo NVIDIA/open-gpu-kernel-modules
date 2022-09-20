@@ -227,6 +227,7 @@ static inline uid_t __kuid_val(uid_t uid)
 #endif
 
 #include <linux/fb.h>               /* fb_info struct                   */
+#include <linux/screen_info.h>      /* screen_info                      */
 
 #if !defined(CONFIG_PCI)
 #warning "Attempting to build driver for a platform with no PCI support!"

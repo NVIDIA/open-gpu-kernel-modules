@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 515.65.01.
+version 515.76.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with gsp.bin
 firmware and user-space NVIDIA GPU driver components from a corresponding
-515.65.01 driver release.  This can be achieved by installing
+515.76 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -167,7 +167,7 @@ for the target kernel.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 515.65.01 release,
+(see the table below). However, in the 515.76 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -175,7 +175,7 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/515.65.01/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/515.76/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -643,6 +643,8 @@ Subsystem Device ID.
 | NVIDIA A100-PG509-200                           | 20B0 10DE 1450 |
 | NVIDIA A100-SXM4-80GB                           | 20B2 10DE 1463 |
 | NVIDIA A100-SXM4-80GB                           | 20B2 10DE 147F |
+| NVIDIA A100-SXM4-80GB                           | 20B2 10DE 1622 |
+| NVIDIA A100-SXM4-80GB                           | 20B2 10DE 1623 |
 | NVIDIA PG506-242                                | 20B3 10DE 14A7 |
 | NVIDIA PG506-243                                | 20B3 10DE 14A8 |
 | NVIDIA A100 80GB PCIe                           | 20B5 10DE 1533 |
@@ -743,6 +745,7 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 3050                         | 2507           |
 | NVIDIA GeForce RTX 3050 OEM                     | 2508           |
 | NVIDIA GeForce RTX 3060 Laptop GPU              | 2520           |
+| NVIDIA GeForce RTX 3060 Laptop GPU              | 2521           |
 | NVIDIA GeForce RTX 3050 Ti Laptop GPU           | 2523           |
 | NVIDIA RTX A2000                                | 2531 1028 151D |
 | NVIDIA RTX A2000                                | 2531 103C 151D |

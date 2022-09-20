@@ -108,6 +108,9 @@ struct LIBOS_LOG_DECODE_LOG
     NvU32 hNvLogNoWrap;  // No wrap buffer captures first records.
     NvU32 hNvLogWrap;    // Wrap buffer captures last records.
     NvBool bNvLogNoWrap; // NV_TRUE if no wrap buffer not full.
+
+    NvBool bDidPush;     // NV_TRUE if this buffer was ever pushed to
+    NvU64 preservedNoWrapPos; // Position in preserved nvlog buffer
 #endif
 
 #if LIBOS_LOG_DECODE_ENABLE
@@ -169,6 +172,8 @@ void libosLogInitEx(
 void libosLogDestroy(LIBOS_LOG_DECODE *logDecode);
 
 void libosExtractLogs(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLog);
+
+void libosPreserveLogs(LIBOS_LOG_DECODE *pLogDecode);
 
 #ifdef __cplusplus
 }

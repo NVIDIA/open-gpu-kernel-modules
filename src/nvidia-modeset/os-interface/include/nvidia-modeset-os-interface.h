@@ -110,6 +110,7 @@ typedef struct {
     } set_maxval;
 } NvKmsSyncPtOpParams;
 
+NvBool nvkms_output_rounding_fix(void);
 
 void   nvkms_call_rm    (void *ops);
 void*  nvkms_alloc      (size_t size,

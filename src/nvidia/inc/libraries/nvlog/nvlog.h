@@ -86,8 +86,9 @@ NV_STATUS nvlogAllocBuffer(NvU32 size, NvU32 flags, NvU32 tag, NVLOG_BUFFER_HAND
  * @brief Deallocate a buffer with the given handle
  *
  * @param[in]   hBuffer     Handle of the buffer to deallocate
+ * @param[in]   bDeallocPreserved Deallocate preserved buffers
  */
-void nvlogDeallocBuffer(NVLOG_BUFFER_HANDLE hBuffer);
+void nvlogDeallocBuffer(NVLOG_BUFFER_HANDLE hBuffer, NvBool bDeallocPreserved);
 
 /**
  * @brief Write to a buffer with the given handle

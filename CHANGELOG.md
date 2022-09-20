@@ -2,6 +2,13 @@
 
 ## Release 515 Entries
 
+### [515.76] 2022-09-20
+
+#### Fixed
+
+- Improved compatibility with new Linux kernel releases
+- Fixed possible excessive GPU power draw on an idle X11 or Wayland desktop when driving high resolutions or refresh rates
+
 ### [515.65.01] 2022-08-02
 
 #### Fixed

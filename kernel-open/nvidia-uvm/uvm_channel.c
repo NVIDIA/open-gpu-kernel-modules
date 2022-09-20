@@ -35,10 +35,6 @@
 #include "nv_uvm_interface.h"
 #include "clb06f.h"
 
-#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_DEFAULT 1024
-#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MIN 32
-#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MAX (1024 * 1024)
-
 static unsigned uvm_channel_num_gpfifo_entries = UVM_CHANNEL_NUM_GPFIFO_ENTRIES_DEFAULT;
 
 #define UVM_CHANNEL_GPFIFO_LOC_DEFAULT "auto"
@@ -85,6 +81,12 @@ static NvU32 uvm_channel_update_progress_with_max(uvm_channel_t *channel,
     NvU64 completed_value = uvm_channel_update_completed_value(channel);
 
     uvm_spin_lock(&channel->pool->lock);
+
+    // Completed value should never exceed the queued value
+    UVM_ASSERT_MSG_RELEASE(completed_value <= channel->tracking_sem.queued_value,
+                           "GPU %s channel %s unexpected completed_value 0x%llx > queued_value 0x%llx\n",
+                           channel->pool->manager->gpu->parent->name, channel->name, completed_value,
+                           channel->tracking_sem.queued_value);
 
     cpu_put = channel->cpu_put;
     gpu_get = channel->gpu_get;
@@ -394,6 +396,14 @@ static void proxy_channel_submit_work(uvm_push_t *push, NvU32 push_size)
 static void uvm_channel_semaphore_release(uvm_push_t *push, NvU64 semaphore_va, NvU32 new_payload)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+
+    // We used to skip the membar or use membar GPU for the semaphore release
+    // for a few pushes, but that doesn't provide sufficient ordering guarantees
+    // in some cases (e.g. ga100 with an LCE with PCEs from both HSHUBs) for the
+    // semaphore writes. To be safe, just always uses a membar sys for now.
+    // TODO bug 3770539: Optimize membars used by end of push semaphore releases
+    (void)uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+    (void)uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
 
     if (uvm_channel_is_ce(push->channel))
         gpu->parent->ce_hal->semaphore_release(push, semaphore_va, new_payload);
@@ -1562,6 +1572,7 @@ static void uvm_channel_print_info(uvm_channel_t *channel, struct seq_file *s)
     UVM_SEQ_OR_DBG_PRINT(s, "get                %u\n", channel->gpu_get);
     UVM_SEQ_OR_DBG_PRINT(s, "put                %u\n", channel->cpu_put);
     UVM_SEQ_OR_DBG_PRINT(s, "Semaphore GPU VA   0x%llx\n", uvm_channel_tracking_semaphore_get_gpu_va(channel));
+    UVM_SEQ_OR_DBG_PRINT(s, "Semaphore CPU VA   0x%llx\n", (NvU64)(uintptr_t)channel->tracking_sem.semaphore.payload);
 
     uvm_spin_unlock(&channel->pool->lock);
 }
