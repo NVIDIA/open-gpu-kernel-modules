@@ -52,11 +52,21 @@ typedef enum
     // By default all operations include a membar sys after any transfer and
     // before a semaphore operation.
     // This flag indicates that next operation should use no membar at all.
+    //
+    // For end of push semaphore release, this flag indicates that the push
+    // itself does not need a membar to be used (membar sys is the default). A
+    // membar may still be used, if needed to order the semaphore release
+    // write. See comments in uvm_channel_end_push().
     UVM_PUSH_FLAG_NEXT_MEMBAR_NONE,
 
     // By default all operations include a membar sys after any transfer and
     // before a semaphore operation.
     // This flag indicates that next operation should use a membar gpu instead.
+    //
+    // For end of push semaphore release, this flag indicates that the push
+    // itself only needs a membar gpu (the default is membar sys). A membar sys
+    // may still be used, if needed to order the semaphore release write. See
+    // comments in uvm_channel_end_push().
     UVM_PUSH_FLAG_NEXT_MEMBAR_GPU,
 
     UVM_PUSH_FLAG_COUNT,

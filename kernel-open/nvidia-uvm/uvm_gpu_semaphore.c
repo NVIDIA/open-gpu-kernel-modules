@@ -25,6 +25,7 @@
 #include "uvm_lock.h"
 #include "uvm_global.h"
 #include "uvm_kvmalloc.h"
+#include "uvm_channel.h" // For UVM_GPU_SEMAPHORE_MAX_JUMP
 
 #define UVM_SEMAPHORE_SIZE 4
 #define UVM_SEMAPHORE_PAGE_SIZE PAGE_SIZE
@@ -467,8 +468,15 @@ static NvU64 update_completed_value_locked(uvm_gpu_tracking_semaphore_t *trackin
     // push, it's easily guaranteed because of the small number of GPFIFO
     // entries available per channel (there could be at most as many pending
     // pushes as GPFIFO entries).
-    if (new_sem_value < old_sem_value)
+    if (unlikely(new_sem_value < old_sem_value))
         new_value += 1ULL << 32;
+
+    // Check for unexpected large jumps of the semaphore value
+    UVM_ASSERT_MSG_RELEASE(new_value - old_value <= UVM_GPU_SEMAPHORE_MAX_JUMP,
+                           "GPU %s unexpected semaphore (CPU VA 0x%llx) jump from 0x%llx to 0x%llx\n",
+                           tracking_semaphore->semaphore.page->pool->gpu->parent->name,
+                           (NvU64)(uintptr_t)tracking_semaphore->semaphore.payload,
+                           old_value, new_value);
 
     // Use an atomic write even though the spinlock is held so that the value can
     // be (carefully) read atomically outside of the lock.

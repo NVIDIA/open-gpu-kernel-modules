@@ -1120,31 +1120,58 @@ void NV_API_CALL os_get_screen_info(
     NvU64 consoleBar2Address
 )
 {
-#if defined(CONFIG_FB)
-    int i;
     *pPhysicalAddress = 0;
     *pFbWidth = *pFbHeight = *pFbDepth = *pFbPitch = 0;
 
-    for (i = 0; i < num_registered_fb; i++)
+#if defined(CONFIG_FB) && defined(NV_NUM_REGISTERED_FB_PRESENT)
+    if (num_registered_fb > 0)
     {
-        if (!registered_fb[i])
-            continue;
+        int i;
 
-        /* Make sure base address is mapped to GPU BAR */
-        if ((registered_fb[i]->fix.smem_start == consoleBar1Address) ||
-            (registered_fb[i]->fix.smem_start == consoleBar2Address))
+        for (i = 0; i < num_registered_fb; i++)
         {
-            *pPhysicalAddress = registered_fb[i]->fix.smem_start;
-            *pFbWidth = registered_fb[i]->var.xres;
-            *pFbHeight = registered_fb[i]->var.yres;
-            *pFbDepth = registered_fb[i]->var.bits_per_pixel;
-            *pFbPitch = registered_fb[i]->fix.line_length;
-            break;
+            if (!registered_fb[i])
+                continue;
+
+            /* Make sure base address is mapped to GPU BAR */
+            if ((registered_fb[i]->fix.smem_start == consoleBar1Address) ||
+                (registered_fb[i]->fix.smem_start == consoleBar2Address))
+            {
+                *pPhysicalAddress = registered_fb[i]->fix.smem_start;
+                *pFbWidth = registered_fb[i]->var.xres;
+                *pFbHeight = registered_fb[i]->var.yres;
+                *pFbDepth = registered_fb[i]->var.bits_per_pixel;
+                *pFbPitch = registered_fb[i]->fix.line_length;
+                break;
+            }
         }
     }
-#else
-    *pPhysicalAddress = 0;
-    *pFbWidth = *pFbHeight = *pFbDepth = *pFbPitch = 0;
+#elif NV_IS_EXPORT_SYMBOL_PRESENT_screen_info
+    /*
+     * If there is not a framebuffer console, return 0 size.
+     *
+     * orig_video_isVGA is set to 1 during early Linux kernel
+     * initialization, and then will be set to a value, such as
+     * VIDEO_TYPE_VLFB or VIDEO_TYPE_EFI if an fbdev console is used.
+     */
+    if (screen_info.orig_video_isVGA > 1)
+    {
+        NvU64 physAddr = screen_info.lfb_base;
+#if defined(VIDEO_CAPABILITY_64BIT_BASE)
+        physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
+#endif
+
+        /* Make sure base address is mapped to GPU BAR */
+        if ((physAddr == consoleBar1Address) ||
+            (physAddr == consoleBar2Address))
+        {
+            *pPhysicalAddress = physAddr;
+            *pFbWidth = screen_info.lfb_width;
+            *pFbHeight = screen_info.lfb_height;
+            *pFbDepth = screen_info.lfb_depth;
+            *pFbPitch = screen_info.lfb_linelength;
+        }
+    }
 #endif
 }
 

@@ -80,6 +80,9 @@ bool uvm_debug_prints_enabled(void);
 #define UVM_ASSERT_PRINT(fmt, ...) \
     UVM_PRINT_FUNC_PREFIX(printk, KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
 
+#define UVM_ASSERT_PRINT_RL(fmt, ...) \
+    UVM_PRINT_FUNC_PREFIX(printk_ratelimited, KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
+
 #define UVM_ERR_PRINT(fmt, ...) \
     UVM_PRINT_FUNC_PREFIX_CHECK(printk, KERN_ERR NVIDIA_UVM_PRETTY_PRINTING_PREFIX, " " fmt, ##__VA_ARGS__)
 
@@ -146,9 +149,7 @@ void on_uvm_test_fail(void);
 // Unlike on_uvm_test_fail it provides 'panic' coverity semantics
 void on_uvm_assert(void);
 
-// UVM_ASSERT_RELEASE and UVM_ASSERT_MSG_RELEASE are always enabled, even on
-// release builds.
-#define _UVM_ASSERT_MSG_RELEASE(expr, cond, fmt, ...)                                           \
+#define _UVM_ASSERT_MSG(expr, cond, fmt, ...)                                                   \
     do {                                                                                        \
         if (unlikely(!(expr))) {                                                                \
             UVM_ASSERT_PRINT("Assert failed, condition %s not true" fmt, cond, ##__VA_ARGS__);  \
@@ -156,9 +157,6 @@ void on_uvm_assert(void);
             on_uvm_assert();                                                                    \
         }                                                                                       \
     } while (0)
-
-#define UVM_ASSERT_MSG_RELEASE(expr, fmt, ...)  _UVM_ASSERT_MSG_RELEASE(expr, #expr, ": " fmt, ##__VA_ARGS__)
-#define UVM_ASSERT_RELEASE(expr)                _UVM_ASSERT_MSG_RELEASE(expr, #expr, "\n")
 
 // Prevent function calls in expr and the print argument list from being
 // evaluated.
@@ -170,12 +168,41 @@ void on_uvm_assert(void);
 
 // UVM_ASSERT and UVM_ASSERT_MSG are only enabled on non-release and Coverity builds
 #if UVM_IS_DEBUG() || defined __COVERITY__
-    #define UVM_ASSERT_MSG                  UVM_ASSERT_MSG_RELEASE
-    #define UVM_ASSERT                      UVM_ASSERT_RELEASE
+    #define UVM_ASSERT_MSG(expr, fmt, ...)  _UVM_ASSERT_MSG(expr, #expr, ": " fmt, ##__VA_ARGS__)
+    #define UVM_ASSERT(expr)                _UVM_ASSERT_MSG(expr, #expr, "\n")
 #else
     #define UVM_ASSERT_MSG(expr, fmt, ...)  UVM_ASSERT_MSG_IGNORE(expr, fmt, ##__VA_ARGS__)
     #define UVM_ASSERT(expr)                UVM_ASSERT_MSG_IGNORE(expr, "\n")
 #endif
+
+// UVM_ASSERT_RELEASE and UVM_ASSERT_MSG_RELEASE are always included in the
+// build, even on release builds. They are skipped at runtime if
+// uvm_release_asserts is 0.
+
+// Whether release asserts are enabled and whether they should dump the stack
+// and set the global error.
+extern int uvm_release_asserts;
+extern int uvm_release_asserts_dump_stack;
+extern int uvm_release_asserts_set_global_error;
+extern bool uvm_release_asserts_set_global_error_for_tests;
+
+// Given these are enabled for release builds, we need to be more cautious than
+// in UVM_ASSERT(). Use a ratelimited print and only dump the stack if a module
+// param is enabled.
+#define _UVM_ASSERT_MSG_RELEASE(expr, cond, fmt, ...)                                                   \
+    do {                                                                                                \
+        if (uvm_release_asserts && unlikely(!(expr))) {                                                 \
+            UVM_ASSERT_PRINT_RL("Assert failed, condition %s not true" fmt, cond, ##__VA_ARGS__);       \
+            if (uvm_release_asserts_set_global_error || uvm_release_asserts_set_global_error_for_tests) \
+                uvm_global_set_fatal_error(NV_ERR_INVALID_STATE);                                       \
+            if (uvm_release_asserts_dump_stack)                                                         \
+                dump_stack();                                                                           \
+            on_uvm_assert();                                                                            \
+        }                                                                                               \
+    } while (0)
+
+#define UVM_ASSERT_MSG_RELEASE(expr, fmt, ...)  _UVM_ASSERT_MSG_RELEASE(expr, #expr, ": " fmt, ##__VA_ARGS__)
+#define UVM_ASSERT_RELEASE(expr)                _UVM_ASSERT_MSG_RELEASE(expr, #expr, "\n")
 
 // Provide a short form of UUID's, typically for use in debug printing:
 #define ABBREV_UUID(uuid) (unsigned)(uuid)

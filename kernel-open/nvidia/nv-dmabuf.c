@@ -820,8 +820,13 @@ nv_dma_buf_reuse(
         goto cleanup_dmabuf;
     }
 
+
+
+
+
     if (params->index > (priv->total_objects - params->numObjects))
     {
+
         status = NV_ERR_INVALID_ARGUMENT;
         goto unlock_priv;
     }

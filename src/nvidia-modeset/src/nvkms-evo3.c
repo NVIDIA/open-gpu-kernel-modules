@@ -1288,6 +1288,8 @@ static void EvoSetOCsc0C5(NVDispEvoPtr pDispEvo, const NvU32 head)
 
     const float32_t zeroF32 = NvU32viewAsF32(NV_FLOAT_ZERO);
     const float32_t oneF32 = NvU32viewAsF32(NV_FLOAT_ONE);
+    const float32_t inv2048F32 = f32_div(NvU32viewAsF32(NV_FLOAT_HALF),
+                                         NvU32viewAsF32(NV_FLOAT_1024));
     /* divide satCos by the default setting of 1024 */
     const float32_t satCos = f32_div(i32_to_f32(pHeadState->procAmp.satCos),
                                      NvU32viewAsF32(NV_FLOAT_1024));
@@ -1323,6 +1325,12 @@ static void EvoSetOCsc0C5(NVDispEvoPtr pDispEvo, const NvU32 head)
     ocsc0Matrix = nvMultiply3x4Matrix(&RGBtoCrYCbMatrix, &ocsc0Matrix);
     ocsc0Matrix = nvMultiply3x4Matrix(&satHueMatrix, &ocsc0Matrix);
     ocsc0Matrix = nvMultiply3x4Matrix(&CrYCbtoRGBMatrix, &ocsc0Matrix);
+
+    if (nvkms_output_rounding_fix()) {
+        ocsc0Matrix.m[0][3] = f32_add(ocsc0Matrix.m[0][3], inv2048F32);
+        ocsc0Matrix.m[1][3] = f32_add(ocsc0Matrix.m[1][3], inv2048F32);
+        ocsc0Matrix.m[2][3] = f32_add(ocsc0Matrix.m[2][3], inv2048F32);
+    }
 
     nvDmaSetStartEvoMethod(pChannel, NVC57D_HEAD_SET_OCSC0COEFFICIENT_C00(head), 12);
     nvDmaSetEvoMethodData(pChannel, DRF_NUM(C57D, _HEAD_SET_OCSC0COEFFICIENT_C00, _VALUE, cscCoefConvertS514(ocsc0Matrix.m[0][0])));
@@ -1965,11 +1973,13 @@ static inline NvU32 GetMaxPixelsFetchedPerLine(NvU16 inWidth,
 static void SetScalingUsageBoundsOneWindow5(
                                 NVDevEvoPtr pDevEvo, NvU32 window,
                                 const struct NvKmsScalingUsageBounds *pScaling,
+                                NvBool layerUsable,
                                 const NVHwModeViewPortEvo *pViewPort,
                                 NVEvoUpdateState *updateState)
 {
     NVEvoChannelPtr pChannel = pDevEvo->core;
     NvU32 setWindowUsageBounds = NV_EVO3_DEFAULT_WINDOW_USAGE_BOUNDS_C5;
+    NvU32 maxPixelsFetchedPerLine;
 
     nvUpdateUpdateState(pDevEvo, updateState, pChannel);
 
@@ -1981,10 +1991,15 @@ static void SetScalingUsageBoundsOneWindow5(
         DRF_NUM(C57D, _WINDOW_SET_MAX_INPUT_SCALE_FACTOR, _VERTICAL,
                 pScaling->maxVDownscaleFactor));
 
+    if (layerUsable) {
+        maxPixelsFetchedPerLine = GetMaxPixelsFetchedPerLine(pViewPort->in.width,
+                                                   pScaling->maxHDownscaleFactor);
+    } else {
+        maxPixelsFetchedPerLine = 0;
+    }
+
     setWindowUsageBounds |=
-        (DRF_NUM(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _MAX_PIXELS_FETCHED_PER_LINE,
-                 GetMaxPixelsFetchedPerLine(pViewPort->in.width,
-                 pScaling->maxHDownscaleFactor))) |
+        (DRF_NUM(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _MAX_PIXELS_FETCHED_PER_LINE,maxPixelsFetchedPerLine)) |
         (pScaling->vTaps >= NV_EVO_SCALER_5TAPS ?
             DRF_DEF(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _INPUT_SCALER_TAPS, _TAPS_5) :
             DRF_DEF(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _INPUT_SCALER_TAPS, _TAPS_2)) |
@@ -2056,8 +2071,9 @@ static NvBool EvoSetUsageBoundsC5(NVDevEvoPtr pDevEvo, NvU32 sd, NvU32 head,
     needCoreUpdate = EvoSetUsageBounds3(pDevEvo, sd, head, pUsage, updateState);
 
     for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-        if (!nvEvoScalingUsageBoundsEqual(&pCurrentUsage->layer[layer].scaling,
-                                          &pUsage->layer[layer].scaling)) {
+        if ((pCurrentUsage->layer[layer].usable != pUsage->layer[layer].usable) ||
+            (!nvEvoScalingUsageBoundsEqual(&pCurrentUsage->layer[layer].scaling,
+                                           &pUsage->layer[layer].scaling))) {
             const NVHwModeViewPortEvo *pViewPort =
                 &pDevEvo->gpus[sd].pDispEvo->headState[head].timings.viewPort;
 
@@ -2066,6 +2082,7 @@ static NvBool EvoSetUsageBoundsC5(NVDevEvoPtr pDevEvo, NvU32 sd, NvU32 head,
                 NV_EVO_CHANNEL_MASK_WINDOW_NUMBER(
                     pDevEvo->head[head].layer[layer]->channelMask),
                 &pUsage->layer[layer].scaling,
+                pUsage->layer[layer].usable,
                 pViewPort,
                 updateState);
             needCoreUpdate = TRUE;
@@ -4383,7 +4400,9 @@ static void EvoSetLUTContextDmaC5(const NVDispEvoRec *pDispEvo,
 
     nvDmaSetStartEvoMethod(pChannel, NVC57D_HEAD_SET_OLUT_CONTROL(head), 1);
     nvDmaSetEvoMethodData(pChannel,
-        DRF_DEF(C57D, _HEAD_SET_OLUT_CONTROL, _INTERPOLATE, _ENABLE) |
+        (!nvkms_output_rounding_fix() ?
+            DRF_DEF(C57D, _HEAD_SET_OLUT_CONTROL, _INTERPOLATE, _ENABLE) :
+            DRF_DEF(C57D, _HEAD_SET_OLUT_CONTROL, _INTERPOLATE, _DISABLE)) |
         DRF_DEF(C57D, _HEAD_SET_OLUT_CONTROL, _MIRROR, _DISABLE) |
         DRF_DEF(C57D, _HEAD_SET_OLUT_CONTROL, _MODE, _DIRECT10) |
         DRF_NUM(C57D, _HEAD_SET_OLUT_CONTROL, _SIZE, NV_LUT_VSS_HEADER_SIZE +
@@ -5180,13 +5199,11 @@ static NvBool EvoSetViewportInOut3(NVDevEvoPtr pDevEvo, const int head,
                                    const NVHwModeViewPortEvo *pViewPortMin,
                                    const NVHwModeViewPortEvo *pViewPort,
                                    const NVHwModeViewPortEvo *pViewPortMax,
-                                   NVEvoUpdateState *updateState,
-                                   NvU32 setWindowUsageBounds)
+                                   NVEvoUpdateState *updateState)
 {
     const NVEvoCapabilitiesPtr pEvoCaps = &pDevEvo->gpus[0].capabilities;
     NVEvoChannelPtr pChannel = pDevEvo->core;
     struct NvKmsScalingUsageBounds scalingUsageBounds = { };
-    NvU32 win;
 
     /* These methods should only apply to a single pDpy */
     nvAssert(pDevEvo->subDevMaskStackDepth > 0);
@@ -5232,31 +5249,6 @@ static NvBool EvoSetViewportInOut3(NVDevEvoPtr pDevEvo, const int head,
         DRF_NUM(C37D, _HEAD_SET_MAX_OUTPUT_SCALE_FACTOR, _VERTICAL,
                 scalingUsageBounds.maxVDownscaleFactor));
 
-    /*
-     * Program MAX_PIXELS_FETCHED_PER_LINE window usage bounds
-     * for each window that’s attached to the head.
-     *
-     * Precomp will clip the post-scaled window to the input viewport, reverse-scale
-     * this cropped size back to the input surface domain, and isohub will fetch
-     * this cropped size. This function assumes that there's no window scaling yet,
-     * so the MAX_PIXELS_FETCHED_PER_LINE will be bounded by the input viewport
-     * width. SetScalingUsageBoundsOneWindow5() will take care of updating
-     * MAX_PIXELS_FETCHED_PER_LINE, if window scaling is enabled later.
-     */
-    setWindowUsageBounds |=
-        DRF_NUM(C37D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _MAX_PIXELS_FETCHED_PER_LINE,
-                GetMaxPixelsFetchedPerLine(pViewPort->in.width,
-                NV_EVO_SCALE_FACTOR_1X));
-
-    for (win = 0; win < pDevEvo->numWindows; win++) {
-        if (head != pDevEvo->headForWindow[win]) {
-            continue;
-        }
-
-        nvDmaSetStartEvoMethod(pChannel, NVC37D_WINDOW_SET_WINDOW_USAGE_BOUNDS(win), 1);
-        nvDmaSetEvoMethodData(pChannel, setWindowUsageBounds);
-    }
-
     return scalingUsageBounds.vUpscalingAllowed;
 }
 
@@ -5267,10 +5259,11 @@ static void EvoSetViewportInOutC3(NVDevEvoPtr pDevEvo, const int head,
                                   NVEvoUpdateState *updateState)
 {
     NVEvoChannelPtr pChannel = pDevEvo->core;
+    NvU32 win;
+    NvU32 setWindowUsageBounds = NV_EVO3_DEFAULT_WINDOW_USAGE_BOUNDS_C3;
     NvBool verticalUpscalingAllowed =
         EvoSetViewportInOut3(pDevEvo, head, pViewPortMin, pViewPort,
-                             pViewPortMax, updateState,
-                             NV_EVO3_DEFAULT_WINDOW_USAGE_BOUNDS_C3);
+                             pViewPortMax, updateState);
 
     nvDmaSetStartEvoMethod(pChannel,
         NVC37D_HEAD_SET_HEAD_USAGE_BOUNDS(head), 1);
@@ -5280,6 +5273,34 @@ static void EvoSetViewportInOutC3(NVDevEvoPtr pDevEvo, const int head,
         (verticalUpscalingAllowed ?
             DRF_DEF(C37D, _HEAD_SET_HEAD_USAGE_BOUNDS, _UPSCALING_ALLOWED, _TRUE) :
             DRF_DEF(C37D, _HEAD_SET_HEAD_USAGE_BOUNDS, _UPSCALING_ALLOWED, _FALSE)));
+     /*
+      * Program MAX_PIXELS_FETCHED_PER_LINE window usage bounds
+      * for each window that is attached to the head.
+      *
+      * Precomp will clip the post-scaled window to the input viewport, reverse-scale
+      * this cropped size back to the input surface domain, and isohub will fetch
+      * this cropped size. This function assumes that there's no window scaling yet,
+      * so the MAX_PIXELS_FETCHED_PER_LINE will be bounded by the input viewport
+      * width. SetScalingUsageBoundsOneWindow5() will take care of updating
+      * MAX_PIXELS_FETCHED_PER_LINE, if window scaling is enabled later.
+      * On Volta, Program for each window that is attached to head. For turing+,
+      * SetScalingUsageBoundsOneWindow5() will take care of programming window
+      * usage bounds only for the layers/windows in use.
+      */
+
+    setWindowUsageBounds |=
+       DRF_NUM(C37D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _MAX_PIXELS_FETCHED_PER_LINE,
+               GetMaxPixelsFetchedPerLine(pViewPort->in.width,
+               NV_EVO_SCALE_FACTOR_1X));
+
+    for (win = 0; win < pDevEvo->numWindows; win++) {
+        if (head != pDevEvo->headForWindow[win]) {
+            continue;
+        }
+
+        nvDmaSetStartEvoMethod(pChannel, NVC37D_WINDOW_SET_WINDOW_USAGE_BOUNDS(win), 1);
+        nvDmaSetEvoMethodData(pChannel, setWindowUsageBounds);
+    }
 }
 
 static void EvoSetViewportInOutC5(NVDevEvoPtr pDevEvo, const int head,
@@ -5289,13 +5310,9 @@ static void EvoSetViewportInOutC5(NVDevEvoPtr pDevEvo, const int head,
                                   NVEvoUpdateState *updateState)
 {
     NVEvoChannelPtr pChannel = pDevEvo->core;
-    NvU32 setWindowUsageBounds =
-        (NV_EVO3_DEFAULT_WINDOW_USAGE_BOUNDS_C5 |
-         DRF_DEF(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _INPUT_SCALER_TAPS, _TAPS_2) |
-         DRF_DEF(C57D, _WINDOW_SET_WINDOW_USAGE_BOUNDS, _UPSCALING_ALLOWED, _FALSE));
     NvU32 verticalUpscalingAllowed =
         EvoSetViewportInOut3(pDevEvo, head, pViewPortMin, pViewPort,
-                             pViewPortMax, updateState, setWindowUsageBounds);
+                             pViewPortMax, updateState);
 
     nvDmaSetStartEvoMethod(pChannel,
         NVC57D_HEAD_SET_HEAD_USAGE_BOUNDS(head), 1);

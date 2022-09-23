@@ -151,6 +151,37 @@ done:
     return status;
 }
 
+static NV_STATUS test_unexpected_completed_values(uvm_va_space_t *va_space)
+{
+    NV_STATUS status;
+    uvm_gpu_t *gpu;
+
+    for_each_va_space_gpu(gpu, va_space) {
+        uvm_channel_t *channel;
+        NvU64 completed_value;
+
+        // The GPU channel manager is destroyed and then re-created after
+        // the test, so this test requires exclusive access to the GPU.
+        TEST_CHECK_RET(uvm_gpu_retained_count(gpu) == 1);
+
+        channel = &gpu->channel_manager->channel_pools[0].channels[0];
+        completed_value = uvm_channel_update_completed_value(channel);
+        uvm_gpu_semaphore_set_payload(&channel->tracking_sem.semaphore, (NvU32)completed_value + 1);
+
+        TEST_CHECK_RET(uvm_global_get_status() == NV_OK);
+        uvm_channel_update_progress_all(channel);
+        TEST_CHECK_RET(uvm_global_reset_fatal_error() == NV_ERR_INVALID_STATE);
+
+        uvm_channel_manager_destroy(gpu->channel_manager);
+        // Destruction will hit the error again, so clear one more time.
+        uvm_global_reset_fatal_error();
+
+        TEST_NV_CHECK_RET(uvm_channel_manager_create(gpu, &gpu->channel_manager));
+    }
+
+    return NV_OK;
+}
+
 static NV_STATUS uvm_test_rc_for_gpu(uvm_gpu_t *gpu)
 {
     uvm_push_t push;
@@ -711,6 +742,14 @@ NV_STATUS uvm_test_channel_sanity(UVM_TEST_CHANNEL_SANITY_PARAMS *params, struct
 
 
 
+
+    g_uvm_global.disable_fatal_error_assert = true;
+    uvm_release_asserts_set_global_error_for_tests = true;
+    status = test_unexpected_completed_values(va_space);
+    uvm_release_asserts_set_global_error_for_tests = false;
+    g_uvm_global.disable_fatal_error_assert = false;
+    if (status != NV_OK)
+        goto done;
 
     if (g_uvm_global.num_simulated_devices == 0) {
         status = test_rc(va_space);

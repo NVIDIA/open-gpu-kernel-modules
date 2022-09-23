@@ -1959,6 +1959,7 @@ memmgrFillComprInfo_IMPL
 {
     const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
         kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+    NvU32 size;
 
     portMemSet(pComprInfo, 0, sizeof(*pComprInfo));
 
@@ -1969,10 +1970,12 @@ memmgrFillComprInfo_IMPL
 
     NV_ASSERT(compTagStartOffset != ~(NvU32)0);
 
+    size = pageSize * pageCount;
+
     pComprInfo->compPageShift = pMemorySystemConfig->comprPageShift;
     pComprInfo->compTagLineMin = compTagStartOffset;
     pComprInfo->compPageIndexLo = (NvU32)(surfOffset >> pComprInfo->compPageShift);
-    pComprInfo->compPageIndexHi = (NvU32)((surfOffset + pageSize * pageCount - 1) >> pComprInfo->compPageShift);
+    pComprInfo->compPageIndexHi = (NvU32)((surfOffset + size - 1) >> pComprInfo->compPageShift);
     pComprInfo->compTagLineMultiplier = 1;
 
     return NV_OK;
