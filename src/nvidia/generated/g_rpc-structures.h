@@ -393,6 +393,15 @@ typedef struct rpc_perf_bridgeless_info_update_v17_00
 
 typedef rpc_perf_bridgeless_info_update_v17_00 rpc_perf_bridgeless_info_update_v;
 
+typedef struct rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
+{
+    NvU32      sysmemPfnBitmapRing;
+    NvU32      sysmemPfnBitmapRingHi;
+    NvU32      sysmemPfnBitmap;
+} rpc_set_sysmem_dirty_page_tracking_buffer_v20_00;
+
+typedef rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 rpc_set_sysmem_dirty_page_tracking_buffer_v;
+
 
 #endif
 
@@ -1679,6 +1688,35 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_perf_bridgeless_info_update_v17_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmapRing),
+        .name                 = "sysmemPfnBitmapRing"
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmapRingHi),
+        .name                 = "sysmemPfnBitmapRingHi"
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmap),
+        .name                 = "sysmemPfnBitmap"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 = {
+    .name = "rpc_set_sysmem_dirty_page_tracking_buffer",
+    .header_length = NV_SIZEOF32(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00),
+    .fdesc = vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
+};
+#endif
+
 #endif
 
 #ifdef RPC_DEBUG_PRINT_FUNCTIONS
@@ -1994,6 +2032,13 @@ vmiopd_mdesc_t *rpcdebugPerfBridgelessInfoUpdate_v17_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
+vmiopd_mdesc_t *rpcdebugSetSysmemDirtyPageTrackingBuffer_v20_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00;
+}
+#endif
+
 
 #endif
 
@@ -2076,6 +2121,8 @@ typedef union rpc_generic_union {
     rpc_perf_gpu_boost_sync_limits_callback_v perf_gpu_boost_sync_limits_callback_v;
     rpc_perf_bridgeless_info_update_v17_00 perf_bridgeless_info_update_v17_00;
     rpc_perf_bridgeless_info_update_v perf_bridgeless_info_update_v;
+    rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 set_sysmem_dirty_page_tracking_buffer_v20_00;
+    rpc_set_sysmem_dirty_page_tracking_buffer_v set_sysmem_dirty_page_tracking_buffer_v;
 } rpc_generic_union;
 
 #endif

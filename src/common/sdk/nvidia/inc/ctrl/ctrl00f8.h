@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl00f8.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 
 #define NV00F8_CTRL_CMD(cat,idx)       NVXXXX_CTRL_CMD(0x00f8, NV00F8_CTRL_##cat, idx)
@@ -67,15 +64,33 @@
  *
  *  allocFlags [OUT]
  *    Flags passed during the allocation.
+ *
+ *  physAttrs [OUT]
+ *    Physical attributes associated with memory allocation.
+ *    For flexible mappings, it is not possible to retrieve this information,
+ *    behavior is undefined (returns all zeros).
  */
 #define NV00F8_CTRL_CMD_GET_INFO (0xf80101U) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_GET_INFO_PARAMS_MESSAGE_ID" */
+
+/*
+ * addressSpace
+ *     Same as NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE.
+ *
+ * compressionCoverage
+ *     Same as NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE.
+ */
+typedef struct NV_PHYSICAL_MEMORY_ATTRS {
+    NvU32 addressSpace;
+    NvU32 compressionCoverage;
+} NV_PHYSICAL_MEMORY_ATTRS;
 
 #define NV00F8_CTRL_GET_INFO_PARAMS_MESSAGE_ID (0x1U)
 
 typedef struct NV00F8_CTRL_GET_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 size, 8);
-    NvU32 pageSize;
-    NvU32 allocFlags;
+    NvU32                    pageSize;
+    NvU32                    allocFlags;
+    NV_PHYSICAL_MEMORY_ATTRS physAttrs;
 } NV00F8_CTRL_GET_INFO_PARAMS;
 
 /*

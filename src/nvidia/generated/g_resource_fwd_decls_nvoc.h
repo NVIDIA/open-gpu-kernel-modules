@@ -39,6 +39,8 @@ extern "C" {
 #ifndef RESOURCE_FWD_DECLS_H
 #define RESOURCE_FWD_DECLS_H
 
+#include "rmconfig.h"
+
 // Base classes
 struct ChannelDescendant;
 
@@ -544,6 +546,18 @@ typedef struct I2cApi I2cApi;
 #ifndef __nvoc_class_id_I2cApi
 #define __nvoc_class_id_I2cApi 0xceb8f6
 #endif /* __nvoc_class_id_I2cApi */
+
+
+struct KernelCcuApi;
+
+#ifndef __NVOC_CLASS_KernelCcuApi_TYPEDEF__
+#define __NVOC_CLASS_KernelCcuApi_TYPEDEF__
+typedef struct KernelCcuApi KernelCcuApi;
+#endif /* __NVOC_CLASS_KernelCcuApi_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_KernelCcuApi
+#define __nvoc_class_id_KernelCcuApi 0x3abed3
+#endif /* __nvoc_class_id_KernelCcuApi */
 
 
 struct KernelChannel;

@@ -101,13 +101,6 @@
 #   define NV_ANDROID
 #endif
 
-
-
-
-
-
-
-
 #if defined(DceCore) && !defined(NV_DCECORE)
 #    define NV_DCECORE
 #endif
@@ -354,15 +347,6 @@
 #else
 #define NVOS_IS_INTEGRITY 0
 #endif
-
-
-
-
-
-
-
-
-
 
 #if defined(NVCPU_X86)
 #define NVCPU_IS_X86 1

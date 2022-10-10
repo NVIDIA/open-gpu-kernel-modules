@@ -101,24 +101,6 @@ typedef enum
 static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_parent_gpu_t *parent_gpu, uvm_pmm_gpu_memory_type_t type)
 {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     return type;
 }
 
@@ -323,14 +305,6 @@ static NV_STATUS gpu_mem_check(uvm_gpu_t *gpu,
     uvm_gpu_address_t verif_gpu_addr;
     NvU32 *verif_cpu_addr = uvm_mem_get_cpu_addr_kernel(verif_mem);
     size_t i;
-
-
-
-
-
-
-
-
 
     UVM_ASSERT(verif_mem->size >= size);
     memset(verif_cpu_addr, 0, size);
@@ -537,11 +511,7 @@ static NV_STATUS basic_test(uvm_va_space_t *va_space, uvm_gpu_t *gpu,
 
     if (mode == UvmTestPmmSanityModeBasic) {
         first_memory_type = UVM_PMM_GPU_MEMORY_TYPE_USER;
-
-
-
         last_memory_type = UVM_PMM_GPU_MEMORY_TYPE_USER;
-
         first_free_pattern = BASIC_TEST_FREE_PATTERN_EVERY_N;
         last_free_pattern = BASIC_TEST_FREE_PATTERN_EVERY_N;
     }
@@ -897,10 +867,6 @@ NV_STATUS uvm_test_pmm_check_leak(UVM_TEST_PMM_CHECK_LEAK_PARAMS *params, struct
     uvm_pmm_gpu_memory_type_t last_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER;
     uvm_pmm_gpu_memory_type_t current_user_mode = first_user_mode;
 
-
-
-
-
     if (params->alloc_limit < -1)
         return NV_ERR_INVALID_ARGUMENT;
 
@@ -1035,10 +1001,6 @@ NV_STATUS uvm_test_pmm_async_alloc(UVM_TEST_PMM_ASYNC_ALLOC_PARAMS *params, stru
     uvm_pmm_gpu_memory_type_t first_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER;
     uvm_pmm_gpu_memory_type_t last_user_mode = UVM_PMM_GPU_MEMORY_TYPE_USER;
     uvm_pmm_gpu_memory_type_t current_user_mode = first_user_mode;
-
-
-
-
 
     uvm_va_space_down_read(va_space);
     gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
@@ -1237,9 +1199,7 @@ static NV_STATUS test_indirect_peers(uvm_gpu_t *owning_gpu, uvm_gpu_t *accessing
     if (!chunks)
         return NV_ERR_NO_MEMORY;
 
-
-
-
+    UVM_ASSERT(!g_uvm_global.sev_enabled);
 
     TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_and_map_cpu_kernel(UVM_CHUNK_SIZE_MAX, current->mm, &verif_mem), out);
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(verif_mem, owning_gpu), out);

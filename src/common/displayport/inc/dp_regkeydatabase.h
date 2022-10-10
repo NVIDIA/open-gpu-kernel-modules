@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,12 +65,6 @@
 //
 #define NV_DP_DSC_MST_CAP_BUG_3143315                  "DP_DSC_MST_CAP_BUG_3143315"
 
-// Enable DSC Pass through support in MST mode.
-#define NV_DP_DSC_MST_ENABLE_PASS_THROUGH              "DP_DSC_MST_ENABLE_PASS_THROUGH"
-
-// Regkey to reduce number of 2H1OR LTs which fixes bug 3534707
-#define NV_DP_DSC_OPTIMIZE_LT_BUG_3534707              "DP_DSC_OPTIMIZE_LT_BUG_3534707"
-
 #define NV_DP_REGKEY_NO_REPLY_TIMER_FOR_BUSY_WAITING   "NO_REPLY_TIMER_FOR_BUSY_WAITING"
 
 #define NV_DP_REGKEY_DPCD_PROBING_FOR_BUSY_WAITING     "DP_DPCD_PROBING_FOR_BUSY_WAITING"
@@ -106,8 +100,6 @@ struct DP_REGKEY_DATABASE
     bool  bOptLinkKeptAliveSst;
     bool  bBypassEDPRevCheck;
     bool  bDscMstCapBug3143315;
-    bool  bDscMstEnablePassThrough;
-    bool  bDscOptimizeLTBug3534707;
     bool  bNoReplyTimerForBusyWaiting;
     bool  bDpcdProbingForBusyWaiting;
 };

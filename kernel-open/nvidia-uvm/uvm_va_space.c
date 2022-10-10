@@ -365,13 +365,6 @@ static void unregister_gpu(uvm_va_space_t *va_space,
         }
     }
 
-
-
-
-
-
-
-
     va_space_check_processors_masks(va_space);
 }
 
@@ -751,17 +744,6 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
         goto done;
     }
 
-
-
-
-
-
-
-
-
-
-
-
     uvm_processor_mask_set(&va_space->registered_gpus, gpu->id);
     va_space->registered_gpus_table[uvm_id_gpu_index(gpu->id)] = gpu;
 
@@ -774,9 +756,7 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     // All GPUs have native atomics on their own memory
     processor_mask_array_set(va_space->has_native_atomics, gpu->id, gpu->id);
 
-
-
-
+    // TODO: Bug 3252572: Support the new link type UVM_GPU_LINK_C2C
     if (gpu->parent->sysmem_link >= UVM_GPU_LINK_NVLINK_1) {
         processor_mask_array_set(va_space->has_nvlink, gpu->id, UVM_ID_CPU);
         processor_mask_array_set(va_space->has_nvlink, UVM_ID_CPU, gpu->id);
@@ -796,17 +776,11 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     processor_mask_array_set(va_space->can_access, gpu->id, gpu->id);
     processor_mask_array_set(va_space->accessible_from, gpu->id, gpu->id);
 
-
-
-
-
-
-
-
-    // All GPUs have direct access to sysmem
-    processor_mask_array_set(va_space->can_access, gpu->id, UVM_ID_CPU);
-    processor_mask_array_set(va_space->accessible_from, UVM_ID_CPU, gpu->id);
-
+    // All GPUs have direct access to sysmem, unless we're in SEV mode
+    if (!g_uvm_global.sev_enabled) {
+        processor_mask_array_set(va_space->can_access, gpu->id, UVM_ID_CPU);
+        processor_mask_array_set(va_space->accessible_from, UVM_ID_CPU, gpu->id);
+    }
 
     processor_mask_array_set(va_space->can_copy_from, gpu->id, gpu->id);
     processor_mask_array_set(va_space->can_copy_from, gpu->id, UVM_ID_CPU);

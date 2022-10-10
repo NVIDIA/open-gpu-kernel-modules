@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2017-2020 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #include "nvlink.h"
 #include "nvVer.h"
@@ -708,6 +707,12 @@ nvlink_lib_ctrl_all_links
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
 
+            if (links[0]->dev->enableALI)
+            {
+                status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
+
             iocReq->status = nvlink_core_initphase1(links, numLinks,
                                                     NVLINK_STATE_CHANGE_SYNC);
             break;
@@ -726,6 +731,16 @@ nvlink_lib_ctrl_all_links
 
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
+
+            //
+            // If the current nvlink device does not support the command
+            // skip using the command and return success for FM to continue on.
+            //
+            if (links[0]->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
 
             iocReq->status = nvlink_core_rx_init_term(links, numLinks,
                                                       NVLINK_STATE_CHANGE_ASYNC);
@@ -746,6 +761,12 @@ nvlink_lib_ctrl_all_links
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
 
+            if (links[0]->dev->enableALI)
+            {
+                status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
+
             iocReq->status = nvlink_core_set_rx_detect(links, numLinks,
                                                       NVLINK_STATE_CHANGE_ASYNC);
             break;
@@ -765,6 +786,12 @@ nvlink_lib_ctrl_all_links
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
 
+            if (links[0]->dev->enableALI)
+            {
+                status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
+
             iocReq->status = nvlink_core_get_rx_detect(links, numLinks,
                                                       NVLINK_STATE_CHANGE_ASYNC);
             break;
@@ -783,6 +810,12 @@ nvlink_lib_ctrl_all_links
 
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
+
+            if (links[0]->dev->enableALI)
+            {
+                status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
 
             if (iocReq->commMode)
             {
@@ -816,6 +849,16 @@ nvlink_lib_ctrl_all_links
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
 
+            //
+            // If the current nvlink device does not support the command
+            // skip using the command and return success for FM to continue on.
+            //
+            if (links[0]->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                iocReq->status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
+
             iocReq->status = nvlink_core_calibrate_links(links, numLinks,
                                                       NVLINK_STATE_CHANGE_SYNC);
             break;
@@ -833,6 +876,16 @@ nvlink_lib_ctrl_all_links
 
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
+
+            //
+            // If the current nvlink device does not support the command
+            // skip using the command and return success for FM to continue on.
+            //
+            if (links[0]->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
 
             iocReq->status = nvlink_core_enable_data(links, numLinks,
                                                       NVLINK_STATE_CHANGE_SYNC);
@@ -871,10 +924,17 @@ nvlink_lib_ctrl_all_links
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
 
+            if (links[0]->dev->enableALI)
+            {
+                status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
+
             iocReq->status = nvlink_core_initnegotiate(links, numLinks,
                                                       NVLINK_STATE_CHANGE_ASYNC);
             break;
         }
+
         case CTRL_NVLINK_INITPHASE5:
         {
             nvlink_initphase5 *iocReq;
@@ -889,6 +949,18 @@ nvlink_lib_ctrl_all_links
             // default initialize status to NVL_SUCCESS
             iocReq->status = NVL_SUCCESS;
 
+            //
+            // If the current nvlink device does not support the command
+            // skip using the command and return success for FM to continue on.
+            //
+            if (links[0]->version < NVLINK_DEVICE_VERSION_40 ||
+                links[0]->dev->enableALI)
+            {
+                status = NVL_SUCCESS;
+                goto nvlink_lib_ctrl_all_links_end;
+            }
+            iocReq->status = nvlink_core_initphase5(links, numLinks,
+                                                      NVLINK_STATE_CHANGE_ASYNC);
             break;
         }
 
@@ -2043,6 +2115,16 @@ nvlink_lib_ctrl_train_intranode_conn
     {
         case nvlink_train_conn_off_to_swcfg:
         {
+            if (srcLink->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                // non-ALI training for NVLink4.0+
+                if (!srcLink->dev->enableALI)
+                {
+                    nvlink_core_init_links_from_off_to_swcfg_non_ALI(
+                                            initLinks, count, NVLINK_STATE_CHANGE_SYNC);
+                }
+            }
+            else
             {
                 // ALT training for NVLink3.0+
                 nvlink_core_init_links_from_off_to_swcfg(
@@ -2052,8 +2134,16 @@ nvlink_lib_ctrl_train_intranode_conn
         }
         case nvlink_train_conn_swcfg_to_active:
         {
-            if (srcLink->version >= NVLINK_DEVICE_VERSION_30)
-
+            if (srcLink->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                // non-ALI training for NVLink4.0+
+                if (!srcLink->dev->enableALI)
+                {
+                    status = nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI(
+                                                     &conn, 1, NVLINK_STATE_CHANGE_SYNC);
+                }
+            } 
+            else if (srcLink->version >= NVLINK_DEVICE_VERSION_30)
             {
                 // ALT training for NVLink3.0+
                 status = nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT(
@@ -2333,6 +2423,16 @@ nvlink_lib_ctrl_train_intranode_conns_parallel
     {
         case nvlink_train_conn_off_to_swcfg:
         {
+            if (srcLink->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                // non-ALI training for NVLink4.0+
+                if (!srcLink->dev->enableALI)
+                {
+                    nvlink_core_init_links_from_off_to_swcfg_non_ALI(
+                                            initLinks, count, NVLINK_STATE_CHANGE_SYNC);
+                }
+            }
+            else
             {
                 // ALT training for NVLink3.0+
                 nvlink_core_init_links_from_off_to_swcfg(
@@ -2342,6 +2442,16 @@ nvlink_lib_ctrl_train_intranode_conns_parallel
         }
         case nvlink_train_conn_swcfg_to_active:
         {
+            if (srcLink->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                // non-ALI training for NVLink4.0+
+                if (!srcLink->dev->enableALI)
+                {
+                    status = nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI(
+                                                        conns, numConns, NVLINK_STATE_CHANGE_SYNC);
+                }
+            }
+            else
             {
                 // ALT training for NVLink3.0+
                 status = nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT(
@@ -3418,8 +3528,6 @@ nvlink_lib_ctrl_get_device_link_states
 {
     nvlink_link  *endpoint  = NULL;
     nvlink_device *dev      = NULL;
-	nvlink_device *devIter    = NULL;
-    nvlink_link   *remoteLink = NULL;
     NvlStatus     status    = NVL_SUCCESS;
     NvU32         numLinks  = 0;
     NvU32         i         = 0;
@@ -3463,14 +3571,12 @@ nvlink_lib_ctrl_get_device_link_states
     // Top-level lock is now acquired. Proceed to traversing the list
     // of devices and list of links to lock all links
     //
-    FOR_EACH_DEVICE_REGISTERED(devIter, nvlinkLibCtx.nv_devicelist_head, node)
+    FOR_EACH_LINK_REGISTERED(endpoint, dev, node)
     {
-        FOR_EACH_LINK_REGISTERED(endpoint, devIter, node)
-    {
-            if (numLinks >= NVLINK_MAX_SYSTEM_LINK_NUM)
+        if (numLinks >= NVLINK_MAX_NVLINK_ENDPOINTS)
         {
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                    "%s: numLinks >= NVLINK_MAX_SYSTEM_LINK_NUM",
+                "%s: numLinks >= NVLINK_MAX_NVLINK_ENDPOINTS",
                 __FUNCTION__));
 
             nvlink_assert(0);
@@ -3483,7 +3589,6 @@ nvlink_lib_ctrl_get_device_link_states
         links[numLinks] = endpoint;
         numLinks++;
     }
-	}
 
     // Acquire the per-link locks
     status = nvlink_lib_link_locks_acquire(links, numLinks);
@@ -3519,31 +3624,6 @@ nvlink_lib_ctrl_get_device_link_states
             "%s: link 0x%x -- rxDet status 0x%x, linkMode 0x%x,\n",
             __FUNCTION__, i, links[i]->bRxDetected, params->endStates[i].linkMode));
 
-        //
-        // If the link succeeds rxDet then go through and find its peer link. What is important
-        // is not actually finding the link, but making sure the corelib goes through the discovery
-        // process and has endpoints cache the remote information in the corelib such that
-        // FM or endpoints can query the corelib for the topology of the system.
-        //
-        if (links[i]->bRxDetected)
-        {
-            remoteLink = NULL;
-            nvlink_core_discover_and_get_remote_end(links[i], &remoteLink, 0);
-
-            if (remoteLink == NULL)
-            {
-                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                    "%s: link 0x%x: couldn't find link pair\n",
-                    __FUNCTION__, i));
-                continue;
-            }
-
-        // If the link is in active, issue postActive settings
-        if (params->endStates[i].linkMode == nvlink_link_mode_active)
-        {
-            links[i]->link_handlers->training_complete(links[i]);
-        }
-    }
     }
 
     params->endStatesCount = numLinks;

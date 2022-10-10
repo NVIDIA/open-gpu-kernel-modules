@@ -49,7 +49,6 @@
 
 #include <nverror.h>
 
-#include "gpu/nvdec/kernel_nvdec.h"
 #include "gpu/sec2/kernel_sec2.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "platform/platform.h"
@@ -89,7 +88,7 @@ static NV_STATUS gpuStatePostLoad(OBJGPU *, NvU32);
 static NV_STATUS gpuStatePreUnload(OBJGPU *, NvU32);
 static NV_STATUS gpuStatePostUnload(OBJGPU *, NvU32);
 static void      gpuXlateHalImplToArchImpl(OBJGPU *, HAL_IMPLEMENTATION, NvU32 *, NvU32 *);
-static NvBool    gpuSatisfiesTemporalOrder(OBJGPU *, HAL_IMPLEMENTATION, NvU32, NvU32);
+static NvBool    gpuSatisfiesTemporalOrder(OBJGPU *, HAL_IMPLEMENTATION);
 static NvBool    gpuSatisfiesTemporalOrderMaskRev(OBJGPU *, HAL_IMPLEMENTATION, NvU32, NvU32, NvU32);
 static NvBool    gpuIsT124ImplementationOrBetter(OBJGPU *);
 static NvBool    gpuShouldCreateObject(PGPUCHILDINFO, PENGDESCRIPTOR, NvU32);
@@ -354,6 +353,11 @@ gpuPostConstruct_IMPL
     // need to get illumination values after the GPU Id
     // has been setup to allow for GPU specific settings
     gpuDeterminePersistantIllumSettings(pGpu);
+
+#if NVCPU_IS_PPC64LE
+    // Skip PCI Express Host Bridge initialization on PPC64 platforms
+    _setPlatformNoHostbridgeDetect(NV_TRUE);
+#endif
 
     // Construct and update the engine database
     rmStatus = gpuConstructEngineTable(pGpu);
@@ -2755,7 +2759,7 @@ gpuIsImplementationOrBetter_IMPL
     gpuXlateHalImplToArchImpl(pGpu, halImpl, &gpuArch, &gpuImpl);
 
     // "is implementation or better" is only defined between 2 gpus within
-    // the same "gpu series" as defined in config/Gpus.pm and gpuarch.h
+    // the same "gpu series" as defined in config/Chips.pm and nv_arch.h
     chipArch = gpuGetChipArch(pGpu);
 
     if (DRF_VAL(GPU, _ARCHITECTURE, _SERIES, chipArch) == DRF_VAL(GPU, _ARCHITECTURE, _SERIES, gpuArch))
@@ -2768,7 +2772,7 @@ gpuIsImplementationOrBetter_IMPL
         else
         {
             // In case there is a temporal ordering we need to account for
-            result = gpuSatisfiesTemporalOrder(pGpu, halImpl, gpuArch, gpuImpl);
+            result = gpuSatisfiesTemporalOrder(pGpu, halImpl);
         }
     }
 
@@ -3004,6 +3008,34 @@ gpuXlateHalImplToArchImpl
         }
 
 
+        case HAL_IMPL_AD102:
+        {
+            *gpuArch = GPU_ARCHITECTURE_ADA;
+            *gpuImpl = GPU_IMPLEMENTATION_AD102;
+            break;
+        }
+
+        case HAL_IMPL_AD103:
+        {
+            *gpuArch = GPU_ARCHITECTURE_ADA;
+            *gpuImpl = GPU_IMPLEMENTATION_AD103;
+            break;
+        }
+
+        case HAL_IMPL_AD104:
+        {
+            *gpuArch = GPU_ARCHITECTURE_ADA;
+            *gpuImpl = GPU_IMPLEMENTATION_AD104;
+            break;
+        }
+
+        case HAL_IMPL_GH100:
+        {
+            *gpuArch = GPU_ARCHITECTURE_HOPPER;
+            *gpuImpl = GPU_IMPLEMENTATION_GH100;
+            break;
+        }
+
         default:
         {
             *gpuArch = 0;
@@ -3016,8 +3048,10 @@ gpuXlateHalImplToArchImpl
 }
 
 //
-// default Logic: If arch is greater than requested --> NV_TRUE
-//                OR If arch is = requested AND impl is >= requested --> NV_TRUE
+// default Logic: If halImpl is equal or greater than requested --> NV_TRUE
+//
+// Arch and impl IDs are not guaranteed to be ordered. 
+// "halImpl" is used here to match the ordering in chip-config/NVOC
 //
 // NOTE: only defined for gpus within same gpu series
 //
@@ -3025,9 +3059,7 @@ static NvBool
 gpuSatisfiesTemporalOrder
 (
     OBJGPU *pGpu,
-    HAL_IMPLEMENTATION halImpl,
-    NvU32 gpuArch,
-    NvU32 gpuImpl
+    HAL_IMPLEMENTATION halImpl
 )
 {
     NvBool result = NV_FALSE;
@@ -3047,12 +3079,11 @@ gpuSatisfiesTemporalOrder
         }
         default:
         {
-            NvU32 chipArch = gpuGetChipArch(pGpu);
-            NvU32 chipImpl = gpuGetChipImpl(pGpu);
+            HAL_IMPLEMENTATION chipImpl = pGpu->halImpl;
+            NV_ASSERT(chipImpl < HAL_IMPL_MAXIMUM);
 
-            result = ((chipArch > gpuArch) ||
-                      ((chipArch == gpuArch) &&
-                      (chipImpl >= gpuImpl)));
+            result = (chipImpl >= halImpl);
+
             break;
         }
     }
@@ -3156,6 +3187,9 @@ static const EXTERN_TO_INTERNAL_ENGINE_ID rmClientEngineTable[] =
     { NV2080_ENGINE_TYPE_NVDEC2,     classId(OBJBSP)     , 2,  NV_TRUE },
     { NV2080_ENGINE_TYPE_NVDEC3,     classId(OBJBSP)     , 3,  NV_TRUE },
     { NV2080_ENGINE_TYPE_NVDEC4,     classId(OBJBSP)     , 4,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVDEC5,     classId(OBJBSP)     , 5,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVDEC6,     classId(OBJBSP)     , 6,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVDEC7,     classId(OBJBSP)     , 7,  NV_TRUE },
     { NV2080_ENGINE_TYPE_CIPHER,     classId(OBJCIPHER)  , 0,  NV_TRUE },
     { NV2080_ENGINE_TYPE_NVENC0,     classId(OBJMSENC)   , 0,  NV_TRUE },
     { NV2080_ENGINE_TYPE_NVENC1,     classId(OBJMSENC)   , 1,  NV_TRUE },
@@ -3163,6 +3197,13 @@ static const EXTERN_TO_INTERNAL_ENGINE_ID rmClientEngineTable[] =
     { NV2080_ENGINE_TYPE_SW,         classId(OBJSWENG)   , 0,  NV_TRUE },
     { NV2080_ENGINE_TYPE_SEC2,       classId(OBJSEC2)    , 0,  NV_TRUE },
     { NV2080_ENGINE_TYPE_NVJPEG0,    classId(OBJNVJPG)   , 0,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVJPEG1,    classId(OBJNVJPG)   , 1,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVJPEG2,    classId(OBJNVJPG)   , 2,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVJPEG3,    classId(OBJNVJPG)   , 3,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVJPEG4,    classId(OBJNVJPG)   , 4,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVJPEG5,    classId(OBJNVJPG)   , 5,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVJPEG6,    classId(OBJNVJPG)   , 6,  NV_TRUE },
+    { NV2080_ENGINE_TYPE_NVJPEG7,    classId(OBJNVJPG)   , 7,  NV_TRUE },
     { NV2080_ENGINE_TYPE_OFA,        classId(OBJOFA)     , 0,  NV_TRUE },
     { NV2080_ENGINE_TYPE_DPU,        classId(OBJDPU)     , 0,  NV_FALSE },
     { NV2080_ENGINE_TYPE_PMU,        classId(Pmu)        , 0,  NV_FALSE },

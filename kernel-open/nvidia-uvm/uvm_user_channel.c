@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -168,10 +168,9 @@ static NV_STATUS uvm_user_channel_create(uvm_va_space_t *va_space,
     user_channel->tsg.valid                 = channel_info->bTsgChannel == NV_TRUE;
     user_channel->tsg.id                    = channel_info->tsgId;
     user_channel->tsg.max_subctx_count      = channel_info->tsgMaxSubctxCount;
-    user_channel->work_submission_token     = channel_info->workSubmissionToken;
-    user_channel->work_submission_offset    = channel_info->workSubmissionOffset;
     user_channel->clear_faulted_token       = channel_info->clearFaultedToken;
     user_channel->chram_channel_register    = channel_info->pChramChannelRegister;
+    user_channel->runlist_pri_base_register = channel_info->pRunlistPRIBaseRegister;
     user_channel->smc_engine_id             = channel_info->smcEngineId;
     user_channel->smc_engine_ve_id_offset   = channel_info->smcEngineVeIdOffset;
 

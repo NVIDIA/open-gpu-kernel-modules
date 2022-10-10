@@ -39,6 +39,8 @@
 #include "class/clc5c0.h"
 #include "class/clc6c0.h"
 #include "class/clc7c0.h"
+#include "class/clc9c0.h"
+#include "class/clcbc0.h"
 // GFX
 #include "class/clb097.h"
 #include "class/clb197.h"
@@ -48,6 +50,8 @@
 #include "class/clc597.h"
 #include "class/clc697.h"
 #include "class/clc797.h"
+#include "class/clc997.h"
+#include "class/clcb97.h"
 // TWOD
 #include "class/cl902d.h"
 
@@ -99,6 +103,8 @@ kgrmgrGetGrObjectType_IMPL
         case TURING_COMPUTE_A:
         case AMPERE_COMPUTE_A:
         case AMPERE_COMPUTE_B:
+        case ADA_COMPUTE_A:
+        case HOPPER_COMPUTE_A:
             *pObjectType = GR_OBJECT_TYPE_COMPUTE;
             break;
         case MAXWELL_A:
@@ -109,6 +115,8 @@ kgrmgrGetGrObjectType_IMPL
         case TURING_A:
         case AMPERE_A:
         case AMPERE_B:
+        case ADA_A:
+        case HOPPER_A:
             *pObjectType = GR_OBJECT_TYPE_3D;
             break;
         case FERMI_TWOD_A:
@@ -636,7 +644,7 @@ kgrmgrAllocVeidsForGrIdx_IMPL
 
     // We statically assign VEIDs to a GR based on the number of GPCs connected to it
     maxVeidsForThisGr = maxVeidsPerGpc * gpcCount;
-    reqVeidMask = NVBIT64(maxVeidsForThisGr) - 1;
+    reqVeidMask = DRF_SHIFTMASK64((maxVeidsForThisGr - 1):0);
 
     // Create a mask for VEIDs associated with this GPU instance
     GPUInstanceVeidEnd = pKernelMIGGPUInstance->resourceAllocation.veidOffset + pKernelMIGGPUInstance->resourceAllocation.veidCount - 1;

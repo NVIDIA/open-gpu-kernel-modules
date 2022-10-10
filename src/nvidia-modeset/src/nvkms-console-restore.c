@@ -757,7 +757,7 @@ NvBool nvEvoRestoreConsole(NVDevEvoPtr pDevEvo, const NvBool allowMST)
 
             FOR_ALL_EVO_DPYS(pDpyEvo, candidateDpys, pDispEvo) {
                 NvBool isTiledDisplayFound = FALSE;
-                TiledDisplayInfo tiledDisplayInfo = { 0 };
+                TiledDisplayInfo tiledDisplayInfo = { };
                 NvBool isTiledDisplayEnable = FALSE;
                 const NVT_DISPLAYID_INFO *pDpyDisplayIdInfo =
                     pDpyEvo->parsedEdid.valid ?

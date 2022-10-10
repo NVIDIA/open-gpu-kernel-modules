@@ -31,6 +31,7 @@
 #include "gpu/bus/kern_bus.h"
 #include "os/os.h"
 #include "nvRmReg.h"
+#include "gpu/gsp/gsp_static_config.h"
 
 NV_STATUS
 kmemsysConstructEngine_IMPL
@@ -582,10 +583,6 @@ kmemsysSetupCoherentCpuLink_IMPL
     NvU32          data32;
     NvBool         bCpuMapping;
 
-    //
-    // Compute coherent link aperture range for SHH and P9 (!NV_VERIF_FEATURES) to enable
-    // FB access via coherent link(Nvlink/C2C) path
-    //
     {
         NV_ASSERT_OK_OR_RETURN(kmemsysGetFbNumaInfo_HAL(pGpu, pKernelMemorySystem,
                                                         &pKernelMemorySystem->coherentCpuFbBase,
@@ -637,8 +634,6 @@ kmemsysSetupCoherentCpuLink_IMPL
 
     // Switch the toggle for coherent link mapping only if migration is successful
     pGpu->setProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING, NV_TRUE);
-
-    NV_ASSERT_OK_OR_RETURN(kbusVerifyCoherentLink_HAL(pGpu, pKernelBus));
 
     //
     // TODO clean up with bug 2020982

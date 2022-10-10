@@ -53,6 +53,7 @@
 #include "class/clc5c0.h"
 #include "class/clc6c0.h"
 #include "class/clc7c0.h"
+#include "class/clcbc0.h"
 
 #include "class/cl0080.h"
 #include "class/cl2080.h"
@@ -65,6 +66,7 @@
 #include "class/clc36f.h" // VOLTA_CHANNEL_GPFIFO_A
 #include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
+#include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
 #include "class/clc637.h"
 #include "class/clc638.h"
 
@@ -1802,6 +1804,10 @@ kgraphicsCreateGoldenImageChannel_IMPL
         {
             ctrlSize = sizeof(Nvc56fControl);
         }
+        else if (gpuIsClassSupported(pGpu, HOPPER_CHANNEL_GPFIFO_A))
+        {
+            ctrlSize = sizeof(Nvc86fControl);
+        }
         else
         {
             status = NV_ERR_NOT_SUPPORTED;
@@ -2443,19 +2449,21 @@ subdeviceCtrlCmdKGrGetSmToGpcTpcMappings_IMPL
     KernelGraphics *pKernelGraphics;
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     const KGRAPHICS_STATIC_INFO *pStaticInfo;
     NvU32 i;
 
     LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
 
-    if (pKernelGraphicsManager == NULL)
+    if (kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
     {
         return NV_ERR_NOT_SUPPORTED;
     }
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &pParams->grRouteInfo, &pKernelGraphics));
-
+    else
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &pParams->grRouteInfo, &pKernelGraphics));
+    }
     // Verify static info is available
     pStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
     NV_ASSERT_OR_RETURN(pStaticInfo != NULL, NV_ERR_INVALID_STATE);
@@ -2487,13 +2495,21 @@ subdeviceCtrlCmdKGrGetGlobalSmOrder_IMPL
     KernelGraphics *pKernelGraphics;
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     const KGRAPHICS_STATIC_INFO *pStaticInfo;
     NvU32 i;
 
     LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &pParams->grRouteInfo, &pKernelGraphics));
+    if (kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    else
+    {
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &pParams->grRouteInfo, &pKernelGraphics));
+    }
 
     // Verify static info is available
     pStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
@@ -2512,7 +2528,7 @@ subdeviceCtrlCmdKGrGetGlobalSmOrder_IMPL
         pParams->globalSmId[i].localTpcId      = pStaticInfo->globalSmOrder.globalSmId[i].localTpcId;
         pParams->globalSmId[i].localSmId       = pStaticInfo->globalSmOrder.globalSmId[i].localSmId;
         pParams->globalSmId[i].globalTpcId     = pStaticInfo->globalSmOrder.globalSmId[i].globalTpcId;
-        pParams->globalSmId[i].virtualGpcId     = pStaticInfo->globalSmOrder.globalSmId[i].virtualGpcId;
+        pParams->globalSmId[i].virtualGpcId    = pStaticInfo->globalSmOrder.globalSmId[i].virtualGpcId;
         pParams->globalSmId[i].migratableTpcId = pStaticInfo->globalSmOrder.globalSmId[i].migratableTpcId;
     }
 
@@ -3477,3 +3493,36 @@ subdeviceCtrlCmdKGrGetCtxBufferPtes_IMPL
     return status;
 }
 
+/*!
+ * subdeviceCtrlCmdKGrGetGfxGpcAndTpcInfo
+ *
+ * Lock Requirements:
+ *      Assert that API lock and GPUs lock held on entry
+ */
+NV_STATUS
+subdeviceCtrlCmdKGrGetGfxGpcAndTpcInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GR_GET_GFX_GPC_AND_TPC_INFO_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    KernelGraphics *pKernelGraphics;
+    const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+
+    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &pParams->grRouteInfo, &pKernelGraphics));
+
+    // Verify static info is available
+    pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
+    NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo != NULL, NV_ERR_INVALID_STATE);
+
+    pParams->physGfxGpcMask = pKernelGraphicsStaticInfo->floorsweepingMasks.physGfxGpcMask;
+    pParams->numGfxTpc = pKernelGraphicsStaticInfo->floorsweepingMasks.numGfxTpc;
+
+    return NV_OK;
+}

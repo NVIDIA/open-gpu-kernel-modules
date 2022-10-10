@@ -452,7 +452,7 @@ NvBool nvKmsKapiAllocateSystemMemory(struct NvKmsKapiDevice *device,
 {
     NvU32 ret;
     NV_MEMORY_ALLOCATION_PARAMS memAllocParams = { };
-    const NvKmsDispIOCoherencyModes *pIOCoherencyModes;
+    const NvKmsDispIOCoherencyModes *pIOCoherencyModes = NULL;
 
     memAllocParams.owner = NVKMS_RM_HEAP_ID;
     memAllocParams.size = size;
@@ -522,6 +522,9 @@ NvBool nvKmsKapiAllocateSystemMemory(struct NvKmsKapiDevice *device,
             pIOCoherencyModes = &device->nisoIOCoherencyModes;
 
             break;
+        case NVKMS_KAPI_ALLOCATION_TYPE_OFFSCREEN:
+            memAllocParams.flags |= NVOS32_ALLOC_FLAGS_NO_SCANOUT;
+            break;
         default:
             nvKmsKapiLogDeviceDebug(device, "Unknown Allocation Type");
             return NV_FALSE;
@@ -532,7 +535,7 @@ NvBool nvKmsKapiAllocateSystemMemory(struct NvKmsKapiDevice *device,
     memAllocParams.attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO,
                                        memAllocParams.attr2);
 
-    if (!pIOCoherencyModes->coherent) {
+    if (pIOCoherencyModes == NULL || !pIOCoherencyModes->coherent) {
         memAllocParams.attr = FLD_SET_DRF(OS32, _ATTR, _COHERENCY,
                                           _WRITE_COMBINE, memAllocParams.attr);
     } else {
@@ -672,6 +675,15 @@ NvBool nvKmsKapiAllocateVideoMemory(struct NvKmsKapiDevice *device,
                 FLD_SET_DRF(OS32, _ATTR, _COHERENCY, _UNCACHED,
                             memAllocParams.attr);
 
+            break;
+        case NVKMS_KAPI_ALLOCATION_TYPE_OFFSCREEN:
+            memAllocParams.type = NVOS32_TYPE_IMAGE;
+            memAllocParams.flags |=
+                NVOS32_ALLOC_FLAGS_NO_SCANOUT |
+                NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_UP;
+            memAllocParams.attr =
+                FLD_SET_DRF(OS32, _ATTR, _PHYSICALITY, _NONCONTIGUOUS,
+                            memAllocParams.attr);
             break;
         default:
             nvKmsKapiLogDeviceDebug(device, "Unknown Allocation Type");
@@ -1219,6 +1231,7 @@ static struct NvKmsKapiMemory* AllocateVideoMemory
 (
     struct NvKmsKapiDevice *device,
     enum NvKmsSurfaceMemoryLayout layout,
+    enum NvKmsKapiAllocationType type,
     NvU64 size,
     NvU8 *compressible
 )
@@ -1236,7 +1249,7 @@ static struct NvKmsKapiMemory* AllocateVideoMemory
                                       hRmHandle,
                                       layout,
                                       size,
-                                      NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
+                                      type,
                                       compressible)) {
         nvKmsKapiFreeRmHandle(device, hRmHandle);
         FreeMemory(device, memory);
@@ -1258,6 +1271,7 @@ static struct NvKmsKapiMemory* AllocateSystemMemory
 (
     struct NvKmsKapiDevice *device,
     enum NvKmsSurfaceMemoryLayout layout,
+    enum NvKmsKapiAllocationType type,
     NvU64 size,
     NvU8 *compressible
 )
@@ -1275,7 +1289,7 @@ static struct NvKmsKapiMemory* AllocateSystemMemory
                                        hRmHandle,
                                        layout,
                                        size,
-                                       NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
+                                       type,
                                        compressible)) {
         nvKmsKapiFreeRmHandle(device, hRmHandle);
         FreeMemory(device, memory);

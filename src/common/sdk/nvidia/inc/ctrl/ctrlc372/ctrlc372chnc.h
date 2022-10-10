@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrlc372/ctrlc372chnc.finn
 //
 
-
-
-
 #include "nvdisptypes.h"
 #include "ctrl/ctrlc372/ctrlc372base.h"
 

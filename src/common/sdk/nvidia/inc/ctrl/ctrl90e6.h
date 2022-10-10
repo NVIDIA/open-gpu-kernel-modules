@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl90e6.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 #define NV90E6_CTRL_CMD(cat,idx)  \
     NVXXXX_CTRL_CMD(0x90E6, NV90E6_CTRL_##cat, idx)

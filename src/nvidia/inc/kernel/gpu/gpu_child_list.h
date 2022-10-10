@@ -90,6 +90,9 @@
 #if GPU_CHILD_MODULE(FBFLCN)
     GPU_CHILD_SINGLE_INST( OBJFBFLCN,            GPU_GET_FBFLCN,                      1,                NV_FALSE,        NV_FALSE,      pFbflcn          )
 #endif
+#if GPU_CHILD_MODULE(HSHUBMANAGER)
+    GPU_CHILD_SINGLE_INST( OBJHSHUBMANAGER,      GPU_GET_HSHUBMANAGER,                 1,               NV_FALSE,        NV_FALSE,      pHshMgr          )
+#endif
 #if GPU_CHILD_MODULE(HSHUB)
     GPU_CHILD_MULTI_INST ( OBJHSHUB,             GPU_GET_HSHUB,                       GPU_MAX_HSHUBS,   NV_FALSE,        NV_FALSE,      pHshub           )
 #endif
@@ -119,9 +122,6 @@
 #endif
 #if GPU_CHILD_MODULE(KERNEL_GMMU)
     GPU_CHILD_SINGLE_INST( KernelGmmu,           GPU_GET_KERNEL_GMMU,                 1,                NV_FALSE,        NV_FALSE,      pKernelGmmu      )
-#endif
-#if GPU_CHILD_MODULE(KERNEL_NVDEC)
-    GPU_CHILD_SINGLE_INST( KernelNvdec,          GPU_GET_KERNEL_NVDEC,                1,                NV_FALSE,        NV_FALSE,      pKernelNvdec     )
 #endif
 #if GPU_CHILD_MODULE(KERNEL_SEC2)
     GPU_CHILD_SINGLE_INST( KernelSec2,           GPU_GET_KERNEL_SEC2,                 1,                NV_FALSE,        NV_FALSE,      pKernelSec2      )
@@ -291,8 +291,14 @@
 #if GPU_CHILD_MODULE(GSP)
     GPU_CHILD_SINGLE_INST( Gsp,                  GPU_GET_GSP,                         1,                NV_FALSE,        NV_FALSE,      pGsp             )
 #endif
+#if RMCFG_MODULE_KERNEL_FSP && GPU_CHILD_MODULE(KERNEL_FSP)
+    GPU_CHILD_SINGLE_INST( KernelFsp,            GPU_GET_KERNEL_FSP,                  1,                NV_FALSE,        NV_FALSE,      pKernelFsp       )
+#endif
 #if GPU_CHILD_MODULE(OFA)
     GPU_CHILD_SINGLE_INST( OBJOFA,               GPU_GET_OFA,                         1,                NV_FALSE,        NV_FALSE,      pOfa             )
+#endif
+#if RMCFG_MODULE_KERNEL_CCU && GPU_CHILD_MODULE(KERNEL_CCU)
+    GPU_CHILD_SINGLE_INST( KernelCcu,            GPU_GET_KERNEL_CCU,                  1,                NV_FALSE,        NV_FALSE,     pKernelCcu        )   
 #endif
 
 // Undefine the entry macros to simplify call sites

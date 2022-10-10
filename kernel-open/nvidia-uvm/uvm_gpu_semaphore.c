@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -134,7 +134,11 @@ static NV_STATUS pool_alloc_page(uvm_gpu_semaphore_pool_t *pool)
 
     pool_page->pool = pool;
 
-    status = uvm_rm_mem_alloc_and_map_all(pool->gpu, UVM_RM_MEM_TYPE_SYS, UVM_SEMAPHORE_PAGE_SIZE, &pool_page->memory);
+    status = uvm_rm_mem_alloc_and_map_all(pool->gpu,
+                                          UVM_RM_MEM_TYPE_SYS,
+                                          UVM_SEMAPHORE_PAGE_SIZE,
+                                          0,
+                                          &pool_page->memory);
     if (status != NV_OK)
         goto error;
 
@@ -321,7 +325,7 @@ NV_STATUS uvm_gpu_semaphore_pool_map_gpu(uvm_gpu_semaphore_pool_t *pool, uvm_gpu
     uvm_mutex_lock(&pool->mutex);
 
     list_for_each_entry(page, &pool->pages, all_pages_node) {
-        status = uvm_rm_mem_map_gpu(page->memory, gpu);
+        status = uvm_rm_mem_map_gpu(page->memory, gpu, 0);
         if (status != NV_OK)
             goto done;
     }

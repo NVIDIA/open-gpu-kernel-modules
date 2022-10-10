@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2019 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -80,6 +80,7 @@ NV_STATUS uvm_pushbuffer_create(uvm_channel_manager_t *channel_manager, uvm_push
     NV_STATUS status;
     int i;
     uvm_gpu_t *gpu = channel_manager->gpu;
+    NvU64 pushbuffer_alignment;
 
     uvm_pushbuffer_t *pushbuffer = uvm_kvmalloc_zero(sizeof(*pushbuffer));
     if (pushbuffer == NULL)
@@ -96,14 +97,31 @@ NV_STATUS uvm_pushbuffer_create(uvm_channel_manager_t *channel_manager, uvm_push
     UVM_ASSERT(channel_manager->conf.pushbuffer_loc == UVM_BUFFER_LOCATION_SYS ||
                channel_manager->conf.pushbuffer_loc == UVM_BUFFER_LOCATION_VID);
 
+    // The pushbuffer allocation is aligned to UVM_PUSHBUFFER_SIZE and its size
+    // (UVM_PUSHBUFFER_SIZE) is a power of 2. These constraints guarantee that
+    // the entire pushbuffer belongs to a 1TB (2^40) segment. Thus, we can set
+    // the Esched/PBDMA segment base for all channels during their
+    // initialization and it is immutable for the entire channels' lifetime.
+    BUILD_BUG_ON_NOT_POWER_OF_2(UVM_PUSHBUFFER_SIZE);
+    BUILD_BUG_ON(UVM_PUSHBUFFER_SIZE >= (1ull << 40));
+
+    if (gpu->uvm_test_force_upper_pushbuffer_segment)
+        pushbuffer_alignment = (1ull << 40);
+    else
+        pushbuffer_alignment = UVM_PUSHBUFFER_SIZE;
+
     status = uvm_rm_mem_alloc_and_map_cpu(gpu,
-                                          (channel_manager->conf.pushbuffer_loc == UVM_BUFFER_LOCATION_SYS)?
+                                          (channel_manager->conf.pushbuffer_loc == UVM_BUFFER_LOCATION_SYS) ?
                                               UVM_RM_MEM_TYPE_SYS:
                                               UVM_RM_MEM_TYPE_GPU,
                                           UVM_PUSHBUFFER_SIZE,
+                                          pushbuffer_alignment,
                                           &pushbuffer->memory);
     if (status != NV_OK)
         goto error;
+
+    // Verify the GPU can access the pushbuffer.
+    UVM_ASSERT(uvm_pushbuffer_get_gpu_va_base(pushbuffer) + UVM_PUSHBUFFER_SIZE < gpu->parent->max_host_va);
 
     bitmap_fill(pushbuffer->idle_chunks, UVM_PUSHBUFFER_CHUNKS);
     bitmap_fill(pushbuffer->available_chunks, UVM_PUSHBUFFER_CHUNKS);
@@ -375,9 +393,13 @@ static uvm_pushbuffer_chunk_t *gpfifo_to_chunk(uvm_pushbuffer_t *pushbuffer, uvm
 
 void uvm_pushbuffer_mark_completed(uvm_pushbuffer_t *pushbuffer, uvm_gpfifo_entry_t *gpfifo)
 {
-    uvm_pushbuffer_chunk_t *chunk = gpfifo_to_chunk(pushbuffer, gpfifo);
+    uvm_pushbuffer_chunk_t *chunk;
     uvm_push_info_t *push_info = gpfifo->push_info;
     bool need_to_update_chunk = false;
+
+    UVM_ASSERT(gpfifo->type == UVM_GPFIFO_ENTRY_TYPE_NORMAL);
+
+    chunk = gpfifo_to_chunk(pushbuffer, gpfifo);
 
     if (push_info->on_complete != NULL)
         push_info->on_complete(push_info->on_complete_data);
@@ -485,4 +507,9 @@ void uvm_pushbuffer_print_common(uvm_pushbuffer_t *pushbuffer, struct seq_file *
 void uvm_pushbuffer_print(uvm_pushbuffer_t *pushbuffer)
 {
     return uvm_pushbuffer_print_common(pushbuffer, NULL);
+}
+
+NvU64 uvm_pushbuffer_get_gpu_va_base(uvm_pushbuffer_t *pushbuffer)
+{
+    return uvm_rm_mem_get_gpu_uvm_va(pushbuffer->memory, pushbuffer->channel_manager->gpu);
 }

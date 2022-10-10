@@ -143,7 +143,7 @@ typedef struct _def_gpumgr_save_vbios_state
 // because there were compilation dependencies that prevented us
 // from adding gpu/ce/ce.h
 //
-#define NV_CE_PCE2LCE_CONFIG__SIZE_1_MAX 18
+#define NV_CE_PCE2LCE_CONFIG__SIZE_1_MAX 32
 #define NV_CE_GRCE_CONFIG__SIZE_1 2
 #define NV_CE_MAX_HSHUBS 5 // Same as GPU_MAX_HSHUBS
 
@@ -229,6 +229,8 @@ typedef struct GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY
     NvU64 domainBusDevice;
     // Flag checking whether we have restored from static info since boot
     NvBool bVgpuRestoredFromStaticInfo;
+    // MIG state last registered for the GPU this struct was saved for.
+    NvBool bMIGEnabled;
     // Saved instance information. May or may not have any valid entries.
     GPUMGR_SAVE_GPU_INSTANCE saveGI[GPUMGR_MAX_GPU_INSTANCES];
 } GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY;
@@ -349,6 +351,10 @@ void gpumgrAddSystemMIGInstanceTopo_IMPL(NvU64 domainBusDevice);
 #define gpumgrAddSystemMIGInstanceTopo(domainBusDevice) gpumgrAddSystemMIGInstanceTopo_IMPL(domainBusDevice)
 NvBool gpumgrGetSystemMIGInstanceTopo_IMPL(NvU64 domainBusDevice, struct GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY **ppTopoParams);
 #define gpumgrGetSystemMIGInstanceTopo(domainBusDevice, ppTopoParams) gpumgrGetSystemMIGInstanceTopo_IMPL(domainBusDevice, ppTopoParams)
+NvBool gpumgrIsSystemMIGEnabled_IMPL(NvU64 domainBusDevice);
+#define gpumgrIsSystemMIGEnabled(domainBusDevice) gpumgrIsSystemMIGEnabled_IMPL(domainBusDevice)
+void gpumgrSetSystemMIGEnabled_IMPL(NvU64 domainBusDevice, NvBool bMIGEnabled);
+#define gpumgrSetSystemMIGEnabled(domainBusDevice, bMIGEnabled) gpumgrSetSystemMIGEnabled_IMPL(domainBusDevice, bMIGEnabled)
 void gpumgrUnregisterRmCapsForMIGGI_IMPL(NvU64 gpuDomainBusDevice);
 #define gpumgrUnregisterRmCapsForMIGGI(gpuDomainBusDevice) gpumgrUnregisterRmCapsForMIGGI_IMPL(gpuDomainBusDevice)
 void gpumgrUpdateBoardId_IMPL(struct OBJGPU *arg0);

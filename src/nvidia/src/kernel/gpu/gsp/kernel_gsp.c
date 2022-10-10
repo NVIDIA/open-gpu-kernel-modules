@@ -835,9 +835,18 @@ _kgspRpcRecvPoll
         NV_ASSERT(portSafeMulU32(GSP_SCALE_TIMEOUT_EMU_SIM, 1500000, &timeoutResult));
         timeoutUs = timeoutResult;
     }
+    else
+    {
+        // We should only ever timeout this when GSP is in really bad state, so if it just
+        // happens to timeout on default timeout it should be OK for us to give it a little
+        // more time - make this timeout 1.5 of the default to allow some leeway.
+        NvU32 defaultus = pGpu->timeoutData.defaultus;
+
+        timeoutUs = defaultus + defaultus / 2;
+    }
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
-    gpuSetTimeout(pGpu, timeoutUs, &timeout, 0);
+    gpuSetTimeout(pGpu, timeoutUs, &timeout, GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
 
     for (;;)
     {
@@ -1323,6 +1332,14 @@ kgspInitRm_IMPL
      * Here we prepare the Booter ucode images in SYSMEM so they may be loaded onto
      * SEC2 (Load / Unload) and NVDEC0 (Unload).
      */
+    if (pKernelGsp->bPartitionedFmc)
+    {
+        //
+        // The secure boot ucode is included in the partitioned FMC, no need for
+        // separate Booter ucodes.
+        //
+    }
+    else
     {
         if (pKernelGsp->pBooterLoadUcode == NULL)
         {
@@ -1461,7 +1478,18 @@ kgspUnloadRm_IMPL
 
     // Dump GSP-RM logs and reset before invoking FWSEC-SB
     kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
-    kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+
+    //
+    // Avoid cascading timeouts when attempting to invoke the below ucodes if
+    // we are unloading due to a GSP-RM timeout.
+    //
+    threadStateResetTimeout(pGpu);
+
+    // Because of COT, RM cannot reset GSP-RISCV and FSP has exclusive access to reset and reboot GSP for next run.
+    if(!(pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_COT_ENABLED)))
+    {
+        kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+    }
 
     // Invoke FWSEC-SB to put back PreOsApps during driver unload
     status = kgspExecuteFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode);
@@ -1471,6 +1499,15 @@ kgspUnloadRm_IMPL
         NV_ASSERT(0);
     }
 
+    if (pKernelGsp->bPartitionedFmc)
+    {
+        //
+        // GSP-RM invokes the partitioned FMC to unload directly as part of the
+        // NV_RM_RPC_UNLOADING_GUEST_DRIVER call above.
+        //
+        status = rpcStatus;
+    }
+    else
     {
         // After instructing GSP-RM to unload itself, run Booter Unload to teardown WPR2
         status = kgspExecuteBooterUnloadIfNeeded_HAL(pGpu, pKernelGsp);

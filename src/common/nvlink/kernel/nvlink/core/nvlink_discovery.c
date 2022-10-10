@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2019-2020 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #include "nvlink.h"
 #include "nvlink_export.h"
@@ -85,6 +84,15 @@ nvlink_core_discover_and_get_remote_end
                     pLinks[linkCount++] = link;
                 }
             }
+
+            if (pLinks[0]->version >= NVLINK_DEVICE_VERSION_40)
+            {
+                if (!pLinks[0]->dev->enableALI)
+                {
+                    nvlink_core_init_links_from_off_to_swcfg_non_ALI(pLinks, linkCount, flags);
+                }
+            }
+            else
             {
                 nvlink_core_init_links_from_off_to_swcfg(pLinks, linkCount, flags);
             }
@@ -216,11 +224,12 @@ _nvlink_core_discover_topology(void)
                         isTokenFound = NV_TRUE;
 
                         //
-                        // If R4 tokens were used for NVLink3.0+, then mark initnegotiate
-                        // passed, since ALT training won't get kicked off without it.
+                        // If a token is found mark bInitnegotiateConfigGood as
+                        // True since we can only finish off discovery if
+                        // INITNEGOTIATE has finished in order to get topology info from
+                        // MINION
                         //
-                        if ((end0->version >= NVLINK_DEVICE_VERSION_30) &&
-                            ((end0->localSid == 0) || (end0->remoteSid == 0)))
+                        if ((end0->version >= NVLINK_DEVICE_VERSION_30))
                         {
                             end0->bInitnegotiateConfigGood = NV_TRUE;
                             end1->bInitnegotiateConfigGood = NV_TRUE;

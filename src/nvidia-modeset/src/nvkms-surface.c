@@ -504,6 +504,7 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
     }
 
     pSurfaceEvo->requireCtxDma = !pRequest->noDisplayHardwareAccess;
+    pSurfaceEvo->noDisplayCaching = pRequest->noDisplayCaching;
 
     /*
      * Map the first plane of the surface only into the CPU's address space.

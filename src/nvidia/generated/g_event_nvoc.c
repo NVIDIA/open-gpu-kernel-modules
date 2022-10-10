@@ -473,6 +473,13 @@ static const struct NVOC_CASTINFO __nvoc_castinfo_INotifier = {
     },
 };
 
+// Not instantiable because it's not derived from class "Object"
+// Not instantiable because it's an abstract class with following pure virtual functions:
+//  inotifyGetNotificationListPtr
+//  inotifySetNotificationShare
+//  inotifyGetNotificationShare
+//  inotifyUnregisterEvent
+//  inotifyGetOrAllocNotifShare
 const struct NVOC_CLASS_DEF __nvoc_class_def_INotifier = 
 {
     /*classInfo=*/ {
@@ -575,6 +582,7 @@ static const struct NVOC_CASTINFO __nvoc_castinfo_Notifier = {
     },
 };
 
+// Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_Notifier = 
 {
     /*classInfo=*/ {

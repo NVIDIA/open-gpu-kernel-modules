@@ -276,15 +276,15 @@ GetColorSpaceAndColorRange(
     nvChooseCurrentColorSpaceAndRangeEvo(&pProposedHead->timings,
                                          requestedColorSpace,
                                          requestedColorRange,
-                                         &pProposedHead->colorSpace,
-                                         &pProposedHead->colorRange);
+                                         &pProposedHead->attributes.colorSpace,
+                                         &pProposedHead->attributes.colorRange);
     /*
      * When colorspace is specified in modeset request, it should
      * match the proposed colorspace.
      */
     if (pRequestHead->colorSpaceSpecified) {
         NvBool ret = FALSE;
-        switch (pProposedHead->colorSpace) {
+        switch (pProposedHead->attributes.colorSpace) {
             case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
                 ret = (pRequestHead->colorSpace ==
                         NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_RGB);
@@ -310,7 +310,7 @@ GetColorSpaceAndColorRange(
      * match the proposed color range.
      */
     if (pRequestHead->colorRangeSpecified &&
-        (pProposedHead->colorRange != pRequestHead->colorRange)) {
+        (pProposedHead->attributes.colorRange != pRequestHead->colorRange)) {
         return FALSE;
     }
 
@@ -381,8 +381,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
             pProposedHead->allowFlipLockGroup = pHeadState->allowFlipLockGroup;
             pProposedHead->modeValidationParams =
                 pHeadState->modeValidationParams;
-            pProposedHead->colorSpace = pHeadState->attributes.colorSpace;
-            pProposedHead->colorRange = pHeadState->attributes.colorRange;
+            pProposedHead->attributes = pHeadState->attributes;
             pProposedHead->changed = FALSE;
             pProposedHead->hs10bpcHint = pHeadState->hs10bpcHint;
             pProposedHead->audio = pHeadState->audio;
@@ -516,6 +515,31 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
                 ret = FALSE;
                 continue;
+            }
+
+            pProposedHead->attributes.digitalSignal =
+                nvGetDefaultDpyAttributeDigitalSignalValue(pProposedHead->pConnectorEvo);
+            if (pProposedHead->timings.hdmiFrlConfig.frlRate !=
+                    HDMI_FRL_DATA_RATE_NONE) {
+                nvAssert(pProposedHead->attributes.digitalSignal ==
+                            NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL_TMDS);
+                pProposedHead->attributes.digitalSignal =
+                    NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL_HDMI_FRL;
+            }
+
+            {
+                NVDpyEvoRec *pDpyEvo =
+                    nvGetOneArbitraryDpyEvo(pProposedHead->dpyIdList,
+                                            pDispEvo);
+
+                pProposedHead->attributes.dvc =
+                    pDpyEvo->currentAttributes.dvc;
+
+                /* Image sharpening is available when scaling is enabled. */
+                pProposedHead->attributes.imageSharpening.available =
+                    nvIsImageSharpeningAvailable(&pProposedHead->timings.viewPort);
+                pProposedHead->attributes.imageSharpening.value =
+                    pDpyEvo->currentAttributes.imageSharpening.value;
             }
 
             /*
@@ -833,7 +857,7 @@ static NvBool DowngradeDpPixelDepth(
         if ((pProposedHead->pConnectorEvo == pConnectorEvo) &&
             nvDowngradeHwModeTimingsDpPixelDepthEvo(
                 pTimings,
-                pProposedHead->colorSpace)) {
+                pProposedHead->attributes.colorSpace)) {
                 return TRUE;
         }
     }
@@ -879,7 +903,7 @@ tryAgain:
                                            head,
                                            pProposedHead->activeRmId,
                                            pProposedHead->dpyIdList,
-                                           pProposedHead->colorSpace,
+                                           pProposedHead->attributes.colorSpace,
                                            &pProposedHead->modeValidationParams,
                                            pTimings);
 
@@ -921,7 +945,7 @@ tryAgain:
                                           head,
                                           pProposedHead->activeRmId,
                                           pProposedHead->dpyIdList,
-                                          pProposedHead->colorSpace,
+                                          pProposedHead->attributes.colorSpace,
                                           &pProposedHead->timings);
             if (pProposedHead->pDpLibModesetState == NULL) {
                 return FALSE;
@@ -932,7 +956,35 @@ tryAgain:
     return bResult;
 }
 
+static void VBlankCallbackDeferredWork(void *dataPtr, NvU32 data32)
+{
+    NVVBlankCallbackPtr pVBlankCallbackTmp = NULL;
+    NVVBlankCallbackPtr pVBlankCallback = NULL;
+    NVDispEvoPtr pDispEvo = dataPtr;
+    NvU32 head = data32;
 
+    if (!nvHeadIsActive(pDispEvo, head)) {
+        return;
+    }
+
+    nvListForEachEntry_safe(pVBlankCallback,
+                            pVBlankCallbackTmp,
+                            &pDispEvo->headState[head].vblankCallbackList,
+                            vblankCallbackListEntry) {
+        pVBlankCallback->pCallback(pDispEvo, head, pVBlankCallback);
+    }
+}
+
+static void VBlankCallback(void *pParam1, void *pParam2)
+{
+    const NvU32 head = (NvU32)(NvUPtr)pParam2;
+
+    (void) nvkms_alloc_timer_with_ref_ptr(
+               VBlankCallbackDeferredWork,
+               pParam1, /* ref_ptr to pDispEvo */
+               head,    /* dataU32 */
+               0);      /* timeout: schedule the work immediately */
+}
 
 /*!
  * Validate the proposed configuration on the specified disp.
@@ -1415,7 +1467,7 @@ ApplyProposedModeSetHwStateOneHeadShutDown(
     nvkms_memset(&pDevEvo->gpus[sd].headState[head], 0,
                  sizeof(pDevEvo->gpus[sd].headState[head]));
 
-    pDpyEvo->head = NV_INVALID_HEAD;
+    pDpyEvo->apiHead = NV_INVALID_HEAD;
 }
 
 static void
@@ -1532,7 +1584,7 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
         return;
     }
 
-    pDpyEvo->head = head;
+    pDpyEvo->apiHead = nvHardwareHeadToApiHead(head);
 
     AssignSor(pWorkArea, pProposedHead->pConnectorEvo);
 
@@ -1583,9 +1635,11 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     nvEvoHeadSetControlOR(pDispEvo, head, updateState);
 
     /* Update hardware's current colorSpace and colorRange */
-    pHeadState->attributes.colorSpace = pProposedHead->colorSpace;
-    pHeadState->attributes.colorRange = pProposedHead->colorRange;
-    nvUpdateCurrentHardwareColorSpaceAndRangeEvo(pDispEvo, head, updateState);
+    nvUpdateCurrentHardwareColorSpaceAndRangeEvo(pDispEvo,
+                                                 head,
+                                                 pProposedHead->attributes.colorSpace,
+                                                 pProposedHead->attributes.colorRange,
+                                                 updateState);
 
     nvEvoAttachConnector(pProposedHead->pConnectorEvo,
                          head,
@@ -1597,18 +1651,15 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     nvSetImageSharpeningEvo(
         pDispEvo,
         head,
-        pDpyEvo->currentAttributes.imageSharpening.value,
+        pProposedHead->attributes.imageSharpening.value,
         updateState);
 
 
     nvSetDVCEvo(pDispEvo, head,
-                pDpyEvo->currentAttributes.dvc,
+                pProposedHead->attributes.dvc,
                 updateState);
 
-    pHeadState->attributes.digitalSignal =
-        nvGetDefaultDpyAttributeDigitalSignalValue(pDpyEvo->pConnectorEvo);
 
-    /* If required, nvHdmiFrlSetConfig() overrides attributes.digitalSignal */
     nvHdmiFrlSetConfig(pDispEvo, head);
 
     /*
@@ -1617,6 +1668,16 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
      */
     ReenableActiveCoreRGSyncObjects(pDispEvo->pDevEvo, pHeadState, head,
                                     updateState);
+
+    pHeadState->attributes.digitalSignal =
+        pProposedHead->attributes.digitalSignal;
+    pHeadState->attributes.dvc = pProposedHead->attributes.dvc;
+    pHeadState->attributes.imageSharpening.available =
+        pProposedHead->attributes.imageSharpening.available;
+    pHeadState->attributes.imageSharpening.value =
+        pProposedHead->attributes.imageSharpening.value;
+    pHeadState->attributes.colorSpace = pProposedHead->attributes.colorSpace;
+    pHeadState->attributes.colorRange = pProposedHead->attributes.colorRange;
 }
 
 
@@ -2623,6 +2684,71 @@ done:
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_MODE_SET_WORK_AREA);
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_PROPOSED_MODESET_HW_STATE);
     return ret;
+}
+
+/*!
+ * Register a callback to activate when vblank is reached on a given head.
+ *
+ * \param[in,out]  pDispEvo  The display engine to register the callback on.
+ * \param[in]      head      The head to register the callback on.
+ * \param[in]      pCallback The function to call when vblank is reached on the
+ *                           provided pDispEvo+head combination.
+ * \param[in]      pUserData A pointer to caller-provided custom data.
+ *
+ * \return         Returns a pointer to a NVVBlankCallbackRec structure if the
+ *                 registration was successful.  Otherwise, return NULL.
+ */
+NVVBlankCallbackPtr nvRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                             NvU32 head,
+                                             NVVBlankCallbackProc pCallback,
+                                             void *pUserData)
+{
+    NVVBlankCallbackPtr pVBlankCallback = NULL;
+
+    pVBlankCallback = nvCalloc(1, sizeof(*pVBlankCallback));
+    if (pVBlankCallback == NULL) {
+        return NULL;
+    }
+
+    pVBlankCallback->pCallback = pCallback;
+    pVBlankCallback->pUserData = pUserData;
+
+    nvListAppend(&pVBlankCallback->vblankCallbackListEntry,
+                 &pDispEvo->headState[head].vblankCallbackList);
+
+    // If this is the first entry in the list, register the vblank callback
+    if (pDispEvo->headState[head].rmVBlankCallbackHandle == 0) {
+
+        pDispEvo->headState[head].rmVBlankCallbackHandle =
+            nvRmAddVBlankCallback(pDispEvo,
+                                  head,
+                                  VBlankCallback);
+    }
+    return pVBlankCallback;
+}
+
+/*!
+ * Un-register a vblank callback for a given head.
+ *
+ * \param[in,out]  pDispEvo  The display engine to register the callback on.
+ * \param[in]      head      The head to register the callback on.
+ * \param[in]      pCallback A pointer to the NVVBlankCallbackRec to un-register.
+ *
+ */
+void nvUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                NvU32 head,
+                                NVVBlankCallbackPtr pCallback)
+{
+    nvListDel(&pCallback->vblankCallbackListEntry);
+    nvFree(pCallback);
+
+    // If there are no more callbacks, disable the RM-level callback
+    if (nvListIsEmpty(&pDispEvo->headState[head].vblankCallbackList)) {
+        nvRmRemoveVBlankCallback(pDispEvo,
+                                 pDispEvo->headState[head].rmVBlankCallbackHandle);
+
+        pDispEvo->headState[head].rmVBlankCallbackHandle = 0;
+    }
 }
 
 /*!

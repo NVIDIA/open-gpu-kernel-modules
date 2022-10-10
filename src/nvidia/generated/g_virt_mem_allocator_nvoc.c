@@ -172,7 +172,7 @@ void __nvoc_init_dataField_VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOw
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // NVOC Property Hal field -- PDB_PROP_DMA_ENFORCE_32BIT_POINTER
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0870ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | GH100 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_DMA_ENFORCE_32BIT_POINTER, ((NvBool)(0 == 0)));
     }
@@ -193,7 +193,7 @@ void __nvoc_init_dataField_VirtMemAllocator(VirtMemAllocator *pThis, RmHalspecOw
     }
 
     // NVOC Property Hal field -- PDB_PROP_DMA_IS_SUPPORTED_SPARSE_VIRTUAL
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0870ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | GH100 */ 
     {
         pThis->setProperty(pThis, PDB_PROP_DMA_IS_SUPPORTED_SPARSE_VIRTUAL, ((NvBool)(0 == 0)));
     }
@@ -254,8 +254,30 @@ static void __nvoc_init_funcTable_VirtMemAllocator_1(VirtMemAllocator *pThis, Rm
 
     pThis->__dmaStateInitLocked__ = &dmaStateInitLocked_IMPL;
 
+    // Hal function -- dmaAllocBar1P2PMapping
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x08000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__dmaAllocBar1P2PMapping__ = &dmaAllocBar1P2PMapping_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__dmaAllocBar1P2PMapping__ = &dmaAllocBar1P2PMapping_46f6a7;
+    }
+
+    // Hal function -- dmaFreeBar1P2PMapping
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x08000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__dmaFreeBar1P2PMapping__ = &dmaFreeBar1P2PMapping_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__dmaFreeBar1P2PMapping__ = &dmaFreeBar1P2PMapping_b3696a;
+    }
+
     // Hal function -- dmaStatePostLoad
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0870ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | GH100 */ 
     {
         pThis->__dmaStatePostLoad__ = &dmaStatePostLoad_GM107;
     }

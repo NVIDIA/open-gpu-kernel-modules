@@ -173,9 +173,6 @@
 #include "uvm_test.h"
 #include "uvm_linux.h"
 
-
-
-
 static int uvm_global_oversubscription = 1;
 module_param(uvm_global_oversubscription, int, S_IRUGO);
 MODULE_PARM_DESC(uvm_global_oversubscription, "Enable (1) or disable (0) global oversubscription support.");
@@ -245,21 +242,11 @@ const char *uvm_pmm_gpu_memory_type_string(uvm_pmm_gpu_memory_type_t type)
 {
     switch (type) {
         UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_USER);
-
-
-
         UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_KERNEL);
-
-
-
         UVM_ENUM_STRING_DEFAULT();
     }
 
-
-
-
     BUILD_BUG_ON(UVM_PMM_GPU_MEMORY_TYPE_COUNT != 2);
-
 }
 
 const char *uvm_pmm_gpu_chunk_state_string(uvm_pmm_gpu_chunk_state_t state)
@@ -461,30 +448,12 @@ bool uvm_pmm_gpu_memory_type_is_user(uvm_pmm_gpu_memory_type_t type)
     UVM_ASSERT(type < UVM_PMM_GPU_MEMORY_TYPE_COUNT);
 
     switch (type) {
-
-
-
-
         case UVM_PMM_GPU_MEMORY_TYPE_USER:
-
             return true;
         default:
             return false;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 static void uvm_gpu_chunk_set_in_eviction(uvm_gpu_chunk_t *chunk, bool in_eviction)
 {
@@ -545,20 +514,7 @@ void uvm_pmm_gpu_sync(uvm_pmm_gpu_t *pmm)
 
 static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_parent_gpu_t *parent_gpu, uvm_pmm_gpu_memory_type_t type)
 {
-
-
-
-
-
-
-
-
-
-
-
-
     return type;
-
 }
 
 NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
@@ -646,10 +602,6 @@ NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
     NV_STATUS status;
     size_t i;
     uvm_pmm_gpu_memory_type_t memory_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
-
-
-
-
 
     status = uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, memory_type, flags, chunks, out_tracker);
     if (status != NV_OK)
@@ -1715,11 +1667,6 @@ void uvm_pmm_gpu_mark_root_chunk_unused(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chu
     root_chunk_update_eviction_list(pmm, chunk, &pmm->root_chunks.va_block_unused);
 }
 
-
-
-
-
-
 static uvm_gpu_root_chunk_t *pick_root_chunk_to_evict(uvm_pmm_gpu_t *pmm)
 {
     uvm_gpu_chunk_t *chunk;
@@ -2192,13 +2139,6 @@ NV_STATUS alloc_root_chunk(uvm_pmm_gpu_t *pmm,
     if (gpu->parent->numa_info.enabled)
         flags |= UVM_PMM_ALLOC_FLAGS_DONT_BATCH;
 
-
-
-
-
-
-
-
     if (!gpu->parent->rm_info.isSimulated &&
         !(options.flags & UVM_PMA_ALLOCATE_PINNED) &&
         !(flags & UVM_PMM_ALLOC_FLAGS_DONT_BATCH)) {
@@ -2447,14 +2387,6 @@ static bool check_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     UVM_ASSERT(chunk_size & chunk_sizes);
     UVM_ASSERT(IS_ALIGNED(chunk->address, chunk_size));
     UVM_ASSERT(uvm_global_id_equal(uvm_global_gpu_id_from_index(chunk->gpu_global_index), gpu->global_id));
-
-
-
-
-
-
-
-
 
 
     if (chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT)
@@ -2765,13 +2697,6 @@ static bool uvm_pmm_should_inject_pma_eviction_error(uvm_pmm_gpu_t *pmm)
 
     return false;
 }
-
-
-
-
-
-
-
 
 // See the documentation of pmaEvictPagesCb_t in pma.h for details of the
 // expected semantics.
@@ -3312,16 +3237,8 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
     uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     const uvm_chunk_sizes_mask_t chunk_size_init[][UVM_PMM_GPU_MEMORY_TYPE_COUNT] =
     {
-
-
-
-
-
-
-
         { gpu->parent->mmu_user_chunk_sizes, gpu->parent->mmu_kernel_chunk_sizes },
         { 0, uvm_mem_kernel_chunk_sizes(gpu)},
-
     };
     NV_STATUS status = NV_OK;
     size_t i, j, k;

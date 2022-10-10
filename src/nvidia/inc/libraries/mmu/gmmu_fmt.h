@@ -197,9 +197,14 @@ typedef struct GMMU_COMPR_INFO      GMMU_COMPR_INFO;
 #define GMMU_FMT_VERSION_2        2
 
 /*!
+ * 6-level (57b VA) format supported on Hopper+.
+ */
+#define GMMU_FMT_VERSION_3        3
+
+/*!
  * Maximum number of MMU versions supported.
  */
-#define GMMU_FMT_MAX_VERSION_COUNT 2
+#define GMMU_FMT_MAX_VERSION_COUNT 3
 
 /*!
  * Array of format version numbers for enumeration utility.

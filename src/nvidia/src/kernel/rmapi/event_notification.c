@@ -310,6 +310,15 @@ eventGetEngineTypeFromSubNotifyIndex
         case NV2080_NOTIFIERS_NVDEC4:
             *engineIdx = NV2080_ENGINE_TYPE_NVDEC4;
             break;
+        case NV2080_NOTIFIERS_NVDEC5:
+            *engineIdx = NV2080_ENGINE_TYPE_NVDEC5;
+            break;
+        case NV2080_NOTIFIERS_NVDEC6:
+            *engineIdx = NV2080_ENGINE_TYPE_NVDEC6;
+            break;
+        case NV2080_NOTIFIERS_NVDEC7:
+            *engineIdx = NV2080_ENGINE_TYPE_NVDEC7;
+            break;
         case NV2080_NOTIFIERS_PDEC:
             *engineIdx = NV2080_ENGINE_TYPE_VP;
             break;
@@ -329,6 +338,27 @@ eventGetEngineTypeFromSubNotifyIndex
             break;
         case NV2080_NOTIFIERS_NVJPEG0:
             *engineIdx = NV2080_ENGINE_TYPE_NVJPEG0;
+            break;
+        case NV2080_NOTIFIERS_NVJPEG1:
+            *engineIdx = NV2080_ENGINE_TYPE_NVJPEG1;
+            break;
+        case NV2080_NOTIFIERS_NVJPEG2:
+            *engineIdx = NV2080_ENGINE_TYPE_NVJPEG2;
+            break;
+        case NV2080_NOTIFIERS_NVJPEG3:
+            *engineIdx = NV2080_ENGINE_TYPE_NVJPEG3;
+            break;
+        case NV2080_NOTIFIERS_NVJPEG4:
+            *engineIdx = NV2080_ENGINE_TYPE_NVJPEG4;
+            break;
+        case NV2080_NOTIFIERS_NVJPEG5:
+            *engineIdx = NV2080_ENGINE_TYPE_NVJPEG5;
+            break;
+        case NV2080_NOTIFIERS_NVJPEG6:
+            *engineIdx = NV2080_ENGINE_TYPE_NVJPEG6;
+            break;
+        case NV2080_NOTIFIERS_NVJPEG7:
+            *engineIdx = NV2080_ENGINE_TYPE_NVJPEG7;
             break;
         case NV2080_NOTIFIERS_OFA:
             *engineIdx = NV2080_ENGINE_TYPE_OFA;

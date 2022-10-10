@@ -31,9 +31,6 @@
 //
 
 #include "nvos.h"
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV04_MEMORY control commands and parameters */
 

@@ -92,14 +92,22 @@ kbifStateInitLocked_IMPL
     KernelBif *pKernelBif
 )
 {
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS  *pOS  = SYS_GET_OS(pSys);
-    OBJCL  *pCl  = SYS_GET_CL(pSys);
+    OBJSYS    *pSys   = SYS_GET_INSTANCE();
+    OBJOS     *pOS    = SYS_GET_OS(pSys);
+    OBJCL     *pCl    = SYS_GET_CL(pSys);
+    NV_STATUS  status = NV_OK;
 
     // Return early if GPU is connected to an unsupported chipset
     if (pCl->getProperty(pCl, PDB_PROP_CL_UNSUPPORTED_CHIPSET))
     {
         return NV_ERR_NOT_COMPATIBLE;
+    }
+
+    // Initialize OS mapping and core logic
+    status = osInitMapping(pGpu);
+    if (status != NV_OK)
+    {
+        return status;
     }
 
     // Initialize BIF static info
@@ -119,7 +127,7 @@ kbifStateInitLocked_IMPL
         pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_SUPPORT_NONCOHERENT, NV_FALSE);
     }
 
-    return NV_OK;
+    return status;
 }
 
 /*!
@@ -144,8 +152,6 @@ kbifStateLoad_IMPL
 
     // Check for stale PCI-E dev ctrl/status errors and AER errors
     kbifClearConfigErrors(pGpu, pKernelBif, NV_TRUE, KBIF_CLEAR_XVE_AER_ALL_MASK);
-
-    kbifInitPcieDeviceControlStatus(pGpu, pKernelBif);
 
     //
     // A vGPU cannot disappear and these accesses are
@@ -364,6 +370,15 @@ kbifInitPcieDeviceControlStatus
     else
     {
         kbifPcieConfigDisableRelaxedOrdering_HAL(pGpu, pKernelBif);
+    }
+
+    // 
+    // WAR for bug 3661529. All GH100 SKUs will need the NoSnoop WAR.
+    // But currently GSP-RM does not detect this correctly,
+    //
+    if (IsGH100(pGpu))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_ROOTPORT_NEEDS_NOSNOOP_WAR, NV_TRUE);
     }
 
     if (!pCl->getProperty(pCl, PDB_PROP_CL_NOSNOOP_NOT_CAPABLE) &&
@@ -910,7 +925,7 @@ kbifControlGetPCIEInfo_IMPL
                 {
                     NV2080_CTRL_BUS_INFO busInfo = {0};
                     NV_STATUS rmStatus = NV_OK;
-
+ 
                     busInfo.index = NV2080_CTRL_BUS_INFO_INDEX_PCIE_GEN_INFO;
 
                     if ((rmStatus = kbusSendBusInfo(pGpu, GPU_GET_KERNEL_BUS(pGpu), &busInfo)) != NV_OK)
@@ -918,7 +933,7 @@ kbifControlGetPCIEInfo_IMPL
                         NV_PRINTF(LEVEL_INFO, "Squashing rmStatus: %x \n", rmStatus);
                         rmStatus = NV_OK;
                         busInfo.data = 0;
-                    }                    
+                    }
                     data = busInfo.data;
                 }
             }

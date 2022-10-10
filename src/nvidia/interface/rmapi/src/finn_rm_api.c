@@ -17,6 +17,7 @@
 #include "ctrl/ctrl83de/ctrl83dedebug.h"
 #include "ctrl/ctrlb06f.h"
 
+#include <stdint.h>
 #include <stddef.h>
 #if defined(NVRM) /* Kernel Mode */
 #include "nvport/nvport.h"
@@ -80,232 +81,426 @@
 #define FINN_ERROR(err) /* No-op */
 #endif
 
-// Copy val into buf as type and increment buf by size.
-#define FINN_COPY_TO_BUFFER(buf, val, type, size)                              \
-    do {                                                                       \
-        *((type *)(buf)) = (val);                                              \
-        (buf) += (size);                                                       \
-    } while(0)
 
-// Copy buf into var as type and increment buf by size.
-#define FINN_COPY_FROM_BUFFER(var, buf, type, size)                            \
-    do {                                                                       \
-        (var) = *((type *)(buf));                                              \
-        (buf) += (size);                                                       \
-    } while(0)
 
-// Copy size bytes from src to dst and increment dst by size.
-#define FINN_MEMCPY_TO_BUFFER(dst, src, size)                                  \
-    do {                                                                       \
-        FINN_MEMCPY((dst), (src), (size));               \
-        (dst) += (size);                                                       \
-    } while(0)
+//
+// The purpose of the bit pump is to ensure 64-bit aligned access to the
+// buffer while enabling arbitrary bits to be read/written.
+//
+typedef struct finn_bit_pump_for_read finn_bit_pump_for_read;
 
-// Copy size bytes from src to dst and increment src by size.
-#define FINN_MEMCPY_FROM_BUFFER(dst, src, size)                                \
-    do {                                                                       \
-        FINN_MEMCPY((dst), (src), (size));               \
-        (src) += (size);                                                       \
-    } while(0)
+struct finn_bit_pump_for_read
+{
+    uint64_t accumulator;               // Bits not yet read from the data buffer
+    uint64_t checksum;                  // Checksum of data
+    const uint64_t *buffer_position;    // Next word within data buffer to be read
+    const uint64_t *end_of_data;        // End of data within buffer
+    uint8_t remaining_bit_count;        // Number of bits remaining in the accumulator
+};
 
-// Set ptr to buf as type and increment buf by size.
-#define FINN_SET_PTR_TO_BUFFER(ptr, buf, type, size)                           \
-    do {                                                                       \
-        (ptr) = (type)(NvUPtr)(buf);                                           \
-        (buf) += (size);                                                       \
-    } while(0)
 
-// Align a byte pointer up to the 8-byte boundary.
-#define FINN_ALIGN_UP_BYTE_PTR(ptr)                                            \
-    do {                                                                       \
-        (ptr) = (NvU8 *)(((NvUPtr)(ptr) + 7) &~ 7);                            \
-    } while(0)                                                                 \
+//
+// Initialize bit pump for reading from the buffer.
+//
+// WARNING: The buffer start is assumed to be 64-bit aligned for optimal performance.
+// `sod` (start of data) and `eod` (end of data) must be multiples of 64 bits
+// since this logic is optimized for a 64-bit word size.  Caller must check both
+// `sod` and `eod`.
+//
+// `eod` points to the 64-bit word after the data (like most C++ `std` iterators).
+//
+static inline void finn_open_buffer_for_read(finn_bit_pump_for_read *bp, const uint64_t *sod, const uint64_t *eod)
+{
+    bp->accumulator         = 0U;
+    bp->checksum            = 0U;
+    bp->buffer_position     = sod;
+    bp->end_of_data         = eod;
+    bp->remaining_bit_count = 0U;
+}
 
-NV_STATUS FinnRmApiSerializeInternal(NvU64 interface, NvU64 message, const char *src, char **dst, NvLength dst_size, NvBool seri_up);
-NV_STATUS FinnRmApiDeserializeInternal(char * const *src, NvLength src_size, char *dst, NvLength dst_size, NvBool deser_up);
 
-static NV_STATUS FinnNv01RootNvdSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv01RootNvdDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_ROOT_NVD *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv01RootNvdGetSerializedSize(NvU64 message, const NvP64 src);
+//
+// Read the next several bits.
+//
+// `bit_size` must be in range of 0 to 64 inclusive; no check is made.
+// When `bit_size` is zero, an unsupported use-case, it works as expected by
+// returning zero without advancing the pointer.
+//
+static uint64_t finn_read_buffer(finn_bit_pump_for_read *bp, uint8_t bit_size)
+{
+    // Value to be deserialized and returned
+    uint64_t value;
+
+    // Boundary crossing
+    // Accumulator does not have enough to satisfy the request,
+    if (bit_size > bp->remaining_bit_count)
+    {
+        // Number of bits not yet satisfied
+        bit_size -= bp->remaining_bit_count;
+
+        // Shift the bits we have into place.
+        value = bp->accumulator;
+
+        // Return zeroes for unsatisfied bits (if any) at end of data.
+        if (bp->buffer_position >= bp->end_of_data)
+        bp->accumulator = 0U;
+
+        // Read the next word from the buffer.
+        else
+        bp->accumulator = *(bp->buffer_position++);
+
+        // Update the checksum.
+        bp->checksum = ((bp->checksum << 1) ^ (bp->checksum & 1U)) ^ bp->accumulator;
+
+        //
+        // This is the special case where we are reading an entire 64-bit word
+        // without crossing a boundary (when the accumulator is empty).  The
+        // accumulator remains empty on exit.
+        //
+        // The bitwise operations in the normal flow do not work in this case.
+        // Shifts are not well-defined in C when the right operand exceeds the
+        // size of the left operand.  Also, the right operand of the bitwise-and
+        // would exceed the 64-bit capacity.  However, the needed logic is simple.
+        //
+        // 64 is the largest legal value for `bit_size`, so `>=` is equivalent to `==`.
+        //
+        if (bit_size >= 64)
+        {
+            // The value is the entire word.
+            value = bp->accumulator;
+
+            // Discard the consumed data from the accumulator.
+            bp->accumulator = 0U;
+
+            // Under the assumption that `bit_size` is never larger than 64,
+            // `bit_size == 64` implies `bp->remaining_bit_count == 0` because
+            // of the above `bit_size -= bp->remaining_bit_count`.  As such, there
+            // is no need to do `bp->remaining_bit_count = 64U - bit_size`.
+
+            // Done
+            return value;
+        }
+
+        // OR in the bits since this was a boundary crossing.
+        // Shift it over by the number of bits we get from the prior word.
+        value |= (bp->accumulator
+            & (((uint64_t) 1U << bit_size) - 1U))
+        << bp->remaining_bit_count;
+
+        // Logic below subtracts off the bits consumed in the accumulator.
+        bp->remaining_bit_count = 64U;
+    }
+
+    else
+    {
+        // The accumulator has enough to satisfy the request.
+        value = bp->accumulator & (((uint64_t) 1U << bit_size) - 1U);
+    }
+
+    // Discard the consumed bits from the accumulator.
+    bp->accumulator >>= bit_size;
+
+    // Keep track of the remaining available bits in the accumulator.
+    bp->remaining_bit_count -= bit_size;
+
+    // Done
+    return value;
+}
+
+
+// Close the read buffer.
+// Postcondition:  `bp->checksum` is updated to end-of-data.
+static inline void finn_close_buffer_for_read(finn_bit_pump_for_read *bp)
+{
+    // No need to update the bit pump buffer position,
+    // so use a local for optimal performance.
+    const uint64_t *p = bp->buffer_position;
+
+    // Apply any unread words to the checksum.
+    while (p < bp->end_of_data)
+    bp->checksum = ((bp->checksum << 1U) ^ (bp->checksum & 1U)) ^ (*(p++));
+}
+
+
+typedef struct finn_bit_pump_for_write finn_bit_pump_for_write;
+
+struct finn_bit_pump_for_write
+{
+    uint64_t accumulator;           // Bits not yet written to the data buffer
+    uint64_t checksum;              // Checksum of data
+    uint64_t *buffer_position;      // Next word within the data buffer to be written
+    const uint64_t *end_of_buffer;  // End of buffer (which may be after end of data)
+    uint8_t empty_bit_count;        // Number of available bits in the accumulator
+};
+
+
+//
+// Initialize bit pump for writing to the buffer.
+//
+// In the general case for writing to the bit pump:
+//
+// WARNING: The buffer start is assumed to be 64-bit aligned for optimal performance.
+// `sod` (start of data) and `eob` (end of buffer) must be multiples of 64 bits
+// since this logic is optimized for a 64-bit word size.    Caller must check both
+// `sod` and `eod`.
+//
+// `eob` points to the 64-bit word after the buffer, an illegal access.
+//
+//
+// Special case to get the serialized size without writing to the buffer:
+// Both `sod` and `eob` are null.
+// When closed, `bp->buffer_position` contains the byte count.
+//
+static inline void finn_open_buffer_for_write(finn_bit_pump_for_write *bp, uint64_t *sod, uint64_t *eob)
+{
+    bp->accumulator      = 0U;
+    bp->buffer_position  = sod;
+    bp->end_of_buffer    = eob;
+    bp->checksum         = 0U;
+    bp->empty_bit_count  = 64U;
+}
+
+//
+// Write several bits to the buffer.
+//
+// `bit_size` must be in range of 1 to 64 inclusive; no check is made.
+// `value` must not have more 1 bits than specified by `bit_size`.
+// In other words, bits that are left of `bit_size` must be 0s; no check is made.
+//
+// Return value is nonzero if the end of buffer is reached, an error.
+//
+// `bp->end_of_buffer` is null to disable writing to the buffer.
+//
+static int finn_write_buffer(finn_bit_pump_for_write *bp, uint64_t value, uint8_t bit_size)
+{
+    // Boundary crossing:  Accumulator does not have enough to satisfy the request,
+    if (bit_size >= bp->empty_bit_count)
+    {
+        // Number of bits not yet satisfied
+        bit_size -= bp->empty_bit_count;
+
+        // OR as many bits as will fit into the accumulator.
+        bp->accumulator |= value << (64U - bp->empty_bit_count);
+
+        // Discard these bits by setting them to 0s.
+        // CAUTION: `value` may be unchanged when `bp->empty_bit_count` is 64
+        // depending on the processor/ISA.
+        value >>= bp->empty_bit_count;
+
+        // Write the word to the buffer unless writes are disabled.
+        if (bp->end_of_buffer)
+        {
+            *bp->buffer_position = bp->accumulator;
+        }
+
+        // Advance to the next word in the buffer.
+        bp->buffer_position++;
+
+        // Update the checksum.
+        bp->checksum = ((bp->checksum << 1) ^ (bp->checksum & 1U)) ^ bp->accumulator;
+
+        // Re-initialize the accumulator and the bits filled.
+        bp->accumulator = 0U;
+        bp->empty_bit_count = 64U;
+    }
+
+    // OR the data into the accumulator.
+    // When `bit_size` and `bp->empty_bit_count` are both 64 above, `bit_size`
+    // is assigned zero, but `value` may be unchanged.  Check `bit_size` here so
+    // that stale `value` is not ORed into the accumulator again.
+    if (bit_size)
+    {
+        bp->accumulator |= (value << (64U - bp->empty_bit_count));
+    }
+
+    // Advance the bit count
+    bp->empty_bit_count -= bit_size;
+
+    // Return nonzero on buffer overrun.
+    return bp->end_of_buffer && bp->buffer_position >= bp->end_of_buffer && bit_size;
+}
+
+
+//
+// Close the write buffer and compute the checksum.
+//
+// Do NOT call this function if `finn_write_buffer` returned nonzero; no check is made.
+//
+// In the general case for writing to the bit pump:
+//
+// Postcondition: `bp->buffer_position` points to the word after the end of the data,
+// which can be used to calculate the data size in 64-bit words by subtracting from
+// `bp->end_of_buffer`.  Buffer data at and after this point is set to zeroes.
+//
+// Special case to get the serialized size without writing to the buffer:
+// Postcondition: ``bp->buffer_position` contains the byte count.
+//
+// All cases:
+// Postcondition: `bp->checksum` contains the checksum of words written to the buffer.
+//
+static inline void finn_close_buffer_for_write(finn_bit_pump_for_write *bp)
+{
+    uint64_t *p;
+
+    // The accumulator is not empty.
+    if (bp->empty_bit_count < 64U)
+    {
+        // Update the buffer with the last word.
+        if (bp->end_of_buffer)
+        {
+            *bp->buffer_position = bp->accumulator;
+        }
+
+        // Advance to the next word to get an accurate word count.
+        bp->buffer_position++;
+
+        // Update the checksum.
+        bp->checksum = ((bp->checksum << 1U) ^ (bp->checksum & 1U)) ^ bp->accumulator;
+    }
+
+    // Zero out the rest of the buffer.
+    for (p = bp->buffer_position; p < bp->end_of_buffer; ++p)
+    {
+        *p = 0u;
+    }
+}
+
+
+static NV_STATUS FinnRmApiSerializeInternal(NvU64 interface, NvU64 message, const char *src, char **dst, size_t dst_size, NvBool seri_up);
+static NV_STATUS FinnRmApiSerializeInterface(NvU64 interface, NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnRmApiDeserializeInternal(char **src, NvLength src_size, char *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS FinnRmApiDeserializeInterface(NvU64 interface, NvU64 message, finn_bit_pump_for_read *bp, char *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS FinnNv01RootNvdSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv01RootNvdDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_ROOT_NVD *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv01RootNvdGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv01Device0DmaSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv01Device0DmaDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_DMA *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv01Device0DmaGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv01Device0DmaSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv01Device0DmaDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_DMA *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv01Device0DmaGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv01Device0FbSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv01Device0FbDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_FB *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv01Device0FbGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv01Device0FbSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv01Device0FbDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_FB *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv01Device0FbGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv01Device0FifoSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv01Device0FifoDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_FIFO *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv01Device0FifoGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv01Device0FifoSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv01Device0FifoDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_FIFO *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv01Device0FifoGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv01Device0GpuSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv01Device0GpuDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_GPU *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv01Device0GpuGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv01Device0GpuSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv01Device0GpuDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_GPU *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv01Device0GpuGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv01Device0GrSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv01Device0GrDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_GR *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv01Device0GrGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv01Device0GrSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv01Device0GrDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_GR *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv01Device0GrGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv01Device0HostSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv01Device0HostDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_HOST *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv01Device0HostGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv01Device0HostSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv01Device0HostDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_HOST *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv01Device0HostGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv01Device0MsencSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv01Device0MsencDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_MSENC *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv01Device0MsencGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv01Device0MsencSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv01Device0MsencDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_MSENC *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv01Device0MsencGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv20Subdevice0CeSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv20Subdevice0CeDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_CE *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv20Subdevice0CeGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv20Subdevice0CeSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv20Subdevice0CeDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_CE *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20Subdevice0CeGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv20Subdevice0GpuSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv20Subdevice0GpuDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_GPU *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv20Subdevice0GpuGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv20Subdevice0GpuSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv20Subdevice0GpuDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_GPU *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20Subdevice0GpuGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv20Subdevice0I2cSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv20Subdevice0I2cDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_I2C *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv20Subdevice0I2cGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv20Subdevice0I2cSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv20Subdevice0I2cDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_I2C *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20Subdevice0I2cGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv20Subdevice0NvdSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv20Subdevice0NvdDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_NVD *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv20Subdevice0NvdGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv20Subdevice0NvdSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv20Subdevice0NvdDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_NVD *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20Subdevice0NvdGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv20Subdevice0PerfSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv20Subdevice0PerfDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_PERF *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv20Subdevice0PerfGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv20Subdevice0PerfSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv20Subdevice0PerfDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_PERF *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20Subdevice0PerfGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv20Subdevice0RcSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv20Subdevice0RcDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_RC *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv20Subdevice0RcGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv20Subdevice0RcSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv20Subdevice0RcDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_RC *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20Subdevice0RcGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnNv40I2cI2cSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnNv40I2cI2cDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV40_I2C_I2C *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnNv40I2cI2cGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnNv40I2cI2cSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv40I2cI2cDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV40_I2C_I2C *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv40I2cI2cGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnGt200DebuggerDebugSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnGt200DebuggerDebugDeserialize(NvU8 **src, const NvU8 *src_max, FINN_GT200_DEBUGGER_DEBUG *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnGt200DebuggerDebugGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnGt200DebuggerDebugSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnGt200DebuggerDebugDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_GT200_DEBUGGER_DEBUG *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnGt200DebuggerDebugGetUnserializedSize(NvU64 message);
-static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoDeserialize(NvU8 **src, const NvU8 *src_max, FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 FinnMaxwellChannelGpfifoAGpfifoGetSerializedSize(NvU64 message, const NvP64 src);
+static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnMaxwellChannelGpfifoAGpfifoGetUnserializedSize(NvU64 message);
 
-static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_DUMP_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0000CtrlNvdGetDumpParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0000_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0000CtrlNvdGetDumpParamsGetSerializedSize(const NV0000_CTRL_NVD_GET_DUMP_PARAMS *src);
-static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsSerialize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlDmaUpdatePde2PageTableParamsGetSerializedSize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *src);
-static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsSerialize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlDmaUpdatePde2ParamsGetSerializedSize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *src);
-static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlFbGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FB_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlFbGetCapsParamsGetSerializedSize(const NV0080_CTRL_FB_GET_CAPS_PARAMS *src);
-static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlFifoGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlFifoGetCapsParamsGetSerializedSize(const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *src);
-static NV_STATUS Nv0080CtrlFifoChannelSerialize(const NV0080_CTRL_FIFO_CHANNEL *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlFifoChannelDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FIFO_CHANNEL *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlFifoChannelGetSerializedSize(const NV0080_CTRL_FIFO_CHANNEL *src);
-static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsSerialize(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlFifoStartSelectedChannelsParamsGetSerializedSize(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *src);
-static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlFifoGetChannellistParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlFifoGetChannellistParamsGetSerializedSize(const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *src);
-static NV_STATUS Nv0080CtrlGpuGetClasslistParamsSerialize(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlGpuGetClasslistParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlGpuGetClasslistParamsGetSerializedSize(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *src);
-static NV_STATUS Nv0080CtrlGrGetCapsParamsSerialize(const NV0080_CTRL_GR_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlGrGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_GR_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlGrGetCapsParamsGetSerializedSize(const NV0080_CTRL_GR_GET_CAPS_PARAMS *src);
-static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlHostGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_HOST_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlHostGetCapsParamsGetSerializedSize(const NV0080_CTRL_HOST_GET_CAPS_PARAMS *src);
-static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv0080CtrlMsencGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_MSENC_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv0080CtrlMsencGetCapsParamsGetSerializedSize(const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *src);
-static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv2080CtrlCeGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_CE_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv2080CtrlCeGetCapsParamsGetSerializedSize(const NV2080_CTRL_CE_GET_CAPS_PARAMS *src);
-static NV_STATUS Nv2080CtrlGpuGetEnginesParamsSerialize(const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv2080CtrlGpuGetEnginesParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_GPU_GET_ENGINES_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv2080CtrlGpuGetEnginesParamsGetSerializedSize(const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *src);
-static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsSerialize(const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv2080CtrlGpuGetEngineClasslistParamsGetSerializedSize(const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *src);
-static NV_STATUS Nv2080CtrlGpumonSamplesSerialize(const NV2080_CTRL_GPUMON_SAMPLES *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up, NvU64 interface, NvU64 message);
-static NV_STATUS Nv2080CtrlGpumonSamplesDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_GPUMON_SAMPLES *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv2080CtrlGpumonSamplesGetSerializedSize(const NV2080_CTRL_GPUMON_SAMPLES *src);
-static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv2080CtrlI2cAccessParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_I2C_ACCESS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv2080CtrlI2cAccessParamsGetSerializedSize(const NV2080_CTRL_I2C_ACCESS_PARAMS *src);
-static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_DUMP_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv2080CtrlNvdGetDumpParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv2080CtrlNvdGetDumpParamsGetSerializedSize(const NV2080_CTRL_NVD_GET_DUMP_PARAMS *src);
-static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv2080CtrlRcReadVirtualMemParamsGetSerializedSize(const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *src);
-static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEXED_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cIndexedParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_INDEXED_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cIndexedParamsGetSerializedSize(const NV402C_CTRL_I2C_INDEXED_PARAMS *src);
-static NV_STATUS Nv402cCtrlI2cTransactionTypeValueToId(NvU8 **buf, const NvU8 *buf_max, NvU64 convert_size);
-static NV_STATUS Nv402cCtrlI2cTransactionTypeIdtoValue(NvU8 **buf, const NvU8 *buf_max, NvU64 convert_size);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusQuickRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataI2cByteRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataI2cBlockRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusByteRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusWordRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataI2cBufferRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusBlockRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusProcessCallGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionDataReadEdidDdcGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *src);
-static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType);
-static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA *dst, NvLength dst_size, NvBool deser_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType);
-static NvU64 Nv402cCtrlI2cTransactionDataGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA *src, NV402C_CTRL_I2C_TRANSACTION_TYPE transType);
-static NV_STATUS Nv402cCtrlI2cTransactionParamsSerialize(const NV402C_CTRL_I2C_TRANSACTION_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv402cCtrlI2cTransactionParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv402cCtrlI2cTransactionParamsGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_PARAMS *src);
-static NV_STATUS Nv83deCtrlDebugReadMemoryParamsSerialize(const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv83deCtrlDebugReadMemoryParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv83deCtrlDebugReadMemoryParamsGetSerializedSize(const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *src);
-static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsSerialize(const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nv83deCtrlDebugWriteMemoryParamsGetSerializedSize(const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *src);
-static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsSerialize(const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsDeserialize(NvU8 **src, const NvU8 *src_max, NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nvb06fCtrlGetEngineCtxDataParamsGetSerializedSize(const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *src);
-static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsSerialize(const NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up);
-static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsDeserialize(NvU8 **src, const NvU8 *src_max, NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *dst, NvLength dst_size, NvBool deser_up);
-static NvU64 Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsGetSerializedSize(const NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *src);
+static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_DUMP_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0000CtrlNvdGetDumpParamsDeserialize(finn_bit_pump_for_read *bp, NV0000_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsSerialize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsSerialize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlFbGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FB_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlFifoGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlFifoChannelSerialize(const NV0080_CTRL_FIFO_CHANNEL *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlFifoChannelDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_CHANNEL *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsSerialize(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlFifoGetChannellistParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlGpuGetClasslistParamsSerialize(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlGpuGetClasslistParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlGrGetCapsParamsSerialize(const NV0080_CTRL_GR_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlGrGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_GR_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlHostGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_HOST_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv0080CtrlMsencGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_MSENC_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv2080CtrlCeGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_CE_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv2080CtrlGpuGetEnginesParamsSerialize(const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv2080CtrlGpuGetEnginesParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_GPU_GET_ENGINES_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsSerialize(const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv2080CtrlGpumonSamplesSerialize(const NV2080_CTRL_GPUMON_SAMPLES *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv2080CtrlGpumonSamplesDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_GPUMON_SAMPLES *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv2080CtrlI2cAccessParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_I2C_ACCESS_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_DUMP_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv2080CtrlNvdGetDumpParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEXED_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cIndexedParamsDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_INDEXED_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionTypeCheckEnum(NV402C_CTRL_I2C_TRANSACTION_TYPE id);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA *src, finn_bit_pump_for_write *bp, NvBool seri_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType);
+static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA *dst, NvLength dst_size, NvBool deser_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType);
+static NV_STATUS Nv402cCtrlI2cTransactionParamsSerialize(const NV402C_CTRL_I2C_TRANSACTION_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv402cCtrlI2cTransactionParamsDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv83deCtrlDebugReadMemoryParamsSerialize(const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv83deCtrlDebugReadMemoryParamsDeserialize(finn_bit_pump_for_read *bp, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsSerialize(const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsDeserialize(finn_bit_pump_for_read *bp, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsSerialize(const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsDeserialize(finn_bit_pump_for_read *bp, NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsSerialize(const NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsDeserialize(finn_bit_pump_for_read *bp, NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nvb06fCtrlSaveEngineCtxDataParamsSerialize(const NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nvb06fCtrlSaveEngineCtxDataParamsDeserialize(finn_bit_pump_for_read *bp, NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS Nvb06fCtrlCmdRestoreEngineCtxDataFinnParamsSerialize(const NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS Nvb06fCtrlCmdRestoreEngineCtxDataFinnParamsDeserialize(finn_bit_pump_for_read *bp, NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS *dst, NvLength dst_size, NvBool deser_up);
 
 NV_STATUS FinnRmApiSerializeUp(NvU64 interface, NvU64 message, const void *src, NvU8 **dst, NvLength dst_size)
 {
@@ -328,54 +523,108 @@ NV_STATUS FinnRmApiDeserializeUp(NvU8 * const *src, NvLength src_size, void *dst
 }
 
 
-NV_STATUS FinnRmApiSerializeInternal(NvU64 interface, NvU64 message, const char *src, char **dst, NvLength dst_size, NvBool seri_up)
+static NV_STATUS FinnRmApiSerializeInternal(NvU64 interface, NvU64 message, const char *src, char **dst, size_t dst_size, NvBool seri_up)
 {
-    const char *dst_max = *dst + dst_size;
+    // Header
+    FINN_RM_API *header;
+
+    // Buffer end
+    // `char` is the C-standrd unit of measure for `sizeof` and `size_t`.
+    const char *dst_end;
+
+    // Bit pump is used to fill the buffer with serialized data.
+    finn_bit_pump_for_write bp;
+
+    // Error code returned from serialization
+    NV_STATUS error_code;
 
     // Input validation
-    if (!src || !dst || !(*dst) || !dst_size)
+    // Null pointers are not permitted.
+    // Buffer must begin on an 8-byte boundary.
+    if (!src || !dst || !(*dst) || !dst_size || (uintptr_t) dst & 0x7u)
     {
         FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // Forward to interface-specific routine
+    // Header is at the start of the buffer.
+    header = (FINN_RM_API *) *dst;
+
+    // Buffer must end on an 8-byte boundary, so round down.
+    dst_end = (const char *) ((uintptr_t) (*dst + dst_size) & ~ (uintptr_t) 0x7);
+
+    // Set header data.
+    header->version = FINN_SERIALIZATION_VERSION;
+    header->payloadSize = 0;        // Zero until completed successfully
+    header->interface = interface;
+    header->message = message;
+
+    // Advance past header.
+    (*dst) += sizeof(FINN_RM_API);
+
+    // Open the bit pump.
+    finn_open_buffer_for_write(&bp, (uint64_t *) *dst, (uint64_t *) dst_end);
+
+    // Call the serializer.
+    error_code = FinnRmApiSerializeInterface(interface, message, src, &bp, seri_up);
+
+    // Close the bit pump.
+    finn_close_buffer_for_write(&bp);
+
+    // Payload size in bytes
+    if (error_code == NV_OK)
+        header->payloadSize = (NvU64) (((const char *) bp.buffer_position) - ((const char *) header));
+
+    // Indicate the ending location.
+    *dst = (char *) bp.buffer_position;
+
+    // Done
+    return error_code;
+}
+
+
+static NV_STATUS FinnRmApiSerializeInterface(NvU64 interface, NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
+{
+
+
+    // Forward to interface-specific serialize routine
     switch (interface)
     {
         case FINN_INTERFACE_ID(FINN_NV01_ROOT_NVD):
-            return FinnNv01RootNvdSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv01RootNvdSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_DMA):
-            return FinnNv01Device0DmaSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv01Device0DmaSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_FB):
-            return FinnNv01Device0FbSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv01Device0FbSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_FIFO):
-            return FinnNv01Device0FifoSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv01Device0FifoSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_GPU):
-            return FinnNv01Device0GpuSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv01Device0GpuSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_GR):
-            return FinnNv01Device0GrSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv01Device0GrSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_HOST):
-            return FinnNv01Device0HostSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv01Device0HostSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_MSENC):
-            return FinnNv01Device0MsencSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv01Device0MsencSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_CE):
-            return FinnNv20Subdevice0CeSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv20Subdevice0CeSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_GPU):
-            return FinnNv20Subdevice0GpuSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv20Subdevice0GpuSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_I2C):
-            return FinnNv20Subdevice0I2cSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv20Subdevice0I2cSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_NVD):
-            return FinnNv20Subdevice0NvdSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv20Subdevice0NvdSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_PERF):
-            return FinnNv20Subdevice0PerfSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv20Subdevice0PerfSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_RC):
-            return FinnNv20Subdevice0RcSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv20Subdevice0RcSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV40_I2C_I2C):
-            return FinnNv40I2cI2cSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnNv40I2cI2cSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_GT200_DEBUGGER_DEBUG):
-            return FinnGt200DebuggerDebugSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnGt200DebuggerDebugSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO):
-            return FinnMaxwellChannelGpfifoAGpfifoSerialize(message, src, (NvU8 **) dst, (const NvU8 *) dst_max, seri_up);
+            return FinnMaxwellChannelGpfifoAGpfifoSerializeMessage(message, src, bp, seri_up);
+
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -385,66 +634,124 @@ NV_STATUS FinnRmApiSerializeInternal(NvU64 interface, NvU64 message, const char 
 }
 
 
-NV_STATUS FinnRmApiDeserializeInternal(char * const *src, NvLength src_size, char *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnRmApiDeserializeInternal(char **src, NvLength src_size, char *dst, NvLength dst_size, NvBool deser_up)
 {
-    const char *src_max = *src + src_size;
+    // Header
+    FINN_RM_API *header;
+
+    // End of data
+    const char *src_max;
+
+    // Bit pump is used to read the serialized data.
+    finn_bit_pump_for_read bp;
+
+    // Error code
+    NV_STATUS status;
 
     // Input validation
-    if (!src || !(*src) || !src_size || !dst || !dst_size)
+    // Null pointers are not permitted.
+    // Buffer must begin on an 8-byte boundary.
+    if (!src || !(*src) || !src_size || !dst || !dst_size || (uintptr_t) *src & 0x7u)
     {
         FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (((NvU64*)(*src))[0] != FINN_SERIALIZATION_VERSION)
+    // Header data comes first.
+    header = (FINN_RM_API *) *src;
+
+    // Check the version.
+    if (header->version != FINN_SERIALIZATION_VERSION)
     {
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         return NV_ERR_LIB_RM_VERSION_MISMATCH;
     }
 
-    if (((NvU64*)(*src))[1] > src_size || ((NvU64 *)(*src))[1] < (4 * sizeof(NvU64)))
+    // Set src_max for buffer bounds checking.
+    src_max = *src + src_size;
+
+    // Check that source buffer is large enough.
+    if (sizeof(FINN_RM_API) > src_size ||
+        header->payloadSize > src_size ||
+        header->payloadSize < sizeof(FINN_RM_API) ||
+        *src + header->payloadSize > src_max ||
+        *src + header->payloadSize < *src)
     {
+        *src = (char *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         return NV_ERR_BUFFER_TOO_SMALL;
     }
 
+    // Open the bit punp, skipping past the header.
+    finn_open_buffer_for_read(&bp, (const uint64_t *) (*src + sizeof(FINN_RM_API)), (const uint64_t *) (src_max));
+
+    // Dispatch to interface-specific routine
+    status = FinnRmApiDeserializeInterface(header->interface, header->message, &bp, dst, dst_size, deser_up);
+
+    // Update the buffer position, error or not.
+    *(src) = (char *) bp.buffer_position;
+
+    // Nothing more to do if there was an error.
+    if (status != NV_OK)
+        return status;
+
+    // Update the checksum.
+    finn_close_buffer_for_read(&bp);
+
+    // TODO: Check the checksum
+
+    // Check that the declared size matches the serialization outcome.
+    if (header->payloadSize != (NvU64) (((const char *) bp.buffer_position) - ((const char *) header)))
+    {
+        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // All good
+    return NV_OK;
+}
+
+
+static NV_STATUS FinnRmApiDeserializeInterface(NvU64 interface, NvU64 message, finn_bit_pump_for_read *bp, char *dst, NvLength dst_size, NvBool deser_up)
+{
     // Forward to interface-specific routine
-    switch (((NvU64 *)(*src))[2])
+    switch (interface)
     {
         case FINN_INTERFACE_ID(FINN_NV01_ROOT_NVD):
-            return FinnNv01RootNvdDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV01_ROOT_NVD *) dst, dst_size, deser_up);
+            return FinnNv01RootNvdDeserializeMessage(message, bp, (FINN_NV01_ROOT_NVD *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_DMA):
-            return FinnNv01Device0DmaDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV01_DEVICE_0_DMA *) dst, dst_size, deser_up);
+            return FinnNv01Device0DmaDeserializeMessage(message, bp, (FINN_NV01_DEVICE_0_DMA *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_FB):
-            return FinnNv01Device0FbDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV01_DEVICE_0_FB *) dst, dst_size, deser_up);
+            return FinnNv01Device0FbDeserializeMessage(message, bp, (FINN_NV01_DEVICE_0_FB *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_FIFO):
-            return FinnNv01Device0FifoDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV01_DEVICE_0_FIFO *) dst, dst_size, deser_up);
+            return FinnNv01Device0FifoDeserializeMessage(message, bp, (FINN_NV01_DEVICE_0_FIFO *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_GPU):
-            return FinnNv01Device0GpuDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV01_DEVICE_0_GPU *) dst, dst_size, deser_up);
+            return FinnNv01Device0GpuDeserializeMessage(message, bp, (FINN_NV01_DEVICE_0_GPU *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_GR):
-            return FinnNv01Device0GrDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV01_DEVICE_0_GR *) dst, dst_size, deser_up);
+            return FinnNv01Device0GrDeserializeMessage(message, bp, (FINN_NV01_DEVICE_0_GR *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_HOST):
-            return FinnNv01Device0HostDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV01_DEVICE_0_HOST *) dst, dst_size, deser_up);
+            return FinnNv01Device0HostDeserializeMessage(message, bp, (FINN_NV01_DEVICE_0_HOST *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_MSENC):
-            return FinnNv01Device0MsencDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV01_DEVICE_0_MSENC *) dst, dst_size, deser_up);
+            return FinnNv01Device0MsencDeserializeMessage(message, bp, (FINN_NV01_DEVICE_0_MSENC *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_CE):
-            return FinnNv20Subdevice0CeDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV20_SUBDEVICE_0_CE *) dst, dst_size, deser_up);
+            return FinnNv20Subdevice0CeDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_0_CE *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_GPU):
-            return FinnNv20Subdevice0GpuDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV20_SUBDEVICE_0_GPU *) dst, dst_size, deser_up);
+            return FinnNv20Subdevice0GpuDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_0_GPU *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_I2C):
-            return FinnNv20Subdevice0I2cDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV20_SUBDEVICE_0_I2C *) dst, dst_size, deser_up);
+            return FinnNv20Subdevice0I2cDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_0_I2C *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_NVD):
-            return FinnNv20Subdevice0NvdDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV20_SUBDEVICE_0_NVD *) dst, dst_size, deser_up);
+            return FinnNv20Subdevice0NvdDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_0_NVD *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_PERF):
-            return FinnNv20Subdevice0PerfDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV20_SUBDEVICE_0_PERF *) dst, dst_size, deser_up);
+            return FinnNv20Subdevice0PerfDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_0_PERF *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_RC):
-            return FinnNv20Subdevice0RcDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV20_SUBDEVICE_0_RC *) dst, dst_size, deser_up);
+            return FinnNv20Subdevice0RcDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_0_RC *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV40_I2C_I2C):
-            return FinnNv40I2cI2cDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_NV40_I2C_I2C *) dst, dst_size, deser_up);
+            return FinnNv40I2cI2cDeserializeMessage(message, bp, (FINN_NV40_I2C_I2C *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_GT200_DEBUGGER_DEBUG):
-            return FinnGt200DebuggerDebugDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_GT200_DEBUGGER_DEBUG *) dst, dst_size, deser_up);
+            return FinnGt200DebuggerDebugDeserializeMessage(message, bp, (FINN_GT200_DEBUGGER_DEBUG *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO):
-            return FinnMaxwellChannelGpfifoAGpfifoDeserialize((NvU8 **) src, (const NvU8 *) src_max, (FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO *) dst, dst_size, deser_up);
+            return FinnMaxwellChannelGpfifoAGpfifoDeserializeMessage(message, bp, (FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO *) dst, dst_size, deser_up);
+
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -453,53 +760,27 @@ NV_STATUS FinnRmApiDeserializeInternal(char * const *src, NvLength src_size, cha
     }
 }
 
+
 NvU64 FinnRmApiGetSerializedSize(NvU64 interface, NvU64 message, const NvP64 src)
 {
-    // Input validation
-    if (!src)
-        return 0;
+    // Bit pump with writing disabled.
+    finn_bit_pump_for_write bp;
+    finn_open_buffer_for_write(&bp, (uint64_t *) 0, (uint64_t *) 0);
 
-    // Forward to interface-specific routine
-    switch (interface)
-    {
-        case FINN_INTERFACE_ID(FINN_NV01_ROOT_NVD):
-            return FinnNv01RootNvdGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_DMA):
-            return FinnNv01Device0DmaGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_FB):
-            return FinnNv01Device0FbGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_FIFO):
-            return FinnNv01Device0FifoGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_GPU):
-            return FinnNv01Device0GpuGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_GR):
-            return FinnNv01Device0GrGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_HOST):
-            return FinnNv01Device0HostGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV01_DEVICE_0_MSENC):
-            return FinnNv01Device0MsencGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_CE):
-            return FinnNv20Subdevice0CeGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_GPU):
-            return FinnNv20Subdevice0GpuGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_I2C):
-            return FinnNv20Subdevice0I2cGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_NVD):
-            return FinnNv20Subdevice0NvdGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_PERF):
-            return FinnNv20Subdevice0PerfGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_RC):
-            return FinnNv20Subdevice0RcGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_NV40_I2C_I2C):
-            return FinnNv40I2cI2cGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_GT200_DEBUGGER_DEBUG):
-            return FinnGt200DebuggerDebugGetSerializedSize(message, src);
-        case FINN_INTERFACE_ID(FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO):
-            return FinnMaxwellChannelGpfifoAGpfifoGetSerializedSize(message, src);
-        default:
-            return 0;
-    }
+    // Call the serializer with write-suppressed bit pump.
+    // The size is the same in bith directions (up/down).
+    // Eeturn zero on error to indicate that this API is not serialized by FINN.
+    if (FinnRmApiSerializeInterface(interface, message, (const char *) src, &bp, 0) != NV_OK)
+    return 0;
+
+    // Close the bit pump.
+    finn_close_buffer_for_write(&bp);
+
+    // Add the header size in bytes to the amount of data serialzied.
+    // `buffer_position` is the payload size (not really the buffer position).
+    return (NvU64) bp.buffer_position + sizeof(FINN_RM_API);
 }
+
 
 NvU64 FinnRmApiGetUnserializedSize(NvU64 interface, NvU64 message)
 {
@@ -545,13 +826,15 @@ NvU64 FinnRmApiGetUnserializedSize(NvU64 interface, NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv01RootNvdSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv01RootNvdSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0000_CTRL_NVD_GET_DUMP_PARAMS):
-            return Nv0000CtrlNvdGetDumpParamsSerialize((const NV0000_CTRL_NVD_GET_DUMP_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0000CtrlNvdGetDumpParamsSerialize((const NV0000_CTRL_NVD_GET_DUMP_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -560,36 +843,26 @@ static NV_STATUS FinnNv01RootNvdSerialize(NvU64 message, const char *src, NvU8 *
     }
 }
 
-static NV_STATUS FinnNv01RootNvdDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_ROOT_NVD *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv01RootNvdDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_ROOT_NVD *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV0000_CTRL_NVD_GET_DUMP_PARAMS):
-            return Nv0000CtrlNvdGetDumpParamsDeserialize(src, src_max, (NV0000_CTRL_NVD_GET_DUMP_PARAMS *) dst, dst_size, deser_up);
+            return Nv0000CtrlNvdGetDumpParamsDeserialize(bp, (NV0000_CTRL_NVD_GET_DUMP_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv01RootNvdGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV0000_CTRL_NVD_GET_DUMP_PARAMS):
-            return Nv0000CtrlNvdGetDumpParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv01RootNvdGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0000_CTRL_NVD_GET_DUMP_PARAMS):
@@ -599,13 +872,15 @@ static NvU64 FinnNv01RootNvdGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv01Device0DmaSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv01Device0DmaSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS):
-            return Nv0080CtrlDmaUpdatePde2ParamsSerialize((const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlDmaUpdatePde2ParamsSerialize((const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -614,36 +889,26 @@ static NV_STATUS FinnNv01Device0DmaSerialize(NvU64 message, const char *src, NvU
     }
 }
 
-static NV_STATUS FinnNv01Device0DmaDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_DMA *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv01Device0DmaDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_DMA *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS):
-            return Nv0080CtrlDmaUpdatePde2ParamsDeserialize(src, src_max, (NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlDmaUpdatePde2ParamsDeserialize(bp, (NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv01Device0DmaGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS):
-            return Nv0080CtrlDmaUpdatePde2ParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv01Device0DmaGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS):
@@ -653,13 +918,15 @@ static NvU64 FinnNv01Device0DmaGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv01Device0FbSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv01Device0FbSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_FB_GET_CAPS_PARAMS):
-            return Nv0080CtrlFbGetCapsParamsSerialize((const NV0080_CTRL_FB_GET_CAPS_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlFbGetCapsParamsSerialize((const NV0080_CTRL_FB_GET_CAPS_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -668,36 +935,26 @@ static NV_STATUS FinnNv01Device0FbSerialize(NvU64 message, const char *src, NvU8
     }
 }
 
-static NV_STATUS FinnNv01Device0FbDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_FB *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv01Device0FbDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_FB *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_FB_GET_CAPS_PARAMS):
-            return Nv0080CtrlFbGetCapsParamsDeserialize(src, src_max, (NV0080_CTRL_FB_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlFbGetCapsParamsDeserialize(bp, (NV0080_CTRL_FB_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv01Device0FbGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV0080_CTRL_FB_GET_CAPS_PARAMS):
-            return Nv0080CtrlFbGetCapsParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv01Device0FbGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_FB_GET_CAPS_PARAMS):
@@ -707,17 +964,19 @@ static NvU64 FinnNv01Device0FbGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv01Device0FifoSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv01Device0FifoSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
-            return Nv0080CtrlFifoGetCapsParamsSerialize((const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlFifoGetCapsParamsSerialize((const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *) src, bp, seri_up);
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
-            return Nv0080CtrlFifoStartSelectedChannelsParamsSerialize((const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlFifoStartSelectedChannelsParamsSerialize((const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *) src, bp, seri_up);
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
-            return Nv0080CtrlFifoGetChannellistParamsSerialize((const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlFifoGetChannellistParamsSerialize((const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -726,44 +985,30 @@ static NV_STATUS FinnNv01Device0FifoSerialize(NvU64 message, const char *src, Nv
     }
 }
 
-static NV_STATUS FinnNv01Device0FifoDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_FIFO *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv01Device0FifoDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_FIFO *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
-            return Nv0080CtrlFifoGetCapsParamsDeserialize(src, src_max, (NV0080_CTRL_FIFO_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlFifoGetCapsParamsDeserialize(bp, (NV0080_CTRL_FIFO_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
-            return Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(src, src_max, (NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(bp, (NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *) dst, dst_size, deser_up);
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
-            return Nv0080CtrlFifoGetChannellistParamsDeserialize(src, src_max, (NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlFifoGetChannellistParamsDeserialize(bp, (NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv01Device0FifoGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
-            return Nv0080CtrlFifoGetCapsParamsGetSerializedSize(NvP64_VALUE(src));
-        case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
-            return Nv0080CtrlFifoStartSelectedChannelsParamsGetSerializedSize(NvP64_VALUE(src));
-        case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
-            return Nv0080CtrlFifoGetChannellistParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv01Device0FifoGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
@@ -777,13 +1022,15 @@ static NvU64 FinnNv01Device0FifoGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv01Device0GpuSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv01Device0GpuSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS):
-            return Nv0080CtrlGpuGetClasslistParamsSerialize((const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlGpuGetClasslistParamsSerialize((const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -792,36 +1039,26 @@ static NV_STATUS FinnNv01Device0GpuSerialize(NvU64 message, const char *src, NvU
     }
 }
 
-static NV_STATUS FinnNv01Device0GpuDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_GPU *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv01Device0GpuDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_GPU *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS):
-            return Nv0080CtrlGpuGetClasslistParamsDeserialize(src, src_max, (NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlGpuGetClasslistParamsDeserialize(bp, (NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv01Device0GpuGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS):
-            return Nv0080CtrlGpuGetClasslistParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv01Device0GpuGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS):
@@ -831,13 +1068,15 @@ static NvU64 FinnNv01Device0GpuGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv01Device0GrSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv01Device0GrSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_GR_GET_CAPS_PARAMS):
-            return Nv0080CtrlGrGetCapsParamsSerialize((const NV0080_CTRL_GR_GET_CAPS_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlGrGetCapsParamsSerialize((const NV0080_CTRL_GR_GET_CAPS_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -846,36 +1085,26 @@ static NV_STATUS FinnNv01Device0GrSerialize(NvU64 message, const char *src, NvU8
     }
 }
 
-static NV_STATUS FinnNv01Device0GrDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_GR *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv01Device0GrDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_GR *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_GR_GET_CAPS_PARAMS):
-            return Nv0080CtrlGrGetCapsParamsDeserialize(src, src_max, (NV0080_CTRL_GR_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlGrGetCapsParamsDeserialize(bp, (NV0080_CTRL_GR_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv01Device0GrGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV0080_CTRL_GR_GET_CAPS_PARAMS):
-            return Nv0080CtrlGrGetCapsParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv01Device0GrGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_GR_GET_CAPS_PARAMS):
@@ -885,13 +1114,15 @@ static NvU64 FinnNv01Device0GrGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv01Device0HostSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv01Device0HostSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_HOST_GET_CAPS_PARAMS):
-            return Nv0080CtrlHostGetCapsParamsSerialize((const NV0080_CTRL_HOST_GET_CAPS_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlHostGetCapsParamsSerialize((const NV0080_CTRL_HOST_GET_CAPS_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -900,36 +1131,26 @@ static NV_STATUS FinnNv01Device0HostSerialize(NvU64 message, const char *src, Nv
     }
 }
 
-static NV_STATUS FinnNv01Device0HostDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_HOST *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv01Device0HostDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_HOST *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_HOST_GET_CAPS_PARAMS):
-            return Nv0080CtrlHostGetCapsParamsDeserialize(src, src_max, (NV0080_CTRL_HOST_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlHostGetCapsParamsDeserialize(bp, (NV0080_CTRL_HOST_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv01Device0HostGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV0080_CTRL_HOST_GET_CAPS_PARAMS):
-            return Nv0080CtrlHostGetCapsParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv01Device0HostGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_HOST_GET_CAPS_PARAMS):
@@ -939,13 +1160,15 @@ static NvU64 FinnNv01Device0HostGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv01Device0MsencSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv01Device0MsencSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_MSENC_GET_CAPS_PARAMS):
-            return Nv0080CtrlMsencGetCapsParamsSerialize((const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv0080CtrlMsencGetCapsParamsSerialize((const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -954,36 +1177,26 @@ static NV_STATUS FinnNv01Device0MsencSerialize(NvU64 message, const char *src, N
     }
 }
 
-static NV_STATUS FinnNv01Device0MsencDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV01_DEVICE_0_MSENC *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv01Device0MsencDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_DEVICE_0_MSENC *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_MSENC_GET_CAPS_PARAMS):
-            return Nv0080CtrlMsencGetCapsParamsDeserialize(src, src_max, (NV0080_CTRL_MSENC_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+            return Nv0080CtrlMsencGetCapsParamsDeserialize(bp, (NV0080_CTRL_MSENC_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv01Device0MsencGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV0080_CTRL_MSENC_GET_CAPS_PARAMS):
-            return Nv0080CtrlMsencGetCapsParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv01Device0MsencGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV0080_CTRL_MSENC_GET_CAPS_PARAMS):
@@ -993,13 +1206,15 @@ static NvU64 FinnNv01Device0MsencGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0CeSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv20Subdevice0CeSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_CE_GET_CAPS_PARAMS):
-            return Nv2080CtrlCeGetCapsParamsSerialize((const NV2080_CTRL_CE_GET_CAPS_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv2080CtrlCeGetCapsParamsSerialize((const NV2080_CTRL_CE_GET_CAPS_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1008,36 +1223,26 @@ static NV_STATUS FinnNv20Subdevice0CeSerialize(NvU64 message, const char *src, N
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0CeDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_CE *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv20Subdevice0CeDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_CE *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_CE_GET_CAPS_PARAMS):
-            return Nv2080CtrlCeGetCapsParamsDeserialize(src, src_max, (NV2080_CTRL_CE_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+            return Nv2080CtrlCeGetCapsParamsDeserialize(bp, (NV2080_CTRL_CE_GET_CAPS_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv20Subdevice0CeGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV2080_CTRL_CE_GET_CAPS_PARAMS):
-            return Nv2080CtrlCeGetCapsParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv20Subdevice0CeGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_CE_GET_CAPS_PARAMS):
@@ -1047,15 +1252,17 @@ static NvU64 FinnNv20Subdevice0CeGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0GpuSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv20Subdevice0GpuSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINES_PARAMS):
-            return Nv2080CtrlGpuGetEnginesParamsSerialize((const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv2080CtrlGpuGetEnginesParamsSerialize((const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *) src, bp, seri_up);
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
-            return Nv2080CtrlGpuGetEngineClasslistParamsSerialize((const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv2080CtrlGpuGetEngineClasslistParamsSerialize((const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1064,40 +1271,28 @@ static NV_STATUS FinnNv20Subdevice0GpuSerialize(NvU64 message, const char *src, 
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0GpuDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_GPU *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv20Subdevice0GpuDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_GPU *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINES_PARAMS):
-            return Nv2080CtrlGpuGetEnginesParamsDeserialize(src, src_max, (NV2080_CTRL_GPU_GET_ENGINES_PARAMS *) dst, dst_size, deser_up);
+            return Nv2080CtrlGpuGetEnginesParamsDeserialize(bp, (NV2080_CTRL_GPU_GET_ENGINES_PARAMS *) dst, dst_size, deser_up);
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
-            return Nv2080CtrlGpuGetEngineClasslistParamsDeserialize(src, src_max, (NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *) dst, dst_size, deser_up);
+            return Nv2080CtrlGpuGetEngineClasslistParamsDeserialize(bp, (NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv20Subdevice0GpuGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINES_PARAMS):
-            return Nv2080CtrlGpuGetEnginesParamsGetSerializedSize(NvP64_VALUE(src));
-        case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
-            return Nv2080CtrlGpuGetEngineClasslistParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv20Subdevice0GpuGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINES_PARAMS):
@@ -1109,13 +1304,15 @@ static NvU64 FinnNv20Subdevice0GpuGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0I2cSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv20Subdevice0I2cSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_I2C_ACCESS_PARAMS):
-            return Nv2080CtrlI2cAccessParamsSerialize((const NV2080_CTRL_I2C_ACCESS_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv2080CtrlI2cAccessParamsSerialize((const NV2080_CTRL_I2C_ACCESS_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1124,36 +1321,26 @@ static NV_STATUS FinnNv20Subdevice0I2cSerialize(NvU64 message, const char *src, 
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0I2cDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_I2C *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv20Subdevice0I2cDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_I2C *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_I2C_ACCESS_PARAMS):
-            return Nv2080CtrlI2cAccessParamsDeserialize(src, src_max, (NV2080_CTRL_I2C_ACCESS_PARAMS *) dst, dst_size, deser_up);
+            return Nv2080CtrlI2cAccessParamsDeserialize(bp, (NV2080_CTRL_I2C_ACCESS_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv20Subdevice0I2cGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV2080_CTRL_I2C_ACCESS_PARAMS):
-            return Nv2080CtrlI2cAccessParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv20Subdevice0I2cGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_I2C_ACCESS_PARAMS):
@@ -1163,13 +1350,15 @@ static NvU64 FinnNv20Subdevice0I2cGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0NvdSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv20Subdevice0NvdSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_NVD_GET_DUMP_PARAMS):
-            return Nv2080CtrlNvdGetDumpParamsSerialize((const NV2080_CTRL_NVD_GET_DUMP_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv2080CtrlNvdGetDumpParamsSerialize((const NV2080_CTRL_NVD_GET_DUMP_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1178,36 +1367,26 @@ static NV_STATUS FinnNv20Subdevice0NvdSerialize(NvU64 message, const char *src, 
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0NvdDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_NVD *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv20Subdevice0NvdDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_NVD *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_NVD_GET_DUMP_PARAMS):
-            return Nv2080CtrlNvdGetDumpParamsDeserialize(src, src_max, (NV2080_CTRL_NVD_GET_DUMP_PARAMS *) dst, dst_size, deser_up);
+            return Nv2080CtrlNvdGetDumpParamsDeserialize(bp, (NV2080_CTRL_NVD_GET_DUMP_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv20Subdevice0NvdGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV2080_CTRL_NVD_GET_DUMP_PARAMS):
-            return Nv2080CtrlNvdGetDumpParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv20Subdevice0NvdGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_NVD_GET_DUMP_PARAMS):
@@ -1217,13 +1396,15 @@ static NvU64 FinnNv20Subdevice0NvdGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0PerfSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv20Subdevice0PerfSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM):
-            return Nv2080CtrlGpumonSamplesSerialize((const NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM *) src, dst, dst_max, seri_up, FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_PERF), FINN_MESSAGE_ID(NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM));
+            return Nv2080CtrlGpumonSamplesSerialize((const NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1232,36 +1413,26 @@ static NV_STATUS FinnNv20Subdevice0PerfSerialize(NvU64 message, const char *src,
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0PerfDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_PERF *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv20Subdevice0PerfDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_PERF *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM):
-            return Nv2080CtrlGpumonSamplesDeserialize(src, src_max, (NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM *) dst, dst_size, deser_up);
+            return Nv2080CtrlGpumonSamplesDeserialize(bp, (NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv20Subdevice0PerfGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM):
-            return Nv2080CtrlGpumonSamplesGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv20Subdevice0PerfGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM):
@@ -1271,13 +1442,15 @@ static NvU64 FinnNv20Subdevice0PerfGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0RcSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv20Subdevice0RcSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS):
-            return Nv2080CtrlRcReadVirtualMemParamsSerialize((const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv2080CtrlRcReadVirtualMemParamsSerialize((const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1286,36 +1459,26 @@ static NV_STATUS FinnNv20Subdevice0RcSerialize(NvU64 message, const char *src, N
     }
 }
 
-static NV_STATUS FinnNv20Subdevice0RcDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV20_SUBDEVICE_0_RC *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv20Subdevice0RcDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_RC *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS):
-            return Nv2080CtrlRcReadVirtualMemParamsDeserialize(src, src_max, (NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *) dst, dst_size, deser_up);
+            return Nv2080CtrlRcReadVirtualMemParamsDeserialize(bp, (NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv20Subdevice0RcGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS):
-            return Nv2080CtrlRcReadVirtualMemParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv20Subdevice0RcGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS):
@@ -1325,15 +1488,17 @@ static NvU64 FinnNv20Subdevice0RcGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnNv40I2cI2cSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnNv40I2cI2cSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_INDEXED_PARAMS):
-            return Nv402cCtrlI2cIndexedParamsSerialize((const NV402C_CTRL_I2C_INDEXED_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv402cCtrlI2cIndexedParamsSerialize((const NV402C_CTRL_I2C_INDEXED_PARAMS *) src, bp, seri_up);
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_TRANSACTION_PARAMS):
-            return Nv402cCtrlI2cTransactionParamsSerialize((const NV402C_CTRL_I2C_TRANSACTION_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv402cCtrlI2cTransactionParamsSerialize((const NV402C_CTRL_I2C_TRANSACTION_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1342,40 +1507,28 @@ static NV_STATUS FinnNv40I2cI2cSerialize(NvU64 message, const char *src, NvU8 **
     }
 }
 
-static NV_STATUS FinnNv40I2cI2cDeserialize(NvU8 **src, const NvU8 *src_max, FINN_NV40_I2C_I2C *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnNv40I2cI2cDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV40_I2C_I2C *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_INDEXED_PARAMS):
-            return Nv402cCtrlI2cIndexedParamsDeserialize(src, src_max, (NV402C_CTRL_I2C_INDEXED_PARAMS *) dst, dst_size, deser_up);
+            return Nv402cCtrlI2cIndexedParamsDeserialize(bp, (NV402C_CTRL_I2C_INDEXED_PARAMS *) dst, dst_size, deser_up);
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_TRANSACTION_PARAMS):
-            return Nv402cCtrlI2cTransactionParamsDeserialize(src, src_max, (NV402C_CTRL_I2C_TRANSACTION_PARAMS *) dst, dst_size, deser_up);
+            return Nv402cCtrlI2cTransactionParamsDeserialize(bp, (NV402C_CTRL_I2C_TRANSACTION_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnNv40I2cI2cGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV402C_CTRL_I2C_INDEXED_PARAMS):
-            return Nv402cCtrlI2cIndexedParamsGetSerializedSize(NvP64_VALUE(src));
-        case FINN_MESSAGE_ID(NV402C_CTRL_I2C_TRANSACTION_PARAMS):
-            return Nv402cCtrlI2cTransactionParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnNv40I2cI2cGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_INDEXED_PARAMS):
@@ -1387,15 +1540,17 @@ static NvU64 FinnNv40I2cI2cGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnGt200DebuggerDebugSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnGt200DebuggerDebugSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS):
-            return Nv83deCtrlDebugReadMemoryParamsSerialize((const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv83deCtrlDebugReadMemoryParamsSerialize((const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *) src, bp, seri_up);
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS):
-            return Nv83deCtrlDebugWriteMemoryParamsSerialize((const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *) src, dst, dst_max, seri_up);
+            return Nv83deCtrlDebugWriteMemoryParamsSerialize((const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1404,40 +1559,28 @@ static NV_STATUS FinnGt200DebuggerDebugSerialize(NvU64 message, const char *src,
     }
 }
 
-static NV_STATUS FinnGt200DebuggerDebugDeserialize(NvU8 **src, const NvU8 *src_max, FINN_GT200_DEBUGGER_DEBUG *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnGt200DebuggerDebugDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_GT200_DEBUGGER_DEBUG *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS):
-            return Nv83deCtrlDebugReadMemoryParamsDeserialize(src, src_max, (NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *) dst, dst_size, deser_up);
+            return Nv83deCtrlDebugReadMemoryParamsDeserialize(bp, (NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *) dst, dst_size, deser_up);
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS):
-            return Nv83deCtrlDebugWriteMemoryParamsDeserialize(src, src_max, (NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *) dst, dst_size, deser_up);
+            return Nv83deCtrlDebugWriteMemoryParamsDeserialize(bp, (NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnGt200DebuggerDebugGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS):
-            return Nv83deCtrlDebugReadMemoryParamsGetSerializedSize(NvP64_VALUE(src));
-        case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS):
-            return Nv83deCtrlDebugWriteMemoryParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnGt200DebuggerDebugGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS):
@@ -1449,15 +1592,21 @@ static NvU64 FinnGt200DebuggerDebugGetUnserializedSize(NvU64 message)
     }
 }
 
-static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoSerialize(NvU64 message, const char *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS):
-            return Nvb06fCtrlGetEngineCtxDataParamsSerialize((const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *) src, dst, dst_max, seri_up);
+            return Nvb06fCtrlGetEngineCtxDataParamsSerialize((const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *) src, bp, seri_up);
         case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS):
-            return Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsSerialize((const NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *) src, dst, dst_max, seri_up);
+            return Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsSerialize((const NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *) src, bp, seri_up);
+        case FINN_MESSAGE_ID(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS):
+            return Nvb06fCtrlSaveEngineCtxDataParamsSerialize((const NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *) src, bp, seri_up);
+        case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS):
+            return Nvb06fCtrlCmdRestoreEngineCtxDataFinnParamsSerialize((const NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS *) src, bp, seri_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
@@ -1466,89 +1615,67 @@ static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoSerialize(NvU64 message, const c
     }
 }
 
-static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoDeserialize(NvU8 **src, const NvU8 *src_max, FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnMaxwellChannelGpfifoAGpfifoDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO *dst, NvLength dst_size, NvBool deser_up)
 {
-    // Forward to message-specific routine
-    switch (((NvU64 *)(*src))[3])
+    // Forward to message-specific routine.
+    switch (message)
     {
         case FINN_MESSAGE_ID(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS):
-            return Nvb06fCtrlGetEngineCtxDataParamsDeserialize(src, src_max, (NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *) dst, dst_size, deser_up);
+            return Nvb06fCtrlGetEngineCtxDataParamsDeserialize(bp, (NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *) dst, dst_size, deser_up);
         case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS):
-            return Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsDeserialize(src, src_max, (NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *) dst, dst_size, deser_up);
+            return Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsDeserialize(bp, (NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *) dst, dst_size, deser_up);
+        case FINN_MESSAGE_ID(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS):
+            return Nvb06fCtrlSaveEngineCtxDataParamsDeserialize(bp, (NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *) dst, dst_size, deser_up);
+        case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS):
+            return Nvb06fCtrlCmdRestoreEngineCtxDataFinnParamsDeserialize(bp, (NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS *) dst, dst_size, deser_up);
+
+        // Everything else is unsupported.
         default:
         {
             FINN_ERROR(NV_ERR_NOT_SUPPORTED);
             return NV_ERR_NOT_SUPPORTED;
         }
-    }
-}
-
-static NvU64 FinnMaxwellChannelGpfifoAGpfifoGetSerializedSize(NvU64 message, const NvP64 src)
-{
-    // Forward to message-specific routine
-    switch (message)
-    {
-        case FINN_MESSAGE_ID(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS):
-            return Nvb06fCtrlGetEngineCtxDataParamsGetSerializedSize(NvP64_VALUE(src));
-        case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS):
-            return Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsGetSerializedSize(NvP64_VALUE(src));
-        default:
-            return 0;
     }
 }
 
 static NvU64 FinnMaxwellChannelGpfifoAGpfifoGetUnserializedSize(NvU64 message)
 {
-    // Forward to message-specific routine
+    // Forward to message-specific routine.
     switch (message)
     {
         case FINN_MESSAGE_ID(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS):
             return sizeof(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS);
         case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS):
             return sizeof(NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS);
+        case FINN_MESSAGE_ID(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS):
+            return sizeof(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS);
+        case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS):
+            return sizeof(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS);
         default:
             return 0;
     }
 }
 
-static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_DUMP_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_DUMP_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0000CtrlNvdGetDumpParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->component
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->component, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x6; // Interface ID
-    header->message = 0x2; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->component, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->size, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
 
     if (src->size < 0 || src->size > NV0000_CTRL_NVD_MAX_DUMP_SIZE)
     {
@@ -1557,68 +1684,69 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_D
         goto exit;
     }
 
-    pos += 4;
-
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pBuffer);
-
-    if (src->pBuffer)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pBuffer, (src->size));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv0000CtrlNvdGetDumpParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0000_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0000_CTRL_NVD_GET_DUMP_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->size, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pBuffer), 1);
+
+    // Skip if pointer is null.
+    if (src->pBuffer)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->size); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pBuffer))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pBuffer)
+            FINN_FREE(src->pBuffer);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv0000CtrlNvdGetDumpParamsDeserialize(finn_bit_pump_for_read *bp, NV0000_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV0000_CTRL_NVD_GET_DUMP_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->component = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->component
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->component, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->size, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Deserialize 4-byte NvU32 object.
+    dst->size = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->size < 0 || dst->size > NV0000_CTRL_NVD_MAX_DUMP_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -1626,30 +1754,40 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsDeserialize(NvU8 **src, const NvU8 *s
         goto exit;
     }
 
-    pos += 4;
 
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pBuffer, pos, (dst->size));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->size)) > src_max ||
-                pos + ((dst->size)) < pos)
+            dst->pBuffer = FINN_MALLOC((dst->size));
+            if (!dst->pBuffer)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pBuffer, pos, NvP64, (dst->size));
+            FINN_MEMZERO(dst->pBuffer, (dst->size));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pBuffer)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->size); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pBuffer))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -1658,284 +1796,266 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsDeserialize(NvU8 **src, const NvU8 *s
             dst->pBuffer = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0000CtrlNvdGetDumpParamsGetSerializedSize(const NV0000_CTRL_NVD_GET_DUMP_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsSerialize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pBuffer)
-    {
-        size += (src->size);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsSerialize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlDmaUpdatePde2PageTableParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->physAddr
+    // Deserialize 8-byte NvU64 object.
+    if (finn_write_buffer(bp, src->physAddr, 8 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
+    // No range check for src->numEntries
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->numEntries, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    //
-    // Non-message type has no interface/message ID
-    //
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
+    // No range check for src->aperture
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->aperture, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->physAddr, NvU64, 8);
-
-    FINN_COPY_TO_BUFFER(pos, src->numEntries, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->aperture, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 8-byte NvU64 object.
+    dst->physAddr = (NvU64) finn_read_buffer(bp, 8 * 8);
+    // No range check for dst->physAddr
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->physAddr, pos, NvU64, 8);
 
-    FINN_COPY_FROM_BUFFER(dst->numEntries, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->numEntries = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->numEntries
 
-    FINN_COPY_FROM_BUFFER(dst->aperture, pos, NvU32, 4);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 4-byte NvU32 object.
+    dst->aperture = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->aperture
 
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
 
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlDmaUpdatePde2PageTableParamsGetSerializedSize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *src)
-{
-    // Suppress used-variable warnings.
-    (void) src;
 
-    // This struct is static and its size is known at compile time.
-    return 56;
-}
-
-static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsSerialize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsSerialize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlDmaUpdatePde2ParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x3f;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->pdeIndex
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->pdeIndex, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x8018; // Interface ID
-    header->message = 0xf; // Message ID
+    // No range check for src->flags
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->flags, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x3f;
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // No range check for src->hVASpace
+    // Deserialize 4-byte NvHandle object.
+    if (finn_write_buffer(bp, src->hVASpace, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->pdeIndex, NvU32, 4);
 
-    FINN_COPY_TO_BUFFER(pos, src->flags, NvU32, 4);
+    // No range check for src->subDeviceId
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->subDeviceId, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    FINN_COPY_TO_BUFFER(pos, src->hVASpace, NvHandle, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->subDeviceId, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Bounded nested fields
     for (NvU64 i = 0; i < (NV0080_CTRL_DMA_UPDATE_PDE_2_PT_IDX__SIZE); ++i)
     {
-        status = Nv0080CtrlDmaUpdatePde2PageTableParamsSerialize(&src->ptParams[i], &pos, dst_max, seri_up);
+        status = Nv0080CtrlDmaUpdatePde2PageTableParamsSerialize(&src->ptParams[i], bp, seri_up);
         if (status != NV_OK)
             goto exit;
     }
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pPdeBuffer);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pPdeBuffer), 1);
 
+    // Skip if pointer is null.
     if (src->pPdeBuffer)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pPdeBuffer, 8);
+
+        // Serialize each 8-byte NvU64 element.
+        for (NvU64 j = 0; j < 1; ++j)
+        {
+            finn_write_buffer(bp, ((NvU64 *) NvP64_VALUE(src->pPdeBuffer))[j], 8 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pPdeBuffer)
+            FINN_FREE(src->pPdeBuffer);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3f)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3f)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->pdeIndex = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->pdeIndex
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->pdeIndex, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->flags, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->flags = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->flags
 
-    FINN_COPY_FROM_BUFFER(dst->hVASpace, pos, NvHandle, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->subDeviceId, pos, NvU32, 4);
+    // Deserialize 4-byte NvHandle object.
+    dst->hVASpace = (NvHandle) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->hVASpace
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+
+    // Deserialize 4-byte NvU32 object.
+    dst->subDeviceId = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->subDeviceId
+
 
     // Bounded nested fields
     for (NvU64 i = 0; i < (NV0080_CTRL_DMA_UPDATE_PDE_2_PT_IDX__SIZE); ++i)
     {
-        status = Nv0080CtrlDmaUpdatePde2PageTableParamsDeserialize(&pos, src_max, &dst->ptParams[i], dst_size, deser_up);
+        status = Nv0080CtrlDmaUpdatePde2PageTableParamsDeserialize(bp, &dst->ptParams[i], dst_size, deser_up);
         if (status != NV_OK)
             goto exit;
     }
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pPdeBuffer, pos, 8);
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            FINN_SET_PTR_TO_BUFFER(dst->pPdeBuffer, pos, NvP64, 8);
+            dst->pPdeBuffer = FINN_MALLOC(8);
+            if (!dst->pPdeBuffer)
+            {
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
+                goto exit;
+            }
+
+            FINN_MEMZERO(dst->pPdeBuffer, 8);
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pPdeBuffer)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 8-byte NvU64 element.
+        for (NvU64 j = 0; j < 1; ++j)
+        {
+            ((NvU64 *) NvP64_VALUE(dst->pPdeBuffer))[j] = (NvU64) finn_read_buffer(bp, 8 * 8);
         }
     }
     else
@@ -1944,82 +2064,22 @@ static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsDeserialize(NvU8 **src, const NvU8
             dst->pPdeBuffer = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlDmaUpdatePde2ParamsGetSerializedSize(const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 168;
-
-    // Add sizes that require runtime calculation
-    size += 112;
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pPdeBuffer)
-    {
-        size += 8;
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlFbGetCapsParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
-
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x8013; // Interface ID
-    header->message = 0x1; // Message ID
+    uint64_t field_presence_mask;
 
     // Field bitmasks
-    header->fieldMask[0] = 0x3;
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->capsTblSize, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
     if (src->capsTblSize < 0 || src->capsTblSize > NV0080_CTRL_FB_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -2027,66 +2087,64 @@ static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAP
         goto exit;
     }
 
-    pos += 4;
-
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->capsTbl);
-
-    if (src->capsTbl)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->capsTbl, (src->capsTblSize));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv0080CtrlFbGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FB_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_FB_GET_CAPS_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->capsTblSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->capsTbl), 1);
+
+    // Skip if pointer is null.
+    if (src->capsTbl)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->capsTblSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->capsTbl)
+            FINN_FREE(src->capsTbl);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv0080CtrlFbGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FB_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV0080_CTRL_FB_GET_CAPS_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->capsTblSize, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->capsTblSize < 0 || dst->capsTblSize > NV0080_CTRL_FB_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -2094,30 +2152,40 @@ static NV_STATUS Nv0080CtrlFbGetCapsParamsDeserialize(NvU8 **src, const NvU8 *sr
         goto exit;
     }
 
-    pos += 4;
 
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->capsTbl, pos, (dst->capsTblSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->capsTblSize)) > src_max ||
-                pos + ((dst->capsTblSize)) < pos)
+            dst->capsTbl = FINN_MALLOC((dst->capsTblSize));
+            if (!dst->capsTbl)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->capsTbl, pos, NvP64, (dst->capsTblSize));
+            FINN_MEMZERO(dst->capsTbl, (dst->capsTblSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->capsTbl)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->capsTblSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->capsTbl))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -2126,81 +2194,22 @@ static NV_STATUS Nv0080CtrlFbGetCapsParamsDeserialize(NvU8 **src, const NvU8 *sr
             dst->capsTbl = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlFbGetCapsParamsGetSerializedSize(const NV0080_CTRL_FB_GET_CAPS_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->capsTbl)
-    {
-        size += (src->capsTblSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlFifoGetCapsParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
-
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x8017; // Interface ID
-    header->message = 0x1; // Message ID
+    uint64_t field_presence_mask;
 
     // Field bitmasks
-    header->fieldMask[0] = 0x3;
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->capsTblSize, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
     if (src->capsTblSize < 0 || src->capsTblSize > NV0080_CTRL_FIFO_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -2208,66 +2217,64 @@ static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET
         goto exit;
     }
 
-    pos += 4;
-
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->capsTbl);
-
-    if (src->capsTbl)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->capsTbl, (src->capsTblSize));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv0080CtrlFifoGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_FIFO_GET_CAPS_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->capsTblSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->capsTbl), 1);
+
+    // Skip if pointer is null.
+    if (src->capsTbl)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->capsTblSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->capsTbl)
+            FINN_FREE(src->capsTbl);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv0080CtrlFifoGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV0080_CTRL_FIFO_GET_CAPS_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->capsTblSize, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->capsTblSize < 0 || dst->capsTblSize > NV0080_CTRL_FIFO_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -2275,30 +2282,40 @@ static NV_STATUS Nv0080CtrlFifoGetCapsParamsDeserialize(NvU8 **src, const NvU8 *
         goto exit;
     }
 
-    pos += 4;
 
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->capsTbl, pos, (dst->capsTblSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->capsTblSize)) > src_max ||
-                pos + ((dst->capsTblSize)) < pos)
+            dst->capsTbl = FINN_MALLOC((dst->capsTblSize));
+            if (!dst->capsTbl)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->capsTbl, pos, NvP64, (dst->capsTblSize));
+            FINN_MEMZERO(dst->capsTbl, (dst->capsTblSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->capsTbl)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->capsTblSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->capsTbl))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -2307,199 +2324,114 @@ static NV_STATUS Nv0080CtrlFifoGetCapsParamsDeserialize(NvU8 **src, const NvU8 *
             dst->capsTbl = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlFifoGetCapsParamsGetSerializedSize(const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlFifoChannelSerialize(const NV0080_CTRL_FIFO_CHANNEL *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->capsTbl)
-    {
-        size += (src->capsTblSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlFifoChannelSerialize(const NV0080_CTRL_FIFO_CHANNEL *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlFifoChannelGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x1;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->hChannel
+    // Deserialize 4-byte NvHandle object.
+    if (finn_write_buffer(bp, src->hChannel, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-
-    //
-    // Non-message type has no interface/message ID
-    //
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x1;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->hChannel, NvHandle, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv0080CtrlFifoChannelDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FIFO_CHANNEL *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv0080CtrlFifoChannelDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_CHANNEL *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_FIFO_CHANNEL) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV0080_CTRL_FIFO_CHANNEL) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x1)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x1)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvHandle object.
+    dst->hChannel = (NvHandle) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->hChannel
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->hChannel, pos, NvHandle, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
 
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlFifoChannelGetSerializedSize(const NV0080_CTRL_FIFO_CHANNEL *src)
-{
-    // Suppress used-variable warnings.
-    (void) src;
 
-    // This struct is static and its size is known at compile time.
-    return 48;
-}
-
-static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsSerialize(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsSerialize(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlFifoStartSelectedChannelsParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->fifoStartChannelListSize
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->fifoStartChannelListSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x8017; // Interface ID
-    header->message = 0x5; // Message ID
+    for (NvU64 i = 0; i < (8); ++i)
+    {
+        // No range check for src->channelHandle[i]
+        // Deserialize 4-byte NvHandle object.
+        if (finn_write_buffer(bp, src->channelHandle[i], 4 * 8))
+        {
+            status = NV_ERR_BUFFER_TOO_SMALL;
+            FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+            goto exit;
+        }
+    }
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->fifoStartChannelListSize, NvU32, 4);
-
-    FINN_MEMCPY_TO_BUFFER(pos, src->channelHandle, 32);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->fifoStartChannelList);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->fifoStartChannelList), 1);
 
+    // Skip if pointer is null.
     if (src->fifoStartChannelList)
     {
-        // Align
-        pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
         for (NvU64 i = 0; i < (src->fifoStartChannelListSize); ++i)
         {
-            status = Nv0080CtrlFifoChannelSerialize(&(((const NV0080_CTRL_FIFO_CHANNEL *) (NvP64_VALUE(src->fifoStartChannelList)))[i]), &pos, dst_max, seri_up);
+            status = Nv0080CtrlFifoChannelSerialize(&(((const NV0080_CTRL_FIFO_CHANNEL *) (NvP64_VALUE(src->fifoStartChannelList)))[i]), bp, seri_up);
 
             if (status != NV_OK)
                 goto exit;
@@ -2511,77 +2443,66 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsSerialize(const NV0080
     }
 
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->fifoStartChannelListSize = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->fifoStartChannelListSize
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->fifoStartChannelListSize, pos, NvU32, 4);
 
-    FINN_MEMCPY_FROM_BUFFER(dst->channelHandle, pos, 32);
+    for (NvU64 i = 0; i < (8); ++i)
+    {
+        // Deserialize 4-byte NvHandle object.
+        dst->channelHandle[i] = (NvHandle) finn_read_buffer(bp, 4 * 8);
+        // No range check for dst->channelHandle[i]
+    }
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        // Align
-        pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
         // Caller must set up the pointers when deserializing down.
         if (!deser_up)
         {
-            // Variable element size
-            NvU64 element_size = Nv0080CtrlFifoChannelGetSerializedSize(NvP64_VALUE(dst->fifoStartChannelList));
-
-            // Validate variable length buffer length
-            if (element_size * (dst->fifoStartChannelListSize) < element_size ||
-                pos + (element_size * (dst->fifoStartChannelListSize)) > src_max ||
-                pos + (element_size * (dst->fifoStartChannelListSize)) < pos)
+            // Data-presence indicator should be false if empty.
+            // Check for integer overflow in the element size variable.
+            if ((dst->fifoStartChannelListSize) < 1 ||
+                (sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListSize)) < sizeof(NV0080_CTRL_FIFO_CHANNEL))
             {
                 status = NV_ERR_BUFFER_TOO_SMALL;
                 FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
                 goto exit;
             }
 
-            // FINN-generated code allocates memory and sets pointer when deserializing down.
+            // Allocate memory and set pointer when deserializing down.
+            // (Calling cods is expected to do so when deserializing up.)
             dst->fifoStartChannelList = FINN_MALLOC((sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListSize)));
             if (!dst->fifoStartChannelList)
             {
@@ -2591,7 +2512,6 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(NvU8 **src
             }
 
             FINN_MEMZERO(dst->fifoStartChannelList, (sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListSize)));
-
         }
 
         // Otherwise the pointer must be provided.
@@ -2605,13 +2525,13 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(NvU8 **src
         for (NvU64 i = 0; i < (dst->fifoStartChannelListSize); ++i)
         {
             // Deserialize each element.
-            status = Nv0080CtrlFifoChannelDeserialize(&pos, src_max, &(((NV0080_CTRL_FIFO_CHANNEL *) (NvP64_VALUE(dst->fifoStartChannelList)))[i]), sizeof(NV0080_CTRL_FIFO_CHANNEL), deser_up);
+            status = Nv0080CtrlFifoChannelDeserialize(bp, &(((NV0080_CTRL_FIFO_CHANNEL *) (NvP64_VALUE(dst->fifoStartChannelList)))[i]), sizeof(NV0080_CTRL_FIFO_CHANNEL), deser_up);
             if (status != NV_OK)
                 goto exit;
         }
     }
 
-    // Data is not present, set to NULL.
+    // Data is not present; set to NULL.
     else
     {
         if (!deser_up)
@@ -2619,167 +2539,134 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(NvU8 **src
     }
 
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlFifoStartSelectedChannelsParamsGetSerializedSize(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 80;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->fifoStartChannelList)
-    {
-        // Alignment
-        size = (size + 7) & ~7;
-        size += Nv0080CtrlFifoChannelGetSerializedSize((const NV0080_CTRL_FIFO_CHANNEL *) src->fifoStartChannelList) * ((src->fifoStartChannelListSize));
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlFifoGetChannellistParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->numChannels
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->numChannels, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x8017; // Interface ID
-    header->message = 0xd; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->numChannels, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pChannelHandleList);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pChannelHandleList), 1);
 
+    // Skip if pointer is null.
     if (src->pChannelHandleList)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pChannelHandleList, (src->numChannels) * 4);
+
+        // Serialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (src->numChannels); ++j)
+        {
+            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->pChannelHandleList))[j], 4 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pChannelHandleList)
+            FINN_FREE(src->pChannelHandleList);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pChannelList), 1);
 
-    // Set data presence byte
-    *(pos++) = !!(src->pChannelList);
-
+    // Skip if pointer is null.
     if (src->pChannelList)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pChannelList, (src->numChannels) * 4);
+
+        // Serialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (src->numChannels); ++j)
+        {
+            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->pChannelList))[j], 4 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pChannelList)
+            FINN_FREE(src->pChannelList);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv0080CtrlFifoGetChannellistParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv0080CtrlFifoGetChannellistParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->numChannels = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->numChannels
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->numChannels, pos, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pChannelHandleList, pos, (dst->numChannels) * 4);
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if ((dst->numChannels) * 4 < 4 ||
-                pos + ((dst->numChannels) * 4) > src_max ||
-                pos + ((dst->numChannels) * 4) < pos)
+            dst->pChannelHandleList = FINN_MALLOC((dst->numChannels) * 4);
+            if (!dst->pChannelHandleList)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pChannelHandleList, pos, NvP64, (dst->numChannels) * 4);
+            FINN_MEMZERO(dst->pChannelHandleList, (dst->numChannels) * 4);
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pChannelHandleList)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (dst->numChannels); ++j)
+        {
+            ((NvU32 *) NvP64_VALUE(dst->pChannelHandleList))[j] = (NvU32) finn_read_buffer(bp, 4 * 8);
         }
     }
     else
@@ -2788,27 +2675,37 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsDeserialize(NvU8 **src, const
             dst->pChannelHandleList = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pChannelList, pos, (dst->numChannels) * 4);
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if ((dst->numChannels) * 4 < 4 ||
-                pos + ((dst->numChannels) * 4) > src_max ||
-                pos + ((dst->numChannels) * 4) < pos)
+            dst->pChannelList = FINN_MALLOC((dst->numChannels) * 4);
+            if (!dst->pChannelList)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pChannelList, pos, NvP64, (dst->numChannels) * 4);
+            FINN_MEMZERO(dst->pChannelList, (dst->numChannels) * 4);
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pChannelList)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (dst->numChannels); ++j)
+        {
+            ((NvU32 *) NvP64_VALUE(dst->pChannelList))[j] = (NvU32) finn_read_buffer(bp, 4 * 8);
         }
     }
     else
@@ -2817,166 +2714,116 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsDeserialize(NvU8 **src, const
             dst->pChannelList = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlFifoGetChannellistParamsGetSerializedSize(const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlGpuGetClasslistParamsSerialize(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pChannelHandleList)
-    {
-        size += (src->numChannels) * 4;
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pChannelList)
-    {
-        size += (src->numChannels) * 4;
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlGpuGetClasslistParamsSerialize(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlGpuGetClasslistParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->numClasses
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->numClasses, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x8002; // Interface ID
-    header->message = 0x1; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x3;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->numClasses, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->classList);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->classList), 1);
 
+    // Skip if pointer is null.
     if (src->classList)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->classList, (src->numClasses) * 4);
+
+        // Serialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (src->numClasses); ++j)
+        {
+            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->classList))[j], 4 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->classList)
+            FINN_FREE(src->classList);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv0080CtrlGpuGetClasslistParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv0080CtrlGpuGetClasslistParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->numClasses = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->numClasses
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->numClasses, pos, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->classList, pos, (dst->numClasses) * 4);
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if ((dst->numClasses) * 4 < 4 ||
-                pos + ((dst->numClasses) * 4) > src_max ||
-                pos + ((dst->numClasses) * 4) < pos)
+            dst->classList = FINN_MALLOC((dst->numClasses) * 4);
+            if (!dst->classList)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->classList, pos, NvP64, (dst->numClasses) * 4);
+            FINN_MEMZERO(dst->classList, (dst->numClasses) * 4);
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->classList)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (dst->numClasses); ++j)
+        {
+            ((NvU32 *) NvP64_VALUE(dst->classList))[j] = (NvU32) finn_read_buffer(bp, 4 * 8);
         }
     }
     else
@@ -2985,153 +2832,116 @@ static NV_STATUS Nv0080CtrlGpuGetClasslistParamsDeserialize(NvU8 **src, const Nv
             dst->classList = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlGpuGetClasslistParamsGetSerializedSize(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlGrGetCapsParamsSerialize(const NV0080_CTRL_GR_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->classList)
-    {
-        size += (src->numClasses) * 4;
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlGrGetCapsParamsSerialize(const NV0080_CTRL_GR_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlGrGetCapsParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->capsTblSize
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->capsTblSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x8011; // Interface ID
-    header->message = 0x2; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x3;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->capsTblSize, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->capsTbl);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->capsTbl), 1);
 
+    // Skip if pointer is null.
     if (src->capsTbl)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->capsTbl, (src->capsTblSize));
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->capsTblSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->capsTbl)
+            FINN_FREE(src->capsTbl);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv0080CtrlGrGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_GR_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv0080CtrlGrGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_GR_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_GR_GET_CAPS_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV0080_CTRL_GR_GET_CAPS_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->capsTblSize
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->capsTblSize, pos, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->capsTbl, pos, (dst->capsTblSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->capsTblSize)) > src_max ||
-                pos + ((dst->capsTblSize)) < pos)
+            dst->capsTbl = FINN_MALLOC((dst->capsTblSize));
+            if (!dst->capsTbl)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->capsTbl, pos, NvP64, (dst->capsTblSize));
+            FINN_MEMZERO(dst->capsTbl, (dst->capsTblSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->capsTbl)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->capsTblSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->capsTbl))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -3140,81 +2950,22 @@ static NV_STATUS Nv0080CtrlGrGetCapsParamsDeserialize(NvU8 **src, const NvU8 *sr
             dst->capsTbl = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlGrGetCapsParamsGetSerializedSize(const NV0080_CTRL_GR_GET_CAPS_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->capsTbl)
-    {
-        size += (src->capsTblSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlHostGetCapsParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
-
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x8014; // Interface ID
-    header->message = 0x1; // Message ID
+    uint64_t field_presence_mask;
 
     // Field bitmasks
-    header->fieldMask[0] = 0x3;
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->capsTblSize, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
     if (src->capsTblSize < 0 || src->capsTblSize > NV0080_CTRL_HOST_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -3222,66 +2973,64 @@ static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET
         goto exit;
     }
 
-    pos += 4;
-
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->capsTbl);
-
-    if (src->capsTbl)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->capsTbl, (src->capsTblSize));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv0080CtrlHostGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_HOST_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_HOST_GET_CAPS_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->capsTblSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->capsTbl), 1);
+
+    // Skip if pointer is null.
+    if (src->capsTbl)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->capsTblSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->capsTbl)
+            FINN_FREE(src->capsTbl);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv0080CtrlHostGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_HOST_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV0080_CTRL_HOST_GET_CAPS_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->capsTblSize, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->capsTblSize < 0 || dst->capsTblSize > NV0080_CTRL_HOST_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -3289,30 +3038,40 @@ static NV_STATUS Nv0080CtrlHostGetCapsParamsDeserialize(NvU8 **src, const NvU8 *
         goto exit;
     }
 
-    pos += 4;
 
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->capsTbl, pos, (dst->capsTblSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->capsTblSize)) > src_max ||
-                pos + ((dst->capsTblSize)) < pos)
+            dst->capsTbl = FINN_MALLOC((dst->capsTblSize));
+            if (!dst->capsTbl)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->capsTbl, pos, NvP64, (dst->capsTblSize));
+            FINN_MEMZERO(dst->capsTbl, (dst->capsTblSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->capsTbl)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->capsTblSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->capsTbl))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -3321,81 +3080,22 @@ static NV_STATUS Nv0080CtrlHostGetCapsParamsDeserialize(NvU8 **src, const NvU8 *
             dst->capsTbl = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlHostGetCapsParamsGetSerializedSize(const NV0080_CTRL_HOST_GET_CAPS_PARAMS *src)
+
+static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->capsTbl)
-    {
-        size += (src->capsTblSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv0080CtrlMsencGetCapsParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
-
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x801b; // Interface ID
-    header->message = 0x1; // Message ID
+    uint64_t field_presence_mask;
 
     // Field bitmasks
-    header->fieldMask[0] = 0x3;
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->capsTblSize, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
     if (src->capsTblSize < 0 || src->capsTblSize > NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -3403,66 +3103,64 @@ static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_G
         goto exit;
     }
 
-    pos += 4;
-
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->capsTbl);
-
-    if (src->capsTbl)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->capsTbl, (src->capsTblSize));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv0080CtrlMsencGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV0080_CTRL_MSENC_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV0080_CTRL_MSENC_GET_CAPS_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->capsTblSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->capsTbl), 1);
+
+    // Skip if pointer is null.
+    if (src->capsTbl)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->capsTblSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->capsTbl)
+            FINN_FREE(src->capsTbl);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv0080CtrlMsencGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV0080_CTRL_MSENC_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV0080_CTRL_MSENC_GET_CAPS_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->capsTblSize, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->capsTblSize < 0 || dst->capsTblSize > NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -3470,30 +3168,40 @@ static NV_STATUS Nv0080CtrlMsencGetCapsParamsDeserialize(NvU8 **src, const NvU8 
         goto exit;
     }
 
-    pos += 4;
 
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->capsTbl, pos, (dst->capsTblSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->capsTblSize)) > src_max ||
-                pos + ((dst->capsTblSize)) < pos)
+            dst->capsTbl = FINN_MALLOC((dst->capsTblSize));
+            if (!dst->capsTbl)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->capsTbl, pos, NvP64, (dst->capsTblSize));
+            FINN_MEMZERO(dst->capsTbl, (dst->capsTblSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->capsTbl)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->capsTblSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->capsTbl))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -3502,82 +3210,31 @@ static NV_STATUS Nv0080CtrlMsencGetCapsParamsDeserialize(NvU8 **src, const NvU8 
             dst->capsTbl = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv0080CtrlMsencGetCapsParamsGetSerializedSize(const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *src)
+
+static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAPS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->capsTbl)
-    {
-        size += (src->capsTblSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAPS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv2080CtrlCeGetCapsParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->ceEngineType
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->ceEngineType, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x20802a; // Interface ID
-    header->message = 0x1; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->ceEngineType, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->capsTblSize, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
 
     if (src->capsTblSize < 0 || src->capsTblSize > NV2080_CTRL_CE_CAPS_TBL_SIZE)
     {
@@ -3586,68 +3243,69 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAP
         goto exit;
     }
 
-    pos += 4;
-
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->capsTbl);
-
-    if (src->capsTbl)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->capsTbl, (src->capsTblSize));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv2080CtrlCeGetCapsParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_CE_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV2080_CTRL_CE_GET_CAPS_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->capsTblSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->capsTbl), 1);
+
+    // Skip if pointer is null.
+    if (src->capsTbl)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->capsTblSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->capsTbl)
+            FINN_FREE(src->capsTbl);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv2080CtrlCeGetCapsParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_CE_GET_CAPS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV2080_CTRL_CE_GET_CAPS_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->ceEngineType = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->ceEngineType
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->ceEngineType, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->capsTblSize, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Deserialize 4-byte NvU32 object.
+    dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->capsTblSize < 0 || dst->capsTblSize > NV2080_CTRL_CE_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -3655,30 +3313,40 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsDeserialize(NvU8 **src, const NvU8 *sr
         goto exit;
     }
 
-    pos += 4;
 
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->capsTbl, pos, (dst->capsTblSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->capsTblSize)) > src_max ||
-                pos + ((dst->capsTblSize)) < pos)
+            dst->capsTbl = FINN_MALLOC((dst->capsTblSize));
+            if (!dst->capsTbl)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->capsTbl, pos, NvP64, (dst->capsTblSize));
+            FINN_MEMZERO(dst->capsTbl, (dst->capsTblSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->capsTbl)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->capsTblSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->capsTbl))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -3687,154 +3355,116 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsDeserialize(NvU8 **src, const NvU8 *sr
             dst->capsTbl = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv2080CtrlCeGetCapsParamsGetSerializedSize(const NV2080_CTRL_CE_GET_CAPS_PARAMS *src)
+
+static NV_STATUS Nv2080CtrlGpuGetEnginesParamsSerialize(const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->capsTbl)
-    {
-        size += (src->capsTblSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv2080CtrlGpuGetEnginesParamsSerialize(const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv2080CtrlGpuGetEnginesParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->engineCount
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->engineCount, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x208001; // Interface ID
-    header->message = 0x23; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x3;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->engineCount, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->engineList);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->engineList), 1);
 
+    // Skip if pointer is null.
     if (src->engineList)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->engineList, (src->engineCount) * 4);
+
+        // Serialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (src->engineCount); ++j)
+        {
+            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->engineList))[j], 4 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->engineList)
+            FINN_FREE(src->engineList);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv2080CtrlGpuGetEnginesParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_GPU_GET_ENGINES_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv2080CtrlGpuGetEnginesParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_GPU_GET_ENGINES_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV2080_CTRL_GPU_GET_ENGINES_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV2080_CTRL_GPU_GET_ENGINES_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->engineCount = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->engineCount
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->engineCount, pos, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->engineList, pos, (dst->engineCount) * 4);
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if ((dst->engineCount) * 4 < 4 ||
-                pos + ((dst->engineCount) * 4) > src_max ||
-                pos + ((dst->engineCount) * 4) < pos)
+            dst->engineList = FINN_MALLOC((dst->engineCount) * 4);
+            if (!dst->engineList)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->engineList, pos, NvP64, (dst->engineCount) * 4);
+            FINN_MEMZERO(dst->engineList, (dst->engineCount) * 4);
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->engineList)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (dst->engineCount); ++j)
+        {
+            ((NvU32 *) NvP64_VALUE(dst->engineList))[j] = (NvU32) finn_read_buffer(bp, 4 * 8);
         }
     }
     else
@@ -3843,158 +3473,131 @@ static NV_STATUS Nv2080CtrlGpuGetEnginesParamsDeserialize(NvU8 **src, const NvU8
             dst->engineList = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv2080CtrlGpuGetEnginesParamsGetSerializedSize(const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *src)
+
+static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsSerialize(const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->engineList)
-    {
-        size += (src->engineCount) * 4;
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsSerialize(const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv2080CtrlGpuGetEngineClasslistParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->engineType
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->engineType, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x208001; // Interface ID
-    header->message = 0x24; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->engineType, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->numClasses, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->classList);
-
-    if (src->classList)
+    // No range check for src->numClasses
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->numClasses, 4 * 8))
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->classList, (src->numClasses) * 4);
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->classList), 1);
+
+    // Skip if pointer is null.
+    if (src->classList)
+    {
+
+        // Serialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (src->numClasses); ++j)
+        {
+            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->classList))[j], 4 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->classList)
+            FINN_FREE(src->classList);
+    }
+
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->engineType = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->engineType
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->engineType, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->numClasses, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->numClasses = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->numClasses
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->classList, pos, (dst->numClasses) * 4);
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if ((dst->numClasses) * 4 < 4 ||
-                pos + ((dst->numClasses) * 4) > src_max ||
-                pos + ((dst->numClasses) * 4) < pos)
+            dst->classList = FINN_MALLOC((dst->numClasses) * 4);
+            if (!dst->classList)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->classList, pos, NvP64, (dst->numClasses) * 4);
+            FINN_MEMZERO(dst->classList, (dst->numClasses) * 4);
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->classList)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 4-byte NvU32 element.
+        for (NvU64 j = 0; j < (dst->numClasses); ++j)
+        {
+            ((NvU32 *) NvP64_VALUE(dst->classList))[j] = (NvU32) finn_read_buffer(bp, 4 * 8);
         }
     }
     else
@@ -4003,165 +3606,161 @@ static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsDeserialize(NvU8 **src, co
             dst->classList = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv2080CtrlGpuGetEngineClasslistParamsGetSerializedSize(const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *src)
+
+static NV_STATUS Nv2080CtrlGpumonSamplesSerialize(const NV2080_CTRL_GPUMON_SAMPLES *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->classList)
-    {
-        size += (src->numClasses) * 4;
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv2080CtrlGpumonSamplesSerialize(const NV2080_CTRL_GPUMON_SAMPLES *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up, NvU64 interface, NvU64 message)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv2080CtrlGpumonSamplesGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x1f;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->bufSize
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->bufSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = interface; // Interface ID
-    header->message = message; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x1f;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->bufSize, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->count, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->tracker, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->type, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pSamples);
-
-    if (src->pSamples)
+    // No range check for src->count
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->count, 4 * 8))
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pSamples, (src->bufSize));
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
+    // No range check for src->tracker
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->tracker, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // No range check for src->type
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->type, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pSamples), 1);
+
+    // Skip if pointer is null.
+    if (src->pSamples)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->bufSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pSamples))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pSamples)
+            FINN_FREE(src->pSamples);
+    }
+
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv2080CtrlGpumonSamplesDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_GPUMON_SAMPLES *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv2080CtrlGpumonSamplesDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_GPUMON_SAMPLES *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV2080_CTRL_GPUMON_SAMPLES) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV2080_CTRL_GPUMON_SAMPLES) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x1f)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x1f)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->bufSize = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->bufSize
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->bufSize, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->count, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->count = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->count
 
-    FINN_COPY_FROM_BUFFER(dst->tracker, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->type, pos, NvU8, 1);
+    // Deserialize 4-byte NvU32 object.
+    dst->tracker = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->tracker
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+
+    // Deserialize 1-byte NvU8 object.
+    dst->type = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->type
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pSamples, pos, (dst->bufSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->bufSize)) > src_max ||
-                pos + ((dst->bufSize)) < pos)
+            dst->pSamples = FINN_MALLOC((dst->bufSize));
+            if (!dst->pSamples)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pSamples, pos, NvP64, (dst->bufSize));
+            FINN_MEMZERO(dst->pSamples, (dst->bufSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pSamples)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->bufSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pSamples))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -4170,90 +3769,71 @@ static NV_STATUS Nv2080CtrlGpumonSamplesDeserialize(NvU8 **src, const NvU8 *src_
             dst->pSamples = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv2080CtrlGpumonSamplesGetSerializedSize(const NV2080_CTRL_GPUMON_SAMPLES *src)
+
+static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 56;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pSamples)
-    {
-        size += (src->bufSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv2080CtrlI2cAccessParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x1ff;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->token
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->token, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x208006; // Interface ID
-    header->message = 0x10; // Message ID
+    // No range check for src->cmd
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->cmd, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x1ff;
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // No range check for src->port
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->port, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->token, NvU32, 4);
 
-    FINN_COPY_TO_BUFFER(pos, src->cmd, NvU32, 4);
+    // No range check for src->flags
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->flags, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    FINN_COPY_TO_BUFFER(pos, src->port, NvU32, 4);
 
-    FINN_COPY_TO_BUFFER(pos, src->flags, NvU32, 4);
+    // No range check for src->status
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->status, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    FINN_COPY_TO_BUFFER(pos, src->status, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->dataBuffSize, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
 
     if (src->dataBuffSize < 0 || src->dataBuffSize > NV2080_CTRL_I2C_MAX_ENTRIES)
     {
@@ -4262,80 +3842,109 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS
         goto exit;
     }
 
-    pos += 4;
-
-
-    FINN_COPY_TO_BUFFER(pos, src->speed, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->encrClientID, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->data);
-
-    if (src->data)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->data, (src->dataBuffSize));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv2080CtrlI2cAccessParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_I2C_ACCESS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV2080_CTRL_I2C_ACCESS_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->dataBuffSize, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x1ff)
+
+    // No range check for src->speed
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->speed, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // No range check for src->encrClientID
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->encrClientID, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->data), 1);
+
+    // Skip if pointer is null.
+    if (src->data)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->dataBuffSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->data))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->data)
+            FINN_FREE(src->data);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv2080CtrlI2cAccessParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_I2C_ACCESS_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV2080_CTRL_I2C_ACCESS_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x1ff)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->token = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->token
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->token, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->cmd, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->cmd = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->cmd
 
-    FINN_COPY_FROM_BUFFER(dst->port, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->flags, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->port = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->port
 
-    FINN_COPY_FROM_BUFFER(dst->status, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->dataBuffSize, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->flags = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->flags
 
-    // Range validation, rewind buffer
-    pos -= 4;
 
+    // Deserialize 4-byte NvU32 object.
+    dst->status = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->status
+
+
+    // Deserialize 4-byte NvU32 object.
+    dst->dataBuffSize = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->dataBuffSize < 0 || dst->dataBuffSize > NV2080_CTRL_I2C_MAX_ENTRIES)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -4343,34 +3952,50 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsDeserialize(NvU8 **src, const NvU8 *sr
         goto exit;
     }
 
-    pos += 4;
 
 
-    FINN_COPY_FROM_BUFFER(dst->speed, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->speed = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->speed
 
-    FINN_COPY_FROM_BUFFER(dst->encrClientID, pos, NvU32, 4);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 4-byte NvU32 object.
+    dst->encrClientID = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->encrClientID
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->data, pos, (dst->dataBuffSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->dataBuffSize)) > src_max ||
-                pos + ((dst->dataBuffSize)) < pos)
+            dst->data = FINN_MALLOC((dst->dataBuffSize));
+            if (!dst->data)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->data, pos, NvP64, (dst->dataBuffSize));
+            FINN_MEMZERO(dst->data, (dst->dataBuffSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->data)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->dataBuffSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->data))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -4379,157 +4004,131 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsDeserialize(NvU8 **src, const NvU8 *sr
             dst->data = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv2080CtrlI2cAccessParamsGetSerializedSize(const NV2080_CTRL_I2C_ACCESS_PARAMS *src)
+
+static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_DUMP_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 72;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->data)
-    {
-        size += (src->dataBuffSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_DUMP_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv2080CtrlNvdGetDumpParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->component
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->component, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x208024; // Interface ID
-    header->message = 0x2; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->component, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->size, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pBuffer);
-
-    if (src->pBuffer)
+    // No range check for src->size
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->size, 4 * 8))
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pBuffer, (src->size));
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pBuffer), 1);
+
+    // Skip if pointer is null.
+    if (src->pBuffer)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->size); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pBuffer))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pBuffer)
+            FINN_FREE(src->pBuffer);
+    }
+
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv2080CtrlNvdGetDumpParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv2080CtrlNvdGetDumpParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV2080_CTRL_NVD_GET_DUMP_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV2080_CTRL_NVD_GET_DUMP_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->component = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->component
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->component, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->size, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->size = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->size
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pBuffer, pos, (dst->size));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->size)) > src_max ||
-                pos + ((dst->size)) < pos)
+            dst->pBuffer = FINN_MALLOC((dst->size));
+            if (!dst->pBuffer)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pBuffer, pos, NvP64, (dst->size));
+            FINN_MEMZERO(dst->pBuffer, (dst->size));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pBuffer)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->size); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pBuffer))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -4538,161 +4137,146 @@ static NV_STATUS Nv2080CtrlNvdGetDumpParamsDeserialize(NvU8 **src, const NvU8 *s
             dst->pBuffer = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv2080CtrlNvdGetDumpParamsGetSerializedSize(const NV2080_CTRL_NVD_GET_DUMP_PARAMS *src)
+
+static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pBuffer)
-    {
-        size += (src->size);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv2080CtrlRcReadVirtualMemParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0xf;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->virtAddress
+    // Deserialize 8-byte NvU64 object.
+    if (finn_write_buffer(bp, src->virtAddress, 8 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x208022; // Interface ID
-    header->message = 0x4; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0xf;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->virtAddress, NvU64, 8);
-
-    FINN_COPY_TO_BUFFER(pos, src->hChannel, NvHandle, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->bufferSize, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->bufferPtr);
-
-    if (src->bufferPtr)
+    // No range check for src->hChannel
+    // Deserialize 4-byte NvHandle object.
+    if (finn_write_buffer(bp, src->hChannel, 4 * 8))
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->bufferPtr, (src->bufferSize));
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
+    // No range check for src->bufferSize
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->bufferSize, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->bufferPtr), 1);
+
+    // Skip if pointer is null.
+    if (src->bufferPtr)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->bufferSize); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->bufferPtr))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->bufferPtr)
+            FINN_FREE(src->bufferPtr);
+    }
+
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0xf)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0xf)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 8-byte NvU64 object.
+    dst->virtAddress = (NvU64) finn_read_buffer(bp, 8 * 8);
+    // No range check for dst->virtAddress
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->virtAddress, pos, NvU64, 8);
 
-    FINN_COPY_FROM_BUFFER(dst->hChannel, pos, NvHandle, 4);
+    // Deserialize 4-byte NvHandle object.
+    dst->hChannel = (NvHandle) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->hChannel
 
-    FINN_COPY_FROM_BUFFER(dst->bufferSize, pos, NvU32, 4);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 4-byte NvU32 object.
+    dst->bufferSize = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->bufferSize
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->bufferPtr, pos, (dst->bufferSize));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->bufferSize)) > src_max ||
-                pos + ((dst->bufferSize)) < pos)
+            dst->bufferPtr = FINN_MALLOC((dst->bufferSize));
+            if (!dst->bufferPtr)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->bufferPtr, pos, NvP64, (dst->bufferSize));
+            FINN_MEMZERO(dst->bufferPtr, (dst->bufferSize));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->bufferPtr)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->bufferSize); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->bufferPtr))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -4701,82 +4285,31 @@ static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsDeserialize(NvU8 **src, const N
             dst->bufferPtr = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv2080CtrlRcReadVirtualMemParamsGetSerializedSize(const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *src)
+
+static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEXED_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 56;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->bufferPtr)
-    {
-        size += (src->bufferSize);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEXED_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cIndexedParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0xff;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->flags
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->flags, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x402c01; // Interface ID
-    header->message = 0x2; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0xff;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->flags, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->indexLength, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
 
     if (src->indexLength < 0 || src->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
     {
@@ -4785,78 +4318,122 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEX
         goto exit;
     }
 
-    pos += 4;
-
-
-    FINN_COPY_TO_BUFFER(pos, src->messageLength, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->address, NvU16, 2);
-
-    FINN_COPY_TO_BUFFER(pos, src->portId, NvU8, 1);
-
-    FINN_COPY_TO_BUFFER(pos, src->bIsWrite, NvU8, 1);
-
-    FINN_MEMCPY_TO_BUFFER(pos, src->index, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pMessage);
-
-    if (src->pMessage)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pMessage, (src->messageLength));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv402cCtrlI2cIndexedParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_INDEXED_PARAMS *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_INDEXED_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->indexLength, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0xff)
+
+    // No range check for src->messageLength
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->messageLength, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // No range check for src->address
+    // Deserialize 2-byte NvU16 object.
+    if (finn_write_buffer(bp, src->address, 2 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // No range check for src->portId
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->portId, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // No range check for src->bIsWrite
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->bIsWrite, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    for (NvU64 i = 0; i < (NV402C_CTRL_I2C_INDEX_LENGTH_MAX); ++i)
+    {
+        // No range check for src->index[i]
+        // Deserialize 1-byte NvU8 object.
+        if (finn_write_buffer(bp, src->index[i], 1 * 8))
+        {
+            status = NV_ERR_BUFFER_TOO_SMALL;
+            FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+            goto exit;
+        }
+    }
+
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pMessage), 1);
+
+    // Skip if pointer is null.
+    if (src->pMessage)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->messageLength); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pMessage)
+            FINN_FREE(src->pMessage);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv402cCtrlI2cIndexedParamsDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_INDEXED_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV402C_CTRL_I2C_INDEXED_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0xff)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->flags = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->flags
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->flags, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->indexLength, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Deserialize 4-byte NvU32 object.
+    dst->indexLength = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->indexLength < 0 || dst->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -4864,40 +4441,68 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsDeserialize(NvU8 **src, const NvU8 *s
         goto exit;
     }
 
-    pos += 4;
 
 
-    FINN_COPY_FROM_BUFFER(dst->messageLength, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->messageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->messageLength
 
-    FINN_COPY_FROM_BUFFER(dst->address, pos, NvU16, 2);
 
-    FINN_COPY_FROM_BUFFER(dst->portId, pos, NvU8, 1);
+    // Deserialize 2-byte NvU16 object.
+    dst->address = (NvU16) finn_read_buffer(bp, 2 * 8);
+    // No range check for dst->address
 
-    FINN_COPY_FROM_BUFFER(dst->bIsWrite, pos, NvU8, 1);
 
-    FINN_MEMCPY_FROM_BUFFER(dst->index, pos, 4);
+    // Deserialize 1-byte NvU8 object.
+    dst->portId = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->portId
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+
+    // Deserialize 1-byte NvU8 object.
+    dst->bIsWrite = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bIsWrite
+
+
+    for (NvU64 i = 0; i < (NV402C_CTRL_I2C_INDEX_LENGTH_MAX); ++i)
+    {
+        // Deserialize 1-byte NvU8 object.
+        dst->index[i] = (NvU8) finn_read_buffer(bp, 1 * 8);
+        // No range check for dst->index[i]
+    }
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pMessage, pos, (dst->messageLength));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->messageLength)) > src_max ||
-                pos + ((dst->messageLength)) < pos)
+            dst->pMessage = FINN_MALLOC((dst->messageLength));
+            if (!dst->pMessage)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pMessage, pos, NvP64, (dst->messageLength));
+            FINN_MEMZERO(dst->pMessage, (dst->messageLength));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pMessage)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->messageLength); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pMessage))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -4906,505 +4511,300 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsDeserialize(NvU8 **src, const NvU8 *s
             dst->pMessage = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cIndexedParamsGetSerializedSize(const NV402C_CTRL_I2C_INDEXED_PARAMS *src)
+
+static NV_STATUS Nv402cCtrlI2cTransactionTypeCheckEnum(NV402C_CTRL_I2C_TRANSACTION_TYPE id)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 64;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pMessage)
+    switch (id)
     {
-        size += (src->messageLength);
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_QUICK_RW:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BYTE_RW:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BLOCK_RW:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_PROCESS_CALL:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_PROCESS_CALL:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW:
+        case NV402C_CTRL_I2C_TRANSACTION_TYPE_READ_EDID_DDC:
+            return NV_OK; // okay
     }
 
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
+    FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
+    return NV_ERR_INVALID_ARGUMENT;
 }
-
-static NV_STATUS Nv402cCtrlI2cTransactionTypeValueToId(NvU8 **buf, const NvU8 *buf_max, NvU64 convert_size)
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NV402C_CTRL_I2C_TRANSACTION_TYPE *pEnum = NULL;
-    NvU8 *buf_end = *buf + convert_size;
-
-    // Bounds checking before overwriting data
-    if (buf_end > buf_max)
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Convert each enum value to its corresponding ID.
-    while (*buf < buf_end)
-    {
-        pEnum = (NV402C_CTRL_I2C_TRANSACTION_TYPE *)*buf;
-
-        switch (*pEnum)
-        {
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_QUICK_RW:
-                *pEnum = 0;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BYTE_RW:
-                *pEnum = 1;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BLOCK_RW:
-                *pEnum = 2;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW:
-                *pEnum = 3;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW:
-                *pEnum = 4;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW:
-                *pEnum = 5;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW:
-                *pEnum = 6;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_PROCESS_CALL:
-                *pEnum = 7;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_PROCESS_CALL:
-                *pEnum = 8;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW:
-                *pEnum = 9;
-                break;
-            case NV402C_CTRL_I2C_TRANSACTION_TYPE_READ_EDID_DDC:
-                *pEnum = 10;
-                break;
-            default:
-            {
-                FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-                return NV_ERR_INVALID_ARGUMENT;
-            }
-        }
-
-        *buf += sizeof(NV402C_CTRL_I2C_TRANSACTION_TYPE);
-    }
-
-    return NV_OK;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionTypeIdtoValue(NvU8 **buf, const NvU8 *buf_max, NvU64 convert_size)
-{
-    NvU32 *pID = NULL;
-    NvU8 *buf_end = *buf + convert_size;
-
-    // Bounds checking before overwriting data
-    if (buf_end > buf_max)
-    {
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    // Convert each ID to its corresponding enum value.
-    while (*buf < buf_end)
-    {
-        pID = (NvU32 *)*buf;
-
-        switch (*pID)
-        {
-            case 0:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_QUICK_RW;
-                break;
-            case 1:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BYTE_RW;
-                break;
-            case 2:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BLOCK_RW;
-                break;
-            case 3:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW;
-                break;
-            case 4:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW;
-                break;
-            case 5:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW;
-                break;
-            case 6:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW;
-                break;
-            case 7:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_PROCESS_CALL;
-                break;
-            case 8:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_PROCESS_CALL;
-                break;
-            case 9:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW;
-                break;
-            case 10:
-                *pID = NV402C_CTRL_I2C_TRANSACTION_TYPE_READ_EDID_DDC;
-                break;
-            default:
-            {
-                FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-                return NV_ERR_INVALID_ARGUMENT;
-            }
-        }
-
-        *buf += sizeof(NvU32);
-    }
-
-    return NV_OK;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataSmbusQuickRwGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
-
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-
-    //
-    // Non-message type has no interface/message ID
-    //
+    uint64_t field_presence_mask;
 
     // Field bitmasks
-    header->fieldMask[0] = 0x3;
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // No range check for src->warFlags
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->warFlags, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->warFlags, NvU32, 4);
 
-    FINN_COPY_TO_BUFFER(pos, src->bWrite, NvBool, 1);
+    // No range check for src->bWrite
+    // Deserialize 1-byte NvBool object.
+    if (finn_write_buffer(bp, src->bWrite, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->warFlags = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->warFlags
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->warFlags, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->bWrite, pos, NvBool, 1);
+    // Deserialize 1-byte NvBool object.
+    dst->bWrite = (NvBool) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bWrite
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
 
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusQuickRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *src)
-{
-    // Suppress used-variable warnings.
-    (void) src;
 
-    // This struct is static and its size is known at compile time.
-    return 48;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataI2cByteRwGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x3;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->bWrite
+    // Deserialize 1-byte NvBool object.
+    if (finn_write_buffer(bp, src->bWrite, 1 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
+    // No range check for src->message
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->message, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    //
-    // Non-message type has no interface/message ID
-    //
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x3;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->bWrite, NvBool, 1);
-
-    FINN_COPY_TO_BUFFER(pos, src->message, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 1-byte NvBool object.
+    dst->bWrite = (NvBool) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bWrite
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->bWrite, pos, NvBool, 1);
 
-    FINN_COPY_FROM_BUFFER(dst->message, pos, NvU8, 1);
+    // Deserialize 1-byte NvU8 object.
+    dst->message = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->message
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
 
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataI2cByteRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BYTE_RW *src)
-{
-    // Suppress used-variable warnings.
-    (void) src;
 
-    // This struct is static and its size is known at compile time.
-    return 48;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataI2cBlockRwGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->messageLength
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->messageLength, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
+    // No range check for src->bWrite
+    // Deserialize 1-byte NvBool object.
+    if (finn_write_buffer(bp, src->bWrite, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    //
-    // Non-message type has no interface/message ID
-    //
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->messageLength, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->bWrite, NvBool, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pMessage);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pMessage), 1);
 
+    // Skip if pointer is null.
     if (src->pMessage)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pMessage, (src->messageLength));
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->messageLength); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pMessage)
+            FINN_FREE(src->pMessage);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->messageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->messageLength
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->messageLength, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->bWrite, pos, NvBool, 1);
+    // Deserialize 1-byte NvBool object.
+    dst->bWrite = (NvBool) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bWrite
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pMessage, pos, (dst->messageLength));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->messageLength)) > src_max ||
-                pos + ((dst->messageLength)) < pos)
+            dst->pMessage = FINN_MALLOC((dst->messageLength));
+            if (!dst->pMessage)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pMessage, pos, NvP64, (dst->messageLength));
+            FINN_MEMZERO(dst->pMessage, (dst->messageLength));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pMessage)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->messageLength); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pMessage))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -5413,391 +4813,339 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwDeserialize(NvU8 **src, c
             dst->pMessage = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataI2cBlockRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *src)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pMessage)
-    {
-        size += (src->messageLength);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataSmbusByteRwGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->bWrite
+    // Deserialize 1-byte NvBool object.
+    if (finn_write_buffer(bp, src->bWrite, 1 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
+    // No range check for src->registerAddress
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->registerAddress, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    //
-    // Non-message type has no interface/message ID
-    //
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
+    // No range check for src->message
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->message, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->bWrite, NvBool, 1);
-
-    FINN_COPY_TO_BUFFER(pos, src->registerAddress, NvU8, 1);
-
-    FINN_COPY_TO_BUFFER(pos, src->message, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 1-byte NvBool object.
+    dst->bWrite = (NvBool) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bWrite
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->bWrite, pos, NvBool, 1);
 
-    FINN_COPY_FROM_BUFFER(dst->registerAddress, pos, NvU8, 1);
+    // Deserialize 1-byte NvU8 object.
+    dst->registerAddress = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->registerAddress
 
-    FINN_COPY_FROM_BUFFER(dst->message, pos, NvU8, 1);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 1-byte NvU8 object.
+    dst->message = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->message
 
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
 
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusByteRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BYTE_RW *src)
-{
-    // Suppress used-variable warnings.
-    (void) src;
 
-    // This struct is static and its size is known at compile time.
-    return 48;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataSmbusWordRwGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->message
+    // Deserialize 2-byte NvU16 object.
+    if (finn_write_buffer(bp, src->message, 2 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
+    // No range check for src->bWrite
+    // Deserialize 1-byte NvBool object.
+    if (finn_write_buffer(bp, src->bWrite, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    //
-    // Non-message type has no interface/message ID
-    //
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
+    // No range check for src->registerAddress
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->registerAddress, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->message, NvU16, 2);
-
-    FINN_COPY_TO_BUFFER(pos, src->bWrite, NvBool, 1);
-
-    FINN_COPY_TO_BUFFER(pos, src->registerAddress, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 2-byte NvU16 object.
+    dst->message = (NvU16) finn_read_buffer(bp, 2 * 8);
+    // No range check for dst->message
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->message, pos, NvU16, 2);
 
-    FINN_COPY_FROM_BUFFER(dst->bWrite, pos, NvBool, 1);
+    // Deserialize 1-byte NvBool object.
+    dst->bWrite = (NvBool) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bWrite
 
-    FINN_COPY_FROM_BUFFER(dst->registerAddress, pos, NvU8, 1);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 1-byte NvU8 object.
+    dst->registerAddress = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->registerAddress
 
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
 
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusWordRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *src)
-{
-    // Suppress used-variable warnings.
-    (void) src;
 
-    // This struct is static and its size is known at compile time.
-    return 48;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataI2cBufferRwGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x1f;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->warFlags
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->warFlags, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
+    // No range check for src->messageLength
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->messageLength, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    //
-    // Non-message type has no interface/message ID
-    //
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x1f;
+    // No range check for src->bWrite
+    // Deserialize 1-byte NvBool object.
+    if (finn_write_buffer(bp, src->bWrite, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->warFlags, NvU32, 4);
+    // No range check for src->registerAddress
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->registerAddress, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    FINN_COPY_TO_BUFFER(pos, src->messageLength, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->bWrite, NvBool, 1);
-
-    FINN_COPY_TO_BUFFER(pos, src->registerAddress, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pMessage);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pMessage), 1);
 
+    // Skip if pointer is null.
     if (src->pMessage)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pMessage, (src->messageLength));
-    }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x1f)
-    {
-        status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
-        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
-        goto exit;
-    }
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->warFlags, pos, NvU32, 4);
-
-    FINN_COPY_FROM_BUFFER(dst->messageLength, pos, NvU32, 4);
-
-    FINN_COPY_FROM_BUFFER(dst->bWrite, pos, NvBool, 1);
-
-    FINN_COPY_FROM_BUFFER(dst->registerAddress, pos, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
-    {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pMessage, pos, (dst->messageLength));
-        else
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->messageLength); ++j)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->messageLength)) > src_max ||
-                pos + ((dst->messageLength)) < pos)
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pMessage)
+            FINN_FREE(src->pMessage);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x1f)
+    {
+        status = NV_ERR_LIB_RM_VERSION_MISMATCH;
+        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
+        goto exit;
+    }
+
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->warFlags = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->warFlags
+
+
+    // Deserialize 4-byte NvU32 object.
+    dst->messageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->messageLength
+
+
+    // Deserialize 1-byte NvBool object.
+    dst->bWrite = (NvBool) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bWrite
+
+
+    // Deserialize 1-byte NvU8 object.
+    dst->registerAddress = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->registerAddress
+
+
+    // Unbounded fields
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
+    {
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
+        {
+            dst->pMessage = FINN_MALLOC((dst->messageLength));
+            if (!dst->pMessage)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pMessage, pos, NvP64, (dst->messageLength));
+            FINN_MEMZERO(dst->pMessage, (dst->messageLength));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pMessage)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->messageLength); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pMessage))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -5806,163 +5154,146 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwDeserialize(NvU8 **src, 
             dst->pMessage = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataI2cBufferRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *src)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 56;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pMessage)
-    {
-        size += (src->messageLength);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataSmbusBlockRwGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0xf;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->messageLength
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->messageLength, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-
-    //
-    // Non-message type has no interface/message ID
-    //
-
-    // Field bitmasks
-    header->fieldMask[0] = 0xf;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->messageLength, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->bWrite, NvBool, 1);
-
-    FINN_COPY_TO_BUFFER(pos, src->registerAddress, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pMessage);
-
-    if (src->pMessage)
+    // No range check for src->bWrite
+    // Deserialize 1-byte NvBool object.
+    if (finn_write_buffer(bp, src->bWrite, 1 * 8))
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pMessage, (src->messageLength));
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
+    // No range check for src->registerAddress
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->registerAddress, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pMessage), 1);
+
+    // Skip if pointer is null.
+    if (src->pMessage)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->messageLength); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pMessage)
+            FINN_FREE(src->pMessage);
+    }
+
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0xf)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0xf)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->messageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->messageLength
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->messageLength, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->bWrite, pos, NvBool, 1);
+    // Deserialize 1-byte NvBool object.
+    dst->bWrite = (NvBool) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bWrite
 
-    FINN_COPY_FROM_BUFFER(dst->registerAddress, pos, NvU8, 1);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 1-byte NvU8 object.
+    dst->registerAddress = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->registerAddress
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pMessage, pos, (dst->messageLength));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->messageLength)) > src_max ||
-                pos + ((dst->messageLength)) < pos)
+            dst->pMessage = FINN_MALLOC((dst->messageLength));
+            if (!dst->pMessage)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pMessage, pos, NvP64, (dst->messageLength));
+            FINN_MEMZERO(dst->pMessage, (dst->messageLength));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pMessage)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->messageLength); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pMessage))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -5971,195 +5302,111 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwDeserialize(NvU8 **src,
             dst->pMessage = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusBlockRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *src)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pMessage)
-    {
-        size += (src->messageLength);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataSmbusProcessCallGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->writeMessage
+    // Deserialize 2-byte NvU16 object.
+    if (finn_write_buffer(bp, src->writeMessage, 2 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
+    // No range check for src->readMessage
+    // Deserialize 2-byte NvU16 object.
+    if (finn_write_buffer(bp, src->readMessage, 2 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    //
-    // Non-message type has no interface/message ID
-    //
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
+    // No range check for src->registerAddress
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->registerAddress, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->writeMessage, NvU16, 2);
-
-    FINN_COPY_TO_BUFFER(pos, src->readMessage, NvU16, 2);
-
-    FINN_COPY_TO_BUFFER(pos, src->registerAddress, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 2-byte NvU16 object.
+    dst->writeMessage = (NvU16) finn_read_buffer(bp, 2 * 8);
+    // No range check for dst->writeMessage
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->writeMessage, pos, NvU16, 2);
 
-    FINN_COPY_FROM_BUFFER(dst->readMessage, pos, NvU16, 2);
+    // Deserialize 2-byte NvU16 object.
+    dst->readMessage = (NvU16) finn_read_buffer(bp, 2 * 8);
+    // No range check for dst->readMessage
 
-    FINN_COPY_FROM_BUFFER(dst->registerAddress, pos, NvU8, 1);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 1-byte NvU8 object.
+    dst->registerAddress = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->registerAddress
 
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
 
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusProcessCallGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_PROCESS_CALL *src)
-{
-    // Suppress used-variable warnings.
-    (void) src;
 
-    // This struct is static and its size is known at compile time.
-    return 48;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
-
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-
-    //
-    // Non-message type has no interface/message ID
-    //
+    uint64_t field_presence_mask;
 
     // Field bitmasks
-    header->fieldMask[0] = 0x1f;
+    field_presence_mask = 0x1f;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->writeMessageLength, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
     if (src->writeMessageLength < 0 || src->writeMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -6167,13 +5414,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(cons
         goto exit;
     }
 
-    pos += 4;
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->writeMessageLength, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-
-    FINN_COPY_TO_BUFFER(pos, src->readMessageLength, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
 
     if (src->readMessageLength < 0 || src->readMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
     {
@@ -6182,60 +5430,81 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(cons
         goto exit;
     }
 
-    pos += 4;
-
-
-    FINN_COPY_TO_BUFFER(pos, src->registerAddress, NvU8, 1);
-
-    FINN_MEMCPY_TO_BUFFER(pos, src->writeMessage, 32);
-
-    FINN_MEMCPY_TO_BUFFER(pos, src->readMessage, 32);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->readMessageLength, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x1f)
+
+    // No range check for src->registerAddress
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->registerAddress, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    for (NvU64 i = 0; i < (NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX); ++i)
+    {
+        // No range check for src->writeMessage[i]
+        // Deserialize 1-byte NvU8 object.
+        if (finn_write_buffer(bp, src->writeMessage[i], 1 * 8))
+        {
+            status = NV_ERR_BUFFER_TOO_SMALL;
+            FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+            goto exit;
+        }
+    }
+
+
+    for (NvU64 i = 0; i < (NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX); ++i)
+    {
+        // No range check for src->readMessage[i]
+        // Deserialize 1-byte NvU8 object.
+        if (finn_write_buffer(bp, src->readMessage[i], 1 * 8))
+        {
+            status = NV_ERR_BUFFER_TOO_SMALL;
+            FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+            goto exit;
+        }
+    }
+
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x1f)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->writeMessageLength, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->writeMessageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->writeMessageLength < 0 || dst->writeMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -6243,14 +5512,10 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(Nv
         goto exit;
     }
 
-    pos += 4;
 
 
-    FINN_COPY_FROM_BUFFER(dst->readMessageLength, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Deserialize 4-byte NvU32 object.
+    dst->readMessageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->readMessageLength < 0 || dst->readMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -6258,81 +5523,54 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(Nv
         goto exit;
     }
 
-    pos += 4;
 
 
-    FINN_COPY_FROM_BUFFER(dst->registerAddress, pos, NvU8, 1);
+    // Deserialize 1-byte NvU8 object.
+    dst->registerAddress = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->registerAddress
 
-    FINN_MEMCPY_FROM_BUFFER(dst->writeMessage, pos, 32);
 
-    FINN_MEMCPY_FROM_BUFFER(dst->readMessage, pos, 32);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
+    for (NvU64 i = 0; i < (NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX); ++i)
     {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
+        // Deserialize 1-byte NvU8 object.
+        dst->writeMessage[i] = (NvU8) finn_read_buffer(bp, 1 * 8);
+        // No range check for dst->writeMessage[i]
     }
 
+
+    for (NvU64 i = 0; i < (NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX); ++i)
+    {
+        // Deserialize 1-byte NvU8 object.
+        dst->readMessage[i] = (NvU8) finn_read_buffer(bp, 1 * 8);
+        // No range check for dst->readMessage[i]
+    }
+
+
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_PROCESS_CALL *src)
-{
-    // Suppress used-variable warnings.
-    (void) src;
 
-    // This struct is static and its size is known at compile time.
-    return 120;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x3f;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->warFlags
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->warFlags, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-
-    //
-    // Non-message type has no interface/message ID
-    //
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x3f;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->warFlags, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->indexLength, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
 
     if (src->indexLength < 0 || src->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
     {
@@ -6341,74 +5579,102 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerial
         goto exit;
     }
 
-    pos += 4;
-
-
-    FINN_COPY_TO_BUFFER(pos, src->messageLength, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->bWrite, NvBool, 1);
-
-    FINN_MEMCPY_TO_BUFFER(pos, src->index, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pMessage);
-
-    if (src->pMessage)
-    {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pMessage, (src->messageLength));
-    }
-
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-exit:
-    *dst = pos;
-    return status;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up)
-{
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NV_STATUS status = NV_OK;
-
-    // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->indexLength, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x3f)
+
+    // No range check for src->messageLength
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->messageLength, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // No range check for src->bWrite
+    // Deserialize 1-byte NvBool object.
+    if (finn_write_buffer(bp, src->bWrite, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    for (NvU64 i = 0; i < (NV402C_CTRL_I2C_INDEX_LENGTH_MAX); ++i)
+    {
+        // No range check for src->index[i]
+        // Deserialize 1-byte NvU8 object.
+        if (finn_write_buffer(bp, src->index[i], 1 * 8))
+        {
+            status = NV_ERR_BUFFER_TOO_SMALL;
+            FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+            goto exit;
+        }
+    }
+
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pMessage), 1);
+
+    // Skip if pointer is null.
+    if (src->pMessage)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->messageLength); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pMessage)
+            FINN_FREE(src->pMessage);
+    }
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x3f)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->warFlags = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->warFlags
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->warFlags, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->indexLength, pos, NvU32, 4);
-
-    // Range validation, rewind buffer
-    pos -= 4;
-
+    // Deserialize 4-byte NvU32 object.
+    dst->indexLength = (NvU32) finn_read_buffer(bp, 4 * 8);
     if (dst->indexLength < 0 || dst->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
@@ -6416,36 +5682,58 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeseri
         goto exit;
     }
 
-    pos += 4;
 
 
-    FINN_COPY_FROM_BUFFER(dst->messageLength, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->messageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->messageLength
 
-    FINN_COPY_FROM_BUFFER(dst->bWrite, pos, NvBool, 1);
 
-    FINN_MEMCPY_FROM_BUFFER(dst->index, pos, 4);
+    // Deserialize 1-byte NvBool object.
+    dst->bWrite = (NvBool) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->bWrite
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+
+    for (NvU64 i = 0; i < (NV402C_CTRL_I2C_INDEX_LENGTH_MAX); ++i)
+    {
+        // Deserialize 1-byte NvU8 object.
+        dst->index[i] = (NvU8) finn_read_buffer(bp, 1 * 8);
+        // No range check for dst->index[i]
+    }
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pMessage, pos, (dst->messageLength));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->messageLength)) > src_max ||
-                pos + ((dst->messageLength)) < pos)
+            dst->pMessage = FINN_MALLOC((dst->messageLength));
+            if (!dst->pMessage)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pMessage, pos, NvP64, (dst->messageLength));
+            FINN_MEMZERO(dst->pMessage, (dst->messageLength));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pMessage)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->messageLength); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pMessage))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -6454,163 +5742,146 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeseri
             dst->pMessage = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *src)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 64;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pMessage)
-    {
-        size += (src->messageLength);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataReadEdidDdcGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0xf;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->messageLength
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->messageLength, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-
-    //
-    // Non-message type has no interface/message ID
-    //
-
-    // Field bitmasks
-    header->fieldMask[0] = 0xf;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->messageLength, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->segmentNumber, NvU8, 1);
-
-    FINN_COPY_TO_BUFFER(pos, src->registerAddress, NvU8, 1);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pMessage);
-
-    if (src->pMessage)
+    // No range check for src->segmentNumber
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->segmentNumber, 1 * 8))
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pMessage, (src->messageLength));
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
+    // No range check for src->registerAddress
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->registerAddress, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pMessage), 1);
+
+    // Skip if pointer is null.
+    if (src->pMessage)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->messageLength); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pMessage)
+            FINN_FREE(src->pMessage);
+    }
+
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0xf)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0xf)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->messageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->messageLength
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->messageLength, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->segmentNumber, pos, NvU8, 1);
+    // Deserialize 1-byte NvU8 object.
+    dst->segmentNumber = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->segmentNumber
 
-    FINN_COPY_FROM_BUFFER(dst->registerAddress, pos, NvU8, 1);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 1-byte NvU8 object.
+    dst->registerAddress = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->registerAddress
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pMessage, pos, (dst->messageLength));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->messageLength)) > src_max ||
-                pos + ((dst->messageLength)) < pos)
+            dst->pMessage = FINN_MALLOC((dst->messageLength));
+            if (!dst->pMessage)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pMessage, pos, NvP64, (dst->messageLength));
+            FINN_MEMZERO(dst->pMessage, (dst->messageLength));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pMessage)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->messageLength); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pMessage))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -6619,83 +5890,27 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(NvU8 **src, 
             dst->pMessage = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataReadEdidDdcGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *src)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA *src, finn_bit_pump_for_write *bp, NvBool seri_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pMessage)
-    {
-        size += (src->messageLength);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRANSACTION_DATA *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionDataGetSerializedSize(src, transType);
+    // Local variables
     NV_STATUS status = NV_OK;
-
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-
-    //
-    // Non-message type has no interface/message ID
-    //
+    uint64_t field_presence_mask;
 
     // Field bitmasks
-    header->fieldMask[0] = 0x7ff;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    field_presence_mask = 0x7ff;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
     // Field copying based on union selector
     switch (transType)
     {
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_QUICK_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusQuickRwSerialize(&src->smbusQuickData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusQuickRwSerialize(&src->smbusQuickData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6703,7 +5918,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BYTE_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataI2cByteRwSerialize(&src->i2cByteData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataI2cByteRwSerialize(&src->i2cByteData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6711,7 +5926,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusByteRwSerialize(&src->smbusByteData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusByteRwSerialize(&src->smbusByteData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6719,7 +5934,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusWordRwSerialize(&src->smbusWordData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusWordRwSerialize(&src->smbusWordData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6727,7 +5942,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_PROCESS_CALL:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusProcessCallSerialize(&src->smbusProcessData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusProcessCallSerialize(&src->smbusProcessData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6735,7 +5950,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_PROCESS_CALL:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(&src->smbusBlockProcessData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(&src->smbusBlockProcessData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6743,7 +5958,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BLOCK_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(&src->i2cBlockData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(&src->i2cBlockData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6751,7 +5966,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(&src->i2cBufferData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(&src->i2cBufferData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6759,7 +5974,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(&src->smbusBlockData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(&src->smbusBlockData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6767,7 +5982,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerialize(&src->smbusMultibyteRegisterData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerialize(&src->smbusMultibyteRegisterData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6775,7 +5990,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_READ_EDID_DDC:
         {
-            status = Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(&src->edidData, &pos, dst_max, seri_up);
+            status = Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(&src->edidData, bp, seri_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6789,51 +6004,39 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
         }
     }
 
-    // Align
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_DATA *dst, NvLength dst_size, NvBool deser_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType)
+
+static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA *dst, NvLength dst_size, NvBool deser_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_DATA) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7ff)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7ff)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
 
     // Field copying based on union selector
     switch (transType)
     {
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_QUICK_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusQuickRwDeserialize(&pos, src_max, &dst->smbusQuickData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusQuickRwDeserialize(bp, &dst->smbusQuickData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6841,7 +6044,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BYTE_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataI2cByteRwDeserialize(&pos, src_max, &dst->i2cByteData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataI2cByteRwDeserialize(bp, &dst->i2cByteData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6849,7 +6052,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusByteRwDeserialize(&pos, src_max, &dst->smbusByteData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusByteRwDeserialize(bp, &dst->smbusByteData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6857,7 +6060,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusWordRwDeserialize(&pos, src_max, &dst->smbusWordData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusWordRwDeserialize(bp, &dst->smbusWordData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6865,7 +6068,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_PROCESS_CALL:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusProcessCallDeserialize(&pos, src_max, &dst->smbusProcessData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusProcessCallDeserialize(bp, &dst->smbusProcessData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6873,7 +6076,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_PROCESS_CALL:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(&pos, src_max, &dst->smbusBlockProcessData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(bp, &dst->smbusBlockProcessData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6881,7 +6084,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BLOCK_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataI2cBlockRwDeserialize(&pos, src_max, &dst->i2cBlockData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataI2cBlockRwDeserialize(bp, &dst->i2cBlockData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6889,7 +6092,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataI2cBufferRwDeserialize(&pos, src_max, &dst->i2cBufferData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataI2cBufferRwDeserialize(bp, &dst->i2cBufferData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6897,7 +6100,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusBlockRwDeserialize(&pos, src_max, &dst->smbusBlockData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusBlockRwDeserialize(bp, &dst->smbusBlockData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6905,7 +6108,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW:
         {
-            status = Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeserialize(&pos, src_max, &dst->smbusMultibyteRegisterData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeserialize(bp, &dst->smbusMultibyteRegisterData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6913,7 +6116,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
         case NV402C_CTRL_I2C_TRANSACTION_TYPE_READ_EDID_DDC:
         {
-            status = Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(&pos, src_max, &dst->edidData, dst_size, deser_up);
+            status = Nv402cCtrlI2cTransactionDataReadEdidDdcDeserialize(bp, &dst->edidData, dst_size, deser_up);
             if (status != NV_OK)
                 goto exit;
 
@@ -6927,370 +6130,268 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataDeserialize(NvU8 **src, const NvU8 
         }
     }
 
-    // Align
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionDataGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_DATA *src, NV402C_CTRL_I2C_TRANSACTION_TYPE transType)
+
+static NV_STATUS Nv402cCtrlI2cTransactionParamsSerialize(const NV402C_CTRL_I2C_TRANSACTION_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the header size
-    NvU64 size = 40;
-
-    // Calculate size based on union selector
-    switch (transType)
-    {
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_QUICK_RW:
-        {
-            size += 48;
-
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BYTE_RW:
-        {
-            size += 48;
-
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW:
-        {
-            size += 48;
-
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW:
-        {
-            size += 48;
-
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_PROCESS_CALL:
-        {
-            size += 48;
-
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_PROCESS_CALL:
-        {
-            size += 120;
-
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BLOCK_RW:
-        {
-            size += Nv402cCtrlI2cTransactionDataI2cBlockRwGetSerializedSize((const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *) &(src->i2cBlockData));
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW:
-        {
-            size += Nv402cCtrlI2cTransactionDataI2cBufferRwGetSerializedSize((const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *) &(src->i2cBufferData));
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BLOCK_RW:
-        {
-            size += Nv402cCtrlI2cTransactionDataSmbusBlockRwGetSerializedSize((const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_BLOCK_RW *) &(src->smbusBlockData));
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW:
-        {
-            size += Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwGetSerializedSize((const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_MULTIBYTE_REGISTER_BLOCK_RW *) &(src->smbusMultibyteRegisterData));
-            break;
-        }
-        case NV402C_CTRL_I2C_TRANSACTION_TYPE_READ_EDID_DDC:
-        {
-            size += Nv402cCtrlI2cTransactionDataReadEdidDdcGetSerializedSize((const NV402C_CTRL_I2C_TRANSACTION_DATA_READ_EDID_DDC *) &(src->edidData));
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
-
-    // Add padding for alignment
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv402cCtrlI2cTransactionParamsSerialize(const NV402C_CTRL_I2C_TRANSACTION_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv402cCtrlI2cTransactionParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x1f;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->flags
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->flags, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x402c01; // Interface ID
-    header->message = 0x5; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0x1f;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->flags, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->transType, NV402C_CTRL_I2C_TRANSACTION_TYPE, 4);
-
-    // Rewind buffer for conversion
-    pos -= 4;
-
-    status = Nv402cCtrlI2cTransactionTypeValueToId(&pos, dst_max, 4);
+    // No range check for src->transType
+    status = Nv402cCtrlI2cTransactionTypeCheckEnum(src->transType);
     if (status != NV_OK)
         goto exit;
 
-    FINN_COPY_TO_BUFFER(pos, src->deviceAddress, NvU16, 2);
+    // Deserialize 4-byte NV402C_CTRL_I2C_TRANSACTION_TYPE object.
+    if (finn_write_buffer(bp, src->transType, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    FINN_COPY_TO_BUFFER(pos, src->portId, NvU8, 1);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // No range check for src->deviceAddress
+    // Deserialize 2-byte NvU16 object.
+    if (finn_write_buffer(bp, src->deviceAddress, 2 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // No range check for src->portId
+    // Deserialize 1-byte NvU8 object.
+    if (finn_write_buffer(bp, src->portId, 1 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
 
     // Unbounded fields
-    status = Nv402cCtrlI2cTransactionDataSerialize(&src->transData, &pos, dst_max, seri_up, src->transType);
+    status = Nv402cCtrlI2cTransactionDataSerialize(&src->transData, bp, seri_up, src->transType);
     if (status != NV_OK)
         goto exit;
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv402cCtrlI2cTransactionParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV402C_CTRL_I2C_TRANSACTION_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv402cCtrlI2cTransactionParamsDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV402C_CTRL_I2C_TRANSACTION_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x1f)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x1f)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->flags = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->flags
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->flags, pos, NvU32, 4);
 
-    status = Nv402cCtrlI2cTransactionTypeIdtoValue(&pos, src_max, 4);
+    // Deserialize 4-byte NV402C_CTRL_I2C_TRANSACTION_TYPE object.
+    dst->transType = (NV402C_CTRL_I2C_TRANSACTION_TYPE) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->transType
+    status = Nv402cCtrlI2cTransactionTypeCheckEnum(dst->transType);
     if (status != NV_OK)
         goto exit;
 
-    // Rewind buffer after conversion
-    pos -= 4;
 
-    FINN_COPY_FROM_BUFFER(dst->transType, pos, NV402C_CTRL_I2C_TRANSACTION_TYPE, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->deviceAddress, pos, NvU16, 2);
+    // Deserialize 2-byte NvU16 object.
+    dst->deviceAddress = (NvU16) finn_read_buffer(bp, 2 * 8);
+    // No range check for dst->deviceAddress
 
-    FINN_COPY_FROM_BUFFER(dst->portId, pos, NvU8, 1);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 1-byte NvU8 object.
+    dst->portId = (NvU8) finn_read_buffer(bp, 1 * 8);
+    // No range check for dst->portId
+
 
     // Unbounded fields
-    status = Nv402cCtrlI2cTransactionDataDeserialize(&pos, src_max, &dst->transData, dst_size, deser_up, dst->transType);
+    status = Nv402cCtrlI2cTransactionDataDeserialize(bp, &dst->transData, dst_size, deser_up, dst->transType);
     if (status != NV_OK)
         goto exit;
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv402cCtrlI2cTransactionParamsGetSerializedSize(const NV402C_CTRL_I2C_TRANSACTION_PARAMS *src)
+
+static NV_STATUS Nv83deCtrlDebugReadMemoryParamsSerialize(const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 56;
-
-    // Add sizes that require runtime calculation
-    size += Nv402cCtrlI2cTransactionDataGetSerializedSize((const NV402C_CTRL_I2C_TRANSACTION_DATA *) &(src->transData),
-            src->transType);
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv83deCtrlDebugReadMemoryParamsSerialize(const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv83deCtrlDebugReadMemoryParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0xf;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->offset
+    // Deserialize 8-byte NvU64 object.
+    if (finn_write_buffer(bp, src->offset, 8 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x83de03; // Interface ID
-    header->message = 0x15; // Message ID
+    // No range check for src->hMemory
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->hMemory, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Field bitmasks
-    header->fieldMask[0] = 0xf;
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // No range check for src->length
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->length, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->offset, NvU64, 8);
-
-    FINN_COPY_TO_BUFFER(pos, src->hMemory, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->length, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->buffer);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->buffer), 1);
 
+    // Skip if pointer is null.
     if (src->buffer)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->buffer, (src->length));
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->length); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->buffer))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->buffer)
+            FINN_FREE(src->buffer);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv83deCtrlDebugReadMemoryParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv83deCtrlDebugReadMemoryParamsDeserialize(finn_bit_pump_for_read *bp, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0xf)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0xf)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 8-byte NvU64 object.
+    dst->offset = (NvU64) finn_read_buffer(bp, 8 * 8);
+    // No range check for dst->offset
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->offset, pos, NvU64, 8);
 
-    FINN_COPY_FROM_BUFFER(dst->hMemory, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->hMemory = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->hMemory
 
-    FINN_COPY_FROM_BUFFER(dst->length, pos, NvU32, 4);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 4-byte NvU32 object.
+    dst->length = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->length
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->buffer, pos, (dst->length));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->length)) > src_max ||
-                pos + ((dst->length)) < pos)
+            dst->buffer = FINN_MALLOC((dst->length));
+            if (!dst->buffer)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->buffer, pos, NvP64, (dst->length));
+            FINN_MEMZERO(dst->buffer, (dst->length));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->buffer)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->length); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->buffer))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -7299,161 +6400,146 @@ static NV_STATUS Nv83deCtrlDebugReadMemoryParamsDeserialize(NvU8 **src, const Nv
             dst->buffer = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv83deCtrlDebugReadMemoryParamsGetSerializedSize(const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *src)
+
+static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsSerialize(const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 56;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->buffer)
-    {
-        size += (src->length);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsSerialize(const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nv83deCtrlDebugWriteMemoryParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0xf;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->offset
+    // Deserialize 8-byte NvU64 object.
+    if (finn_write_buffer(bp, src->offset, 8 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0x83de03; // Interface ID
-    header->message = 0x16; // Message ID
-
-    // Field bitmasks
-    header->fieldMask[0] = 0xf;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->offset, NvU64, 8);
-
-    FINN_COPY_TO_BUFFER(pos, src->hMemory, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->length, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->buffer);
-
-    if (src->buffer)
+    // No range check for src->hMemory
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->hMemory, 4 * 8))
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->buffer, (src->length));
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
+    // No range check for src->length
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->length, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // Unbounded fields
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->buffer), 1);
+
+    // Skip if pointer is null.
+    if (src->buffer)
+    {
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->length); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->buffer))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->buffer)
+            FINN_FREE(src->buffer);
+    }
+
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsDeserialize(NvU8 **src, const NvU8 *src_max, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsDeserialize(finn_bit_pump_for_read *bp, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0xf)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0xf)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 8-byte NvU64 object.
+    dst->offset = (NvU64) finn_read_buffer(bp, 8 * 8);
+    // No range check for dst->offset
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->offset, pos, NvU64, 8);
 
-    FINN_COPY_FROM_BUFFER(dst->hMemory, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->hMemory = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->hMemory
 
-    FINN_COPY_FROM_BUFFER(dst->length, pos, NvU32, 4);
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
+    // Deserialize 4-byte NvU32 object.
+    dst->length = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->length
+
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->buffer, pos, (dst->length));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->length)) > src_max ||
-                pos + ((dst->length)) < pos)
+            dst->buffer = FINN_MALLOC((dst->length));
+            if (!dst->buffer)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->buffer, pos, NvP64, (dst->length));
+            FINN_MEMZERO(dst->buffer, (dst->length));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->buffer)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->length); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->buffer))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -7462,157 +6548,131 @@ static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsDeserialize(NvU8 **src, const N
             dst->buffer = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nv83deCtrlDebugWriteMemoryParamsGetSerializedSize(const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *src)
+
+static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsSerialize(const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 56;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->buffer)
-    {
-        size += (src->length);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsSerialize(const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nvb06fCtrlGetEngineCtxDataParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Statically sized fields
+    // No range check for src->engineID
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->engineID, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
 
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0xb06f01; // Interface ID
-    header->message = 0xc; // Message ID
+    // No range check for src->size
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->size, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
-    // Field bitmasks
-    header->fieldMask[0] = 0x7;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
-    // Static size fields
-    FINN_COPY_TO_BUFFER(pos, src->engineID, NvU32, 4);
-
-    FINN_COPY_TO_BUFFER(pos, src->size, NvU32, 4);
-
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Set data presence byte
-    *(pos++) = !!(src->pEngineCtxBuff);
+    // Set data-presence indicator.
+    finn_write_buffer(bp, !!(src->pEngineCtxBuff), 1);
 
+    // Skip if pointer is null.
     if (src->pEngineCtxBuff)
     {
-        FINN_MEMCPY_TO_BUFFER(pos, src->pEngineCtxBuff, (src->size));
+
+        // Serialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (src->size); ++j)
+        {
+            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pEngineCtxBuff))[j], 1 * 8);
+        }
+
+        // Free memory that was allocated during downward deserialization.
+        if (seri_up && src->pEngineCtxBuff)
+            FINN_FREE(src->pEngineCtxBuff);
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsDeserialize(NvU8 **src, const NvU8 *src_max, NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsDeserialize(finn_bit_pump_for_read *bp, NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x7)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->engineID = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->engineID
 
-    // Static size fields
-    FINN_COPY_FROM_BUFFER(dst->engineID, pos, NvU32, 4);
 
-    FINN_COPY_FROM_BUFFER(dst->size, pos, NvU32, 4);
+    // Deserialize 4-byte NvU32 object.
+    dst->size = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->size
 
-    // Align after static size fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
 
     // Unbounded fields
-    // Check data presence byte
-    if (*(pos++))
+    // Skip if data is not present (null pointer).
+    if (finn_read_buffer(bp, 1))
     {
-        if (deser_up)
-            FINN_MEMCPY_FROM_BUFFER(dst->pEngineCtxBuff, pos, (dst->size));
-        else
+
+        // Allocate memory and set pointer when deserializing down.
+        // (Calling cods is expected to do so when deserializing up.)
+        if (!deser_up)
         {
-            // Validate variable length buffer length
-            if (pos + ((dst->size)) > src_max ||
-                pos + ((dst->size)) < pos)
+            dst->pEngineCtxBuff = FINN_MALLOC((dst->size));
+            if (!dst->pEngineCtxBuff)
             {
-                status = NV_ERR_BUFFER_TOO_SMALL;
-                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                status = NV_ERR_NO_MEMORY;
+                FINN_ERROR(NV_ERR_NO_MEMORY);
                 goto exit;
             }
 
-            FINN_SET_PTR_TO_BUFFER(dst->pEngineCtxBuff, pos, NvP64, (dst->size));
+            FINN_MEMZERO(dst->pEngineCtxBuff, (dst->size));
+        }
+
+        // Otherwise the pointer must be provided.
+        else if (!dst->pEngineCtxBuff)
+        {
+            status = NV_ERR_INVALID_POINTER;
+            FINN_ERROR(NV_ERR_INVALID_POINTER);
+            goto exit;
+        }
+
+        // Deserialize each 1-byte NvU8 element.
+        for (NvU64 j = 0; j < (dst->size); ++j)
+        {
+            ((NvU8 *) NvP64_VALUE(dst->pEngineCtxBuff))[j] = (NvU8) finn_read_buffer(bp, 1 * 8);
         }
     }
     else
@@ -7621,151 +6681,207 @@ static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsDeserialize(NvU8 **src, const N
             dst->pEngineCtxBuff = NULL;
     }
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nvb06fCtrlGetEngineCtxDataParamsGetSerializedSize(const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *src)
+
+static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsSerialize(const NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 48;
-
-    // Add sizes that require runtime calculation
-    // Increment size to account for the data presence byte.
-    ++size;
-
-    // For non-NULL pointers, proceed to size calculation.
-    if (src->pEngineCtxBuff)
-    {
-        size += (src->size);
-    }
-
-    // Add padding
-    size = (size + 7) &~ 7;
-
-    return size;
-}
-
-static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsSerialize(const NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *src, NvU8 **dst, const NvU8 *dst_max, NvBool seri_up)
-{
-    NvU8 *pos = *dst;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
-    NvU64 serializedSize = Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsGetSerializedSize(src);
+    // Local variables
     NV_STATUS status = NV_OK;
-
-    // Validate buffer size
-    if (pos + serializedSize > dst_max)
-    {
-        status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
-        goto exit;
-    }
-
-    // Clear destination buffer
-    FINN_MEMZERO(pos, serializedSize);
-
-    // Serialization header
-    header->version = FINN_SERIALIZATION_VERSION; // Serialization version
-    header->payloadSize = serializedSize; // Serialized size
-    header->interface = 0xb06f01; // Interface ID
-    header->message = 0xd; // Message ID
+    uint64_t field_presence_mask;
 
     // Field bitmasks
-    header->fieldMask[0] = 0x1;
-
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
+    field_presence_mask = 0x1;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
     // Unbounded fields
-    status = Nvb06fCtrlGetEngineCtxDataParamsSerialize(&src->params, &pos, dst_max, seri_up);
+    status = Nvb06fCtrlGetEngineCtxDataParamsSerialize(&src->params, bp, seri_up);
     if (status != NV_OK)
         goto exit;
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
+    goto exit; // Suppress potential not-used warning
 exit:
-    *dst = pos;
     return status;
 }
 
-static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsDeserialize(NvU8 **src, const NvU8 *src_max, NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+
+static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsDeserialize(finn_bit_pump_for_read *bp, NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *dst, NvLength dst_size, NvBool deser_up)
 {
-    NvU8 *pos = *src;
-    FINN_RM_API *header = (FINN_RM_API *)pos;
+    // Local variables
     NV_STATUS status = NV_OK;
 
     // Check that the destination struct fits within the destination buffer
-    // and that the declared size fits within the source buffer
-    if (sizeof(NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS) > dst_size ||
-        header->payloadSize < (sizeof(FINN_RM_API) + sizeof(NvU64)) ||
-        pos + header->payloadSize > src_max ||
-        pos + header->payloadSize < pos)
+    if (sizeof(NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS) > dst_size)
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
-        pos = (NvU8 *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         goto exit;
     }
 
-    // Validate the field bitmasks. They must match the expected values for now
-    if (header->fieldMask[0] != 0x1)
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x1)
     {
         status = NV_ERR_LIB_RM_VERSION_MISMATCH;
-        pos = (NvU8 *) &header->fieldMask;
         FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
         goto exit;
     }
 
-    // Jump past header
-    pos += sizeof(FINN_RM_API) + (1 * sizeof(NvU64));
-
     // Unbounded fields
-    status = Nvb06fCtrlGetEngineCtxDataParamsDeserialize(&pos, src_max, &dst->params, dst_size, deser_up);
+    status = Nvb06fCtrlGetEngineCtxDataParamsDeserialize(bp, &dst->params, dst_size, deser_up);
     if (status != NV_OK)
         goto exit;
 
-    // Align after unbounded fields
-    pos = (NvU8*)(((NvU64)pos + 7) &~ 7);
-
-    // Check that the declared size matches the serialization outcome
-    if (header->payloadSize != (NvU64) (pos - *src))
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        pos = (NvU8 *) &header->payloadSize;
-        FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
-        goto exit;
-    }
-
 exit:
-    *src = pos;
     return status;
 }
 
-static NvU64 Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsGetSerializedSize(const NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA_FINN_PARAMS *src)
+
+static NV_STATUS Nvb06fCtrlSaveEngineCtxDataParamsSerialize(const NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
-    // Start with the portion of the size known at compile time.
-    NvU64 size = 40;
+    // Local variables
+    NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
 
-    // Add sizes that require runtime calculation
-    size += Nvb06fCtrlGetEngineCtxDataParamsGetSerializedSize((const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *) &(src->params));
-    // Add padding
-    size = (size + 7) &~ 7;
+    // Field bitmasks
+    field_presence_mask = 0x7;
+    finn_write_buffer(bp, field_presence_mask, 64);
 
-    return size;
+    // Statically sized fields
+    // No range check for src->engineID
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->engineID, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    // No range check for src->size
+    // Deserialize 4-byte NvU32 object.
+    if (finn_write_buffer(bp, src->size, 4 * 8))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+
+    for (NvU64 i = 0; i < (NVB06F_CTRL_ENGINE_CTX_BUFFER_SIZE_MAX); ++i)
+    {
+        // No range check for src->engineCtxBuff[i]
+        // Deserialize 1-byte NvU8 object.
+        if (finn_write_buffer(bp, src->engineCtxBuff[i], 1 * 8))
+        {
+            status = NV_ERR_BUFFER_TOO_SMALL;
+            FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+            goto exit;
+        }
+    }
+
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
 }
+
+
+static NV_STATUS Nvb06fCtrlSaveEngineCtxDataParamsDeserialize(finn_bit_pump_for_read *bp, NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x7)
+    {
+        status = NV_ERR_LIB_RM_VERSION_MISMATCH;
+        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
+        goto exit;
+    }
+
+    // Statically sized fields
+    // Deserialize 4-byte NvU32 object.
+    dst->engineID = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->engineID
+
+
+    // Deserialize 4-byte NvU32 object.
+    dst->size = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->size
+
+
+    for (NvU64 i = 0; i < (NVB06F_CTRL_ENGINE_CTX_BUFFER_SIZE_MAX); ++i)
+    {
+        // Deserialize 1-byte NvU8 object.
+        dst->engineCtxBuff[i] = (NvU8) finn_read_buffer(bp, 1 * 8);
+        // No range check for dst->engineCtxBuff[i]
+    }
+
+
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nvb06fCtrlCmdRestoreEngineCtxDataFinnParamsSerialize(const NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+    uint64_t field_presence_mask;
+
+    // Field bitmasks
+    field_presence_mask = 0x1;
+    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Bounded nested fields
+    status = Nvb06fCtrlSaveEngineCtxDataParamsSerialize(&src->params, bp, seri_up);
+    if (status != NV_OK)
+        goto exit;
+
+    goto exit; // Suppress potential not-used warning
+exit:
+    return status;
+}
+
+
+static NV_STATUS Nvb06fCtrlCmdRestoreEngineCtxDataFinnParamsDeserialize(finn_bit_pump_for_read *bp, NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Local variables
+    NV_STATUS status = NV_OK;
+
+    // Check that the destination struct fits within the destination buffer
+    if (sizeof(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS) > dst_size)
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
+
+    // Validate the field bitmasks, which must match the expected values for now.
+    if (finn_read_buffer(bp, 64) != 0x1)
+    {
+        status = NV_ERR_LIB_RM_VERSION_MISMATCH;
+        FINN_ERROR(NV_ERR_LIB_RM_VERSION_MISMATCH);
+        goto exit;
+    }
+
+    // Bounded nested fields
+    status = Nvb06fCtrlSaveEngineCtxDataParamsDeserialize(bp, &dst->params, dst_size, deser_up);
+    if (status != NV_OK)
+        goto exit;
+
+exit:
+    return status;
+}
+
 

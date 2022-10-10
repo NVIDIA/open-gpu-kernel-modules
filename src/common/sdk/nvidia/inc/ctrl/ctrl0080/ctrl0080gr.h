@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0080/ctrl0080gr.finn
 //
 
-
-
-
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
 typedef struct NV0080_CTRL_GR_ROUTE_INFO {

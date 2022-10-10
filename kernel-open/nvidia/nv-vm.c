@@ -222,7 +222,7 @@ static NvU64 nv_get_max_sysmem_address(void)
 
     for_each_online_node(node_id)
     {
-        global_max_pfn = max(global_max_pfn, node_end_pfn(node_id));
+        global_max_pfn = max(global_max_pfn, (NvU64)node_end_pfn(node_id));
     }
 
     return ((global_max_pfn + 1) << PAGE_SHIFT) - 1;
@@ -370,13 +370,6 @@ NV_STATUS nv_alloc_contig_pages(
     // TODO: This is a temporary WAR, and will be removed after fixing bug 200732409.
     if (os_is_xen_dom0() || at->flags.unencrypted)
         return nv_alloc_coherent_pages(nv, at);
-
-
-
-
-
-
-
 
     at->order = get_order(at->num_pages * PAGE_SIZE);
     gfp_mask = nv_compute_gfp_mask(nv, at);

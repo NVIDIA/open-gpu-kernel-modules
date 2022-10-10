@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrlb0cc/ctrlb0ccprofiler.finn
 //
 
-
-
-
 #include "ctrl/ctrlb0cc/ctrlb0ccbase.h"
 
 

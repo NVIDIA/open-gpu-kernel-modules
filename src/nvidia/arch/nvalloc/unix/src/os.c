@@ -718,6 +718,11 @@ void osSpinLoop(void)
 {
 }
 
+NvU64 osGetMaxUserVa(void)
+{
+    return os_get_max_user_va();
+}
+
 NV_STATUS osSchedule(void)
 {
     return os_schedule();
@@ -3497,17 +3502,14 @@ osRemoveGpuSupported
  * - All address values are in the System Physical Address (SPA) space
  * - Targets can either be "Local" (bIsPeer=False) or for a specified "Peer"
  *   (bIsPeer=True, peerIndex=#) GPU
- * - Granularity of the target address space is returned as a bit shift value
- *   (e.g. granularity=37 implies a granularity of 128GiB)
  * - Target address and mask values have a specified bit width, and represent
  *   the higher order bits above the target address granularity
  *
  * @param[in]   pGpu                GPU object pointer
- * @param[out]  pAddrSysPhys        Pointer to hold SPA aligned at 128GB boundary
+ * @param[out]  pAddrSysPhys        Pointer to hold SPA
  * @param[out]  pAddrWidth          Address range width value pointer
  * @param[out]  pMask               Mask value pointer
  * @param[out]  pMaskWidth          Mask width value pointer
- * @param[out]  pGranularity        Granularity value pointer
  * @param[in]   bIsPeer             NV_TRUE if this is a peer, local GPU otherwise
  * @param[in]   peerIndex           Peer index
  *
@@ -3520,11 +3522,10 @@ NV_STATUS
 osGetAtsTargetAddressRange
 (
     OBJGPU *pGpu,
-    NvU32   *pAddrSysPhys,
+    NvU64   *pAddrSysPhys,
     NvU32   *pAddrWidth,
     NvU32   *pMask,
     NvU32   *pMaskWidth,
-    NvU32   *pGranularity,
     NvBool  bIsPeer,
     NvU32   peerIndex
 )
@@ -3548,27 +3549,21 @@ osGetAtsTargetAddressRange
     if (bIsPeer)
     {
         const int addrWidth = 0x10;
-        const NvU32 guestAddrGranularity = 37;
 
         *pAddrSysPhys = 0;
         *pAddrWidth = addrWidth;
         *pMask = 0;
         *pMaskWidth = addrMaskWidth;
-        *pGranularity = guestAddrGranularity;
         return NV_OK;
     }
     else
     {
-        NvU64 addrSysPhys;
-
-        NV_STATUS status = nv_get_device_memory_config(nv, &addrSysPhys, NULL,
-                                                       pAddrWidth, pGranularity, NULL);
+        NV_STATUS status = nv_get_device_memory_config(nv, pAddrSysPhys, NULL,
+                                                       pAddrWidth, NULL);
         if (status == NV_OK)
         {
             *pMask = NVBIT(*pAddrWidth) - 1U;
             *pMaskWidth = addrMaskWidth;
-
-            *pAddrSysPhys = addrSysPhys >> *pGranularity;
         }
         return status;
     }
@@ -3615,7 +3610,7 @@ osGetFbNumaInfo
 
     nv = NV_GET_NV_STATE(pGpu);
 
-    NV_STATUS status = nv_get_device_memory_config(nv, NULL, pAddrPhys, NULL, NULL, pNodeId);
+    NV_STATUS status = nv_get_device_memory_config(nv, NULL, pAddrPhys, NULL, pNodeId);
 
     return status;
 #endif
@@ -3901,7 +3896,7 @@ osNumaOnliningEnabled
     // Note that this numaNodeId value fetched from Linux layer might not be
     // accurate since it is possible to overwrite it with regkey on some configs
     //
-    if (nv_get_device_memory_config(pOsGpuInfo, NULL, NULL, NULL, NULL,
+    if (nv_get_device_memory_config(pOsGpuInfo, NULL, NULL, NULL,
                                     &numaNodeId) != NV_OK)
     {
         return NV_FALSE;
@@ -4956,6 +4951,51 @@ osGetSyncpointAperture
     NvU32 *offset
 )
 {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+/*!
+ * @brief Enable PCIe AtomicOp Requester Enable and return
+ * the completer side capabilities that the requester can send.
+ *
+ * @param[in]    pOsGpuInfo   OS_GPU_INFO OS specific GPU information pointer
+ * @param[out]   pMask        mask of supported atomic size, including one or more of:
+ *                            OS_PCIE_CAP_MASK_REQ_ATOMICS_32
+ *                            OS_PCIE_CAP_MASK_REQ_ATOMICS_64
+ *                            OS_PCIE_CAP_MASK_REQ_ATOMICS_128
+ *
+ * @returns NV_STATUS, NV_OK if success
+ *                     NV_ERR_NOT_SUPPORTED if platform doesn't support this
+ *                     feature.
+ *                     NV_ERR_GENERIC for any other error
+ */
+
+NV_STATUS
+osConfigurePcieReqAtomics
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvU32       *pMask
+)
+{
+    if (pMask)
+    {
+        *pMask = 0U;
+        if (pOsGpuInfo)
+        {
+            if (os_enable_pci_req_atomics(pOsGpuInfo->handle,
+                                          OS_INTF_PCIE_REQ_ATOMICS_32BIT) == NV_OK)
+                *pMask |= OS_PCIE_CAP_MASK_REQ_ATOMICS_32;
+            if (os_enable_pci_req_atomics(pOsGpuInfo->handle,
+                                          OS_INTF_PCIE_REQ_ATOMICS_64BIT) == NV_OK)
+                *pMask |= OS_PCIE_CAP_MASK_REQ_ATOMICS_64;
+            if (os_enable_pci_req_atomics(pOsGpuInfo->handle,
+                                          OS_INTF_PCIE_REQ_ATOMICS_128BIT) == NV_OK)
+                *pMask |= OS_PCIE_CAP_MASK_REQ_ATOMICS_128;
+
+            if (*pMask != 0)
+                return NV_OK;
+        }
+    }
     return NV_ERR_NOT_SUPPORTED;
 }
 

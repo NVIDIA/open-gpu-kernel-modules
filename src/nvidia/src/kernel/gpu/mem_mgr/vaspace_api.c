@@ -523,9 +523,19 @@ vaspaceapiDestruct_IMPL(VaSpaceApi *pVaspaceApi)
     }
 
     destroyMemDesc(pDevice, hVASpace);
+    if ((vaspaceGetFlags(pVaspaceApi->pVASpace) & VASPACE_FLAGS_FLA))
+    {
+        if (GPU_GET_KERNEL_BUS(pGpu)->flaInfo.pFlaVAS == NULL)
+        {
+            NV_PRINTF(LEVEL_INFO, "Skipping Legacy FLA vaspace destruct, gpu:%x \n",
+                      pGpu->gpuInstance);
+            goto skip_destroy;
+        }
+    }
 
     vmmDestroyVaspace(pVmm, pVaspaceApi->pVASpace);
 
+skip_destroy:
     //
     // RS-TODO: Move out to freeWithResServ?
     //

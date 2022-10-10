@@ -1222,10 +1222,10 @@ virtmemMapTo_IMPL
     NvBool      bIsIndirectPeer       = NV_FALSE;
     NvBool      bEncrypted;
     NvBool      bIsSysmem             = NV_FALSE;
-    NvBool      bBar1P2P              = (p2p && kbusIsPcieBar1P2PMapping_HAL(pGpu,
-                                                                             GPU_GET_KERNEL_BUS(pGpu),
-                                                                             pSrcGpu,
-                                                                             GPU_GET_KERNEL_BUS(pSrcGpu)));
+    NvBool      bBar1P2P              = (p2p && kbusHasPcieBar1P2PMapping_HAL(pGpu,
+                                                                              GPU_GET_KERNEL_BUS(pGpu),
+                                                                              pSrcGpu,
+                                                                              GPU_GET_KERNEL_BUS(pSrcGpu)));
 
     //
     // Allow unicast on NV01_MEMORY_VIRTUAL object, but maintain the broadcast

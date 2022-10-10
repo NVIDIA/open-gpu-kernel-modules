@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrla06f/ctrla06fgpfifo.finn
 //
 
-
-
-
 #include "ctrl/ctrla06f/ctrla06fbase.h"
 
 /*

@@ -88,15 +88,11 @@
 
 #include "nv-kthread-q.h"
 
-
     #if NV_KTHREAD_Q_SUPPORTS_AFFINITY() == 1 && defined(NV_CPUMASK_OF_NODE_PRESENT)
         #define UVM_THREAD_AFFINITY_SUPPORTED() 1
     #else
         #define UVM_THREAD_AFFINITY_SUPPORTED() 0
     #endif
-
-
-
 
 // The ARM arch lacks support for cpumask_of_node() until kernel 4.7. It was
 // added via commit1a2db300348b ("arm64, numa: Add NUMA support for arm64
@@ -112,15 +108,11 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #endif
 }
 
-
     #if defined(CONFIG_HMM_MIRROR) && defined(CONFIG_DEVICE_PRIVATE) && defined(NV_MAKE_DEVICE_EXCLUSIVE_RANGE_PRESENT)
         #define UVM_IS_CONFIG_HMM() 1
     #else
         #define UVM_IS_CONFIG_HMM() 0
     #endif
-
-
-
 
 // Various issues prevent us from using mmu_notifiers in older kernels. These
 // include:
@@ -137,20 +129,11 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 //
 // The callback was added in commit 0f0a327fa12cd55de5e7f8c05a70ac3d047f405e,
 // v3.19 (2014-11-13).
-
     #if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE)
         #define UVM_CAN_USE_MMU_NOTIFIERS() 1
     #else
         #define UVM_CAN_USE_MMU_NOTIFIERS() 0
     #endif
-
-
-
-
-
-
-
-
 
 // See bug 1707453 for further details about setting the minimum kernel version.
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
@@ -543,7 +526,6 @@ typedef struct
     struct mem_cgroup *old_memcg;
 } uvm_memcg_context_t;
 
-
     // cgroup support requires set_active_memcg(). set_active_memcg() is an
     // inline function that requires int_active_memcg per-cpu symbol when called
     // from interrupt context. int_active_memcg is only exported by commit
@@ -585,29 +567,13 @@ typedef struct
         }
     #endif // NV_IS_EXPORT_SYMBOL_PRESENT_int_active_memcg
 
+#if defined(NVCPU_X86) || defined(NVCPU_X86_64)
+  #include <asm/pgtable_types.h>
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#if !defined(PAGE_KERNEL_NOENC)
+  #define PAGE_KERNEL_NOENC PAGE_KERNEL
+#endif
 
 // Commit 1dff8083a024650c75a9c961c38082473ceae8cf (v4.7).
 //

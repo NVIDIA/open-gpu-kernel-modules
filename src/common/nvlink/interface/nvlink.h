@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2014-2022 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 //
 //     nvlink.h
@@ -72,6 +71,7 @@ extern "C" {
 #define NVLINK_TRANSITION_OFF_TIMEOUT        1
 #define NVLINK_TRANSITION_SAFE_TIMEOUT       300
 #define NVLINK_TRANSITION_HS_TIMEOUT         8000
+#define NVLINK_TRANSITION_ACTIVE_PENDING     2000
 #define NVLINK_TRANSITION_POST_HS_TIMEOUT    70
 
 // Link training seed values
@@ -109,8 +109,16 @@ struct nvlink_device
     NvU64  type;
     NvBool initialized;
 
+    // Training type: ALI or Non-ALI
+    NvBool enableALI;
+
     // fabric node id
     NvU16  nodeId;
+
+    // per Ioctrl data
+    NvU32 numIoctrls;
+    NvU32 numLinksPerIoctrl;
+    NvU32 numActiveLinksPerIoctrl;
 
     // Client private information
     void *pDevInfo;
@@ -249,6 +257,7 @@ struct nvlink_link_handlers
     NV_API_CALL NvlStatus (*read_discovery_token)       (struct nvlink_link *link, NvU64 *token);
     NV_API_CALL void      (*training_complete)          (struct nvlink_link *link);
     NV_API_CALL void      (*get_uphy_load)              (struct nvlink_link *link, NvBool* bUnlocked);
+    NV_API_CALL NvlStatus (*ali_training)               (struct nvlink_link *link);
 };
 
 //
@@ -318,11 +327,15 @@ typedef struct nvlink_inband_data      nvlink_inband_data;
 #define NVLINK_LINKSTATE_DISABLE_HEARTBEAT              0x18   // Disables the heartbeat errors
 #define NVLINK_LINKSTATE_CONTAIN                        0x19   // TL is in contain mode
 #define NVLINK_LINKSTATE_INITTL                         0x1A   // INITTL
+#define NVLINK_LINKSTATE_INITPHASE5                     0x1B   // INITPHASE5
+#define NVLINK_LINKSTATE_ALI                            0x1C   // ALI
+#define NVLINK_LINKSTATE_ACTIVE_PENDING                 0x1D   // Intermediate state for a link going to active
 #define NVLINK_LINKSTATE_INVALID                        0xFF   // Invalid state
 
 // NVLINK TX SUBLINK states
 #define NVLINK_SUBLINK_STATE_TX_HS                      0x0   // TX High Speed
 #define NVLINK_SUBLINK_STATE_TX_SINGLE_LANE             0x4   // TX Single Lane (1/8th or 1/4th) Mode (Deprecated)
+#define NVLINK_SUBLINK_STATE_TX_LOW_POWER               0x4   // TX Single Lane Mode / L1
 #define NVLINK_SUBLINK_STATE_TX_TRAIN                   0x5   // TX training
 #define NVLINK_SUBLINK_STATE_TX_SAFE                    0x6   // TX Safe Mode
 #define NVLINK_SUBLINK_STATE_TX_OFF                     0x7   // TX OFF
@@ -336,6 +349,7 @@ typedef struct nvlink_inband_data      nvlink_inband_data;
 // NVLINK RX SUBLINK states
 #define NVLINK_SUBLINK_STATE_RX_HS                      0x0   // RX High Speed
 #define NVLINK_SUBLINK_STATE_RX_SINGLE_LANE             0x4   // RX Single Lane (1/8th or 1/4th) Mode (Deprecated)
+#define NVLINK_SUBLINK_STATE_RX_LOW_POWER               0x4   // RX Single Lane Mode / L1
 #define NVLINK_SUBLINK_STATE_RX_TRAIN                   0x5   // RX training
 #define NVLINK_SUBLINK_STATE_RX_SAFE                    0x6   // RX Safe Mode
 #define NVLINK_SUBLINK_STATE_RX_OFF                     0x7   // RX OFF
@@ -426,6 +440,15 @@ NvlStatus nvlink_lib_set_link_master(nvlink_link *link);
  */
 NvlStatus nvlink_lib_get_link_master(nvlink_link *link, nvlink_link **master);
 
+/*
+ * Set the training state for the given link as non-ALI or ALI
+ */
+NvlStatus nvlink_lib_is_link_using_ALI(nvlink_link *link, NvBool *usingALI);
+
+/*
+ * Set the training state for the given link as non-ALI or ALI
+ */
+NvlStatus nvlink_lib_link_set_training_mode(nvlink_link *link, NvBool enableALI);
 /************************************************************************************************/
 /*************************** NVLink topology discovery functions ********************************/
 /************************************************************************************************/
@@ -508,6 +531,7 @@ void nvlink_lib_restore_training_seeds(nvlink_link * link,
 NvlStatus nvlink_lib_check_training_complete(nvlink_link **links,
                                              NvU32 linkCount);
 
+
 /************************************************************************************************/
 /********************************** NVLink shutdown functions ***********************************/
 /************************************************************************************************/
@@ -542,21 +566,26 @@ NvlStatus nvlink_lib_reset_links(nvlink_link **links,
                                  NvU32         numLinks,
                                  NvU32         flags);
 
+/*
+ * Floorsweep the necessary links and set buffer ready on the active links
+ */
+NvlStatus nvlink_lib_powerdown_floorswept_links_to_off(nvlink_device *pDevice);
+
 
 /*
  * Nvlink core library structure iterators
  */
 
-#define FOR_EACH_DEVICE_REGISTERED(dev, head, node)                \
+#define FOR_EACH_DEVICE_REGISTERED(dev, head, node)  \
         nvListForEachEntry(dev, &head.node, node)
 
-#define FOR_EACH_LINK_REGISTERED(link, dev, node)                  \
+#define FOR_EACH_LINK_REGISTERED(link, dev, node)    \
         nvListForEachEntry(link, &dev->link_list, node)
 
 #define FOR_EACH_LINK_REGISTERED_SAFE(link, next, dev, node)       \
         nvListForEachEntry_safe(link, next, &dev->link_list, node)
 
-#define FOR_EACH_CONNECTION(conn, head, node)                      \
+#define FOR_EACH_CONNECTION(conn, head, node)        \
         nvListForEachEntry(conn, &head.node, node)
 
 #ifdef __cplusplus

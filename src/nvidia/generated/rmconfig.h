@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 //
 
 #ifndef _RMCFG_H_
@@ -29,6 +29,8 @@
 #define RMCFG_CHIP_TU10X     1
 #define RMCFG_CHIP_GA10X     1
 #define RMCFG_CHIP_GA10XF    0
+#define RMCFG_CHIP_AD10X     1
+#define RMCFG_CHIP_GH10X     1
 #define RMCFG_CHIP_T12X      0
 #define RMCFG_CHIP_T13X      0
 #define RMCFG_CHIP_T21X      0
@@ -58,6 +60,8 @@
 
 #define RMCFG_CHIP_GV100     0
 
+#define RMCFG_CHIP_GV11B     0
+
 #define RMCFG_CHIP_TU102     1
 #define RMCFG_CHIP_TU104     1
 #define RMCFG_CHIP_TU106     1
@@ -73,6 +77,14 @@
 #define RMCFG_CHIP_GA10B     0
 
 #define RMCFG_CHIP_GA102F    0
+
+#define RMCFG_CHIP_AD102     1
+#define RMCFG_CHIP_AD103     1
+#define RMCFG_CHIP_AD104     1
+
+#define RMCFG_CHIP_GH100     1
+
+#define RMCFG_CHIP_T194      0
 
 #define RMCFG_CHIP_T234      0
 
@@ -107,13 +119,11 @@
 #define RMCFG_CHIP_GK110C    0
 #define RMCFG_CHIP_GK208     0
 #define RMCFG_CHIP_GK208S    0
-#define RMCFG_CHIP_GV11B     0
 #define RMCFG_CHIP_T001_FERMI_NOT_EXIST 0
 #define RMCFG_CHIP_T124      0
 #define RMCFG_CHIP_T132      0
 #define RMCFG_CHIP_T210      0
 #define RMCFG_CHIP_T186      0
-#define RMCFG_CHIP_T194      0
 #define RMCFG_CHIP_T002_TURING_NOT_EXIST 0
 
 
@@ -157,6 +167,14 @@
 #define RMCFG_CHIP_TEGRA_DGPU_AMPERE 0
 #define RMCFG_CHIP_TEGRA_DGPU 0
 #define RMCFG_CHIP_DFPGA     0
+#define RMCFG_CHIP_dADA      1
+#define RMCFG_CHIP_DADA      1
+#define RMCFG_CHIP_ADA       1
+#define RMCFG_CHIP_ADA_CLASSIC_GPUS 1
+#define RMCFG_CHIP_dHOPPER   1
+#define RMCFG_CHIP_DHOPPER   1
+#define RMCFG_CHIP_HOPPER    1
+#define RMCFG_CHIP_HOPPER_CLASSIC_GPUS 1
 #define RMCFG_CHIP_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_FERMI_TEGRA_BIG_GPUS 0
 #define RMCFG_CHIP_TEGRA     0
@@ -339,15 +357,18 @@
 #define RMCFG_CLASS_VOLTA_CHANNEL_GPFIFO_A        1
 #define RMCFG_CLASS_TURING_CHANNEL_GPFIFO_A       1
 #define RMCFG_CLASS_AMPERE_CHANNEL_GPFIFO_A       1
+#define RMCFG_CLASS_HOPPER_CHANNEL_GPFIFO_A       1
 #define RMCFG_CLASS_NV04_SOFTWARE_TEST            1
 #define RMCFG_CLASS_NV4_SOFTWARE_TEST             1  // aka NV04_SOFTWARE_TEST
 #define RMCFG_CLASS_VOLTA_USERMODE_A              1
 #define RMCFG_CLASS_TURING_USERMODE_A             1
 #define RMCFG_CLASS_AMPERE_USERMODE_A             1
+#define RMCFG_CLASS_HOPPER_USERMODE_A             1
 #define RMCFG_CLASS_NVC371_DISP_SF_USER           1
 #define RMCFG_CLASS_NVC372_DISPLAY_SW             1
 #define RMCFG_CLASS_NVC573_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NVC673_DISP_CAPABILITIES      1
+#define RMCFG_CLASS_NVC773_DISP_CAPABILITIES      1
 #define RMCFG_CLASS_NV04_DISPLAY_COMMON           1
 #define RMCFG_CLASS_NV50_DEFERRED_API_CLASS       1
 #define RMCFG_CLASS_MPS_COMPUTE                   1
@@ -362,6 +383,9 @@
 #define RMCFG_CLASS_NVC67B_WINDOW_IMM_CHANNEL_DMA  1
 #define RMCFG_CLASS_NVC67D_CORE_CHANNEL_DMA       1
 #define RMCFG_CLASS_NVC67E_WINDOW_CHANNEL_DMA     1
+#define RMCFG_CLASS_NVC770_DISPLAY                1
+#define RMCFG_CLASS_NVC771_DISP_SF_USER           1
+#define RMCFG_CLASS_NVC77D_CORE_CHANNEL_DMA       1
 #define RMCFG_CLASS_NV9010_VBLANK_CALLBACK        1
 #define RMCFG_CLASS_GF100_PROFILER                1  // Profiler Client Support
 #define RMCFG_CLASS_MAXWELL_PROFILER              1  // Base Profiler Class
@@ -377,15 +401,22 @@
 #define RMCFG_CLASS_FERMI_TWOD_A                  1  // FERMI Graphics 2D
 #define RMCFG_CLASS_FERMI_VASPACE_A               1  // FERMI virtual address space
 #define RMCFG_CLASS_GF100_HDACODEC                1
+#define RMCFG_CLASS_NVB8B0_VIDEO_DECODER          1  // Decoder Class for Hopper
 #define RMCFG_CLASS_NVC4B0_VIDEO_DECODER          1  // Decoder Class for Turing
 #define RMCFG_CLASS_NVC6B0_VIDEO_DECODER          1  // Decoder Class for Ampere
 #define RMCFG_CLASS_NVC7B0_VIDEO_DECODER          1  // Decoder Class for Ampere
+#define RMCFG_CLASS_NVC9B0_VIDEO_DECODER          1  // Decoder Class for Ada
 #define RMCFG_CLASS_NVC4B7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVB4B7_VIDEO_ENCODER          1
 #define RMCFG_CLASS_NVC7B7_VIDEO_ENCODER          1
+#define RMCFG_CLASS_NVC9B7_VIDEO_ENCODER          1
+#define RMCFG_CLASS_NVB8D1_VIDEO_NVJPG            1
 #define RMCFG_CLASS_NVC4D1_VIDEO_NVJPG            1
+#define RMCFG_CLASS_NVC9D1_VIDEO_NVJPG            1
+#define RMCFG_CLASS_NVB8FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC6FA_VIDEO_OFA              1
 #define RMCFG_CLASS_NVC7FA_VIDEO_OFA              1
+#define RMCFG_CLASS_NVC9FA_VIDEO_OFA              1
 #define RMCFG_CLASS_KEPLER_INLINE_TO_MEMORY_B     1  // Kepler inline to memory
 #define RMCFG_CLASS_FERMI_CONTEXT_SHARE_A         1  // Context Share class
 #define RMCFG_CLASS_KEPLER_CHANNEL_GROUP_A        1  // Channel Group Class
@@ -393,6 +424,7 @@
 #define RMCFG_CLASS_TURING_DMA_COPY_A             1
 #define RMCFG_CLASS_AMPERE_DMA_COPY_A             1
 #define RMCFG_CLASS_AMPERE_DMA_COPY_B             1
+#define RMCFG_CLASS_HOPPER_DMA_COPY_A             1
 #define RMCFG_CLASS_MAXWELL_DMA_COPY_A            1
 #define RMCFG_CLASS_ACCESS_COUNTER_NOTIFY_BUFFER  1  // Access Cntr Buffer for Gr
 #define RMCFG_CLASS_MMU_FAULT_BUFFER              1  // Volta Fault Buffer for Gr
@@ -402,11 +434,15 @@
 #define RMCFG_CLASS_AMPERE_COMPUTE_A              1  // AmpereComputeA (Graphics Compute)
 #define RMCFG_CLASS_AMPERE_B                      1  // AmpereB (Graphics)
 #define RMCFG_CLASS_AMPERE_COMPUTE_B              1  // AmpereComputeB (Graphics Compute)
+#define RMCFG_CLASS_ADA_A                         1  // AdaA (Graphics)
+#define RMCFG_CLASS_ADA_COMPUTE_A                 1  // AdaComputeA (Graphics Compute)
 #define RMCFG_CLASS_AMPERE_SMC_PARTITION_REF      1  // Ampere SMC Partition Subscription
 #define RMCFG_CLASS_AMPERE_SMC_EXEC_PARTITION_REF  1  // Ampere SMC Execution Partition Subscription
 #define RMCFG_CLASS_AMPERE_SMC_CONFIG_SESSION     1  // Ampere SMC config session subscription
 #define RMCFG_CLASS_NV0092_RG_LINE_CALLBACK       1  // RG line callback functions
 #define RMCFG_CLASS_AMPERE_SMC_MONITOR_SESSION    1  // Ampere SMC monitor session subscription
+#define RMCFG_CLASS_HOPPER_A                      1  // HopperA (Graphics)
+#define RMCFG_CLASS_HOPPER_COMPUTE_A              1  // HopperComputeA (Graphics Compute)
 #define RMCFG_CLASS_NV40_DEBUG_BUFFER             1
 #define RMCFG_CLASS_GT200_DEBUGGER                1  // CUDA Debugger support
 #define RMCFG_CLASS_NV40_I2C                      1  // I2C operations
@@ -414,6 +450,7 @@
 #define RMCFG_CLASS_NV0060_SYNC_GPU_BOOST         1  // Synchronized GPU Boost Class. Defines a set of GPUs for Synchronized Boost
 #define RMCFG_CLASS_GP100_UVM_SW                  1  // UVM SW class to support SW methods for fault cancel
 #define RMCFG_CLASS_NV_EVENT_BUFFER               1  // Event buffer class used to share event data with UMD
+#define RMCFG_CLASS_NV_COUNTER_COLLECTION_UNIT    1  // Counter Collection Unit Class
 
 
 
@@ -504,7 +541,7 @@
 #define RMCFG_MODULE_ISOHUB                       0  // Display's memory read interface
 #define RMCFG_MODULE_BSP                          0  // Bit Stream Processor/NVDEC
 #define RMCFG_MODULE_NVDEC                        0  // aka BSP
-#define RMCFG_MODULE_KERNEL_NVDEC                 1  // NVDEC on Kernel(CPU) RM. Used for booting Falcon cores.
+#define RMCFG_MODULE_KERNEL_NVDEC                 1
 #define RMCFG_MODULE_CIPHER                       0
 #define RMCFG_MODULE_CE                           0  // Copy Engine
 #define RMCFG_MODULE_KERNEL_CE                    1  // Kernel Copy Engine
@@ -582,6 +619,7 @@
 #define RMCFG_MODULE_KERNEL_NVLINK                1  // Nvlink on Kernel(CPU) RM
 #define RMCFG_MODULE_IOCTRL                       0  // NVLINK Ioctrl
 #define RMCFG_MODULE_HSHUB                        0  // High Speed Hub
+#define RMCFG_MODULE_HSHUBMANAGER                 0  // High Speed Hub Manager
 #define RMCFG_MODULE_KERNEL_HSHUB                 1  // High Speed Hub on Kernel(CPU) RM
 #define RMCFG_MODULE_KERNEL_HSHUB                 1  // High Speed Hub on Kernel(CPU) RM
 #define RMCFG_MODULE_GPUMON                       1  // GPU Monitoring
@@ -592,6 +630,7 @@
 #define RMCFG_MODULE_RPCSTRUCTURECOPY             0  // RPC structure copying for VGPU
 #define RMCFG_MODULE_NVJPG                        0  // Video JPEG (NVJPG) Engine
 #define RMCFG_MODULE_KERNEL_NVJPG                 1
+#define RMCFG_MODULE_KERNEL_FSP                   1  // FSP on Kernel(CPU) RM
 #define RMCFG_MODULE_GSP                          0  // GPU system processor
 #define RMCFG_MODULE_KERNEL_GSP                   1  // GSP on Kernel(CPU) RM. Used for booting RM on GSP.
 #define RMCFG_MODULE_OFA                          0  // Optical Flow Accelarator
@@ -605,6 +644,7 @@
 #define RMCFG_MODULE_DISPMACRO                    0  // DispMacro RM infrastructure for IED removal from VBIOS
 #define RMCFG_MODULE_DISP_MGR                     0  // Lid- and dock-related disp code for NOTEBOOK
 #define RMCFG_MODULE_PLATFORM                     1  // Object for platform related features
+#define RMCFG_MODULE_KERNEL_CCU                   1  // Counter Collection Unit Kernel(CPU) RM
 
 
 

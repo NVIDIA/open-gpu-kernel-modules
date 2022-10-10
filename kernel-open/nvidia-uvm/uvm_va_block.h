@@ -440,10 +440,8 @@ struct uvm_va_block_struct
 #if UVM_IS_CONFIG_HMM()
     struct
     {
-
         // The MMU notifier is registered per va_block.
         struct mmu_interval_notifier notifier;
-
 
         // Parent VA space pointer. It is NULL for UVM managed blocks or if
         // the HMM block is dead. This field can be read while holding the
@@ -551,6 +549,11 @@ static inline void uvm_va_block_retain(uvm_va_block_t *va_block)
     nv_kref_get(&va_block->kref);
 }
 
+// Locking: The va_block lock must not be held.
+// The va_space lock must be held in write mode unless it is the special case
+// that the block has no GPU state; for example, right after calling
+// uvm_va_block_create(). In that case, the va_space lock can be held in read
+// mode.
 static inline void uvm_va_block_release(uvm_va_block_t *va_block)
 {
     if (va_block) {
@@ -986,9 +989,11 @@ NV_STATUS uvm_va_block_add_gpu_va_space(uvm_va_block_t *va_block, uvm_gpu_va_spa
 // If mm != NULL, that mm is used for any CPU mappings which may be created as
 // a result of this call. See uvm_va_block_context_t::mm for details.
 //
-// LOCKING: The caller must hold the va_block lock. If mm != NULL, the caller
-//          must hold mm->mmap_lock in at least read mode.
-void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block, uvm_gpu_va_space_t *gpu_va_space, struct mm_struct *mm);
+// LOCKING: The caller must hold the va_block lock. If block_context->mm is not
+// NULL, the caller must hold mm->mmap_lock in at least read mode.
+void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block,
+                                      uvm_gpu_va_space_t *gpu_va_space,
+                                      uvm_va_block_context_t *block_context);
 
 // Creates any mappings necessary in this VA block between the two GPUs, in
 // either direction.

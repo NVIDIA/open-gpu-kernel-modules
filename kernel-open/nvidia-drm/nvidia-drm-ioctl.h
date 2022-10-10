@@ -199,6 +199,8 @@ struct drm_nvidia_gem_map_offset_params {
     uint64_t offset;             /* OUT Fake offset */
 };
 
+#define NV_GEM_ALLOC_NO_SCANOUT                     (1 << 0)
+
 struct drm_nvidia_gem_alloc_nvkms_memory_params {
     uint32_t handle;              /* OUT */
     uint8_t  block_linear;        /* IN */
@@ -206,6 +208,7 @@ struct drm_nvidia_gem_alloc_nvkms_memory_params {
     uint16_t __pad;
 
     uint64_t memory_size;         /* IN */
+    uint32_t flags;               /* IN */
 };
 
 struct drm_nvidia_gem_export_dmabuf_memory_params {

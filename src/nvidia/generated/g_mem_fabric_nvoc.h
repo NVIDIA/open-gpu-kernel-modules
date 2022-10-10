@@ -90,7 +90,6 @@ struct MemoryFabric {
     NV_STATUS (*__memoryfabricControlLookup__)(struct MemoryFabric *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__memoryfabricMap__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__memoryfabricAccessCallback__)(struct MemoryFabric *, struct RsClient *, void *, RsAccessRight);
-    NvU32 flags;
 };
 
 #ifndef __NVOC_CLASS_MemoryFabric_TYPEDEF__
@@ -267,6 +266,21 @@ static inline NvBool memoryfabricCanExport(struct MemoryFabric *pMemoryFabric) {
 
 #undef PRIVATE_FIELD
 
+
+typedef struct
+{
+    //
+    // TODO: Only sticky non-partial mappings are supported currently, so all
+    // the fabric addrs are mapped to the single vidmem memory object. However,
+    // when partial mappings are supported, we will need a per-fabric memdesc
+    // tree to track the mappings for multiple vidmem memory objects.
+    //
+    NvHandle hDupedVidmem;
+
+    NV_PHYSICAL_MEMORY_ATTRS physAttrs;
+
+    NvU32 allocFlags;
+} FABRIC_MEMDESC_DATA;
 
 #endif /* _MEMORYFABRIC_H_ */
 

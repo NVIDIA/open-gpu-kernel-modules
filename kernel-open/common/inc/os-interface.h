@@ -125,6 +125,7 @@ NvU32       NV_API_CALL  os_get_cpu_number           (void);
 void        NV_API_CALL  os_disable_console_access   (void);
 void        NV_API_CALL  os_enable_console_access    (void);
 NV_STATUS   NV_API_CALL  os_registry_init            (void);
+NvU64       NV_API_CALL  os_get_max_user_va          (void);
 NV_STATUS   NV_API_CALL  os_schedule                 (void);
 NV_STATUS   NV_API_CALL  os_alloc_spinlock           (void **);
 void        NV_API_CALL  os_free_spinlock            (void *);
@@ -193,19 +194,12 @@ void        NV_API_CALL  os_nv_cap_destroy_entry      (nv_cap_t *);
 int         NV_API_CALL  os_nv_cap_validate_and_dup_fd(const nv_cap_t *, int);
 void        NV_API_CALL  os_nv_cap_close_fd           (int);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+enum os_pci_req_atomics_type {
+    OS_INTF_PCIE_REQ_ATOMICS_32BIT,
+    OS_INTF_PCIE_REQ_ATOMICS_64BIT,
+    OS_INTF_PCIE_REQ_ATOMICS_128BIT
+};
+NV_STATUS   NV_API_CALL  os_enable_pci_req_atomics   (void *, enum os_pci_req_atomics_type);
 
 extern NvU32 os_page_size;
 extern NvU64 os_page_mask;
@@ -244,12 +238,5 @@ int  NV_API_CALL  nv_printf(NvU32 debuglevel, const char *printf_format, ...);
 #define NV_LOCK_USER_PAGES_FLAGS_WRITE                     0:0
 #define NV_LOCK_USER_PAGES_FLAGS_WRITE_NO                  0x00000000
 #define NV_LOCK_USER_PAGES_FLAGS_WRITE_YES                 0x00000001
-
-
-
-
-
-
-
 
 #endif /* OS_INTERFACE_H */

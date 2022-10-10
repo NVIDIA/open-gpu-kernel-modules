@@ -28,14 +28,6 @@
 
 #include "nv-time.h"
 
-
-
-
-
-
-
-
-
 extern char *NVreg_TemporaryFilePath;
 
 #define MAX_ERROR_STRING 512
@@ -52,15 +44,11 @@ NvU8  os_page_shift = PAGE_SHIFT;
 NvU32 os_sev_status = 0;
 NvBool os_sev_enabled = 0;
 
-
 #if defined(CONFIG_DMA_SHARED_BUFFER)
 NvBool os_dma_buf_enabled = NV_TRUE;
 #else
 NvBool os_dma_buf_enabled = NV_FALSE;
 #endif // CONFIG_DMA_SHARED_BUFFER
-
-
-
 
 void NV_API_CALL os_disable_console_access(void)
 {
@@ -972,6 +960,11 @@ void NV_API_CALL os_dbg_set_level(NvU32 new_debuglevel)
     nv_printf(NV_DBG_SETUP, "NVRM: Changing debuglevel from 0x%x to 0x%x\n",
         cur_debuglevel, new_debuglevel);
     cur_debuglevel = new_debuglevel;
+}
+
+NvU64 NV_API_CALL os_get_max_user_va(void)
+{
+	return TASK_SIZE;
 }
 
 NV_STATUS NV_API_CALL os_schedule(void)
@@ -1964,52 +1957,6 @@ void NV_API_CALL os_wake_up
     complete_all(&wq->q);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 nv_cap_t* NV_API_CALL os_nv_cap_init
 (
     const char *path
@@ -2062,102 +2009,4 @@ void NV_API_CALL os_nv_cap_close_fd
 {
     nv_cap_close_fd(fd);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

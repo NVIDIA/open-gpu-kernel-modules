@@ -47,6 +47,7 @@
 #include "class/clc36f.h" // VOLTA_CHANNEL_GPFIFO_A
 #include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 #include "class/clc56f.h" // AMPERE_CHANNEL_GPFIFO_A
+#include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
 
 #include "deprecated/rmapi_deprecated.h"
 #include "nvRmReg.h"
@@ -583,6 +584,7 @@ krcWatchdogInit_IMPL
             , {VOLTA_CHANNEL_GPFIFO_A,   sizeof(Nvc36fControl)}
             , {TURING_CHANNEL_GPFIFO_A,  sizeof(Nvc46fControl)}
             , {AMPERE_CHANNEL_GPFIFO_A,  sizeof(Nvc56fControl)}
+            , {HOPPER_CHANNEL_GPFIFO_A,  sizeof(Nvc86fControl)}
         };
 
         NvU32 i;

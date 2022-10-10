@@ -1098,9 +1098,6 @@ rmapiAllocWithSecInfo
     NV_PRINTF(LEVEL_INFO, "client:0x%x parent:0x%x object:0x%x class:0x%x\n",
               hClient, hParent, *phObject, hClass);
 
-    NVRM_TRACE_API('ALOC', hParent, *phObject, hClass);
-    NVRM_TRACE(pAllocParams);
-
     status = _rmAlloc(hClient,
                       hParent,
                       phObject,
@@ -1128,7 +1125,6 @@ rmapiAllocWithSecInfo
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "allocation complete\n");
-        NVRM_TRACE('aloc');
     }
     else
     {
@@ -1137,8 +1133,6 @@ rmapiAllocWithSecInfo
         NV_PRINTF(LEVEL_WARNING,
                   "client:0x%x parent:0x%x object:0x%x class:0x%x\n", hClient,
                   hParent, *phObject, hClass);
-
-        NVRM_TRACE_ERROR('aloc', status);
     }
 
     portMemFree(pLockInfo);
@@ -1282,8 +1276,6 @@ rmapiFreeWithSecInfo
     NV_PRINTF(LEVEL_INFO, "Nv01Free: client:0x%x object:0x%x\n", hClient,
               hObject);
 
-    NVRM_TRACE_API('FREE', hClient, hObject, 0);
-
     status = rmapiPrologue(pRmApi, &rmApiContext);
 
     if (status != NV_OK)
@@ -1314,7 +1306,6 @@ rmapiFreeWithSecInfo
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "Nv01Free: free complete\n");
-        NVRM_TRACE('free');
     }
     else
     {
@@ -1323,7 +1314,6 @@ rmapiFreeWithSecInfo
                   nvstatusToString(status), status);
         NV_PRINTF(LEVEL_WARNING, "Nv01Free:  client:0x%x object:0x%x\n",
                   hClient, hObject);
-        NVRM_TRACE_ERROR('free', status);
     }
 
     return status;

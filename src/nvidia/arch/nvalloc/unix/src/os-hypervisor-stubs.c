@@ -75,7 +75,8 @@ NV_STATUS NV_API_CALL nv_vgpu_create_request(
     const NvU8 *pMdevUuid,
     NvU32 vgpuTypeId,
     NvU16 *vgpuId,
-    NvU32 gpuPciBdf
+    NvU32 gpuPciBdf,
+    NvBool *is_driver_vm
 )
 {
     return NV_ERR_NOT_SUPPORTED;

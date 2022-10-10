@@ -168,13 +168,16 @@ _fabricvaspaceUnbindInstBlk
     // Unbind the instance block for fabric vaspace.
     NV_ASSERT(kbusSetupUnbindFla_HAL(pGpu, pKernelBus) == NV_OK);
 
-    // Instantiate the instance block for FLA vaspace.
-    NV_ASSERT(kgmmuInstBlkInit(pKernelGmmu, pKernelBus->flaInfo.pInstblkMemDesc,
-                               pKernelBus->flaInfo.pFlaVAS, FIFO_PDB_IDX_BASE,
-                               &instblkParams) == NV_OK);
+    if (pKernelBus->flaInfo.pFlaVAS != NULL)
+    {
+        // Instantiate the instance block for FLA vaspace.
+        NV_ASSERT(kgmmuInstBlkInit(pKernelGmmu, pKernelBus->flaInfo.pInstblkMemDesc,
+                                pKernelBus->flaInfo.pFlaVAS, FIFO_PDB_IDX_BASE,
+                                &instblkParams) == NV_OK);
 
-    // Bind the instance block for FLA vaspace.
-    NV_ASSERT(kbusSetupBindFla_HAL(pGpu, pKernelBus, pFabricVAS->gfid) == NV_OK);
+        // Bind the instance block for FLA vaspace.
+        NV_ASSERT(kbusSetupBindFla_HAL(pGpu, pKernelBus, pFabricVAS->gfid) == NV_OK);
+    }
 }
 
 NV_STATUS

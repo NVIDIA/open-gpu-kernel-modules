@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_register.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 //
 
 #ifndef _G_RMCFG_HAL_REGISTER_H_
@@ -87,6 +87,42 @@ static NV_STATUS NV_INLINE REGISTER_GA10X_HALS(void)
     return NV_OK;
 }
 
+NV_STATUS registerHalModule_AD102(void);    
+NV_STATUS registerHalModule_AD103(void);    
+NV_STATUS registerHalModule_AD104(void);    
+
+static NV_STATUS NV_INLINE REGISTER_AD10X_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_AD102();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_AD103();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    rmStatus = registerHalModule_AD104();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
+NV_STATUS registerHalModule_GH100(void);    
+
+static NV_STATUS NV_INLINE REGISTER_GH10X_HALS(void)
+{
+    NV_STATUS rmStatus;
+
+    rmStatus = registerHalModule_GH100();
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
+    return NV_OK;
+}
+
 // 
 // This routine can be used by platform dependent code to
 // enable all HAL modules.
@@ -102,6 +138,18 @@ static NV_STATUS NV_INLINE REGISTER_ALL_HALS(void)
     }
 
     rmStatus = REGISTER_GA10X_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_AD10X_HALS();
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    rmStatus = REGISTER_GH10X_HALS();
     if (rmStatus != NV_OK)
     {
         return rmStatus;

@@ -356,6 +356,7 @@ gpuChildOrderList_GM200[] =
     {classId(Intr),               GCO_ALL},
     {classId(OBJTMR),             GCO_ALL},
     {classId(Therm),              GCO_ALL},
+    {classId(OBJHSHUBMANAGER),    GCO_ALL},
     {classId(OBJHSHUB),           GCO_ALL},
     {classId(MemorySystem),       GCO_ALL},
     {classId(KernelMemorySystem), GCO_ALL},
@@ -366,7 +367,6 @@ gpuChildOrderList_GM200[] =
     {classId(OBJGMMU),            GCO_ALL},
     {classId(KernelGmmu),         GCO_ALL},
     {classId(OBJVMMU),            GCO_ALL},
-    {classId(KernelNvdec),        GCO_ALL},
     {classId(KernelSec2),         GCO_ALL},
     {classId(KernelGsp),          GCO_ALL},
     {classId(OBJBUS),             GCO_ALL},
@@ -430,6 +430,7 @@ gpuChildOrderList_GM200[] =
     {classId(OBJHWPM),            GCO_ALL},
     {classId(OBJSWENG),           GCO_ALL},
     {classId(OBJGRIDDISPLAYLESS), GCO_ALL},
+    {classId(KernelCcu),      GCO_ALL},
 };
 
 const GPUCHILDORDER *
@@ -469,6 +470,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GM200[] =
     {classId(VirtMemAllocator), 1},
     {classId(OBJDPAUX), 1},
     {classId(OBJFAN), 1},
+    {classId(OBJHSHUBMANAGER), 1},
     {classId(OBJHSHUB), 1},
     {classId(MemorySystem), 1},
     {classId(KernelMemorySystem), 1},

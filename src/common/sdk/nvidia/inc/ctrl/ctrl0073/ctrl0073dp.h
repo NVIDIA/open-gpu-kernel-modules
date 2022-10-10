@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0073/ctrl0073dp.finn
 //
 
-
-
-
 #include "ctrl/ctrl0073/ctrl0073base.h"
 
 /* NV04_DISPLAY_COMMON dfp-display-specific control commands and parameters */
@@ -1839,40 +1836,6 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DSC_BITS_PER_PIXEL_PRECISION_1_2            (0x00000004U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DSC_BITS_PER_PIXEL_PRECISION_1              (0x00000005U)
 
-/*
- * NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES
- *
- * This command returns the following info
- *
- *   subDeviceInstance
- *     This parameter specifies the subdevice instance within the
- *     NV04_DISPLAY_COMMON parent device to which the operation should be
- *     directed. This parameter must specify a value between zero and the
- *     total number of subdevices within the parent device.  This parameter
- *     should be set to zero for default behavior.
- *   displayId
- *     should be for DP only
- *   bEnableMSA
- *     To enable or disable MSA
- *   bStereoPhaseInverse
- *     To enable or disable Stereo Phase Inverse value
- *   bCacheMsaOverrideForNextModeset
- *     Cache the values and don't apply them until next modeset
- *   featureMask
- *     Enable/Disable mask of individual MSA property
- *   featureValues
- *     MSA property value to write
- *   pFeatureDebugValues
- *     It will actual MSA property value being written on HW.
- *     If its NULL then no error but return nothing
- *
- * Possible status values returned are:
- *      NV_OK
- *      NV_ERR_INVALID_ARGUMENT
- *      NV_ERR_NOT_SUPPORTED
- *      NV_ERR_TIMEOUT
- *
- */
 #define NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES                                   (0x73136aU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS_MESSAGE_ID" */
 
 #define NV0073_CTRL_CMD_DP_MSA_PROPERTIES_SYNC_POLARITY_LOW                     (0U)
@@ -2730,8 +2693,6 @@ typedef struct NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS {
     NvBool bOdStatus;
 } NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS;
 
-/* _ctrl0073dp_h_ */
-
 /* valid commands */
 #define NV0073_CTRL_CMD_DP_AUXCHQUERY_OD_CAPABLE       0x00000000
 #define NV0073_CTRL_CMD_DP_AUXCHQUERY_OD_CTL_CAPABLE   0x00000001
@@ -2742,3 +2703,57 @@ typedef struct NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS {
 #define NV0073_CTRL_CMD_DP_AUXCH_OD_CTL_SET_AUTONOMOUS 0x00000000
 #define NV0073_CTRL_CMD_DP_AUXCH_OD_CTL_SET_DISABLE_OD 0x00000002
 #define NV0073_CTRL_CMD_DP_AUXCH_OD_CTL_SET_ENABLE_OD  0x00000003
+
+/*
+ * NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2
+ *
+ * This command returns the following info
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId
+ *     should be for DP only
+ *   bEnableMSA
+ *     To enable or disable MSA
+ *   bStereoPhaseInverse
+ *     To enable or disable Stereo Phase Inverse value
+ *   bCacheMsaOverrideForNextModeset
+ *     Cache the values and don't apply them until next modeset
+ *   featureMask
+ *     Enable/Disable mask of individual MSA property
+ *   featureValues
+ *     MSA property value to write
+ *   bDebugValues
+ *     To inform whether actual MSA values need to be returned
+ *   pFeatureDebugValues
+ *     It will actual MSA property value being written on HW.
+ *     If its NULL then no error but return nothing
+ *
+ * Possible status values returned are:
+ *      NV_OK
+ *      NV_ERR_INVALID_ARGUMENT
+ *      NV_ERR_NOT_SUPPORTED
+ *      NV_ERR_TIMEOUT
+ *
+ */
+#define NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2 (0x731381U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS_MESSAGE_ID (0x81U)
+
+typedef struct NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS {
+    NvU32                                subDeviceInstance;
+    NvU32                                displayId;
+    NvBool                               bEnableMSA;
+    NvBool                               bStereoPhaseInverse;
+    NvBool                               bCacheMsaOverrideForNextModeset;
+    NV0073_CTRL_DP_MSA_PROPERTIES_MASK   featureMask;
+    NV0073_CTRL_DP_MSA_PROPERTIES_VALUES featureValues;
+    NvBool                               bDebugValues;
+    NV0073_CTRL_DP_MSA_PROPERTIES_VALUES featureDebugValues;
+} NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS;
+
+/* _ctrl0073dp_h_ */

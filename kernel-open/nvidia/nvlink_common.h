@@ -69,9 +69,7 @@ struct nvlink_detailed_device_info
     NvU64       deviceType;
     NvU8       *devUuid;
     NvBool      bInitialized;
-
-
-
+    NvBool      bEnableALI;
     void       *dev_info;     // Endpoint driver device info opaque
                               // to core lib. Passed from end point
                               // driver to core

@@ -28,15 +28,11 @@
 #define NV_PFALCON_FALCON_IRQSCLR_HALT_SET                                                             0x00000001     /* -W--V */
 #define NV_PFALCON_FALCON_IRQSCLR_SWGEN0                                                               6:6            /* -WXVF */
 #define NV_PFALCON_FALCON_IRQSCLR_SWGEN0_SET                                                           0x00000001     /* -W--V */
-#define NV_PFALCON_FALCON_IRQSCLR_SWGEN1                                                               7:7            /* -WXVF */
-#define NV_PFALCON_FALCON_IRQSCLR_SWGEN1_SET                                                           0x00000001     /* -W--V */
 #define NV_PFALCON_FALCON_IRQSTAT                                                                      0x00000008     /* R--4R */
 #define NV_PFALCON_FALCON_IRQSTAT_HALT                                                                 4:4            /* R-IVF */
 #define NV_PFALCON_FALCON_IRQSTAT_HALT_TRUE                                                            0x00000001     /* R---V */
 #define NV_PFALCON_FALCON_IRQSTAT_SWGEN0                                                               6:6            /* R-IVF */
 #define NV_PFALCON_FALCON_IRQSTAT_SWGEN0_TRUE                                                          0x00000001     /* R---V */
-#define NV_PFALCON_FALCON_IRQSTAT_SWGEN1                                                               7:7            /* R-IVF */
-#define NV_PFALCON_FALCON_IRQSTAT_SWGEN1_TRUE                                                          0x00000001     /* R---V */
 #define NV_PFALCON_FALCON_INTR_RETRIGGER(i)                                                            (0x000003e8+(i)*4) /* -W-4A */
 #define NV_PFALCON_FALCON_INTR_RETRIGGER__SIZE_1                                                       2              /*       */
 #define NV_PFALCON_FALCON_INTR_RETRIGGER_TRIGGER                                                       0:0            /* -W-VF */

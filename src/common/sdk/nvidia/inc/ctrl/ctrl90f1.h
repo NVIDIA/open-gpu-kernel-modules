@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl90f1.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 #include "mmu_fmt_types.h"
 

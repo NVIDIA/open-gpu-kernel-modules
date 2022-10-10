@@ -33,6 +33,7 @@
 #include "class/clc4b7.h"
 #include "class/clb4b7.h"
 #include "class/clc7b7.h"
+#include "class/clc9b7.h"
 
 /*
  * This function returns an engine descriptor corresponding to the class
@@ -72,6 +73,7 @@ msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAl
         case NVC4B7_VIDEO_ENCODER:
         case NVB4B7_VIDEO_ENCODER:
         case NVC7B7_VIDEO_ENCODER:
+        case NVC9B7_VIDEO_ENCODER:
             engineInstance = pMsencAllocParms->engineInstance;
             break;
         default:

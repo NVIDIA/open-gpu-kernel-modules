@@ -110,6 +110,15 @@ enum NvKmsPerOpenType {
     NvKmsPerOpenTypeUndefined,
 };
 
+enum NvKmsUnicastEventType {
+    /* Used by:
+     *  NVKMS_IOCTL_JOIN_SWAP_GROUP */
+    NvKmsUnicastEventTypeDeferredRequest,
+
+    /* Undefined, this indicates the unicast fd is available for use. */
+    NvKmsUnicastEventTypeUndefined,
+};
+
 struct NvKmsPerOpenConnector {
     NVConnectorEvoPtr            pConnectorEvo;
     NvKmsConnectorHandle         nvKmsApiHandle;
@@ -183,13 +192,13 @@ struct NvKmsPerOpen {
              * that object can generate events on the unicast event.  Store a
              * pointer to that object, so that we can clear the pointer when the
              * unicast event NvKmsPerOpen is closed.
-             *
-             * So far, deferred request fifos with swap groups are the only
-             * users of unicast events.  When we add more users, we can add an
-             * enum or similar to know which object type is using this unicast
-             * event.
              */
-            NVDeferredRequestFifoPtr pDeferredRequestFifo;
+            enum NvKmsUnicastEventType type;
+            union {
+                struct {
+                    NVDeferredRequestFifoPtr pDeferredRequestFifo;
+                } deferred;
+            } e;
         } unicastEvent;
     };
 };
@@ -3701,6 +3710,17 @@ static const char *ProcFsPerOpenTypeString(
     return "unknown";
 }
 
+static const char *ProcFsUnicastEventTypeString(
+    enum NvKmsUnicastEventType type)
+{
+    switch (type) {
+    case NvKmsUnicastEventTypeDeferredRequest:  return "DeferredRequest";
+    case NvKmsUnicastEventTypeUndefined:        return "undefined";
+    }
+
+    return "unknown";
+}
+
 static const char *ProcFsPerOpenClientTypeString(
     enum NvKmsClientType clientType)
 {
@@ -3851,10 +3871,18 @@ ProcFsPrintClients(
                 pOpen->grantSwapGroup.pSwapGroup);
 
         } else if (pOpen->type == NvKmsPerOpenTypeUnicastEvent) {
-
             nvEvoLogInfoString(&infoString,
-                "  pDeferredRequestFifo      : %p",
-                pOpen->unicastEvent.pDeferredRequestFifo);
+                "  unicastEvent type         : %s",
+                ProcFsUnicastEventTypeString(pOpen->unicastEvent.type));
+            switch(pOpen->unicastEvent.type) {
+                case NvKmsUnicastEventTypeDeferredRequest:
+                    nvEvoLogInfoString(&infoString,
+                        "  pDeferredRequestFifo      : %p",
+                        pOpen->unicastEvent.e.deferred.pDeferredRequestFifo);
+                    break;
+                default:
+                    break;
+            }
         }
 
         nvEvoLogInfoString(&infoString, "");
@@ -4612,6 +4640,7 @@ void nvSendUnicastEvent(struct NvKmsPerOpen *pOpen)
     }
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeUnicastEvent);
+    nvAssert(pOpen->unicastEvent.type != NvKmsUnicastEventTypeUndefined);
 
     nvkms_event_queue_changed(pOpen->pOpenKernel, TRUE);
 }
@@ -4626,12 +4655,21 @@ void nvRemoveUnicastEvent(struct NvKmsPerOpen *pOpen)
 
     nvAssert(pOpen->type == NvKmsPerOpenTypeUnicastEvent);
 
-    pDeferredRequestFifo = pOpen->unicastEvent.pDeferredRequestFifo;
+    switch(pOpen->unicastEvent.type)
+    {
+        case NvKmsUnicastEventTypeDeferredRequest:
+            pDeferredRequestFifo =
+                pOpen->unicastEvent.e.deferred.pDeferredRequestFifo;
 
-    if (pDeferredRequestFifo != NULL) {
-        pDeferredRequestFifo->swapGroup.pOpenUnicastEvent = NULL;
-        pOpen->unicastEvent.pDeferredRequestFifo = NULL;
+            pDeferredRequestFifo->swapGroup.pOpenUnicastEvent = NULL;
+            pOpen->unicastEvent.e.deferred.pDeferredRequestFifo = NULL;
+            break;
+        default:
+            nvAssert("Invalid Unicast Event Type!");
+            break;
     }
+
+    pOpen->unicastEvent.type = NvKmsUnicastEventTypeUndefined;
 }
 
 static void AllocSurfaceCtxDmasForAllOpens(NVDevEvoRec *pDevEvo)

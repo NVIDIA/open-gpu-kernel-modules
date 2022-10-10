@@ -198,4 +198,15 @@ NvBool    rmMemPoolIsScrubSkipped(RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInf
  */
 NV_STATUS      rmMemPoolGetChunkAndPageSize(RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo, NvU64*, NvU32*);
 
-#endif //_RM_POOL_ALLOC_H_
+/*!
+ * @brief Indicate that pool should be allocated in protected video memory in
+ *        case memory protection is enabled
+ *
+ * @param[in] pMemReserveInfo  Pointer to the RM_POOL_ALLOC_MEM_RESERVE_INFO data
+ * @param[in] bProtected       Allocate in protected memory
+ *
+ * @return
+ */
+void           rmMemPoolAllocateProtectedMemory(RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo, NvBool bProtected);
+
+#endif //_RM_POOL_ALLOC_

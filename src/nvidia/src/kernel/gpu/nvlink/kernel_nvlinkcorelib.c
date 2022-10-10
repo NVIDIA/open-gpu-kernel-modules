@@ -207,6 +207,10 @@ knvlinkCoreAddDevice_IMPL
     dev->pciInfo.bars[0].baseAddr = pGpu->pKernelBus->pciBars[0];
     dev->pciInfo.bars[0].barSize  = pGpu->pKernelBus->pciBarSizes[0];
     dev->initialized              = 1;
+    dev->enableALI                = pKernelNvlink->bEnableAli;
+    dev->numIoctrls               = nvPopCount32(pKernelNvlink->ioctrlMask);
+    dev->numActiveLinksPerIoctrl  = knvlinkGetNumActiveLinksPerIoctrl(pGpu, pKernelNvlink);
+    dev->numLinksPerIoctrl        = knvlinkGetTotalNumLinksPerIoctrl(pGpu, pKernelNvlink);
   
     // Register the GPU in nvlink core
     if (nvlink_lib_register_device(dev) != 0)
@@ -392,6 +396,7 @@ knvlinkCoreAddLink_IMPL
     link->tx_sublink_state = NVLINK_SUBLINK_STATE_TX_OFF;
     link->rx_sublink_state = NVLINK_SUBLINK_STATE_RX_OFF;
     link->bRxDetected      = NV_FALSE;
+    link->bInitphase5Fails = NV_FALSE;
     link->version          = pKernelNvlink->ipVerNvlink;
     link->dev              = pKernelNvlink->pNvlinkDev;
     link->link_info        = &(pKernelNvlink->nvlinkLinks[linkId]);

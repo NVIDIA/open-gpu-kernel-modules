@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2019-2020 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #include "nvlink.h"
 #include "nvlink_export.h"
@@ -30,6 +29,31 @@
 static void _nvlink_core_set_sublink_pre_hs_settings(nvlink_link *, NvU32);
 static void _nvlink_core_set_link_pre_active_settings(nvlink_link *, NvU32);
 static void _nvlink_core_set_link_post_active_settings(nvlink_link *, NvU32);
+
+NvlStatus
+nvlink_core_train_check_link_ready_ALI
+(
+    nvlink_link **links,
+    NvU32 linkCount
+)
+{
+    NvU32 i = 0;
+    NvlStatus status = NVL_SUCCESS;
+
+    for (i = 0; i < linkCount; i++)
+    {
+        if (!nvlink_core_check_link_state(links[i], NVLINK_LINKSTATE_ALI))
+        {
+            // If link is not in active, update status to be error and continue
+            status = NVL_ERR_GENERIC;
+            continue;
+        }
+
+        links[i]->link_handlers->training_complete(links[i]);
+    }
+
+    return status;
+}
 
 /**
  * Link training
@@ -667,6 +691,157 @@ nvlink_core_train_intranode_conns_from_from_L2_to_active
     }
 
     /***************** End of L2 exit sequence for the connections *****************/
+
+    return status;
+}
+
+/**
+ * Train intranode connections associated with a list of links to HS
+ * using non-ALI sequence
+ *
+ * @param[in]  conns      Array of connections to train
+ * @param[in]  connCount  Number of connections in the array
+ * @param[in]  flags      Flags to track if training is sync/async
+ *
+ * return NVL_SUCCESS if the connections train successfully
+ */
+NvlStatus
+nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI
+(
+    nvlink_intranode_conn **conns,
+    NvU32                   connCount,
+    NvU32                   flags
+)
+{
+    NvlStatus status     = NVL_SUCCESS;
+    NvlStatus pollStatus = NVL_SUCCESS;
+    NvU32     i;
+
+    if ((conns == NULL) || (connCount == 0))
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: No connections to train to ACTIVE\n",
+            __FUNCTION__));
+
+        return NVL_ERR_GENERIC;
+    }
+
+    // Trigger INITOPTIMIZE on both ends of the connection
+    for (i = 0; i < connCount; i++)
+    {
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_INITOPTIMIZE,
+                                                        flags);
+
+        // On loopback, only send INITOPTIMIZE to one side.
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                            NVLINK_LINKSTATE_INITOPTIMIZE,
+                                                            flags);
+        }
+    }
+
+    // Trigger POST_INITOPTIMIZE (Checks INITOPTIMIZE was successful) on both ends of the connection
+    for (i = 0; i < connCount; i++)
+    {
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_POST_INITOPTIMIZE,
+                                                        flags);
+
+        // On loopback, only send POST_INITOPTIMIZE to one side.
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                            NVLINK_LINKSTATE_POST_INITOPTIMIZE,
+                                                            flags);
+        }
+    }
+
+    // Set link modes to ACTIVE
+    for (i = 0; i < connCount; i++)
+    {
+        // Some settings required before moving to ACTIVE
+        _nvlink_core_set_link_pre_active_settings(conns[i]->end0, flags);
+        _nvlink_core_set_link_pre_active_settings(conns[i]->end1, flags);
+
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_HS,
+                                                        flags);
+
+        // If not in loopback send the dl link mode
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                        NVLINK_LINKSTATE_HS,
+                                                        flags);
+        }
+
+    }
+
+    // Verify link mode HS on the endpoints
+    for (i = 0; i < connCount; i++)
+    {
+
+        pollStatus = nvlink_core_poll_link_state(conns[i]->end0,
+                                                NVLINK_LINKSTATE_HS,
+                                                NVLINK_TRANSITION_HS_TIMEOUT);
+        if (pollStatus != NVL_SUCCESS)
+        {
+            status = pollStatus;
+        }
+
+        pollStatus = nvlink_core_poll_link_state(conns[i]->end1,
+                                                NVLINK_LINKSTATE_HS,
+                                                NVLINK_TRANSITION_HS_TIMEOUT);
+        if (pollStatus != NVL_SUCCESS)
+        {
+            status = pollStatus;
+        }
+
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_INITTL,
+                                                        flags);
+
+        // On loopback, only send once
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                        NVLINK_LINKSTATE_INITTL,
+                                                        flags);
+        }
+
+        conns[i]->end0->link_handlers->training_complete(conns[i]->end0);
+
+        // On loopback, only send once
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->training_complete(conns[i]->end1);
+        }
+
+        conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
+                                                   NVLINK_SUBLINK_STATE_TX_POST_HS,
+                                                   flags);
+        // On loopback, only send once
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_tx_mode(conns[i]->end1,
+                                                       NVLINK_SUBLINK_STATE_TX_POST_HS,
+                                                       flags);
+        }
+
+        conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
+                                                        NVLINK_LINKSTATE_TRAFFIC_SETUP,
+                                                        flags);
+        // On loopback, only send once
+        if (conns[i]->end0 != conns[i]->end1)
+        {
+            conns[i]->end1->link_handlers->set_dl_link_mode(conns[i]->end1,
+                                                            NVLINK_LINKSTATE_TRAFFIC_SETUP,
+                                                            flags);
+        }
+    }
 
     return status;
 }

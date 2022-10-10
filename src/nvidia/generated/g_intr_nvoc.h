@@ -211,6 +211,10 @@ struct Intr {
     NvU32 (*__intrReadRegTopEnSet__)(OBJGPU *, struct Intr *, NvU32, struct THREAD_STATE_NODE *);
     void (*__intrWriteRegTopEnSet__)(OBJGPU *, struct Intr *, NvU32, NvU32, struct THREAD_STATE_NODE *);
     void (*__intrWriteRegTopEnClear__)(OBJGPU *, struct Intr *, NvU32, NvU32, struct THREAD_STATE_NODE *);
+    NvU32 (*__intrGetStallSubtreeLast__)(OBJGPU *, struct Intr *);
+    NvU32 (*__intrGetNumLeaves__)(OBJGPU *, struct Intr *);
+    NvU32 (*__intrGetLeafSize__)(OBJGPU *, struct Intr *);
+    NvU32 (*__intrGetIntrTopNonStallMask__)(OBJGPU *, struct Intr *);
     void (*__intrSanityCheckEngineIntrStallVector__)(OBJGPU *, struct Intr *, NvU32, NvU16);
     void (*__intrSanityCheckEngineIntrNotificationVector__)(OBJGPU *, struct Intr *, NvU32, NvU16);
     NV_STATUS (*__intrStateLoad__)(OBJGPU *, struct Intr *, NvU32);
@@ -335,6 +339,14 @@ NV_STATUS __nvoc_objCreate_Intr(Intr**, Dynamic*, NvU32);
 #define intrWriteRegTopEnSet_HAL(pGpu, pIntr, arg0, arg1, arg2) intrWriteRegTopEnSet_DISPATCH(pGpu, pIntr, arg0, arg1, arg2)
 #define intrWriteRegTopEnClear(pGpu, pIntr, arg0, arg1, arg2) intrWriteRegTopEnClear_DISPATCH(pGpu, pIntr, arg0, arg1, arg2)
 #define intrWriteRegTopEnClear_HAL(pGpu, pIntr, arg0, arg1, arg2) intrWriteRegTopEnClear_DISPATCH(pGpu, pIntr, arg0, arg1, arg2)
+#define intrGetStallSubtreeLast(pGpu, pIntr) intrGetStallSubtreeLast_DISPATCH(pGpu, pIntr)
+#define intrGetStallSubtreeLast_HAL(pGpu, pIntr) intrGetStallSubtreeLast_DISPATCH(pGpu, pIntr)
+#define intrGetNumLeaves(pGpu, pIntr) intrGetNumLeaves_DISPATCH(pGpu, pIntr)
+#define intrGetNumLeaves_HAL(pGpu, pIntr) intrGetNumLeaves_DISPATCH(pGpu, pIntr)
+#define intrGetLeafSize(pGpu, pIntr) intrGetLeafSize_DISPATCH(pGpu, pIntr)
+#define intrGetLeafSize_HAL(pGpu, pIntr) intrGetLeafSize_DISPATCH(pGpu, pIntr)
+#define intrGetIntrTopNonStallMask(pGpu, pIntr) intrGetIntrTopNonStallMask_DISPATCH(pGpu, pIntr)
+#define intrGetIntrTopNonStallMask_HAL(pGpu, pIntr) intrGetIntrTopNonStallMask_DISPATCH(pGpu, pIntr)
 #define intrSanityCheckEngineIntrStallVector(pGpu, pIntr, vector, mcEngine) intrSanityCheckEngineIntrStallVector_DISPATCH(pGpu, pIntr, vector, mcEngine)
 #define intrSanityCheckEngineIntrStallVector_HAL(pGpu, pIntr, vector, mcEngine) intrSanityCheckEngineIntrStallVector_DISPATCH(pGpu, pIntr, vector, mcEngine)
 #define intrSanityCheckEngineIntrNotificationVector(pGpu, pIntr, vector, mcEngine) intrSanityCheckEngineIntrNotificationVector_DISPATCH(pGpu, pIntr, vector, mcEngine)
@@ -937,58 +949,6 @@ static inline void intrWriteRegLeaf(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg0
 
 #define intrWriteRegLeaf_HAL(pGpu, pIntr, arg0, arg1, arg2) intrWriteRegLeaf(pGpu, pIntr, arg0, arg1, arg2)
 
-NvU32 intrGetStallSubtreeLast_TU102(OBJGPU *pGpu, struct Intr *pIntr);
-
-#ifdef __nvoc_intr_h_disabled
-static inline NvU32 intrGetStallSubtreeLast(OBJGPU *pGpu, struct Intr *pIntr) {
-    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
-    return 0;
-}
-#else //__nvoc_intr_h_disabled
-#define intrGetStallSubtreeLast(pGpu, pIntr) intrGetStallSubtreeLast_TU102(pGpu, pIntr)
-#endif //__nvoc_intr_h_disabled
-
-#define intrGetStallSubtreeLast_HAL(pGpu, pIntr) intrGetStallSubtreeLast(pGpu, pIntr)
-
-NvU32 intrGetNumLeaves_TU102(OBJGPU *pGpu, struct Intr *pIntr);
-
-#ifdef __nvoc_intr_h_disabled
-static inline NvU32 intrGetNumLeaves(OBJGPU *pGpu, struct Intr *pIntr) {
-    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
-    return 0;
-}
-#else //__nvoc_intr_h_disabled
-#define intrGetNumLeaves(pGpu, pIntr) intrGetNumLeaves_TU102(pGpu, pIntr)
-#endif //__nvoc_intr_h_disabled
-
-#define intrGetNumLeaves_HAL(pGpu, pIntr) intrGetNumLeaves(pGpu, pIntr)
-
-NvU32 intrGetLeafSize_TU102(OBJGPU *pGpu, struct Intr *pIntr);
-
-#ifdef __nvoc_intr_h_disabled
-static inline NvU32 intrGetLeafSize(OBJGPU *pGpu, struct Intr *pIntr) {
-    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
-    return 0;
-}
-#else //__nvoc_intr_h_disabled
-#define intrGetLeafSize(pGpu, pIntr) intrGetLeafSize_TU102(pGpu, pIntr)
-#endif //__nvoc_intr_h_disabled
-
-#define intrGetLeafSize_HAL(pGpu, pIntr) intrGetLeafSize(pGpu, pIntr)
-
-NvU32 intrGetIntrTopNonStallMask_TU102(OBJGPU *pGpu, struct Intr *pIntr);
-
-#ifdef __nvoc_intr_h_disabled
-static inline NvU32 intrGetIntrTopNonStallMask(OBJGPU *pGpu, struct Intr *pIntr) {
-    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
-    return 0;
-}
-#else //__nvoc_intr_h_disabled
-#define intrGetIntrTopNonStallMask(pGpu, pIntr) intrGetIntrTopNonStallMask_TU102(pGpu, pIntr)
-#endif //__nvoc_intr_h_disabled
-
-#define intrGetIntrTopNonStallMask_HAL(pGpu, pIntr) intrGetIntrTopNonStallMask(pGpu, pIntr)
-
 static inline NvU32 intrUpdateIntrCtrlValue_4a4dee(OBJGPU *pGpu, struct Intr *pIntr, NvU32 intrCtrl, NvU32 routing) {
     return 0;
 }
@@ -1513,7 +1473,57 @@ static inline void intrWriteRegTopEnClear_DISPATCH(OBJGPU *pGpu, struct Intr *pI
     pIntr->__intrWriteRegTopEnClear__(pGpu, pIntr, arg0, arg1, arg2);
 }
 
+NvU32 intrGetStallSubtreeLast_TU102(OBJGPU *pGpu, struct Intr *pIntr);
+
+NvU32 intrGetStallSubtreeLast_GH100(OBJGPU *pGpu, struct Intr *pIntr);
+
+static inline NvU32 intrGetStallSubtreeLast_474d46(OBJGPU *pGpu, struct Intr *pIntr) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 intrGetStallSubtreeLast_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
+    return pIntr->__intrGetStallSubtreeLast__(pGpu, pIntr);
+}
+
+NvU32 intrGetNumLeaves_TU102(OBJGPU *pGpu, struct Intr *pIntr);
+
+NvU32 intrGetNumLeaves_GH100(OBJGPU *pGpu, struct Intr *pIntr);
+
+static inline NvU32 intrGetNumLeaves_474d46(OBJGPU *pGpu, struct Intr *pIntr) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 intrGetNumLeaves_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
+    return pIntr->__intrGetNumLeaves__(pGpu, pIntr);
+}
+
+NvU32 intrGetLeafSize_TU102(OBJGPU *pGpu, struct Intr *pIntr);
+
+NvU32 intrGetLeafSize_GH100(OBJGPU *pGpu, struct Intr *pIntr);
+
+static inline NvU32 intrGetLeafSize_474d46(OBJGPU *pGpu, struct Intr *pIntr) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 intrGetLeafSize_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
+    return pIntr->__intrGetLeafSize__(pGpu, pIntr);
+}
+
+NvU32 intrGetIntrTopNonStallMask_TU102(OBJGPU *pGpu, struct Intr *pIntr);
+
+NvU32 intrGetIntrTopNonStallMask_GH100(OBJGPU *pGpu, struct Intr *pIntr);
+
+static inline NvU32 intrGetIntrTopNonStallMask_474d46(OBJGPU *pGpu, struct Intr *pIntr) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 intrGetIntrTopNonStallMask_DISPATCH(OBJGPU *pGpu, struct Intr *pIntr) {
+    return pIntr->__intrGetIntrTopNonStallMask__(pGpu, pIntr);
+}
+
 void intrSanityCheckEngineIntrStallVector_GA100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, NvU16 mcEngine);
+
+void intrSanityCheckEngineIntrStallVector_GH100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, NvU16 mcEngine);
 
 static inline void intrSanityCheckEngineIntrStallVector_b3696a(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, NvU16 mcEngine) {
     return;
@@ -1524,6 +1534,8 @@ static inline void intrSanityCheckEngineIntrStallVector_DISPATCH(OBJGPU *pGpu, s
 }
 
 void intrSanityCheckEngineIntrNotificationVector_GA100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, NvU16 mcEngine);
+
+void intrSanityCheckEngineIntrNotificationVector_GH100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, NvU16 mcEngine);
 
 static inline void intrSanityCheckEngineIntrNotificationVector_b3696a(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, NvU16 mcEngine) {
     return;

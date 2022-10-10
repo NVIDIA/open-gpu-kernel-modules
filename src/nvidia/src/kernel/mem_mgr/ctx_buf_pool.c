@@ -148,7 +148,11 @@ ctxBufPoolInit
                 NV_PRINTF(LEVEL_ERROR, "Unsupported page size attr %d\n", i);
                 return NV_ERR_INVALID_STATE;
         }
-        NV_ASSERT_OK_OR_GOTO(status, rmMemPoolSetup((void*)&pHeap->pmaObject, &pCtxBufPool->pMemPool[i], poolConfig), cleanup);
+        NV_ASSERT_OK_OR_GOTO(status,
+            rmMemPoolSetup((void*)&pHeap->pmaObject, &pCtxBufPool->pMemPool[i],
+                           poolConfig),
+            cleanup);
+
     }
     NV_PRINTF(LEVEL_INFO, "Ctx buf pool successfully initialized\n");
 

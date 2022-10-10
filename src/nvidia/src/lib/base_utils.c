@@ -35,21 +35,10 @@
 //
 NvU32 nvLogBase2(NvU64 val)
 {
-    NvU32 i;
+    NV_ASSERT(val != 0);
+    NV_ASSERT(((val) & (val - 1)) == 0);
 
-    NV_ASSERT(((val)&(val-1)) == 0);
-
-    for (i = 0; i < 64; i++)
-    {
-       if ((1ull << i) == val)
-       {
-           break;
-       }
-    }
-
-    NV_ASSERT(i < 64);
-
-    return i;
+    return portUtilCountTrailingZeros64(val);
 }
 
 

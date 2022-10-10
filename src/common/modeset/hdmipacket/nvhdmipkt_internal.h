@@ -41,6 +41,7 @@ extern void initializeHdmiPktInterface9471(NVHDMIPKT_CLASS*);
 extern void initializeHdmiPktInterface9571(NVHDMIPKT_CLASS*);
 extern void initializeHdmiPktInterfaceC371(NVHDMIPKT_CLASS*);
 extern void initializeHdmiPktInterfaceC671(NVHDMIPKT_CLASS*);
+extern void initializeHdmiPktInterfaceC771(NVHDMIPKT_CLASS*);
 
 extern NvBool hdmiConstructor0073(NVHDMIPKT_CLASS*);
 extern void   hdmiDestructor0073 (NVHDMIPKT_CLASS*);
@@ -56,5 +57,7 @@ extern NvBool hdmiConstructorC371(NVHDMIPKT_CLASS*);
 extern void   hdmiDestructorC371 (NVHDMIPKT_CLASS*);
 extern NvBool hdmiConstructorC671(NVHDMIPKT_CLASS*);
 extern void   hdmiDestructorC671 (NVHDMIPKT_CLASS*);
+extern NvBool hdmiConstructorC771(NVHDMIPKT_CLASS*);
+extern void   hdmiDestructorC771 (NVHDMIPKT_CLASS*);
 
 #endif //_NVHDMIPKT_INTERNAL_H_

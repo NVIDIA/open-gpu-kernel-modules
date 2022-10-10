@@ -42,9 +42,6 @@
 #include "uvm_ats.h"
 #include "uvm_test.h"
 
-
-
-
 #include "uvm_linux.h"
 
 #define UVM_PROC_GPUS_PEER_DIR_NAME "peers"
@@ -95,12 +92,10 @@ static uvm_gpu_link_type_t get_gpu_link_type(UVM_LINK_TYPE link_type)
             return UVM_GPU_LINK_NVLINK_2;
         case UVM_LINK_TYPE_NVLINK_3:
             return UVM_GPU_LINK_NVLINK_3;
-
-
-
-
-
-
+        case UVM_LINK_TYPE_NVLINK_4:
+            return UVM_GPU_LINK_NVLINK_4;
+        case UVM_LINK_TYPE_C2C:
+            return UVM_GPU_LINK_C2C;
         default:
             return UVM_GPU_LINK_INVALID;
     }
@@ -356,11 +351,7 @@ static const char *uvm_gpu_virt_type_string(UVM_VIRT_MODE virtMode)
 
 static const char *uvm_gpu_link_type_string(uvm_gpu_link_type_t link_type)
 {
-
-
-
-    BUILD_BUG_ON(UVM_GPU_LINK_MAX != 5);
-
+    BUILD_BUG_ON(UVM_GPU_LINK_MAX != 7);
 
     switch (link_type) {
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_INVALID);
@@ -368,10 +359,8 @@ static const char *uvm_gpu_link_type_string(uvm_gpu_link_type_t link_type)
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_1);
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_2);
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_3);
-
-
-
-
+        UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_4);
+        UVM_ENUM_STRING_CASE(UVM_GPU_LINK_C2C);
         UVM_ENUM_STRING_DEFAULT();
     }
 }
@@ -518,12 +507,6 @@ static void gpu_info_print_common(uvm_gpu_t *gpu, struct seq_file *s)
                          mapped_cpu_pages_size / (1024u * 1024u));
 
     gpu_info_print_ce_caps(gpu, s);
-
-
-
-
-
-
 
 }
 
@@ -1038,15 +1021,6 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
         return status;
     }
 
-
-
-
-
-
-
-
-
-
     parent_gpu->pci_dev = gpu_platform_info->pci_dev;
     parent_gpu->closest_cpu_numa_node = dev_to_node(&parent_gpu->pci_dev->dev);
     parent_gpu->dma_addressable_start = gpu_platform_info->dma_addressable_start;
@@ -1207,16 +1181,6 @@ static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
         UVM_ERR_PRINT("Creating flat mappings failed: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
         return status;
     }
-
-
-
-
-
-
-
-
-
-
 
     status = init_procfs_files(gpu);
     if (status != NV_OK) {
@@ -1393,10 +1357,6 @@ static void remove_gpus_from_gpu(uvm_gpu_t *gpu)
     // Sync all trackers in PMM
     uvm_pmm_gpu_sync(&gpu->pmm);
 
-
-
-
-
 }
 
 // Remove all references to the given GPU from its parent, since it is being
@@ -1529,13 +1489,6 @@ static void remove_gpu(uvm_gpu_t *gpu)
     // comment on discover_nvlink_peers in add_gpu.
     if (free_parent)
         destroy_nvlink_peers(gpu);
-
-
-
-
-
-
-
 
     // TODO: Bug 2844714: If the parent is not being freed, the following
     // gpu_table_lock is only needed to protect concurrent
@@ -2212,16 +2165,12 @@ static NV_STATUS init_peer_access(uvm_gpu_t *gpu0,
 {
     NV_STATUS status;
 
-
-
-
+    UVM_ASSERT(p2p_caps_params->p2pLink != UVM_LINK_TYPE_C2C);
 
     // check for peer-to-peer compatibility (PCI-E or NvLink).
     peer_caps->link_type = get_gpu_link_type(p2p_caps_params->p2pLink);
     if (peer_caps->link_type == UVM_GPU_LINK_INVALID
-
-
-
+        || peer_caps->link_type == UVM_GPU_LINK_C2C
         )
         return NV_ERR_NOT_SUPPORTED;
 

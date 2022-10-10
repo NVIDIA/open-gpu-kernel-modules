@@ -208,6 +208,10 @@ typedef RmRC2GpuTimeout3_RECORD *PRmRC2GpuTimeout3_RECORD;
 #define NV_RM_ASSERT_HW_UNIT_NVDEC1      (0x13)
 #define NV_RM_ASSERT_HW_UNIT_NVDEC2      (0x14)
 #define NV_RM_ASSERT_HW_UNIT_NVDEC3      (0x15)
+#define NV_RM_ASSERT_HW_UNIT_NVDEC4      (0x16)
+#define NV_RM_ASSERT_HW_UNIT_NVDEC5      (0x17)
+#define NV_RM_ASSERT_HW_UNIT_NVDEC6      (0x18)
+#define NV_RM_ASSERT_HW_UNIT_NVDEC7      (0x19)
 #define NV_RM_ASSERT_HW_UNIT_ALLENGINES  (0xff)
 // SW Module which generated the error
 #define NV_RM_ASSERT_SW_MODULE           15:8

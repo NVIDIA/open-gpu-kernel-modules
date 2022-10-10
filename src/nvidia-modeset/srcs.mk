@@ -124,6 +124,7 @@ SRCS += ../common/modeset/hdmipacket/nvhdmipkt_9471.c
 SRCS += ../common/modeset/hdmipacket/nvhdmipkt_9571.c
 SRCS += ../common/modeset/hdmipacket/nvhdmipkt_C371.c
 SRCS += ../common/modeset/hdmipacket/nvhdmipkt_C671.c
+SRCS += ../common/modeset/hdmipacket/nvhdmipkt_C771.c
 SRCS += ../common/modeset/timing/nvt_cvt.c
 SRCS += ../common/modeset/timing/nvt_displayid20.c
 SRCS += ../common/modeset/timing/nvt_dmt.c

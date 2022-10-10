@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl2080/ctrl2080grmgr.finn
 //
 
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 /* NV20_SUBDEVICE_XX grmgr control commands and parameters */

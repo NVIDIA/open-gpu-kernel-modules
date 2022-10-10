@@ -109,6 +109,12 @@ hdmiPacketWrite0073(NVHDMIPKT_CLASS*   pThis,
                     NvU8 const *const  pPacket)
 {
     NVHDMIPKT_RESULT result = NVHDMIPKT_SUCCESS;
+
+    if (packetLen > NV0073_CTRL_SET_OD_MAX_PACKET_SIZE)
+    {
+        return NVHDMIPKT_INVALID_ARG;
+    }
+
     NV0073_CTRL_SPECIFIC_SET_OD_PACKET_PARAMS params = {0};
 
     NVMISC_MEMSET(&params, 0, sizeof(params));

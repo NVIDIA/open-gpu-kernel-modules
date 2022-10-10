@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2011 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,63 +21,32 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl0000_h_
-#define _cl0000_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file: class/cl0000.finn
+//
+
 #include "nvlimits.h"
+#include "cl0000_notification.h"
 
 /* object NV01_NULL_OBJECT */
-#define NV01_NULL_OBJECT                                           (0x00000000)
+#define NV01_NULL_OBJECT (0x00000000)
+
 /* obsolete alises */
-#define NV1_NULL_OBJECT                                            NV01_NULL_OBJECT
+#define NV1_NULL_OBJECT  NV01_NULL_OBJECT
 
-/*event values*/
-#define NV0000_NOTIFIERS_DISPLAY_CHANGE                            (0)
-#define NV0000_NOTIFIERS_EVENT_NONE_PENDING                        (1)
-#define NV0000_NOTIFIERS_VM_START                                  (2)
-#define NV0000_NOTIFIERS_GPU_BIND_EVENT                            (3)
-#define NV0000_NOTIFIERS_NVTELEMETRY_REPORT_EVENT                  (4)
-#define NV0000_NOTIFIERS_MAXCOUNT                                  (5)
-
-/*Status definitions for NV0000_NOTIFIERS_DISPLAY_CHANGE event*/
-
-#define NV0000_NOTIFIERS_STATUS_ACPI_DISPLAY_DEVICE_CYCLE          (0)
-
-//---------------------------------------------------------------------------
-
-#define NV01_ROOT                                                  (0x00000000)
-/* NvNotification[] fields and values */
-#define NV000_NOTIFICATION_STATUS_ERROR_PROTECTION_FAULT           (0x4000)
+#define NV01_ROOT        (0x00000000)
 
 /* NvAlloc parameteters */
-typedef struct {
+#define NV0000_ALLOC_PARAMETERS_MESSAGE_ID (0x0000U)
+
+typedef struct NV0000_ALLOC_PARAMETERS {
     NvHandle hClient; /* CORERM-2934: hClient must remain the first member until all allocations use these params */
     NvU32    processID;
     char     processName[NV_PROC_NAME_MAX_LENGTH];
 } NV0000_ALLOC_PARAMETERS;
-
-    /* pio method data structure */
-typedef volatile struct _cl0000_tag0 {
-    NvV32 Reserved00[0x7c0];
-} Nv000Typedef, Nv01Root;
-
-/* obsolete aliases */
-#define NV000_TYPEDEF                                              Nv01Root
-#define Nv1Root                                                    Nv01Root
-#define nv1Root                                                    Nv01Root
-#define nv01Root                                                   Nv01Root
-
-/*event values*/
-#define NV0000_NOTIFIERS_ENABLE_CPU_UTIL_CTRL                      (1) 
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl0000_h_ */
 

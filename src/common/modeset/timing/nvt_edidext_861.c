@@ -2871,6 +2871,7 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
             pHdmiInfo->cnmvrr               = pHdmiForum->CNMVRR;
             pHdmiInfo->cinemaVrr            = pHdmiForum->CinemaVRR;
             pHdmiInfo->m_delta              = pHdmiForum->M_delta;
+            pHdmiInfo->fapa_end_extended    = pHdmiForum->FAPA_End_Extended;
             
             // sixth byte
             if (!remainingSize--)

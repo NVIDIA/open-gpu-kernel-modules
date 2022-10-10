@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2014 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,23 +21,26 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _cl503b_h_
-#define _cl503b_h_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
-#include "nvtypes.h"
+#include <nvtypes.h>
 
-#define   NV50_P2P                                      (0x0000503b)
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file: class/cl503b.finn
+//
+
+#define NV50_P2P                  (0x0000503b)
 
 #define NV503B_FLAGS_P2P_TYPE            0:0
-#define NV503B_FLAGS_P2P_TYPE_GPA        0
-#define NV503B_FLAGS_P2P_TYPE_SPA        1
+#define NV503B_FLAGS_P2P_TYPE_GPA 0
+#define NV503B_FLAGS_P2P_TYPE_SPA 1
 
 /* NvRmAlloc parameters */
-typedef struct {
+#define NV503B_ALLOC_PARAMETERS_MESSAGE_ID (0x503bU)
+
+typedef struct NV503B_ALLOC_PARAMETERS {
     NvHandle hSubDevice;                /* subDevice handle of local GPU              */
     NvHandle hPeerSubDevice;            /* subDevice handle of peer GPU               */
     NvU32    subDevicePeerIdMask;       /* Bit mask of peer ID for SubDevice
@@ -46,15 +49,9 @@ typedef struct {
     NvU32    peerSubDevicePeerIdMask;   /* Bit mask of peer ID for PeerSubDevice
                                          * A value of 0 defaults to RM selected
                                          * PeerIdMasks must match in loopback         */
-    NvU64    mailboxBar1Addr;           /* P2P Mailbox area base offset in BAR1
+    NV_DECLARE_ALIGNED(NvU64 mailboxBar1Addr, 8);           /* P2P Mailbox area base offset in BAR1
                                          * Must have the same value across the GPUs   */
     NvU32    mailboxTotalSize;          /* Size of the P2P Mailbox area
                                          * Must have the same value across the GPUs   */
     NvU32    flags;                     /* Flag to indicate types/attib of p2p   */
 } NV503B_ALLOC_PARAMETERS;
-
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
-
-#endif /* _cl503b_h_ */

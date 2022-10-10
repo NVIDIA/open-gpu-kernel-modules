@@ -636,19 +636,6 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
 {
     uvm_gpu_t *owning_gpu;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     // This is a local or peer allocation, so the owning GPU must have been
     // registered.
     owning_gpu = uvm_va_space_get_gpu_by_uuid(va_space, &mem_info->uuid);

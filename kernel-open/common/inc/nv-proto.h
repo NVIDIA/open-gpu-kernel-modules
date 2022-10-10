@@ -27,9 +27,6 @@
 #include "nv-pci.h"
 #include "nv-register-module.h"
 
-
-
-
 extern const char *nv_device_name;
 extern nvidia_module_t nv_fops;
 

@@ -92,4 +92,5 @@ NvU32     nvswitch_minion_get_data_rate_KiBps_lr10(nvswitch_device *device, NvU3
 NvlStatus nvswitch_set_minion_initialized_lr10(nvswitch_device *device, NvU32 idx_minion, NvBool initialized);
 NvBool    nvswitch_is_minion_initialized_lr10(nvswitch_device *device, NvU32 idx_minion);
 NvlStatus nvswitch_minion_clear_dl_error_counters_lr10(nvswitch_device *device, NvU32 linkId);
+
 #endif //_MINION_LR10_H_

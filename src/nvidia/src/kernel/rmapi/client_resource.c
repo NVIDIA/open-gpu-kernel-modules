@@ -415,7 +415,7 @@ CliGetSystemP2pCaps
                 p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_LOOPBACK] = NV0000_P2P_CAPS_STATUS_OK;
         }
     }
-    else if (connectivity == P2P_CONNECTIVITY_PCIE_BAR1 || (connectivity == P2P_CONNECTIVITY_PCIE))
+    else if ((connectivity == P2P_CONNECTIVITY_PCIE_BAR1) || (connectivity == P2P_CONNECTIVITY_PCIE))
     {
         if (p2pCaps != NULL)
         {
@@ -449,7 +449,7 @@ CliGetSystemP2pCaps
             }
         }
 
-        if (gpuCount == 1)
+        if ((gpuCount == 1) && (connectivity == P2P_CONNECTIVITY_PCIE))
         {
             if (p2pCaps != NULL)
             {
@@ -1949,6 +1949,7 @@ cliresCtrlCmdSystemGetGpusPowerStatus_IMPL
     NvU32      gpuIndex     = 0;
     RM_API    *pRmApi;
     NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS params = {0};
+
 
     pGpu = gpumgrGetSomeGpu();
 

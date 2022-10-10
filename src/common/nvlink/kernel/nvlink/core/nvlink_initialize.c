@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2019-2021 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #include "nvlink.h"
 #include "nvlink_export.h"
@@ -256,6 +255,294 @@ nvlink_core_init_links_from_off_to_swcfg
 }
 
 /**
+ * Initialize all the endpoints from OFF to SWCFG state
+ * Used for NvLink 4.0+
+ *
+ * @param[in]  links    Array of link endpoints to initialize
+ * @param[in]  numLinks Number of links in the array
+ * @param[in]  flags    Flags to determine whether init is sync/async
+ */
+void
+nvlink_core_init_links_from_off_to_swcfg_non_ALI
+(
+    nvlink_link **pLinks,
+    NvU32         numLinks,
+    NvU32         flags
+)
+{
+    NvlStatus  status = NVL_SUCCESS;
+    NvU64      linkMode;
+    NvU32      i;
+
+    // Sanity check the links array
+    nvlink_assert(pLinks != NULL);
+
+    // Return early if there are no links to initialize
+    if (numLinks == 0)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: No links to initialize\n",
+            __FUNCTION__));
+        return;
+    }
+
+    // Step 1: Perform INITPHASE1 on all endpoints
+    nvlink_core_initphase1(pLinks, numLinks, flags);
+
+    // Get state on all links. This ensures NVLINK_LINKSTATE_INITPHASE1 completes
+    if (flags == NVLINK_STATE_CHANGE_ASYNC)
+    {
+        for (i = 0; i < numLinks; i++)
+        {
+            status = pLinks[i]->link_handlers->get_dl_link_mode(pLinks[i], &linkMode);
+            if ((status != NVL_SUCCESS) ||
+                (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Link %s:%s is in bad state\n",
+                    __FUNCTION__, pLinks[i]->dev->deviceName, pLinks[i]->linkName));
+            }
+        }
+    }
+    
+    // Step 2 RECEIVER DETECT :Perform receiver detect on all the endpoints
+    nvlink_core_set_rx_detect(pLinks, numLinks, flags);
+
+    // Get state on all links. This ensures receiver detect command completes
+    if (flags == NVLINK_STATE_CHANGE_ASYNC)
+    {
+        for (i = 0; i < numLinks; i++)
+        {
+            // In NVLink3.0 and 3.1, RXDET must be called serially - done above (Bug 2546220)
+            if (!((pLinks[i]->version == NVLINK_DEVICE_VERSION_30) ||
+                  (pLinks[i]->version == NVLINK_DEVICE_VERSION_31)))
+            {
+                // If receiver detect has passed for the link, move to next link
+                if (pLinks[i]->bRxDetected)
+                    continue;
+
+                status = pLinks[i]->link_handlers->get_dl_link_mode(pLinks[i], &linkMode);
+                if ((status != NVL_SUCCESS) ||
+                    (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
+                {
+                    NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                        "%s: Link %s:%s is in bad state\n",
+                        __FUNCTION__, pLinks[i]->dev->deviceName, pLinks[i]->linkName));
+                }
+            }
+        }
+    }
+
+    // Step 2.1 RECEIVER DETECT :Poll for output of receiver detect on all the endpoints
+    nvlink_core_get_rx_detect(pLinks, numLinks, flags);
+
+
+    /***************** Receiver Detect is completed at this point ****************/
+    /***************** Proceed with the link initialization steps ****************/
+
+    // Step 3: Enable Common mode on all Tx's
+    nvlink_core_enable_common_mode(pLinks, numLinks, flags);
+
+    // Get state on all links. This ensures NVLINK_SUBLINK_STATE_TX_COMMON_MODE completes
+    if (flags == NVLINK_STATE_CHANGE_ASYNC)
+    {
+        for (i = 0; i < numLinks; i++)
+        {
+            // If receiver detect failed for the link, move to next link
+            if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail)
+                continue;
+
+            status = pLinks[i]->link_handlers->get_dl_link_mode(pLinks[i], &linkMode);
+            if ((status != NVL_SUCCESS) ||
+                (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Link %s:%s is in bad state\n",
+                    __FUNCTION__, pLinks[i]->dev->deviceName, pLinks[i]->linkName));
+            }
+        }
+    }
+
+    // Step 4: call INITPHASE5
+    nvlink_core_initphase5(pLinks, numLinks, flags);
+
+    // Get state on all links. This ensures NVLINK_SUBLINK_STATE_TX_DATA_READY completes
+    if (flags == NVLINK_STATE_CHANGE_ASYNC)
+    {
+        for (i = 0; i < numLinks; i++)
+        {
+            // If receiver detect failed for the link, move to next link
+            if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail || pLinks[i]->bInitphase5Fails)
+                continue;
+
+            status = pLinks[i]->link_handlers->get_dl_link_mode(pLinks[i], &linkMode);
+            if ((status != NVL_SUCCESS) ||
+                (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                    "%s: Link %s:%s is in bad state\n",
+                    __FUNCTION__, pLinks[i]->dev->deviceName, pLinks[i]->linkName));
+            }
+        }
+    }
+
+    // Step 5: Put the links in SAFE mode
+    for (i = 0; i < numLinks; i++)
+    {
+        // If receiver detect failed for the link, move to next link
+        if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail || pLinks[i]->bInitphase5Fails)
+            continue;
+
+        linkMode = 0;
+        if (pLinks[i]->link_handlers->get_dl_link_mode(pLinks[i], &linkMode))
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                "%s: Unable to get link mode for %s:%s",
+                __FUNCTION__, pLinks[i]->dev->deviceName, pLinks[i]->linkName));
+        }
+
+        if ((linkMode != NVLINK_LINKSTATE_SAFE) && (linkMode != NVLINK_LINKSTATE_HS))
+        {
+            // Check if the link has reached failed state
+            if (pLinks[i]->state == NVLINK_LINKSTATE_FAIL)
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
+                    "%s:%s marked as failed.\n",
+                    pLinks[i]->dev->deviceName, pLinks[i]->linkName));
+                continue;
+            }
+
+            //
+            // Check if number of attempts to put the link into
+            // safe state has already exceeded the maximum number
+            // of retries. If yes, mark the link as failed
+            //
+            // On NVLink3.0, we don't support retraining in the driver.
+            // However MODS test 252 (on NVL3+ specifically)  will train 
+            // HS->OFF->HS many times. This check causes RM to stop
+            // training after NVLINK_MAX_NUM_SAFE_RETRIES times
+            //
+            if ((pLinks[i]->safe_retries > NVLINK_MAX_NUM_SAFE_RETRIES) &&
+                (pLinks[i]->version < NVLINK_DEVICE_VERSION_30))
+            {
+                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
+                    "Max safe mode retries reached for %s:%s. Marking it as failed.\n",
+
+                pLinks[i]->dev->deviceName, pLinks[i]->linkName));
+                pLinks[i]->state = NVLINK_LINKSTATE_FAIL;
+                continue;
+            }
+
+            // Put the link in safe state and increment the retry count
+            pLinks[i]->link_handlers->set_dl_link_mode(pLinks[i], NVLINK_LINKSTATE_SAFE, flags);
+            pLinks[i]->safe_retries++;
+        }
+    }
+
+    // Poll for links to enter SAFE mode
+    for (i = 0; i < numLinks; i++)
+    {
+        status = nvlink_core_wait_for_link_init(pLinks[i]);
+        if (status == NVL_SUCCESS)
+        {
+            pLinks[i]->powerStateTransitionStatus = nvlink_power_state_in_L0;
+        }
+    }
+
+    // Send INITNEGOTIATE to all the links
+    nvlink_core_initnegotiate(pLinks, numLinks, flags);
+}
+
+/**
+ * Kick-off INITPHASE5 on the given array of links
+ *
+ * @param[in]  links     Array of nvlink_link pointers
+ * @param[in]  numLinks  Number of links in the array
+ * @param[in]  flags     Flags - Async/Sync
+ *
+ * return NvlStatus
+ */
+NvlStatus
+nvlink_core_initphase5
+(
+    nvlink_link **links,
+    NvU32         numLinks,
+    NvU32         flags
+)
+{
+    NvU32 i;
+
+    // Sanity check the links array
+    nvlink_assert(links != NULL);
+
+    // Return early if link array is empty
+    if (numLinks == 0)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
+            "%s: Link array is empty\n",
+            __FUNCTION__));
+        return NVL_SUCCESS;
+    }
+
+    for (i = 0; i < numLinks; i++)
+    {
+        NvlStatus status     = NVL_SUCCESS;
+        NvU64     dlLinkMode = 0;
+
+        // INITPHASE5 is supported only for NVLINK version >= 4.0
+        if (links[i]->version < NVLINK_DEVICE_VERSION_40)
+            continue;
+
+        // If receiver detect failed for the link, move to next link
+        if (!links[i]->bRxDetected || links[i]->bTxCommonModeFail)
+            continue;
+
+        if (links[i]->link_handlers->get_dl_link_mode(links[i], &dlLinkMode))
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                "%s: Unable to get link mode for %s:%s",
+                __FUNCTION__, links[i]->dev->deviceName, links[i]->linkName));
+        }
+
+        // Check if the link has reached failed state
+        if (links[i]->state == NVLINK_LINKSTATE_FAIL)
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
+                "%s: %s:%s marked as failed.\n",
+                __FUNCTION__, links[i]->dev->deviceName, links[i]->linkName));
+            continue;
+        }
+
+        // Skip this step if link is in HS/SAFE
+        if (dlLinkMode == NVLINK_LINKSTATE_HS ||
+            dlLinkMode == NVLINK_LINKSTATE_SAFE)
+        {
+            continue;
+        }
+
+        status = links[i]->link_handlers->set_dl_link_mode(links[i],
+                                                  NVLINK_LINKSTATE_INITPHASE5,
+                                                  flags);
+
+        // Although it fails we need to continue with the next link
+        if (status != NVL_SUCCESS)
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                "%s: Initphase5 failed on Device:Link %s:%s\n",
+                __FUNCTION__, links[i]->dev->deviceName, links[i]->linkName));
+            links[i]->bInitphase5Fails = NV_TRUE;
+        }
+    }
+
+    //
+    // We could have links which are faulty and cannot be initialized. But proceeding
+    // the initialization sequence allows us to use other non-faulty links. Therefore
+    // return success always.
+    //
+    return NVL_SUCCESS;
+}
+
+/**
  * Kick-off INITPHASE1 on the given array of links
  *
  * @param[in]  links     Array of nvlink_link pointers
@@ -295,11 +582,16 @@ nvlink_core_initphase1
         NvU32     txSubMode  = 0;
         NvU64     rxMode     = 0;
         NvU32     rxSubMode  = 0;
+        NvBool    bPhyUnlocked  = NV_FALSE;
 
         // INITPHASE1 is supported only for NVLINK version >= 3.0
         if (links[i]->version < NVLINK_DEVICE_VERSION_30)
             continue;
 
+        if (links[i]->version >= NVLINK_DEVICE_VERSION_40)
+            links[i]->link_handlers->get_uphy_load(links[i], &bPhyUnlocked);
+
+        if (!bPhyUnlocked)
         {
             if (links[i]->link_handlers->get_tl_link_mode(links[i], &tlLinkMode))
             {
@@ -343,6 +635,7 @@ nvlink_core_initphase1
         //
         if ((tlLinkMode == NVLINK_LINKSTATE_SLEEP) ||
             (dlLinkMode == NVLINK_LINKSTATE_RESET) ||
+            (bPhyUnlocked)                         ||
             ((txMode    == NVLINK_SUBLINK_STATE_TX_OFF) &&
              (rxMode    == NVLINK_SUBLINK_STATE_RX_OFF)))
         {

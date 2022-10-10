@@ -639,17 +639,6 @@ sysInitRegistryOverrides_IMPL
     _sysRegistryOverrideExternalFabricMgmt(pSys, pGpu);
     _sysRegistryOverrideResourceServer(pSys, pGpu);
 
-    if ((data32 = osGetReleaseAssertBehavior()) != 0)
-    {
-        NvBool bRmAssertBehaviorBugcheck = NV_FALSE;
-#if defined(DEVELOP)
-            bRmAssertBehaviorBugcheck = ((data32 & RM_ASSERT_BEHAVIOR_BUGCHECK_DEVELOP) == RM_ASSERT_BEHAVIOR_BUGCHECK_DEVELOP);
-#elif !defined(DEBUG)  // !DEVELOP and !DEBUG = RELEASE
-        bRmAssertBehaviorBugcheck = ((data32 & RM_ASSERT_BEHAVIOR_BUGCHECK_RELEASE) == RM_ASSERT_BEHAVIOR_BUGCHECK_RELEASE);
-#endif
-        pSys->setProperty(pSys, PDB_PROP_SYS_BSOD_ON_ASSERT, bRmAssertBehaviorBugcheck);
-    }
-
     if (osBugCheckOnTimeoutEnabled())
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_BUGCHECK_ON_TIMEOUT, NV_TRUE);

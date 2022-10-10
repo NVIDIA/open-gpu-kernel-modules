@@ -35,6 +35,7 @@
 #include "ctrl/ctrl2080/ctrl2080bios.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
+#include "ctrl/ctrla083.h"
 
 #include "gpu/gpu.h" // COMPUTE_BRANDING_TYPE
 #include "vgpu/rpc_headers.h" // MAX_GPC_COUNT
@@ -109,8 +110,8 @@ typedef struct GspStaticConfigInfo_t
 
     NvBool bClRootportNeedsNosnoopWAR;
 
-    VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS displaylessMaxHeads;
-    VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS displaylessMaxResolution;
+    NVA083_CTRL_VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS displaylessMaxHeads;
+    NVA083_CTRL_VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS displaylessMaxResolution;
     NvU64 displaylessMaxPixels;
 
     // Client handle for internal RMAPI control.
@@ -121,6 +122,8 @@ typedef struct GspStaticConfigInfo_t
 
     // Subdevice handle for internal RMAPI control.
     NvHandle hInternalSubdevice;
+
+    NvBool bAtsSupported;
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -133,6 +136,7 @@ typedef struct GspSystemInfo
     NvU64 simAccessBufPhysAddr;
     NvU64 pcieAtomicsOpMask;
     NvU64 consoleMemSize;
+    NvU64 maxUserVa;
     NvU32 pciConfigMirrorBase;
     NvU32 pciConfigMirrorSize;
     NvU8 oorArch;

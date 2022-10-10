@@ -143,7 +143,9 @@ kflcnPreResetWait_GA10X
 {
     NvU32 hwcfg2;
     RMTIMEOUT timeout;
-    NvU32 flags = GPU_TIMEOUT_FLAGS_DEFAULT | GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG;
+    NvU32 flags = (GPU_TIMEOUT_FLAGS_TMR |
+                   GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE |
+                   GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG);
 
     if (!IS_SILICON(pGpu) && !IS_EMULATION(pGpu))
     {

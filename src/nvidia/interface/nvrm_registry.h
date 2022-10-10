@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1997-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1997-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -787,44 +787,15 @@
 // 1 - Increases RM reserved space
 // 0 - (default) Keeps RM reserved space as it is.
 
-#define NV_REG_STR_BUG_1698088_WAR                            "RMBug1698088War"
-#define NV_REG_STR_BUG_1698088_WAR_ENABLE                     0x00000001
-#define NV_REG_STR_BUG_1698088_WAR_DISABLE                    0x00000000
-#define NV_REG_STR_BUG_1698088_WAR_DEFAULT                    NV_REG_STR_BUG_1698088_WAR_DISABLE
-
-//
-// TYPE DWORD
-// This regkey can be used to ignore upper memory on GM20X and later. If there
-// is upper memory but this regkey is set to _YES, then RM will only expose the
-// lower memory to clients.
-//
-// DEFAULT - Use the default setting of upper memory on GM20X-and-later.
-// YES     - Ignore upper memory on GM20X-and-later.
-//
-#define NV_REG_STR_RM_IGNORE_UPPER_MEMORY           "RMIgnoreUpperMemory"
-#define NV_REG_STR_RM_IGNORE_UPPER_MEMORY_DEFAULT   (0x00000000)
-#define NV_REG_STR_RM_IGNORE_UPPER_MEMORY_YES       (0x00000001)
-
-#define NV_REG_STR_RM_NO_ECC_FB_SCRUB                        "RMNoECCFBScrub"
-
 #define  NV_REG_STR_RM_DISABLE_SCRUB_ON_FREE          "RMDisableScrubOnFree"
 // Type DWORD
 // Encoding 0 (default) - Scrub on free
 //          1           - Disable Scrub on Free
 
-#define NV_REG_STR_RM_INIT_SCRUB                          "RMInitScrub"
+#define  NV_REG_STR_RM_DISABLE_FAST_SCRUBBER          "RMDisableFastScrubber"
 // Type DWORD
-// Encoding 1 - Scrub Fb during rminit irrespective of ECC capability
-
-#define NV_REG_STR_RM_DISABLE_ASYNC_MEM_SCRUB         "RMDisableAsyncMemScrub"
-// Type DWORD
-// Encoding 0 (default) - Async memory scrubbing is enabled
-//          1           - Async memory scrubbing is disabled
-
-#define NV_REG_STR_RM_INCREASE_ECC_SCRUB_TIMEOUT         "RM1441072"
-// Type DWORD
-// Encoding 0 (default) - Use default ECC Scrub Timeout
-//          1           - Increase ECC Scrub Timeout
+// Encoding 0 (default) - Enable Fast Scrubber
+//          1           - Disable Fast Scrubber
 
 //
 // Type DWORD
@@ -888,6 +859,13 @@
 // If set, this will cause RM mark GPU as lost when it detects 0xFF from register
 // access.
 
+#define NV_REG_STR_RM_BLACKLIST_ADDRESSES                "RmBlackListAddresses"
+// Type BINARY:
+// struct
+// {
+//     NvU64 addresses[NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES];
+// };
+
 #define NV_REG_STR_RM_NUM_FIFOS                        "RmNumFifos"
 // Type Dword
 // Override number of fifos (channels) on NV4X
@@ -931,7 +909,7 @@
 // will fail in such a case.
 //
 // TYPE_DEFAULT let RM to choose a P2P type. The priority is:
-//              C2C > NVLINK > BAR1P2P > mailbox P2P
+//              C2C > NVLINK > mailbox P2P > BAR1P2P 
 //
 // TYPE_C2C to use C2C P2P if it supports
 // TYPE_NVLINK to use NVLINK P2P, including INDIRECT_NVLINK_P2P if it supports
@@ -1307,7 +1285,10 @@
 #define NV_REG_STR_RM_NVLINK_CONTROL_SKIP_TRAIN_NO                  (0x00000000)
 #define NV_REG_STR_RM_NVLINK_CONTROL_SKIP_TRAIN_YES                 (0x00000001)
 #define NV_REG_STR_RM_NVLINK_CONTROL_SKIP_TRAIN_DEFAULT             (NV_REG_STR_RM_NVLINK_CONTROL_SKIP_TRAIN_NO)
-#define NV_REG_STR_RM_NVLINK_CONTROL_RESERVED_0                     7:3
+#define NV_REG_STR_RM_NVLINK_CONTROL_RESERVED_0                     6:3
+#define NV_REG_STR_RM_NVLINK_CONTROL_LINK_TRAINING_DEBUG_SPEW       7:7
+#define NV_REG_STR_RM_NVLINK_CONTROL_LINK_TRAINING_DEBUG_SPEW_OFF   (0x00000000)
+#define NV_REG_STR_RM_NVLINK_CONTROL_LINK_TRAINING_DEBUG_SPEW_ON    (0x00000001)
 #define NV_REG_STR_RM_NVLINK_CONTROL_FORCE_AUTOCONFIG               8:8
 #define NV_REG_STR_RM_NVLINK_CONTROL_FORCE_AUTOCONFIG_NO            (0x00000000)
 #define NV_REG_STR_RM_NVLINK_CONTROL_FORCE_AUTOCONFIG_YES           (0x00000001)
@@ -1342,7 +1323,23 @@
 #define NV_REG_STR_RM_NVLINK_MINION_CONTROL_INITOPTIMIZE_DEFAULT     (0x00000000)
 #define NV_REG_STR_RM_NVLINK_MINION_CONTROL_INITOPTIMIZE_ENABLE      (0x00000001)
 #define NV_REG_STR_RM_NVLINK_MINION_CONTROL_INITOPTIMIZE_DISABLE     (0x00000002)
-#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_RESERVED_0                31:20
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_CACHE_SEEDS              23:20
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_CACHE_SEEDS_DEFAULT      (0x00000000)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_CACHE_SEEDS_ENABLE       (0x00000001)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_CACHE_SEEDS_DISABLE      (0x00000002)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_BOOT_CORE                27:24
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_BOOT_CORE_DEFAULT        (0x00000000)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_BOOT_CORE_RISCV          (0x00000001)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_BOOT_CORE_FALCON         (0x00000002)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_BOOT_CORE_RISCV_MANIFEST (0x00000003)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_BOOT_CORE_NO_MANIFEST    (0x00000004)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_ALI_TRAINING             30:28
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_ALI_TRAINING_DEFAULT     (0x00000000)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_ALI_TRAINING_ENABLE      (0x00000001)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_ALI_TRAINING_DISABLE     (0x00000002)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_GFW_BOOT_DISABLE         31:31
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_GFW_BOOT_DISABLE_DEFAULT (0x00000000)
+#define NV_REG_STR_RM_NVLINK_MINION_CONTROL_GFW_BOOT_DISABLE_DISABLE (0x00000001)
 
 //
 // Type DWORD
@@ -1374,8 +1371,10 @@
 #define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_40G                 (0x0000000F)
 #define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_50_00000G           (0x00000010)
 #define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_53_12500G           (0x00000011)
-#define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_FAULT               (0x00000013)
-#define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED__LAST               (0x00000013)
+#define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_100_00000G          (0x00000012)
+#define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_106_25000G          (0x00000013)
+#define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_FAULT               (0x00000014)
+#define NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED__LAST               (0x00000014)
 
 //
 // Type DWORD
@@ -1401,7 +1400,10 @@
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_PROD_WRITES_DEFAULT        (0x00000000)
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_PROD_WRITES_ENABLE         (0x00000001)
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_PROD_WRITES_DISABLE        (0x00000002)
-#define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_RESERVED_0                 5:4
+#define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L1_MODE                    5:4
+#define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L1_MODE_DEFAULT            (0x00000000)
+#define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L1_MODE_ENABLE             (0x00000001)
+#define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L1_MODE_DISABLE            (0x00000002)
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L2_MODE                    7:6
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L2_MODE_DEFAULT            (0x00000000)
 #define NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL_L2_MODE_ENABLE             (0x00000001)
@@ -1577,5 +1579,27 @@
 // 0 - Do Nothing
 // 1 - Force Enable Gen2 (to invalidate PDB_PROP_CL_PCIE_GEN1_GEN2_SWITCH_CHIPSET_DISABLED)
 //
+
+#define NV_REG_STR_RM_DISABLE_FSP                           "RmDisableFsp"
+#define NV_REG_STR_RM_DISABLE_FSP_NO                        (0x00000000)
+#define NV_REG_STR_RM_DISABLE_FSP_YES                       (0x00000001)
+// Type DWORD (Boolean)
+// Override any other settings and disable FSP
+
+#define NV_REG_STR_RM_DISABLE_COT_CMD                       "RmDisableCotCmd"
+#define NV_REG_STR_RM_DISABLE_COT_CMD_FRTS_SYSMEM           1:0
+#define NV_REG_STR_RM_DISABLE_COT_CMD_FRTS_VIDMEM           3:2
+#define NV_REG_STR_RM_DISABLE_COT_CMD_GSPFMC                5:4
+#define NV_REG_STR_RM_DISABLE_COT_CMD_DEFAULT               (0x00000000)
+#define NV_REG_STR_RM_DISABLE_COT_CMD_YES                   (0x00000001)
+// Type DWORD (Boolean)
+// Disable the specified commands as part of Chain-Of-Trust feature
+
+#define NV_REG_STR_PCI_LATENCY_TIMER_CONTROL                "PciLatencyTimerControl"
+// Type Dword
+// Encoding Numeric Value
+// Override to control setting/not setting of pci timer latency value.
+// Not present suggests default value. A value 0xFFFFFFFF will leave the value unmodified (ie bios value).
+// All other values must be multiples of 8
 
 #endif // NVRM_REGISTRY_H

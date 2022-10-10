@@ -139,7 +139,8 @@ static NV_STATUS _osVerifyInterrupts(
     // support required to run this interrupt sanity test has been brought up
     // yet for T234D SOC display.
     //
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_IGPU))
     {
         //
         // Nothing to verify here for the time being

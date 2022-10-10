@@ -30,8 +30,6 @@
 // Source file: ctrl/ctrla06f/ctrla06fevent.finn
 //
 
-
-
 #include "ctrl/ctrla06f/ctrla06fbase.h"
 
 /*

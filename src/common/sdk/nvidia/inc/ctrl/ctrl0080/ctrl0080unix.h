@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0080/ctrl0080unix.finn
 //
 
-
-
-
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
 /* NV01_DEVICE_XX/NV03_DEVICE UNIX-specific control commands and parameters */

@@ -777,14 +777,11 @@ rmapiControlWithSecInfo
               "Nv04Control: hClient:0x%x hObject:0x%x cmd:0x%x params:" NvP64_fmt " paramSize:0x%x flags:0x%x\n",
               hClient, hObject, cmd, pParams, paramsSize, flags);
 
-    NVRM_TRACE_API('CTRL', hClient, hObject, cmd);
-
     status = _rmapiRmControl(hClient, hObject, cmd, pParams, paramsSize, flags, pRmApi, pSecInfo);
 
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "Nv04Control: control complete\n");
-        NVRM_TRACE('ctrl');
     }
     else
     {
@@ -794,7 +791,6 @@ rmapiControlWithSecInfo
         NV_PRINTF(LEVEL_INFO,
                   "Nv04Control:  hClient:0x%x hObject:0x%x cmd:0x%x params:" NvP64_fmt " paramSize:0x%x flags:0x%x\n",
                   hClient, hObject, cmd, pParams, paramsSize, flags);
-        NVRM_TRACE_ERROR('ctrl', status);
     }
 
     return status;

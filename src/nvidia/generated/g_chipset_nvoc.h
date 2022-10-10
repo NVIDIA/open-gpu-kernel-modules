@@ -76,7 +76,9 @@ struct PCIECONFIGSPACEBASE
 // CL_IS_ROOT_PORT() returns NV_TRUE if root port of PCI-E Root Complex
 // Device/Port type is 23:20
 // Root port is 0100b
-#define CL_IS_ROOT_PORT(p)      (((p & 0xf00000) >> 20) == 0x4)
+#define CL_IS_ROOT_PORT(p)       (((p & 0xf00000) >> 20) == 0x4)
+#define CL_IS_UPSTREAM_PORT(p)   (((p & 0xf00000) >> 20) == 0x5)
+#define CL_IS_DOWNSTREAM_PORT(p) (((p & 0xf00000) >> 20) == 0x6)
 #define CL_AVG_LINK_WIDTH       8
 #define CL_DAGWOOD_LINK_WIDTH   8
 #define CL_SINGLE_DW_LINK_WIDTH 8
@@ -145,11 +147,32 @@ struct PCIECONFIGSPACEBASE
 #define CL_AER_ERROR_SOURCE                         (CL_AER_BEGIN + 0x34)
 #define CL_AER_END                                  (CL_AER_BEGIN + 0x34)
 
+// PCI Express Device Capabilities 2
+#define CL_PCIE_DEV_CAP_2_ATOMICS_SUPPORTED_BIT     NVBIT(6)
+#define CL_PCIE_DEV_CAP_2_ATOMIC_32BIT              NVBIT(7)
+#define CL_PCIE_DEV_CAP_2_ATOMIC_64BIT              NVBIT(8)
+#define CL_PCIE_DEV_CAP_2_ATOMIC_128BIT             NVBIT(9)
+
+// PCI Express Device Control & Status 2
+#define CL_PCIE_DEV_CTRL_2_ATOMICS_EGRESS_BLOCK_BIT NVBIT(7)
+
+// Defines for Atomic Mask
+#define CL_ATOMIC_32BIT                             NVBIT(0)
+#define CL_ATOMIC_64BIT                             NVBIT(1)
+#define CL_ATOMIC_128BIT                            NVBIT(2)
+
 #define CL_IS_L0_SUPPORTED(p) (((p) & CL_PCIE_LINK_CAP_ASPM_L0S_BIT))
 #define CL_IS_L1_SUPPORTED(p) (((p) & CL_PCIE_LINK_CAP_ASPM_L1_BIT))
 
 #define CL_IS_LTR_PORT_SUPPORTED(p)    (((p) & CL_PCIE_DEV_CAP_2_LTR_SUPPORTED_BIT))
 #define CL_IS_LTR_PORT_ENABLED(p)      (((p) & CL_PCIE_DEV_CTRL_2_LTR_ENABLED_BIT))
+
+#define CL_IS_ATOMICS_SUPPORTED(p)        (((p) & CL_PCIE_DEV_CAP_2_ATOMICS_SUPPORTED_BIT))
+#define CL_IS_ATOMICS_EGRESS_BLOCKED(p)   (((p) & CL_PCIE_DEV_CTRL_2_ATOMICS_EGRESS_BLOCK_BIT))
+
+#define CL_IS_32BIT_ATOMICS_SUPPORTED(p)  (((p) & CL_PCIE_DEV_CAP_2_ATOMIC_32BIT))
+#define CL_IS_64BIT_ATOMICS_SUPPORTED(p)  (((p) & CL_PCIE_DEV_CAP_2_ATOMIC_64BIT))
+#define CL_IS_128BIT_ATOMICS_SUPPORTED(p) (((p) & CL_PCIE_DEV_CAP_2_ATOMIC_128BIT))
 
 //
 // This defines PCI-E Advanced Error Reporting Capability structure per PCI-E manual
@@ -266,6 +289,8 @@ struct OBJCL {
     NvBool PDB_PROP_CL_IS_CHIPSET_IO_COHERENT;
     NvBool PDB_PROP_CL_DISABLE_IOMAP_WC;
     NvBool PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE;
+    NvBool PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR;
+    NvBool PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS;
     NBADDR NBAddr;
     NvBool EnteredRecoverySinceErrorsLastChecked;
     struct OBJHWBC *pHWBC;
@@ -310,6 +335,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJCL;
 #define PDB_PROP_CL_PCIE_GEN1_GEN2_SWITCH_CHIPSET_DISABLED_GEFORCE_BASE_NAME PDB_PROP_CL_PCIE_GEN1_GEN2_SWITCH_CHIPSET_DISABLED_GEFORCE
 #define PDB_PROP_CL_UPSTREAM_LTR_SUPPORTED_BASE_CAST
 #define PDB_PROP_CL_UPSTREAM_LTR_SUPPORTED_BASE_NAME PDB_PROP_CL_UPSTREAM_LTR_SUPPORTED
+#define PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS_BASE_CAST
+#define PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS_BASE_NAME PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS
 #define PDB_PROP_CL_BUG_1681803_WAR_DISABLE_MSCG_BASE_CAST
 #define PDB_PROP_CL_BUG_1681803_WAR_DISABLE_MSCG_BASE_NAME PDB_PROP_CL_BUG_1681803_WAR_DISABLE_MSCG
 #define PDB_PROP_CL_ON_PCIE_GEN3_PATSBURG_BASE_CAST
@@ -362,6 +389,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJCL;
 #define PDB_PROP_CL_FORCE_SNOOP_READS_AND_WRITES_WAR_BUG_410390_BASE_NAME PDB_PROP_CL_FORCE_SNOOP_READS_AND_WRITES_WAR_BUG_410390
 #define PDB_PROP_CL_ASPM_L0S_CHIPSET_ENABLED_MOBILE_ONLY_BASE_CAST
 #define PDB_PROP_CL_ASPM_L0S_CHIPSET_ENABLED_MOBILE_ONLY_BASE_NAME PDB_PROP_CL_ASPM_L0S_CHIPSET_ENABLED_MOBILE_ONLY
+#define PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR_BASE_CAST
+#define PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR_BASE_NAME PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR
 #define PDB_PROP_CL_ON_HASWELL_HOST_BRIDGE_BASE_CAST
 #define PDB_PROP_CL_ON_HASWELL_HOST_BRIDGE_BASE_NAME PDB_PROP_CL_ON_HASWELL_HOST_BRIDGE
 #define PDB_PROP_CL_PCIE_NON_COHERENT_USE_TC0_ONLY_BASE_CAST
@@ -993,6 +1022,19 @@ static inline NV_STATUS clControlL0sL1LinkControlUpstreamPort(struct OBJGPU *arg
 
 #define clControlL0sL1LinkControlUpstreamPort_HAL(arg0, arg1, arg2) clControlL0sL1LinkControlUpstreamPort(arg0, arg1, arg2)
 
+NV_STATUS clChipsetAspmPublicControl_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 arg2);
+
+#ifdef __nvoc_chipset_h_disabled
+static inline NV_STATUS clChipsetAspmPublicControl(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 arg2) {
+    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_chipset_h_disabled
+#define clChipsetAspmPublicControl(arg0, arg1, arg2) clChipsetAspmPublicControl_IMPL(arg0, arg1, arg2)
+#endif //__nvoc_chipset_h_disabled
+
+#define clChipsetAspmPublicControl_HAL(arg0, arg1, arg2) clChipsetAspmPublicControl(arg0, arg1, arg2)
+
 NvBool clRootportNeedsNosnoopWAR_FWCLIENT(struct OBJGPU *arg0, struct OBJCL *arg1);
 
 #ifdef __nvoc_chipset_h_disabled
@@ -1048,6 +1090,16 @@ static inline NV_STATUS clCheckUpstreamLtrSupport(struct OBJGPU *arg0, struct OB
 }
 #else //__nvoc_chipset_h_disabled
 #define clCheckUpstreamLtrSupport(arg0, arg1, arg2) clCheckUpstreamLtrSupport_IMPL(arg0, arg1, arg2)
+#endif //__nvoc_chipset_h_disabled
+
+NV_STATUS clGetAtomicTypesSupported_IMPL(NvU32 arg0, NvU8 arg1, struct OBJCL *arg2, NvU32 *arg3);
+#ifdef __nvoc_chipset_h_disabled
+static inline NV_STATUS clGetAtomicTypesSupported(NvU32 arg0, NvU8 arg1, struct OBJCL *arg2, NvU32 *arg3) {
+    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_chipset_h_disabled
+#define clGetAtomicTypesSupported(arg0, arg1, arg2, arg3) clGetAtomicTypesSupported_IMPL(arg0, arg1, arg2, arg3)
 #endif //__nvoc_chipset_h_disabled
 
 void clSyncWithGsp_IMPL(struct OBJCL *arg0, GspSystemInfo *arg1);

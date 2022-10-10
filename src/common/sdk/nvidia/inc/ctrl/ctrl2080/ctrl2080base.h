@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl2080/ctrl2080base.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV20_SUBDEVICE_XX control commands and parameters */
 

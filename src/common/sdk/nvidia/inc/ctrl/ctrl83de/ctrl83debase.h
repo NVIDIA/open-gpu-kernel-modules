@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl83de/ctrl83debase.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* GT200_DEBUG control commands and parameters */
 

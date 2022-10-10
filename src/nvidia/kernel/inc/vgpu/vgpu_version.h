@@ -30,8 +30,8 @@
 
 #define RPC_VERSION_FROM_VGX_VERSION(major, minor) ( DRF_NUM(_RPC, _VERSION_NUMBER, _MAJOR, major) | \
                                                      DRF_NUM(_RPC, _VERSION_NUMBER, _MINOR, minor))
-#define VGX_MAJOR_VERSION_NUMBER  0x1F
-#define VGX_MINOR_VERSION_NUMBER  0x0F
+#define VGX_MAJOR_VERSION_NUMBER  0x20
+#define VGX_MINOR_VERSION_NUMBER  0x04
 
 // The NV_VGPU_GRIDSW_VERSION_MIN_SUPPORTED_INTERNAL macros are auto-generated using the value from rpc-structures.def file.
 #define AUTOGENERATE_RPC_MIN_SUPPORTED_VERSION_INFORMATION

@@ -24,8 +24,6 @@
 /* this source file contains routines for setting and moving the cursor.
  * NV50 specific */
 
-
-
 #include "nvkms-cursor.h"
 #include "nvkms-types.h"
 #include "nvkms-dma.h"

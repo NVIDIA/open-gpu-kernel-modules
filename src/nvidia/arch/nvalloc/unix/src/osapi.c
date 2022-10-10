@@ -1843,6 +1843,7 @@ static NV_STATUS RmCreateMmapContextLocked(
     NvP64       address,
     NvU64       size,
     NvU64       offset,
+    NvU32       cachingType,
     NvU32       fd
 )
 {
@@ -1884,6 +1885,7 @@ static NV_STATUS RmCreateMmapContextLocked(
     nvuap->addr = addr;
     nvuap->size = size;
     nvuap->offset = offset;
+    nvuap->caching = cachingType;
 
     //
     // Assume the allocation is contiguous until RmGetMmapPteArray
@@ -1975,6 +1977,7 @@ NV_STATUS rm_create_mmap_context(
     NvP64       address,
     NvU64       size,
     NvU64       offset,
+    NvU32       cachingType,
     NvU32       fd
 )
 {
@@ -1995,7 +1998,7 @@ NV_STATUS rm_create_mmap_context(
         else if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) == NV_OK)
         {
             rmStatus = RmCreateMmapContextLocked(hClient, hDevice, hMemory,
-                                                 address, size, offset, fd);
+                                                 address, size, offset, cachingType, fd);
             // UNLOCK: release GPUs lock
             rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         }
@@ -3364,13 +3367,29 @@ static NV_STATUS RmNonDPAuxI2CTransfer
             break;
 
         case NV_I2C_CMD_SMBUS_WRITE:
-            params->transData.smbusByteData.bWrite = NV_TRUE;
+            if (len == 2)
+            {
+                params->transData.smbusWordData.bWrite = NV_TRUE;
+            }
+            else
+            {
+                params->transData.smbusByteData.bWrite = NV_TRUE;
+            }
             /* fall through*/
 
         case NV_I2C_CMD_SMBUS_READ:
-            params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW;
-            params->transData.smbusByteData.message = pData[0];
-            params->transData.smbusByteData.registerAddress = command;
+            if (len == 2)
+            {
+                params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW;
+                params->transData.smbusWordData.message = pData[0] | ((NvU16)pData[1] << 8);
+                params->transData.smbusWordData.registerAddress = command;
+            }
+            else
+            {
+                params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW;
+                params->transData.smbusByteData.message = pData[0];
+                params->transData.smbusByteData.registerAddress = command;
+            }
             break;
 
         case NV_I2C_CMD_SMBUS_BLOCK_WRITE:
@@ -3408,7 +3427,15 @@ static NV_STATUS RmNonDPAuxI2CTransfer
     //
     if (rmStatus == NV_OK && type == NV_I2C_CMD_SMBUS_READ)
     {
-        pData[0] = params->transData.smbusByteData.message;
+        if (len == 2)
+        {
+            pData[0] = (params->transData.smbusWordData.message & 0xff);
+            pData[1] = params->transData.smbusWordData.message >> 8;
+        }
+        else
+        {
+            pData[0] = params->transData.smbusByteData.message;
+        }
     }
 
     portMemFree(params);

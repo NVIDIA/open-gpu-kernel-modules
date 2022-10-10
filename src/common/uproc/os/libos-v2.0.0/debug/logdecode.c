@@ -968,6 +968,17 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
 
         pLog->putCopy = pLog->physicLogBuffer[0];
         pLog->putIter = pLog->putCopy;
+        if (pLog->putIter < pLog->previousPut)
+        {
+            printf(
+                "**** %s-%s buffer put counter reset unexpectedly (cur=0x%llx, prev=0x%llx). Entries possibly lost. ****\n",
+                logDecode->sourceName, pLog->taskPrefix, pLog->putIter, pLog->previousPut);
+#ifdef PORT_ASSERT
+            PORT_ASSERT(pLog->putIter >= pLog->previousPut);
+#endif
+            pLog->previousPut = pLog->putIter;
+        }
+
         libosExtractLog_ReadRecord(logDecode, pLog);
     }
 

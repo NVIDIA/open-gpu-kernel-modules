@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1405,29 +1405,14 @@ _flcnQueueCmdPostNonBlocking_IMPL
     }
 
     // Falcon must be in a ready state before commands may be submitted.
-    if (!pFlcn->bOSReady)
+    status = soeWaitForInitAck_HAL(device,  (PSOE)pFlcn->pFlcnable);
+    if (status != NV_OK)
     {
-        if (pFlcn->engineTag != ENG_TAG_SOE) {
-            NVSWITCH_PRINT(device, ERROR,
-                "%s: FLCN not ready for command processing\n",
-                __FUNCTION__);
-            return NV_ERR_INVALID_STATE;
-        }
-        else
-        {
-            SOE *pSoe = (PSOE)pFlcn->pFlcnable;
-
-            status = soeWaitForInitAck(device, pSoe);
-
-            if (status != NV_OK || !pFlcn->bOSReady)
-            {
-                NVSWITCH_PRINT(device, ERROR,
-                    "%s: SOE not ready for command processing\n",
-                    __FUNCTION__);
-                NVSWITCH_ASSERT(0);
-                return status;
-            }
-        }
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: SOE not ready for command processing\n",
+            __FUNCTION__);
+        NVSWITCH_ASSERT(0);
+        return status;
     }
 
     // Sanity check the command input.

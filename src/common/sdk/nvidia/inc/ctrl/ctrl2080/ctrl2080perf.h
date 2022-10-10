@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl2080/ctrl2080perf.finn
 //
 
-
-
-
 #include "nvfixedtypes.h"
 #include "ctrl/ctrl2080/ctrl2080base.h"
 

@@ -134,6 +134,7 @@ typedef struct _NVVblankSyncObjectRec *NVVblankSyncObjectPtr;
 typedef struct _NVDispHeadStateEvoRec *NVDispHeadStateEvoPtr;
 typedef struct _NVDispEvoRec *NVDispEvoPtr;
 typedef struct _NVParsedEdidEvoRec *NVParsedEdidEvoPtr;
+typedef struct _NVVBlankCallbackRec *NVVBlankCallbackPtr;
 typedef struct _NVDpyEvoRec *NVDpyEvoPtr;
 typedef struct _NVLutSurfaceEvo *NVLutSurfaceEvoPtr;
 typedef struct _NVFrameLockEvo *NVFrameLockEvoPtr;
@@ -841,7 +842,6 @@ typedef struct _NVEvoDevRec {
     NvU32               deviceHandle;
     struct NvKmsPerOpenDev *pNvKmsOpenDev;
 
-
     /* SLI Info */
     struct {
         NvBool          mosaic;
@@ -1141,6 +1141,13 @@ typedef struct _NVHwModeViewPortEvo {
     struct NvKmsUsageBounds guaranteedUsage;
 } NVHwModeViewPortEvo;
 
+static inline NvBool nvIsImageSharpeningAvailable(
+        const NVHwModeViewPortEvo *pViewPort)
+{
+    return (pViewPort->out.width != pViewPort->in.width) ||
+           (pViewPort->out.height != pViewPort->in.height);
+}
+
 enum nvKmsPixelDepth {
     NVKMS_PIXEL_DEPTH_18_444,
     NVKMS_PIXEL_DEPTH_24_444,
@@ -1324,6 +1331,22 @@ static inline struct NvKmsRect nvEvoViewPortOutClientView(
     return viewPortOut;
 }
 
+/*
+ * The ELD contains a subset of the digital display device's EDID
+ * information related to audio capabilities. The GPU driver sends the
+ * ELD to hardware and the audio driver reads it by issuing the ELD
+ * command verb.
+ */
+
+#define NV_MAX_AUDIO_DEVICE_ENTRIES \
+    (NV0073_CTRL_DFP_ELD_AUDIO_CAPS_DEVICE_ENTRY_3 + 1)
+
+typedef enum {
+    NV_ELD_PRE_MODESET = 0,
+    NV_ELD_POST_MODESET,
+    NV_ELD_POWER_ON_RESET,
+} NvEldCase;
+
 /* OR indices are per OR-type.  The maximum OR index for each type
  * on each GPU is:
  *
@@ -1390,6 +1413,8 @@ typedef struct _NVConnectorEvoRec {
         NvBool ycbcr422Capable;
         NvBool ycbcr444Capable;
     } colorSpaceCaps;
+
+    NvEldCase audioDevEldCase[NV_MAX_AUDIO_DEVICE_ENTRIES];
 } NVConnectorEvoRec;
 
 static inline NvU32 nvConnectorGetAttachedHeadMaskEvo(
@@ -1513,9 +1538,6 @@ typedef struct _NVDispHeadStateEvoRec {
 
     NVAttributesSetEvoRec attributes;
 
-    NVEvoScalerTaps hTaps;
-    NVEvoScalerTaps vTaps;
-
     /*! Cached, to preserve across modesets. */
     struct NvKmsModeValidationParams modeValidationParams;
 
@@ -1567,6 +1589,9 @@ typedef struct _NVDispHeadStateEvoRec {
     NvU8 numVblankSyncObjectsCreated;
     NVVblankSyncObjectRec vblankSyncObjects[NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD];
     NVDispHeadAudioStateEvoRec audio;
+
+    NvU32 rmVBlankCallbackHandle;
+    NVListRec vblankCallbackList;
 } NVDispHeadStateEvoRec;
 
 typedef struct _NVDispEvoRec {
@@ -1662,6 +1687,15 @@ typedef struct _NVDispEvoRec {
     struct nvkms_backlight_device *backlightDevice;
 } NVDispEvoRec;
 
+/*
+ * XXX[2Head1OR] Remove nvHardwareHeadToApiHead(), before implementing logic to
+ * map multiple hardware heads onto the single api head.
+ */
+static inline NvU32 nvHardwareHeadToApiHead(const NvU32 head)
+{
+    return head;
+}
+
 typedef enum {
     NV_EVO_PASSIVE_DP_DONGLE_UNUSED,
     NV_EVO_PASSIVE_DP_DONGLE_DP2DVI,
@@ -1682,14 +1716,23 @@ typedef struct _NVParsedEdidEvoRec {
     char                 serialNumberString[NVT_EDID_LDD_PAYLOAD_SIZE+1];
 } NVParsedEdidEvoRec;
 
+typedef void (*NVVBlankCallbackProc)(NVDispEvoRec *pDispEvo,
+                                     const NvU32 head,
+                                     NVVBlankCallbackPtr pCallbackData);
+
+typedef struct _NVVBlankCallbackRec {
+    NVListRec vblankCallbackListEntry;
+    NVVBlankCallbackProc pCallback;
+    void *pUserData;
+} NVVBlankCallbackRec;
+
 typedef struct _NVDpyEvoRec {
     NVListRec dpyListEntry;
     NVDpyId  id;
 
     char name[NVKMS_DPY_NAME_SIZE];
 
-    /* The hardware head to use with this dpy. */
-    NvU32 head;
+    NvU32 apiHead;
 
     struct _NVDispEvoRec *pDispEvo;
     NVConnectorEvoPtr pConnectorEvo;
@@ -1907,7 +1950,7 @@ static inline NvBool nvDpyUsesDPLib(const NVDpyEvoRec *pDpyEvo)
  */
 static inline NvBool nvDpyEvoIsActive(const NVDpyEvoRec *pDpyEvo)
 {
-    return (pDpyEvo->head != NV_INVALID_HEAD);
+    return (pDpyEvo->apiHead != NV_INVALID_HEAD);
 }
 
 /*
@@ -2252,6 +2295,14 @@ struct _NVSurfaceEvoRec {
     NvBool procFsFlag;
 #endif
 
+    /*
+     * Disallow DIFR if display caching is forbidden. This will be set for
+     * CPU accessible surfaces.
+     */
+    NvBool noDisplayCaching;
+
+    /* Keep track of prefetched surfaces. */
+    NvU32 difrLastPrefetchPass;
 };
 
 typedef struct _NVDeferredRequestFifoRec {

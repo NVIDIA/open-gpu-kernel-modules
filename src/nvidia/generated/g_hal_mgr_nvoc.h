@@ -63,7 +63,7 @@ struct OBJHALMGR {
     struct Object __nvoc_base_Object;
     struct Object *__nvoc_pbase_Object;
     struct OBJHALMGR *__nvoc_pbase_OBJHALMGR;
-    struct OBJHAL *pHalList[60];
+    struct OBJHAL *pHalList[64];
 };
 
 #ifndef __NVOC_CLASS_OBJHALMGR_TYPEDEF__

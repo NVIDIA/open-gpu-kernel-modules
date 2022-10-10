@@ -47,55 +47,37 @@ typedef int vm_fault_t;
  *
  */
 
-#if defined(NV_GET_USER_PAGES_HAS_TASK_STRUCT)
-    #if defined(NV_GET_USER_PAGES_HAS_WRITE_AND_FORCE_ARGS)
-        #define NV_GET_USER_PAGES(start, nr_pages, write, force, pages, vmas) \
-            get_user_pages(current, current->mm, start, nr_pages, write, force, pages, vmas)
-    #else
-        #include <linux/mm.h>
-        #include <linux/sched.h>
-
-        static inline long NV_GET_USER_PAGES(unsigned long start,
-                                             unsigned long nr_pages,
-                                             int write,
-                                             int force,
-                                             struct page **pages,
-                                             struct vm_area_struct **vmas)
-        {
-            unsigned int flags = 0;
-
-            if (write)
-                flags |= FOLL_WRITE;
-            if (force)
-                flags |= FOLL_FORCE;
-
-            return get_user_pages(current, current->mm, start, nr_pages, flags,
-                                  pages, vmas);
-        }
-    #endif
+#if defined(NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE)
+    #define NV_GET_USER_PAGES get_user_pages
+#elif defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE)
+    #define NV_GET_USER_PAGES(start, nr_pages, write, force, pages, vmas) \
+        get_user_pages(current, current->mm, start, nr_pages, write, force, pages, vmas)
 #else
-    #if defined(NV_GET_USER_PAGES_HAS_WRITE_AND_FORCE_ARGS)
-        #define NV_GET_USER_PAGES get_user_pages
+    #include <linux/mm.h>
+    #include <linux/sched.h>
+
+    static inline long NV_GET_USER_PAGES(unsigned long start,
+                                         unsigned long nr_pages,
+                                         int write,
+                                         int force,
+                                         struct page **pages,
+                                         struct vm_area_struct **vmas)
+    {
+        unsigned int flags = 0;
+
+        if (write)
+            flags |= FOLL_WRITE;
+        if (force)
+            flags |= FOLL_FORCE;
+
+    #if defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_FLAGS)
+        return get_user_pages(current, current->mm, start, nr_pages, flags,
+                              pages, vmas);
     #else
-        #include <linux/mm.h>
-
-        static inline long NV_GET_USER_PAGES(unsigned long start,
-                                             unsigned long nr_pages,
-                                             int write,
-                                             int force,
-                                             struct page **pages,
-                                             struct vm_area_struct **vmas)
-        {
-            unsigned int flags = 0;
-
-            if (write)
-                flags |= FOLL_WRITE;
-            if (force)
-                flags |= FOLL_FORCE;
-
-            return get_user_pages(start, nr_pages, flags, pages, vmas);
-        }
+        // remaining defination(NV_GET_USER_PAGES_HAS_ARGS_FLAGS)
+        return get_user_pages(start, nr_pages, flags, pages, vmas);
     #endif
+    }
 #endif
 
 /*
@@ -131,7 +113,7 @@ typedef int vm_fault_t;
  */
 
 #if defined(NV_GET_USER_PAGES_REMOTE_PRESENT)
-    #if defined(NV_GET_USER_PAGES_REMOTE_HAS_WRITE_AND_FORCE_ARGS)
+    #if defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_WRITE_FORCE)
         #define NV_GET_USER_PAGES_REMOTE    get_user_pages_remote
     #else
         static inline long NV_GET_USER_PAGES_REMOTE(struct task_struct *tsk,
@@ -150,26 +132,21 @@ typedef int vm_fault_t;
             if (force)
                 flags |= FOLL_FORCE;
 
-        #if defined(NV_GET_USER_PAGES_REMOTE_HAS_LOCKED_ARG)
-            #if defined (NV_GET_USER_PAGES_REMOTE_HAS_TSK_ARG)
-               return get_user_pages_remote(tsk, mm, start, nr_pages, flags,
-                                            pages, vmas, NULL);
-            #else
-               return get_user_pages_remote(mm, start, nr_pages, flags,
-                                            pages, vmas, NULL);
-            #endif
-
+        #if defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS)
+            return get_user_pages_remote(tsk, mm, start, nr_pages, flags,
+                                         pages, vmas);
+        #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS_LOCKED)
+            return get_user_pages_remote(tsk, mm, start, nr_pages, flags,
+                                         pages, vmas, NULL);
         #else
-
-               return get_user_pages_remote(tsk, mm, start, nr_pages, flags,
-                                            pages, vmas);
-
+            // remaining defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED)
+            return get_user_pages_remote(mm, start, nr_pages, flags,
+                                         pages, vmas, NULL);
         #endif
-
         }
     #endif
 #else
-    #if defined(NV_GET_USER_PAGES_HAS_WRITE_AND_FORCE_ARGS)
+    #if defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE)
         #define NV_GET_USER_PAGES_REMOTE    get_user_pages
     #else
         #include <linux/mm.h>

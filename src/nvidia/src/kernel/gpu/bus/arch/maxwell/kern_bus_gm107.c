@@ -156,6 +156,8 @@ kbusStatePreInitLocked_GM107
 
     kbusDetermineBar1ApertureLength(pKernelBus, GPU_GFID_PF);
 
+    kbusSetupBar1P2PCapability(pGpu, pKernelBus);
+
     if (NV_OK != kbusConstructVirtualBar2_HAL(pGpu, pKernelBus, GPU_GFID_PF))
     {
         return NV_ERR_INSUFFICIENT_RESOURCES;
@@ -2120,6 +2122,31 @@ kbusUpdateRmAperture_GM107
         // PTEs during mapping.
         //
         nvFieldSetBool(&pFmt->pPte->fldValid, NV_TRUE, mapIter.pteTemplate.v8);
+        if (pFmt->version == GMMU_FMT_VERSION_3)
+        {
+            NvU32 ptePcfHw  = 0;
+            NvU32 ptePcfSw  = 0;
+
+            if (memdescGetVolatility(pMemDesc))
+            {
+                ptePcfSw = 1 << SW_MMU_PCF_UNCACHED_IDX;
+            }
+            else
+            {
+                //
+                // For internal DMA mappings to sysmem, we should always use
+                // GPU-uncached because RM won't invalidate L2 upon unmap
+                //
+                NV_ASSERT(mapIter.aperture == GMMU_APERTURE_VIDEO);
+            }
+
+            ptePcfSw |= (1 << SW_MMU_PCF_REGULAR_IDX);
+
+            NV_ASSERT_OR_RETURN(kgmmuTranslatePtePcfFromSw_HAL(pKernelGmmu, ptePcfSw,
+                &ptePcfHw) == NV_OK, NV_ERR_INVALID_ARGUMENT);
+            nvFieldSet32(&pFmt->pPte->fldPtePcf, ptePcfHw, mapIter.pteTemplate.v8);
+        }
+        else
         {
             nvFieldSetBool(&pFmt->pPte->fldVolatile, memdescGetVolatility(pMemDesc), mapIter.pteTemplate.v8);
         }

@@ -50,10 +50,13 @@
 #include "vgpu/vgpu_events.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "finn_rm_api.h"
+#include "os/os.h"
 
 #define SDK_ALL_CLASSES_INCLUDE_FULL_HEADER
 #include "g_allclasses.h"
 #undef SDK_ALL_CLASSES_INCLUDE_FULL_HEADER
+#include "nverror.h"
+
 
 #define RPC_STRUCTURES
 #define RPC_GENERIC_UNION
@@ -996,6 +999,18 @@ NV_STATUS rpcGetStaticInfo_v1A_05(OBJGPU *pGpu, OBJRPC *pRpc)
     return status;
 }
 
+NV_STATUS rpcGetStaticInfo_v20_01(OBJGPU *pGpu, OBJRPC *pRpc)
+{
+    NV_STATUS status = NV_OK;
+    return status;
+}
+
+NV_STATUS rpcGetStaticInfo_v20_04(OBJGPU *pGpu, OBJRPC *pRpc)
+{
+    NV_STATUS status = NV_OK;
+    return status;
+}
+
 NV_STATUS rpcGetGspStaticInfo_v14_00(OBJGPU *pGpu, OBJRPC *pRpc)
 {
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
@@ -1258,7 +1273,10 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
         {
             rpcInfo->simAccessBufPhysAddr = 0;
         }
+        rpcInfo->pcieAtomicsOpMask = GPU_GET_KERNEL_BIF(pGpu) ?
+            GPU_GET_KERNEL_BIF(pGpu)->osPcieAtomicsOpMask : 0U;
         rpcInfo->consoleMemSize = GPU_GET_MEMORY_MANAGER(pGpu)->Ram.ReservedConsoleDispMemSize;
+        rpcInfo->maxUserVa      = osGetMaxUserVa();
 
         OBJCL *pCl = SYS_GET_CL(SYS_GET_INSTANCE());
         if (pCl != NULL)

@@ -198,6 +198,11 @@ struct OBJTMR {
     NV_STATUS (*__tmrStateLoad__)(OBJGPU *, struct OBJTMR *, NvU32);
     NV_STATUS (*__tmrStateUnload__)(OBJGPU *, struct OBJTMR *, NvU32);
     void (*__tmrStateDestroy__)(OBJGPU *, struct OBJTMR *);
+    NV_STATUS (*__tmrSetCurrentTime__)(OBJGPU *, struct OBJTMR *);
+    NvU64 (*__tmrGetTimeEx__)(OBJGPU *, struct OBJTMR *, struct THREAD_STATE_NODE *);
+    NV_STATUS (*__tmrSetCountdownIntrDisable__)(OBJGPU *, struct OBJTMR *);
+    NV_STATUS (*__tmrSetCountdown__)(OBJGPU *, struct OBJTMR *, NvU32, NvU32, struct THREAD_STATE_NODE *);
+    NV_STATUS (*__tmrGrTickFreqChange__)(OBJGPU *, struct OBJTMR *, NvBool);
     NV_STATUS (*__tmrGetGpuPtimerOffset__)(OBJGPU *, struct OBJTMR *, NvU32 *, NvU32 *);
     NV_STATUS (*__tmrGetPhysicalIntrVectors__)(OBJGPU *, struct OBJTMR *, NvU32, NvU32 *, NvU32 *, NvU32 *);
     void (*__tmrFreeTunableState__)(POBJGPU, struct OBJTMR *, void *);
@@ -294,6 +299,16 @@ NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
 #define tmrStateLoad(pGpu, pTmr, arg0) tmrStateLoad_DISPATCH(pGpu, pTmr, arg0)
 #define tmrStateUnload(pGpu, pTmr, arg0) tmrStateUnload_DISPATCH(pGpu, pTmr, arg0)
 #define tmrStateDestroy(pGpu, pTmr) tmrStateDestroy_DISPATCH(pGpu, pTmr)
+#define tmrSetCurrentTime(pGpu, pTmr) tmrSetCurrentTime_DISPATCH(pGpu, pTmr)
+#define tmrSetCurrentTime_HAL(pGpu, pTmr) tmrSetCurrentTime_DISPATCH(pGpu, pTmr)
+#define tmrGetTimeEx(pGpu, pTmr, arg0) tmrGetTimeEx_DISPATCH(pGpu, pTmr, arg0)
+#define tmrGetTimeEx_HAL(pGpu, pTmr, arg0) tmrGetTimeEx_DISPATCH(pGpu, pTmr, arg0)
+#define tmrSetCountdownIntrDisable(pGpu, pTmr) tmrSetCountdownIntrDisable_DISPATCH(pGpu, pTmr)
+#define tmrSetCountdownIntrDisable_HAL(pGpu, pTmr) tmrSetCountdownIntrDisable_DISPATCH(pGpu, pTmr)
+#define tmrSetCountdown(pGpu, pTmr, arg0, arg1, arg2) tmrSetCountdown_DISPATCH(pGpu, pTmr, arg0, arg1, arg2)
+#define tmrSetCountdown_HAL(pGpu, pTmr, arg0, arg1, arg2) tmrSetCountdown_DISPATCH(pGpu, pTmr, arg0, arg1, arg2)
+#define tmrGrTickFreqChange(pGpu, pTmr, arg0) tmrGrTickFreqChange_DISPATCH(pGpu, pTmr, arg0)
+#define tmrGrTickFreqChange_HAL(pGpu, pTmr, arg0) tmrGrTickFreqChange_DISPATCH(pGpu, pTmr, arg0)
 #define tmrGetGpuPtimerOffset(pGpu, pTmr, arg0, arg1) tmrGetGpuPtimerOffset_DISPATCH(pGpu, pTmr, arg0, arg1)
 #define tmrGetGpuPtimerOffset_HAL(pGpu, pTmr, arg0, arg1) tmrGetGpuPtimerOffset_DISPATCH(pGpu, pTmr, arg0, arg1)
 #define tmrGetPhysicalIntrVectors(pGpu, pTmr, maxIntrs, pIntrs, pMcEngineIdxs, pCount) tmrGetPhysicalIntrVectors_DISPATCH(pGpu, pTmr, maxIntrs, pIntrs, pMcEngineIdxs, pCount)
@@ -352,19 +367,6 @@ static inline NV_STATUS tmrDelay(struct OBJTMR *pTmr, NvU32 arg0) {
 #endif //__nvoc_objtmr_h_disabled
 
 #define tmrDelay_HAL(pTmr, arg0) tmrDelay(pTmr, arg0)
-
-NV_STATUS tmrSetCurrentTime_GV100(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-#ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrSetCurrentTime(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_objtmr_h_disabled
-#define tmrSetCurrentTime(pGpu, pTmr) tmrSetCurrentTime_GV100(pGpu, pTmr)
-#endif //__nvoc_objtmr_h_disabled
-
-#define tmrSetCurrentTime_HAL(pGpu, pTmr) tmrSetCurrentTime(pGpu, pTmr)
 
 static inline NV_STATUS tmrSetAlarmIntrDisable_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr) {
     return NV_OK;
@@ -457,19 +459,6 @@ static inline NvU64 tmrGetTime(OBJGPU *pGpu, struct OBJTMR *pTmr) {
 
 #define tmrGetTime_HAL(pGpu, pTmr) tmrGetTime(pGpu, pTmr)
 
-NvU64 tmrGetTimeEx_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg0);
-
-#ifdef __nvoc_objtmr_h_disabled
-static inline NvU64 tmrGetTimeEx(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg0) {
-    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
-    return 0;
-}
-#else //__nvoc_objtmr_h_disabled
-#define tmrGetTimeEx(pGpu, pTmr, arg0) tmrGetTimeEx_GM107(pGpu, pTmr, arg0)
-#endif //__nvoc_objtmr_h_disabled
-
-#define tmrGetTimeEx_HAL(pGpu, pTmr, arg0) tmrGetTimeEx(pGpu, pTmr, arg0)
-
 NvU32 tmrReadTimeLoReg_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg0);
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -526,19 +515,6 @@ static inline NvBool tmrGetAlarmPending(OBJGPU *pGpu, struct OBJTMR *pTmr, struc
 
 #define tmrGetAlarmPending_HAL(pGpu, pTmr, arg0) tmrGetAlarmPending(pGpu, pTmr, arg0)
 
-NV_STATUS tmrSetCountdownIntrDisable_GM200(OBJGPU *pGpu, struct OBJTMR *pTmr);
-
-#ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrSetCountdownIntrDisable(OBJGPU *pGpu, struct OBJTMR *pTmr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_objtmr_h_disabled
-#define tmrSetCountdownIntrDisable(pGpu, pTmr) tmrSetCountdownIntrDisable_GM200(pGpu, pTmr)
-#endif //__nvoc_objtmr_h_disabled
-
-#define tmrSetCountdownIntrDisable_HAL(pGpu, pTmr) tmrSetCountdownIntrDisable(pGpu, pTmr)
-
 NV_STATUS tmrSetCountdownIntrEnable_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr);
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -580,19 +556,6 @@ static inline NvBool tmrGetCountdownPending(OBJGPU *pGpu, struct OBJTMR *pTmr, s
 
 #define tmrGetCountdownPending_HAL(pGpu, pTmr, arg0) tmrGetCountdownPending(pGpu, pTmr, arg0)
 
-NV_STATUS tmrSetCountdown_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2);
-
-#ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrSetCountdown(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_objtmr_h_disabled
-#define tmrSetCountdown(pGpu, pTmr, arg0, arg1, arg2) tmrSetCountdown_TU102(pGpu, pTmr, arg0, arg1, arg2)
-#endif //__nvoc_objtmr_h_disabled
-
-#define tmrSetCountdown_HAL(pGpu, pTmr, arg0, arg1, arg2) tmrSetCountdown(pGpu, pTmr, arg0, arg1, arg2)
-
 NV_STATUS tmrGetTimerBar0MapInfo_PTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU64 *arg0, NvU32 *arg1);
 
 #ifdef __nvoc_objtmr_h_disabled
@@ -605,19 +568,6 @@ static inline NV_STATUS tmrGetTimerBar0MapInfo(OBJGPU *pGpu, struct OBJTMR *pTmr
 #endif //__nvoc_objtmr_h_disabled
 
 #define tmrGetTimerBar0MapInfo_HAL(pGpu, pTmr, arg0, arg1) tmrGetTimerBar0MapInfo(pGpu, pTmr, arg0, arg1)
-
-NV_STATUS tmrGrTickFreqChange_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg0);
-
-#ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrGrTickFreqChange(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg0) {
-    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_objtmr_h_disabled
-#define tmrGrTickFreqChange(pGpu, pTmr, arg0) tmrGrTickFreqChange_GM107(pGpu, pTmr, arg0)
-#endif //__nvoc_objtmr_h_disabled
-
-#define tmrGrTickFreqChange_HAL(pGpu, pTmr, arg0) tmrGrTickFreqChange(pGpu, pTmr, arg0)
 
 static inline NvU32 tmrGetUtilsClkScaleFactor_4a4dee(OBJGPU *pGpu, struct OBJTMR *pTmr) {
     return 0;
@@ -800,6 +750,70 @@ static inline void tmrStateDestroy_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
     pTmr->__tmrStateDestroy__(pGpu, pTmr);
 }
 
+static inline NV_STATUS tmrSetCurrentTime_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    return NV_OK;
+}
+
+NV_STATUS tmrSetCurrentTime_GV100(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+NV_STATUS tmrSetCurrentTime_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+static inline NV_STATUS tmrSetCurrentTime_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetCurrentTime_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    return pTmr->__tmrSetCurrentTime__(pGpu, pTmr);
+}
+
+static inline NvU64 tmrGetTimeEx_fa6bbe(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg0) {
+    return osGetTimestamp();
+}
+
+NvU64 tmrGetTimeEx_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg0);
+
+NvU64 tmrGetTimeEx_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg0);
+
+static inline NvU64 tmrGetTimeEx_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, struct THREAD_STATE_NODE *arg0) {
+    return pTmr->__tmrGetTimeEx__(pGpu, pTmr, arg0);
+}
+
+NV_STATUS tmrSetCountdownIntrDisable_GM200(OBJGPU *pGpu, struct OBJTMR *pTmr);
+
+static inline NV_STATUS tmrSetCountdownIntrDisable_56cd7a(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    return NV_OK;
+}
+
+static inline NV_STATUS tmrSetCountdownIntrDisable_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetCountdownIntrDisable_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr) {
+    return pTmr->__tmrSetCountdownIntrDisable__(pGpu, pTmr);
+}
+
+NV_STATUS tmrSetCountdown_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2);
+
+NV_STATUS tmrSetCountdown_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2);
+
+static inline NV_STATUS tmrSetCountdown_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrSetCountdown_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
+    return pTmr->__tmrSetCountdown__(pGpu, pTmr, arg0, arg1, arg2);
+}
+
+NV_STATUS tmrGrTickFreqChange_GM107(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg0);
+
+static inline NV_STATUS tmrGrTickFreqChange_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg0) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS tmrGrTickFreqChange_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, NvBool arg0) {
+    return pTmr->__tmrGrTickFreqChange__(pGpu, pTmr, arg0);
+}
+
 NV_STATUS tmrGetGpuPtimerOffset_TU102(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *arg0, NvU32 *arg1);
 
 NV_STATUS tmrGetGpuPtimerOffset_GA100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 *arg0, NvU32 *arg1);
@@ -819,6 +833,8 @@ static inline NV_STATUS tmrGetGpuPtimerOffset_DISPATCH(OBJGPU *pGpu, struct OBJT
 static inline NV_STATUS tmrGetPhysicalIntrVectors_46f6a7(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 maxIntrs, NvU32 *pIntrs, NvU32 *pMcEngineIdxs, NvU32 *pCount) {
     return NV_ERR_NOT_SUPPORTED;
 }
+
+NV_STATUS tmrGetPhysicalIntrVectors_GH100(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 maxIntrs, NvU32 *pIntrs, NvU32 *pMcEngineIdxs, NvU32 *pCount);
 
 static inline NV_STATUS tmrGetPhysicalIntrVectors_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, NvU32 maxIntrs, NvU32 *pIntrs, NvU32 *pMcEngineIdxs, NvU32 *pCount) {
     return pTmr->__tmrGetPhysicalIntrVectors__(pGpu, pTmr, maxIntrs, pIntrs, pMcEngineIdxs, pCount);

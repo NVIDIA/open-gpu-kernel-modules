@@ -130,6 +130,7 @@ typedef NvU8 FLCN_STATUS;
 // because that will affect other binaries and their signatures
 //
 #define FLCN_ERR_CTXSW_ERROR                                               (0x4EU)
+#define FLCN_ERR_SE_SNPKA_HW_CRYPTO_OPERATION_FAILED                       (0x4FU)
 
 // VPR SEC2 task errors
 #define FLCN_ERR_VPR_APP_INVALID_REQUEST_END_ADDR                          (0x51U)
@@ -232,6 +233,8 @@ typedef NvU8 FLCN_STATUS;
 #define FLCN_ERR_HS_APM_FECS_NOT_HALTED                                    (0xCEU)
 #define FLCN_ERR_HS_APM_SCRATCH_PLM_INVALID                                (0xCFU)
 #define FLCN_ERR_HS_APM_SCRATCH_INIT_INVALID                               (0xD0U)
+#define FLCN_ERR_HS_INVALID_KEY                                            (0xD1U)
+#define FLCN_ERR_HS_SWKG_INVALID_SIGNATURE                                 (0xD2U)
 
 
 //
@@ -282,5 +285,8 @@ typedef NvU8 FLCN_STATUS;
 // Booter Reload on SEC2-RTOS errors
 #define FLCN_ERR_AUTH_GSP_RM_HANDOFF_FAILED                                (0xF8U)
 #define FLCN_ERR_INVALID_WPRMETA_MAGIC_OR_REVISION                         (0xF9U)
+
+// Arithmetic errors
+#define FLCN_ERR_ARITHMETIC_OVERFLOW                                       (0xFAU)
 
 #endif // FLCNRETVAL_H

@@ -399,9 +399,13 @@ struct MemoryManager {
     NV_STATUS (*__memmgrStatePreUnload__)(OBJGPU *, struct MemoryManager *, NvU32);
     NV_STATUS (*__memmgrStateUnload__)(OBJGPU *, struct MemoryManager *, NvU32);
     void (*__memmgrStateDestroy__)(OBJGPU *, struct MemoryManager *);
+    NvBool (*__memmgrMemUtilsCheckMemoryFastScrubEnable__)(OBJGPU *, struct MemoryManager *, NvU32, NvBool, RmPhysAddr, NvU32, NV_ADDRESS_SPACE);
     NV_STATUS (*__memmgrAllocDetermineAlignment__)(OBJGPU *, struct MemoryManager *, NvU64 *, NvU64 *, NvU64, NvU32, NvU32, NvU32, NvU64);
     NvU64 (*__memmgrGetMaxContextSize__)(OBJGPU *, struct MemoryManager *);
     void (*__memmgrScrubRegistryOverrides__)(OBJGPU *, struct MemoryManager *);
+    NvU32 (*__memmgrGetPteKindBl__)(OBJGPU *, struct MemoryManager *);
+    NvU32 (*__memmgrGetPteKindPitch__)(OBJGPU *, struct MemoryManager *);
+    NvU32 (*__memmgrChooseKindCompressC__)(OBJGPU *, struct MemoryManager *, FB_ALLOC_PAGE_FORMAT *);
     NV_STATUS (*__memmgrGetFlaKind__)(OBJGPU *, struct MemoryManager *, NvU32 *);
     NvU32 (*__memmgrDetermineComptag__)(OBJGPU *, struct MemoryManager *, RmPhysAddr);
     NV_STATUS (*__memmgrCheckReservedMemorySize__)(OBJGPU *, struct MemoryManager *);
@@ -444,10 +448,10 @@ struct MemoryManager {
     NvBool bSysmemCompressionSupportDef;
     NvBool bBug1698088IncreaseRmReserveMemoryWar;
     NvBool bBug2301372IncreaseRmReserveMemoryWar;
+    NvBool bBug3620359IncreaseRmReserveMemoryWar;
     NvBool bEnableFbsrFileMode;
     NvBool bEnableDynamicPageOfflining;
     NvBool bVgpuPmaSupport;
-    NvBool bSupportCCProtectedMemoryAlloc;
     NvBool bAllowNoncontiguousAllocation;
     NvBool bEccInterleavedVidmemScrub;
     NvBool bScrubberInitialized;
@@ -525,12 +529,20 @@ NV_STATUS __nvoc_objCreate_MemoryManager(MemoryManager**, Dynamic*, NvU32);
 #define memmgrStatePreUnload(pGpu, pMemoryManager, arg0) memmgrStatePreUnload_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrStateUnload(pGpu, pMemoryManager, arg0) memmgrStateUnload_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrStateDestroy(pGpu, pMemoryManager) memmgrStateDestroy_DISPATCH(pGpu, pMemoryManager)
+#define memmgrMemUtilsCheckMemoryFastScrubEnable(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4) memmgrMemUtilsCheckMemoryFastScrubEnable_DISPATCH(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4)
+#define memmgrMemUtilsCheckMemoryFastScrubEnable_HAL(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4) memmgrMemUtilsCheckMemoryFastScrubEnable_DISPATCH(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4)
 #define memmgrAllocDetermineAlignment(pGpu, pMemoryManager, pMemSize, pAlign, alignPad, allocFlags, retAttr, retAttr2, hwAlignment) memmgrAllocDetermineAlignment_DISPATCH(pGpu, pMemoryManager, pMemSize, pAlign, alignPad, allocFlags, retAttr, retAttr2, hwAlignment)
 #define memmgrAllocDetermineAlignment_HAL(pGpu, pMemoryManager, pMemSize, pAlign, alignPad, allocFlags, retAttr, retAttr2, hwAlignment) memmgrAllocDetermineAlignment_DISPATCH(pGpu, pMemoryManager, pMemSize, pAlign, alignPad, allocFlags, retAttr, retAttr2, hwAlignment)
 #define memmgrGetMaxContextSize(pGpu, pMemoryManager) memmgrGetMaxContextSize_DISPATCH(pGpu, pMemoryManager)
 #define memmgrGetMaxContextSize_HAL(pGpu, pMemoryManager) memmgrGetMaxContextSize_DISPATCH(pGpu, pMemoryManager)
 #define memmgrScrubRegistryOverrides(pGpu, pMemoryManager) memmgrScrubRegistryOverrides_DISPATCH(pGpu, pMemoryManager)
 #define memmgrScrubRegistryOverrides_HAL(pGpu, pMemoryManager) memmgrScrubRegistryOverrides_DISPATCH(pGpu, pMemoryManager)
+#define memmgrGetPteKindBl(pGpu, pMemoryManager) memmgrGetPteKindBl_DISPATCH(pGpu, pMemoryManager)
+#define memmgrGetPteKindBl_HAL(pGpu, pMemoryManager) memmgrGetPteKindBl_DISPATCH(pGpu, pMemoryManager)
+#define memmgrGetPteKindPitch(pGpu, pMemoryManager) memmgrGetPteKindPitch_DISPATCH(pGpu, pMemoryManager)
+#define memmgrGetPteKindPitch_HAL(pGpu, pMemoryManager) memmgrGetPteKindPitch_DISPATCH(pGpu, pMemoryManager)
+#define memmgrChooseKindCompressC(pGpu, pMemoryManager, arg0) memmgrChooseKindCompressC_DISPATCH(pGpu, pMemoryManager, arg0)
+#define memmgrChooseKindCompressC_HAL(pGpu, pMemoryManager, arg0) memmgrChooseKindCompressC_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrGetFlaKind(pGpu, pMemoryManager, arg0) memmgrGetFlaKind_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrGetFlaKind_HAL(pGpu, pMemoryManager, arg0) memmgrGetFlaKind_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrDetermineComptag(pGpu, pMemoryManager, arg0) memmgrDetermineComptag_DISPATCH(pGpu, pMemoryManager, arg0)
@@ -1183,32 +1195,6 @@ static inline NvBool memmgrIsKindBlocklinear(struct MemoryManager *pMemoryManage
 
 #define memmgrIsKindBlocklinear_HAL(pMemoryManager, arg0) memmgrIsKindBlocklinear(pMemoryManager, arg0)
 
-NvU32 memmgrGetPteKindBl_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-#ifdef __nvoc_mem_mgr_h_disabled
-static inline NvU32 memmgrGetPteKindBl(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
-    return 0;
-}
-#else //__nvoc_mem_mgr_h_disabled
-#define memmgrGetPteKindBl(pGpu, pMemoryManager) memmgrGetPteKindBl_GM107(pGpu, pMemoryManager)
-#endif //__nvoc_mem_mgr_h_disabled
-
-#define memmgrGetPteKindBl_HAL(pGpu, pMemoryManager) memmgrGetPteKindBl(pGpu, pMemoryManager)
-
-NvU32 memmgrGetPteKindPitch_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-#ifdef __nvoc_mem_mgr_h_disabled
-static inline NvU32 memmgrGetPteKindPitch(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
-    return 0;
-}
-#else //__nvoc_mem_mgr_h_disabled
-#define memmgrGetPteKindPitch(pGpu, pMemoryManager) memmgrGetPteKindPitch_GM107(pGpu, pMemoryManager)
-#endif //__nvoc_mem_mgr_h_disabled
-
-#define memmgrGetPteKindPitch_HAL(pGpu, pMemoryManager) memmgrGetPteKindPitch(pGpu, pMemoryManager)
-
 NvU32 memmgrChooseKindZ_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0);
 
 #ifdef __nvoc_mem_mgr_h_disabled
@@ -1234,19 +1220,6 @@ static inline NvU32 memmgrChooseKindCompressZ(OBJGPU *pGpu, struct MemoryManager
 #endif //__nvoc_mem_mgr_h_disabled
 
 #define memmgrChooseKindCompressZ_HAL(pGpu, pMemoryManager, arg0) memmgrChooseKindCompressZ(pGpu, pMemoryManager, arg0)
-
-NvU32 memmgrChooseKindCompressC_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0);
-
-#ifdef __nvoc_mem_mgr_h_disabled
-static inline NvU32 memmgrChooseKindCompressC(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
-    return 0;
-}
-#else //__nvoc_mem_mgr_h_disabled
-#define memmgrChooseKindCompressC(pGpu, pMemoryManager, arg0) memmgrChooseKindCompressC_GP100(pGpu, pMemoryManager, arg0)
-#endif //__nvoc_mem_mgr_h_disabled
-
-#define memmgrChooseKindCompressC_HAL(pGpu, pMemoryManager, arg0) memmgrChooseKindCompressC(pGpu, pMemoryManager, arg0)
 
 static inline NvU32 memmgrChooseKindCompressCForMS2_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0) {
     return 0;
@@ -1682,6 +1655,16 @@ static inline void memmgrStateDestroy_DISPATCH(OBJGPU *pGpu, struct MemoryManage
     pMemoryManager->__memmgrStateDestroy__(pGpu, pMemoryManager);
 }
 
+NvBool memmgrMemUtilsCheckMemoryFastScrubEnable_GH100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvBool arg1, RmPhysAddr arg2, NvU32 arg3, NV_ADDRESS_SPACE arg4);
+
+static inline NvBool memmgrMemUtilsCheckMemoryFastScrubEnable_491d52(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvBool arg1, RmPhysAddr arg2, NvU32 arg3, NV_ADDRESS_SPACE arg4) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool memmgrMemUtilsCheckMemoryFastScrubEnable_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvBool arg1, RmPhysAddr arg2, NvU32 arg3, NV_ADDRESS_SPACE arg4) {
+    return pMemoryManager->__memmgrMemUtilsCheckMemoryFastScrubEnable__(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4);
+}
+
 NV_STATUS memmgrAllocDetermineAlignment_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment);
 
 NV_STATUS memmgrAllocDetermineAlignment_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment);
@@ -1702,6 +1685,8 @@ NvU64 memmgrGetMaxContextSize_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryM
 
 NvU64 memmgrGetMaxContextSize_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+NvU64 memmgrGetMaxContextSize_AD102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 static inline NvU64 memmgrGetMaxContextSize_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     return 0;
 }
@@ -1720,6 +1705,36 @@ static inline void memmgrScrubRegistryOverrides_b3696a(OBJGPU *pGpu, struct Memo
 
 static inline void memmgrScrubRegistryOverrides_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     pMemoryManager->__memmgrScrubRegistryOverrides__(pGpu, pMemoryManager);
+}
+
+NvU32 memmgrGetPteKindBl_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+static inline NvU32 memmgrGetPteKindBl_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 memmgrGetPteKindBl_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return pMemoryManager->__memmgrGetPteKindBl__(pGpu, pMemoryManager);
+}
+
+NvU32 memmgrGetPteKindPitch_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+static inline NvU32 memmgrGetPteKindPitch_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 memmgrGetPteKindPitch_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return pMemoryManager->__memmgrGetPteKindPitch__(pGpu, pMemoryManager);
+}
+
+NvU32 memmgrChooseKindCompressC_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0);
+
+static inline NvU32 memmgrChooseKindCompressC_474d46(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 memmgrChooseKindCompressC_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0) {
+    return pMemoryManager->__memmgrChooseKindCompressC__(pGpu, pMemoryManager, arg0);
 }
 
 NV_STATUS memmgrGetFlaKind_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *arg0);
@@ -1928,14 +1943,6 @@ static inline void memmgrSetClientPageTablesPmaManaged(struct MemoryManager *pMe
 
 static inline NvBool memmgrIsPmaAddrTree(struct MemoryManager *pMemoryManager) {
     return pMemoryManager->bPmaAddrTree;
-}
-
-static inline NvBool memmgrIsMemoryProtectionEnabledInSw(struct MemoryManager *pMemoryManager) {
-    return pMemoryManager->bSupportCCProtectedMemoryAlloc;
-}
-
-static inline void memmgrSetMemoryProtectionInSw(struct MemoryManager *pMemoryManager, NvU32 val) {
-    pMemoryManager->bSupportCCProtectedMemoryAlloc = !!val;
 }
 
 static inline NvU64 memmgrGetRsvdMemoryBase(struct MemoryManager *pMemoryManager) {

@@ -66,6 +66,8 @@ ct_assert(NV2080_NVLINK_CORE_LINK_STATE_ENABLE_PM ==
           NVLINK_LINKSTATE_ENABLE_PM);
 ct_assert(NV2080_NVLINK_CORE_LINK_STATE_DISABLE_PM ==
           NVLINK_LINKSTATE_DISABLE_PM);
+ct_assert(NV2080_NVLINK_CORE_LINK_STATE_SLEEP ==
+          NVLINK_LINKSTATE_SLEEP);
 ct_assert(NV2080_NVLINK_CORE_LINK_STATE_SAVE_STATE ==
           NVLINK_LINKSTATE_SAVE_STATE);
 ct_assert(NV2080_NVLINK_CORE_LINK_STATE_RESTORE_STATE ==
@@ -96,6 +98,12 @@ ct_assert(NV2080_NVLINK_CORE_LINK_STATE_CONTAIN ==
           NVLINK_LINKSTATE_CONTAIN);
 ct_assert(NV2080_NVLINK_CORE_LINK_STATE_INITTL ==
           NVLINK_LINKSTATE_INITTL);
+ct_assert(NV2080_NVLINK_CORE_LINK_STATE_INITPHASE5 ==
+          NVLINK_LINKSTATE_INITPHASE5);
+ct_assert(NV2080_NVLINK_CORE_LINK_STATE_ALI ==
+          NVLINK_LINKSTATE_ALI);
+ct_assert(NV2080_NVLINK_CORE_LINK_STATE_ACTIVE_PENDING ==
+          NVLINK_LINKSTATE_ACTIVE_PENDING);
 
 /*!
  * Compile time asserts to ensure NV2080_NVLINK_CORE_SUBLINK_STATE_TX* ==
@@ -1300,6 +1308,35 @@ knvlinkCoreWriteDiscoveryTokenCallback
 
     pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
 
+    //
+    // If Nvlink4.0+ get the "token" values via SIDs stored
+    // by MINION
+    //
+    if (pNvlinkLink->ipVerDlPl >= NVLINK_VERSION_40)
+    {
+        NV2080_CTRL_NVLINK_UPDATE_REMOTE_LOCAL_SID_PARAMS params;
+        portMemSet(&params, 0, sizeof(params));
+        params.linkId = pNvlinkLink->linkId;
+
+        status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                     NV2080_CTRL_CMD_NVLINK_UPDATE_REMOTE_LOCAL_SID,
+                                     (void *)&params, sizeof(params));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Error updating Local/Remote SID Info!\n");
+            return status;
+        }
+
+        link->remoteSid =
+            params.remoteLocalSidInfo.remoteSid;
+        link->remoteDeviceType =
+            params.remoteLocalSidInfo.remoteDeviceType;
+        link->remoteLinkId =
+            params.remoteLocalSidInfo.remoteLinkId;
+        link->localSid =
+            params.remoteLocalSidInfo.localSid;
+    }
+    else
     {
 
         NV2080_CTRL_NVLINK_CORE_CALLBACK_PARAMS params;
@@ -1377,6 +1414,12 @@ knvlinkCoreReadDiscoveryTokenCallback
 
     pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
 
+    // If Nvlink4.0+ then reading tokens is no longer supported
+    if (pNvlinkLink->ipVerDlPl >= NVLINK_VERSION_40)
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+    }
+    else
     {
         params.linkId            = pNvlinkLink->linkId;
         params.callbackType.type =
@@ -1444,6 +1487,50 @@ knvlinkCoreTrainingCompleteCallback
     {
         NV_PRINTF(LEVEL_ERROR, "Error issuing NvLink Training Complete callback!\n");
     }
+}
+
+/*
+ * @brief nvlinkCoreGetUphyLoadCallback send ALI training on the specified link
+ *
+ * @param[in]  link        nvlink_link pointer
+ */
+NvlStatus
+knvlinkCoreAliTrainingCallback
+(
+    nvlink_link *link
+)
+{
+    KNVLINK_RM_LINK *pNvlinkLink = (KNVLINK_RM_LINK *) link->link_info;
+    POBJGPU          pGpu        = pNvlinkLink->pGpu;
+    KernelNvlink   * pKernelNvlink     = NULL;
+    NV_STATUS        status;
+
+    if (pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Error processing link info!\n");
+        return 1;
+    }
+
+    pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    status = knvlinkPreTrainLinksToActiveAli(pGpu, pKernelNvlink,
+                                                 BIT(pNvlinkLink->linkId), NV_TRUE);
+    if (status != NV_OK)
+    {
+        goto knvlinkCoreAliTrainingCallback_end;
+    }
+
+    status = knvlinkTrainLinksToActiveAli(pGpu, pKernelNvlink, NVBIT(pNvlinkLink->linkId), NV_FALSE);
+
+knvlinkCoreAliTrainingCallback_end:
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to request Link %d to transition to active\n", pNvlinkLink->linkId);
+        return 1;
+    }
+
+    return 0;
 }
 
 /*!

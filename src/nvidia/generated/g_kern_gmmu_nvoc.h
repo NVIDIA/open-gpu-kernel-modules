@@ -281,8 +281,20 @@ struct KernelGmmu {
     NV_STATUS (*__kgmmuInstBlkVaLimitGet__)(struct KernelGmmu *, struct OBJVASPACE *, NvU32, INST_BLK_INIT_PARAMS *, NvU32 *, NvU64 *);
     NvU32 (*__kgmmuSetTlbInvalidateMembarWarParameters__)(OBJGPU *, struct KernelGmmu *, TLB_INVALIDATE_PARAMS *);
     NV_STATUS (*__kgmmuSetTlbInvalidationScope__)(OBJGPU *, struct KernelGmmu *, NvU32, TLB_INVALIDATE_PARAMS *);
+    void (*__kgmmuFmtInitPteComptagLine__)(struct KernelGmmu *, struct GMMU_FMT_PTE *, const NvU32);
+    void (*__kgmmuFmtInitPeerPteFld__)(struct KernelGmmu *, struct GMMU_FMT_PTE *, const NvU32);
+    void (*__kgmmuFmtInitPte__)(struct KernelGmmu *, struct GMMU_FMT_PTE *, const NvU32, const struct NV_FIELD_ENUM_ENTRY *, const NvBool);
+    void (*__kgmmuFmtInitPde__)(struct KernelGmmu *, struct GMMU_FMT_PDE *, const NvU32, const struct NV_FIELD_ENUM_ENTRY *);
+    NvBool (*__kgmmuFmtIsVersionSupported__)(struct KernelGmmu *, NvU32);
     void (*__kgmmuFmtInitLevels__)(struct KernelGmmu *, MMU_FMT_LEVEL *, const NvU32, const NvU32, const NvU32);
+    void (*__kgmmuFmtInitPdeMulti__)(struct KernelGmmu *, struct GMMU_FMT_PDE_MULTI *, const NvU32, const struct NV_FIELD_ENUM_ENTRY *);
+    NV_STATUS (*__kgmmuFmtFamiliesInit__)(OBJGPU *, struct KernelGmmu *);
+    NV_STATUS (*__kgmmuTranslatePtePcfFromSw__)(struct KernelGmmu *, NvU32, NvU32 *);
+    NV_STATUS (*__kgmmuTranslatePtePcfFromHw__)(struct KernelGmmu *, NvU32, NvBool, NvU32 *);
+    NV_STATUS (*__kgmmuTranslatePdePcfFromSw__)(struct KernelGmmu *, NvU32, NvU32 *);
+    NV_STATUS (*__kgmmuTranslatePdePcfFromHw__)(struct KernelGmmu *, NvU32, GMMU_APERTURE, NvU32 *);
     NV_STATUS (*__kgmmuSetupWarForBug2720120__)(struct KernelGmmu *, GMMU_FMT_FAMILY *);
+    NvU32 (*__kgmmuGetGraphicsEngineId__)(struct KernelGmmu *);
     NV_STATUS (*__kgmmuReconcileTunableState__)(POBJGPU, struct KernelGmmu *, void *);
     NV_STATUS (*__kgmmuStateLoad__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStateUnload__)(POBJGPU, struct KernelGmmu *, NvU32);
@@ -304,7 +316,7 @@ struct KernelGmmu {
     NvBool PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED;
     NvBool PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED;
     const NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo;
-    GMMU_FMT_FAMILY *pFmtFamilies[2];
+    GMMU_FMT_FAMILY *pFmtFamilies[3];
     NvU32 defaultBigPageSize;
     NvU32 PDEAperture;
     NvU32 PDEAttr;
@@ -378,10 +390,34 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 #define kgmmuSetTlbInvalidateMembarWarParameters_HAL(pGpu, pKernelGmmu, pParams) kgmmuSetTlbInvalidateMembarWarParameters_DISPATCH(pGpu, pKernelGmmu, pParams)
 #define kgmmuSetTlbInvalidationScope(pGpu, pKernelGmmu, flags, pParams) kgmmuSetTlbInvalidationScope_DISPATCH(pGpu, pKernelGmmu, flags, pParams)
 #define kgmmuSetTlbInvalidationScope_HAL(pGpu, pKernelGmmu, flags, pParams) kgmmuSetTlbInvalidationScope_DISPATCH(pGpu, pKernelGmmu, flags, pParams)
+#define kgmmuFmtInitPteComptagLine(pKernelGmmu, pPte, version) kgmmuFmtInitPteComptagLine_DISPATCH(pKernelGmmu, pPte, version)
+#define kgmmuFmtInitPteComptagLine_HAL(pKernelGmmu, pPte, version) kgmmuFmtInitPteComptagLine_DISPATCH(pKernelGmmu, pPte, version)
+#define kgmmuFmtInitPeerPteFld(pKernelGmmu, pPte, version) kgmmuFmtInitPeerPteFld_DISPATCH(pKernelGmmu, pPte, version)
+#define kgmmuFmtInitPeerPteFld_HAL(pKernelGmmu, pPte, version) kgmmuFmtInitPeerPteFld_DISPATCH(pKernelGmmu, pPte, version)
+#define kgmmuFmtInitPte(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture) kgmmuFmtInitPte_DISPATCH(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture)
+#define kgmmuFmtInitPte_HAL(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture) kgmmuFmtInitPte_DISPATCH(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture)
+#define kgmmuFmtInitPde(pKernelGmmu, pPde, version, pPdeApertures) kgmmuFmtInitPde_DISPATCH(pKernelGmmu, pPde, version, pPdeApertures)
+#define kgmmuFmtInitPde_HAL(pKernelGmmu, pPde, version, pPdeApertures) kgmmuFmtInitPde_DISPATCH(pKernelGmmu, pPde, version, pPdeApertures)
+#define kgmmuFmtIsVersionSupported(pKernelGmmu, version) kgmmuFmtIsVersionSupported_DISPATCH(pKernelGmmu, version)
+#define kgmmuFmtIsVersionSupported_HAL(pKernelGmmu, version) kgmmuFmtIsVersionSupported_DISPATCH(pKernelGmmu, version)
 #define kgmmuFmtInitLevels(pKernelGmmu, pLevels, numLevels, version, bigPageShift) kgmmuFmtInitLevels_DISPATCH(pKernelGmmu, pLevels, numLevels, version, bigPageShift)
 #define kgmmuFmtInitLevels_HAL(pKernelGmmu, pLevels, numLevels, version, bigPageShift) kgmmuFmtInitLevels_DISPATCH(pKernelGmmu, pLevels, numLevels, version, bigPageShift)
+#define kgmmuFmtInitPdeMulti(pKernelGmmu, pPdeMulti, version, pPdeApertures) kgmmuFmtInitPdeMulti_DISPATCH(pKernelGmmu, pPdeMulti, version, pPdeApertures)
+#define kgmmuFmtInitPdeMulti_HAL(pKernelGmmu, pPdeMulti, version, pPdeApertures) kgmmuFmtInitPdeMulti_DISPATCH(pKernelGmmu, pPdeMulti, version, pPdeApertures)
+#define kgmmuFmtFamiliesInit(pGpu, pKernelGmmu) kgmmuFmtFamiliesInit_DISPATCH(pGpu, pKernelGmmu)
+#define kgmmuFmtFamiliesInit_HAL(pGpu, pKernelGmmu) kgmmuFmtFamiliesInit_DISPATCH(pGpu, pKernelGmmu)
+#define kgmmuTranslatePtePcfFromSw(pKernelGmmu, arg0, arg1) kgmmuTranslatePtePcfFromSw_DISPATCH(pKernelGmmu, arg0, arg1)
+#define kgmmuTranslatePtePcfFromSw_HAL(pKernelGmmu, arg0, arg1) kgmmuTranslatePtePcfFromSw_DISPATCH(pKernelGmmu, arg0, arg1)
+#define kgmmuTranslatePtePcfFromHw(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePtePcfFromHw_DISPATCH(pKernelGmmu, arg0, arg1, arg2)
+#define kgmmuTranslatePtePcfFromHw_HAL(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePtePcfFromHw_DISPATCH(pKernelGmmu, arg0, arg1, arg2)
+#define kgmmuTranslatePdePcfFromSw(pKernelGmmu, arg0, arg1) kgmmuTranslatePdePcfFromSw_DISPATCH(pKernelGmmu, arg0, arg1)
+#define kgmmuTranslatePdePcfFromSw_HAL(pKernelGmmu, arg0, arg1) kgmmuTranslatePdePcfFromSw_DISPATCH(pKernelGmmu, arg0, arg1)
+#define kgmmuTranslatePdePcfFromHw(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePdePcfFromHw_DISPATCH(pKernelGmmu, arg0, arg1, arg2)
+#define kgmmuTranslatePdePcfFromHw_HAL(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePdePcfFromHw_DISPATCH(pKernelGmmu, arg0, arg1, arg2)
 #define kgmmuSetupWarForBug2720120(pKernelGmmu, pFam) kgmmuSetupWarForBug2720120_DISPATCH(pKernelGmmu, pFam)
 #define kgmmuSetupWarForBug2720120_HAL(pKernelGmmu, pFam) kgmmuSetupWarForBug2720120_DISPATCH(pKernelGmmu, pFam)
+#define kgmmuGetGraphicsEngineId(pKernelGmmu) kgmmuGetGraphicsEngineId_DISPATCH(pKernelGmmu)
+#define kgmmuGetGraphicsEngineId_HAL(pKernelGmmu) kgmmuGetGraphicsEngineId_DISPATCH(pKernelGmmu)
 #define kgmmuReconcileTunableState(pGpu, pEngstate, pTunableState) kgmmuReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kgmmuStateLoad(pGpu, pEngstate, arg0) kgmmuStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kgmmuStateUnload(pGpu, pEngstate, arg0) kgmmuStateUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -579,79 +615,6 @@ static inline void kgmmuSetPdbToInvalidate(OBJGPU *pGpu, struct KernelGmmu *pKer
 
 #define kgmmuSetPdbToInvalidate_HAL(pGpu, pKernelGmmu, pParams) kgmmuSetPdbToInvalidate(pGpu, pKernelGmmu, pParams)
 
-void kgmmuFmtInitPteComptagLine_TU10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version);
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline void kgmmuFmtInitPteComptagLine(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuFmtInitPteComptagLine(pKernelGmmu, pPte, version) kgmmuFmtInitPteComptagLine_TU10X(pKernelGmmu, pPte, version)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuFmtInitPteComptagLine_HAL(pKernelGmmu, pPte, version) kgmmuFmtInitPteComptagLine(pKernelGmmu, pPte, version)
-
-void kgmmuFmtInitPeerPteFld_TU10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version);
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline void kgmmuFmtInitPeerPteFld(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuFmtInitPeerPteFld(pKernelGmmu, pPte, version) kgmmuFmtInitPeerPteFld_TU10X(pKernelGmmu, pPte, version)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuFmtInitPeerPteFld_HAL(pKernelGmmu, pPte, version) kgmmuFmtInitPeerPteFld(pKernelGmmu, pPte, version)
-
-void kgmmuFmtInitPte_GP10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPteApertures, const NvBool bUnifiedAperture);
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline void kgmmuFmtInitPte(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPteApertures, const NvBool bUnifiedAperture) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuFmtInitPte(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture) kgmmuFmtInitPte_GP10X(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuFmtInitPte_HAL(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture) kgmmuFmtInitPte(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture)
-
-void kgmmuFmtInitPde_GP10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE *pPde, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures);
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline void kgmmuFmtInitPde(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE *pPde, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuFmtInitPde(pKernelGmmu, pPde, version, pPdeApertures) kgmmuFmtInitPde_GP10X(pKernelGmmu, pPde, version, pPdeApertures)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuFmtInitPde_HAL(pKernelGmmu, pPde, version, pPdeApertures) kgmmuFmtInitPde(pKernelGmmu, pPde, version, pPdeApertures)
-
-NvBool kgmmuFmtIsVersionSupported_GP10X(struct KernelGmmu *pKernelGmmu, NvU32 version);
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline NvBool kgmmuFmtIsVersionSupported(struct KernelGmmu *pKernelGmmu, NvU32 version) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuFmtIsVersionSupported(pKernelGmmu, version) kgmmuFmtIsVersionSupported_GP10X(pKernelGmmu, version)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuFmtIsVersionSupported_HAL(pKernelGmmu, version) kgmmuFmtIsVersionSupported(pKernelGmmu, version)
-
-void kgmmuFmtInitPdeMulti_GP10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE_MULTI *pPdeMulti, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures);
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline void kgmmuFmtInitPdeMulti(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE_MULTI *pPdeMulti, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuFmtInitPdeMulti(pKernelGmmu, pPdeMulti, version, pPdeApertures) kgmmuFmtInitPdeMulti_GP10X(pKernelGmmu, pPdeMulti, version, pPdeApertures)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuFmtInitPdeMulti_HAL(pKernelGmmu, pPdeMulti, version, pPdeApertures) kgmmuFmtInitPdeMulti(pKernelGmmu, pPdeMulti, version, pPdeApertures)
-
 void kgmmuDetermineMaxVASize_GM107(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
 
 #ifdef __nvoc_kern_gmmu_h_disabled
@@ -663,79 +626,6 @@ static inline void kgmmuDetermineMaxVASize(OBJGPU *pGpu, struct KernelGmmu *pKer
 #endif //__nvoc_kern_gmmu_h_disabled
 
 #define kgmmuDetermineMaxVASize_HAL(pGpu, pKernelGmmu) kgmmuDetermineMaxVASize(pGpu, pKernelGmmu)
-
-NV_STATUS kgmmuFmtFamiliesInit_TU102(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline NV_STATUS kgmmuFmtFamiliesInit(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuFmtFamiliesInit(pGpu, pKernelGmmu) kgmmuFmtFamiliesInit_TU102(pGpu, pKernelGmmu)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuFmtFamiliesInit_HAL(pGpu, pKernelGmmu) kgmmuFmtFamiliesInit(pGpu, pKernelGmmu)
-
-static inline NV_STATUS kgmmuTranslatePtePcfFromSw_56cd7a(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1) {
-    return NV_OK;
-}
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline NV_STATUS kgmmuTranslatePtePcfFromSw(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuTranslatePtePcfFromSw(pKernelGmmu, arg0, arg1) kgmmuTranslatePtePcfFromSw_56cd7a(pKernelGmmu, arg0, arg1)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuTranslatePtePcfFromSw_HAL(pKernelGmmu, arg0, arg1) kgmmuTranslatePtePcfFromSw(pKernelGmmu, arg0, arg1)
-
-static inline NV_STATUS kgmmuTranslatePtePcfFromHw_56cd7a(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvBool arg1, NvU32 *arg2) {
-    return NV_OK;
-}
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline NV_STATUS kgmmuTranslatePtePcfFromHw(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvBool arg1, NvU32 *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuTranslatePtePcfFromHw(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePtePcfFromHw_56cd7a(pKernelGmmu, arg0, arg1, arg2)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuTranslatePtePcfFromHw_HAL(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePtePcfFromHw(pKernelGmmu, arg0, arg1, arg2)
-
-static inline NV_STATUS kgmmuTranslatePdePcfFromSw_56cd7a(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1) {
-    return NV_OK;
-}
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline NV_STATUS kgmmuTranslatePdePcfFromSw(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuTranslatePdePcfFromSw(pKernelGmmu, arg0, arg1) kgmmuTranslatePdePcfFromSw_56cd7a(pKernelGmmu, arg0, arg1)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuTranslatePdePcfFromSw_HAL(pKernelGmmu, arg0, arg1) kgmmuTranslatePdePcfFromSw(pKernelGmmu, arg0, arg1)
-
-static inline NV_STATUS kgmmuTranslatePdePcfFromHw_56cd7a(struct KernelGmmu *pKernelGmmu, NvU32 arg0, GMMU_APERTURE arg1, NvU32 *arg2) {
-    return NV_OK;
-}
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline NV_STATUS kgmmuTranslatePdePcfFromHw(struct KernelGmmu *pKernelGmmu, NvU32 arg0, GMMU_APERTURE arg1, NvU32 *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuTranslatePdePcfFromHw(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePdePcfFromHw_56cd7a(pKernelGmmu, arg0, arg1, arg2)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuTranslatePdePcfFromHw_HAL(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePdePcfFromHw(pKernelGmmu, arg0, arg1, arg2)
 
 NV_STATUS kgmmuGetFaultRegisterMappings_TU102(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvU32 index, NvP64 *pFaultBufferGet, NvP64 *pFaultBufferPut, NvP64 *pFaultBufferInfo, NvP64 *faultIntr, NvP64 *faultIntrSet, NvP64 *faultIntrClear, NvU32 *faultMask, NvP64 *pPrefetchCtrl);
 
@@ -943,19 +833,6 @@ static inline NvBool kgmmuTestAccessCounterWriteNak(OBJGPU *pGpu, struct KernelG
 
 #define kgmmuTestAccessCounterWriteNak_HAL(pGpu, pKernelGmmu) kgmmuTestAccessCounterWriteNak(pGpu, pKernelGmmu)
 
-NvU32 kgmmuGetGraphicsEngineId_GV100(struct KernelGmmu *pKernelGmmu);
-
-#ifdef __nvoc_kern_gmmu_h_disabled
-static inline NvU32 kgmmuGetGraphicsEngineId(struct KernelGmmu *pKernelGmmu) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
-    return 0;
-}
-#else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuGetGraphicsEngineId(pKernelGmmu) kgmmuGetGraphicsEngineId_GV100(pKernelGmmu)
-#endif //__nvoc_kern_gmmu_h_disabled
-
-#define kgmmuGetGraphicsEngineId_HAL(pKernelGmmu) kgmmuGetGraphicsEngineId(pKernelGmmu)
-
 NV_STATUS kgmmuEnableNvlinkComputePeerAddressing_GV100(struct KernelGmmu *pKernelGmmu);
 
 #ifdef __nvoc_kern_gmmu_h_disabled
@@ -1040,9 +917,67 @@ static inline NV_STATUS kgmmuSetTlbInvalidationScope_DISPATCH(OBJGPU *pGpu, stru
     return pKernelGmmu->__kgmmuSetTlbInvalidationScope__(pGpu, pKernelGmmu, flags, pParams);
 }
 
+void kgmmuFmtInitPteComptagLine_TU10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version);
+
+static inline void kgmmuFmtInitPteComptagLine_b3696a(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version) {
+    return;
+}
+
+static inline void kgmmuFmtInitPteComptagLine_DISPATCH(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version) {
+    pKernelGmmu->__kgmmuFmtInitPteComptagLine__(pKernelGmmu, pPte, version);
+}
+
+void kgmmuFmtInitPeerPteFld_TU10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version);
+
+static inline void kgmmuFmtInitPeerPteFld_b3696a(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version) {
+    return;
+}
+
+static inline void kgmmuFmtInitPeerPteFld_DISPATCH(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version) {
+    pKernelGmmu->__kgmmuFmtInitPeerPteFld__(pKernelGmmu, pPte, version);
+}
+
+void kgmmuFmtInitPte_GP10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPteApertures, const NvBool bUnifiedAperture);
+
+void kgmmuFmtInitPte_GH10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPteApertures, const NvBool bUnifiedAperture);
+
+static inline void kgmmuFmtInitPte_b3696a(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPteApertures, const NvBool bUnifiedAperture) {
+    return;
+}
+
+static inline void kgmmuFmtInitPte_DISPATCH(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PTE *pPte, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPteApertures, const NvBool bUnifiedAperture) {
+    pKernelGmmu->__kgmmuFmtInitPte__(pKernelGmmu, pPte, version, pPteApertures, bUnifiedAperture);
+}
+
+void kgmmuFmtInitPde_GP10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE *pPde, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures);
+
+void kgmmuFmtInitPde_GH10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE *pPde, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures);
+
+static inline void kgmmuFmtInitPde_b3696a(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE *pPde, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures) {
+    return;
+}
+
+static inline void kgmmuFmtInitPde_DISPATCH(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE *pPde, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures) {
+    pKernelGmmu->__kgmmuFmtInitPde__(pKernelGmmu, pPde, version, pPdeApertures);
+}
+
+NvBool kgmmuFmtIsVersionSupported_GP10X(struct KernelGmmu *pKernelGmmu, NvU32 version);
+
+NvBool kgmmuFmtIsVersionSupported_GH10X(struct KernelGmmu *pKernelGmmu, NvU32 version);
+
+static inline NvBool kgmmuFmtIsVersionSupported_491d52(struct KernelGmmu *pKernelGmmu, NvU32 version) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool kgmmuFmtIsVersionSupported_DISPATCH(struct KernelGmmu *pKernelGmmu, NvU32 version) {
+    return pKernelGmmu->__kgmmuFmtIsVersionSupported__(pKernelGmmu, version);
+}
+
 void kgmmuFmtInitLevels_GP10X(struct KernelGmmu *pKernelGmmu, MMU_FMT_LEVEL *pLevels, const NvU32 numLevels, const NvU32 version, const NvU32 bigPageShift);
 
 void kgmmuFmtInitLevels_GA10X(struct KernelGmmu *pKernelGmmu, MMU_FMT_LEVEL *pLevels, const NvU32 numLevels, const NvU32 version, const NvU32 bigPageShift);
+
+void kgmmuFmtInitLevels_GH10X(struct KernelGmmu *pKernelGmmu, MMU_FMT_LEVEL *pLevels, const NvU32 numLevels, const NvU32 version, const NvU32 bigPageShift);
 
 static inline void kgmmuFmtInitLevels_b3696a(struct KernelGmmu *pKernelGmmu, MMU_FMT_LEVEL *pLevels, const NvU32 numLevels, const NvU32 version, const NvU32 bigPageShift) {
     return;
@@ -1050,6 +985,70 @@ static inline void kgmmuFmtInitLevels_b3696a(struct KernelGmmu *pKernelGmmu, MMU
 
 static inline void kgmmuFmtInitLevels_DISPATCH(struct KernelGmmu *pKernelGmmu, MMU_FMT_LEVEL *pLevels, const NvU32 numLevels, const NvU32 version, const NvU32 bigPageShift) {
     pKernelGmmu->__kgmmuFmtInitLevels__(pKernelGmmu, pLevels, numLevels, version, bigPageShift);
+}
+
+void kgmmuFmtInitPdeMulti_GP10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE_MULTI *pPdeMulti, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures);
+
+void kgmmuFmtInitPdeMulti_GH10X(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE_MULTI *pPdeMulti, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures);
+
+static inline void kgmmuFmtInitPdeMulti_b3696a(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE_MULTI *pPdeMulti, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures) {
+    return;
+}
+
+static inline void kgmmuFmtInitPdeMulti_DISPATCH(struct KernelGmmu *pKernelGmmu, struct GMMU_FMT_PDE_MULTI *pPdeMulti, const NvU32 version, const struct NV_FIELD_ENUM_ENTRY *pPdeApertures) {
+    pKernelGmmu->__kgmmuFmtInitPdeMulti__(pKernelGmmu, pPdeMulti, version, pPdeApertures);
+}
+
+NV_STATUS kgmmuFmtFamiliesInit_TU102(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
+
+NV_STATUS kgmmuFmtFamiliesInit_GH100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
+
+static inline NV_STATUS kgmmuFmtFamiliesInit_56cd7a(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kgmmuFmtFamiliesInit_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
+    return pKernelGmmu->__kgmmuFmtFamiliesInit__(pGpu, pKernelGmmu);
+}
+
+NV_STATUS kgmmuTranslatePtePcfFromSw_GH100(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1);
+
+static inline NV_STATUS kgmmuTranslatePtePcfFromSw_56cd7a(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kgmmuTranslatePtePcfFromSw_DISPATCH(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1) {
+    return pKernelGmmu->__kgmmuTranslatePtePcfFromSw__(pKernelGmmu, arg0, arg1);
+}
+
+NV_STATUS kgmmuTranslatePtePcfFromHw_GH100(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvBool arg1, NvU32 *arg2);
+
+static inline NV_STATUS kgmmuTranslatePtePcfFromHw_56cd7a(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvBool arg1, NvU32 *arg2) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kgmmuTranslatePtePcfFromHw_DISPATCH(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvBool arg1, NvU32 *arg2) {
+    return pKernelGmmu->__kgmmuTranslatePtePcfFromHw__(pKernelGmmu, arg0, arg1, arg2);
+}
+
+NV_STATUS kgmmuTranslatePdePcfFromSw_GH100(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1);
+
+static inline NV_STATUS kgmmuTranslatePdePcfFromSw_56cd7a(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kgmmuTranslatePdePcfFromSw_DISPATCH(struct KernelGmmu *pKernelGmmu, NvU32 arg0, NvU32 *arg1) {
+    return pKernelGmmu->__kgmmuTranslatePdePcfFromSw__(pKernelGmmu, arg0, arg1);
+}
+
+NV_STATUS kgmmuTranslatePdePcfFromHw_GH100(struct KernelGmmu *pKernelGmmu, NvU32 arg0, GMMU_APERTURE arg1, NvU32 *arg2);
+
+static inline NV_STATUS kgmmuTranslatePdePcfFromHw_56cd7a(struct KernelGmmu *pKernelGmmu, NvU32 arg0, GMMU_APERTURE arg1, NvU32 *arg2) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kgmmuTranslatePdePcfFromHw_DISPATCH(struct KernelGmmu *pKernelGmmu, NvU32 arg0, GMMU_APERTURE arg1, NvU32 *arg2) {
+    return pKernelGmmu->__kgmmuTranslatePdePcfFromHw__(pKernelGmmu, arg0, arg1, arg2);
 }
 
 NV_STATUS kgmmuSetupWarForBug2720120_GA100(struct KernelGmmu *pKernelGmmu, GMMU_FMT_FAMILY *pFam);
@@ -1060,6 +1059,18 @@ static inline NV_STATUS kgmmuSetupWarForBug2720120_56cd7a(struct KernelGmmu *pKe
 
 static inline NV_STATUS kgmmuSetupWarForBug2720120_DISPATCH(struct KernelGmmu *pKernelGmmu, GMMU_FMT_FAMILY *pFam) {
     return pKernelGmmu->__kgmmuSetupWarForBug2720120__(pKernelGmmu, pFam);
+}
+
+NvU32 kgmmuGetGraphicsEngineId_GV100(struct KernelGmmu *pKernelGmmu);
+
+NvU32 kgmmuGetGraphicsEngineId_GH100(struct KernelGmmu *pKernelGmmu);
+
+static inline NvU32 kgmmuGetGraphicsEngineId_4a4dee(struct KernelGmmu *pKernelGmmu) {
+    return 0;
+}
+
+static inline NvU32 kgmmuGetGraphicsEngineId_DISPATCH(struct KernelGmmu *pKernelGmmu) {
+    return pKernelGmmu->__kgmmuGetGraphicsEngineId__(pKernelGmmu);
 }
 
 static inline NV_STATUS kgmmuReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelGmmu *pEngstate, void *pTunableState) {

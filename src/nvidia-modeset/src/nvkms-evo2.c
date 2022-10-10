@@ -2008,7 +2008,7 @@ static void EvoFlip90(NVDevEvoPtr pDevEvo,
                     sd,
                     head,
                     pHwState->pSurfaceEvo[NVKMS_LEFT])) {
-                const struct NvKmsCscMatrix zeroCscMatrix = { 0 };
+                const struct NvKmsCscMatrix zeroCscMatrix = { };
 
                 nvPushEvoSubDevMask(pDevEvo, NVBIT(sd));
                 EvoPushSetCoreSurfaceMethodsForOneSd(pDevEvo, sd, head,
@@ -2768,6 +2768,7 @@ static void EvoSetOutputScaler90(const NVDispEvoRec *pDispEvo, const NvU32 head,
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVEvoChannelPtr pChannel = pDevEvo->core;
     const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+    const NVHwModeViewPortEvo *pViewPort = &pHeadState->timings.viewPort;
     NvU32 setControlOutputScaler = 0;
     NvU32 vTapsHw = 0, hTapsHw = 0;
 
@@ -2775,7 +2776,7 @@ static void EvoSetOutputScaler90(const NVDispEvoRec *pDispEvo, const NvU32 head,
     nvAssert(pDevEvo->subDevMaskStackDepth > 0);
 
     nvUpdateUpdateState(pDevEvo, updateState, pChannel);
-    switch (pHeadState->vTaps) {
+    switch (pViewPort->vTaps) {
     case NV_EVO_SCALER_5TAPS:
         vTapsHw = NV917D_HEAD_SET_CONTROL_OUTPUT_SCALER_VERTICAL_TAPS_TAPS_5;
         break;
@@ -2793,7 +2794,7 @@ static void EvoSetOutputScaler90(const NVDispEvoRec *pDispEvo, const NvU32 head,
         vTapsHw = NV917D_HEAD_SET_CONTROL_OUTPUT_SCALER_VERTICAL_TAPS_TAPS_1;
         break;
     }
-    switch (pHeadState->hTaps) {
+    switch (pViewPort->hTaps) {
     case NV_EVO_SCALER_8TAPS:
         hTapsHw = NV917D_HEAD_SET_CONTROL_OUTPUT_SCALER_HORIZONTAL_TAPS_TAPS_8;
         break;
@@ -2814,7 +2815,7 @@ static void EvoSetOutputScaler90(const NVDispEvoRec *pDispEvo, const NvU32 head,
         DRF_NUM(917D, _HEAD_SET_CONTROL_OUTPUT_SCALER, _VERTICAL_TAPS,
                 vTapsHw);
 
-    if (pHeadState->attributes.imageSharpening.available) {
+    if (nvIsImageSharpeningAvailable(&pHeadState->timings.viewPort)) {
         setControlOutputScaler =
             FLD_SET_DRF_NUM(917D, _HEAD_SET_CONTROL_OUTPUT_SCALER,
                             _HRESPONSE_BIAS, imageSharpeningValue,
@@ -3601,7 +3602,7 @@ static void EvoGetScanLine90(const NVDispEvoRec *pDispEvo,
 
 static NvU32 EvoGetActiveViewportOffset94(NVDispEvoRec *pDispEvo, NvU32 head)
 {
-    NV5070_CTRL_CMD_GET_ACTIVE_VIEWPORT_BASE_PARAMS params = {0};
+    NV5070_CTRL_CMD_GET_ACTIVE_VIEWPORT_BASE_PARAMS params = { };
     NvU32 ret;
     NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
 
@@ -3626,13 +3627,13 @@ EvoClearSurfaceUsage91(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
 {
     NvU32 sd;
     NvBool kickOff = FALSE;
-    NVEvoUpdateState updateState = { 0 };
+    NVEvoUpdateState updateState = { };
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
         NvU32 head;
 
         for (head = 0; head < pDevEvo->numHeads; head++) {
-            const struct NvKmsCscMatrix zeroCscMatrix = { 0 };
+            const struct NvKmsCscMatrix zeroCscMatrix = { };
             const NVEvoSubDevHeadStateRec *pSdHeadState =
                 &pDevEvo->gpus[sd].headState[head];
 

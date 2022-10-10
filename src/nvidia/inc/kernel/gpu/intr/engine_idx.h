@@ -81,13 +81,14 @@
 #define MC_ENGINE_IDX_NVJPG                         42
 #define MC_ENGINE_IDX_NVJPEG                        MC_ENGINE_IDX_NVJPG
 #define MC_ENGINE_IDX_NVJPEG0                       MC_ENGINE_IDX_NVJPEG
-#define MC_ENGINE_IDX_RESERVED43                    43
-#define MC_ENGINE_IDX_RESERVED44                    44
-#define MC_ENGINE_IDX_RESERVED45                    45
-#define MC_ENGINE_IDX_RESERVED46                    46
-#define MC_ENGINE_IDX_RESERVED47                    47
-#define MC_ENGINE_IDX_RESERVED48                    48
-#define MC_ENGINE_IDX_RESERVED49                    49
+#define MC_ENGINE_IDX_NVJPEG1                       43
+#define MC_ENGINE_IDX_NVJPEG2                       44
+#define MC_ENGINE_IDX_NVJPEG3                       45
+#define MC_ENGINE_IDX_NVJPEG4                       46
+#define MC_ENGINE_IDX_NVJPEG5                       47
+#define MC_ENGINE_IDX_NVJPEG6                       48
+#define MC_ENGINE_IDX_NVJPEG7                       49
+
 #define MC_ENGINE_IDX_REPLAYABLE_FAULT              50
 #define MC_ENGINE_IDX_ACCESS_CNTR                   51
 #define MC_ENGINE_IDX_NON_REPLAYABLE_FAULT          52
@@ -101,9 +102,9 @@
 #define MC_ENGINE_IDX_NVDEC2                        58
 #define MC_ENGINE_IDX_NVDEC3                        59
 #define MC_ENGINE_IDX_NVDEC4                        60
-#define MC_ENGINE_IDX_RESERVED61                    61
-#define MC_ENGINE_IDX_RESERVED62                    62
-#define MC_ENGINE_IDX_RESERVED63                    63
+#define MC_ENGINE_IDX_NVDEC5                        61
+#define MC_ENGINE_IDX_NVDEC6                        62
+#define MC_ENGINE_IDX_NVDEC7                        63
 #define MC_ENGINE_IDX_CPU_DOORBELL                  64
 #define MC_ENGINE_IDX_PRIV_DOORBELL                 65
 #define MC_ENGINE_IDX_MMU_ECC_ERROR                 66

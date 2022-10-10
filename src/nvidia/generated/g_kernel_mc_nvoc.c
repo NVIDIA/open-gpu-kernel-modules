@@ -70,12 +70,12 @@ static NV_STATUS __nvoc_thunk_KernelMc_engstateStateInitLocked(struct OBJGPU *pG
     return kmcStateInitLocked(pGpu, (struct KernelMc *)(((unsigned char *)pKernelMc) - __nvoc_rtti_KernelMc_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcReconcileTunableState(POBJGPU pGpu, struct KernelMc *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), pTunableState);
+static NV_STATUS __nvoc_thunk_KernelMc_engstateStateLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelMc, NvU32 arg0) {
+    return kmcStateLoad(pGpu, (struct KernelMc *)(((unsigned char *)pKernelMc) - __nvoc_rtti_KernelMc_OBJENGSTATE.offset), arg0);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcStateLoad(POBJGPU pGpu, struct KernelMc *pEngstate, NvU32 arg0) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), arg0);
+static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcReconcileTunableState(POBJGPU pGpu, struct KernelMc *pEngstate, void *pTunableState) {
+    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), pTunableState);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcStateUnload(POBJGPU pGpu, struct KernelMc *pEngstate, NvU32 arg0) {
@@ -191,12 +191,14 @@ static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pR
 
     pThis->__kmcStateInitLocked__ = &kmcStateInitLocked_IMPL;
 
+    pThis->__kmcStateLoad__ = &kmcStateLoad_IMPL;
+
     // Hal function -- kmcWritePmcEnableReg
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
         pThis->__kmcWritePmcEnableReg__ = &kmcWritePmcEnableReg_GK104;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0870fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | GH100 */ 
     {
         pThis->__kmcWritePmcEnableReg__ = &kmcWritePmcEnableReg_GA100;
     }
@@ -209,7 +211,7 @@ static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pR
     {
         pThis->__kmcReadPmcEnableReg__ = &kmcReadPmcEnableReg_GK104;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0000fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0870fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | GH100 */ 
     {
         pThis->__kmcReadPmcEnableReg__ = &kmcReadPmcEnableReg_GA100;
     }
@@ -219,9 +221,9 @@ static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pR
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelMc_engstateStateInitLocked;
 
-    pThis->__kmcReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_kmcReconcileTunableState;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_KernelMc_engstateStateLoad;
 
-    pThis->__kmcStateLoad__ = &__nvoc_thunk_OBJENGSTATE_kmcStateLoad;
+    pThis->__kmcReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_kmcReconcileTunableState;
 
     pThis->__kmcStateUnload__ = &__nvoc_thunk_OBJENGSTATE_kmcStateUnload;
 

@@ -192,6 +192,11 @@ _gmmuWalkCBLevelAlloc
         // Get the alignment from the parent PDE address shift.
         pPde = gmmuFmtGetPde(pFmt, pParent, subLevel);
 
+        if (pPde->version == GMMU_FMT_VERSION_3)
+        {
+            alignment = NVBIT(pPde->fldAddr.shift);
+        }
+        else
         {
             alignment = NVBIT(pPde->fldAddrSysmem.shift);
         }
@@ -718,6 +723,19 @@ _gmmuWalkCBUpdatePde
             const GMMU_FIELD_ADDRESS *pFldAddr = gmmuFmtPdePhysAddrFld(pPde, aperture);
             const NvU64               physAddr = memdescGetPhysAddr(pSubMemDesc, AT_GPU, 0);
 
+            if (pFmt->version == GMMU_FMT_VERSION_3)
+            {
+                NvU32 pdePcfHw    = 0;
+                NvU32 pdePcfSw    = 0;
+
+                pdePcfSw |= gvaspaceIsAtsEnabled(pGVAS) ? (1 << SW_MMU_PCF_ATS_ALLOWED_IDX) : 0;
+                pdePcfSw |= memdescGetVolatility(pSubMemDesc) ? (1 << SW_MMU_PCF_UNCACHED_IDX) : 0;
+
+                NV_ASSERT_OR_RETURN((kgmmuTranslatePdePcfFromSw_HAL(pKernelGmmu, pdePcfSw, &pdePcfHw) == NV_OK),
+                                      NV_ERR_INVALID_ARGUMENT);
+                nvFieldSet32(&pPde->fldPdePcf, pdePcfHw, entry.v8);
+            }
+            else
             {
                 nvFieldSetBool(&pPde->fldVolatile, memdescGetVolatility(pSubMemDesc), entry.v8);
             }

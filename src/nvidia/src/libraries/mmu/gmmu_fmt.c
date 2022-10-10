@@ -31,6 +31,7 @@ const NvU32 g_gmmuFmtVersions[GMMU_FMT_MAX_VERSION_COUNT] =
 {
     GMMU_FMT_VERSION_1,
     GMMU_FMT_VERSION_2,
+    GMMU_FMT_VERSION_3,
 };
 
 const NvU32 g_gmmuFmtBigPageShifts[GMMU_FMT_MAX_BIG_PAGE_SIZES] =
@@ -91,6 +92,12 @@ gmmuFmtPdePhysAddrFld
     const GMMU_APERTURE aperture
 )
 {
+    if (pPde->version == GMMU_FMT_VERSION_3)
+    {
+        // GMMU_FMT_VERSION_3 uses a unified PDE field
+        return &pPde->fldAddr;
+    }
+    else
     {
         switch (aperture)
         {

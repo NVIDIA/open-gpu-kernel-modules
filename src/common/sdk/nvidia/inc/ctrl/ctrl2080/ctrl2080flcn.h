@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,9 +29,6 @@
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file: ctrl/ctrl2080/ctrl2080flcn.finn
 //
-
-
-
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
@@ -83,196 +80,26 @@ typedef struct NV2080_CTRL_FLCN_GET_DMEM_USAGE_PARAMS {
  * @defgroup NVOS_INST_EVT Instrumentation event types.
  * @{
  */
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_RECALIBRATE                0x00U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_CTXSW_TICK                 0x01U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_CTXSW_YIELD                0x02U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_CTXSW_INT0                 0x03U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_CTXSW_BLOCK                0x04U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_UNBLOCK                    0x05U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_HANDLER_BEGIN              0x06U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_HANDLER_END                0x07U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_QUEUE_SEND                 0x08U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_QUEUE_RECV                 0x09U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_RPC_BEGIN                  0x0AU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_RPC_END                    0x0BU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_SKIPPED                    0x0CU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_EXEC_PROFILE_BEGIN    0x0DU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_EXEC_PROFILE_END      0x0EU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_LOAD_PROFILE_BEGIN    0x0FU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_LOAD_PROFILE_END      0x10U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_ODP_CODE_BEGIN        0x11U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_ODP_CODE_END          0x12U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_ODP_DATA_BEGIN        0x13U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_ODP_DATA_END          0x14U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_DMA_PROFILE_BEGIN     0x15U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_DMA_PROFILE_END       0x16U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_DMA_ODP_PROFILE_BEGIN 0x17U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_DMA_ODP_PROFILE_END   0x18U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_USER_CUSTOM_BEGIN          0x19U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_USER_CUSTOM_END            0x1AU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_USER_CUSTOM_2_BEGIN        0x1BU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_USER_CUSTOM_2_END          0x1CU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_USER_CUSTOM_3_BEGIN        0x1DU
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_USER_CUSTOM_3_END          0x1EU
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_RSVD_DO_NOT_USE    0x00U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_CTXSW_END          0x01U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_HW_IRQ_BEGIN       0x02U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_HW_IRQ_END         0x03U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TIMER_TICK         0x04U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_EVENT_BEGIN   0x05U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_EVENT_END     0x06U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_RM_QUEUE_LATENCY   0x07U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_SPECIAL_EVENT 0x08U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_DMA_BEGIN          0x09U
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_DMA_END            0x0AU
+
+//! Begin/end for arbitrary block of code. The payload contains a sub-ID for each location profiled.
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_GENERIC_BEGIN      0x0BU
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_GENERIC_END        0x0CU
+
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_EVENT_LATENCY 0x0DU
 /*!@}*/
 
-#define NV2080_CTRL_FLCN_NVOS_INST_INVALID_TASK_ID                0xFFU
-
-/*!
- * Interrupts and exceptions both use the same event type. Set the first bit
- * for exceptions to differentiate between the two.
- */
-#define NV2080_CTRL_FLCN_NVOS_INST_IRQ_ID(_irqId)                (_irqId)
-#define NV2080_CTRL_FLCN_NVOS_INST_EXCI_ID(_exciId)              (_exciId | (1 << 7))
-
-/*!
- * @defgroup NV_INSTRUMENTATION_EVENT_DATA Instrumentation event struct entry.
- *
- * This is a binary-packed representation of event type and additional data,
- * including timing data and tracking IDs.
- *
- * @{
- */
-
-/*!
- * Below DRF needs constants assigned to start and end so it can be represented in FINN properly
- * This is because FINN v1 will not have the ability to represent DRF's and bit fields yet
- */
-#define NV_INSTRUMENTATION_EVENT_DATA_EVENT_TYPE_DRF_EXTENT       (31)
-#define NV_INSTRUMENTATION_EVENT_DATA_EVENT_TYPE_DRF_BASE         (27)
-#define NV_INSTRUMENTATION_EVENT_DATA_EVENT_TYPE \
-    (NV_INSTRUMENTATION_EVENT_DATA_EVENT_TYPE_DRF_EXTENT) : \
-    (NV_INSTRUMENTATION_EVENT_DATA_EVENT_TYPE_DRF_BASE)
-
-#define NV_INSTRUMENTATION_EVENT_DATA_TASK_ID     26:19
-#define NV_INSTRUMENTATION_EVENT_DATA_EXTRA       26:19
-#define NV_INSTRUMENTATION_EVENT_DATA_TIME_DELTA  18:0
-#define NV_INSTRUMENTATION_EVENT_DATA_TIME_ABS    26:0
-/*!@}*/
-
-/*!
- * The maximum number of event types, calculated from the number of bits in the
- * event structure.
- */
-#define NV2080_CTRL_FLCN_NVOS_INST_NUM_EVT_TYPES                  (0x20U) /* finn: Evaluated from "(1 << (NV_INSTRUMENTATION_EVENT_DATA_EVENT_TYPE_DRF_EXTENT - NV_INSTRUMENTATION_EVENT_DATA_EVENT_TYPE_DRF_BASE + 1))" */
-
-/*!
- * The number of bytes required in the event mask to contain all event types.
- */
-#define NV2080_CTRL_FLCN_NVOS_INST_MASK_SIZE_BYTES                (0x4U) /* finn: Evaluated from "(NV2080_CTRL_FLCN_NVOS_INST_NUM_EVT_TYPES / 8)" */
-
-/*!
- * Instrumentation event bitfield structure. Exact structure depends on the
- * first five bits, which represent event type.
- *
- * For most event types, the structure is:
- *  - 5 bits of event type
- *  - 8 bits of ID
- *  - 19 bits of delta time (time since last event). If we've missed some
- *    events, it's the amount of time since the last event that was not
- *    skipped. If this time would overflow, a recalibration event is inserted
- *    instead (see below).
- *
- * The main exception is the recalibration event, which has no ID/delta time
- * fields and instead has a 27-bit absolute timestamp. This event is used
- * when the gap between two events is greater than the maximum 20-bit integer.
- *
- * All timestamps are represented in increments of 32ns
- * (the finest possible timer resolution).
- */
-typedef struct NVOS_INSTRUMENTATION_EVENT {
-    /*!
-     * Field containing the event type and data.
-     *
-     * Bitmask of @ref NV_INSTRUMENTATION_EVENT_DATA.
-     */
-    NvU32 data;
-} NVOS_INSTRUMENTATION_EVENT;
-typedef struct NVOS_INSTRUMENTATION_EVENT *PNVOS_INSTRUMENTATION_EVENT;
-
-/*
- * NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_MAP/UNMAP
- *
- * Params for both RmCtrls are the same (out for _MAP, in for _UNMAP)
- */
-#define NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_MAP   (0x20803112) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FLCN_INTERFACE_ID << 8) | 0x12" */
-
-#define NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_UNMAP (0x20803113) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FLCN_INTERFACE_ID << 8) | 0x13" */
-
-typedef struct NV2080_CTRL_FLCN_INSTRUMENTATION_MAP_PARAMS {
-    //! The engine type, from NV2080_ENGINE_TYPE_*
-    NvU32 engine;
-
-    //! The beginning of the instrumentation buffer, mapped to user memory.
-    NV_DECLARE_ALIGNED(NvP64 begin, 8);
-
-    // Priv pointer for memory mapping.
-    NV_DECLARE_ALIGNED(NvP64 pPriv, 8);
-
-    // The size of the user-mapped instrumentation buffer.
-    NV_DECLARE_ALIGNED(NvU64 size, 8);
-} NV2080_CTRL_FLCN_INSTRUMENTATION_MAP_PARAMS;
-
-/*
- * NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_GET_INFO
- *
- * Get static information about FLCN instrumentation.
- */
-#define NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_GET_INFO (0x20803114) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FLCN_INTERFACE_ID << 8) | NV2080_CTRL_FLCN_INSTRUMENTATION_GET_INFO_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_FLCN_INSTRUMENTATION_GET_INFO_PARAMS_MESSAGE_ID (0x14U)
-
-typedef struct NV2080_CTRL_FLCN_INSTRUMENTATION_GET_INFO_PARAMS {
-    //! The engine type, from NV2080_ENGINE_TYPE_*
-    NvU32  engine;
-
-    //! Whether or not instrumentation is enabled
-    NvBool bEnabled;
-
-    /*!
-     * Whether we use PTIMER (resolution 32ns) or the 30us timer tick (NV_TRUE
-     * is PTIMER).
-     */
-    NvBool bIsTimerPrecise;
-} NV2080_CTRL_FLCN_INSTRUMENTATION_GET_INFO_PARAMS;
-
-/*
- * NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_GET/SET_CONTROL
- *
- * Get/set the event bitmask.
- */
-#define NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_GET_CONTROL (0x20803115) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FLCN_INTERFACE_ID << 8) | 0x15" */
-
-#define NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_SET_CONTROL (0x20803116) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FLCN_INTERFACE_ID << 8) | 0x16" */
-
-typedef struct NV2080_CTRL_FLCN_INSTRUMENTATION_CONTROL_PARAMS {
-    //! The engine type, from NV2080_ENGINE_TYPE_*
-    NvU32 engine;
-
-    /*!
-     * The bitmask of which event types to log. An event type corresponding to
-     * a bit with a zero will be ignored at the log site, which prevents it
-     * from filling up the resident buffer in the PMU. In general, set this to
-     * only log the event types you actually want to use.
-     * Refer to NVOS_BM_* in nvos_utility.h for usage.
-     */
-    NvU8  mask[4];
-} NV2080_CTRL_FLCN_INSTRUMENTATION_CONTROL_PARAMS;
-
-/*
- * NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_RECALIBRATE
- *
- * Send a recalibrate event to the intstrumentation.
- */
-#define NV2080_CTRL_CMD_FLCN_INSTRUMENTATION_RECALIBRATE (0x20803117) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FLCN_INTERFACE_ID << 8) | NV2080_CTRL_FLCN_INSTRUMENTATION_RECALIBRATE_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_FLCN_INSTRUMENTATION_RECALIBRATE_PARAMS_MESSAGE_ID (0x17U)
-
-typedef struct NV2080_CTRL_FLCN_INSTRUMENTATION_RECALIBRATE_PARAMS {
-    //! The engine type, from NV2080_ENGINE_TYPE_*
-    NvU32 engine;
-} NV2080_CTRL_FLCN_INSTRUMENTATION_RECALIBRATE_PARAMS;
-
+#define NV2080_CTRL_FLCN_NVOS_INST_INVALID_TASK_ID        0xFFU
 
 /*
  * NV2080_CTRL_CMD_FLCN_GET_ENGINE_ARCH
@@ -280,7 +107,7 @@ typedef struct NV2080_CTRL_FLCN_INSTRUMENTATION_RECALIBRATE_PARAMS {
  * Get the egine arch i.e FALCON, RISCV etc given the NV2080_ENGINE_TYPE_*.
  *
  */
-#define NV2080_CTRL_CMD_FLCN_GET_ENGINE_ARCH (0x20803118) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FLCN_INTERFACE_ID << 8) | NV2080_CTRL_FLCN_GET_ENGINE_ARCH_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_FLCN_GET_ENGINE_ARCH              (0x20803118) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FLCN_INTERFACE_ID << 8) | NV2080_CTRL_FLCN_GET_ENGINE_ARCH_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_FLCN_GET_ENGINE_ARCH_PARAMS_MESSAGE_ID (0x18U)
 
@@ -337,6 +164,50 @@ typedef struct NV2080_CTRL_FLCN_GET_ENGINE_ARCH_PARAMS {
 #define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT                23:0
 #define NV2080_CTRL_FLCN_USTREAMER_EVENT_HEAD_TIME                          29:0
 #define NV2080_CTRL_FLCN_USTREAMER_EVENT_DATA_PAYLOAD                       30:0
+/*!@}*/
+
+
+/*!
+ * @defgroup NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_BREAKDOWN
+ *
+ * These DRFs define breakdown of the compact payload for various event IDs.
+ *
+ * @{
+ */
+
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_CTXSW_END_TASK_ID                               7:0
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_CTXSW_END_REASON                               10:8
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_CTXSW_END_REASON_YIELD                          0x0
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_CTXSW_END_REASON_INT0                           0x1
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_CTXSW_END_REASON_TIMER_TICK                     0x2
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_CTXSW_END_REASON_QUEUE_BLOCK                    0x3
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_CTXSW_END_REASON_DMA_SUSPENDED                  0x4
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_CTXSW_END_ODP_MISS_COUNT                      23:11
+
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TIMER_TICK_TIME_SLIP                           23:0
+
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_BEGIN_TASK_ID                        7:0
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_BEGIN_UNIT_ID                       15:8
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_BEGIN_EVENT_TYPE                   23:16
+
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_TASK_ID                          7:0
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_RPC_FUNC                        15:8
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_RPC_FUNC_BOBJ_CMD_BASE          0xF0
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_CLASS_ID                       23:16
+
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_RM_QUEUE_LATENCY_SHIFT                          10U
+
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_SPECIAL_EVENT_TASK_ID                      7:0
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_SPECIAL_EVENT_ID                          23:8
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_SPECIAL_EVENT_ID_RESERVED             0x000000
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_SPECIAL_EVENT_ID_CB_ENQUEUE_FAIL      0x000001
+
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_LATENCY_SHIFT                         6U
+
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_GENERIC_ID                                     11:0
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_GENERIC_ID_INVALID                            0x000
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_GENERIC_ID_VF_SWITCH_TOTAL                    0x001
+
 /*!@}*/
 
 

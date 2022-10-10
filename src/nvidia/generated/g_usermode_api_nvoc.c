@@ -225,6 +225,19 @@ static void __nvoc_init_funcTable_UserModeApi_1(UserModeApi *pThis, RmHalspecOwn
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
+    // Hal function -- usrmodeConstructHal
+    if (0)
+    {
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0070ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 */ 
+    {
+        pThis->__usrmodeConstructHal__ = &usrmodeConstructHal_GV100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x08000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__usrmodeConstructHal__ = &usrmodeConstructHal_GH100;
+    }
+
     pThis->__usrmodeCanCopy__ = &usrmodeCanCopy_IMPL;
 
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_UserModeApi_resCanCopy;

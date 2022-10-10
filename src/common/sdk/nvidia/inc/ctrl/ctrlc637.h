@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrlc637.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* AMPERE_SMC_PARTITION_REF commands and parameters */
 
@@ -59,8 +56,11 @@
  *
  * This structure specifies resources in an execution partition
  *
- *  GpcCount[IN/OUT]
- *      - Number of GPCs in this partition
+ *  gpcCount[IN/OUT]
+ *      - Total Number of GPCs in this partition (including GFX Supported GPCs)
+ *
+ *  gfxGpcCount[IN/OUT]
+ *      - Number of GFX GPCs in this partition. This should be a subset of gpcs inlcuded in gpcCount
  *
  *  VeidCount[OUT]
  *      - Number of VEIDs available in this partition.
@@ -88,6 +88,7 @@
  */
 typedef struct NVC637_CTRL_EXEC_PARTITIONS_INFO {
     NvU32 gpcCount;
+    NvU32 gfxGpcCount;
     NvU32 veidCount;
     NvU32 ceCount;
     NvU32 nvEncCount;
@@ -144,8 +145,6 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_INFO {
 #define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_WITH_PART_ID                   0:0
 #define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_WITH_PART_ID_FALSE (0x00000000)
 #define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_WITH_PART_ID_TRUE  (0x00000001)
-
-
 
 
 
@@ -262,7 +261,7 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS {
 #define NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS               (0xc6370104) /* finn: Evaluated from "(FINN_AMPERE_SMC_PARTITION_REF_EXEC_PARTITIONS_INTERFACE_ID << 8) | NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS_MESSAGE_ID" */
 
 /*
- * NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT 
+ * NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT
  *
  * Export the resource and placement information about an exec partition such
  * that a similar partition can be recreated from scratch in the same position.
@@ -270,7 +269,7 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_GET_ACTIVE_IDS_PARAMS {
 #define NVC637_CTRL_CMD_EXEC_PARTITIONS_EXPORT                   (0xc6370105) /* finn: Evaluated from "(FINN_AMPERE_SMC_PARTITION_REF_EXEC_PARTITIONS_INTERFACE_ID << 8) | 0x5" */
 
 /*
- * NVC637_CTRL_CMD_EXEC_PARTITIONS_IMPORT 
+ * NVC637_CTRL_CMD_EXEC_PARTITIONS_IMPORT
  *
  * Create an exec partition resembling the exported partition info. The imported
  * partition should behave identically with respect to fragmentation.

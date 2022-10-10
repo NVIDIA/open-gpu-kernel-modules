@@ -96,7 +96,11 @@ void vaListDestroy(VA_LIST *pVaList)
         DBG_BREAKPOINT();
     }
 
-    if (mapCount(pVaList) != 0)
+    //
+    // Skip DBG_BREAKPOINT when we are in Physical RM.
+    // DBG_BREAKPOINT is the result of the lack of eviction of the context buffers from client RM.
+    //
+    if (!RMCFG_FEATURE_PLATFORM_GSP && mapCount(pVaList) != 0)
     {
         NV_PRINTF(LEVEL_ERROR, "non-zero mapCount(pVaList): 0x%x\n",
                   mapCount(pVaList));

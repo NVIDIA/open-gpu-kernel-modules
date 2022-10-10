@@ -27,6 +27,8 @@
 #include "resserv/rs_server.h"
 
 #include "class/clc4d1.h" // NVC4D1_VIDEO_NVJPG
+#include "class/clb8d1.h" // NVB8D1_VIDEO_NVJPG
+#include "class/clc9d1.h" // NVC9D1_VIDEO_NVJPG
 
 /*!
  * This function returns an engine descriptor corresponding to the class
@@ -65,6 +67,10 @@ nvjpgGetEngineDescFromAllocParams
     {
         case NVC4D1_VIDEO_NVJPG:
             engineInstance = 0;
+            break;
+        case NVB8D1_VIDEO_NVJPG:
+        case NVC9D1_VIDEO_NVJPG:
+            engineInstance = pNvjpgAllocParms->engineInstance;
             break;
         default:
             DBG_BREAKPOINT();

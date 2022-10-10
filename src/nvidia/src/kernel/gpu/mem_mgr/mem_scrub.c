@@ -52,6 +52,10 @@
 #include "class/clc6b5.h"   // AMPERE_DMA_COPY_A
 #include "class/clc7b5.h"   // AMPERE_DMA_COPY_B
 
+#include "class/clc8b5.h"   // HOPPER_DMA_COPY_A
+
+#include "class/clc86f.h"   // HOPPER_CHANNEL_GPFIFO_A
+
 static NvU64  _scrubCheckProgress(OBJMEMSCRUB *pScrubber);
 static void   _scrubSetupChannelBufferSizes(OBJCHANNEL *pChannel, NvU32  numCopyBlocks);
 static NvU64  _searchScrubList(OBJMEMSCRUB *pScrubber, RmPhysAddr base, NvU64 size);
@@ -144,6 +148,12 @@ scrubberConstruct
         pChannel->pGpu      = pGpu;
         pChannel->bUseVasForCeCopy = memmgrUseVasForCeMemoryOps(pMemoryManager);
         memmgrMemUtilsGetCopyEngineClass_HAL(pGpu, pMemoryManager, &pChannel->hTdCopyClass);
+
+        if (((pChannel->hTdCopyClass == HOPPER_DMA_COPY_A)
+            ) && !pChannel->bUseVasForCeCopy)
+        {
+            pChannel->type = FAST_SCRUBBER_CHANNEL;
+        }
 
         NV_ASSERT_OK_OR_GOTO(status,
             pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT, NV01_NULL_OBJECT,
@@ -1235,6 +1245,118 @@ _scrubFillPb
     return (NvU32)((NvU8*)pPtr - (NvU8*)pStartPtr);
 }
 
+/** single helper function to fill the push buffer with the methods needed for
+    memsetting using fast memory scrubber in CE. This function is much more efficient than
+    normal CE scrubber operation
+    TODO: Add support for memcopy here based on channel type.
+  */
+static NvU32
+_fastscrubFillPb
+(
+    OBJCHANNEL      *pChannel,
+    RmPhysAddr       base,
+    NvU32            size,
+    NvU32            payload,
+    NvBool           bPipelined,
+    NV_ADDRESS_SPACE dstAddressSpace,
+    NvU32            dstCpuCacheAttrib,
+    NvBool           bInsertFinishpayload,
+    NvBool           bNonStallInterrupt,
+    NvU32            putIndex
+)
+{
+    NvU32   semaValue      = 0;
+    NvU32   pipelinedValue = 0;
+    NvU32  *pPtr           = (NvU32 *)((NvU8*)pChannel->pbCpuVA + (putIndex * pChannel->methodSizePerBlock));
+    NvU32  *pStartPtr      = pPtr;
+    NvU32   data           = 0;
+    NvU64   pSemaAddr      = 0;
+
+    NV_PRINTF(LEVEL_INFO, "PutIndex: %x, PbOffset: %x\n", putIndex,
+               putIndex * pChannel->methodSizePerBlock);
+
+    // SET OBJECT
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC86F_SET_OBJECT, pChannel->classEngineID);
+
+    // Set Pattern for Memset
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_SET_REMAP_CONST_A, MEMSET_PATTERN);
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_SET_REMAP_CONST_B, MEMSET_PATTERN);
+
+    // Set Component Size to 1
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_SET_REMAP_COMPONENTS,
+                  DRF_DEF(C8B5, _SET_REMAP_COMPONENTS, _DST_X, _CONST_A)          |
+                  DRF_DEF(C8B5, _SET_REMAP_COMPONENTS, _DST_X, _CONST_B)          |
+                  DRF_DEF(C8B5, _SET_REMAP_COMPONENTS, _COMPONENT_SIZE, _ONE)     |
+                  DRF_DEF(C8B5, _SET_REMAP_COMPONENTS, _NUM_DST_COMPONENTS, _ONE));
+
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_SET_DST_PHYS_MODE,
+                  DRF_DEF(C8B5, _SET_DST_PHYS_MODE, _TARGET, _LOCAL_FB));
+
+    semaValue = (bInsertFinishpayload) ?
+        DRF_DEF(C8B5, _LAUNCH_DMA, _SEMAPHORE_TYPE, _RELEASE_ONE_WORD_SEMAPHORE) : 0;
+
+    if (bPipelined)
+        pipelinedValue = DRF_DEF(C8B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _PIPELINED);
+    else
+        pipelinedValue = DRF_DEF(C8B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _NON_PIPELINED);
+
+    NV_PUSH_INC_2U(RM_SUBCHANNEL, NVC8B5_OFFSET_OUT_UPPER,
+                   DRF_NUM(C8B5, _OFFSET_OUT_UPPER, _UPPER, NvU64_HI32(base)),
+                   NVC8B5_OFFSET_OUT_LOWER,
+                   DRF_NUM(C8B5, _OFFSET_OUT_LOWER, _VALUE,NvU64_LO32(base)));
+
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_LINE_LENGTH_IN, size);
+
+    if (semaValue)
+    {
+        NV_PUSH_INC_3U(RM_SUBCHANNEL, NVC8B5_SET_SEMAPHORE_A,
+            DRF_NUM(C8B5, _SET_SEMAPHORE_A, _UPPER, NvU64_HI32(pChannel->pbGpuVA+pChannel->finishPayloadOffset)),
+            NVC8B5_SET_SEMAPHORE_B,
+            DRF_NUM(C8B5, _SET_SEMAPHORE_B, _LOWER, NvU64_LO32(pChannel->pbGpuVA+pChannel->finishPayloadOffset)),
+            NVC8B5_SET_SEMAPHORE_PAYLOAD,
+            payload);
+    }
+
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_SET_MEMORY_SCRUB_PARAMETERS,
+                       DRF_DEF(C8B5, _SET_MEMORY_SCRUB_PARAMETERS, _DISCARDABLE, _FALSE));
+
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_LAUNCH_DMA,
+            DRF_DEF(C8B5, _LAUNCH_DMA, _SRC_MEMORY_LAYOUT, _PITCH)    |
+            DRF_DEF(C8B5, _LAUNCH_DMA, _DST_MEMORY_LAYOUT, _PITCH)    |
+            DRF_DEF(C8B5, _LAUNCH_DMA, _REMAP_ENABLE, _FALSE)         |
+            DRF_DEF(C8B5, _LAUNCH_DMA, _MULTI_LINE_ENABLE, _FALSE)    |
+            DRF_DEF(C8B5, _LAUNCH_DMA, _FLUSH_ENABLE, _TRUE)          |
+            DRF_DEF(C8B5, _LAUNCH_DMA, _MEMORY_SCRUB_ENABLE, _TRUE)   |
+            DRF_DEF(C8B5, _LAUNCH_DMA, _DISABLE_PLC, _TRUE)           |
+            DRF_DEF(C8B5, _LAUNCH_DMA, _DST_TYPE, _PHYSICAL)          |
+            DRF_DEF(C8B5, _LAUNCH_DMA, _SRC_TYPE, _PHYSICAL)          |
+            pipelinedValue |
+            semaValue);
+
+    //
+    // This should always be at the bottom the push buffer segment, since this
+    // denotes that HOST has read all the methods needed for this memory operation
+    // and safely assume that this GPFIFO and PB entry can be reused.
+    //
+    data =  DRF_DEF(C86F, _SEM_EXECUTE, _OPERATION, _RELEASE) |
+            DRF_DEF(C86F, _SEM_EXECUTE, _PAYLOAD_SIZE, _32BIT) |
+            DRF_DEF(C86F, _SEM_EXECUTE, _RELEASE_WFI, _DIS);
+
+    pSemaAddr = (pChannel->pbGpuVA+pChannel->semaOffset);
+
+    NV_PUSH_INC_4U(RM_SUBCHANNEL, NVC86F_SEM_ADDR_LO,
+            DRF_NUM(C86F, _SEM_ADDR_LO, _OFFSET, NvU64_LO32(pSemaAddr) >> 2),
+            NVC86F_SEM_ADDR_HI,
+            DRF_NUM(C86F, _SEM_ADDR_HI, _OFFSET, NvU64_HI32(pSemaAddr)),
+            NVC86F_SEM_PAYLOAD_LO, putIndex,
+            NVC86F_SEM_PAYLOAD_HI, 0);
+
+    NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC86F_SEM_EXECUTE, data);
+
+    // typecasting to calculate the bytes consumed by this iteration.
+    return (NvU32)((NvU8*)pPtr - (NvU8*)pStartPtr);
+}
+
 /** helper function which waits for a PB & GPFIO entry to be read by HOST.
   * After the HOST reads GPFIFO and PB entry, the semaphore will be released.
  */
@@ -1358,6 +1480,7 @@ _scrubMemory
     NvU32       putIndex             = 0;
     NV_STATUS   status               = NV_OK;
     NvU32       methodsLength        = 0;
+    NvBool      bFastScrubEnable     = NV_FALSE;
 
     do
     {
@@ -1367,6 +1490,21 @@ _scrubMemory
         putIndex = _scrubWaitForFreeEntry(pChannel);
         NV_PRINTF(LEVEL_INFO, "Put Index: %x\n", putIndex);
 
+        // Fill PB with methods
+        bFastScrubEnable = memmgrMemUtilsCheckMemoryFastScrubEnable_HAL(pChannel->pGpu,
+                                   GPU_GET_MEMORY_MANAGER(pChannel->pGpu), pChannel->hTdCopyClass,
+                                   pChannel->bUseVasForCeCopy, base, tempMemsetSize,
+                                   dstAddressSpace);
+
+        if (bFastScrubEnable)
+        {
+            NV_PRINTF(LEVEL_INFO, "Fast Scrubber enabled!\n");
+            methodsLength = _fastscrubFillPb(pChannel, base, tempMemsetSize, payload,
+                        bFirstIteration, dstAddressSpace,
+                        dstCpuCacheAttrib, (tempMemsetSize == size),
+                        bNonStallInterrupt, putIndex);
+        }
+        else
         {
             NV_PRINTF(LEVEL_INFO, "Fast Scrubber not enabled!\n");
             methodsLength = _scrubFillPb(pChannel, base, tempMemsetSize, payload,

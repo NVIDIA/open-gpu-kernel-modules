@@ -26,6 +26,7 @@
 #define _RPC_SDK_STRUCTURES_H_
 
 #include <ctrl/ctrl83de.h>
+#include <ctrl/ctrla083.h>
 #include <ctrl/ctrlc36f.h>
 #include <ctrl/ctrlc637.h>
 #include <ctrl/ctrl0000/ctrl0000system.h>
@@ -62,6 +63,8 @@
 #include <class/clc67e.h>
 #include "rpc_headers.h"
 #include "nvctassert.h"
+
+
 
 typedef struct vmiopd_SM_info {
     NvU32 version;
@@ -123,6 +126,8 @@ typedef struct vmiopd_SM_info {
 #define NV2080_CTRL_INTERNAL_MAX_TPC_PER_GPC_COUNT_v1C_03                       10
 #define NV2080_CTRL_INTERNAL_GR_MAX_GPC_v1C_03                                  12
 #define NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_MAX_v1E_09                         32
+#define NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL_v1F_0E                100
+#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE_v20_04                6
 
 // Defined this intermediate RM-RPC structure for making RPC call from Guest as
 // we have the restriction of passing max 4kb of data to plugin and the
@@ -225,6 +230,7 @@ typedef struct HYPERV_SHARED_MEMORY_DESCRIPTOR
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v15_01 (0x00000014)
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v1A_04 (0x00000014)
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v1C_09 (0x00000016)
+#define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v20_03 (0x00000018)
 
 #define NV2080_ENGINE_TYPE_LAST_v18_01      (0x0000002a)
 #define NV2080_ENGINE_TYPE_LAST_v1C_09      (0x00000034)

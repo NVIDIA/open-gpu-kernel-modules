@@ -28,6 +28,7 @@
 #include "mem_mgr/gpu_vaspace.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
+#include "gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "platform/chipset/chipset.h"
@@ -951,8 +952,29 @@ kbusCheckEngine_KERNEL
                 return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC3))) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(4):
                 return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC4))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVDEC(5):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC5))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVDEC(6):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC6))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVDEC(7):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC7))) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(0):
                 return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG0))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVJPEG(1):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG1))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVJPEG(2):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG2))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVJPEG(3):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG3))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVJPEG(4):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG4))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVJPEG(5):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG5))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVJPEG(6):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG6))) ? NV_TRUE: NV_FALSE);
+        case ENG_NVJPEG(7):
+                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG7))) ? NV_TRUE: NV_FALSE);
+
         case ENG_GR(1):
         case ENG_GR(2):
         case ENG_GR(3):
@@ -1248,4 +1270,21 @@ kbusSendBusInfo_IMPL
 
     pBusInfo->data = busGetInfoParams.busInfoList[0].data;
     return status;
+}
+
+/**
+ * @brief     Check for any P2P references in to remote GPUs
+ *            which are still have a P2P api object alive.
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ */
+NV_STATUS
+kbusIsGpuP2pAlive_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    return (pKernelBus->totalP2pObjectsAliveRefCount > 0);
 }

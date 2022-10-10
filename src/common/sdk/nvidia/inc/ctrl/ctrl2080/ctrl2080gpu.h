@@ -29,12 +29,10 @@
 // Source file: ctrl/ctrl2080/ctrl2080gpu.finn
 //
 
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 #include "ctrl/ctrl2080/ctrl2080gr.h"
 #include "ctrl/ctrl0000/ctrl0000system.h"
+#include "nvcfg_sdk.h"
 
 
 
@@ -366,7 +364,7 @@ typedef struct NV2080_CTRL_GPU_GET_SDM_PARAMS {
  * This command sets the subdevice instance and mask value for the associated subdevice.
  * The subdevice mask value can be used with the SET_SUBDEVICE_MASK instruction
  * provided by the NV36_CHANNEL_DMA and newer channel dma classes.
- * It must be called before the GPU HW is initialized otherwise 
+ * It must be called before the GPU HW is initialized otherwise
  * NV_ERR_INVALID_STATE is being returned.
  *
  *   subdeviceMask [in]
@@ -903,9 +901,9 @@ typedef struct NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ENTRY {
  *   promoteEntry
  *     List of context buffer entries to issue promotions for.
  *
- *   When not using promoteEntry, only hVirtMemory or (virtAddress, size) should be 
- *   specified, the code cases based on hVirtMemory(NULL vs non-NULL) so 
- *   if both are specified, hVirtMemory has precedence. 
+ *   When not using promoteEntry, only hVirtMemory or (virtAddress, size) should be
+ *   specified, the code cases based on hVirtMemory(NULL vs non-NULL) so
+ *   if both are specified, hVirtMemory has precedence.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -1080,7 +1078,7 @@ typedef struct NV2080_CTRL_GPU_QUERY_ECC_INTR_PARAMS {
 #define NV2080_CTRL_CMD_GPU_QUERY_ECC_STATUS                   (0x2080012f) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_MESSAGE_ID" */
 
 
-#define NV2080_CTRL_GPU_ECC_UNIT_COUNT                         (0x00000016)
+#define NV2080_CTRL_GPU_ECC_UNIT_COUNT                         (0x00000018)
 
 
 
@@ -2399,28 +2397,6 @@ typedef struct NV2080_CTRL_GPU_SET_FABRIC_BASE_ADDR_PARAMS {
 #define NV2080_CTRL_CMD_GPU_SET_FABRIC_BASE_ADDR (0x2080016f) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_SET_FABRIC_BASE_ADDR_PARAMS_MESSAGE_ID" */
 
 /*
- * NV2080_CTRL_CMD_GPU_INTERRUPT_FUNCTION
- *
- * The command will trigger an interrupt to a specified PCIe Function.
- *
- *   gfid[IN]
- *      - The GPU function identifier
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_ARGUMENT
- *   NV_ERR_NOT_SUPPORTED
- */
-
-#define NV2080_CTRL_GPU_INTERRUPT_FUNCTION_PARAMS_MESSAGE_ID (0x71U)
-
-typedef struct NV2080_CTRL_GPU_INTERRUPT_FUNCTION_PARAMS {
-    NvU32 gfid;
-} NV2080_CTRL_GPU_INTERRUPT_FUNCTION_PARAMS;
-
-#define NV2080_CTRL_CMD_GPU_INTERRUPT_FUNCTION (0x20800171) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_INTERRUPT_FUNCTION_PARAMS_MESSAGE_ID" */
-
-/*
  * NV2080_CTRL_CMD_GPU_VIRTUAL_INTERRUPT
  *
  * The command will trigger the specified interrupt on the host from a guest.
@@ -2545,34 +2521,43 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITION_INFO {
     NV_DECLARE_ALIGNED(NV2080_CTRL_GPU_PARTITION_SPAN placement, 8);
 } NV2080_CTRL_GPU_SET_PARTITION_INFO;
 
-#define PARTITIONID_INVALID                                    NV2080_CTRL_GPU_PARTITION_ID_INVALID
-#define NV2080_CTRL_GPU_PARTITION_ID_INVALID                   0xFFFFFFFF
-#define NV2080_CTRL_GPU_MAX_PARTITIONS                         0x00000008
-#define NV2080_CTRL_GPU_MAX_PARTITION_IDS                      0x00000009
-#define NV2080_CTRL_GPU_MAX_SMC_IDS                            0x00000008
-#define NV2080_CTRL_GPU_MAX_GPC_PER_SMC                        0x0000000c
-#define NV2080_CTRL_GPU_MAX_CE_PER_SMC                         0x00000008
+#define PARTITIONID_INVALID                                      NV2080_CTRL_GPU_PARTITION_ID_INVALID
+#define NV2080_CTRL_GPU_PARTITION_ID_INVALID                     0xFFFFFFFF
+#define NV2080_CTRL_GPU_MAX_PARTITIONS                           0x00000008
+#define NV2080_CTRL_GPU_MAX_PARTITION_IDS                        0x00000009
+#define NV2080_CTRL_GPU_MAX_SMC_IDS                              0x00000008
+#define NV2080_CTRL_GPU_MAX_GPC_PER_SMC                          0x0000000c
+#define NV2080_CTRL_GPU_MAX_CE_PER_SMC                           0x00000008
 
 #define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE              1:0
-#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL        0x00000000
-#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_HALF        0x00000001
-#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_QUARTER     0x00000002
-#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_EIGHTH      0x00000003
-#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE__SIZE       4
+#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL          0x00000000
+#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_HALF          0x00000001
+#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_QUARTER       0x00000002
+#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_EIGHTH        0x00000003
+#define NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE__SIZE         4
 #define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE             4:2
-#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_FULL       0x00000000
-#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_HALF       0x00000001
-#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_HALF  0x00000002
-#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_QUARTER    0x00000003
-#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_EIGHTH     0x00000004
-#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE      5
-#define NV2080_CTRL_GPU_PARTITION_MAX_TYPES                    8
+#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_FULL         0x00000000
+#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_HALF         0x00000001
+#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_HALF    0x00000002
+#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_QUARTER      0x00000003
+#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_QUARTER 0x00000004
+#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_EIGHTH       0x00000005
+#define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE        6
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE                7:5
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_FULL             0x00000001
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_HALF             0x00000002
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_MINI_HALF        0x00000003
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_QUARTER          0x00000004
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_EIGHTH           0x00000005
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE_NONE             0x00000000
+#define NV2080_CTRL_GPU_PARTITION_FLAG_GFX_SIZE__SIZE            6
+#define NV2080_CTRL_GPU_PARTITION_MAX_TYPES                      8
 #define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA          30:30
-#define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA_DISABLE 0
-#define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA_ENABLE  1
+#define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA_DISABLE   0
+#define NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA_ENABLE    1
 #define NV2080_CTRL_GPU_PARTITION_FLAG_PLACE_AT_SPAN            31:31
-#define NV2080_CTRL_GPU_PARTITION_FLAG_PLACE_AT_SPAN_DISABLE   0
-#define NV2080_CTRL_GPU_PARTITION_FLAG_PLACE_AT_SPAN_ENABLE    1
+#define NV2080_CTRL_GPU_PARTITION_FLAG_PLACE_AT_SPAN_DISABLE     0
+#define NV2080_CTRL_GPU_PARTITION_FLAG_PLACE_AT_SPAN_ENABLE      1
 
 // TODO XXX Bug 2657907 Remove these once clients update
 #define NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                 (DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _MEMORY_SIZE, _FULL)    | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _COMPUTE_SIZE, _FULL))
@@ -2633,10 +2618,22 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITIONS_PARAMS {
  *      - NvJpg Engines assigned to a partition.
  *
  *   gpcCount[OUT]
- *      - Max GPCs assigned to a partition.
+ *      - Max GPCs assigned to a partition, including the GfxCapable ones.
+ *
+ *   virtualGpcCount[OUT]
+ *      - Virtualized GPC count assigned to partition
+ *
+ *   gfxGpcCount[OUT]
+ *      - Max GFX GPCs assigned to a partition. This is a subset of the GPCs incuded in gpcCount.
  *
  *   gpcsPerGr[NV2080_CTRL_GPU_MAX_SMC_IDS][OUT]
- *      - GPC count associated with every valid SMC/Gr.
+ *      - GPC count associated with every valid SMC/Gr, including the GPCs capable of GFX
+ *
+ *   virtualGpcsPerGr[NV2080_CTRL_GPU_MAX_SMC_IDS][OUT]
+ *      - Virtualized GPC count associated with every valid SMC/Gr, including the GPCs capable of GFX
+ *
+ *   gfxGpcsPerGr[NV2080_CTRL_GPU_MAX_SMC_IDS][OUT]
+ *      - GFX GPC count associated with every valid SMC/Gr. This is a subset of the GPCs included in gfxGpcCount
  *
  *   veidsPerGr[NV2080_CTRL_GPU_MAX_SMC_IDS][OUT]
  *      - VEID count associated with every valid SMC. VEIDs within this SMC
@@ -2670,7 +2667,11 @@ typedef struct NV2080_CTRL_GPU_GET_PARTITION_INFO {
     NvU32  nvJpgCount;
     NvU32  nvOfaCount;
     NvU32  gpcCount;
+    NvU32  virtualGpcCount;
+    NvU32  gfxGpcCount;
     NvU32  gpcsPerGr[NV2080_CTRL_GPU_MAX_SMC_IDS];
+    NvU32  virtualGpcsPerGr[NV2080_CTRL_GPU_MAX_SMC_IDS];
+    NvU32  gfxGpcPerGr[NV2080_CTRL_GPU_MAX_SMC_IDS];
     NvU32  veidsPerGr[NV2080_CTRL_GPU_MAX_SMC_IDS];
     NV_DECLARE_ALIGNED(NvU64 memSize, 8);
     NV_DECLARE_ALIGNED(NV2080_CTRL_GPU_PARTITION_SPAN span, 8);
@@ -3179,10 +3180,19 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITIONING_MODE_PARAMS {
  *        partition
  *
  * [OUT] grCount
- *      - Number of SMC engines/GR engines
+ *      - Total Number of SMC engines/GR engines (including GFX capable ones in this parition)
+ *
+ * [OUT] gfxGrCount
+ *      - Number of SMC engines/GR engines capable of GFX. This is a subset of the engines included in grCount
  *
  * [OUT] gpcCount
- *      - Number of GPCs in this partition
+ *      - Number of GPCs in this partition, including the GFX Capable ones.
+ *
+ * [OUT] virtualGpcCount
+ *      - Number of virtualized GPCs in this partition, including the GFX Capable ones.
+ *
+ * [OUT] gfxGpcCount
+ *      - Number of GFX Capable GPCs in this partition. This is a subset of the GPCs included in gpcCount.
  *
  * [OUT] veidCount
  *      - Number of VEIDS in this partition
@@ -3210,7 +3220,10 @@ typedef struct NV2080_CTRL_GPU_SET_PARTITIONING_MODE_PARAMS {
 typedef struct NV2080_CTRL_GPU_DESCRIBE_PARTITIONS_INFO {
     NvU32 partitionFlag;
     NvU32 grCount;
+    NvU32 gfxGrCount;
     NvU32 gpcCount;
+    NvU32 virtualGpcCount;
+    NvU32 grGpcCount;
     NvU32 veidCount;
     NvU32 smCount;
     NvU32 ceCount;
@@ -3282,9 +3295,9 @@ typedef struct NV2080_CTRL_GPU_GET_MAX_SUPPORTED_PAGE_SIZE_PARAMS {
  *     Logical GPC id
  *   count [OUT]
  *     The number of MMUs per GPC
- *   grRouteInfo            
- *     This parameter specifies the routing information used to            
- *     disambiguate the target GR engine. When SMC is enabled, this            
+ *   grRouteInfo
+ *     This parameter specifies the routing information used to
+ *     disambiguate the target GR engine. When SMC is enabled, this
  *     is a mandatory parameter.
  */
 #define NV2080_CTRL_GPU_GET_NUM_MMUS_PER_GPC_PARAMS_MESSAGE_ID (0x8AU)
@@ -3619,7 +3632,7 @@ typedef struct NV2080_CTRL_GPU_VALIDATE_MEM_MAP_REQUEST_PARAMS {
  * NV2080_CTRL_CMD_GPU_GET_ENGINE_LOAD_TIMES
  *
  * This command is used to retrieve the load time (latency) of each engine.
- *  
+ *
  *   engineCount
  *     This field specifies the number of entries of the following
  *     three arrays.
@@ -3653,10 +3666,10 @@ typedef struct NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS {
  * NV2080_CTRL_CMD_GPU_GET_ID_NAME_MAPPING
  *
  * This command is used to retrieve the mapping of engine ID and engine Name.
- * 
+ *
  *   engineCount
  *     This field specifies the size of the mapping.
- *   
+ *
  *   engineID
  *     An array of NvU32 which stores each engine's descriptor.
  *
@@ -3681,7 +3694,7 @@ typedef struct NV2080_CTRL_GPU_GET_ID_NAME_MAPPING_PARAMS {
  *
  * Same as above NV2080_CTRL_CMD_GPU_EXEC_REG_OPS except that this CTRL CMD will
  * not allow any embedded pointers. The regOps array is inlined as part of the
- * struct. 
+ * struct.
  * NOTE: This intended for gsp plugin only as it may override regOp access
  *       restrictions
  *
@@ -3778,5 +3791,55 @@ typedef struct NV2080_CTRL_GET_P2P_CAPS_PARAMS {
     NvU32                                   peerGpuCount;
     NV2080_CTRL_GPU_P2P_PEER_CAPS_PEER_INFO peerGpuCaps[NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS];
 } NV2080_CTRL_GET_P2P_CAPS_PARAMS;
+
+
+
+/*!
+ * NV2080_CTRL_GPU_COMPUTE_PROFILE
+ *
+ * This structure specifies resources in an execution partition
+ *
+ *  id[OUT]
+ *      - Total Number of GPCs in this partition
+ *
+ *  computeSize[OUT]
+ *      - NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_* associated with this profile
+ *
+ *  gpcCount[OUT]
+ *      - Total Number of GPCs in this partition (including GFX Supported GPCs)
+ *
+ *  veidCount[OUT]
+ *      - Number of VEIDs allocated to this profile
+ *
+ *  smCount[OUT]
+ *      - Number of SMs usable in this profile
+ */
+typedef struct NV2080_CTRL_GPU_COMPUTE_PROFILE {
+    NvU8  computeSize;
+    NvU32 gfxGpcCount;
+    NvU32 gpcCount;
+    NvU32 veidCount;
+    NvU32 smCount;
+} NV2080_CTRL_GPU_COMPUTE_PROFILE;
+
+/*!
+ * NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS
+ *
+ * This structure specifies resources in an execution partition
+ *
+ *  profileCount[OUT]
+ *      - Total Number of profiles filled
+ *
+ *  profiles[OUT]
+ *      - NV2080_CTRL_GPU_COMPUTE_PROFILE filled with valid compute instance profiles 
+ */
+#define NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS_MESSAGE_ID (0xA2U)
+
+typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
+    NvU32                           profileCount;
+    NV2080_CTRL_GPU_COMPUTE_PROFILE profiles[NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE];
+} NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS;
+
+#define NV2080_CTRL_CMD_GPU_GET_COMPUTE_PROFILES (0x208001a2) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS_MESSAGE_ID" */
 
 /* _ctrl2080gpu_h_ */

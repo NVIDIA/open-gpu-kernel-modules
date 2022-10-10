@@ -103,7 +103,7 @@ kchangrpAllocFaultMethodBuffers_GV100
 
         // Allocate and initialize MEMDESC
         status = memdescCreate(&(pFaultMthdBuf->pMemDesc), pGpu, bufSizeInBytes, 0,
-                               NV_FALSE, faultBufApert, faultBufAttr, memDescFlags);
+                               NV_TRUE, faultBufApert, faultBufAttr, memDescFlags);
         if (status != NV_OK)
         {
             DBG_BREAKPOINT();

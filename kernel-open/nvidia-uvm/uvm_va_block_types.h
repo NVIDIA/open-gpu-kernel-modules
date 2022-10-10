@@ -254,7 +254,6 @@ typedef struct
 
     uvm_va_policy_t *policy;
 
-
 #if UVM_IS_CONFIG_HMM()
     struct
     {
@@ -262,7 +261,6 @@ typedef struct
         struct vm_area_struct *vma;
     } hmm;
 #endif
-
 
     // Convenience buffer for page mask prints
     char page_mask_string_buffer[UVM_PAGE_MASK_PRINT_MIN_BUFFER_SIZE];

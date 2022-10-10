@@ -33,6 +33,7 @@ static const struct NVOC_CASTINFO __nvoc_castinfo_RmResourceCommon = {
     },
 };
 
+// Not instantiable because it's not derived from class "Object"
 const struct NVOC_CLASS_DEF __nvoc_class_def_RmResourceCommon = 
 {
     /*classInfo=*/ {

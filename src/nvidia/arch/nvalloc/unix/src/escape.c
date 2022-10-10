@@ -285,6 +285,7 @@ NV_STATUS RmIoctl(
                     if (rm_create_mmap_context(nv, pParms->hRoot,
                             pParms->hObjectParent, pParms->hObjectNew,
                             pParms->pMemory, pParms->limit + 1, 0,
+                            NV_MEMORY_DEFAULT,
                             pApi->fd) != NV_OK)
                     {
                         NV_PRINTF(LEVEL_WARNING,
@@ -457,6 +458,8 @@ NV_STATUS RmIoctl(
                 goto done;
             }
 
+            // Don't allow userspace to override the caching type
+            pParms->flags = FLD_SET_DRF(OS33, _FLAGS, _CACHING_TYPE, _DEFAULT, pParms->flags);
             Nv04MapMemoryWithSecInfo(pParms, secInfo);
 
             if (pParms->status == NV_OK)
@@ -464,7 +467,9 @@ NV_STATUS RmIoctl(
                 pParms->status = rm_create_mmap_context(nv, pParms->hClient,
                                  pParms->hDevice, pParms->hMemory,
                                  pParms->pLinearAddress, pParms->length,
-                                 pParms->offset, pApi->fd);
+                                 pParms->offset,
+                                 DRF_VAL(OS33, _FLAGS, _CACHING_TYPE, pParms->flags),
+                                 pApi->fd);
                 if (pParms->status != NV_OK)
                 {
                     NVOS34_PARAMETERS params;

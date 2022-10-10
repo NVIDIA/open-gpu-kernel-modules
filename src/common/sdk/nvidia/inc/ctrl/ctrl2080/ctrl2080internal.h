@@ -31,9 +31,6 @@
 //
 
 #include "nvimpshared.h"
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
@@ -316,6 +313,9 @@ typedef struct NV2080_CTRL_INTERNAL_STATIC_GR_FLOORSWEEPING_MASKS {
      * zcullMask is always indexed by physical GPC ID
      */
     NvU32 zcullMask[NV2080_CTRL_INTERNAL_GR_MAX_GPC];
+
+    NvU32 physGfxGpcMask;
+    NvU32 numGfxTpc;
 } NV2080_CTRL_INTERNAL_STATIC_GR_FLOORSWEEPING_MASKS;
 
 typedef struct NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS {
@@ -662,7 +662,7 @@ typedef struct NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS {
 
 /**
  * NV2080_CTRL_CMD_INTERNAL_GET_DEVICE_INFO_TABLE
- * 
+ *
  * Parse the DEVICE_INFO2_TABLE on the physical side and return it to kernel.
  */
 typedef struct NV2080_CTRL_INTERNAL_DEVICE_INFO {
@@ -852,10 +852,19 @@ typedef struct NV2080_CTRL_INTERNAL_DISPLAY_SETUP_RG_LINE_INTR_PARAMS {
  *     Allocation flag to be used to allocate a partition with this profile.
  *
  *   grCount [OUT]
- *     # GR engines
+ *     # GR engines, including the GFX capable ones.
+ *
+ *   gfxGrCount [OUT]
+ *     # GR engines capable of Gfx, which is a subset of the GR engines included in grCount
  *
  *   gpcCount [OUT]
- *     # total gpcs
+ *     # total gpcs, including the GFX capable ones.
+ *
+ *   virtualGpcCount [OUT]
+ *     # virtualized gpcs, including the GFX capable ones.
+ *
+ *   gfxGpcCount [OUT]
+ *     # total gpcs capable of Gfx. This is a subset of the GPCs included in gpcCount.
  *
  *   veidCount [OUT]
  *     # total veids
@@ -878,14 +887,17 @@ typedef struct NV2080_CTRL_INTERNAL_DISPLAY_SETUP_RG_LINE_INTR_PARAMS {
  *   nvOfaCount [OUT]
  *     # NVOFA engines
  */
-#define NV2080_CTRL_INTERNAL_GRMGR_PARTITION_MAX_TYPES      10
+#define NV2080_CTRL_INTERNAL_GRMGR_PARTITION_MAX_TYPES      20
 
 
 
 typedef struct NV2080_CTRL_INTERNAL_MIGMGR_PROFILE_INFO {
     NvU32 partitionFlag;
     NvU32 grCount;
+    NvU32 gfxGrCount;
     NvU32 gpcCount;
+    NvU32 virtualGpcCount;
+    NvU32 gfxGpcCount;
     NvU32 veidCount;
     NvU32 smCount;
     NvU32 ceCount;
@@ -1484,7 +1496,7 @@ typedef struct NV2080_CTRL_INTERNAL_FIFO_GET_NUM_CHANNELS_PARAMS {
  *
  *   memBoundaryCfg [OUT]
  *      Memory boundary config (64KB aligned)
- *      
+ *
  *   memBoundaryCfgValInit [OUT]
  *      Memory boundary config initial value (64KB aligned)
  */
@@ -1591,7 +1603,7 @@ typedef struct NV2080_CTRL_INTERNAL_PERF_GPU_BOOST_SYNC_CONTROL_PARAMS {
  *
  *   bBridgeless [IN]
  *     Bridgeless information, for now supporting only MIO bridges
- * 
+ *
  *   currLimits
  *     Array of limits that will be applied
  *
@@ -1618,7 +1630,7 @@ typedef struct NV2080_CTRL_INTERNAL_PERF_GPU_BOOST_SYNC_SET_LIMITS_PARAMS {
  *     hysteresis algorithm for SLI GPU Boost synchronization:
  *      NV_TRUE  -> enabled,
  *      NV_FALSE -> disabled
- * 
+ *
  *   bSliGpuBoostSyncEnable [OUT]
  *     SLI GPU Boost feature is:
  *      NV_TRUE  -> enabled,
@@ -1736,20 +1748,25 @@ typedef struct NV2080_CTRL_INTERNAL_GMMU_REGISTER_CLIENT_SHADOW_FAULT_BUFFER_PAR
  *   gfId [IN]
  *     This specifies Id of the Kernel RM that is requesting the Boost
  *
+ *   bOverrideInfinite[IN]
+ *      This parameter specifies if we want to override already registered infinite boost for the specific Kernel RM.
+ *      This should be NV_TRUE only in case when we are removing the current infinite boost for a specific Kernel RM
+ *      and setting the boost duration to a next maximum duration registered for the Kernel RM in question.
+ *
  * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT *
+ *   NV_ERR_INVALID_ARGUMENT
  */
 #define NV2080_CTRL_CMD_INTERNAL_PERF_BOOST_SET_3X                          (0x20800aa0) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_PERF_BOOST_SET_PARAMS_3X_MESSAGE_ID" */
 
 #define NV2080_CTRL_INTERNAL_PERF_BOOST_SET_PARAMS_3X_MESSAGE_ID (0xA0U)
 
 typedef struct NV2080_CTRL_INTERNAL_PERF_BOOST_SET_PARAMS_3X {
-
-    NvU32 flags;
-    NvU32 boostDuration;
-    NvU32 gfId;
+    NvU32  flags;
+    NvU32  boostDuration;
+    NvU32  gfId;
+    NvBool bOverrideInfinite;
 } NV2080_CTRL_INTERNAL_PERF_BOOST_SET_PARAMS_3X;
 
 /*!
@@ -1893,6 +1910,7 @@ typedef struct NV2080_CTRL_INTERNAL_KMIGMGR_EXPORTED_GPU_INSTANCE_INFO {
     NV_DECLARE_ALIGNED(NvU64 enginesMask[NV2080_CTRL_INTERNAL_KMIGMGR_EXPORTED_GPU_INSTANCE_MAX_ENGINES_MASK_SIZE], 8);
     NvU32 partitionFlags;
     NvU32 gpcMask;
+    NvU32 virtualGpcCount;
     NvU32 veidOffset;
     NvU32 veidCount;
 } NV2080_CTRL_INTERNAL_KMIGMGR_EXPORTED_GPU_INSTANCE_INFO;
@@ -1933,8 +1951,6 @@ typedef struct NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_PARAMS {
  *
  */
 #define NV2080_CTRL_CMD_INTERNAL_MEMSYS_FLUSH_L2_ALL_RAMS_AND_CACHES       (0x20800a6d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | 0x6D" */
-
-
 
 /*!
  * NV2080_CTRL_CMD_INTERNAL_BIF_GET_STATIC_INFO
@@ -1997,7 +2013,7 @@ typedef struct NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS {
  *
  * Possible status values returned are:
  *   NV_OK
- *   
+ *
  */
 #define NV2080_CTRL_CMD_INTERNAL_HSHUB_FIRST_LINK_PEER_ID          (0x20800a89) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_HSHUB_FIRST_LINK_PEER_ID_PARAMS_MESSAGE_ID" */
 
@@ -2166,6 +2182,35 @@ typedef struct NV2080_CTRL_INTERNAL_MEMSYS_PROGRAM_RAW_COMPRESSION_MODE_PARAMS {
     NvBool bRawMode;
 } NV2080_CTRL_INTERNAL_MEMSYS_PROGRAM_RAW_COMPRESSION_MODE_PARAMS;
 
+/*
+ * NV2080_CTRL_CMD_INTERNAL_CCU_MAP
+ *
+ * This command gets the shared buffer memory descriptor from the CPU-RM and maps to it
+ * in physical-RM.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_ADDRESS
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CCU_MAP              (0x20800ab3) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_CCU_MAP_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_CCU_DEV_SHRBUF_COUNT_MAX 1
+#define NV2080_CTRL_INTERNAL_CCU_MAP_INFO_PARAMS_MESSAGE_ID (0xB3U)
+
+typedef struct NV2080_CTRL_INTERNAL_CCU_MAP_INFO_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 phyAddr[NV2080_CTRL_INTERNAL_MEMSYS_GET_MIG_MEMORY_PARTITION_TABLE_SIZE + NV2080_CTRL_INTERNAL_CCU_DEV_SHRBUF_COUNT_MAX], 8);
+} NV2080_CTRL_INTERNAL_CCU_MAP_INFO_PARAMS;
+/*
+ * NV2080_CTRL_CMD_INTERNAL_CCU_UNMAP
+ *
+ * This command unmaps the shared buffer memory mapping in physical-RM
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CCU_UNMAP (0x20800ab4) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | 0xB4" */
+
 
 
 /*!
@@ -2224,14 +2269,98 @@ typedef struct NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS {
 } NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS;
 
 /*!
+ * @ref NV2080_CTRL_CMD_INTERNAL_STATIC_KMIGMGR_GET_COMPUTE_PROFILES
+ * @ref NV2080_CTRL_CMD_INTERNAL_STATIC_MIGMGR_GET_COMPUTE_PROFILES
+ */
+#define NV2080_CTRL_CMD_INTERNAL_STATIC_KMIGMGR_GET_COMPUTE_PROFILES (0x20800aba) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | 0xba" */
+
+/*!
+ * NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE
+ *
+ * This structure specifies resources in an execution partition
+ *
+ *  computeSize[OUT]
+ *      - NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_* associated with this profile
+ *
+ *  gfxGpcCount[OUT]
+ *      - Total Number of GFX Supporting GPCs in this partition
+ *
+ *  gpcCount[OUT]
+ *      - Total Number of GPCs in this partition (including GFX Supported GPCs)
+ *
+ *  veidCount[OUT]
+ *      - Number of VEIDs allocated to this profile
+ *
+ *  smCount[OUT]
+ *      - Number of SMs usable in this profile
+ */
+typedef struct NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE {
+    NvU8  computeSize;
+    NvU32 gfxGpcCount;
+    NvU32 gpcCount;
+    NvU32 veidCount;
+    NvU32 smCount;
+} NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE;
+
+/*!
+ * NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_COMPUTE_PROFILES_PARAMS
+ *
+ * This structure specifies resources in an execution partition
+ *
+ *  profileCount[OUT]
+ *      - Total Number of profiles filled
+ *
+ *  profiles[OUT]
+ *      - NV2080_CTRL_GPU_COMPUTE_PROFILE filled with valid compute instance profiles 
+ */
+#define NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_COMPUTE_PROFILES_PARAMS_MESSAGE_ID (0xbbU)
+
+typedef struct NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_COMPUTE_PROFILES_PARAMS {
+    NvU32                                       profileCount;
+    NV2080_CTRL_INTERNAL_MIGMGR_COMPUTE_PROFILE profiles[NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE];
+} NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_COMPUTE_PROFILES_PARAMS;
+
+
+
+/*
+ * NV2080_CTRL_INTERNAL_NVLINK_GET_NUM_ACTIVE_LINK_PER_IOCTRL
+ *
+ * Returns number of active links allowed per IOCTRL
+ *
+ * [Out] numActiveLinksPerIoctrl
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_GET_NUM_ACTIVE_LINK_PER_IOCTRL_PARAMS_MESSAGE_ID (0xD8U)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_GET_NUM_ACTIVE_LINK_PER_IOCTRL_PARAMS {
+    NvU32 numActiveLinksPerIoctrl;
+} NV2080_CTRL_INTERNAL_NVLINK_GET_NUM_ACTIVE_LINK_PER_IOCTRL_PARAMS;
+
+#define NV2080_CTRL_INTERNAL_NVLINK_GET_NUM_ACTIVE_LINK_PER_IOCTRL (0x20800ad8U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_GET_NUM_ACTIVE_LINK_PER_IOCTRL_PARAMS_MESSAGE_ID" */
+
+/*
+ * NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL
+ *
+ * Returns number of links per IOCTRL
+ *
+ * [Out] numLinksPerIoctrl
+ */
+#define NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL_PARAMS_MESSAGE_ID (0xD9U)
+
+typedef struct NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL_PARAMS {
+    NvU32 numLinksPerIoctrl;
+} NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL_PARAMS;
+
+#define NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL (0x20800ad9U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL_PARAMS_MESSAGE_ID" */
+
+/*!
  * NV2080_CTRL_CMD_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE
  *
  * Query Coherent FB Aperture Size.
  *
  */
-#define NV2080_CTRL_CMD_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE (0x20800aba) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE    (0x20800ada) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS_MESSAGE_ID (0xbaU)
+#define NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS_MESSAGE_ID (0xDAU)
 
 typedef struct NV2080_CTRL_INTERNAL_GET_COHERENT_FB_APERTURE_SIZE_PARAMS {
     // Get Coherent Fb Aperture Size

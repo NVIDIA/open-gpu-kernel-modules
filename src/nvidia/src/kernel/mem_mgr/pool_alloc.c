@@ -176,6 +176,11 @@ struct RM_POOL_ALLOC_MEM_RESERVE_INFO
      * Automatically trim memory pool when allocation is freed.
      */
     NvBool bTrimOnFree;
+
+    /*! 
+     * Allocate pool in protected memory
+     */
+    NvBool bProtected;
 };
 
 /* ------------------------------------ Static functions --------------------------- */
@@ -213,6 +218,11 @@ allocUpstreamTopPool
     if (pMemReserveInfo->bSkipScrub)
     {
         allocOptions.flags |= PMA_ALLOCATE_NO_ZERO;
+    }
+
+    if (pMemReserveInfo->bProtected)
+    {
+        allocOptions.flags |= PMA_ALLOCATE_PROTECTED_REGION;
     }
 
     status = pmaAllocatePages(pMemReserveInfo->pPma,
@@ -979,4 +989,15 @@ rmMemPoolGetChunkAndPageSize
     *pChunkSize = pMemReserveInfo->pmaChunkSize;
     *pPageSize = poolAllocSizes[pMemReserveInfo->topmostPoolIndex];
     return NV_OK;
+}
+
+void
+rmMemPoolAllocateProtectedMemory
+(
+    RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo,
+    NvBool bProtected
+)
+{
+    NV_ASSERT_OR_RETURN_VOID(pMemReserveInfo != NULL);
+    pMemReserveInfo->bProtected = bProtected;
 }

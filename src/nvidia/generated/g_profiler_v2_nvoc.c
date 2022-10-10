@@ -323,12 +323,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #endif
     },
     {               /*  [9] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x230u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdExecRegops_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x230u)
-        /*flags=*/      0x230u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*flags=*/      0x210u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb0cc010au,
         /*paramSize=*/  sizeof(NVB0CC_CTRL_EXEC_REG_OPS_PARAMS),
@@ -530,7 +530,7 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
     pThis->__profilerBaseCtrlCmdPmaStreamUpdateGetPut__ = &profilerBaseCtrlCmdPmaStreamUpdateGetPut_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x230u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__profilerBaseCtrlCmdExecRegops__ = &profilerBaseCtrlCmdExecRegops_IMPL;
 #endif
 

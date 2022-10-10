@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0073/ctrl0073specific.finn
 //
 
-
-
-
 #include "ctrl/ctrl0073/ctrl0073base.h"
 
 #include "ctrl/ctrlxxxx.h"
@@ -1789,5 +1786,56 @@ typedef struct NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS {
     NvU32 targetHeadIndex;
     NvU32 infoframeIndex;
 } NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_DISP_I2C_READ_WRITE
+ *
+ * This command is used to do I2C R/W to slave on display i2c instance.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   i2cPort
+ *      This parameter specifies the I2C CCB port ID.
+ *   i2cSlaveAddress
+ *      This parameter specifies the I2C slave address.
+ *   readWriteFlag
+ *      This parameter specifies whether its read/write operation.
+ *   readWriteLen
+ *      This parameter specifies the length of the read/write buffer
+ *   readBuffer
+ *      This parameter reads the data from slave address and copies to this
+ *      buffer
+ *   writeBuffer
+ *      This parameter specifies this buffer data that would be written to
+ *      slave address
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV0073_CTRL_CMD_SPECIFIC_DISP_I2C_READ_WRITE     (0x7302acU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN 128U
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS_MESSAGE_ID (0xACU)
+
+typedef struct NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 i2cPort;
+    NvU32 i2cSlaveAddress;
+    NvU32 readWriteFlag;
+    NvU32 readWriteLen;
+    NvU8  readBuffer[NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN];
+    NvU8  writeBuffer[NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN];
+} NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_MODE  (0x00000001)
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_WRITE_MODE (0x00000000)
 
 /* _ctrl0073specific_h_ */

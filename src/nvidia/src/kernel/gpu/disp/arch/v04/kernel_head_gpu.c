@@ -46,9 +46,9 @@ NvU32 kheadReadPendingVblank_v04_00_KERNEL(OBJGPU *pGpu, KernelHead *pKernelHead
 
     if (!FLD_IDX_TEST_DRF(_PDISP, _FE_RM_INTR_DISPATCH, _HEAD_TIMING, pKernelHead->PublicId, _PENDING, intr))
         return headIntrMask;
-    
-    intr = GPU_REG_RD32(pGpu, NV_PDISP_FE_EVT_STAT_HEAD_TIMING(pKernelHead->PublicId));
-    
+
+    intr = GPU_REG_RD32(pGpu, NV_PDISP_FE_RM_INTR_STAT_HEAD_TIMING(pKernelHead->PublicId));
+
     if (FLD_TEST_DRF(_PDISP, _FE_EVT_STAT_HEAD_TIMING, _LAST_DATA, _PENDING, intr))
     {
         headIntrMask |= headIntr_vblank;

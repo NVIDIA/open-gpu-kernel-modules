@@ -73,6 +73,9 @@ static NV_STATUS objClGpuIs3DController(OBJGPU *);
 static void      objClLoadPcieVirtualP2PApproval(OBJGPU *);
 static void      objClCheckForExternalGpu(OBJGPU *, OBJCL *);
 static void      _objClAdjustTcVcMap(OBJGPU *, OBJCL *, PORTDATA *);
+static void      _objClGetDownstreamAtomicsEnabledMask(void  *, NvU32, NvU32 *);
+static void      _objClGetUpstreamAtomicRoutingCap(void  *, NvU32, NvBool *);
+static void      _objClGetDownstreamAtomicRoutingCap(void  *, NvU32, NvBool *);
 
 extern void _Set_ASPM_L0S_L1(OBJCL *, NvBool, NvBool);
 
@@ -551,6 +554,187 @@ clCheckUpstreamLtrSupport_exit:
     return status;
 }
 
+/*! @brief Check PCIe Atomics capability throughout the hierarchy of
+ *         switches in between root port and endpoint.
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pCl         Core logic object pointer
+ * @param[out] pAtomicMask Mask of supported atomic size, including one or more of:
+ *                         OS_PCIE_CAP_MASK_REQ_ATOMICS_32
+ *                         OS_PCIE_CAP_MASK_REQ_ATOMICS_64
+ *                         OS_PCIE_CAP_MASK_REQ_ATOMICS_128
+ *
+ * @return NV_OK if PCIe Atomics is supported throughout the hierarchy, else
+ *         NV_ERR_NOT_SUPPORTED
+ */
+NV_STATUS
+clGetAtomicTypesSupported_IMPL
+(
+    NvU32  domain,
+    NvU8   bus,
+    OBJCL *pCl,
+    NvU32 *pAtomicMask
+)
+{
+    NvU32      portCaps    = 0;
+    NvBool     bRoutingCap = NV_TRUE;
+    NV_STATUS  status      = NV_OK;
+    NvU32      PCIECapPtr;
+    void      *pHandleUp;
+    NvU8       busUp, devUp, funcUp;
+    NvU16      vendorIDUp, deviceIDUp;
+
+    do
+    {
+        // find virtual P2P bridge
+        pHandleUp = clFindP2PBrdg(pCl, domain, bus,
+                                  &busUp, &devUp, &funcUp,
+                                  &vendorIDUp, &deviceIDUp);
+
+        // make sure handle was found
+        if (!pHandleUp)
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+            goto clGetAtomicTypesSupported_exit;
+        }
+
+        status = clSetPortPcieCapOffset(pCl, pHandleUp, &PCIECapPtr);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "Capability pointer not found.\n");
+            status = NV_ERR_NOT_SUPPORTED;
+            goto clGetAtomicTypesSupported_exit;
+        }
+
+        // Read PCIe Capability
+        portCaps = osPciReadDword(pHandleUp, CL_PCIE_CAP - CL_PCIE_BEGIN + PCIECapPtr);
+
+        if (CL_IS_ROOT_PORT(portCaps))
+        {
+            _objClGetDownstreamAtomicsEnabledMask(pHandleUp, PCIECapPtr, pAtomicMask);
+        }
+        else if (CL_IS_UPSTREAM_PORT(portCaps))
+        {
+            _objClGetUpstreamAtomicRoutingCap(pHandleUp, PCIECapPtr, &bRoutingCap);
+            if (!bRoutingCap)
+            {
+                status = NV_ERR_NOT_SUPPORTED;
+                goto clGetAtomicTypesSupported_exit;
+            }
+        }
+        else if (CL_IS_DOWNSTREAM_PORT(portCaps))
+        {
+            _objClGetDownstreamAtomicRoutingCap(pHandleUp, PCIECapPtr, &bRoutingCap);
+            if (!bRoutingCap)
+            {
+                status = NV_ERR_NOT_SUPPORTED;
+                goto clGetAtomicTypesSupported_exit;
+            }
+        }
+        else
+        {
+            // Invalid port
+            status = NV_ERR_NOT_SUPPORTED;
+            goto clGetAtomicTypesSupported_exit;
+        }
+
+        bus = busUp;
+    } while (!CL_IS_ROOT_PORT(portCaps));
+
+clGetAtomicTypesSupported_exit:
+    return status;
+}
+
+/*!
+ * @brief Get the supported Atomics mask bit configuration for root port
+ *
+ * @param[in]  pHandle     Handle for the P2P bridge
+ * @param[in]  PCIECapPtr  PCIe Capability pointer
+ * @param[out] pAtomicMask Mask of supported atomic size
+ */
+static void
+_objClGetDownstreamAtomicsEnabledMask
+(
+    void  *pHandle,
+    NvU32  PCIECapPtr,
+    NvU32 *pAtomicMask
+)
+{
+    NvU32 devCap2;
+
+    devCap2  = osPciReadDword(pHandle,
+                              CL_PCIE_DEV_CAP_2  - CL_PCIE_BEGIN + PCIECapPtr);
+    if (CL_IS_32BIT_ATOMICS_SUPPORTED(devCap2))
+    {
+        *pAtomicMask |= CL_ATOMIC_32BIT;
+    }
+    if (CL_IS_64BIT_ATOMICS_SUPPORTED(devCap2))
+    {
+        *pAtomicMask |= CL_ATOMIC_64BIT;
+    }
+    if (CL_IS_128BIT_ATOMICS_SUPPORTED(devCap2))
+    {
+        *pAtomicMask |= CL_ATOMIC_128BIT;
+    }
+}
+
+/*!
+ * @brief Check if upstream port is capable of atomic routing
+ *        and whether egress is blocked
+ *
+ * @param[in]  pHandle      Handle for the P2P bridge
+ * @param[in]  PCIECapPtr   PCIe Capability pointer
+ * @param[out] pbRoutingCap Atomic routing capable
+ */
+static void
+_objClGetUpstreamAtomicRoutingCap
+(
+    void   *pHandle,
+    NvU32   PCIECapPtr,
+    NvBool *pbRoutingCap
+)
+{
+    NvU32 devCap2;
+    NvU32 devCtrl2;
+
+    devCap2  = osPciReadDword(pHandle,
+                              CL_PCIE_DEV_CAP_2  - CL_PCIE_BEGIN + PCIECapPtr);
+    devCtrl2 = osPciReadDword(pHandle,
+                              CL_PCIE_DEV_CTRL_2 - CL_PCIE_BEGIN + PCIECapPtr);
+
+    if ((!CL_IS_ATOMICS_SUPPORTED(devCap2)) ||
+        (CL_IS_ATOMICS_EGRESS_BLOCKED(devCtrl2)))
+    {
+        *pbRoutingCap = NV_FALSE;
+    }
+}
+
+/*!
+ * @brief Check if downstream port is capable of atomic routing
+ *
+ * @param[in]  pHandle      Handle for the P2P bridge
+ * @param[in]  PCIECapPtr   PCIe Capability pointer
+ * @param[out] pbRoutingCap Atomic routing capable
+ */
+static void
+_objClGetDownstreamAtomicRoutingCap
+(
+    void   *pHandle,
+    NvU32   PCIECapPtr,
+    NvBool *pbRoutingCap
+)
+{
+    NvU32 devCap2;
+
+    devCap2  = osPciReadDword(pHandle,
+                              CL_PCIE_DEV_CAP_2  - CL_PCIE_BEGIN + PCIECapPtr);
+
+    if (!CL_IS_ATOMICS_SUPPORTED(devCap2))
+    {
+        *pbRoutingCap = NV_FALSE;
+    }
+}
+
 static void
 _objClAdjustTcVcMap(OBJGPU *pGpu, OBJCL *pCl, PORTDATA *pPort)
 {
@@ -649,6 +833,14 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     //
     kbifInitPcieDeviceControlStatus(pGpu, pKernelBif);
 
+    // 
+    // Probe root port PCIe atomic capabilities.
+    // kbifProbePcieReqAtomicCaps_HAL should be called from here instead of
+    // kbif construct because of the dependency on the chipset
+    // discovery to build the allow list for enabling PCIe atomics feature.
+    //
+    kbifProbePcieReqAtomicCaps_HAL(pGpu, pKernelBif);
+
     //
     // Passthrough configurations do not typically present the upstream
     // bridge required for detecting multi-GPU boards. So for hypervisors
@@ -717,6 +909,9 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     // always ensure that the GPU TC/VC map is a subset of the RP TC/VC map.
     // The GPU's map can be more restrictive than the RP, but it can *never*
     // be larger.
+    //
+    // Virtual channel capability is no longer supported for GH100
+    // Bug 200570282, comment#41
     //
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_VC_CAPABILITY_SUPPORTED))
     {
@@ -4193,6 +4388,53 @@ clControlL0sL1LinkControlUpstreamPort_IMPL
         regVal &= 0x0;
     }
     osPciWriteDword(handle, linkControlRegOffset, regVal);
+    return NV_OK;
+}
+
+/*!
+ * @brief: Enable L0s and L1 support from chipset
+ * Note: This function is used for force enabling ASPM and shouldn't be used
+ * for normal driver operations
+ *
+ * @param[in] pGpu      GPU object pointer
+ * @param[in] pBif      BIF object pointer
+ * @param[in] aspmState L0s/L1 state (enable/disable)
+ *
+ * @return NV_OK if ASPM state updated, else return error
+ */
+NV_STATUS
+clChipsetAspmPublicControl_IMPL
+(
+    OBJGPU *pGpu,
+    OBJCL  *pCl,
+    NvU32   aspmState
+)
+{
+    void  *pHandle             = pGpu->gpuClData.upstreamPort.addr.handle;
+    NvU32 PCIECapPtr           = pGpu->gpuClData.upstreamPort.PCIECapPtr;
+    NvU32 linkControlRegOffset = PCIECapPtr + 0x10;
+    NvU32 regVal;
+
+    if (aspmState > CL_PCIE_LINK_CTRL_STATUS_ASPM_MASK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid ASPM state passed.\n");
+        return NV_ERR_INVALID_DATA;
+    }
+
+    regVal = osPciReadDword(pHandle, linkControlRegOffset);
+    if (regVal == 0xFFFF)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Link Control register read failed for upstream port\n");
+        return NV_ERR_GENERIC;
+    }
+
+    // Mask all bits except ASPM control bits and update only ASPM bits (1:0)
+    regVal = (~CL_PCIE_LINK_CTRL_STATUS_ASPM_MASK) & regVal;
+    regVal |= aspmState;
+
+    osPciWriteDword(pHandle, linkControlRegOffset, regVal);
+
     return NV_OK;
 }
 

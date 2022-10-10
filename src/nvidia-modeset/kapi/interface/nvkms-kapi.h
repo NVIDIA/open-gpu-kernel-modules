@@ -416,6 +416,12 @@ struct NvKmsKapiCreateSurfaceParams {
     NvU8 log2GobsPerBlockY;
 };
 
+enum NvKmsKapiAllocationType {
+    NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT = 0,
+    NVKMS_KAPI_ALLOCATION_TYPE_NOTIFIER = 1,
+    NVKMS_KAPI_ALLOCATION_TYPE_OFFSCREEN = 2,
+};
+
 struct NvKmsKapiFunctionsTable {
 
     /*!
@@ -609,6 +615,8 @@ struct NvKmsKapiFunctionsTable {
      * \param [in] device  A device allocated using allocateDevice().
      *
      * \param [in] layout  BlockLinear or Pitch.
+     * 
+     * \param [in] type    Allocation type.
      *
      * \param [in] size    Size, in bytes, of the memory to allocate.
      *
@@ -624,6 +632,7 @@ struct NvKmsKapiFunctionsTable {
     (
         struct NvKmsKapiDevice *device,
         enum NvKmsSurfaceMemoryLayout layout,
+        enum NvKmsKapiAllocationType type,
         NvU64 size,
         NvU8 *compressible
     );
@@ -637,6 +646,8 @@ struct NvKmsKapiFunctionsTable {
      * \param [in] device  A device allocated using allocateDevice().
      *
      * \param [in] layout  BlockLinear or Pitch.
+     * 
+     * \param [in] type    Allocation type.
      *
      * \param [in] size    Size, in bytes, of the memory to allocate.
      *
@@ -652,6 +663,7 @@ struct NvKmsKapiFunctionsTable {
     (
         struct NvKmsKapiDevice *device,
         enum NvKmsSurfaceMemoryLayout layout,
+        enum NvKmsKapiAllocationType type,
         NvU64 size,
         NvU8 *compressible
     );

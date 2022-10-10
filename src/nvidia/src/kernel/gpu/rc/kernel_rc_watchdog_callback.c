@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -179,7 +179,6 @@ krcWatchdog_IMPL
             (WATCHDOG_RESET_QUEUE_SIZE - 1));
     }
 
-    // If we are disabled or chip is in low power mode
     if ((WATCHDOG_FLAGS_DISABLED !=
          (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED)) &&
         gpuIsGpuFullPower(pGpu))

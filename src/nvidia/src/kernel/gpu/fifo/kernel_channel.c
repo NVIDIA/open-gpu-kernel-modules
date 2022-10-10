@@ -61,9 +61,12 @@
 #include "class/clc56f.h"   // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc56fsw.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc572.h"   // PHYSICAL_CHANNEL_GPFIFO
+#include "class/clc86f.h"   // HOPPER_CHANNEL_GPFIFO_A
+#include "class/clc86fsw.h" // HOPPER_CHANNEL_GPFIFO_A
 
 #include "ctrl/ctrl906f.h"
 #include "ctrl/ctrlc46f.h"
+#include "ctrl/ctrlc86f.h"
 
 #include "Nvcm.h"
 #include "libraries/resserv/resserv.h"
@@ -533,14 +536,6 @@ kchannelConstruct_IMPL
             _INTERNALFLAGS, _ECC_ERROR_NOTIFIER_TYPE,
             pChannelGpfifoParams->internalFlags);
 
-        errContextMemDescFlags = MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
-        if (gpuIsSriovEnabled(pGpu) &&
-            IS_GFID_VF(callingContextGfid) &&
-            !pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bIsCallingContextVgpuPlugin)
-        {
-            errContextMemDescFlags |= MEMDESC_FLAGS_GUEST_ALLOCATED;
-        }
-
         if (pKernelChannel->errorContextType != ERROR_NOTIFIER_TYPE_NONE)
         {
             NV_ASSERT_OK_OR_GOTO(status,
@@ -558,6 +553,7 @@ kchannelConstruct_IMPL
                             pChannelGpfifoParams->errorNotifierMem.base,
                             pChannelGpfifoParams->errorNotifierMem.size);
         }
+
         if (pKernelChannel->eccErrorContextType != ERROR_NOTIFIER_TYPE_NONE)
         {
             NV_ASSERT_OK_OR_GOTO(status,
@@ -1402,6 +1398,16 @@ CliGetChannelClassInfo
             pClassInfo->eventActionSingle  = NVC56F_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE;
             pClassInfo->eventActionRepeat  = NVC56F_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
             pClassInfo->rcNotifierIndex    = NVC56F_NOTIFIERS_RC;
+            pClassInfo->classType          = CHANNEL_CLASS_TYPE_GPFIFO;
+            break;
+        }
+        case HOPPER_CHANNEL_GPFIFO_A:
+        {
+            pClassInfo->notifiersMaxCount  = NVC86F_NOTIFIERS_MAXCOUNT;
+            pClassInfo->eventActionDisable = NVC86F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
+            pClassInfo->eventActionSingle  = NVC86F_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE;
+            pClassInfo->eventActionRepeat  = NVC86F_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
+            pClassInfo->rcNotifierIndex    = NVC86F_NOTIFIERS_RC;
             pClassInfo->classType          = CHANNEL_CLASS_TYPE_GPFIFO;
             break;
         }

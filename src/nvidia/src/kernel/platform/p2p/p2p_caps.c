@@ -531,8 +531,7 @@ _kp2pCapsGetStatusOverPcieBar1
     KernelBif *pKernelBif  = GPU_GET_KERNEL_BIF(pFirstGpu);
     NV_STATUS status       = NV_OK;
 
-    if ((pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_DEFAULT) &&
-        (pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_BAR1P2P))
+    if ((pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_BAR1P2P))
     {
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -545,8 +544,8 @@ _kp2pCapsGetStatusOverPcieBar1
 
     while ((pGpuPeer = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
-        if (!kbusIsPcieBar1P2PCapable_HAL(pFirstGpu, GPU_GET_KERNEL_BUS(pFirstGpu),
-                                          pGpuPeer, GPU_GET_KERNEL_BUS(pGpuPeer)))
+        if (!kbusIsPcieBar1P2PMappingSupported_HAL(pFirstGpu, GPU_GET_KERNEL_BUS(pFirstGpu),
+                                                   pGpuPeer, GPU_GET_KERNEL_BUS(pGpuPeer)))
         {
             status = NV_ERR_NOT_SUPPORTED;
             break;

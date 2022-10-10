@@ -173,6 +173,8 @@ namespace DisplayPort
         bool bIsFakedMuxDevice;
         bool bIsPreviouslyFakedMuxDevice;
         bool bisMarkedForDeletion;
+        bool bIgnoreMsaCap;
+        bool bIgnoreMsaCapCached;
 
         //
         // Device doing the DSC decompression for this device. This could be device itself
@@ -194,6 +196,7 @@ namespace DisplayPort
 
         TriState bSdpExtCapable;
         bool bMSAOverMSTCapable;
+        bool bDscPassThroughColorFormatWar;
 
         DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent);
         ~DeviceImpl();
@@ -349,15 +352,9 @@ namespace DisplayPort
             return true;
         }
 
-        bool getIgnoreMSACap()
-        {
-            return hal->getMsaTimingparIgnored();
-        }
+        bool getIgnoreMSACap();
 
-        AuxRetry::status setIgnoreMSAEnable(bool msaTimingParamIgnoreEn)
-        {
-            return hal->setIgnoreMSATimingParamters(msaTimingParamIgnoreEn);
-        }
+        AuxRetry::status setIgnoreMSAEnable(bool msaTimingParamIgnoreEn);
 
         bool isVirtualPeerDevice()
         {

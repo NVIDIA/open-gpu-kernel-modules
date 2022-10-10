@@ -182,7 +182,7 @@ typedef struct NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS {
 
 #define NV2080_CTRL_CMD_CE_SET_PCE_LCE_CONFIG (0x20802a04) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_CE_INTERFACE_ID << 8) | NV2080_CTRL_CE_SET_PCE_LCE_CONFIG_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_MAX_PCES                  18
+#define NV2080_CTRL_MAX_PCES                  32
 #define NV2080_CTRL_MAX_GRCES                 2
 
 #define NV2080_CTRL_CE_SET_PCE_LCE_CONFIG_PARAMS_MESSAGE_ID (0x4U)
@@ -199,10 +199,13 @@ typedef struct NV2080_CTRL_CE_SET_PCE_LCE_CONFIG_PARAMS {
  * This command updates the PCE-LCE mappings
  *
  *   pPceLceMap [IN]
- *     This parameter tracks the array of PCE-LCE mappings.
+ *     This parameter contains the array of PCE to LCE mappings.
+ *     The array is indexed by the PCE index, and contains the
+ *     LCE index that the PCE is assigned to.  A unused PCE is
+ *     tagged with NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE.
  *
  *   pGrceConfig [IN]
- *     This parameter tracks the array of GRCE configs.
+ *     This parameter contains the array of GRCE configs.
  *     0xF -> GRCE does not share with any LCE
  *     0-MAX_LCE -> GRCE shares with the given LCE
  *
@@ -232,6 +235,8 @@ typedef struct NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS {
     NvU32  exposeCeMask;
     NvBool bUpdateNvlinkPceLce;
 } NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS;
+
+#define NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE      0xf
 
 #define NV2080_CTRL_CMD_CE_UPDATE_CLASS_DB (0x20802a06) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_CE_INTERFACE_ID << 8) | NV2080_CTRL_CE_UPDATE_CLASS_DB_PARAMS_MESSAGE_ID" */
 

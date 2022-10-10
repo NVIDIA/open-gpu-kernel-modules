@@ -34,7 +34,6 @@
 #include "published/ampere/ga100/dev_nv_xve.h"
 #include "published/ampere/ga100/dev_nv_xve_addendum.h"
 
-#define MAX_CE_CNT 18
 #define NV_CE_INVALID_TOPO_IDX 0xFFFF
 
 // Ampere +
@@ -61,50 +60,6 @@
 #define NV_CE_MAX_LCE_MASK                    0x3FF
 
 static void _ceGetAlgorithmPceIndex(OBJGPU *, KernelCE*, NvU32 *, NvU32 *, NvBool *, NvU8 *);
-
-/*
- * sysmemLinks
- *    Represents the number of sysmem links detected
- *    This affects how many PCEs LCE0(sysmem read CE)
- *    and LCE1(sysmem write CE) should be mapped to
- * maxLinksPerPeer
- *    Represents the maximum number of peer links
- *    between this GPU and all its peers. This affects
- *    how many PCEs LCE3(P2P CE) should be mapped to
- * numPeers
- *    Represents the number of Peer GPUs discovered so far
- * bSymmetric
- *    Represents whether the topology detected so far
- *    is symmetric i.e. has same number of links to all
- *    peers connected through nvlink. This affects how
- *    many PCEs to assign to LCEs3-5 (nvlink P2P CEs)
- * bSwitchConfig
- *    Represents whether the config listed is intended
- *    for use with nvswitch systems
- * pceLceMap
- *    Value of NV_CE_PCE2LCE_CONFIG0 register with the
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- * grceConfig
- *    Value of NV_CE_GRCE_CONFIG register with the
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- * exposeCeMask
- *    Mask of CEs to expose to clients for the above
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- */
-typedef struct NVLINK_CE_AUTO_CONFIG_TABLE
-{
-    NvU32  sysmemLinks;
-    NvU32  maxLinksPerPeer;
-    NvU32  numPeers;
-    NvBool bSymmetric;
-    NvBool bSwitchConfig;
-    NvU32  pceLceMap[MAX_CE_CNT];
-    NvU32  grceConfig[MAX_CE_CNT];
-    NvU32  exposeCeMask;
-} NVLINK_CE_AUTO_CONFIG_TABLE;
 
 /*
  * Table for setting the PCE2LCE mapping for WAR configs that cannot be implemented
@@ -199,50 +154,58 @@ kceGetNvlinkAutoConfigCeValues_GA100
     NvU32         grceConfigSize1    = kceGetGrceConfigSize1_HAL(pKCe);
     NvBool        bEntryExists;
     NvU32         pceIdx, grceIdx, i;
-    NVLINK_TOPOLOGY_PARAMS currentTopo;
+    NVLINK_TOPOLOGY_PARAMS *pCurrentTopo = portMemAllocNonPaged(sizeof(*pCurrentTopo));
+    NvU32 *pLocalPceLceMap = NULL, *pLocalGrceConfig = NULL;
 
-    NV_ASSERT_OR_RETURN(!RMCFG_FEATURE_PLATFORM_GSP, NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(pCurrentTopo != NULL, NV_ERR_NO_MEMORY);
 
     if ((pPceLceMap == NULL) || (pGrceConfig == NULL) || (pExposeCeMask == NULL))
     {
-        return NV_ERR_INVALID_ARGUMENT;
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto done;
     }
 
-    if (pKernelNvlink == NULL)
+    if (pKernelNvlink == NULL && pGpu->getProperty(pGpu, PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK))
     {
-        return NV_ERR_NOT_SUPPORTED;
+        status = NV_ERR_NOT_SUPPORTED;
+        goto done;
     }
 
-    portMemSet(&currentTopo, 0, sizeof(currentTopo));
-
-    // Initialize pPceLceMap with no mappings
-    for (pceIdx = 0; pceIdx < pce2lceConfigSize1; pceIdx++)
-    {
-        pPceLceMap[pceIdx] = NV_CE_PCE2LCE_CONFIG_PCE_ASSIGNED_LCE_NONE;
-    }
+    portMemSet(pCurrentTopo, 0, sizeof(*pCurrentTopo));
 
     // Bug 200283711: Use the largest of all chips in allocating these arrays
-    NvU32 localPceLceMap[NV_CE_PCE2LCE_CONFIG__SIZE_1_MAX];
-    NvU32 localGrceConfig[MAX_CE_CNT];
+    pLocalPceLceMap = portMemAllocNonPaged(sizeof(NvU32[NV2080_CTRL_MAX_PCES]));
+    pLocalGrceConfig = portMemAllocNonPaged(sizeof(NvU32[NV2080_CTRL_MAX_GRCES]));
     NvU32 localExposeCeMask = 0;
 
-    // Initialize to ASSIGNED_LCE_NONE
-    for (i = 0; i < pce2lceConfigSize1; i++)
+    if (pLocalPceLceMap == NULL || pLocalGrceConfig == NULL)
     {
-        localPceLceMap[i] = NV_CE_PCE2LCE_CONFIG_PCE_ASSIGNED_LCE_NONE;
+        status = NV_ERR_NO_MEMORY;
+        goto done;
     }
 
-    sysmemLinks = knvlinkGetNumLinksToSystem(pGpu, pKernelNvlink);
+    for (i = 0; i < NV2080_CTRL_MAX_PCES; i++)
+    {
+        pLocalPceLceMap[i] = NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE;
+    }
+
+    for (i = 0; i < NV2080_CTRL_MAX_GRCES; i++)
+    {
+        pLocalGrceConfig[i] = NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE;
+    }
+
+    sysmemLinks = pKernelNvlink ? knvlinkGetNumLinksToSystem(pGpu, pKernelNvlink) : 0;
 
     if (gpuGetNumCEs(pGpu) == 0)
     {
-        return NV_ERR_NOT_SUPPORTED;
+        status = NV_ERR_NOT_SUPPORTED;
+        goto done;
     }
 
     (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
 
     // Get the max{nvlinks/peer, for all connected peers}
-    while ((pRemoteGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    while ((pKernelNvlink != NULL) && ((pRemoteGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL))
     {
         NvU32 numLinksToPeer = knvlinkGetNumLinksToPeer(pGpu, pKernelNvlink,
                                                         pRemoteGpu);
@@ -269,17 +232,17 @@ kceGetNvlinkAutoConfigCeValues_GA100
         }
     }
 
-    currentTopo.sysmemLinks     = sysmemLinks;
-    currentTopo.maxLinksPerPeer = maxLinksPerPeer;
-    currentTopo.numPeers        = numPeers;
-    currentTopo.bSymmetric      = bSymmetric;
-    currentTopo.bSwitchConfig   = knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink);
+    pCurrentTopo->sysmemLinks     = sysmemLinks;
+    pCurrentTopo->maxLinksPerPeer = maxLinksPerPeer;
+    pCurrentTopo->numPeers        = numPeers;
+    pCurrentTopo->bSymmetric      = bSymmetric;
+    pCurrentTopo->bSwitchConfig   = pKernelNvlink ? knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink) : NV_FALSE;
 
     //
     // Check if the current config exists in the table
     // Here, we only fill exposeCeMask.
     //
-    bEntryExists = kceGetAutoConfigTableEntry_HAL(pGpu, pKCe, &currentTopo, nvLinkCeAutoConfigTable_GA100,
+    bEntryExists = kceGetAutoConfigTableEntry_HAL(pGpu, pKCe, pCurrentTopo, nvLinkCeAutoConfigTable_GA100,
                                                  NV_ARRAY_ELEMENTS(nvLinkCeAutoConfigTable_GA100),
                                                  &topoIdx, &localExposeCeMask);
     if (bEntryExists)
@@ -287,11 +250,11 @@ kceGetNvlinkAutoConfigCeValues_GA100
         // Since entry exists, fill local variables with the associated table entry
         for (pceIdx = 0; pceIdx < pce2lceConfigSize1; pceIdx++)
         {
-            localPceLceMap[pceIdx] = nvLinkCeAutoConfigTable_GA100[topoIdx].pceLceMap[pceIdx];
+            pLocalPceLceMap[pceIdx] = nvLinkCeAutoConfigTable_GA100[topoIdx].pceLceMap[pceIdx];
         }
         for (grceIdx = 0; grceIdx < grceConfigSize1; grceIdx++)
         {
-            localGrceConfig[grceIdx] = nvLinkCeAutoConfigTable_GA100[topoIdx].grceConfig[grceIdx];
+            pLocalGrceConfig[grceIdx] = nvLinkCeAutoConfigTable_GA100[topoIdx].grceConfig[grceIdx];
         }
     }
     else
@@ -301,15 +264,15 @@ kceGetNvlinkAutoConfigCeValues_GA100
         // Here the currentTopo struct comes with pce-lce & grce mappings & exposeCeMask
         //
 
-        status = kceGetMappings_HAL(pGpu, pKCe, &currentTopo,
-                                   localPceLceMap, localGrceConfig, &localExposeCeMask);
+        status = kceGetMappings_HAL(pGpu, pKCe, pCurrentTopo,
+                                   pLocalPceLceMap, pLocalGrceConfig, &localExposeCeMask);
     }
 
     // Get the largest topology that has been cached
-    bEntryExists = gpumgrGetSystemNvlinkTopo(gpuGetDBDF(pGpu), &currentTopo);
+    bEntryExists = gpumgrGetSystemNvlinkTopo(gpuGetDBDF(pGpu), pCurrentTopo);
 
     // Is this the largest topology that we've ever seen compared to the cached one?
-    bCurrentTopoMax = kceIsCurrentMaxTopology_HAL(pGpu, pKCe, &currentTopo, &localExposeCeMask, &topoIdx);
+    bCurrentTopoMax = kceIsCurrentMaxTopology_HAL(pGpu, pKCe, pCurrentTopo, &localExposeCeMask, &topoIdx);
 
     if (bCurrentTopoMax)
     {
@@ -321,25 +284,25 @@ kceGetNvlinkAutoConfigCeValues_GA100
         //
         for (pceIdx = 0; pceIdx < pce2lceConfigSize1; pceIdx++)
         {
-            currentTopo.maxPceLceMap[pceIdx] = localPceLceMap[pceIdx];
+            pCurrentTopo->maxPceLceMap[pceIdx] = pLocalPceLceMap[pceIdx];
         }
         for (grceIdx = 0; grceIdx < grceConfigSize1; grceIdx++)
         {
-            currentTopo.maxGrceConfig[grceIdx] = localGrceConfig[grceIdx];
+            pCurrentTopo->maxGrceConfig[grceIdx] = pLocalGrceConfig[grceIdx];
         }
-        currentTopo.maxExposeCeMask = localExposeCeMask;
+        pCurrentTopo->maxExposeCeMask = localExposeCeMask;
 
         if (topoIdx != NV_CE_INVALID_TOPO_IDX)
         {
             // Only if we used table to determine config, store this value
-            currentTopo.maxTopoIdx      = topoIdx;
-            currentTopo.sysmemLinks     = nvLinkCeAutoConfigTable_GA100[topoIdx].sysmemLinks;
-            currentTopo.maxLinksPerPeer = nvLinkCeAutoConfigTable_GA100[topoIdx].maxLinksPerPeer;
-            currentTopo.numPeers        = nvLinkCeAutoConfigTable_GA100[topoIdx].numPeers;
-            currentTopo.bSymmetric      = nvLinkCeAutoConfigTable_GA100[topoIdx].bSymmetric;
-            currentTopo.bSwitchConfig   = nvLinkCeAutoConfigTable_GA100[topoIdx].bSwitchConfig;
+            pCurrentTopo->maxTopoIdx      = topoIdx;
+            pCurrentTopo->sysmemLinks     = nvLinkCeAutoConfigTable_GA100[topoIdx].sysmemLinks;
+            pCurrentTopo->maxLinksPerPeer = nvLinkCeAutoConfigTable_GA100[topoIdx].maxLinksPerPeer;
+            pCurrentTopo->numPeers        = nvLinkCeAutoConfigTable_GA100[topoIdx].numPeers;
+            pCurrentTopo->bSymmetric      = nvLinkCeAutoConfigTable_GA100[topoIdx].bSymmetric;
+            pCurrentTopo->bSwitchConfig   = nvLinkCeAutoConfigTable_GA100[topoIdx].bSwitchConfig;
         }
-        gpumgrUpdateSystemNvlinkTopo(gpuGetDBDF(pGpu), &currentTopo);
+        gpumgrUpdateSystemNvlinkTopo(gpuGetDBDF(pGpu), pCurrentTopo);
     }
 
     NV_PRINTF(LEVEL_INFO, "GPU%d : RM Configured Values for CE Config\n", gpuGetInstance(pGpu));
@@ -347,13 +310,13 @@ kceGetNvlinkAutoConfigCeValues_GA100
     // Now, fill up the information to return. We'll always return max config information.
     for (pceIdx = 0; pceIdx < pce2lceConfigSize1; pceIdx++)
     {
-        pPceLceMap[pceIdx] = currentTopo.maxPceLceMap[pceIdx];
+        pPceLceMap[pceIdx] = pCurrentTopo->maxPceLceMap[pceIdx];
         NV_PRINTF(LEVEL_INFO, "PCE-LCE map: PCE %d LCE 0x%x\n", pceIdx, pPceLceMap[pceIdx]);
     }
 
     for (grceIdx = 0; grceIdx < grceConfigSize1; grceIdx++)
     {
-        NvU32 grceSharedLce = currentTopo.maxGrceConfig[grceIdx];
+        NvU32 grceSharedLce = pCurrentTopo->maxGrceConfig[grceIdx];
 
         if (grceSharedLce != 0xF)
         {
@@ -369,8 +332,13 @@ kceGetNvlinkAutoConfigCeValues_GA100
         NV_PRINTF(LEVEL_INFO, "GRCE Config: GRCE %d LCE 0x%x\n", grceIdx, pGrceConfig[grceIdx]);
     }
 
-    *pExposeCeMask = currentTopo.maxExposeCeMask;
+    *pExposeCeMask = pCurrentTopo->maxExposeCeMask;
     NV_PRINTF(LEVEL_INFO, "exposeCeMask = 0x%x\n", *pExposeCeMask);
+
+done:
+    portMemFree(pCurrentTopo);
+    portMemFree(pLocalPceLceMap);
+    portMemFree(pLocalGrceConfig);
 
     return status;
 }
@@ -518,6 +486,12 @@ kceGetMappings_GA100
     NvU32       fbPceMask         = 0;
     NV_STATUS   status            = NV_OK;
     NvU32       pceIndex, lceIndex, grceIdx;
+    KernelNvlink *pKernelNvlink      = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    if (!pKernelNvlink || knvlinkIsForcedConfig(pGpu, pKernelNvlink))
+    {
+        return NV_OK;
+    }
 
     // Prepare the per-HSHUB/FBHUB available PCE mask
     status = kceGetAvailableHubPceMask(pGpu, pTopoParams);
@@ -560,6 +534,9 @@ kceGetMappings_GA100
 
     for (grceIdx = 0; grceIdx < NV_CE_MAX_GRCE; grceIdx++)
     {
+        // We should have fbhub PCEs left to assign, but avoid an invalid pceIndex if we do not
+        NV_ASSERT_OR_ELSE(fbPceMask != 0, break);
+
         //
         // Check if we are sharing GRCEs
         // On Ampere, GRCEs can only use FBHUB PCEs
@@ -575,7 +552,7 @@ kceGetMappings_GA100
             pLocalGrceMap[grceIdx] = DRF_NUM(_CE, _GRCE_CONFIG, _SHARED, 1) |
                                      DRF_NUM(_CE, _GRCE_CONFIG, _SHARED_LCE, lceIndex);
 
-            if ((kceIsGen4orHigherSupported_HAL(pGpu, pKCe)) || (pKCe->bUseGen4Mapping == NV_TRUE))
+            if ((kceIsGenXorHigherSupported_HAL(pGpu, pKCe, 4)) || (pKCe->bUseGen4Mapping == NV_TRUE))
             {
                 kceApplyGen4orHigherMapping_HAL(pGpu, pKCe,
                                                 &pLocalPceLceMap[0],
@@ -635,12 +612,12 @@ kceMapPceLceForSysmemLinks_GA100
     NvU32   lceIndex, pceIndex;
     NvU32   linkId, i;
     NvU8    hshubId;
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
 
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
  
     NV2080_CTRL_NVLINK_HSHUB_GET_SYSMEM_NVLINK_MASK_PARAMS paramsNvlinkMask;
-    NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS paramsHshubId;
+    NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS *pParamsHshubId = NULL;
 
     NV_ASSERT_OR_RETURN(pKernelNvlink != NULL, NV_ERR_NOT_SUPPORTED);
 
@@ -682,21 +659,25 @@ kceMapPceLceForSysmemLinks_GA100
     // If sysmem is over NVlink, assign HSHUB PCEs
     numPcePerLink = NV_CE_MIN_PCE_PER_SYS_LINK;
 
-    portMemSet(&paramsHshubId, 0, sizeof(paramsHshubId));
-    paramsHshubId.linkMask = paramsNvlinkMask.sysmemLinkMask;
+    pParamsHshubId = portMemAllocNonPaged(sizeof(*pParamsHshubId));
+
+    NV_ASSERT_OR_RETURN(pParamsHshubId != NULL, NV_ERR_NO_MEMORY);
+
+    portMemSet(pParamsHshubId, 0, sizeof(*pParamsHshubId));
+    pParamsHshubId->linkMask = paramsNvlinkMask.sysmemLinkMask;
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                                  NV2080_CTRL_CMD_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS,
-                                 (void *)&paramsHshubId, sizeof(paramsHshubId));
+                                 pParamsHshubId, sizeof(*pParamsHshubId));
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Unable to determine Hshub Id for sysmem links");
-        return status;
+        goto done;
     }
 
     FOR_EACH_INDEX_IN_MASK(32, linkId, paramsNvlinkMask.sysmemLinkMask)
     {
-        hshubId = paramsHshubId.hshubIds[linkId];
+        hshubId = pParamsHshubId->hshubIds[linkId];
         pceIndex = CE_GET_LOWEST_AVAILABLE_IDX(pceAvailableMaskPerHshub[hshubId]);
         bFirstIter = NV_TRUE;
         for (i = 0; i < numPcePerLink; i++)
@@ -732,7 +713,10 @@ kceMapPceLceForSysmemLinks_GA100
         *pLocalExposeCeMask |= lceMask;
     }
 
-    return NV_OK;
+done:
+    portMemFree(pParamsHshubId);
+
+    return status;
 }
 
 /**
@@ -792,13 +776,16 @@ kceMapPceLceForNvlinkPeers_GA100
     NvU32         lceIndex, pceIndex;
     NvU32         linkId, gpuMask, gpuInstance = 0, i;
     NvU8          hshubId, prevHshubId;
-
-    NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS params;
+    NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS *pParams = NULL;
 
     if (pKernelNvlink == NULL)
     {
         return NV_WARN_NOTHING_TO_DO;
     }
+
+    pParams = portMemAllocNonPaged(sizeof(*pParams));
+
+    NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_NO_MEMORY);
 
     peerAvailableLceMask = kceGetNvlinkPeerSupportedLceMask_HAL(pGpu, pKCe, peerAvailableLceMask);
 
@@ -854,17 +841,17 @@ kceMapPceLceForNvlinkPeers_GA100
         numPcePerLink = NV_CE_MIN_PCE_PER_PEER_LINK;
         prevHshubId = 0xFF;
 
-        portMemSet(&params, 0, sizeof(params));
-        params.linkMask = peerLinkMask;
+        portMemSet(pParams, 0, sizeof(*pParams));
+        pParams->linkMask = peerLinkMask;
 
         status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                                      NV2080_CTRL_CMD_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS,
-                                     (void *)&params, sizeof(params));
+                                     pParams, sizeof(*pParams));
         NV_ASSERT_OK_OR_RETURN(status);
 
         FOR_EACH_INDEX_IN_MASK(32, linkId, peerLinkMask)
         {
-            hshubId = params.hshubIds[linkId];
+            hshubId = pParams->hshubIds[linkId];
             if (hshubId != prevHshubId)
             {
                 pceIndex = CE_GET_LOWEST_AVAILABLE_IDX(pceAvailableMaskPerHshub[hshubId]);
@@ -917,6 +904,7 @@ kceMapPceLceForNvlinkPeers_GA100
         status = NV_WARN_NOTHING_TO_DO;
     }
 
+    portMemFree(pParams);
     return status;
 }
 
@@ -1041,17 +1029,18 @@ kceGetGrceSupportedLceMask_GA100
 
 /**
  * @brief This function checks for root port gen speed or GPU
- *        gen speed to determine if we should apply gen4+ mapping
- *        or gen3- mapping
+ *        gen speed to determine if we should apply genX+ mapping
  *
  * @param[in]   pGpu            OBJGPU pointer
- * @param[in]   pKCe             KernelCE pointer
+ * @param[in]   pKCe            KernelCE pointer
+ * @param[in]   checkGen        genX for query 
  */
 NvBool
-kceIsGen4orHigherSupported_GA100
+kceIsGenXorHigherSupported_GA100
 (
     OBJGPU *pGpu,
-    KernelCE  *pKCe
+    KernelCE  *pKCe,
+    NvU32  checkGen
 )
 {
     OBJSYS    *pSys = SYS_GET_INSTANCE();
@@ -1059,7 +1048,7 @@ kceIsGen4orHigherSupported_GA100
     OBJCL     *pCl = SYS_GET_CL(pSys);
     NvU8       genSpeed = 0;
     NV_STATUS  status = NV_OK;
-    NvBool     bIsGen4orHigher = NV_FALSE;
+    NvBool     bIsGenXorHigher = NV_FALSE;
     NvU32      regVal;
 
     if (IS_PASSTHRU(pGpu) && (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_PCIE_GEN4_CAPABLE)))
@@ -1078,7 +1067,7 @@ kceIsGen4orHigherSupported_GA100
         NvU32 rootPortSpeed = DRF_VAL(_XVE, _PASSTHROUGH_EMULATED_CONFIG, _ROOT_PORT_SPEED, passthroughEmulatedConfig);
 
         // 0 means the config is not being emulated and we assume gen4
-        bIsGen4orHigher = (rootPortSpeed == 0 || rootPortSpeed >= 4);
+        bIsGenXorHigher = ((rootPortSpeed == 0 && checkGen <= 4) || rootPortSpeed >= checkGen);
 
         if (rootPortSpeed != 0)
         {
@@ -1097,12 +1086,12 @@ kceIsGen4orHigherSupported_GA100
         }
         NV_PRINTF(LEVEL_INFO, "Gen Speed = %d\n", genSpeed);
 
-        if ((genSpeed >= 0x4))
+        if ((genSpeed >= checkGen))
         {
-            bIsGen4orHigher = NV_TRUE;
+            bIsGenXorHigher = NV_TRUE;
         }
     }
-    return bIsGen4orHigher;
+    return bIsGenXorHigher;
 }
 
 /**

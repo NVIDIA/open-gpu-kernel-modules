@@ -31,7 +31,6 @@
  *
  */
 
-
 #if defined(SDK_ALL_CLASSES_INCLUDE_FULL_HEADER)
 
 #include <class/cl0000.h>               // NV01_ROOT
@@ -75,14 +74,17 @@
 #include <class/clc36f.h>               // VOLTA_CHANNEL_GPFIFO_A
 #include <class/clc46f.h>               // TURING_CHANNEL_GPFIFO_A
 #include <class/clc56f.h>               // AMPERE_CHANNEL_GPFIFO_A
+#include <class/clc86f.h>               // HOPPER_CHANNEL_GPFIFO_A
 #include <class/cl007d.h>               // NV04_SOFTWARE_TEST
 #include <class/clc361.h>               // VOLTA_USERMODE_A
 #include <class/clc461.h>               // TURING_USERMODE_A
 #include <class/clc561.h>               // AMPERE_USERMODE_A
+#include <class/clc661.h>               // HOPPER_USERMODE_A
 #include <class/clc371.h>               // NVC371_DISP_SF_USER
 #include <class/clc372sw.h>             // NVC372_DISPLAY_SW
 #include <class/clc573.h>               // NVC573_DISP_CAPABILITIES
 #include <class/clc673.h>               // NVC673_DISP_CAPABILITIES
+#include <class/clc773.h>               // NVC773_DISP_CAPABILITIES
 #include <class/cl0073.h>               // NV04_DISPLAY_COMMON
 #include <class/cl5080.h>               // NV50_DEFERRED_API_CLASS
 #include <class/cl900e.h>               // MPS_COMPUTE
@@ -97,6 +99,9 @@
 #include <class/clc67b.h>               // NVC67B_WINDOW_IMM_CHANNEL_DMA
 #include <class/clc67d.h>               // NVC67D_CORE_CHANNEL_DMA
 #include <class/clc67e.h>               // NVC67E_WINDOW_CHANNEL_DMA
+#include <class/clc770.h>               // NVC770_DISPLAY
+#include <class/clc771.h>               // NVC771_DISP_SF_USER
+#include <class/clc77d.h>               // NVC77D_CORE_CHANNEL_DMA
 #include <class/cl9010.h>               // NV9010_VBLANK_CALLBACK
 #include <class/cl90cc.h>               // GF100_PROFILER
 #include <class/clb0cc.h>               // MAXWELL_PROFILER
@@ -112,15 +117,22 @@
 #include <class/cl902d.h>               // FERMI_TWOD_A
 #include <class/cl90f1.h>               // FERMI_VASPACE_A
 #include <class/cl90ec.h>               // GF100_HDACODEC
+#include <class/clb8b0.h>               // NVB8B0_VIDEO_DECODER
 #include <class/clc4b0.h>               // NVC4B0_VIDEO_DECODER
 #include <class/clc6b0.h>               // NVC6B0_VIDEO_DECODER
 #include <class/clc7b0.h>               // NVC7B0_VIDEO_DECODER
+#include <class/clc9b0.h>               // NVC9B0_VIDEO_DECODER
 #include <class/clc4b7.h>               // NVC4B7_VIDEO_ENCODER
 #include <class/clb4b7.h>               // NVB4B7_VIDEO_ENCODER
 #include <class/clc7b7.h>               // NVC7B7_VIDEO_ENCODER
+#include <class/clc9b7.h>               // NVC9B7_VIDEO_ENCODER
+#include <class/clb8d1.h>               // NVB8D1_VIDEO_NVJPG
 #include <class/clc4d1.h>               // NVC4D1_VIDEO_NVJPG
+#include <class/clc9d1.h>               // NVC9D1_VIDEO_NVJPG
+#include <class/clb8fa.h>               // NVB8FA_VIDEO_OFA
 #include <class/clc6fa.h>               // NVC6FA_VIDEO_OFA
 #include <class/clc7fa.h>               // NVC7FA_VIDEO_OFA
+#include <class/clc9fa.h>               // NVC9FA_VIDEO_OFA
 #include <class/cla140.h>               // KEPLER_INLINE_TO_MEMORY_B
 #include <class/cl9067.h>               // FERMI_CONTEXT_SHARE_A
 #include <class/cla06c.h>               // KEPLER_CHANNEL_GROUP_A
@@ -128,6 +140,7 @@
 #include <class/clc5b5.h>               // TURING_DMA_COPY_A
 #include <class/clc6b5.h>               // AMPERE_DMA_COPY_A
 #include <class/clc7b5.h>               // AMPERE_DMA_COPY_B
+#include <class/clc8b5.h>               // HOPPER_DMA_COPY_A
 #include <class/clb0b5.h>               // MAXWELL_DMA_COPY_A
 #include <class/clc365.h>               // ACCESS_COUNTER_NOTIFY_BUFFER
 #include <class/clc369.h>               // MMU_FAULT_BUFFER
@@ -137,19 +150,26 @@
 #include <class/clc6c0.h>               // AMPERE_COMPUTE_A
 #include <class/clc797.h>               // AMPERE_B
 #include <class/clc7c0.h>               // AMPERE_COMPUTE_B
+#include <class/clc997.h>               // ADA_A
+#include <class/clc9c0.h>               // ADA_COMPUTE_A
 #include <class/clc637.h>               // AMPERE_SMC_PARTITION_REF
 #include <class/clc638.h>               // AMPERE_SMC_EXEC_PARTITION_REF
 #include <class/clc639.h>               // AMPERE_SMC_CONFIG_SESSION
 #include <class/cl0092.h>               // NV0092_RG_LINE_CALLBACK
 #include <class/clc640.h>               // AMPERE_SMC_MONITOR_SESSION
+#include <class/clcb97.h>               // HOPPER_A
+#include <class/clcbc0.h>               // HOPPER_COMPUTE_A
 #include <class/cl00db.h>               // NV40_DEBUG_BUFFER
 #include <class/cl83de.h>               // GT200_DEBUGGER
 #include <class/cl402c.h>               // NV40_I2C
 #include <class/cl0060.h>               // NV0060_SYNC_GPU_BOOST
 #include <class/clc076.h>               // GP100_UVM_SW
 #include <class/cl90cd.h>               // NV_EVENT_BUFFER
+#include <class/clcbca.h>               // NV_COUNTER_COLLECTION_UNIT
+
 
 #else // defined(SDK_ALL_CLASSES_INCLUDE_FULL_HEADER)
+
 
 #ifndef NV01_ROOT
 #define NV01_ROOT                                (0x00000000)
@@ -378,6 +398,10 @@
 #define AMPERE_CHANNEL_GPFIFO_A                  (0x0000c56f)
 #endif
 
+#ifndef HOPPER_CHANNEL_GPFIFO_A
+#define HOPPER_CHANNEL_GPFIFO_A                  (0x0000c86f)
+#endif
+
 #ifndef NV04_SOFTWARE_TEST
 #define NV04_SOFTWARE_TEST                       (0x0000007d)
 #endif
@@ -397,6 +421,10 @@
 #define AMPERE_USERMODE_A                        (0x0000c561)
 #endif
 
+#ifndef HOPPER_USERMODE_A
+#define HOPPER_USERMODE_A                        (0x0000c661)
+#endif
+
 #ifndef NVC371_DISP_SF_USER
 #define NVC371_DISP_SF_USER                      (0x0000c371)
 #endif
@@ -411,6 +439,10 @@
 
 #ifndef NVC673_DISP_CAPABILITIES
 #define NVC673_DISP_CAPABILITIES                 (0x0000c673)
+#endif
+
+#ifndef NVC773_DISP_CAPABILITIES
+#define NVC773_DISP_CAPABILITIES                 (0x0000c773)
 #endif
 
 #ifndef NV04_DISPLAY_COMMON
@@ -467,6 +499,18 @@
 
 #ifndef NVC67E_WINDOW_CHANNEL_DMA
 #define NVC67E_WINDOW_CHANNEL_DMA                (0x0000c67e)
+#endif
+
+#ifndef NVC770_DISPLAY
+#define NVC770_DISPLAY                           (0x0000c770)
+#endif
+
+#ifndef NVC771_DISP_SF_USER
+#define NVC771_DISP_SF_USER                      (0x0000c771)
+#endif
+
+#ifndef NVC77D_CORE_CHANNEL_DMA
+#define NVC77D_CORE_CHANNEL_DMA                  (0x0000c77d)
 #endif
 
 #ifndef NV9010_VBLANK_CALLBACK
@@ -529,6 +573,10 @@
 #define GF100_HDACODEC                           (0x000090ec)
 #endif
 
+#ifndef NVB8B0_VIDEO_DECODER
+#define NVB8B0_VIDEO_DECODER                     (0x0000b8b0)
+#endif
+
 #ifndef NVC4B0_VIDEO_DECODER
 #define NVC4B0_VIDEO_DECODER                     (0x0000c4b0)
 #endif
@@ -539,6 +587,10 @@
 
 #ifndef NVC7B0_VIDEO_DECODER
 #define NVC7B0_VIDEO_DECODER                     (0x0000c7b0)
+#endif
+
+#ifndef NVC9B0_VIDEO_DECODER
+#define NVC9B0_VIDEO_DECODER                     (0x0000c9b0)
 #endif
 
 #ifndef NVC4B7_VIDEO_ENCODER
@@ -553,8 +605,24 @@
 #define NVC7B7_VIDEO_ENCODER                     (0x0000c7b7)
 #endif
 
+#ifndef NVC9B7_VIDEO_ENCODER
+#define NVC9B7_VIDEO_ENCODER                     (0x0000c9b7)
+#endif
+
+#ifndef NVB8D1_VIDEO_NVJPG
+#define NVB8D1_VIDEO_NVJPG                       (0x0000b8d1)
+#endif
+
 #ifndef NVC4D1_VIDEO_NVJPG
 #define NVC4D1_VIDEO_NVJPG                       (0x0000c4d1)
+#endif
+
+#ifndef NVC9D1_VIDEO_NVJPG
+#define NVC9D1_VIDEO_NVJPG                       (0x0000c9d1)
+#endif
+
+#ifndef NVB8FA_VIDEO_OFA
+#define NVB8FA_VIDEO_OFA                         (0x0000b8fa)
 #endif
 
 #ifndef NVC6FA_VIDEO_OFA
@@ -563,6 +631,10 @@
 
 #ifndef NVC7FA_VIDEO_OFA
 #define NVC7FA_VIDEO_OFA                         (0x0000c7fa)
+#endif
+
+#ifndef NVC9FA_VIDEO_OFA
+#define NVC9FA_VIDEO_OFA                         (0x0000c9fa)
 #endif
 
 #ifndef KEPLER_INLINE_TO_MEMORY_B
@@ -591,6 +663,10 @@
 
 #ifndef AMPERE_DMA_COPY_B
 #define AMPERE_DMA_COPY_B                        (0x0000c7b5)
+#endif
+
+#ifndef HOPPER_DMA_COPY_A
+#define HOPPER_DMA_COPY_A                        (0x0000c8b5)
 #endif
 
 #ifndef MAXWELL_DMA_COPY_A
@@ -629,6 +705,14 @@
 #define AMPERE_COMPUTE_B                         (0x0000c7c0)
 #endif
 
+#ifndef ADA_A
+#define ADA_A                                    (0x0000c997)
+#endif
+
+#ifndef ADA_COMPUTE_A
+#define ADA_COMPUTE_A                            (0x0000c9c0)
+#endif
+
 #ifndef AMPERE_SMC_PARTITION_REF
 #define AMPERE_SMC_PARTITION_REF                 (0x0000c637)
 #endif
@@ -647,6 +731,14 @@
 
 #ifndef AMPERE_SMC_MONITOR_SESSION
 #define AMPERE_SMC_MONITOR_SESSION               (0x0000c640)
+#endif
+
+#ifndef HOPPER_A
+#define HOPPER_A                                 (0x0000cb97)
+#endif
+
+#ifndef HOPPER_COMPUTE_A
+#define HOPPER_COMPUTE_A                         (0x0000cbc0)
 #endif
 
 #ifndef NV40_DEBUG_BUFFER
@@ -672,5 +764,10 @@
 #ifndef NV_EVENT_BUFFER
 #define NV_EVENT_BUFFER                          (0x000090cd)
 #endif
+
+#ifndef NV_COUNTER_COLLECTION_UNIT
+#define NV_COUNTER_COLLECTION_UNIT               (0x0000cbca)
+#endif
+
 
 #endif // defined(SDK_ALL_CLASSES_INCLUDE_FULL_HEADER)

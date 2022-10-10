@@ -400,17 +400,6 @@ _nvswitch_setup_link_system_registers_lr10
                                  DRF_VAL(_NVLINK_VBIOS,_PARAM6,_TXTRAIN_MINIMUM_TRAIN_TIME_MANTISSA, vbios_link_entry->nvLinkparam6),
                                  regval);
     }
-    else
-    {
-        //
-        // Default working configuration for LR10
-        // This will be provided by VBIOS once support available (bug 2767390)
-        //
-        NVSWITCH_PRINT(device, SETUP, "%s: MINIMUM_TRAIN_TIME_MANTISSA = 0x5 forced by driver\n",
-                       __FUNCTION__);
-        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
-                                 _TXTRAIN_MINIMUM_TRAIN_TIME_MANTISSA, 0x5, regval);
-    }
 
     fldval = DRF_VAL(_SWITCH_REGKEY, _TXTRAIN_CONTROL, _MINIMUM_TRAIN_TIME_EXPONENT,
                      device->regkeys.txtrain_control);
@@ -426,17 +415,6 @@ _nvswitch_setup_link_system_registers_lr10
         regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT,
                                  DRF_VAL(_NVLINK_VBIOS,_PARAM6,_TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT, vbios_link_entry->nvLinkparam6),
                                  regval);
-    }
-    else
-    {
-        //
-        // Default working configuration for LR10
-        // This will be provided by VBIOS once support available  (bug 2767390)
-        //
-        NVSWITCH_PRINT(device, SETUP, "%s: MINIMUM_TRAIN_TIME_EXPONENT = 0x4 forced by driver\n",
-                       __FUNCTION__);
-        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
-                                 _TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT, 0x4, regval);
     }
 
     NVSWITCH_LINK_WR32_LR10(device, link->linkNumber, NVLIPT_LNK,
@@ -644,6 +622,27 @@ _nvswitch_vbios_read_structure
     packed_data = &device->biosImage.pImage[offset];
     return _nvswitch_devinit_unpack_structure(format, packed_data, structure,
                                               &unpacked_bytes, NULL);
+}
+
+
+NvlStatus
+nvswitch_vbios_read_structure_lr10
+(
+    nvswitch_device *device,
+    void            *structure,
+    NvU32           offset,
+    NvU32           *ppacked_size,
+    const char      *format
+)
+{
+    if (NV_OK == _nvswitch_vbios_read_structure(device, structure, offset, ppacked_size, format))
+    {
+       return NVL_SUCCESS;
+    }
+    else
+    {
+       return -NVL_ERR_GENERIC;
+    }
 }
 
 NvU8
@@ -974,19 +973,19 @@ _nvswitch_read_vbios_link_base_entry
     return status;
 }
 
-NV_STATUS
-_nvswitch_read_vbios_link_entries
+NvlStatus
+nvswitch_read_vbios_link_entries_lr10
 (
-    nvswitch_device *device,
-    NvU32            tblPtr,
-    NvU32            expected_link_entriesCount,
-    NVLINK_CONFIG_DATA_LINKENTRY  *link_entries,
-    NvU32            *identified_link_entriesCount
+    nvswitch_device              *device,
+    NvU32                         tblPtr,
+    NvU32                         expected_link_entriesCount,
+    NVLINK_CONFIG_DATA_LINKENTRY *link_entries,
+    NvU32                        *identified_link_entriesCount
 )
 {
     NV_STATUS status = NV_ERR_INVALID_PARAMETER;
     NvU32 i;
-    NVLINK_VBIOS_CONFIG_DATA_LINKENTRY vbios_link_entry;
+    NVLINK_VBIOS_CONFIG_DATA_LINKENTRY_20 vbios_link_entry;
     *identified_link_entriesCount = 0;
 
     for (i = 0; i < expected_link_entriesCount; i++)
@@ -994,7 +993,7 @@ _nvswitch_read_vbios_link_entries
         status = _nvswitch_vbios_read_structure(device,
                                                 &vbios_link_entry,
                                                 tblPtr, (NvU32 *)0,
-                                                NVLINK_CONFIG_DATA_LINKENTRY_FMT);
+                                                NVLINK_CONFIG_DATA_LINKENTRY_FMT_20);
         if (status != NV_OK)
         {
             NVSWITCH_PRINT(device, ERROR,
@@ -1009,7 +1008,7 @@ _nvswitch_read_vbios_link_entries
         link_entries[i].nvLinkparam4 = (NvU8)vbios_link_entry.nvLinkparam4;
         link_entries[i].nvLinkparam5 = (NvU8)vbios_link_entry.nvLinkparam5;
         link_entries[i].nvLinkparam6 = (NvU8)vbios_link_entry.nvLinkparam6;
-        tblPtr += sizeof(NVLINK_CONFIG_DATA_LINKENTRY);
+        tblPtr += (sizeof(NVLINK_VBIOS_CONFIG_DATA_LINKENTRY_20)/sizeof(NvU32));
 
         NVSWITCH_PRINT(device, SETUP,
             "<<<---- NvLink ID 0x%x ---->>>\n", i);
@@ -1038,7 +1037,7 @@ NV_STATUS
 _nvswitch_vbios_fetch_nvlink_entries
 (
     nvswitch_device         *device,
-    NVSWITCH_BIOS_NVLINK_CONFIG    *bios_config
+    NVSWITCH_BIOS_NVLINK_CONFIG *bios_config
 )
 {
     NvU32                       tblPtr;
@@ -1063,6 +1062,7 @@ _nvswitch_vbios_fetch_nvlink_entries
     switch (version)
     {
         case NVLINK_CONFIG_DATA_HEADER_VER_20:
+        case NVLINK_CONFIG_DATA_HEADER_VER_30:
             size = _nvswitch_vbios_read8(device, tblPtr + 1);
             if (size == NVLINK_CONFIG_DATA_HEADER_20_SIZE)
             {
@@ -1105,7 +1105,10 @@ _nvswitch_vbios_fetch_nvlink_entries
         "Reserved \t0x%x\n", header.ver_20.Reserved);
     NVSWITCH_PRINT(device, SETUP,
         "<<<---- NvLink Header ---->>>\n");
-
+    if (header.ver_20.Version == NVLINK_CONFIG_DATA_HEADER_VER_20)
+    {
+         device->bIsNvlinkVbiosTableVersion2 = NV_TRUE;
+    }
     expected_base_entry_count = header.ver_20.BaseEntryCount;
     if (expected_base_entry_count > NVSWITCH_NUM_BIOS_NVLINK_CONFIG_BASE_ENTRY)
     {
@@ -1130,13 +1133,19 @@ _nvswitch_vbios_fetch_nvlink_entries
         // Grab Nvlink Config Data Base Entry
         _nvswitch_read_vbios_link_base_entry(device, tblPtr, &bios_config->link_vbios_base_entry[base_entry_index]);
         tblPtr += header.ver_20.BaseEntrySize;
-        
-        _nvswitch_read_vbios_link_entries(device,
+        device->hal.nvswitch_read_vbios_link_entries(device,
                                           tblPtr,
                                           expected_link_entriesCount,
                                           bios_config->link_vbios_entry[base_entry_index],
                                           &bios_config->identified_Link_entries[base_entry_index]);
-        tblPtr += (expected_link_entriesCount * sizeof(NVLINK_CONFIG_DATA_LINKENTRY));
+        if (device->bIsNvlinkVbiosTableVersion2)
+        {
+            tblPtr += (expected_link_entriesCount * (sizeof(NVLINK_VBIOS_CONFIG_DATA_LINKENTRY_20)/sizeof(NvU32)));
+        }
+        else
+        {
+            tblPtr += (expected_link_entriesCount * (sizeof(NVLINK_VBIOS_CONFIG_DATA_LINKENTRY_30)/sizeof(NvU32)));
+        }
     }
 vbios_fetch_nvlink_entries_done:
     return status;
@@ -1233,7 +1242,7 @@ _nvswitch_setup_link_vbios_overrides
     if (_nvswitch_vbios_fetch_nvlink_entries(device, bios_config) != NV_OK)
     {
         NVSWITCH_PRINT(device, ERROR,
-            "%s: Error on identifying pci image loc\n",
+            "%s: Error on fetching nvlink entries\n",
             __FUNCTION__);
         status = NV_ERR_GENERIC;
         goto setup_link_vbios_overrides_done;
@@ -1880,8 +1889,8 @@ nvswitch_initialize_ip_wrappers_lr10
 //
 // Bring units out of warm reset on boot.  Used by driver load.
 //
-static void
-_nvswitch_init_warm_reset_lr10
+void
+nvswitch_init_warm_reset_lr10
 (
     nvswitch_device *device
 )
@@ -3302,8 +3311,8 @@ _nvswitch_process_firmware_info_lr10
     }
 }
 
-static void
-_nvswitch_init_npg_multicast_lr10
+void
+nvswitch_init_npg_multicast_lr10
 (
     nvswitch_device *device
 )
@@ -4029,8 +4038,8 @@ nvswitch_initialize_device_state_lr10
         goto nvswitch_initialize_device_state_exit;
     }
 
-    _nvswitch_init_warm_reset_lr10(device);
-    _nvswitch_init_npg_multicast_lr10(device);
+    nvswitch_init_warm_reset(device);
+    nvswitch_init_npg_multicast(device);
     retval = nvswitch_clear_nport_rams(device);
     if (NVL_SUCCESS != retval)
     {
@@ -4351,6 +4360,11 @@ nvswitch_ctrl_get_nvlink_status_lr10
         {
             ret->linkInfo[i].nvlinkVersion = NVSWITCH_NVLINK_STATUS_NVLINK_VERSION_3_0;
             ret->linkInfo[i].nciVersion = NVSWITCH_NVLINK_STATUS_NCI_VERSION_3_0;
+        }
+        else if (nvlink_caps_version == NVSWITCH_NVLINK_CAPS_NVLINK_VERSION_4_0)
+        {
+            ret->linkInfo[i].nvlinkVersion = NVSWITCH_NVLINK_STATUS_NVLINK_VERSION_4_0;
+            ret->linkInfo[i].nciVersion = NVSWITCH_NVLINK_STATUS_NCI_VERSION_4_0;
         }
         else
         {
@@ -4862,6 +4876,22 @@ nvswitch_ctrl_get_info_lr10
                     NvlStatus status;
 
                     status = nvswitch_get_remap_table_selector(device, NVSWITCH_TABLE_SELECT_REMAP_EXTB, &remap_ram_sel);
+                    if (status == NVL_SUCCESS)
+                    {
+                        p->info[i] = nvswitch_get_ingress_ram_size(device, remap_ram_sel);
+                    }
+                    else
+                    {
+                        p->info[i] = 0;
+                    }
+                }
+                break;
+            case NVSWITCH_GET_INFO_INDEX_REMAP_POLICY_MULTICAST_TABLE_SIZE:
+                {
+                    NvU32 remap_ram_sel;
+                    NvlStatus status;
+
+                    status = nvswitch_get_remap_table_selector(device, NVSWITCH_TABLE_SELECT_REMAP_MULTICAST, &remap_ram_sel);
                     if (status == NVL_SUCCESS)
                     {
                         p->info[i] = nvswitch_get_ingress_ram_size(device, remap_ram_sel);
@@ -5837,6 +5867,9 @@ nvswitch_reset_and_drain_links_lr10
         }
     }
     FOR_EACH_INDEX_IN_MASK_END;
+
+    // Launch ALI training if applicable
+    (void)nvswitch_launch_ALI(device);
 
 nvswitch_reset_and_drain_links_exit:
     nvswitch_os_free(nport_reg_val);
@@ -6829,6 +6862,62 @@ nvswitch_ctrl_get_rb_stall_busy_lr10
 }
 
 /*
+ * CTRL_NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR
+ */
+static NvlStatus
+nvswitch_ctrl_get_multicast_id_error_vector_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR *p
+)
+{
+    NVSWITCH_PRINT(device, ERROR,
+        "GET_MULTICAST_ID_ERROR_VECTOR should not be called on LR10\n");
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+/*
+ * CTRL_NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR
+ */
+static NvlStatus
+nvswitch_ctrl_clear_multicast_id_error_vector_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR *p
+)
+{
+    NVSWITCH_PRINT(device, ERROR,
+        "CLEAR_MULTICAST_ID_ERROR_VECTOR should not be called on LR10\n");
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+/*
+ * CTRL_NVSWITCH_INBAND_SEND_DATA
+ */
+NvlStatus
+nvswitch_ctrl_inband_send_data_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_INBAND_SEND_DATA_PARAMS *p
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+/*
+ * CTRL_NVSWITCH_INBAND_RECEIVE_DATA
+ */
+NvlStatus
+nvswitch_ctrl_inband_read_data_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_INBAND_READ_DATA_PARAMS *p
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+/*
 * @brief: This function retrieves the NVLIPT public ID for a given global link idx
 * @params[in]  device        reference to current nvswitch device
 * @params[in]  linkId        link to retrieve NVLIPT public ID from
@@ -6943,12 +7032,21 @@ void nvswitch_init_scratch_lr10
             continue;
         }
 
-        reg = NVSWITCH_LINK_RD32_LR10(device, linkId, NPORT, _NPORT, _SCRATCH_WARM);
+        reg = NVSWITCH_LINK_RD32(device, linkId, NPORT, _NPORT, _SCRATCH_WARM);
         if (reg == NV_NPORT_SCRATCH_WARM_DATA_INIT)
         {
-            NVSWITCH_LINK_WR32_LR10(device, linkId, NPORT, _NPORT, _SCRATCH_WARM, 0);
+            NVSWITCH_LINK_WR32(device, linkId, NPORT, _NPORT, _SCRATCH_WARM, 0);
         }
     }
+}
+
+NvlStatus
+nvswitch_launch_ALI_lr10
+(
+    nvswitch_device *device
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
 }
 
 NvlStatus
@@ -6984,6 +7082,7 @@ nvswitch_parse_bios_image_lr10
     status = _nvswitch_setup_link_vbios_overrides(device, bios_config);
     if ((status != NV_OK) && device->pSoe)
     {
+        //To enable LS10 bringup (VBIOS is not ready and SOE is disabled), fail the device init only when SOE is enabled and vbios overrides has failed
         NVSWITCH_PRINT(device, ERROR,
                 "%s: error=0x%x\n",
                 __FUNCTION__, status);
@@ -7063,4 +7162,5 @@ void nvswitch_setup_hal_lr10(nvswitch_device *device)
     }
 
     NVSWITCH_INIT_HAL(device, lr10);
+    NVSWITCH_INIT_HAL_LS10(device, lr10);                             
 }

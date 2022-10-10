@@ -349,7 +349,11 @@ knvlinkGetP2pConnectionStatus_IMPL
     }
 
     // Get the remote ends of the links of local GPU from the nvlink core
-    knvlinkCoreGetRemoteDeviceInfo(pGpu0, pKernelNvlink0);
+    status = knvlinkCoreGetRemoteDeviceInfo(pGpu0, pKernelNvlink0);
+    if (status != NV_OK)
+    {
+        return status;
+    }
 
     // Post topology link enable on links of local GPU
     status = knvlinkEnableLinksPostTopology_HAL(pGpu0, pKernelNvlink0,
@@ -365,7 +369,11 @@ knvlinkGetP2pConnectionStatus_IMPL
         if (knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0) != numPeerLinks)
         {
             // Get the remote ends of the links of remote GPU from the nvlink core
-            knvlinkCoreGetRemoteDeviceInfo(pGpu1, pKernelNvlink1);
+            status = knvlinkCoreGetRemoteDeviceInfo(pGpu1, pKernelNvlink1);
+            if (status != NV_OK)
+            {
+                return status;
+            }
 
             // Post topology link enable on links of remote GPU
             status = knvlinkEnableLinksPostTopology_HAL(pGpu1, pKernelNvlink1,
@@ -484,12 +492,12 @@ knvlinkUpdateCurrentConfig_IMPL
         {
             pKCe = GPU_GET_KCE(pGpu, i);
             if (pKCe)
+        {
+            status = kceTopLevelPceLceMappingsUpdate(pGpu, pKCe);
+            if (status != NV_OK)
             {
-                status = kceTopLevelPceLceMappingsUpdate(pGpu, pKCe);
-                if (status != NV_OK)
-                {
-                    NV_PRINTF(LEVEL_ERROR, "Failed to update PCE-LCE mappings\n");
-                }
+                NV_PRINTF(LEVEL_ERROR, "Failed to update PCE-LCE mappings\n");
+            }
                 break;
             }
         }
@@ -729,7 +737,8 @@ NV_STATUS
 knvlinkPrepareForXVEReset_IMPL
 (
     OBJGPU       *pGpu,
-    KernelNvlink *pKernelNvlink
+    KernelNvlink *pKernelNvlink,
+    NvBool        bForceShutdown
 )
 {
     OBJSYS    *pSys      = SYS_GET_INSTANCE();
@@ -766,7 +775,8 @@ knvlinkPrepareForXVEReset_IMPL
 
         if ((pRemoteGpu == pGpu) || (pRemoteKernelNvlink == NULL) ||
             (knvlinkGetNumLinksToPeer(pRemoteGpu, pRemoteKernelNvlink, pGpu) == 0) ||
-            API_GPU_IN_RESET_SANITY_CHECK(pRemoteGpu))
+            API_GPU_IN_RESET_SANITY_CHECK(pRemoteGpu) ||
+            pRemoteGpu->getProperty(pRemoteGpu, PDB_PROP_GPU_IS_LOST))
         {
             continue;
         }
@@ -804,6 +814,7 @@ knvlinkPrepareForXVEReset_IMPL
     }
 
     // Remove all NVLink mappings in HSHUB config registers to init values
+    if (!API_GPU_IN_RESET_SANITY_CHECK(pGpu) && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
     status = knvlinkRemoveMapping_HAL(pGpu, pKernelNvlink, NV_TRUE, ((1 << NVLINK_MAX_PEERS_SW) - 1),
                                       NV_FALSE /* bL2Entry */);
     if (status != NV_OK)
@@ -815,8 +826,17 @@ knvlinkPrepareForXVEReset_IMPL
         retStatus = (retStatus == NV_OK) ? status : retStatus;
     }
 
+    //
+    // If GFW is booted and running through link-training, then no need to tear-down the
+    // links to reset. Exit out early from the function
+    //
+    if (!bForceShutdown && pKernelNvlink->getProperty(pNvlink, PDB_PROP_KNVLINK_MINION_GFW_BOOT))
+    {
+        return NV_OK;
+    }
+
     // Pseudo-clean  shutdown the links from this GPU
-    status = knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink);
+    status = knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, bForceShutdown);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1197,7 +1217,7 @@ knvlinkUpdateLinkConnectionStatus_IMPL
 
 #if defined(INCLUDE_NVLINK_LIB)
 
-    params.bConnected       = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bConnected;
+    params.bConnected = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bConnected;
     params.remoteDeviceType = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.deviceType;
     params.remoteLinkNumber = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.linkNumber;
 
@@ -1215,6 +1235,96 @@ knvlinkUpdateLinkConnectionStatus_IMPL
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to update Link connection status!\n");
+        return status;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Execute initial steps to Train links for ALI.
+ *
+ * @param[in] pGpu           OBJGPU pointer for local GPU
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ * @param[in] linkMask       Masks of links to enable
+ * @param[in] bSync          Input sync boolean
+ *
+ */
+NV_STATUS
+knvlinkPreTrainLinksToActiveAli_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32         linkMask,
+    NvBool        bSync
+)
+{
+    NV_STATUS status = NV_OK;
+
+    NV2080_CTRL_NVLINK_PRE_LINK_TRAIN_ALI_PARAMS params;
+
+    portMemSet(&params, 0, sizeof(params));
+
+    params.linkMask = linkMask;
+    params.bSync    = bSync;
+
+    // Reset timeout to clear any accumulated timeouts from link init
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        threadStateResetTimeout(pGpu);
+    }
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                 NV2080_CTRL_CMD_NVLINK_PRE_LINK_TRAIN_ALI,
+                                 (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to execute Pre Link Training ALI steps!\n");
+        return status;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Train links to active for ALI.
+ *
+ * @param[in] pGpu           OBJGPU pointer for local GPU
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ * @param[in] linkMask       Masks of links to enable
+ * @param[in] bSync          Input sync boolean
+ *
+ */
+NV_STATUS
+knvlinkTrainLinksToActiveAli_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32         linkMask,
+    NvBool        bSync
+)
+{
+    NV_STATUS status = NV_OK;
+
+    NV2080_CTRL_NVLINK_PRE_LINK_TRAIN_ALI_PARAMS params;
+
+    portMemSet(&params, 0, sizeof(params));
+
+    params.linkMask = linkMask;
+    params.bSync    = bSync;
+
+    // Reset timeout to clear any accumulated timeouts from link init
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        threadStateResetTimeout(pGpu);
+    }
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                 NV2080_CTRL_CMD_NVLINK_LINK_TRAIN_ALI,
+                                 (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to change ALI Links to active!\n");
         return status;
     }
 
@@ -1602,6 +1712,72 @@ knvlinkSetUniqueFabricBaseAddress_IMPL
               pKernelNvlink->fabricBaseAddr, pGpu->gpuInstance);
 
     return NV_OK;
+}
+
+/*!
+ * @brief   Get the number of active links allowed per IOCTRL
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ *
+ * @returns On success, returns the number of active links per IOCTRL.
+ *          On failure, returns 0.
+ */
+NvU32
+knvlinkGetNumActiveLinksPerIoctrl_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV_STATUS status;
+    NV2080_CTRL_INTERNAL_NVLINK_GET_NUM_ACTIVE_LINK_PER_IOCTRL_PARAMS params;
+
+    portMemSet(&params, 0, sizeof(params));
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                 NV2080_CTRL_INTERNAL_NVLINK_GET_NUM_ACTIVE_LINK_PER_IOCTRL,
+                                 (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to get the number of active links per IOCTRL\n");
+        return 0;
+    }
+
+    return params.numActiveLinksPerIoctrl;
+}
+
+/*!
+ * @brief   Get the number of total links  per IOCTRL
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ *
+ * @returns On success, returns the number of total links per IOCTRL.
+ *          On failure, returns 0.
+ */
+NvU32
+knvlinkGetTotalNumLinksPerIoctrl_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV_STATUS status;
+    NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL_PARAMS params;
+
+    portMemSet(&params, 0, sizeof(params));
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                 NV2080_CTRL_INTERNAL_NVLINK_GET_TOTAL_NUM_LINK_PER_IOCTRL,
+                                 (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to get the total number of links per IOCTRL\n");
+        return 0;
+    }
+
+    return params.numLinksPerIoctrl;
 }
 
 /**

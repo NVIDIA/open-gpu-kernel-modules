@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl2080/ctrl2080fla.finn
 //
 
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 /* NV20_SUBDEVICE_XX FLA control commands and parameters */

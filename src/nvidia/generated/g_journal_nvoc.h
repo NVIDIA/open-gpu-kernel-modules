@@ -155,8 +155,7 @@ typedef struct _nocatQueueDescriptor
     RM_NOCAT_ASSERT_DIAG_BUFFER   lastAssertData;
     NvU8    tag[NV2080_NOCAT_JOURNAL_MAX_STR_LEN];
     NvU64   cacheFreshnessPeriodticks;
-    NV2080_NOCAT_JOURNAL_GPU_STATE  nocatGpuState;      // cache contains the state of the 
-                                                        // associated GPU if there is one.
+    NV2080_NOCAT_JOURNAL_GPU_STATE  nocatGpuState;      // cache contains the state of the
 
     NvU32   nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_COUNTER_COUNT];
 } nocatQueueDescriptor;

@@ -434,24 +434,3 @@ kflcnMaskDmemAddr_TU102
     return (addr & (DRF_SHIFTMASK(NV_PFALCON_FALCON_DMEMC_OFFS) |
                     DRF_SHIFTMASK(NV_PFALCON_FALCON_DMEMC_BLK)));
 }
-
-void gkflcnNonstallIntrCheckAndClear_TU102(OBJGPU *pGpu, GenericKernelFalcon *pGKF, THREAD_STATE_NODE *pThreadState)
-{
-    NvU32 registerBase = staticCast(pGKF, KernelFalcon)->registerBase;
-    NvU32 intr, clearBits;
-
-    NV_ASSERT(registerBase != 0);
-
-    intr = GPU_REG_RD32_EX(pGpu, registerBase + NV_PFALCON_FALCON_IRQSTAT,
-                           pThreadState);
-
-    if (DRF_VAL( _PFALCON_FALCON, _IRQSTAT, _SWGEN1, intr))
-    {
-        NV_PRINTF(LEVEL_INFO, "Handling Trap Interrupt\n");
-
-        // Clear interrupt
-        clearBits = DRF_NUM(_PFALCON_FALCON, _IRQSTAT, _SWGEN1, 1);
-        GPU_REG_WR32_EX(pGpu, registerBase + NV_PFALCON_FALCON_IRQSCLR,
-                        clearBits, pThreadState);
-    }
-}

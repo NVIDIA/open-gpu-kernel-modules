@@ -46,9 +46,6 @@
 #include "uvm_rb_tree.h"
 #include "nv-kthread-q.h"
 
-
-
-
 // Buffer length to store uvm gpu id, RM device name and gpu uuid.
 #define UVM_GPU_NICE_NAME_BUFFER_LENGTH (sizeof("ID 999: : ") + \
             UVM_GPU_NAME_LENGTH + UVM_GPU_UUID_TEXT_BUFFER_LENGTH)
@@ -508,10 +505,8 @@ typedef enum
     UVM_GPU_LINK_NVLINK_1,
     UVM_GPU_LINK_NVLINK_2,
     UVM_GPU_LINK_NVLINK_3,
-
-
-
-
+    UVM_GPU_LINK_NVLINK_4,
+    UVM_GPU_LINK_C2C,
     UVM_GPU_LINK_MAX
 } uvm_gpu_link_type_t;
 
@@ -684,10 +679,6 @@ struct uvm_gpu_struct
     // mappings (instead of kernel), and it is used in most configurations.
     uvm_pmm_sysmem_mappings_t pmm_reverse_sysmem_mappings;
 
-
-
-
-
     // ECC handling
     // In order to trap ECC errors as soon as possible the driver has the hw
     // interrupt register mapped directly. If an ECC interrupt is ever noticed
@@ -742,6 +733,9 @@ struct uvm_gpu_struct
 
     // Placeholder for per-GPU performance heuristics information
     uvm_perf_module_data_desc_t perf_modules_data[UVM_PERF_MODULE_TYPE_COUNT];
+
+    // Force pushbuffer's GPU VA to be >= 1TB; used only for testing purposes.
+    bool uvm_test_force_upper_pushbuffer_segment;
 };
 
 struct uvm_parent_gpu_struct
@@ -822,9 +816,6 @@ struct uvm_parent_gpu_struct
     uvm_arch_hal_t *arch_hal;
     uvm_fault_buffer_hal_t *fault_buffer_hal;
     uvm_access_counter_buffer_hal_t *access_counter_buffer_hal;
-
-
-
 
     uvm_gpu_peer_copy_mode_t peer_copy_mode;
 
@@ -1360,14 +1351,13 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
 // addresses.
 NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr);
 
+static bool uvm_gpu_has_pushbuffer_segments(uvm_gpu_t *gpu)
+{
+    return gpu->parent->max_host_va > (1ull << 40);
+}
+
 static bool uvm_gpu_supports_eviction(uvm_gpu_t *gpu)
 {
-
-
-
-
-
-
     // Eviction is supported only if the GPU supports replayable faults
     return gpu->parent->replayable_faults_supported;
 }

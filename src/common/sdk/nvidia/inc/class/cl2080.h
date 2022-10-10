@@ -54,9 +54,9 @@ extern "C" {
 #define NV2080_NOTIFIERS_NVDEC2                                    (16)
 #define NV2080_NOTIFIERS_NVDEC3                                    (17)
 #define NV2080_NOTIFIERS_NVDEC4                                    (18)
-#define NV2080_NOTIFIERS_RESERVED19                                (19)
-#define NV2080_NOTIFIERS_RESERVED20                                (20)
-#define NV2080_NOTIFIERS_RESERVED21                                (21)
+#define NV2080_NOTIFIERS_NVDEC5                                    (19)
+#define NV2080_NOTIFIERS_NVDEC6                                    (20)
+#define NV2080_NOTIFIERS_NVDEC7                                    (21)
 #define NV2080_NOTIFIERS_PDEC                                      (22) // also known as VP
 #define NV2080_NOTIFIERS_CE0                                       (23)
 #define NV2080_NOTIFIERS_CE1                                       (24)
@@ -158,19 +158,19 @@ extern "C" {
 #define NV2080_NOTIFIERS_CLOCKS_CHANGE                             (119)
 #define NV2080_NOTIFIERS_HOTPLUG_PROCESSING_COMPLETE               (120)
 #define NV2080_NOTIFIERS_PHYSICAL_PAGE_FAULT                       (121)
-#define NV2080_NOTIFIERS_RESERVED_122                              (122)
+#define NV2080_NOTIFIERS_RESERVED122                               (122)
 #define NV2080_NOTIFIERS_NVLINK_ERROR_FATAL                        (123)
 #define NV2080_NOTIFIERS_PRIV_REG_ACCESS_FAULT                     (124)
 #define NV2080_NOTIFIERS_NVLINK_ERROR_RECOVERY_REQUIRED            (125)
 #define NV2080_NOTIFIERS_NVJPG                                     (126)
 #define NV2080_NOTIFIERS_NVJPEG0                                   NV2080_NOTIFIERS_NVJPG
-#define NV2080_NOTIFIERS_RESERVED127                               (127)
-#define NV2080_NOTIFIERS_RESERVED128                               (128)
-#define NV2080_NOTIFIERS_RESERVED129                               (129)
-#define NV2080_NOTIFIERS_RESERVED130                               (130)
-#define NV2080_NOTIFIERS_RESERVED131                               (131)
-#define NV2080_NOTIFIERS_RESERVED132                               (132)
-#define NV2080_NOTIFIERS_RESERVED133                               (133)
+#define NV2080_NOTIFIERS_NVJPEG1                                   (127)
+#define NV2080_NOTIFIERS_NVJPEG2                                   (128)
+#define NV2080_NOTIFIERS_NVJPEG3                                   (129)
+#define NV2080_NOTIFIERS_NVJPEG4                                   (130)
+#define NV2080_NOTIFIERS_NVJPEG5                                   (131)
+#define NV2080_NOTIFIERS_NVJPEG6                                   (132)
+#define NV2080_NOTIFIERS_NVJPEG7                                   (133)
 #define NV2080_NOTIFIERS_RUNLIST_AND_ENG_IDLE                      (134)
 #define NV2080_NOTIFIERS_RUNLIST_ACQUIRE                           (135)
 #define NV2080_NOTIFIERS_RUNLIST_ACQUIRE_AND_ENG_IDLE              (136)
@@ -216,12 +216,10 @@ extern "C" {
 #define NV2080_NOTIFIER_TYPE_IS_NVENC(x)  (((x) >= NV2080_NOTIFIERS_NVENC0) && ((x) <= NV2080_NOTIFIERS_NVENC2))
 // Indexed NVDEC notifier reference
 #define NV2080_NOTIFIERS_NVDEC(x)                                  (NV2080_NOTIFIERS_NVDEC0 + (x))
-
-#define NV2080_NOTIFIER_TYPE_IS_NVDEC(x)  (((x) >= NV2080_NOTIFIERS_NVDEC0) && ((x) <= NV2080_NOTIFIERS_NVDEC4))
-
+#define NV2080_NOTIFIER_TYPE_IS_NVDEC(x)  (((x) >= NV2080_NOTIFIERS_NVDEC0) && ((x) <= NV2080_NOTIFIERS_NVDEC7))
 // Indexed NVJPEG notifier reference
 #define NV2080_NOTIFIERS_NVJPEG(x)                                 (NV2080_NOTIFIERS_NVJPEG0 + (x))
-#define NV2080_NOTIFIER_TYPE_IS_NVJPEG(x)  (((x) >= NV2080_NOTIFIERS_NVJPEG0) && ((x) <= NV2080_NOTIFIERS_NVJPEG0))
+#define NV2080_NOTIFIER_TYPE_IS_NVJPEG(x)  (((x) >= NV2080_NOTIFIERS_NVJPEG0) && ((x) <= NV2080_NOTIFIERS_NVJPEG7))
 
 #define NV2080_NOTIFIERS_GPIO_RISING_INTERRUPT(pin)                (NV2080_NOTIFIERS_GPIO_0_RISING_INTERRUPT+(pin))
 #define NV2080_NOTIFIERS_GPIO_FALLING_INTERRUPT(pin)               (NV2080_NOTIFIERS_GPIO_0_FALLING_INTERRUPT+(pin))
@@ -259,9 +257,9 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_NVDEC2                     (0x00000015)
 #define NV2080_ENGINE_TYPE_NVDEC3                     (0x00000016)
 #define NV2080_ENGINE_TYPE_NVDEC4                     (0x00000017)
-#define NV2080_ENGINE_TYPE_RESERVED18                 (0x00000018)
-#define NV2080_ENGINE_TYPE_RESERVED19                 (0x00000019)
-#define NV2080_ENGINE_TYPE_RESERVED1A                 (0x0000001a)
+#define NV2080_ENGINE_TYPE_NVDEC5                     (0x00000018)
+#define NV2080_ENGINE_TYPE_NVDEC6                     (0x00000019)
+#define NV2080_ENGINE_TYPE_NVDEC7                     (0x0000001a)
 #define NV2080_ENGINE_TYPE_MSENC                      (0x0000001b)
 #define NV2080_ENGINE_TYPE_NVENC0                      NV2080_ENGINE_TYPE_MSENC  /* Mutually exclusive alias */
 #define NV2080_ENGINE_TYPE_NVENC1                     (0x0000001c)
@@ -282,24 +280,21 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_FBFLCN                     (0x0000002a)
 #define NV2080_ENGINE_TYPE_NVJPG                      (0x0000002b)
 #define NV2080_ENGINE_TYPE_NVJPEG0                     NV2080_ENGINE_TYPE_NVJPG
-#define NV2080_ENGINE_TYPE_RESERVED2C                 (0x0000002c)
-#define NV2080_ENGINE_TYPE_RESERVED2D                 (0x0000002d)
-#define NV2080_ENGINE_TYPE_RESERVED2E                 (0x0000002e)
-#define NV2080_ENGINE_TYPE_RESERVED2F                 (0x0000002f)
-#define NV2080_ENGINE_TYPE_RESERVED30                 (0x00000030)
-#define NV2080_ENGINE_TYPE_RESERVED31                 (0x00000031)
-#define NV2080_ENGINE_TYPE_RESERVED32                 (0x00000032)
+#define NV2080_ENGINE_TYPE_NVJPEG1                    (0x0000002c)
+#define NV2080_ENGINE_TYPE_NVJPEG2                    (0x0000002d)
+#define NV2080_ENGINE_TYPE_NVJPEG3                    (0x0000002e)
+#define NV2080_ENGINE_TYPE_NVJPEG4                    (0x0000002f)
+#define NV2080_ENGINE_TYPE_NVJPEG5                    (0x00000030)
+#define NV2080_ENGINE_TYPE_NVJPEG6                    (0x00000031)
+#define NV2080_ENGINE_TYPE_NVJPEG7                    (0x00000032)
 #define NV2080_ENGINE_TYPE_OFA                        (0x00000033)
 #define NV2080_ENGINE_TYPE_LAST                       (0x00000034)
 #define NV2080_ENGINE_TYPE_ALLENGINES                 (0xffffffff)
 
 #define NV2080_ENGINE_TYPE_COPY_SIZE 10
 #define NV2080_ENGINE_TYPE_NVENC_SIZE 3
-
-#define NV2080_ENGINE_TYPE_NVJPEG_SIZE 1
-
-#define NV2080_ENGINE_TYPE_NVDEC_SIZE 5
-
+#define NV2080_ENGINE_TYPE_NVJPEG_SIZE 8
+#define NV2080_ENGINE_TYPE_NVDEC_SIZE 8
 #define NV2080_ENGINE_TYPE_GR_SIZE 8
 
 // Indexed engines

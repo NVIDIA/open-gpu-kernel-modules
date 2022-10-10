@@ -617,6 +617,14 @@ remote_fla_bind:
             }
         }
     }
+
+    if (status == NV_OK)
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, pLocalKernelBus->totalP2pObjectsAliveRefCount < NV_U32_MAX, NV_ERR_INSUFFICIENT_RESOURCES);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, pRemoteKernelBus->totalP2pObjectsAliveRefCount < NV_U32_MAX, NV_ERR_INSUFFICIENT_RESOURCES);
+        pLocalKernelBus->totalP2pObjectsAliveRefCount++;
+        pRemoteKernelBus->totalP2pObjectsAliveRefCount++;
+    }
     return status;
 
 fail:
@@ -803,6 +811,14 @@ NV_STATUS CliInvalidateP2PInfo
 
     pLocalKernelBus  = GPU_GET_KERNEL_BUS(pLocalGpu);
     pRemoteKernelBus = GPU_GET_KERNEL_BUS(pRemoteGpu);
+
+    NV_ASSERT(pLocalKernelBus->totalP2pObjectsAliveRefCount > 0);
+    NV_ASSERT(pRemoteKernelBus->totalP2pObjectsAliveRefCount > 0);
+    if (pLocalKernelBus->totalP2pObjectsAliveRefCount > 0)
+        pLocalKernelBus->totalP2pObjectsAliveRefCount--;
+
+    if (pRemoteKernelBus->totalP2pObjectsAliveRefCount > 0)
+        pRemoteKernelBus->totalP2pObjectsAliveRefCount--;
 
     if (!IS_VIRTUAL(pLocalGpu))
     {

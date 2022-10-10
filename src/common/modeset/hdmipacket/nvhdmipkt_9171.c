@@ -282,12 +282,9 @@ hdmiWriteVendorPacket9171(NVHDMIPKT_CLASS*   pThis,
                           NvU32*             pBaseReg,
                           NvU32              head,
                           NvU32              packetLen,
-                          NvU8 const *const  pPacketIn)
+                          NvU8 const *const  pPacket)
 {
     NvU32 data = 0;
-    NvU8  pPacket[31] = {0};
-
-    NVMISC_MEMCPY(pPacket, pPacketIn, packetLen);
 
     data = REG_RD32(pBaseReg, NV9171_SF_HDMI_VSI_HEADER(head));
     data = FLD_SET_DRF_NUM(9171, _SF_HDMI_VSI_HEADER, _HB0,         pPacket[0],  data);
@@ -515,6 +512,41 @@ checkPacketStatus_exit:
     return result;
 }
 
+static NVHDMIPKT_RESULT
+validateInputPacketLength(NvU32               pktType9171,
+                          NvU32               packetLen, 
+                          NvU8 const *const   pPacketIn)
+{
+    NVHDMIPKT_RESULT result = NVHDMIPKT_SUCCESS;
+    HDMI_PACKET_TYPE infoframeType = pPacketIn[0];
+
+    // Lower bound check. Since actual infoframe size varies depending on the infoframe packet being sent, 
+    // check all supported infoframe types and their expected sizes. This is not a strict == check becuase they may/may not need
+    // additional checksum byte (library clients take care of adding checksum byte if needed)
+    if (((infoframeType == hdmi_pktType_GeneralControl)                 && (packetLen < 6))                                             ||
+        ((infoframeType == hdmi_pktType_GamutMetadata)                  && (packetLen < sizeof(NVT_GAMUT_METADATA)))                    ||
+        ((infoframeType == hdmi_pktType_ExtendedMetadata)               && (packetLen < sizeof(NVT_EXTENDED_METADATA_PACKET_INFOFRAME)))||
+        ((infoframeType == hdmi_pktType_VendorSpecInfoFrame)            && (packetLen < 8))                                             ||
+        ((infoframeType == hdmi_pktType_AviInfoFrame)                   && (packetLen < sizeof(NVT_VIDEO_INFOFRAME)))                   ||
+        ((infoframeType == hdmi_pktType_SrcProdDescInfoFrame)           && (packetLen < sizeof(NVT_SPD_INFOFRAME)))                     ||
+        ((infoframeType == hdmi_pktType_DynamicRangeMasteringInfoFrame) && (packetLen < sizeof(NVT_HDR_INFOFRAME))))
+        //  Unused: hdmi_pktType_AudioClkRegeneration
+        //  Unused: hdmi_pktType_MpegSrcInfoFrame
+    {
+        result = NVHDMIPKT_INVALID_ARG;
+    }
+
+    // Upper bound check. Check against number of bytes possible on the hw infoframe unit
+    if (((pktType9171 == NV9171_SF_HDMI_INFO_IDX_AVI_INFOFRAME)     && (packetLen > 17)) || // 3 bytes header + 14 bytes data
+        ((pktType9171 == NV9171_SF_HDMI_INFO_IDX_GENERIC_INFOFRAME) && (packetLen > 31)) || // 3 bytes header + 28 bytes data
+        ((pktType9171 == NV9171_SF_HDMI_INFO_IDX_VSI)               && (packetLen > 31)))   // 3 bytes header + 28 bytes data
+    {
+        result = NVHDMIPKT_INVALID_ARG;
+    }
+
+    return result;
+}
+
 /*
  * hdmiPacketWrite9171
  */
@@ -526,7 +558,7 @@ hdmiPacketWrite9171(NVHDMIPKT_CLASS*   pThis,
                     NVHDMIPKT_TYPE     packetType,
                     NVHDMIPKT_TC       transmitControl, 
                     NvU32              packetLen, 
-                    NvU8 const *const  pPacket)
+                    NvU8 const *const  pPacketIn)
 {
     NVHDMIPKT_RESULT result = NVHDMIPKT_SUCCESS;
     NvU32* pBaseReg    = (NvU32*)pThis->memMap[subDevice].pMemBase;
@@ -534,12 +566,25 @@ hdmiPacketWrite9171(NVHDMIPKT_CLASS*   pThis,
     NvU32  tc          = pThis->translateTransmitControl(pThis, transmitControl);
     NV0073_CTRL_SPECIFIC_CTRL_HDMI_PARAMS params = {0};
 
-    if (pBaseReg == 0 || head >= NV9171_SF_HDMI_AVI_INFOFRAME_CTRL__SIZE_1 ||
-        packetLen == 0 || pPacket == 0 || pktType9171 == NVHDMIPKT_9171_INVALID_PKT_TYPE)
+    // packetIn can be of varying size. Use a fixed max size buffer for programing hw units to prevent out of bounds access
+    NvU8   pPacket[31] = {0};
+
+    if (pBaseReg == 0  || head >= NV9171_SF_HDMI_AVI_INFOFRAME_CTRL__SIZE_1 ||
+        packetLen == 0 || pPacketIn == 0 || pktType9171 == NVHDMIPKT_9171_INVALID_PKT_TYPE)
     {
         result = NVHDMIPKT_INVALID_ARG;
         goto hdmiPacketWrite9171_exit;
     }
+
+    if ((result = validateInputPacketLength(pktType9171, packetLen, pPacketIn)) != NVHDMIPKT_SUCCESS)
+    {
+        NvHdmiPkt_Print(pThis, "ERROR - input packet length incorrect");
+        NvHdmiPkt_Assert(0);
+        goto hdmiPacketWrite9171_exit;
+    }
+
+    // input packet looks ok to use, copy over the bytes
+    NVMISC_MEMCPY(pPacket, pPacketIn, packetLen);
 
     // acquire mutex
     pThis->callback.acquireMutex(pThis->cbHandle);

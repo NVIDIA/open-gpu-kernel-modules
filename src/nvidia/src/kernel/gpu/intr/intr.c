@@ -65,8 +65,6 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
     NvU16 nextEngine;
     NvU32 regReadValue;
 
-    NVRM_TRACE('MISR');
-
     //
     // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
     // we wont know about GPU state until after we start processing DPCs for every
@@ -124,7 +122,7 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
     }
 
 exit:
-    NVRM_TRACE('misr');
+    return;
 }
 
 NV_STATUS

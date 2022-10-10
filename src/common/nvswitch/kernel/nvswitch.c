@@ -61,15 +61,20 @@
         break;                                                                   \
     }                                                                            \
 
-//
-// HW's device id list can be found here -
-// P4hw:2001: hw\doc\engr\Dev_ID\DeviceID_master_list.txt
-//
-
 const static NvU32 nvswitch_lr10_device_ids[] =
 {
     0x1AE8, 0x1AF0, 0x1AF1, 0x1AF2, 0x1AF3, 0x1AF4, 0x1AF5, 0x1AF6, 0x1AF7,
     0x1AF8, 0x1AF9, 0x1AFA, 0x1AFB, 0x1AFC, 0x1AFD, 0x1AFE, 0x1AFF
+};
+
+const static NvU32 nvswitch_ls10_device_ids[] =
+{
+    // PCIE endpoint to manage the NVLink switch HW
+    0x22A0, 0x22A1, 0x22A2, 0x22A3, 0x22A4, 0x22A5, 0x22A6, 0x22A7,
+    // PCI-PCI Bridge, Laguna Switch Function 0
+    0x22A8, 0x22A9, 0x22AA, 0x22AB,
+    // Non-Transparent Bridge, Laguna Switch Function 1
+    0x22AC, 0x22AD, 0x22AE, 0x22AF
 };
 
 nvlink_link_handlers link_handlers;
@@ -105,6 +110,18 @@ nvswitch_is_lr10_device_id
                         sizeof(nvswitch_lr10_device_ids[0]));
 
     return _nvswitch_is_device_id_present(nvswitch_lr10_device_ids, count, device_id);
+}
+
+NvBool
+nvswitch_is_ls10_device_id
+(
+    NvU32 device_id
+)
+{
+    NvU32 count = (sizeof(nvswitch_ls10_device_ids) /
+                        sizeof(nvswitch_ls10_device_ids[0]));
+
+    return _nvswitch_is_device_id_present(nvswitch_ls10_device_ids, count, device_id);
 }
 
 /*
@@ -283,6 +300,16 @@ _nvswitch_corelib_write_discovery_token
     return NVL_SUCCESS;
 }
 
+static NV_API_CALL NvlStatus
+_nvswitch_corelib_ali_training
+(
+    nvlink_link *link
+)
+{
+    nvswitch_device *device = link->dev->pDevInfo;
+    return device->hal.nvswitch_launch_ALI_link_training(device, link, NV_FALSE);
+}
+
 void
 nvswitch_get_link_handlers
 (
@@ -310,6 +337,7 @@ nvswitch_get_link_handlers
     nvswitch_link_handlers->training_complete = _nvswitch_corelib_training_complete;
     nvswitch_link_handlers->get_uphy_load = _nvswitch_corelib_get_uphy_load;
     nvswitch_link_handlers->write_discovery_token = _nvswitch_corelib_write_discovery_token;
+    nvswitch_link_handlers->ali_training = _nvswitch_corelib_ali_training;
 }
 
 #define NVSWITCH_INIT_REGKEY(_private, _regkey, _string, _default_val)          \
@@ -358,7 +386,7 @@ _nvswitch_init_device_regkeys
                          NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_OFF);
 
     //
-    // Private internal use regkeys
+    // Debug use regkeys
     // Not available on release build kernel drivers
     //
     NVSWITCH_INIT_REGKEY(_PRIVATE, external_fabric_mgmt,
@@ -429,9 +457,6 @@ _nvswitch_init_device_regkeys
                          NV_SWITCH_REGKEY_SOE_DISABLE,
                          NV_SWITCH_REGKEY_SOE_DISABLE_NO);
 
-    NVSWITCH_INIT_REGKEY(_PUBLIC, soe_boot_core,
-                         NV_SWITCH_REGKEY_SOE_BOOT_CORE,
-                         NV_SWITCH_REGKEY_SOE_BOOT_CORE_DEFAULT);
     NVSWITCH_INIT_REGKEY(_PRIVATE, latency_counter,
                          NV_SWITCH_REGKEY_LATENCY_COUNTER_LOGGING,
                          NV_SWITCH_REGKEY_LATENCY_COUNTER_LOGGING_ENABLE);
@@ -471,6 +496,10 @@ _nvswitch_init_device_regkeys
     NVSWITCH_INIT_REGKEY(_PRIVATE, select_uphy_tables,
                          NV_SWITCH_REGKEY_MINION_SELECT_UPHY_TABLES,
                          NV_SWITCH_REGKEY_MINION_SELECT_UPHY_TABLES_DEFAULT);
+
+    NVSWITCH_INIT_REGKEY(_PRIVATE, link_training_mode,
+                         NV_SWITCH_REGKEY_LINK_TRAINING_SELECT,
+                         NV_SWITCH_REGKEY_LINK_TRAINING_SELECT_DEFAULT);
 
     NVSWITCH_INIT_REGKEY(_PRIVATE, i2c_access_control,
                          NV_SWITCH_REGKEY_I2C_ACCESS_CONTROL,
@@ -604,15 +633,6 @@ nvswitch_is_smbpbi_supported
     return device->hal.nvswitch_is_smbpbi_supported(device);
 }
 
-NvlStatus
-nvswitch_soe_prepare_for_reset
-(
-    nvswitch_device *device
-)
-{
-    return device->hal.nvswitch_soe_prepare_for_reset(device);
-}
-
 NvBool
 nvswitch_is_soe_supported
 (
@@ -626,16 +646,6 @@ nvswitch_is_soe_supported
     }
 
     return device->hal.nvswitch_is_soe_supported(device);
-}
-
-NvlStatus
-nvswitch_soe_set_ucode_core
-(
-    nvswitch_device *device,
-    NvBool bFalcon
-)
-{
-    return device->hal.nvswitch_soe_set_ucode_core(device, bFalcon);
 }
 
 NvlStatus
@@ -1145,6 +1155,12 @@ nvswitch_lib_initialize_device
 
     nvListInit(&device->client_events_list);
 
+    for (link_num=0; link_num < nvswitch_get_num_links(device); link_num++)
+    {
+        nvListInit(&device->link[link_num].inbandData.persistent_list);
+        nvListInit(&device->link[link_num].inbandData.nonpersistent_list);
+    }
+
     retval = nvswitch_lib_load_platform_info(device);
     if (retval != NVL_SUCCESS)
     {
@@ -1363,6 +1379,10 @@ nvswitch_lib_validate_device_id
     {
         return NV_TRUE;
     }
+    if (nvswitch_is_ls10_device_id(device_id))
+    {
+        return NV_TRUE;
+    }
     return NV_FALSE;
 }
 
@@ -1413,6 +1433,8 @@ nvswitch_lib_post_init_device
     }
 
     nvswitch_smbpbi_post_init(device);
+
+    (void)nvswitch_launch_ALI(device);
 
     return NVL_SUCCESS;
 }
@@ -1861,6 +1883,10 @@ nvswitch_lib_register_device
     // advantage of them.
     //
     _nvswitch_init_device_regkeys(device);
+
+    // After regkeys have been set then only set the enableALI field.
+    device->nvlink_device->enableALI = (device->regkeys.link_training_mode ==
+                        NV_SWITCH_REGKEY_LINK_TRAINING_SELECT_ALI) ? NV_TRUE:NV_FALSE;
 
     retval = nvlink_lib_register_device(device->nvlink_device);
     if (NVL_SUCCESS != retval)
@@ -2390,6 +2416,24 @@ _nvswitch_ctrl_set_ganged_link_table
     return device->hal.nvswitch_ctrl_set_ganged_link_table(device, p);
 }
 
+void
+nvswitch_init_npg_multicast
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_init_npg_multicast(device);
+}
+
+void
+nvswitch_init_warm_reset
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_init_warm_reset(device);
+}
+
 static NvlStatus
 _nvswitch_ctrl_set_remap_policy
 (
@@ -2710,6 +2754,150 @@ _nvswitch_ctrl_get_rb_stall_busy
     return device->hal.nvswitch_ctrl_get_rb_stall_busy(device, p);
 }
 
+NvlStatus
+nvswitch_ctrl_get_multicast_id_error_vector
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR *p
+)
+{
+    return device->hal.nvswitch_ctrl_get_multicast_id_error_vector(device, p);
+}
+
+NvlStatus
+nvswitch_ctrl_clear_multicast_id_error_vector
+(
+    nvswitch_device *device,
+    NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR *p
+)
+{
+    return device->hal.nvswitch_ctrl_clear_multicast_id_error_vector(device, p);
+}
+
+static NvlStatus
+_nvswitch_ctrl_inband_send_data
+(
+    nvswitch_device *device,
+    NVSWITCH_INBAND_SEND_DATA_PARAMS *p
+)
+{
+    return device->hal.nvswitch_ctrl_inband_send_data(device, p);
+}
+
+static NvlStatus
+_nvswitch_ctrl_inband_read_data
+(
+    nvswitch_device *device,
+    NVSWITCH_INBAND_READ_DATA_PARAMS *p
+)
+{
+    return device->hal.nvswitch_ctrl_inband_read_data(device, p);
+}
+
+/*
+ * @Brief : Deletes all the entires in persistant or nonpersistant list
+ *
+ * @Description :
+ *
+ * @param[in] device      NvSwitch device to contain this link
+ * @param[in] linkId      link number of the link
+ *
+ */
+static void
+_nvswitch_inband_clear_list
+(
+    nvswitch_device *device,
+    NvU32           linkId
+)
+{
+    nvswitch_inband_data_list *curr = NULL;
+    nvswitch_inband_data_list *next = NULL;
+
+    nvListForEachEntry_safe(curr, next, &device->link[linkId].inbandData.persistent_list, entry)
+    {
+         nvListDel(&curr->entry);
+         nvswitch_os_free(curr);
+    }
+
+    nvListForEachEntry_safe(curr, next, &device->link[linkId].inbandData.nonpersistent_list, entry)
+    {
+         nvListDel(&curr->entry);
+         nvswitch_os_free(curr);
+    }
+}
+
+static NvlStatus
+_nvswitch_ctrl_inband_flush_data
+(
+    nvswitch_device *device,
+    NVSWITCH_INBAND_FLUSH_DATA_PARAMS *p
+)
+{
+    NvU32 i;
+    NvU64 enabledLinkMask;
+
+    if (p->linkMask == 0)
+    {
+        NVSWITCH_PRINT(device, ERROR, "Nothing to clear\n");
+        return NVL_SUCCESS;
+    }
+
+    enabledLinkMask = nvswitch_get_enabled_link_mask(device);
+
+    FOR_EACH_INDEX_IN_MASK(64, i, p->linkMask)
+    {
+         if (nvswitch_is_link_valid(device, i) &&
+             (enabledLinkMask & NVBIT(i)))
+         {
+              _nvswitch_inband_clear_list(device, i);
+         }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return NVL_SUCCESS;
+}
+
+static NvlStatus
+_nvswitch_ctrl_inband_pending_data_stats
+(
+    nvswitch_device *device,
+    NVSWITCH_INBAND_PENDING_DATA_STATS_PARAMS *p
+)
+{
+    NvU32 link_num;
+    NvU64 enabledLinkMask, persistent_mask = 0, nonpersistent_mask = 0;
+
+    enabledLinkMask = nvswitch_get_enabled_link_mask(device);
+
+    for (link_num = 0; link_num < nvswitch_get_num_links(device); link_num++)
+    {
+         if (nvswitch_is_link_valid(device, link_num) &&
+             (enabledLinkMask & NVBIT(link_num)))
+         {
+              if (!nvListIsEmpty(&device->link[link_num].inbandData.persistent_list))
+              {
+                  persistent_mask |= NVBIT(link_num);
+              }
+
+              if (!nvListIsEmpty(&device->link[link_num].inbandData.nonpersistent_list))
+              {
+                  nonpersistent_mask |= NVBIT(link_num);
+              }
+         }
+    }
+
+    if (persistent_mask > 0)
+    {
+        p->linkMask = persistent_mask;
+    }
+    else
+    {
+        p->linkMask = nonpersistent_mask;
+    }
+
+    return NVL_SUCCESS;
+}
+
 static NvlStatus
 _nvswitch_ctrl_i2c_smbus_command
 (
@@ -2882,6 +3070,72 @@ _nvswitch_lib_validate_privileged_ctrl
     }
 
     return -NVL_ERR_INSUFFICIENT_PERMISSIONS;
+}
+
+/*
+ * @Brief : Copy the data from the persistant or nonpersistant list
+ *
+ * @Description :
+ *
+ * @param[in] device            NvSwitch device to contain this link
+ * @param[out] data             Destination Data
+ * @param[in] linkId            link number of the link
+ * @param[out] dataSize         Size of data copied
+ *
+ * @returns                     NVL_SUCCESS if action succeeded,
+ *                              -NVL_NOT_FOUND if link doesnt have data
+ */
+NvlStatus
+nvswitch_inband_read_data
+(
+    nvswitch_device *device,
+    NvU8 *dest,
+    NvU32 linkId,
+    NvU32 *dataSize
+)
+{
+    nvswitch_inband_data_list *curr = NULL;
+    NVListRec *list;
+
+    if (nvListIsEmpty(&device->link[linkId].inbandData.persistent_list) &&
+        nvListIsEmpty(&device->link[linkId].inbandData.nonpersistent_list))
+    {
+        *dataSize = 0;
+        return -NVL_NOT_FOUND;
+    }
+
+    list = nvListIsEmpty(&device->link[linkId].inbandData.persistent_list) ?
+                         &device->link[linkId].inbandData.nonpersistent_list :
+                         &device->link[linkId].inbandData.persistent_list;
+
+    nvListForEachEntry(curr, list, entry)
+    {
+         *dataSize = curr->dataSize;
+         nvswitch_os_memcpy(dest, curr->data, curr->dataSize);
+         nvListDel(&curr->entry);
+         nvswitch_os_free(curr);
+         break;
+    }
+
+    return NVL_SUCCESS;
+}
+
+/*
+ * @Brief : Moves the data into persistant or nonpersistant list
+ *
+ * @Description :
+ *
+ * @param[in] device            NvSwitch device to contain this link
+ * @param[in] linkId            link number of the link
+ *
+ */
+void
+nvswitch_filter_messages
+(
+    nvswitch_device *device,
+    NvU32           linkId
+)
+{
 }
 
 /*
@@ -3770,17 +4024,6 @@ nvswitch_pri_ring_init
 }
 
 NvlStatus
-nvswitch_get_soe_ucode_binaries
-(
-    nvswitch_device *device,
-    const NvU32 **soe_ucode_data,
-    const NvU32 **soe_ucode_header
-)
-{
-    return device->hal.nvswitch_get_soe_ucode_binaries(device, soe_ucode_data, soe_ucode_header);
-}
-
-NvlStatus
 nvswitch_get_remap_table_selector
 (
     nvswitch_device *device,
@@ -3875,6 +4118,15 @@ nvswitch_init_lpwr_regs
 }
 
 NvlStatus
+nvswitch_launch_ALI
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_launch_ALI(device);
+}
+
+NvlStatus
 nvswitch_set_training_mode
 (
     nvswitch_device *device
@@ -3933,6 +4185,17 @@ nvswitch_apply_recal_settings
 )
 {
     return device->hal.nvswitch_apply_recal_settings(device, link);
+}
+
+NvlStatus
+nvswitch_launch_ALI_link_training
+(
+    nvswitch_device *device,
+    nvlink_link *link,
+    NvBool bSync
+)
+{
+    return device->hal.nvswitch_launch_ALI_link_training(device, link, bSync);
 }
 
 NvlStatus
@@ -4195,6 +4458,32 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_RB_STALL_BUSY,
                 _nvswitch_ctrl_get_rb_stall_busy,
                 NVSWITCH_GET_RB_STALL_BUSY);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR,
+                nvswitch_ctrl_get_multicast_id_error_vector,
+                NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR,
+                nvswitch_ctrl_clear_multicast_id_error_vector,
+                NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_INBAND_SEND_DATA,
+                _nvswitch_ctrl_inband_send_data,
+                NVSWITCH_INBAND_SEND_DATA_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_INBAND_READ_DATA,
+                _nvswitch_ctrl_inband_read_data,
+                 NVSWITCH_INBAND_READ_DATA_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_INBAND_FLUSH_DATA,
+                _nvswitch_ctrl_inband_flush_data,
+                NVSWITCH_INBAND_FLUSH_DATA_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_INBAND_PENDING_DATA_STATS,
+                _nvswitch_ctrl_inband_pending_data_stats,
+                NVSWITCH_INBAND_PENDING_DATA_STATS_PARAMS,
+                osPrivate, flags);
         NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
                 CTRL_NVSWITCH_GET_SW_INFO,
                 _nvswitch_ctrl_get_sw_info,

@@ -181,6 +181,7 @@ _rmapiInitInterface
 
     pRmApi->MapToCpu = rmapiMapToCpu;
     pRmApi->MapToCpuWithSecInfo = pRmApi->bTlsInternal ? rmapiMapToCpuWithSecInfo : rmapiMapToCpuWithSecInfoTls;
+    pRmApi->MapToCpuWithSecInfoV2 = pRmApi->bTlsInternal ? rmapiMapToCpuWithSecInfoV2 : rmapiMapToCpuWithSecInfoTlsV2;
 
     pRmApi->UnmapFromCpu = rmapiUnmapFromCpu;
     pRmApi->UnmapFromCpuWithSecInfo = pRmApi->bTlsInternal ? rmapiUnmapFromCpuWithSecInfo : rmapiUnmapFromCpuWithSecInfoTls;

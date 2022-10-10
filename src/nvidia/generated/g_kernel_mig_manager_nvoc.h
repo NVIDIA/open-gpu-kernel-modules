@@ -138,6 +138,11 @@ typedef struct MIG_RESOURCE_ALLOCATION
      * Bitvector of local engine IDs associated with this instance.
      */
     ENGTYPE_BIT_VECTOR localEngines;
+    
+    /*!
+     * Virtualized GPC Count
+    */
+    NvU32 virtualGpcCount;
 } MIG_RESOURCE_ALLOCATION;
 
 typedef struct MIG_COMPUTE_INSTANCE
@@ -383,6 +388,11 @@ typedef struct KERNEL_MIG_MANAGER_STATIC_INFO
     /*! Per swizzId FB memory page ranges */
     NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_SWIZZ_ID_FB_MEM_PAGE_RANGES_PARAMS *pSwizzIdFbMemPageRanges;
 
+    /*! Compute instance profiles */
+    NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_COMPUTE_PROFILES_PARAMS *pCIProfiles;
+
+    /*! Skyline info used to determine GPU and compute instance resources available */
+    NV2080_CTRL_INTERNAL_STATIC_GRMGR_GET_SKYLINE_INFO_PARAMS *pSkylineInfo;
 } KERNEL_MIG_MANAGER_STATIC_INFO;
 
 /*!
@@ -691,6 +701,8 @@ static inline NvBool kmigmgrIsDevinitMIGBitSet_DISPATCH(OBJGPU *arg0, struct Ker
 
 NvBool kmigmgrIsGPUInstanceCombinationValid_GA100(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 gpuInstanceFlag);
 
+NvBool kmigmgrIsGPUInstanceCombinationValid_GH100(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 gpuInstanceFlag);
+
 static inline NvBool kmigmgrIsGPUInstanceCombinationValid_491d52(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 gpuInstanceFlag) {
     return ((NvBool)(0 != 0));
 }
@@ -700,6 +712,8 @@ static inline NvBool kmigmgrIsGPUInstanceCombinationValid_DISPATCH(OBJGPU *arg0,
 }
 
 NvBool kmigmgrIsGPUInstanceFlagValid_GA100(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 gpuInstanceFlag);
+
+NvBool kmigmgrIsGPUInstanceFlagValid_GH100(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 gpuInstanceFlag);
 
 static inline NvBool kmigmgrIsGPUInstanceFlagValid_491d52(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 gpuInstanceFlag) {
     return ((NvBool)(0 != 0));

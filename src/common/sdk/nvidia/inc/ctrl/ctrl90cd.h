@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl90cd.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV_EVENT_BUFFER control commands and parameters */
 

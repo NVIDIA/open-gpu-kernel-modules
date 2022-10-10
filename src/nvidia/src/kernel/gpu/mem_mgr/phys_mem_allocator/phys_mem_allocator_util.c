@@ -861,7 +861,7 @@ _pmaPredictOutOfMemory
 /*!
  * @brief Internal function to intermittently free the blacklisted pages in the
  * range of allocation request. This will enable PMA to allow OS to manage those
- * blacklisted pages after being allocated.
+ * blacklisted pages after being allocated. 
  *
  * @param[in] pPma       PMA Object
  * @param[in] regId      PMA Region ID , where the allocation falls into

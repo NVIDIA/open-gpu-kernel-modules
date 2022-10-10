@@ -35,6 +35,7 @@
 
 #include "rmconfig.h"
 
+#include "ctrl/ctrla083.h"
 #include "ctrl/ctrlc637.h"
 #include "ctrl/ctrl2080/ctrl2080bios.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h"

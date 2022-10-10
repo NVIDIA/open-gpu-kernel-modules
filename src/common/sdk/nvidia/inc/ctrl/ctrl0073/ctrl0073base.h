@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl0073/ctrl0073base.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV04_DISPLAY_COMMON control commands and parameters */
 

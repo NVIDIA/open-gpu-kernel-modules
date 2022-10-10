@@ -128,7 +128,8 @@ NV_STATUS kceGetDeviceCaps_IMPL(OBJGPU *pGpu, KernelCE *pKCe, NvU32 engineType, 
     // Since some CE capabilities depend on the nvlink topology,
     // trigger topology detection before updating the CE caps
     //
-    if (pKernelNvlink != NULL && !knvlinkIsForcedConfig(pGpu, pKernelNvlink))
+    if ((pKernelNvlink != NULL) && !knvlinkIsForcedConfig(pGpu, pKernelNvlink) &&
+         kmigmgrIsMIGNvlinkP2PSupported(pGpu, GPU_GET_KERNEL_MIG_MANAGER(pGpu)))
     {
         knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
     }
@@ -181,7 +182,8 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
     // Since some CE capabilities depend on the nvlink topology,
     // trigger topology detection before updating the CE caps
     //
-    if (pKernelNvlink != NULL && !knvlinkIsForcedConfig(pGpu, pKernelNvlink))
+    if ((pKernelNvlink != NULL) && !knvlinkIsForcedConfig(pGpu, pKernelNvlink) &&
+         kmigmgrIsMIGNvlinkP2PSupported(pGpu, GPU_GET_KERNEL_MIG_MANAGER(pGpu)))
     {
         knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
     }
@@ -370,13 +372,10 @@ kceServiceNotificationInterrupt_IMPL
 
     MODS_ARCH_REPORT(NV_ARCH_EVENT_NONSTALL_CE, "%s", "processing CE nonstall interrupt\n");
 
-    NV_ASSERT(NV2080_NOTIFIERS_CE(pKCe->publicID));
-
     kceNonstallIntrCheckAndClear_HAL(pGpu, pKCe, pParams->pThreadState);
 
     // Wake up channels waiting on this event
-    engineNonStallIntrNotify(pGpu,
-        NV2080_ENGINE_TYPE_COPY0 + NV2080_NOTIFIERS_CE(pKCe->publicID) - NV2080_NOTIFIERS_CE0);
+    engineNonStallIntrNotify(pGpu, NV2080_ENGINE_TYPE_COPY(pKCe->publicID));
 
     return NV_OK;
 }
@@ -388,7 +387,7 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     NvU32        exposeCeMask        = 0;
     NvBool       bUpdateNvlinkPceLce = NV_FALSE;
     NV_STATUS    status              = NV_OK;
-    KernelNvlink *pKernelNvlink      = GPU_GET_KERNEL_NVLINK(pGpu);
+    NvU32        i;
 
     //
     // Sync class DB before proceeding with the algorithm.
@@ -396,35 +395,38 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     //
     NV_ASSERT_OK_OR_RETURN(kceUpdateClassDB_HAL(pGpu, pKCe));
 
-    if (pKernelNvlink && !knvlinkIsForcedConfig(pGpu, pKernelNvlink))
+    for (i = 0; i < NV2080_CTRL_MAX_PCES; i++)
+        pceLceMap[i] = NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE;
+
+    for (i = 0; i < NV2080_CTRL_MAX_GRCES; i++)
+        grceConfig[i] = NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE;
+
+    //
+    // If not GSP-RM, get the auto-config PCE-LCE mappings for NVLink topology.
+    // This should work fine on CPU-RM and monolithic RM.
+    //
+
+    // Set bUpdateNvlinkPceLce to auto-config status
+    bUpdateNvlinkPceLce = pKCe->bIsAutoConfigEnabled;
+
+    if (bUpdateNvlinkPceLce)
     {
-        //
-        // If not GSP-RM, get the auto-config PCE-LCE mappings for NVLink topology.
-        // This should work fine on CPU-RM and monolithic RM.
-        //
-
-        // Set bUpdateNvlinkPceLce to auto-config status
-        bUpdateNvlinkPceLce = pKCe->bIsAutoConfigEnabled;
-
-        if (bUpdateNvlinkPceLce)
+        status = kceGetNvlinkAutoConfigCeValues_HAL(pGpu, pKCe, pceLceMap,
+                                               grceConfig, &exposeCeMask);
+        if (status == NV_ERR_NOT_SUPPORTED)
         {
-            status = kceGetNvlinkAutoConfigCeValues_HAL(pGpu, pKCe, pceLceMap,
-                                                   grceConfig, &exposeCeMask);
-            if (status == NV_ERR_NOT_SUPPORTED)
-            {
-                NV_PRINTF(LEVEL_INFO,
-                    "CE AutoConfig is not supported. Skipping PCE2LCE update\n");
+            NV_PRINTF(LEVEL_INFO,
+                "CE AutoConfig is not supported. Skipping PCE2LCE update\n");
 
-                bUpdateNvlinkPceLce = NV_FALSE;
-            }
-            else
+            bUpdateNvlinkPceLce = NV_FALSE;
+        }
+        else
+        {
+            if (status != NV_OK)
             {
-                if (status != NV_OK)
-                {
-                    NV_PRINTF(LEVEL_ERROR,
-                        "Failed to get auto-config PCE-LCE mappings. Return\n");
-                    return status;
-                }
+                NV_PRINTF(LEVEL_ERROR,
+                    "Failed to get auto-config PCE-LCE mappings. Return\n");
+                return status;
             }
         }
     }

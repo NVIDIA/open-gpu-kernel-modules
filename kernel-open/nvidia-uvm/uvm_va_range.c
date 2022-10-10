@@ -30,9 +30,6 @@
 #include "uvm_kvmalloc.h"
 #include "uvm_map_external.h"
 #include "uvm_perf_thrashing.h"
-
-
-
 #include "nv_uvm_interface.h"
 
 static struct kmem_cache *g_uvm_va_range_cache __read_mostly;
@@ -378,10 +375,8 @@ NV_STATUS uvm_va_range_create_semaphore_pool(uvm_va_space_t *va_space,
         if (status != NV_OK)
             goto error;
 
-
-
-
-
+        if (i == 0 && g_uvm_global.sev_enabled)
+            mem_alloc_params.dma_owner = gpu;
 
         if (attrs.is_cacheable) {
             // At most 1 GPU can have this memory cached, in which case it is
@@ -702,7 +697,7 @@ static void va_range_remove_gpu_va_space_managed(uvm_va_range_t *va_range,
 
     for_each_va_block_in_va_range(va_range, va_block) {
         uvm_mutex_lock(&va_block->lock);
-        uvm_va_block_remove_gpu_va_space(va_block, gpu_va_space, mm);
+        uvm_va_block_remove_gpu_va_space(va_block, gpu_va_space, va_block_context);
         uvm_mutex_unlock(&va_block->lock);
 
         if (should_enable_read_duplicate)
@@ -732,14 +727,7 @@ static void va_range_remove_gpu_va_space_semaphore_pool(uvm_va_range_t *va_range
 {
     UVM_ASSERT(va_range->type == UVM_VA_RANGE_TYPE_SEMAPHORE_POOL);
 
-
-
-
-
-
-
     uvm_mem_unmap_gpu_user(va_range->semaphore_pool.mem, gpu);
-
 }
 
 void uvm_va_range_remove_gpu_va_space(uvm_va_range_t *va_range,
@@ -1896,10 +1884,8 @@ NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, 
     if (params->gpuAttributesCount > UVM_MAX_GPUS)
         return NV_ERR_INVALID_ARGUMENT;
 
-
-
-
-
+    if (g_uvm_global.sev_enabled && params->gpuAttributesCount == 0)
+        return NV_ERR_INVALID_ARGUMENT;
 
     // The mm needs to be locked in order to remove stale HMM va_blocks.
     mm = uvm_va_space_mm_retain_lock(va_space);

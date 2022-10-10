@@ -77,10 +77,10 @@ nvswitch_setup_link_loopback_mode_lr10
         }
     }
 
-    if (device->link[link->linkNumber].ned)
+    if (device->link[link->linkNumber].nedr)
     {
         NVSWITCH_PRINT(device, ERROR,
-            "%s: Setting NED on link %d\n",
+            "%s: Setting NEDR on link %d\n",
             __FUNCTION__, link->linkNumber);
 
         // setting NEDR
@@ -92,7 +92,14 @@ nvswitch_setup_link_loopback_mode_lr10
                 "%s: SETNEDR CMD failed for link %d.\n",
                 __FUNCTION__, link->linkNumber);
         }
+    }
         
+    if (device->link[link->linkNumber].nedw)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Setting NEDW on link %d\n",
+            __FUNCTION__, link->linkNumber);
+
         // setting NEDW
         status = nvswitch_minion_send_command(device, link->linkNumber,
                     NV_MINION_NVLINK_DL_CMD_COMMAND_SETNEDW, 0);
@@ -147,7 +154,7 @@ _nvswitch_ioctrl_setup_link_plls_lr10
 
     // Request Minion to setup the NVLink clocks
     status = nvswitch_minion_send_command(device, linkId,
-                        NV_MINION_NVLINK_DL_CMD_COMMAND_TXCLKSWITCH_PLL, 0); 
+                        NV_MINION_NVLINK_DL_CMD_COMMAND_TXCLKSWITCH_PLL, 0);
     if (status != NV_OK)
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -297,8 +304,8 @@ nvswitch_init_dlpl_interrupts_lr10
     nvlink_link *link
 )
 {
-    nvswitch_device *device            = link->dev->pDevInfo;
-    NvU32            linkNumber        = link->linkNumber;
+    nvswitch_device *device = link->dev->pDevInfo;
+    NvU32 linkNumber = link->linkNumber;
     NvU32            crcShortRegkeyVal = device->regkeys.crc_bit_error_rate_short;
     NvU32            crcLongRegkeyVal  = device->regkeys.crc_bit_error_rate_long;
     NvU32            intrRegVal;
@@ -1027,7 +1034,7 @@ nvswitch_corelib_set_dl_link_mode_lr10
                 NVSWITCH_PRINT(device, ERROR,
                     "%s : INITPHASE1 failed for link (%s):(%s).\n",
                     __FUNCTION__, device->name, link->linkName);
-                NVSWITCH_ASSERT_INFO(NV_ERR_NVLINK_CONFIGURATION_ERROR, 
+                NVSWITCH_ASSERT_INFO(NV_ERR_NVLINK_CONFIGURATION_ERROR,
                     NVBIT32(link->linkNumber), INITPHASE1_ERROR);
                 return NV_ERR_NVLINK_CONFIGURATION_ERROR;
             }
@@ -1539,7 +1546,7 @@ nvswitch_corelib_get_tx_mode_lr10
         *mode = NVLINK_SUBLINK_STATE_TX_OFF;
         return NVL_SUCCESS;
     }
-
+    
     data = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLDL, _NVLDL_TX, _SLSM_STATUS_TX);
 
     tx_sublink_state = DRF_VAL(_NVLDL_TX, _SLSM_STATUS_TX, _PRIMARY_STATE, data);
@@ -1761,7 +1768,7 @@ nvswitch_corelib_get_rx_mode_lr10
         *mode = NVLINK_SUBLINK_STATE_RX_OFF;
         return NVL_SUCCESS;
     }
-
+    
     data = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLDL, _NVLDL_RX, _SLSM_STATUS_RX);
 
     rx_sublink_state = DRF_VAL(_NVLDL_RX, _SLSM_STATUS_RX, _PRIMARY_STATE, data);
@@ -2036,3 +2043,13 @@ nvswitch_apply_recal_settings_lr10
     return;
 }
 
+NvlStatus
+nvswitch_launch_ALI_link_training_lr10
+(
+    nvswitch_device *device,
+    nvlink_link     *link,
+    NvBool           bSync
+)
+{
+    return NVL_ERR_NOT_IMPLEMENTED;
+}

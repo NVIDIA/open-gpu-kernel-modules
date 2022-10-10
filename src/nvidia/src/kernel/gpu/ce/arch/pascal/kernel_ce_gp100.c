@@ -167,16 +167,19 @@ kceGetNvlinkMaxTopoForTable_GP100
     NvU32  currentTopoIdx = 0;
     NvBool bCachedIdxExists, bCurrentIdxExists;
     NvU32  currentExposeCeMask, cachedExposeCeMask;
-    NVLINK_TOPOLOGY_PARAMS cachedTopo;
+    NvBool result = NV_FALSE;
+    NVLINK_TOPOLOGY_PARAMS *pCachedTopo = portMemAllocNonPaged(sizeof(*pCachedTopo));
+
+    NV_ASSERT_OR_RETURN(pCachedTopo != NULL, result);
 
     //
     // If exposeCeMask from current config is a subset of the cached topology,
     // then use the cached topology data.
     // We do this to ensure that we don't revoke CEs that we have exposed prevously.
     //
-    gpumgrGetSystemNvlinkTopo(gpuGetDBDF(pGpu), &cachedTopo);
+    gpumgrGetSystemNvlinkTopo(gpuGetDBDF(pGpu), pCachedTopo);
 
-    bCachedIdxExists = kceGetAutoConfigTableEntry_HAL(pGpu, pKCe, &cachedTopo,
+    bCachedIdxExists = kceGetAutoConfigTableEntry_HAL(pGpu, pKCe, pCachedTopo,
                         pAutoConfigTable, autoConfigNumEntries, &cachedTopoIdx,
                         &cachedExposeCeMask);
 
@@ -225,8 +228,13 @@ kceGetNvlinkMaxTopoForTable_GP100
     else
     {
         // Neither are in table
-        return NV_FALSE;
+        result = NV_FALSE;
+        goto done;
     }
 
-    return NV_TRUE;
+    result = NV_TRUE;
+
+done:
+    portMemFree(pCachedTopo);
+    return result;
 }

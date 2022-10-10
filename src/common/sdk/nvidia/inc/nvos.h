@@ -40,6 +40,7 @@ extern "C" {
 
 #include "nvgputypes.h"
 #include "rs_access.h"
+#include "nvcfg_sdk.h"
 
 /* local defines here */
 #define FILE_DEVICE_NV      0x00008000
@@ -1795,15 +1796,28 @@ typedef struct
 // have the option of directly mapping video memory over that connection.
 // During mapping you may specify a preference.
 //
-#define NVOS33_FLAGS_BUS                               21:20
-#define NVOS33_FLAGS_BUS_ANY                           0
-#define NVOS33_FLAGS_BUS_NVLINK_COHERENT               1
-#define NVOS33_FLAGS_BUS_PCIE                          2
+#define NVOS33_FLAGS_BUS                                           21:20
+#define NVOS33_FLAGS_BUS_ANY                                       0
+#define NVOS33_FLAGS_BUS_NVLINK_COHERENT                           1
+#define NVOS33_FLAGS_BUS_PCIE                                      2
 
 // Internal use only
 #define NVOS33_FLAGS_OS_DESCRIPTOR                                 22:22
 #define NVOS33_FLAGS_OS_DESCRIPTOR_DISABLE                         (0x00000000)
 #define NVOS33_FLAGS_OS_DESCRIPTOR_ENABLE                          (0x00000001)
+
+//
+// For use in the linux mapping path. This flag sets the
+// caching mode for pcie BAR mappings (from nv_memory_type.h).
+// Internal use only.
+//
+#define NVOS33_FLAGS_CACHING_TYPE                                  25:23
+#define NVOS33_FLAGS_CACHING_TYPE_CACHED                           0
+#define NVOS33_FLAGS_CACHING_TYPE_UNCACHED                         1
+#define NVOS33_FLAGS_CACHING_TYPE_WRITECOMBINED                    2
+#define NVOS33_FLAGS_CACHING_TYPE_WRITEBACK                        5
+#define NVOS33_FLAGS_CACHING_TYPE_DEFAULT                          6
+#define NVOS33_FLAGS_CACHING_TYPE_UNCACHED_WEAK                    7
 
 /* parameters */
 typedef struct
@@ -3192,6 +3206,23 @@ typedef struct
     NvU32 notifyIndex;                  // [IN] notifier index
     NvV32 status;                       // [OUT] status of call
 } NV_GSP_TEST_SEND_EVENT_NOTIFICATION_PARAMETERS;
+
+/**
+ * @brief HopperUsermodeAParams
+ * This set of optionalparameters is passed in on allocation of
+ * HOPPER_USERMODE_A object to specify whether a BAR1/GMMU
+ * privileged/non-privileged mapping is needed.
+ */
+
+typedef struct
+{
+    /**
+     * [IN] Whether to allocate GMMU/BAR1 mapping or BAR0 mapping.
+     */ 
+    NvBool bBar1Mapping;
+    /* [IN] Whether to allocate the PRIV page or regular VF page */
+    NvBool bPriv;
+} NV_HOPPER_USERMODE_A_PARAMS;
 
 
 #ifdef __cplusplus

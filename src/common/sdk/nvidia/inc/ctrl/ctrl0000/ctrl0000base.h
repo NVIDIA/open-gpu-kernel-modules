@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl0000/ctrl0000base.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV01_ROOT (client) control commands and parameters */
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,6 +36,7 @@ void cacheDsmSupportedFunction(OBJGPU *, ACPI_DSM_FUNCTION, NvU32, NvU32 *, NvU3
 NV_STATUS checkDsmCall(OBJGPU *, ACPI_DSM_FUNCTION *, NvU32 *, NvU32 *, NvU16 *);
 void acpiDsmInit(OBJGPU *);
 NV_STATUS getLicenseKey(OBJGPU *, NvU32, NvU32 *, NvU16 *);
+void uncacheDsmFuncStatus(OBJGPU *, ACPI_DSM_FUNCTION, NvU32);
 
 // useful macros
 #if NV_PRINTF_ENABLED

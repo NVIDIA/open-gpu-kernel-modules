@@ -459,12 +459,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_RmClient
 #endif
     },
     {               /*  [18] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x13u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) cliresCtrlCmdSystemGetClientDatabaseInfo_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x13u)
-        /*flags=*/      0x13u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
+        /*flags=*/      0x7u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x13du,
         /*paramSize=*/  sizeof(NV0000_CTRL_SYSTEM_GET_CLIENT_DATABASE_INFO_PARAMS),
@@ -1434,7 +1434,7 @@ static void __nvoc_init_funcTable_RmClientResource_1(RmClientResource *pThis) {
     pThis->__cliresCtrlCmdSystemGetRmInstanceId__ = &cliresCtrlCmdSystemGetRmInstanceId_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x13u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x7u)
     pThis->__cliresCtrlCmdSystemGetClientDatabaseInfo__ = &cliresCtrlCmdSystemGetClientDatabaseInfo_IMPL;
 #endif
 

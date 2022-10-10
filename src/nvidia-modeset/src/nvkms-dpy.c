@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2013 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,6 +56,7 @@ DpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
                           NvU32 *passiveDpDongleMaxPclkKHz);
 static void
 CreateParsedEdidFromNVT_TIMING(NVT_TIMING *pTimings,
+                               NvU8 bpc,
                                NVParsedEdidEvoPtr pParsedEdid);
 
 static NvBool ReadEdidFromDP              (const NVDpyEvoRec *pDpyEvo,
@@ -81,7 +82,8 @@ static void ReadAndApplyEdidEvo           (NVDpyEvoPtr pDpyEvo,
                                            struct NvKmsQueryDpyDynamicDataParams *pParams);
 static NvBool GetFixedModeTimings         (NVDpyEvoPtr pDpyEvo);
 static NvBool ReadDSITimingsFromResman    (const NVDpyEvoRec *pDpyEvo,
-                                           NVT_TIMING *pTimings);
+                                           NVT_TIMING *pTimings,
+                                           NvU8 *pBpc);
 static void AssignDpyEvoName              (NVDpyEvoPtr pDpyEvo);
 
 static NvBool IsConnectorTMDS             (NVConnectorEvoPtr);
@@ -116,8 +118,9 @@ static NvBool DpyConnectEvo(
         ReadAndApplyEdidEvo(pDpyEvo, pParams);
     }
 
-    if (pDpyEvo->head != NV_INVALID_HEAD) {
-        nvUpdateInfoFrames(pDpyEvo->pDispEvo, pDpyEvo->head);
+    if (pDpyEvo->apiHead != NV_INVALID_HEAD) {
+        /* XXX[2Heads1OR] Info frames should get programmed onky for the primary head. */
+        nvUpdateInfoFrames(pDpyEvo->pDispEvo, pDpyEvo->apiHead);
     }
 
     return TRUE;
@@ -404,17 +407,11 @@ static void ApplyNewEdid(
  */
 static NvBool ReadDSITimingsFromResman(
     const NVDpyEvoRec *pDpyEvo,
-    NVT_TIMING *pTimings)
+    NVT_TIMING *pTimings,
+    NvU8 *pBpc)
 {
     NvU32 ret;
     NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS dsiModeTimingParams = { 0 };
-    // Values are currently hardcoded while waiting for full RM support
-    NvU32 hFrontPorch = 8;
-    NvU32 vFrontPorch = 2;
-    NvU32 hBackPorch = 56;
-    NvU32 vBackPorch = 51;
-    NvU32 hSyncWidth = 96;
-    NvU32 vSyncWidth = 2;
 
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
@@ -442,31 +439,37 @@ static NvBool ReadDSITimingsFromResman(
     // Converts refresh (Hz) into appropriate units for rr1k (units of 0.001Hz)
     pTimings->etc.rrx1k = dsiModeTimingParams.refresh * 1000;
     pTimings->HVisible = dsiModeTimingParams.hActive;
-    pTimings->HFrontPorch = hFrontPorch;
-    pTimings->HSyncWidth = hSyncWidth;
+    pTimings->HFrontPorch = dsiModeTimingParams.hFrontPorch;
+    pTimings->HSyncWidth = dsiModeTimingParams.hSyncWidth;
     pTimings->HTotal = dsiModeTimingParams.hActive +
-                       hFrontPorch + hSyncWidth + hBackPorch;
+                       dsiModeTimingParams.hFrontPorch +
+                       dsiModeTimingParams.hSyncWidth +
+                       dsiModeTimingParams.hBackPorch;
 
     pTimings->VVisible = dsiModeTimingParams.vActive;
-    pTimings->VFrontPorch = vFrontPorch;
-    pTimings->VSyncWidth = vSyncWidth;
+    pTimings->VFrontPorch = dsiModeTimingParams.vFrontPorch;
+    pTimings->VSyncWidth = dsiModeTimingParams.vSyncWidth;
     pTimings->VTotal = dsiModeTimingParams.vActive +
-                       vFrontPorch + vSyncWidth + vBackPorch;
+                       dsiModeTimingParams.vFrontPorch +
+                       dsiModeTimingParams.vSyncWidth +
+                       dsiModeTimingParams.vBackPorch;
 
-    pTimings->pclk = HzToKHz(pTimings->VTotal *
-                             pTimings->HTotal *
-                             dsiModeTimingParams.refresh) / 10;
+    pTimings->pclk = HzToKHz(dsiModeTimingParams.pclkHz) / 10;
+
+    // DSI only supports RGB444
+    *pBpc = dsiModeTimingParams.bpp / 3;
 
     return TRUE;
 }
 
 static NvBool ReadDPSerializerTimings(
     const NVDpyEvoRec *pDpyEvo,
-    NVT_TIMING *pTimings)
+    NVT_TIMING *pTimings,
+    NvU8 *pBpc)
 {
     /*
      * TODO Add RM control call that will return the fixed timings
-     * that can be used with a given display.
+     * and bpc that can be used with a given display.
      */
     pTimings->HVisible = 1920;
     pTimings->VVisible = 1080;
@@ -481,6 +484,7 @@ static NvBool ReadDPSerializerTimings(
     pTimings->interlaced = 0;
     pTimings->pclk = 14850;
     pTimings->etc.rrx1k = 60000;
+    *pBpc = 0;
 
     return TRUE;
 }
@@ -490,18 +494,20 @@ static NvBool GetFixedModeTimings(
 {
     NVT_TIMING timings = { };
     NvBool ret = FALSE;
+    NvU8 bpc;
 
     if (pDpyEvo->pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
-        ret = ReadDSITimingsFromResman(pDpyEvo, &timings);
+        ret = ReadDSITimingsFromResman(pDpyEvo, &timings, &bpc);
     } else if (nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo)) {
-        ret = ReadDPSerializerTimings(pDpyEvo, &timings);
+        ret = ReadDPSerializerTimings(pDpyEvo, &timings, &bpc);
     }
 
     if (!ret) {
         return ret;
     }
 
-    CreateParsedEdidFromNVT_TIMING(&timings, &pDpyEvo->parsedEdid);
+    CreateParsedEdidFromNVT_TIMING(&timings, bpc, &pDpyEvo->parsedEdid);
+
     AssignDpyEvoName(pDpyEvo);
     nvDpyProbeMaxPixelClock(pDpyEvo);
 
@@ -1982,6 +1988,7 @@ static void PrePatchEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
  */
 static void CreateParsedEdidFromNVT_TIMING(
     NVT_TIMING *pTimings,
+    NvU8 bpc,
     NVParsedEdidEvoPtr pParsedEdid)
 {
     nvkms_memset(pParsedEdid, 0, sizeof(*pParsedEdid));
@@ -1991,6 +1998,7 @@ static void CreateParsedEdidFromNVT_TIMING(
     pParsedEdid->info.u.feature_ver_1_4_digital.continuous_frequency = FALSE;
     pParsedEdid->info.version = NVT_EDID_VER_1_4;
     pParsedEdid->info.input.isDigital = TRUE;
+    pParsedEdid->info.input.u.digital.bpc = bpc;
     pParsedEdid->limits.min_h_rate_hz = 1;
     pParsedEdid->limits.min_v_rate_hzx1k = 1;
     pParsedEdid->limits.max_h_rate_hz = NV_U32_MAX;
@@ -2192,7 +2200,7 @@ NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,
 
     pDpyEvo->pDispEvo = pDispEvo;
     pDpyEvo->pConnectorEvo = pConnectorEvo;
-    pDpyEvo->head = NV_INVALID_HEAD;
+    pDpyEvo->apiHead = NV_INVALID_HEAD;
     pDpyEvo->id = dpyId;
 
     nvListAdd(&pDpyEvo->dpyListEntry, &pDispEvo->dpyList);
@@ -2427,34 +2435,6 @@ NvBool nvDpyRequiresDualLinkEvo(const NVDpyEvoRec *pDpyEvo,
                (pTimings->pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz)));
     return (pTimings->pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz);
 }
-
-
-/*!
- * Return EVO mode timings currently used with the given pDpyEvo.
- *
- * \param[in] pDpyEvo  dpy whose mode timings should be returned.
- *
- * \return NULL if pDpyEvo is not active.  Otherwise, return the mode
- * timings programmed in the head that is driving the dpy.
- */
-NVHwModeTimingsEvoPtr
-nvGetCurrentModeTimingsForDpyEvo(const NVDpyEvoRec *pDpyEvo)
-{
-    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
-    NVDispHeadStateEvoPtr pHeadState = NULL;
-    const NvU32 head = pDpyEvo->head;
-
-    if (head == NV_INVALID_HEAD) {
-        return NULL;
-    }
-
-    pHeadState = &pDispEvo->headState[head];
-
-    nvAssert(nvDpyIdIsInDpyIdList(pDpyEvo->id, pHeadState->activeDpys));
-
-    return &pHeadState->timings;
-}
-
 
 /*!
  * Return the NVDpyEvoPtr that corresponds to the given dpyId, on the
@@ -2738,9 +2718,10 @@ void nvDpyUpdateCurrentAttributes(NVDpyEvoRec *pDpyEvo)
 {
     NVAttributesSetEvoRec newAttributes = pDpyEvo->currentAttributes;
 
-    if (pDpyEvo->head != NV_INVALID_HEAD) {
+    if (pDpyEvo->apiHead != NV_INVALID_HEAD) {
+        /* XXX[2Heads1OR] attributes should get stored in the api-head state. */
         newAttributes =
-            pDpyEvo->pDispEvo->headState[pDpyEvo->head].attributes;
+            pDpyEvo->pDispEvo->headState[pDpyEvo->apiHead].attributes;
     } else {
         newAttributes.dithering.enabled = FALSE;
         newAttributes.dithering.depth   = NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_DEPTH_NONE;

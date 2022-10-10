@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl208f/ctrl208fevent.finn
 //
 
-
-
-
 #include "ctrl/ctrl208f/ctrl208fbase.h"
 
 /* NV20_SUBDEVICE_DIAG event-related control commands and parameters */

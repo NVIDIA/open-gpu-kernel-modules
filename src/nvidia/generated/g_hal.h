@@ -118,6 +118,10 @@ typedef enum
     HAL_IMPL_GA107,
     HAL_IMPL_GA10B,
     HAL_IMPL_GA102F,
+    HAL_IMPL_AD102,
+    HAL_IMPL_AD103,
+    HAL_IMPL_AD104,
+    HAL_IMPL_GH100,
     HAL_IMPL_T001_FERMI_NOT_EXIST,
     HAL_IMPL_T124,
     HAL_IMPL_T132,
@@ -147,7 +151,11 @@ typedef enum
     { HAL_IMPL_GA103, "GA103" }, \
     { HAL_IMPL_GA104, "GA104" }, \
     { HAL_IMPL_GA106, "GA106" }, \
-    { HAL_IMPL_GA107, "GA107" }
+    { HAL_IMPL_GA107, "GA107" }, \
+    { HAL_IMPL_AD102, "AD102" }, \
+    { HAL_IMPL_AD103, "AD103" }, \
+    { HAL_IMPL_AD104, "AD104" }, \
+    { HAL_IMPL_GH100, "GH100" }
 
 
 #endif  // _G_RMCFG_HAL_H_

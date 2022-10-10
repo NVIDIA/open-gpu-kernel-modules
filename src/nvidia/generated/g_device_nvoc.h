@@ -89,6 +89,7 @@ struct Device {
     NV_STATUS (*__deviceCtrlCmdBifReset__)(struct Device *, NV0080_CTRL_BIF_RESET_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdBifGetDmaBaseSysmemAddr__)(struct Device *, NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdBifAspmFeatureSupported__)(struct Device *, NV0080_CTRL_BIF_SET_ASPM_FEATURE_PARAMS *);
+    NV_STATUS (*__deviceCtrlCmdBifAspmCyaUpdate__)(struct Device *, NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdDmaGetPteInfo__)(struct Device *, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdDmaUpdatePde2__)(struct Device *, NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdDmaSetPageDirectory__)(struct Device *, NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS *);
@@ -217,6 +218,7 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceCtrlCmdBifReset(pDevice, pBifResetParams) deviceCtrlCmdBifReset_DISPATCH(pDevice, pBifResetParams)
 #define deviceCtrlCmdBifGetDmaBaseSysmemAddr(pDevice, pBifDmaBaseSysmemParams) deviceCtrlCmdBifGetDmaBaseSysmemAddr_DISPATCH(pDevice, pBifDmaBaseSysmemParams)
 #define deviceCtrlCmdBifAspmFeatureSupported(pDevice, pBifAspmParams) deviceCtrlCmdBifAspmFeatureSupported_DISPATCH(pDevice, pBifAspmParams)
+#define deviceCtrlCmdBifAspmCyaUpdate(pDevice, pBifAspmCyaParams) deviceCtrlCmdBifAspmCyaUpdate_DISPATCH(pDevice, pBifAspmCyaParams)
 #define deviceCtrlCmdDmaGetPteInfo(pDevice, pParams) deviceCtrlCmdDmaGetPteInfo_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdDmaUpdatePde2(pDevice, pParams) deviceCtrlCmdDmaUpdatePde2_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdDmaSetPageDirectory(pDevice, pParams) deviceCtrlCmdDmaSetPageDirectory_DISPATCH(pDevice, pParams)
@@ -319,6 +321,12 @@ NV_STATUS deviceCtrlCmdBifAspmFeatureSupported_IMPL(struct Device *pDevice, NV00
 
 static inline NV_STATUS deviceCtrlCmdBifAspmFeatureSupported_DISPATCH(struct Device *pDevice, NV0080_CTRL_BIF_SET_ASPM_FEATURE_PARAMS *pBifAspmParams) {
     return pDevice->__deviceCtrlCmdBifAspmFeatureSupported__(pDevice, pBifAspmParams);
+}
+
+NV_STATUS deviceCtrlCmdBifAspmCyaUpdate_IMPL(struct Device *pDevice, NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS *pBifAspmCyaParams);
+
+static inline NV_STATUS deviceCtrlCmdBifAspmCyaUpdate_DISPATCH(struct Device *pDevice, NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS *pBifAspmCyaParams) {
+    return pDevice->__deviceCtrlCmdBifAspmCyaUpdate__(pDevice, pBifAspmCyaParams);
 }
 
 NV_STATUS deviceCtrlCmdDmaGetPteInfo_IMPL(struct Device *pDevice, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *pParams);

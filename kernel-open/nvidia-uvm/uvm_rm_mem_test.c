@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -40,6 +40,7 @@ static NV_STATUS map_cpu(uvm_rm_mem_t *rm_mem)
 
     // Unmap
     uvm_rm_mem_unmap_cpu(rm_mem);
+
     // Unmapping already unmapped also OK
     uvm_rm_mem_unmap_cpu(rm_mem);
 
@@ -59,9 +60,10 @@ static NV_STATUS map_cpu(uvm_rm_mem_t *rm_mem)
     return NV_OK;
 }
 
-static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem)
+static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem, NvU64 alignment)
 {
     uvm_gpu_t *gpu = rm_mem->gpu_owner;
+    NvU64 gpu_va;
 
     // The memory should have been automatically mapped in the GPU owner
     TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu(rm_mem, gpu));
@@ -71,26 +73,31 @@ static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem)
     // located in vidmem.
     TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) == uvm_gpu_uses_proxy_channel_pool(gpu));
 
+    gpu_va = uvm_rm_mem_get_gpu_va(rm_mem, gpu, uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
+    if (alignment)
+        TEST_CHECK_RET(IS_ALIGNED(gpu_va, alignment));
+
     // Explicitly mapping or unmapping to the GPU that owns the allocation is
     // not allowed, so the testing related to GPU owners is simpler than that of
     // other GPUs.
     return NV_OK;
 }
 
-static NV_STATUS map_other_gpus(uvm_rm_mem_t *rm_mem, uvm_va_space_t *va_space)
+static NV_STATUS map_other_gpus(uvm_rm_mem_t *rm_mem, uvm_va_space_t *va_space, NvU64 alignment)
 {
     uvm_gpu_t *gpu_owner = rm_mem->gpu_owner;
     uvm_gpu_t *gpu;
+    NvU64 gpu_va;
 
     for_each_va_space_gpu(gpu, va_space) {
         if (gpu == gpu_owner)
             continue;
 
-        TEST_NV_CHECK_RET(uvm_rm_mem_map_gpu(rm_mem, gpu));
+        TEST_NV_CHECK_RET(uvm_rm_mem_map_gpu(rm_mem, gpu, alignment));
         TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu(rm_mem, gpu));
 
         // Mappings are not ref counted, so additional map calls are no-ops
-        TEST_NV_CHECK_RET(uvm_rm_mem_map_gpu(rm_mem, gpu));
+        TEST_NV_CHECK_RET(uvm_rm_mem_map_gpu(rm_mem, gpu, alignment));
 
         // The previous GPU map calls added mappings to the proxy VA space
         // when in SR-IOV heavy mode
@@ -107,10 +114,14 @@ static NV_STATUS map_other_gpus(uvm_rm_mem_t *rm_mem, uvm_va_space_t *va_space)
         TEST_CHECK_RET(!uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
 
         // Subsequent mappings should behave as they did in the beginning.
-        TEST_NV_CHECK_RET(uvm_rm_mem_map_gpu(rm_mem, gpu));
+        TEST_NV_CHECK_RET(uvm_rm_mem_map_gpu(rm_mem, gpu, alignment));
         TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu(rm_mem, gpu));
 
         TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) == uvm_gpu_uses_proxy_channel_pool(gpu));
+
+        gpu_va = uvm_rm_mem_get_gpu_va(rm_mem, gpu, uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
+        if (alignment)
+            TEST_CHECK_RET(IS_ALIGNED(gpu_va, alignment));
     }
 
     return NV_OK;
@@ -124,33 +135,45 @@ static NV_STATUS test_all_gpus_in_va(uvm_va_space_t *va_space)
 
     // Create allocations of these types
     static const uvm_rm_mem_type_t mem_types[] = { UVM_RM_MEM_TYPE_SYS, UVM_RM_MEM_TYPE_GPU };
+
     // Create allocations of these sizes
-    static const size_t sizes[] = {1, 4, 16, 128, 1024, 4096, 1024 * 1024, 4 * 1024 * 1024};
+    static const size_t sizes[] = { 1, 4, 16, 128, 1024, 4096, 1024 * 1024, 4 * 1024 * 1024 };
+    static const NvU64 alignments[] = { 0,
+                                        8,
+                                        UVM_PAGE_SIZE_4K >> 1,
+                                        UVM_PAGE_SIZE_4K,
+                                        UVM_PAGE_SIZE_4K << 1,
+                                        UVM_PAGE_SIZE_64K,
+                                        UVM_PAGE_SIZE_2M,
+                                        UVM_PAGE_SIZE_2M << 3,
+                                        UVM_PAGE_SIZE_2M << 5 };
 
     uvm_assert_rwsem_locked(&va_space->lock);
 
     TEST_CHECK_RET(!uvm_processor_mask_empty(&va_space->registered_gpus));
 
     for_each_va_space_gpu(gpu, va_space) {
-        int i, j;
+        int i, j, k;
 
         for (i = 0; i < ARRAY_SIZE(sizes); ++i) {
             for (j = 0; j < ARRAY_SIZE(mem_types); ++j) {
+                for (k = 0; k < ARRAY_SIZE(alignments); ++k) {
 
-                // Create an allocation in the GPU's address space
-                TEST_NV_CHECK_RET(uvm_rm_mem_alloc(gpu, mem_types[j], sizes[i], &rm_mem));
+                    // Create an allocation in the GPU's address space
+                    TEST_NV_CHECK_RET(uvm_rm_mem_alloc(gpu, mem_types[j], sizes[i], alignments[k], &rm_mem));
 
-                // Test CPU mappings
-                TEST_NV_CHECK_GOTO(map_cpu(rm_mem), error);
+                    // Test CPU mappings
+                    TEST_NV_CHECK_GOTO(map_cpu(rm_mem), error);
 
-                // Test mappings in the GPU owning the allocation
-                TEST_NV_CHECK_GOTO(map_gpu_owner(rm_mem), error);
+                    // Test mappings in the GPU owning the allocation
+                    TEST_NV_CHECK_GOTO(map_gpu_owner(rm_mem, alignments[k]), error);
 
-                // For sysmem allocations, test mappings on all other GPUs
-                if (rm_mem->type == UVM_RM_MEM_TYPE_SYS)
-                    TEST_NV_CHECK_GOTO(map_other_gpus(rm_mem, va_space), error);
+                    // For sysmem allocations, test mappings on all other GPUs
+                    if (rm_mem->type == UVM_RM_MEM_TYPE_SYS)
+                        TEST_NV_CHECK_GOTO(map_other_gpus(rm_mem, va_space, alignments[k]), error);
 
-                uvm_rm_mem_free(rm_mem);
+                    uvm_rm_mem_free(rm_mem);
+                }
             }
         }
     }

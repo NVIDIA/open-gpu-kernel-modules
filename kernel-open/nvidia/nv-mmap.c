@@ -132,13 +132,6 @@ nvidia_vma_access(
     pageIndex = ((addr - vma->vm_start) >> PAGE_SHIFT);
     pageOffset = (addr & ~PAGE_MASK);
 
-
-
-
-
-
-
-
     if (!mmap_context->valid)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap context\n");
@@ -326,6 +319,7 @@ int nv_encode_caching(
             break;
 #if defined(NV_PGPROT_WRITE_COMBINED) && \
     defined(NV_PGPROT_WRITE_COMBINED_DEVICE)
+        case NV_MEMORY_DEFAULT:
         case NV_MEMORY_WRITECOMBINED:
             if (NV_ALLOW_WRITE_COMBINING(memory_type))
             {
@@ -516,13 +510,6 @@ int nvidia_mmap_helper(
         NvU64 access_start = mmap_context->access_start;
         NvU64 access_len = mmap_context->access_size;
 
-
-
-
-
-
-
-
         if (IS_REG_OFFSET(nv, access_start, access_len))
         {
             if (nv_encode_caching(&vma->vm_page_prot, NV_MEMORY_UNCACHED,
@@ -544,7 +531,7 @@ int nvidia_mmap_helper(
             else
             {
                 if (nv_encode_caching(&vma->vm_page_prot,
-                        rm_disable_iomap_wc() ? NV_MEMORY_UNCACHED : NV_MEMORY_WRITECOMBINED, 
+                        rm_disable_iomap_wc() ? NV_MEMORY_UNCACHED : mmap_context->caching, 
                         NV_MEMORY_TYPE_FRAMEBUFFER))
                 {
                     if (nv_encode_caching(&vma->vm_page_prot,

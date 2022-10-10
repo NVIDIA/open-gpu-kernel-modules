@@ -1924,6 +1924,12 @@ kgmmuExtractPteInfo_IMPL
     pPteInfo->pteFlags = FLD_SET_DRF_NUM(0080_CTRL, _DMA_PTE_INFO, _PARAMS_FLAGS_VALID,
         bPteValid, pPteInfo->pteFlags);
 
+    if (pFmtPte->version != GMMU_FMT_VERSION_3)
+    {
+        pPteInfo->pteFlags = FLD_SET_DRF_NUM(0080_CTRL, _DMA_PTE_INFO, _PARAMS_FLAGS_ENCRYPTED,
+            nvFieldGetBool(&pFmtPte->fldEncrypted, pPte->v8), pPteInfo->pteFlags);
+    }
+
     switch (gmmuFieldGetAperture(&pFmtPte->fldAperture, pPte->v8))
     {
         case GMMU_APERTURE_VIDEO:
@@ -1948,6 +1954,82 @@ kgmmuExtractPteInfo_IMPL
             break;
     }
 
+    if (pFmtPte->version == GMMU_FMT_VERSION_3)
+    {
+        KernelGmmu  *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+        NvU32        ptePcfHw;
+        NvU32        ptePcfSw = 0;
+
+        // In Version 3, parse the PCF bits and return those
+        ptePcfHw = nvFieldGet32(&pFmtPte->fldPtePcf, pPte->v8);
+        NV_ASSERT(kgmmuTranslatePtePcfFromHw_HAL(pKernelGmmu, ptePcfHw, bPteValid, &ptePcfSw) == NV_OK);
+
+        // Valid 2MB PTEs follow the same format as 64K and 4K PTEs
+        if (bPteValid)
+        {
+            if (!(ptePcfSw & (1 << SW_MMU_PCF_UNCACHED_IDX)))
+            {
+                pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                        _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
+            }
+            if (ptePcfSw & (1 << SW_MMU_PCF_RO_IDX))
+            {
+                pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                        _PARAMS_FLAGS_READ_ONLY, _TRUE, pPteInfo->pteFlags);
+            }
+            if (ptePcfSw & (1 << SW_MMU_PCF_NOATOMIC_IDX))
+            {
+                pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                        _PARAMS_FLAGS_ATOMIC, _DISABLE, pPteInfo->pteFlags);
+            }
+            if (ptePcfSw & (1 << SW_MMU_PCF_REGULAR_IDX))
+            {
+                pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                        _PARAMS_FLAGS_PRIVILEGED, _FALSE, pPteInfo->pteFlags);
+            }
+            if (ptePcfSw & (1 << SW_MMU_PCF_ACE_IDX))
+            {
+                pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                        _PARAMS_FLAGS_ACCESS_COUNTING, _ENABLE, pPteInfo->pteFlags);
+            }
+        }
+        else
+        {
+            if (pLevelFmt->numSubLevels == 0)
+            {
+                if (ptePcfSw & (1 << SW_MMU_PCF_SPARSE_IDX))
+                {
+                    pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                            _PARAMS_FLAGS_GPU_CACHED, _FALSE, pPteInfo->pteFlags);
+                }
+                else
+                {
+                    pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                            _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
+                }
+            }
+            else
+            {
+                NvU32  pdePcfHw = 0;
+                NvU32  pdePcfSw = 0;
+
+                pdePcfHw = nvFieldGet32(&pFmt->pPde->fldPdePcf, pPte->v8);
+                NV_ASSERT(kgmmuTranslatePdePcfFromHw_HAL(pKernelGmmu, pdePcfHw, GMMU_APERTURE_INVALID, &pdePcfSw) == NV_OK);
+                if (pdePcfSw & (1 << SW_MMU_PCF_SPARSE_IDX))
+                {
+                    pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                            _PARAMS_FLAGS_GPU_CACHED, _FALSE, pPteInfo->pteFlags);
+                }
+                else
+                {
+                    pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO,
+                            _PARAMS_FLAGS_GPU_CACHED, _TRUE, pPteInfo->pteFlags);
+                }
+
+            }
+        }
+    }
+    else
     {
         pPteInfo->pteFlags = FLD_SET_DRF_NUM(0080_CTRL, _DMA_PTE_INFO, _PARAMS_FLAGS_GPU_CACHED,
             !nvFieldGetBool(&pFmtPte->fldVolatile, pPte->v8), pPteInfo->pteFlags);

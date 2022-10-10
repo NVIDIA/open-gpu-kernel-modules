@@ -206,19 +206,6 @@ typedef enum
     UVM_PAGING_CHANNEL_VASPACE_FREE,
 } UVM_PAGING_CHANNEL_VASPACE_OPERATION;
 
-typedef struct VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS 
-{
-    NvU32 headIndex;
-    NvU32 maxHResolution;
-    NvU32 maxVResolution;
-} VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS;
-
-typedef struct VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS 
-{
-    NvU32 numHeads;
-    NvU32 maxNumHeads;
-} VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS;
-
 
 /*
  * Maximum guest pages that can be mapped for UVM method stream

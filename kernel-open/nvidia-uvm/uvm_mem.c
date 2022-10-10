@@ -71,11 +71,9 @@ static bool sysmem_can_be_mapped(uvm_mem_t *sysmem)
 {
     UVM_ASSERT(uvm_mem_is_sysmem(sysmem));
 
-
-
-
-
-
+    // If SEV is enabled, only unprotected memory can be mapped
+    if (g_uvm_global.sev_enabled)
+        return uvm_mem_is_sysmem_dma(sysmem);
 
     return true;
 }
@@ -451,11 +449,6 @@ static gfp_t sysmem_allocation_gfp_flags(int order, bool zero)
     return gfp_flags;
 }
 
-
-
-
-
-
 // There is a tighter coupling between allocation and mapping because of the
 // allocator UVM must use. Hence, this function does the equivalent of
 // uvm_mem_map_gpu_phys().
@@ -731,10 +724,8 @@ static NV_STATUS mem_map_cpu_to_sysmem_kernel(uvm_mem_t *mem)
             pages[page_index] = mem_cpu_page(mem, page_index * PAGE_SIZE);
     }
 
-
-
-
-
+    if (g_uvm_global.sev_enabled)
+        prot = PAGE_KERNEL_NOENC;
 
     mem->kernel.cpu_addr = vmap(pages, num_pages, VM_MAP, prot);
 
@@ -1067,18 +1058,6 @@ static NV_STATUS mem_map_gpu(uvm_mem_t *mem,
 
     page_size = mem_pick_gpu_page_size(mem, gpu, tree);
     UVM_ASSERT_MSG(uvm_mmu_page_size_supported(tree, page_size), "page_size 0x%x\n", page_size);
-
-
-
-
-
-
-
-
-
-
-
-
 
     status = uvm_page_table_range_vec_create(tree,
                                              gpu_va,

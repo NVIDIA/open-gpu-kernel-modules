@@ -304,6 +304,7 @@ typedef enum NVT_TIMING_TYPE
     NVT_TYPE_DISPLAYID_8,                             // DisplayID 2.0 enumerated timing - Type VIII
     NVT_TYPE_DISPLAYID_9,                             // DisplayID 2.0 formula-based timing - Type IX
     NVT_TYPE_DISPLAYID_10,                            // DisplayID 2.0 formula-based timing - Type X
+    NVT_TYPE_CVT_RB_3,                                // CVT timing with reduced blanking V3
 }NVT_TIMING_TYPE;
 //
 // 5. the timing sequence number like the TV format and EIA861B predefined timing format
@@ -357,6 +358,7 @@ typedef enum NVT_TV_FORMAT
 #define NVT_STATUS_CVT                       NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT, 0)        // CVT timing with regular blanking
 #define NVT_STATUS_CVT_RB                    NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT_RB,  0)    // CVT_RB timing
 #define NVT_STATUS_CVT_RB_2                  NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT_RB_2,  0)  // CVT_RB timing V2
+#define NVT_STATUS_CVT_RB_3                  NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT_RB_3,  0)  // CVT_RB timing V3
 #define NVT_STATUS_CUST                      NVT_DEF_TIMING_STATUS(NVT_TYPE_CUST,    0)    // Customized timing
 #define NVT_STATUS_EDID_DTD                  NVT_DEF_TIMING_STATUS(NVT_TYPE_EDID_DTD, 0)
 #define NVT_STATUS_EDID_STD                  NVT_DEF_TIMING_STATUS(NVT_TYPE_EDID_STD, 0)
@@ -2081,6 +2083,7 @@ typedef struct tagNVT_HDMI_LLC_INFO
 typedef struct tagNVT_HDMI_FORUM_INFO
 {
     NvU8 max_TMDS_char_rate;
+
     NvU8 threeD_Osd_Disparity       :  1;
     NvU8 dual_view                  :  1;
     NvU8 independent_View           :  1;
@@ -2089,29 +2092,40 @@ typedef struct tagNVT_HDMI_FORUM_INFO
     NvU8 cable_status               :  1;
     NvU8 rr_capable                 :  1;
     NvU8 scdc_present               :  1;
+
     NvU8 dc_30bit_420               :  1;
     NvU8 dc_36bit_420               :  1;
     NvU8 dc_48bit_420               :  1;
     NvU8 uhd_vic                    :  1;
     NvU8 max_FRL_Rate               :  4;
+
     NvU8 fapa_start_location        :  1;
     NvU8 allm                       :  1;
     NvU8 fva                        :  1;
     NvU8 cnmvrr                     :  1;
     NvU8 cinemaVrr                  :  1;
     NvU8 m_delta                    :  1;
-    NvU8 vrr_min                    :  6;
+    NvU8 fapa_end_extended          :  1;
+    NvU8 rsvd                       :  1;
+
+    NvU16 vrr_min                   :  6;
     NvU16 vrr_max                   : 10;
+
+    NvU16 dsc_MaxSlices             :  6;    
+    NvU16 dsc_MaxPclkPerSliceMHz    : 10;
+
     NvU8 dsc_10bpc                  :  1;
     NvU8 dsc_12bpc                  :  1;
     NvU8 dsc_16bpc                  :  1;
     NvU8 dsc_All_bpp                :  1;
+    NvU8 dsc_Max_FRL_Rate           :  4;
+
     NvU8 dsc_Native_420             :  1;
     NvU8 dsc_1p2                    :  1;
-    NvU8 dsc_MaxSlices              :  6;
-    NvU16 dsc_MaxPclkPerSliceMHz    : 10;
-    NvU8 dsc_Max_FRL_Rate           :  4;
+    NvU8 rsvd_2                     :  6;
+
     NvU8 dsc_totalChunkKBytes       :  7; // = 1 + EDID reported DSC_TotalChunkKBytes
+    NvU8 rsvd_3                     :  1;
 
 } NVT_HDMI_FORUM_INFO;
 
@@ -2785,10 +2799,6 @@ typedef struct tagNVT_SPD_INFOFRAME_PAYLOAD
     NvU8 productBytes[16];
 
     NvU8 sourceInformation;
-    
-    // Since HDMI Library doesn't clear the rest of the bytes and checksum is calculated for all the 32 bytes : Temporary WAR
-    NvU8 paddingBytes[3];
-
 
 } NVT_SPD_INFOFRAME_PAYLOAD;
 
@@ -3720,7 +3730,9 @@ typedef struct tagNVT_HDMI_FORUM_VSDB_PAYLOAD
     NvU8    CNMVRR                  : 1;
     NvU8    CinemaVRR               : 1;
     NvU8    M_delta                 : 1;
-    NvU8    Rsvd_2                  : 2;
+    NvU8    Rsvd_2                  : 1;
+    NvU8    FAPA_End_Extended       : 1;
+
     // sixth byte
     NvU8    VRR_min                 : 6;
     NvU8    VRR_max_high            : 2;
@@ -5253,6 +5265,7 @@ NVT_STATUS NvTiming_CalcDMT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
 NVT_STATUS NvTiming_CalcCVT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_TIMING *pT);
 NVT_STATUS NvTiming_CalcCVT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_TIMING *pT);
 NVT_STATUS NvTiming_CalcCVT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvBool is1000div1001, NVT_TIMING *pT);
+NVT_STATUS NvTiming_CalcCVT_RB3(NvU32 width, NvU32 height, NvU32 rr, NvU32 deltaHBlank, NvU32 vBlankMicroSec, NvBool isEarlyVSync, NVT_TIMING *pT);
 NvBool NvTiming_IsTimingCVTRB(const NVT_TIMING *pTiming);
 
 // CEA/EIA/Psf timing

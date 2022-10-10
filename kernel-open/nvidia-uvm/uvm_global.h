@@ -143,12 +143,11 @@ struct uvm_global_struct
         struct page *page;
     } unload_state;
 
-
-
-
-
-
-
+    // AMD Secure Encrypted Virtualization (SEV) status. True if VM has SEV
+    // enabled. This field is set once during global initialization
+    // (uvm_global_init), and can be read afterwards without acquiring any
+    // locks.
+    bool sev_enabled;
 };
 
 // Initialize global uvm state

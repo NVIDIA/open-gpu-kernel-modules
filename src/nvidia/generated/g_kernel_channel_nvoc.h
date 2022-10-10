@@ -210,6 +210,7 @@ struct KernelChannel {
     NV_STATUS (*__kchannelGetMapAddrSpace__)(struct KernelChannel *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     NV_STATUS (*__kchannelGetMemInterMapParams__)(struct KernelChannel *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__kchannelCheckMemInterUnmap__)(struct KernelChannel *, NvBool);
+    NV_STATUS (*__kchannelCreateUserMemDesc__)(struct OBJGPU *, struct KernelChannel *);
     NvBool (*__kchannelIsUserdAddrSizeValid__)(struct KernelChannel *, NvU32, NvU32);
     NV_STATUS (*__kchannelCtrlCmdResetIsolatedChannel__)(struct KernelChannel *, NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS *);
     NV_STATUS (*__kchannelCtrlCmdGetClassEngineid__)(struct KernelChannel *, NV906F_CTRL_GET_CLASS_ENGINEID_PARAMS *);
@@ -241,6 +242,8 @@ struct KernelChannel {
     NV_STATUS (*__kchannelCtrlCmdGetEngineCtxState__)(struct KernelChannel *, NVB06F_CTRL_GET_ENGINE_CTX_STATE_PARAMS *);
     NV_STATUS (*__kchannelCtrlCmdGetChannelHwState__)(struct KernelChannel *, NVB06F_CTRL_GET_CHANNEL_HW_STATE_PARAMS *);
     NV_STATUS (*__kchannelCtrlCmdSetChannelHwState__)(struct KernelChannel *, NVB06F_CTRL_SET_CHANNEL_HW_STATE_PARAMS *);
+    NV_STATUS (*__kchannelCtrlCmdSaveEngineCtxData__)(struct KernelChannel *, NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *);
+    NV_STATUS (*__kchannelCtrlCmdRestoreEngineCtxData__)(struct KernelChannel *, NVB06F_CTRL_RESTORE_ENGINE_CTX_DATA_PARAMS *);
     NV_STATUS (*__kchannelCtrlCmdGetClassEngineidC06F__)(struct KernelChannel *, NVC06F_CTRL_GET_CLASS_ENGINEID_PARAMS *);
     NV_STATUS (*__kchannelCtrlCmdResetChannelC06F__)(struct KernelChannel *, NVC06F_CTRL_CMD_RESET_CHANNEL_PARAMS *);
     NV_STATUS (*__kchannelCtrlCmdGpFifoScheduleC06F__)(struct KernelChannel *, NVC06F_CTRL_GPFIFO_SCHEDULE_PARAMS *);
@@ -352,6 +355,8 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_
 #define kchannelGetMapAddrSpace(pKernelChannel, pCallContext, mapFlags, pAddrSpace) kchannelGetMapAddrSpace_DISPATCH(pKernelChannel, pCallContext, mapFlags, pAddrSpace)
 #define kchannelGetMemInterMapParams(pKernelChannel, pParams) kchannelGetMemInterMapParams_DISPATCH(pKernelChannel, pParams)
 #define kchannelCheckMemInterUnmap(pKernelChannel, bSubdeviceHandleProvided) kchannelCheckMemInterUnmap_DISPATCH(pKernelChannel, bSubdeviceHandleProvided)
+#define kchannelCreateUserMemDesc(pGpu, arg0) kchannelCreateUserMemDesc_DISPATCH(pGpu, arg0)
+#define kchannelCreateUserMemDesc_HAL(pGpu, arg0) kchannelCreateUserMemDesc_DISPATCH(pGpu, arg0)
 #define kchannelIsUserdAddrSizeValid(pKernelChannel, userdAddrLo, userdAddrHi) kchannelIsUserdAddrSizeValid_DISPATCH(pKernelChannel, userdAddrLo, userdAddrHi)
 #define kchannelIsUserdAddrSizeValid_HAL(pKernelChannel, userdAddrLo, userdAddrHi) kchannelIsUserdAddrSizeValid_DISPATCH(pKernelChannel, userdAddrLo, userdAddrHi)
 #define kchannelCtrlCmdResetIsolatedChannel(pKernelChannel, pResetParams) kchannelCtrlCmdResetIsolatedChannel_DISPATCH(pKernelChannel, pResetParams)
@@ -384,6 +389,8 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_
 #define kchannelCtrlCmdGetEngineCtxState(pKernelChannel, pCtxStateParams) kchannelCtrlCmdGetEngineCtxState_DISPATCH(pKernelChannel, pCtxStateParams)
 #define kchannelCtrlCmdGetChannelHwState(pKernelChannel, pParams) kchannelCtrlCmdGetChannelHwState_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlCmdSetChannelHwState(pKernelChannel, pParams) kchannelCtrlCmdSetChannelHwState_DISPATCH(pKernelChannel, pParams)
+#define kchannelCtrlCmdSaveEngineCtxData(pKernelChannel, pCtxBuffParams) kchannelCtrlCmdSaveEngineCtxData_DISPATCH(pKernelChannel, pCtxBuffParams)
+#define kchannelCtrlCmdRestoreEngineCtxData(pKernelChannel, pCtxBuffParams) kchannelCtrlCmdRestoreEngineCtxData_DISPATCH(pKernelChannel, pCtxBuffParams)
 #define kchannelCtrlCmdGetClassEngineidC06F(pKernelChannel, pParams) kchannelCtrlCmdGetClassEngineidC06F_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlCmdResetChannelC06F(pKernelChannel, pResetChannelParams) kchannelCtrlCmdResetChannelC06F_DISPATCH(pKernelChannel, pResetChannelParams)
 #define kchannelCtrlCmdGpFifoScheduleC06F(pKernelChannel, pSchedParams) kchannelCtrlCmdGpFifoScheduleC06F_DISPATCH(pKernelChannel, pSchedParams)
@@ -593,19 +600,6 @@ static inline NV_STATUS kchannelDestroyUserdMemDesc(struct OBJGPU *pGpu, struct 
 
 #define kchannelDestroyUserdMemDesc_HAL(pGpu, arg0) kchannelDestroyUserdMemDesc(pGpu, arg0)
 
-NV_STATUS kchannelCreateUserMemDesc_GM107(struct OBJGPU *pGpu, struct KernelChannel *arg0);
-
-#ifdef __nvoc_kernel_channel_h_disabled
-static inline NV_STATUS kchannelCreateUserMemDesc(struct OBJGPU *pGpu, struct KernelChannel *arg0) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_channel_h_disabled
-#define kchannelCreateUserMemDesc(pGpu, arg0) kchannelCreateUserMemDesc_GM107(pGpu, arg0)
-#endif //__nvoc_kernel_channel_h_disabled
-
-#define kchannelCreateUserMemDesc_HAL(pGpu, arg0) kchannelCreateUserMemDesc(pGpu, arg0)
-
 NV_STATUS kchannelGetEngine_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 *engDesc);
 
 #ifdef __nvoc_kernel_channel_h_disabled
@@ -720,9 +714,23 @@ static inline NV_STATUS kchannelCheckMemInterUnmap_DISPATCH(struct KernelChannel
     return pKernelChannel->__kchannelCheckMemInterUnmap__(pKernelChannel, bSubdeviceHandleProvided);
 }
 
+NV_STATUS kchannelCreateUserMemDesc_GM107(struct OBJGPU *pGpu, struct KernelChannel *arg0);
+
+NV_STATUS kchannelCreateUserMemDesc_GA10B(struct OBJGPU *pGpu, struct KernelChannel *arg0);
+
+static inline NV_STATUS kchannelCreateUserMemDesc_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *arg0) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kchannelCreateUserMemDesc_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *arg0) {
+    return arg0->__kchannelCreateUserMemDesc__(pGpu, arg0);
+}
+
 NvBool kchannelIsUserdAddrSizeValid_GV100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
 
 NvBool kchannelIsUserdAddrSizeValid_GA100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
+
+NvBool kchannelIsUserdAddrSizeValid_GH100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
 
 static inline NvBool kchannelIsUserdAddrSizeValid_cbe027(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi) {
     return ((NvBool)(0 == 0));
@@ -936,6 +944,18 @@ NV_STATUS kchannelCtrlCmdSetChannelHwState_IMPL(struct KernelChannel *pKernelCha
 
 static inline NV_STATUS kchannelCtrlCmdSetChannelHwState_DISPATCH(struct KernelChannel *pKernelChannel, NVB06F_CTRL_SET_CHANNEL_HW_STATE_PARAMS *pParams) {
     return pKernelChannel->__kchannelCtrlCmdSetChannelHwState__(pKernelChannel, pParams);
+}
+
+NV_STATUS kchannelCtrlCmdSaveEngineCtxData_IMPL(struct KernelChannel *pKernelChannel, NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *pCtxBuffParams);
+
+static inline NV_STATUS kchannelCtrlCmdSaveEngineCtxData_DISPATCH(struct KernelChannel *pKernelChannel, NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *pCtxBuffParams) {
+    return pKernelChannel->__kchannelCtrlCmdSaveEngineCtxData__(pKernelChannel, pCtxBuffParams);
+}
+
+NV_STATUS kchannelCtrlCmdRestoreEngineCtxData_IMPL(struct KernelChannel *pKernelChannel, NVB06F_CTRL_RESTORE_ENGINE_CTX_DATA_PARAMS *pCtxBuffParams);
+
+static inline NV_STATUS kchannelCtrlCmdRestoreEngineCtxData_DISPATCH(struct KernelChannel *pKernelChannel, NVB06F_CTRL_RESTORE_ENGINE_CTX_DATA_PARAMS *pCtxBuffParams) {
+    return pKernelChannel->__kchannelCtrlCmdRestoreEngineCtxData__(pKernelChannel, pCtxBuffParams);
 }
 
 static inline NV_STATUS kchannelCtrlCmdGetClassEngineidC06F_6a9a13(struct KernelChannel *pKernelChannel, NVC06F_CTRL_GET_CLASS_ENGINEID_PARAMS *pParams) {

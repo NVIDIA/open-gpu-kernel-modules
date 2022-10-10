@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021 NVIDIA Corporation
+    Copyright (c) 2021-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -116,6 +116,14 @@ extern "C" {
 #define NVA16F_GP_ENTRY1_LEVEL_MAIN                    0x00000000
 #define NVA16F_GP_ENTRY1_LEVEL_SUBROUTINE              0x00000001
 #define NVA16F_GP_ENTRY1_LENGTH                             30:10
+#define NVA16F_GP_ENTRY1_SYNC                               31:31
+#define NVA16F_GP_ENTRY1_SYNC_PROCEED                  0x00000000
+#define NVA16F_GP_ENTRY1_SYNC_WAIT                     0x00000001
+#define NVA16F_GP_ENTRY1_OPCODE                               7:0
+#define NVA16F_GP_ENTRY1_OPCODE_NOP                    0x00000000
+#define NVA16F_GP_ENTRY1_OPCODE_ILLEGAL                0x00000001
+#define NVA16F_GP_ENTRY1_OPCODE_GP_CRC                 0x00000002
+#define NVA16F_GP_ENTRY1_OPCODE_PB_CRC                 0x00000003
 
 /* dma method formats */
 #define NVA16F_DMA_METHOD_ADDRESS                                  11:0

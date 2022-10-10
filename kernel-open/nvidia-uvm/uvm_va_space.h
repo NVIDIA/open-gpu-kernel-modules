@@ -44,9 +44,6 @@
 #include "uvm_ats.h"
 #include "uvm_va_space_mm.h"
 
-
-
-
 // uvm_deferred_free_object provides a mechanism for building and later freeing
 // a list of objects which are owned by a VA space, but can't be freed while the
 // VA space lock is held.
@@ -279,13 +276,6 @@ struct uvm_va_space_struct
     // contain information for up to UVM_ID_MAX_GPUS nodes. The information is
     // stored in the VA space to avoid taking the global lock.
     uvm_cpu_gpu_affinity_t gpu_cpu_numa_affinity[UVM_ID_MAX_GPUS];
-
-
-
-
-
-
-
 
     // Array of GPU VA spaces
     uvm_gpu_va_space_t *gpu_va_spaces[UVM_ID_MAX_GPUS];

@@ -62,6 +62,8 @@ struct KernelSec2 {
     NV_STATUS (*__ksec2ResetHw__)(struct OBJGPU *, struct KernelSec2 *);
     NvBool (*__ksec2IsEngineInReset__)(struct OBJGPU *, struct KernelSec2 *);
     NvU32 (*__ksec2ReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelSec2 *, NvU32);
+    const BINDATA_ARCHIVE *(*__ksec2GetBinArchiveBlUcode__)(struct OBJGPU *, struct KernelSec2 *);
+    NV_STATUS (*__ksec2GetGenericBlUcode__)(struct OBJGPU *, struct KernelSec2 *, const RM_FLCN_BL_DESC **, const NvU8 **);
     NV_STATUS (*__ksec2ReconcileTunableState__)(POBJGPU, struct KernelSec2 *, void *);
     NV_STATUS (*__ksec2StateLoad__)(POBJGPU, struct KernelSec2 *, NvU32);
     NV_STATUS (*__ksec2StateUnload__)(POBJGPU, struct KernelSec2 *, NvU32);
@@ -125,6 +127,10 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 #define ksec2IsEngineInReset_HAL(pGpu, pKernelSec2) ksec2IsEngineInReset_DISPATCH(pGpu, pKernelSec2)
 #define ksec2ReadUcodeFuseVersion(pGpu, pKernelSec2, ucodeId) ksec2ReadUcodeFuseVersion_DISPATCH(pGpu, pKernelSec2, ucodeId)
 #define ksec2ReadUcodeFuseVersion_HAL(pGpu, pKernelSec2, ucodeId) ksec2ReadUcodeFuseVersion_DISPATCH(pGpu, pKernelSec2, ucodeId)
+#define ksec2GetBinArchiveBlUcode(pGpu, pKernelSec2) ksec2GetBinArchiveBlUcode_DISPATCH(pGpu, pKernelSec2)
+#define ksec2GetBinArchiveBlUcode_HAL(pGpu, pKernelSec2) ksec2GetBinArchiveBlUcode_DISPATCH(pGpu, pKernelSec2)
+#define ksec2GetGenericBlUcode(pGpu, pKernelSec2, ppDesc, ppImg) ksec2GetGenericBlUcode_DISPATCH(pGpu, pKernelSec2, ppDesc, ppImg)
+#define ksec2GetGenericBlUcode_HAL(pGpu, pKernelSec2, ppDesc, ppImg) ksec2GetGenericBlUcode_DISPATCH(pGpu, pKernelSec2, ppDesc, ppImg)
 #define ksec2ReconcileTunableState(pGpu, pEngstate, pTunableState) ksec2ReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define ksec2StateLoad(pGpu, pEngstate, arg0) ksec2StateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define ksec2StateUnload(pGpu, pEngstate, arg0) ksec2StateUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -144,32 +150,6 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 #define ksec2AllocTunableState(pGpu, pEngstate, ppTunableState) ksec2AllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
 #define ksec2SetTunableState(pGpu, pEngstate, pTunableState) ksec2SetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define ksec2IsPresent(pGpu, pEngstate) ksec2IsPresent_DISPATCH(pGpu, pEngstate)
-const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-#ifdef __nvoc_kernel_sec2_h_disabled
-static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelSec2 was disabled!");
-    return NULL;
-}
-#else //__nvoc_kernel_sec2_h_disabled
-#define ksec2GetBinArchiveBlUcode(pGpu, pKernelSec2) ksec2GetBinArchiveBlUcode_TU102(pGpu, pKernelSec2)
-#endif //__nvoc_kernel_sec2_h_disabled
-
-#define ksec2GetBinArchiveBlUcode_HAL(pGpu, pKernelSec2) ksec2GetBinArchiveBlUcode(pGpu, pKernelSec2)
-
-NV_STATUS ksec2GetGenericBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, const RM_FLCN_BL_DESC **ppDesc, const NvU8 **ppImg);
-
-#ifdef __nvoc_kernel_sec2_h_disabled
-static inline NV_STATUS ksec2GetGenericBlUcode(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, const RM_FLCN_BL_DESC **ppDesc, const NvU8 **ppImg) {
-    NV_ASSERT_FAILED_PRECOMP("KernelSec2 was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_sec2_h_disabled
-#define ksec2GetGenericBlUcode(pGpu, pKernelSec2, ppDesc, ppImg) ksec2GetGenericBlUcode_TU102(pGpu, pKernelSec2, ppDesc, ppImg)
-#endif //__nvoc_kernel_sec2_h_disabled
-
-#define ksec2GetGenericBlUcode_HAL(pGpu, pKernelSec2, ppDesc, ppImg) ksec2GetGenericBlUcode(pGpu, pKernelSec2, ppDesc, ppImg)
-
 NV_STATUS ksec2ConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0);
 
 static inline NV_STATUS ksec2ConstructEngine_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0) {
@@ -226,6 +206,26 @@ static inline NvU32 ksec2ReadUcodeFuseVersion_474d46(struct OBJGPU *pGpu, struct
 
 static inline NvU32 ksec2ReadUcodeFuseVersion_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
     return pKernelSec2->__ksec2ReadUcodeFuseVersion__(pGpu, pKernelSec2, ucodeId);
+}
+
+const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+
+static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_80f438(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, ((void *)0));
+}
+
+static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
+    return pKernelSec2->__ksec2GetBinArchiveBlUcode__(pGpu, pKernelSec2);
+}
+
+NV_STATUS ksec2GetGenericBlUcode_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, const RM_FLCN_BL_DESC **ppDesc, const NvU8 **ppImg);
+
+static inline NV_STATUS ksec2GetGenericBlUcode_5baef9(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, const RM_FLCN_BL_DESC **ppDesc, const NvU8 **ppImg) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS ksec2GetGenericBlUcode_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, const RM_FLCN_BL_DESC **ppDesc, const NvU8 **ppImg) {
+    return pKernelSec2->__ksec2GetGenericBlUcode__(pGpu, pKernelSec2, ppDesc, ppImg);
 }
 
 static inline NV_STATUS ksec2ReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {

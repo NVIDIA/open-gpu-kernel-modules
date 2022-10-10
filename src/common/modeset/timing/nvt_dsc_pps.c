@@ -283,6 +283,114 @@ static const NvU8 maxqp444_12b[15][61]={
        ,{23,23,22,22,21,21,21,21,20,20,19,19,19,19,18,18,18,17,17,17,16,16,16,16,15,15,14,14,14,14,14,13,13,12,12,12,12,12,11,11,10,10,10,10,10, 9, 9, 8, 8, 8, 8, 8, 7, 7, 6, 6, 6, 6, 5, 5, 4}
 };
 
+static const NvU8 minqp422_8b[15][21] = {
+        {0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{3 ,3 ,3 ,3 ,3 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{3 ,3 ,3 ,3 ,3 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0}
+       ,{3 ,3 ,3 ,3 ,3 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0}
+       ,{3 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,0 ,0}
+       ,{3 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1}
+       ,{3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1}
+       ,{5 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,4 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,1 ,1 ,1}
+       ,{5 ,5 ,5 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,1 ,1}
+       ,{5 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,1 ,1}
+       ,{8 ,8 ,7 ,7 ,7 ,7 ,7 ,7 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,2}
+       ,{12,12,11,11,10,10,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,3 ,3}
+};
+
+static const NvU8 maxqp422_8b[15][21] = {
+        {4 ,4 ,3 ,3 ,2 ,2 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{4 ,4 ,4 ,4 ,4 ,3 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{5 ,5 ,5 ,5 ,5 ,4 ,3 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0}
+       ,{6 ,6 ,6 ,6 ,6 ,5 ,4 ,3 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0}
+       ,{7 ,7 ,7 ,7 ,7 ,6 ,5 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1}
+       ,{7 ,7 ,7 ,7 ,7 ,6 ,5 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1}
+       ,{7 ,7 ,7 ,7 ,7 ,6 ,5 ,4 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1}
+       ,{8 ,8 ,8 ,8 ,8 ,7 ,6 ,5 ,4 ,4 ,4 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,1 ,1}
+       ,{9 ,9 ,9 ,8 ,8 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2}
+       ,{10,10,9 ,9 ,9 ,8 ,7 ,6 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2}
+       ,{10,10,10,9 ,9 ,8 ,7 ,7 ,6 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,2}
+       ,{11,11,10,10,9 ,9 ,8 ,7 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2}
+       ,{11,11,11,10,9 ,9 ,8 ,8 ,7 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,2}
+       ,{12,12,11,11,10,10,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,3 ,3 ,3}
+       ,{13,13,12,12,11,11,10,10,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4}
+};
+
+static const NvU8 minqp422_10b[15][29] = {
+        {0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{4 ,4 ,4 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{5 ,5 ,5 ,4 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{6 ,6 ,6 ,6 ,5 ,4 ,4 ,4 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{6 ,6 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,4 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0}
+       ,{6 ,6 ,6 ,6 ,6 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,4 ,4 ,4 ,4 ,3 ,3 ,3 ,3 ,2 ,1 ,1 ,0 ,0 ,0 ,0 ,0}
+       ,{6 ,6 ,6 ,6 ,6 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,1 ,1 ,1 ,0 ,0 ,0}
+       ,{7 ,7 ,7 ,7 ,7 ,6 ,6 ,6 ,6 ,6 ,6 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,1 ,1 ,1 ,1 ,1}
+       ,{7 ,7 ,7 ,7 ,7 ,6 ,6 ,6 ,6 ,6 ,6 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,4 ,3 ,2 ,2 ,1 ,1 ,1 ,1 ,1}
+       ,{8 ,8 ,7 ,7 ,7 ,7 ,7 ,7 ,7 ,7 ,7 ,7 ,6 ,6 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,1 ,1 ,1 ,1}
+       ,{9 ,9 ,9 ,8 ,8 ,8 ,8 ,8 ,8 ,8 ,8 ,7 ,7 ,6 ,6 ,6 ,5 ,5 ,5 ,5 ,5 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1}
+       ,{9 ,9 ,9 ,9 ,8 ,8 ,8 ,8 ,8 ,8 ,8 ,8 ,7 ,7 ,6 ,6 ,6 ,6 ,6 ,5 ,5 ,4 ,3 ,3 ,2 ,2 ,1 ,1 ,1}
+       ,{9 ,9 ,9 ,9 ,9 ,9 ,9 ,9 ,9 ,9 ,9 ,8 ,8 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,3 ,3 ,3 ,2 ,2 ,1 ,1}
+       ,{12,12,11,11,11,11,11,11,11,11,10,10,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,1}
+       ,{16,16,15,15,14,14,13,13,12,12,11,11,10,10,9 ,9 ,8 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,3}
+};
+
+static const NvU8 maxqp422_10b[15][29] = {
+        {8 ,8 ,7 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{8 ,8 ,8 ,6 ,6 ,5 ,4 ,4 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{9 ,9 ,9 ,8 ,7 ,6 ,5 ,4 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0}
+       ,{10,10,10,10,9 ,8 ,7 ,6 ,5 ,5 ,5 ,5 ,5 ,4 ,4 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1}
+       ,{11,11,11,11,10,9 ,8 ,6 ,5 ,5 ,5 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1}
+       ,{11,11,11,11,11,10,9 ,8 ,7 ,6 ,6 ,5 ,5 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,3 ,2 ,2 ,1 ,1 ,1 ,1 ,1}
+       ,{11,11,11,11,11,10,9 ,8 ,7 ,7 ,7 ,7 ,7 ,6 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1}
+       ,{12,12,12,12,12,11,10,9 ,8 ,8 ,8 ,7 ,7 ,7 ,7 ,6 ,5 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,2 ,2 ,2}
+       ,{13,13,13,12,12,11,10,10,9 ,9 ,9 ,8 ,8 ,7 ,7 ,7 ,6 ,5 ,5 ,5 ,5 ,4 ,3 ,3 ,2 ,2 ,2 ,2 ,2}
+       ,{14,14,13,13,13,12,11,10,9 ,9 ,9 ,9 ,8 ,8 ,8 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,2 ,2}
+       ,{14,14,14,13,13,12,11,11,10,10,10,9 ,9 ,8 ,8 ,8 ,7 ,7 ,6 ,6 ,6 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2}
+       ,{15,15,14,14,13,13,12,11,11,11,10,10,9 ,9 ,8 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,2}
+       ,{15,15,15,14,13,13,12,12,11,11,11,10,10,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2}
+       ,{16,16,15,15,14,14,13,13,12,12,11,11,10,10,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,3 ,3 ,2}
+       ,{17,17,16,16,15,15,14,14,13,13,12,12,11,11,10,10,9 ,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,6 ,5 ,5 ,4}
+};
+
+static const NvU8 minqp422_12b[15][37] = {
+        {0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{4 ,4 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{9 ,9 ,9 ,8 ,7 ,6 ,5 ,5 ,4 ,4 ,4 ,4 ,4 ,4 ,3 ,3 ,2 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{10,10,10,10,8 ,8 ,8 ,7 ,6 ,6 ,6 ,6 ,6 ,5 ,4 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{11,11,11,11,10,9 ,9 ,8 ,7 ,7 ,7 ,7 ,6 ,6 ,5 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{11,11,11,11,11,10,10,9 ,9 ,8 ,8 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,3 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{11,11,11,11,11,10,10,10,9 ,9 ,9 ,9 ,8 ,7 ,7 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,0 ,0 ,0 ,0}
+       ,{11,11,11,11,11,11,10,10,10,10,10,9 ,8 ,8 ,8 ,7 ,6 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,0 ,0 ,0}
+       ,{11,11,11,11,11,11,11,11,11,11,11,10,9 ,8 ,8 ,8 ,7 ,6 ,6 ,6 ,6 ,5 ,4 ,4 ,3 ,3 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,1 ,0 ,0 ,0}
+       ,{11,11,11,11,11,11,11,11,11,11,11,11,9 ,9 ,9 ,8 ,7 ,7 ,6 ,6 ,6 ,5 ,5 ,4 ,4 ,3 ,3 ,3 ,3 ,3 ,3 ,2 ,2 ,1 ,1 ,0 ,0}
+       ,{13,13,13,13,13,12,12,12,12,12,12,11,11,10,10,10,9 ,9 ,8 ,8 ,8 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,1 ,1 ,1}
+       ,{13,13,13,13,13,13,13,13,13,13,12,12,11,11,10,10,10,9 ,9 ,8 ,8 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,1 ,1}
+       ,{13,13,13,13,13,13,13,13,13,13,13,12,12,11,11,10,10,9 ,9 ,8 ,8 ,7 ,6 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,1 ,1}
+       ,{16,16,15,15,15,15,15,15,15,15,14,14,13,13,12,12,11,11,10,10,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2}
+       ,{20,20,19,19,18,18,17,17,16,16,15,15,14,14,13,13,12,12,12,11,11,10,10,9 ,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,6 ,5 ,5 ,4 ,4}
+};
+
+static const NvU8 maxqp422_12b[15][37] = {
+        {12,12,11,9 ,6 ,6 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{12,12,12,10,9 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{13,13,13,12,10,9 ,8 ,7 ,6 ,6 ,6 ,6 ,6 ,6 ,5 ,5 ,4 ,3 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{14,14,14,14,12,11,10,9 ,8 ,8 ,8 ,8 ,8 ,7 ,6 ,5 ,5 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,2 ,2 ,2 ,1 ,1 ,0 ,0 ,0 ,0 ,0 ,0}
+       ,{15,15,15,15,14,13,12,10,9 ,9 ,9 ,9 ,8 ,8 ,7 ,6 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,0 ,0 ,0}
+       ,{15,15,15,15,15,14,13,12,11,10,10,9 ,8 ,8 ,7 ,7 ,7 ,6 ,6 ,6 ,6 ,5 ,4 ,4 ,3 ,3 ,3 ,2 ,2 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,1}
+       ,{15,15,15,15,15,14,13,12,11,11,11,11,10,9 ,9 ,9 ,8 ,8 ,7 ,7 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,4 ,3 ,3 ,2 ,2 ,1 ,1 ,1 ,1}
+       ,{16,16,16,16,16,15,14,13,12,12,12,11,10,10,10,9 ,8 ,8 ,8 ,7 ,7 ,7 ,6 ,6 ,5 ,5 ,5 ,5 ,5 ,3 ,3 ,3 ,2 ,2 ,1 ,1 ,1}
+       ,{17,17,17,16,16,15,14,14,13,13,13,12,11,10,10,10,9 ,8 ,8 ,8 ,8 ,7 ,6 ,6 ,5 ,5 ,5 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,1 ,1 ,1}
+       ,{18,18,17,17,17,16,15,14,13,13,13,13,11,11,11,10,9 ,9 ,8 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,1 ,1}
+       ,{18,18,18,17,17,16,15,15,14,14,14,13,13,12,12,12,11,11,10,10,10,8 ,8 ,7 ,7 ,7 ,6 ,6 ,6 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,2}
+       ,{19,19,18,18,17,17,16,15,15,15,14,14,13,13,12,12,12,11,11,10,10,9 ,8 ,8 ,7 ,7 ,6 ,6 ,6 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,2}
+       ,{19,19,19,18,17,17,16,16,15,15,15,14,14,13,13,12,12,11,11,10,10,9 ,8 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,4 ,4 ,3 ,3 ,2 ,2}
+       ,{20,20,19,19,18,18,17,17,16,16,15,15,14,14,13,13,12,12,11,11,10,10,9 ,9 ,8 ,8 ,7 ,7 ,6 ,6 ,5 ,5 ,5 ,4 ,4 ,3 ,3}
+       ,{21,21,20,20,19,19,18,18,17,17,16,16,15,15,14,14,13,13,13,12,12,11,11,10,10,10,9 ,9 ,8 ,8 ,7 ,7 ,7 ,6 ,6 ,5 ,5}
+};
+
 static const NvU32 rcBufThresh[] = { 896, 1792, 2688, 3584, 4480, 5376, 6272, 6720, 7168, 7616, 7744, 7872, 8000, 8064 };
 
 /* ------------------------ Static Variables ------------------------------- */
@@ -369,7 +477,7 @@ DSC_PpsCalcExtraBits
     DSC_OUTPUT_PARAMS *out
 )
 {
-    NvU32 numSsps = 3;
+    NvU32 numSsps = out->native_422 ? 4 : 3;
     NvU32 sliceBits;
     NvU32 extra_bits;
     NvU32 bitsPerComponent = out->bits_per_component;
@@ -418,6 +526,7 @@ DSC_PpsCalcRcInitValue
 )
 {
     NvU32 bitsPerPixel = out->bits_per_pixel;
+    NvU32 xmit_delay;
     out->rc_model_size = 8192;
 
     if (out->native_422)
@@ -427,7 +536,7 @@ DSC_PpsCalcRcInitValue
             out->initial_offset = 2048;
         else if (bitsPerPixel >= 14 * BPP_UNIT)
             out->initial_offset = 5632 - ((bitsPerPixel - 14 * BPP_UNIT) * 1792 + BPP_UNIT / 2) / BPP_UNIT;
-        else if (bitsPerPixel >= 12 * BPP_UNIT)
+        else
             out->initial_offset = 5632;
     }
     else
@@ -450,10 +559,50 @@ DSC_PpsCalcRcInitValue
     }
     RANGE_CHECK("initial_scale_value", out->initial_scale_value, 0, 63);
 
-    out->initial_xmit_delay = (4096*BPP_UNIT + bitsPerPixel / 2) / bitsPerPixel;
-    //RANGE_CHECK("initial_xmit_delay", out->initial_xmit_delay, 0, 1023);
+    xmit_delay = (4096*BPP_UNIT + bitsPerPixel/2) / bitsPerPixel;
+
+    if (out->native_420 || out->native_422)
+    {
+	    NvU32 slicew = (out->native_420 || out->native_422) ? out->slice_width / 2 : out->slice_width;
+	    NvU32 padding_pixels = ((slicew % 3) ? (3 - (slicew % 3)) : 0) * (xmit_delay / slicew);
+	    if (3 * bitsPerPixel >= ((xmit_delay + 2) / 3) * (out->native_422 ? 4 : 3) * BPP_UNIT &&
+			    (((xmit_delay + padding_pixels) % 3) == 1))
+        {
+		    xmit_delay++;
+	    }
+    }
+    out->initial_xmit_delay = xmit_delay;
+    RANGE_CHECK("initial_xmit_delay", out->initial_xmit_delay, 0, 1023);
 
     return NVT_STATUS_SUCCESS;
+}
+
+static NvU32 DSC_PpsCalcComputeOffset(DSC_OUTPUT_PARAMS *out, NvU32 grpcnt)
+{
+	NvU32 offset = 0;
+	NvU32 groupsPerLine = out->groups_per_line;
+	NvU32 grpcnt_id = (out->initial_xmit_delay + PIXELS_PER_GROUP - 1) / PIXELS_PER_GROUP;
+
+	if(grpcnt <= grpcnt_id)
+		offset = (grpcnt * PIXELS_PER_GROUP * out->bits_per_pixel + BPP_UNIT - 1) / BPP_UNIT;
+	else
+		offset = (grpcnt_id * PIXELS_PER_GROUP * out->bits_per_pixel + BPP_UNIT - 1) / BPP_UNIT - (((grpcnt-grpcnt_id) * out->slice_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
+
+	if(grpcnt <= groupsPerLine)
+		offset += grpcnt * out->first_line_bpg_offset;
+	else
+		offset += groupsPerLine * out->first_line_bpg_offset - (((grpcnt - groupsPerLine) * out->nfl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
+
+	if(out->native_420)
+	{
+		if(grpcnt <= groupsPerLine)
+			offset -= (grpcnt * out->nsl_bpg_offset) >> OFFSET_FRACTIONAL_BITS;
+		else if(grpcnt <= 2*groupsPerLine)
+			offset += (grpcnt - groupsPerLine) * out->second_line_bpg_offset - ((groupsPerLine * out->nsl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
+		else
+			offset += (grpcnt - groupsPerLine) * out->second_line_bpg_offset - (((grpcnt - groupsPerLine) * out->nsl_bpg_offset)>>OFFSET_FRACTIONAL_BITS);
+	}
+	return(offset);
 }
 
 /*
@@ -477,6 +626,7 @@ NvU32 DSC_PpsCalcBpg
     NvU32 bitsPerPixel;
     NvU32 rbsMin;
     NvU32 hrdDelay;
+    NvU32 groups_total;
 
     if (out->native_422)
         uncompressedBpgRate = PIXELS_PER_GROUP * out->bits_per_component * 4;
@@ -515,9 +665,35 @@ NvU32 DSC_PpsCalcBpg
     out->second_line_offset_adj = out->native_420 ? 512 : 0;
 
     bitsPerPixel = out->bits_per_pixel;
-    rbsMin = out->rc_model_size - out->initial_offset
+    groups_total = out->groups_per_line * out->slice_height;
+    out->slice_bpg_offset = (((out->rc_model_size - out->initial_offset + out->num_extra_mux_bits) << OFFSET_FRACTIONAL_BITS)
+                + groups_total - 1) / groups_total;
+    RANGE_CHECK("slice_bpg_offset", out->slice_bpg_offset, 0, 65535);
+
+    if((PIXELS_PER_GROUP * bitsPerPixel << OFFSET_FRACTIONAL_BITS) - (out->slice_bpg_offset + out->nfl_bpg_offset) * BPP_UNIT
+            < (1+5*PIXELS_PER_GROUP)*BPP_UNIT <<OFFSET_FRACTIONAL_BITS )
+    {
+        return NVT_STATUS_ERR;
+    }
+
+    if (((out->dsc_version_major > 1) || (out->dsc_version_major == 1 && out->dsc_version_minor >= 2)) &&
+        (out->native_420 || out->native_422))
+    {
+        // OPTIMIZED computation of rbsMin:
+        // Compute max by sampling offset at points of inflection
+        // *MODEL NOTE* MN_RBS_MIN
+        NvU32 maxOffset;
+        maxOffset = DSC_PpsCalcComputeOffset(out, (out->initial_xmit_delay+PIXELS_PER_GROUP-1)/PIXELS_PER_GROUP );  // After initial delay
+        maxOffset = MAX(maxOffset, DSC_PpsCalcComputeOffset(out, out->groups_per_line));   // After first line
+        maxOffset = MAX(maxOffset, DSC_PpsCalcComputeOffset(out, 2*out->groups_per_line));
+        rbsMin = out->rc_model_size - out->initial_offset + maxOffset;
+    }
+    else
+    { // DSC 1.1 method
+        rbsMin = out->rc_model_size - out->initial_offset
             + (out->initial_xmit_delay * bitsPerPixel + BPP_UNIT - 1) / BPP_UNIT
             + out->groups_per_line * out->first_line_bpg_offset;
+    }
     hrdDelay = (rbsMin * BPP_UNIT + bitsPerPixel - 1) / bitsPerPixel;
     out->initial_dec_delay = hrdDelay - out->initial_xmit_delay;
     RANGE_CHECK("initial_dec_delay", out->initial_dec_delay, 0, 65535);
@@ -526,7 +702,7 @@ NvU32 DSC_PpsCalcBpg
 }
 
 /*
- * @brief Calculate slice_bpg_offset, final_offset and scale_increment_interval,
+ * @brief Calculate final_offset and scale_increment_interval,
  *        scale_decrement_interval
  *
  * @param[in/out]   out   DSC output parameter
@@ -541,22 +717,9 @@ DSC_PpsCalcScaleInterval
 )
 {
     NvU32 final_scale;
-    NvU32 groups_total;
-    NvU32 bitsPerPixel = out->bits_per_pixel;
 
-    groups_total = out->groups_per_line * out->slice_height;
-    out->slice_bpg_offset = (((out->rc_model_size - out->initial_offset + out->num_extra_mux_bits) << OFFSET_FRACTIONAL_BITS)
-                + groups_total - 1) / groups_total;
-    RANGE_CHECK("slice_bpg_offset", out->slice_bpg_offset, 0, 65535);
-
-    if ((PIXELS_PER_GROUP * bitsPerPixel << OFFSET_FRACTIONAL_BITS) - (out->slice_bpg_offset + out->nfl_bpg_offset) * BPP_UNIT
-        < (1 + 5 * PIXELS_PER_GROUP) * BPP_UNIT << OFFSET_FRACTIONAL_BITS)
-    {
-        DSC_Print("The bits/pixel allocation for non-first lines is too low (<5.33bpp).");
-        DSC_Print("Consider decreasing FIRST_LINE_BPG_OFFSET.");
-    }
-
-    out->final_offset = out->rc_model_size - (out->initial_xmit_delay * bitsPerPixel + 8)/BPP_UNIT + out->num_extra_mux_bits;
+    out->final_offset = (out->rc_model_size - (out->initial_xmit_delay * out->bits_per_pixel + 8) /
+                         BPP_UNIT + out->num_extra_mux_bits);
     RANGE_CHECK("final_offset", out->final_offset, 0, out->rc_model_size-1); //try increase initial_xmit_delay
 
     final_scale = 8 * out->rc_model_size / (out->rc_model_size - out->final_offset);
@@ -571,7 +734,8 @@ DSC_PpsCalcScaleInterval
         //   for that configuration.
         //
         out->scale_increment_interval = (out->final_offset << OFFSET_FRACTIONAL_BITS) /
-                                        ((final_scale - 9) * (out->nfl_bpg_offset + out->slice_bpg_offset + out->nsl_bpg_offset));
+                                        ((final_scale - 9) * (out->nfl_bpg_offset +
+                                        out->slice_bpg_offset + out->nsl_bpg_offset));
         RANGE_CHECK("scale_increment_interval", out->scale_increment_interval, 0, 65535);
     }
     else
@@ -607,6 +771,9 @@ DSC_PpsCalcRcParam
     NvU32 bpcm8 = out->bits_per_component - 8;
     NvU32 yuv_modifier = out->convert_rgb == 0 && out->dsc_version_minor == 1;
     NvU32 qp_bpc_modifier = bpcm8 * 2 - yuv_modifier;
+    const int ofs_und6[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -12, -12, -12, -12 };
+    const int ofs_und7[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
+    const int ofs_und10[] = { 10, 8, 6, 4, 2, 0, -2, -4, -6, -8, -10, -10, -12, -12, -12 };
 
     out->flatness_min_qp = 3 + qp_bpc_modifier;
     out->flatness_max_qp = 12 + qp_bpc_modifier;
@@ -620,102 +787,167 @@ DSC_PpsCalcRcParam
     for (i = 0; i < NUM_BUF_RANGES - 1; i++)
         out->rc_buf_thresh[i] = rcBufThresh[i] & (0xFF << 6);
 
-    //if (out->native_420)
-    //    idx = bitsPerPixel/BPP_UNIT - 8;
-    //else if(out->native_422)
-    //    idx = bitsPerPixel/BPP_UNIT - 12;
-    //else
-    idx = (2 * (bitsPerPixel - 6 * BPP_UNIT) ) / BPP_UNIT;
-
-    if (bpcm8 == 0)
+    if (out->native_422)
     {
-        for (i = 0; i < NUM_BUF_RANGES; i++)
+        idx = bitsPerPixel/BPP_UNIT - 12;
+        if (bpcm8 == 0)
         {
-            const NvU32 min = minqp444_8b[i][idx];
-            const NvU32 max = maxqp444_8b[i][idx];
-
-            out->range_min_qp[i] = MAX(0, min - yuv_modifier);
-            out->range_max_qp[i] = MAX(0, max - yuv_modifier);
+            for (i = 0; i < NUM_BUF_RANGES; ++i)
+            {
+                out->range_min_qp[i] = minqp422_8b[i][idx];
+                out->range_max_qp[i] = maxqp422_8b[i][idx];
+            }
         }
-    }
-    else if (bpcm8 == 2)
-    {
-        for (i = 0; i < NUM_BUF_RANGES; i++)
+        else if (bpcm8 == 2)
         {
-            const NvU32 min = minqp444_10b[i][idx];
-            const NvU32 max = maxqp444_10b[i][idx];
+            for (i=0; i < NUM_BUF_RANGES; i++)
+            {
+                out->range_min_qp[i] = minqp422_10b[i][idx];
+                out->range_max_qp[i] = maxqp422_10b[i][idx];
+            }
+        }
+        else
+        {
+            for (i=0; i<NUM_BUF_RANGES; i++)
+            {
+                out->range_min_qp[i] = minqp422_12b[i][idx];
+                out->range_max_qp[i] = maxqp422_12b[i][idx];
+            }
+        }
 
-            out->range_min_qp[i] = MAX(0, min - yuv_modifier);
-            out->range_max_qp[i] = MAX(0, max - yuv_modifier);
+        for (i = 0; i < NUM_BUF_RANGES; ++i)
+        {
+            if (bitsPerPixel <= 12*BPP_UNIT)
+            {
+                out->range_bpg_offset[i] = ofs_und6[i];
+            }
+            else if (bitsPerPixel <= 14*BPP_UNIT)
+            {
+                out->range_bpg_offset[i] = ofs_und6[i] + ((bitsPerPixel - 12*BPP_UNIT) *
+                                           (ofs_und7[i] - ofs_und6[i]) + BPP_UNIT) / (2*BPP_UNIT);
+            }
+            else if (bitsPerPixel <= 16*BPP_UNIT)
+            {
+                out->range_bpg_offset[i] = ofs_und7[i];
+            }
+            else if (bitsPerPixel <= 20*BPP_UNIT)
+            {
+                out->range_bpg_offset[i] = ofs_und7[i] + ((bitsPerPixel - 16*BPP_UNIT) *
+                                           (ofs_und10[i] - ofs_und7[i]) + 2*BPP_UNIT) / (4*BPP_UNIT);
+            }
+            else
+            {
+                out->range_bpg_offset[i] = ofs_und10[i];
+            }
         }
     }
     else
     {
-        for (i = 0; i < NUM_BUF_RANGES; i++)
-        {
-            const NvU32 min = minqp444_12b[i][idx];
-            const NvU32 max = maxqp444_12b[i][idx];
+        idx = (2 * (bitsPerPixel - 6 * BPP_UNIT) ) / BPP_UNIT;
 
-            out->range_min_qp[i] = MAX(0, min - yuv_modifier);
-            out->range_max_qp[i] = MAX(0, max - yuv_modifier);
+        if (bpcm8 == 0)
+        {
+            for (i = 0; i < NUM_BUF_RANGES; i++)
+            {
+                const NvU32 min = minqp444_8b[i][idx];
+                const NvU32 max = maxqp444_8b[i][idx];
+
+                out->range_min_qp[i] = MAX(0, min - yuv_modifier);
+                out->range_max_qp[i] = MAX(0, max - yuv_modifier);
+            }
         }
-    }
-
-    for (i = 0; i < NUM_BUF_RANGES; ++i)
-    {
-        //if (out->native_420)
-        //{
-        //  NvU32 ofs_und4[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -12, -12, -12, -12 };
-        //  NvU32 ofs_und5[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
-        //  NvU32 ofs_und6[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
-        //  NvU32 ofs_und8[] = { 10, 8, 6, 4, 2, 0, -2, -4, -6, -8, -10, -10, -12, -12, -12 };
-        //  out->range_min_qp[i] = minqp_420[bpcm8 / 2][i][idx];
-        //  out->range_max_qp[i] = maxqp_420[bpcm8 / 2][i][idx];
-        //  if (bitsPerPixel <= 8*BPP_UNIT)
-        //      out->range_bpg_offset[i] = ofs_und4[i];
-        //  else if (bitsPerPixel <= 10*BPP_UNIT)
-        //      out->range_bpg_offset[i] = ofs_und4[i] + (NvU32)(0.5 * (bitsPerPixel - 8.0) * (ofs_und5[i] - ofs_und4[i]) + 0.5);
-        //  else if (bitsPerPixel <= 12*BPP_UNIT)
-        //      out->range_bpg_offset[i] = ofs_und5[i] + (NvU32)(0.5 * (bitsPerPixel - 10.0) * (ofs_und6[i] - ofs_und5[i]) + 0.5);
-        //  else if (bitsPerPixel <= 16*BPP_UNIT)
-        //      out->range_bpg_offset[i] = ofs_und6[i] + (NvU32)(0.25 * (bitsPerPixel - 12.0) * (ofs_und8[i] - ofs_und6[i]) + 0.5);
-        //  else
-        //      out->range_bpg_offset[i] = ofs_und8[i];
-        //}
-        //else if (out->native_422)
-        //{
-        //  NvU32 ofs_und6[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -12, -12, -12, -12 };
-        //  NvU32 ofs_und7[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
-        //  NvU32 ofs_und10[] = { 10, 8, 6, 4, 2, 0, -2, -4, -6, -8, -10, -10, -12, -12, -12 };
-        //  out->range_min_qp[i] = minqp_422[bpcm8 / 2][i][idx];
-        //  out->range_max_qp[i] = maxqp_422[bpcm8 / 2][i][idx];
-        //  if (bitsPerPixel <= 12*BPP_UNIT)
-        //      out->range_bpg_offset[i] = ofs_und6[i];
-        //  else if(bitsPerPixel <= 14*BPP_UNIT)
-        //      out->range_bpg_offset[i] = ofs_und6[i] + (NvU32)((bitsPerPixel - 12.0) * (ofs_und7[i] - ofs_und6[i]) / 2.0 + 0.5);
-        //  else if(bitsPerPixel <= 16*BPP_UNIT)
-        //      out->range_bpg_offset[i] = ofs_und7[i];
-        //  else if(bitsPerPixel <= 20*BPP_UNIT)
-        //      out->range_bpg_offset[i] = ofs_und7[i] + (NvU32)((bitsPerPixel - 16.0) * (ofs_und10[i] - ofs_und7[i]) / 4.0 + 0.5);
-        //  else
-        //      out->range_bpg_offset[i] = ofs_und10[i];
-        //}
-        //else
+        else if (bpcm8 == 2)
         {
-            const NvU32 ofs_und6[] = { 0, -2, -2, -4, -6, -6, -8, -8, -8, -10, -10, -12, -12, -12, -12 };
-            const NvU32 ofs_und8[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
-            const NvU32 ofs_und12[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
-            const NvU32 ofs_und15[] = { 10, 8, 6, 4, 2, 0, -2, -4, -6, -8, -10, -10, -12, -12, -12 };
-            if (bitsPerPixel <= 6 * BPP_UNIT)
-                out->range_bpg_offset[i] = ofs_und6[i];
-            else if (bitsPerPixel <= 8 * BPP_UNIT)
-                out->range_bpg_offset[i] = ofs_und6[i] + ((bitsPerPixel - 6 * BPP_UNIT) * (ofs_und8[i] - ofs_und6[i]) + BPP_UNIT) / (2 * BPP_UNIT);
-            else if (bitsPerPixel <= 12 * BPP_UNIT)
-                out->range_bpg_offset[i] = ofs_und8[i];
-            else if (bitsPerPixel <= 15 * BPP_UNIT)
-                out->range_bpg_offset[i] = ofs_und12[i] + ((bitsPerPixel - 12 * BPP_UNIT) * (ofs_und15[i] - ofs_und12[i]) + 3 * BPP_UNIT / 2) / (3 * BPP_UNIT);
-            else
-                out->range_bpg_offset[i] = ofs_und15[i];
+            for (i = 0; i < NUM_BUF_RANGES; i++)
+            {
+                const NvU32 min = minqp444_10b[i][idx];
+                const NvU32 max = maxqp444_10b[i][idx];
+
+                out->range_min_qp[i] = MAX(0, min - yuv_modifier);
+                out->range_max_qp[i] = MAX(0, max - yuv_modifier);
+            }
+        }
+        else
+        {
+            for (i = 0; i < NUM_BUF_RANGES; i++)
+            {
+                const NvU32 min = minqp444_12b[i][idx];
+                const NvU32 max = maxqp444_12b[i][idx];
+
+                out->range_min_qp[i] = MAX(0, min - yuv_modifier);
+                out->range_max_qp[i] = MAX(0, max - yuv_modifier);
+            }
+        }
+
+        for (i = 0; i < NUM_BUF_RANGES; ++i)
+        {
+            //if (out->native_420)
+            //{
+            //  NvU32 ofs_und4[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -12, -12, -12, -12 };
+            //  NvU32 ofs_und5[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
+            //  NvU32 ofs_und6[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
+            //  NvU32 ofs_und8[] = { 10, 8, 6, 4, 2, 0, -2, -4, -6, -8, -10, -10, -12, -12, -12 };
+            //  out->range_min_qp[i] = minqp_420[bpcm8 / 2][i][idx];
+            //  out->range_max_qp[i] = maxqp_420[bpcm8 / 2][i][idx];
+            //  if (bitsPerPixel <= 8*BPP_UNIT)
+            //      out->range_bpg_offset[i] = ofs_und4[i];
+            //  else if (bitsPerPixel <= 10*BPP_UNIT)
+            //      out->range_bpg_offset[i] = ofs_und4[i] + (NvU32)(0.5 * (bitsPerPixel - 8.0) * (ofs_und5[i] - ofs_und4[i]) + 0.5);
+            //  else if (bitsPerPixel <= 12*BPP_UNIT)
+            //      out->range_bpg_offset[i] = ofs_und5[i] + (NvU32)(0.5 * (bitsPerPixel - 10.0) * (ofs_und6[i] - ofs_und5[i]) + 0.5);
+            //  else if (bitsPerPixel <= 16*BPP_UNIT)
+            //      out->range_bpg_offset[i] = ofs_und6[i] + (NvU32)(0.25 * (bitsPerPixel - 12.0) * (ofs_und8[i] - ofs_und6[i]) + 0.5);
+            //  else
+            //      out->range_bpg_offset[i] = ofs_und8[i];
+            //}
+            //else if (out->native_422)
+            //{
+            //  NvU32 ofs_und6[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -12, -12, -12, -12 };
+            //  NvU32 ofs_und7[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
+            //  NvU32 ofs_und10[] = { 10, 8, 6, 4, 2, 0, -2, -4, -6, -8, -10, -10, -12, -12, -12 };
+            //  out->range_min_qp[i] = minqp_422[bpcm8 / 2][i][idx];
+            //  out->range_max_qp[i] = maxqp_422[bpcm8 / 2][i][idx];
+            //  if (bitsPerPixel <= 12*BPP_UNIT)
+            //      out->range_bpg_offset[i] = ofs_und6[i];
+            //  else if(bitsPerPixel <= 14*BPP_UNIT)
+            //      out->range_bpg_offset[i] = ofs_und6[i] + (NvU32)((bitsPerPixel - 12.0) * (ofs_und7[i] - ofs_und6[i]) / 2.0 + 0.5);
+            //  else if(bitsPerPixel <= 16*BPP_UNIT)
+            //      out->range_bpg_offset[i] = ofs_und7[i];
+            //  else if(bitsPerPixel <= 20*BPP_UNIT)
+            //      out->range_bpg_offset[i] = ofs_und7[i] + (NvU32)((bitsPerPixel - 16.0) * (ofs_und10[i] - ofs_und7[i]) / 4.0 + 0.5);
+            //  else
+            //      out->range_bpg_offset[i] = ofs_und10[i];
+            //}
+            //else
+            {
+                const NvU32 ofs_und6[] = { 0, -2, -2, -4, -6, -6, -8, -8, -8, -10, -10, -12, -12, -12, -12 };
+                const NvU32 ofs_und8[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
+                const NvU32 ofs_und12[] = { 2, 0, 0, -2, -4, -6, -8, -8, -8, -10, -10, -10, -12, -12, -12 };
+                const NvU32 ofs_und15[] = { 10, 8, 6, 4, 2, 0, -2, -4, -6, -8, -10, -10, -12, -12, -12 };
+
+                if (bitsPerPixel <= 6 * BPP_UNIT)
+                {
+                    out->range_bpg_offset[i] = ofs_und6[i];
+                }
+                else if (bitsPerPixel <= 8 * BPP_UNIT)
+                {
+                    out->range_bpg_offset[i] = ofs_und6[i] + ((bitsPerPixel - 6 * BPP_UNIT) *
+                                               (ofs_und8[i] - ofs_und6[i]) + BPP_UNIT) / (2 * BPP_UNIT);
+                }
+                else if (bitsPerPixel <= 12 * BPP_UNIT)
+                {
+                    out->range_bpg_offset[i] = ofs_und8[i];
+                }
+                else if (bitsPerPixel <= 15 * BPP_UNIT)
+                {
+                    out->range_bpg_offset[i] = ofs_und12[i] + ((bitsPerPixel - 12 * BPP_UNIT) *
+                                               (ofs_und15[i] - ofs_und12[i]) + 3 * BPP_UNIT / 2) / (3 * BPP_UNIT);
+                }
+                else
+                {
+                    out->range_bpg_offset[i] = ofs_und15[i];
+                }
+            }
         }
     }
     return NVT_STATUS_SUCCESS;
@@ -1154,6 +1386,11 @@ DSC_PpsCalcSliceParams
         }
 
         out->slice_width = (out->pic_width + out->slice_num - 1) / out->slice_num;
+
+        if (out->native_420 || out->native_422)
+        {
+            out->slice_width = (out->slice_width+1)/2 * 2 ;
+        }
 
         if (out->slice_width > max_slice_width)
         {
@@ -1934,13 +2171,7 @@ DSC_GeneratePPS
     if (*pBitsPerPixelX16 != 0)
     {
         *pBitsPerPixelX16 = DSC_AlignDownForBppPrecision(*pBitsPerPixelX16, pDscInfo->sinkCaps.bitsPerPixelPrecision);
-
-        // The calculation of in->bits_per_pixel here in PPSlib, which is the maximum bpp that is allowed by available bandwidth, 
-        // which is applicable to DP alone and not to HDMI FRL. 
-        // Before calling PPS lib to generate PPS data, HDMI library has done calculation according to HDMI2.1 spec 
-        // to determine if FRL rate is sufficient for the requested bpp. So restricting the condition to DP alone.
-        if ((pWARData && (pWARData->connectorType == DSC_DP)) &&
-            (*pBitsPerPixelX16 > in->bits_per_pixel))
+        if (*pBitsPerPixelX16 > in->bits_per_pixel)
         {
             DSC_Print("ERROR - Invalid bits per pixel value specified.");
             ret = NVT_STATUS_INVALID_PARAMETER;
@@ -2009,6 +2240,36 @@ DSC_GeneratePPS
     in->slice_count_mask = pDscInfo->sinkCaps.sliceCountSupportedMask;
     in->peak_throughput_mode0 = pDscInfo->sinkCaps.peakThroughputMode0;
     in->peak_throughput_mode1 = pDscInfo->sinkCaps.peakThroughputMode1;
+    
+    if (in->native_422)
+    {
+        if (in->dsc_version_minor == 1)
+        {
+            DSC_Print("Error! DSC1.1 can't support native422!\n");
+            ret = NVT_STATUS_INVALID_PARAMETER;
+            goto done;
+        }
+        //the bpp in native 422 mode is doubled.
+        if((((NvS32)(in->bits_per_pixel)) < (NvS32)(2*6*BPP_UNIT)) ||
+           (((NvS32)(in->bits_per_pixel)) > (NvS32)(2*32*BPP_UNIT-1)))
+        {
+            DSC_Print("bits_per_pixelx16 (=%u) needs to be between %u and %u",
+                      in->bits_per_pixel, 2*6*BPP_UNIT, 2*32*BPP_UNIT-1);
+            ret = NVT_STATUS_INVALID_PARAMETER;
+            goto done;
+        }
+    }
+    else
+    {
+        if ((((NvS32)(in->bits_per_pixel)) < (NvS32)(8*BPP_UNIT)) ||
+            (((NvS32)(in->bits_per_pixel)) > (NvS32)(32*BPP_UNIT)))
+        {
+            DSC_Print("bits_per_pixelx16 (=%u) needs to be between %u and %u",
+                      in->bits_per_pixel, 8*BPP_UNIT, 32*BPP_UNIT);
+            ret = NVT_STATUS_INVALID_PARAMETER;
+            goto done;
+        }
+    }
 
     ret = DSC_PpsDataGen(in, pps);
 

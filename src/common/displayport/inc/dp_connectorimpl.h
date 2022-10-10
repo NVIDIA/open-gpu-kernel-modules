@@ -316,14 +316,6 @@ namespace DisplayPort
         bool        bDscMstCapBug3143315;
 
         //
-        // Enable DSC Pass through support in driver based on regkey.
-        //
-        bool        bDscMstEnablePassThrough;
-
-        // Reduce number of 2H1OR LTs which fixes bug 3534707
-        bool        bDscOptimizeLTBug3534707;
-
-        //
         // Synaptics branch device doesn't support Virtual Peer Devices so DSC
         // capability of downstream device should be decided based on device's own
         // and its parent's DSC capability

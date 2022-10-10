@@ -176,6 +176,15 @@ NV_STATUS __nvoc_objCreateDynamic(
     const struct NVOC_CLASS_DEF *pClassDef =
         (const struct NVOC_CLASS_DEF*)pClassInfo;
 
+    if (pClassDef == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    else if (pClassDef->objCreatefn == NULL)
+    {
+        return NV_ERR_INVALID_CLASS;
+    }
+
     va_start(args, createFlags);
     status = pClassDef->objCreatefn(ppNewObject, pParent, createFlags, args);
     va_end(args);

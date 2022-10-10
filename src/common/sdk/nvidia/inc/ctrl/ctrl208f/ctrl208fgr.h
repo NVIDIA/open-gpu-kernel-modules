@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl208f/ctrl208fgr.finn
 //
 
-
-
-
 #include "ctrl/ctrl208f/ctrl208fbase.h"
 
 #include "ctrl/ctrl2080/ctrl2080gr.h"

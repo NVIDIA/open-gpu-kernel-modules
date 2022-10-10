@@ -127,6 +127,8 @@
 #define NV_PMC_BOOT_0_ARCHITECTURE_TU100                 0x00000016 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_TU110                 0x00000016 /* R---V */
 #define NV_PMC_BOOT_0_ARCHITECTURE_GA100                 0x00000017 /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_GH100                 0x00000018 /* R---V */
+#define NV_PMC_BOOT_0_ARCHITECTURE_AD100                 0x00000019 /* R---V */
 
 #define NV_PMC_BOOT_1                                    0x00000004 /* R--4R */
 #define NV_PMC_BOOT_1_VGPU8                                     8:8 /* R--VF */

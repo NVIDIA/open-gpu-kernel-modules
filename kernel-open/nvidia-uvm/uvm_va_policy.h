@@ -28,6 +28,7 @@
 #include "uvm_forward_decl.h"
 #include "uvm_processors.h"
 #include "uvm_range_tree.h"
+#include "uvm_va_block_types.h"
 
 // This enum must be kept in sync with UVM_TEST_READ_DUPLICATION_POLICY in
 // uvm_test_ioctl.h
@@ -167,6 +168,31 @@ uvm_va_policy_node_t *uvm_va_policy_node_iter_next(uvm_va_block_t *va_block, uvm
          (next) = uvm_va_policy_node_iter_next((va_block), (node), (end));    \
          (node);                                                              \
          (node) = (next))
+
+// Returns the first policy in the range [start, end], if any.
+// Locking: The va_block lock must be held.
+uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
+                                          NvU64 start,
+                                          NvU64 end,
+                                          uvm_va_policy_node_t **out_node,
+                                          uvm_va_block_region_t *out_region);
+
+// Returns the next VA policy following the provided policy in address order,
+// if that policy's start <= the provided end.
+// Locking: The va_block lock must be held.
+uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
+                                         uvm_va_policy_t *policy,
+                                         NvU64 end,
+                                         uvm_va_policy_node_t **inout_node,
+                                         uvm_va_block_region_t *inout_region);
+
+// Note that policy and region are set and usable in the loop body.
+// The 'node' variable is used to retain loop state and 'policy' doesn't
+// necessarily match &node->policy.
+#define uvm_for_each_va_policy_in(policy, va_block, start, end, node, region) \
+    for ((policy) = uvm_va_policy_iter_first((va_block), (start), (end), &(node), &(region)); \
+         (policy);                                                              \
+         (policy) = uvm_va_policy_iter_next((va_block), (policy), (end), &(node), &(region)))
 
 #else // UVM_IS_CONFIG_HMM()
 

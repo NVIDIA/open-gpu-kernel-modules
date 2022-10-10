@@ -47,11 +47,6 @@ extern nv_cap_t *nvidia_caps_root;
 
 extern const NvBool nv_is_rm_firmware_supported_os;
 
-
-
-
-
-
 #include <nv-kernel-interface-api.h>
 
 /* NVIDIA's reserved major character device number (Linux). */
@@ -286,6 +281,7 @@ typedef struct nv_usermap_access_params_s
     NvU64    access_size;
     NvU64    remap_prot_extra;
     NvBool   contig;
+    NvU32    caching;
 } nv_usermap_access_params_t;
 
 /*
@@ -303,6 +299,7 @@ typedef struct nv_alloc_mapping_context_s {
     NvU64  remap_prot_extra;
     NvU32  prot;
     NvBool valid;
+    NvU32  caching;
 } nv_alloc_mapping_context_t;
 
 typedef enum
@@ -331,6 +328,9 @@ typedef struct nv_soc_irq_info_s {
 #define NV_MAX_DPAUX_NUM_DEVICES     4
 #define NV_MAX_SOC_DPAUX_NUM_DEVICES 2 // From SOC_DEV_MAPPING
 
+#define NV_IGPU_LEGACY_STALL_IRQ     70
+#define NV_IGPU_MAX_STALL_IRQS       3
+#define NV_IGPU_MAX_NONSTALL_IRQS    1
 /*
  * per device state
  */
@@ -367,6 +367,7 @@ typedef struct nv_state_t
     nv_aperture_t *hdacodec_regs;
     nv_aperture_t *mipical_regs;
     nv_aperture_t *fb, ud;
+    nv_aperture_t *simregs;
 
     NvU32  num_dpaux_instance;
     NvU32  interrupt_line;
@@ -379,6 +380,11 @@ typedef struct nv_state_t
     NvU32 soc_dcb_size;
     NvU32 disp_sw_soc_chip_id;
 
+    NvU32 igpu_stall_irq[NV_IGPU_MAX_STALL_IRQS];
+    NvU32 igpu_nonstall_irq;
+    NvU32 num_stall_irqs;
+    NvU64 dma_mask;
+    
     NvBool primary_vga;
 
     NvU32 sim_env;
@@ -456,6 +462,9 @@ typedef struct nv_state_t
 
     NvBool printed_openrm_enable_unsupported_gpus_error;
 
+    /* Check if NVPCF DSM function is implemented under NVPCF or GPU device scope */
+    NvBool nvpcf_dsm_in_gpu_scope;
+
 } nv_state_t;
 
 // These define need to be in sync with defines in system.h
@@ -520,7 +529,7 @@ typedef NV_STATUS (*nvPmaEvictRangeCallback)(void *, NvU64, NvU64);
 #define NV_FLAG_USES_MSIX              0x0040
 #define NV_FLAG_PASSTHRU               0x0080
 #define NV_FLAG_SUSPENDED              0x0100
-// Unused                              0x0200
+#define NV_FLAG_SOC_IGPU               0x0200
 // Unused                              0x0400
 #define NV_FLAG_PERSISTENT_SW_STATE    0x0800
 #define NV_FLAG_IN_RECOVERY            0x1000
@@ -568,6 +577,9 @@ typedef enum
 #define NV_IS_CTL_DEVICE(nv)    ((nv)->flags & NV_FLAG_CONTROL)
 #define NV_IS_SOC_DISPLAY_DEVICE(nv)    \
         ((nv)->flags & NV_FLAG_SOC_DISPLAY)
+
+#define NV_IS_SOC_IGPU_DEVICE(nv)    \
+        ((nv)->flags & NV_FLAG_SOC_IGPU)
 
 #define NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv)    \
         (((nv)->flags & NV_FLAG_IN_SURPRISE_REMOVAL) != 0)
@@ -627,18 +639,12 @@ typedef enum
 static inline NvBool IS_REG_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
 {
     return ((offset >= nv->regs->cpu_address) &&
-
-
-
             ((offset + (length - 1)) <= (nv->regs->cpu_address + (nv->regs->size - 1))));
 }
 
 static inline NvBool IS_FB_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
 {
     return  ((nv->fb) && (offset >= nv->fb->cpu_address) &&
-
-
-
              ((offset + (length - 1)) <= (nv->fb->cpu_address + (nv->fb->size - 1))));
 }
 
@@ -646,9 +652,6 @@ static inline NvBool IS_UD_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
 {
     return ((nv->ud.cpu_address != 0) && (nv->ud.size != 0) &&
             (offset >= nv->ud.cpu_address) &&
-
-
-
             ((offset + (length - 1)) <= (nv->ud.cpu_address + (nv->ud.size - 1))));
 }
 
@@ -657,9 +660,6 @@ static inline NvBool IS_IMEM_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
     return ((nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address != 0) &&
             (nv->bars[NV_GPU_BAR_INDEX_IMEM].size != 0) &&
             (offset >= nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address) &&
-
-
-
             ((offset + (length - 1)) <= (nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address +
                                          (nv->bars[NV_GPU_BAR_INDEX_IMEM].size - 1))));
 }
@@ -799,7 +799,7 @@ void       NV_API_CALL  nv_put_firmware(const void *);
 nv_file_private_t* NV_API_CALL nv_get_file_private(NvS32, NvBool, void **);
 void               NV_API_CALL nv_put_file_private(void *);
 
-NV_STATUS NV_API_CALL nv_get_device_memory_config(nv_state_t *, NvU64 *, NvU64 *, NvU32 *, NvU32 *, NvS32 *);
+NV_STATUS NV_API_CALL nv_get_device_memory_config(nv_state_t *, NvU64 *, NvU64 *, NvU32 *, NvS32 *);
 
 NV_STATUS NV_API_CALL nv_get_ibmnpu_genreg_info(nv_state_t *, NvU64 *, NvU64 *, void**);
 NV_STATUS NV_API_CALL nv_get_ibmnpu_relaxed_ordering_mode(nv_state_t *nv, NvBool *mode);
@@ -850,10 +850,8 @@ void      NV_API_CALL nv_dma_release_dma_buf     (void *, nv_dma_buf_t *);
 
 void      NV_API_CALL nv_schedule_uvm_isr        (nv_state_t *);
 
-
 NvBool    NV_API_CALL nv_platform_supports_s0ix  (void);
 NvBool    NV_API_CALL nv_s2idle_pm_configured    (void);
-
 
 NvBool    NV_API_CALL nv_is_chassis_notebook      (void);
 void      NV_API_CALL nv_allow_runtime_suspend    (nv_state_t *nv);
@@ -863,45 +861,6 @@ typedef void (*nvTegraDceClientIpcCallback)(NvU32, NvU32, NvU32, void *, void *)
 
 NV_STATUS NV_API_CALL nv_get_num_phys_pages      (void *, NvU32 *);
 NV_STATUS NV_API_CALL nv_get_phys_pages          (void *, void *, NvU32 *);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*
  * ---------------------------------------------------------------------------
@@ -1019,7 +978,7 @@ void       NV_API_CALL rm_acpi_notify(nvidia_stack_t *, nv_state_t *, NvU32);
 NV_STATUS  NV_API_CALL rm_get_clientnvpcf_power_limits(nvidia_stack_t *, nv_state_t *, NvU32 *, NvU32 *);
 
 /* vGPU VFIO specific functions */
-NV_STATUS  NV_API_CALL  nv_vgpu_create_request(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU32, NvU16 *, NvU32);
+NV_STATUS  NV_API_CALL  nv_vgpu_create_request(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU32, NvU16 *, NvU32, NvBool *);
 NV_STATUS  NV_API_CALL  nv_vgpu_delete(nvidia_stack_t *, const NvU8 *, NvU16);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_type_ids(nvidia_stack_t *, nv_state_t *, NvU32 *, NvU32 **, NvBool);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_type_info(nvidia_stack_t *, nv_state_t *, NvU32, char *, int, NvU8);
@@ -1044,18 +1003,6 @@ static inline const NvU8 *nv_get_cached_uuid(nv_state_t *nv)
 {
     return nv->nv_uuid_cache.valid ? nv->nv_uuid_cache.uuid : NULL;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 #if defined(NVCPU_X86_64)
 

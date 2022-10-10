@@ -1037,6 +1037,32 @@ static inline vm_fault_t nv_insert_pfn(struct vm_area_struct *vma,
     return VM_FAULT_SIGBUS;
 }
 
+/* Converts BAR index to Linux specific PCI BAR index */
+static inline NvU8 nv_bar_index_to_os_bar_index
+(
+    struct pci_dev *dev,
+    NvU8 nv_bar_index
+)
+{
+    NvU8 bar_index = 0;
+    NvU8 i;
+
+    BUG_ON(nv_bar_index >= NV_GPU_NUM_BARS);
+
+    for (i = 0; i < nv_bar_index; i++)
+    {
+        if (NV_PCI_RESOURCE_FLAGS(dev, bar_index) & PCI_BASE_ADDRESS_MEM_TYPE_64)
+        {
+            bar_index += 2;
+        }
+        else
+        {
+            bar_index++;
+        }
+    }
+
+    return bar_index;
+}
 
 #define NV_PAGE_MASK    (NvU64)(long)PAGE_MASK
 
@@ -1160,16 +1186,6 @@ typedef struct nvidia_pte_s {
 #endif
     unsigned int    page_count;
 } nvidia_pte_t;
-
-
-
-
-
-
-
-
-
-
 
 typedef struct nv_alloc_s {
     struct nv_alloc_s *next;
@@ -1413,34 +1429,6 @@ struct os_wait_queue {
     struct completion q;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*
  * To report error in msi/msix when unhandled count reaches a threshold
  */
@@ -1464,19 +1452,6 @@ struct nv_dma_device {
     NvBool nvlink;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* linux-specific version of old nv_state_t */
 /* this is a general os-specific state structure. the first element *must* be
    the general state structure, for the generic unix-based code */
@@ -1491,11 +1466,6 @@ typedef struct nv_linux_state_s {
 
     /* IBM-NPU info associated with this GPU */
     nv_ibmnpu_info_t *npu;
-
-
-
-
-
 
     /* NUMA node information for the platforms where GPU memory is presented
      * as a NUMA node to the kernel */
@@ -1575,23 +1545,6 @@ typedef struct nv_linux_state_s {
 
     /* Per-device notifier block for ACPI events */
     struct notifier_block acpi_nb;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /* Lock serializing ISRs for different SOC vectors */
     nv_spinlock_t soc_isr_lock;
@@ -1760,11 +1713,9 @@ static inline struct kmem_cache *nv_kmem_cache_create(const char *name, unsigned
     return cache;
 }
 
-
 #if defined(CONFIG_PCI_IOV)
 #define NV_PCI_SRIOV_SUPPORT
 #endif /* CONFIG_PCI_IOV */
-
 
 #define NV_PCIE_CFG_MAX_OFFSET 0x1000
 
@@ -1958,11 +1909,6 @@ static inline NvU32 nv_default_irq_flags(nv_state_t *nv)
 #define MODULE_NAME MODULE_BASE_NAME MODULE_INSTANCE_STRING
 
 NvS32 nv_request_soc_irq(nv_linux_state_t *, NvU32, nv_soc_irq_type_t, NvU32, NvU32);
-
-
-
-
-
 
 static inline void nv_mutex_destroy(struct mutex *lock)
 {

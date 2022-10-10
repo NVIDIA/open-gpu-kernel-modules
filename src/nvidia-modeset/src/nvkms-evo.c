@@ -1707,14 +1707,12 @@ done:
 void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
     NVDispEvoPtr pDispEvo,
     const NvU32 head,
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorRangeValue colorRange,
     NVEvoUpdateState *pUpdateState)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace =
-        pHeadState->attributes.colorSpace;
-    const enum NvKmsDpyAttributeColorRangeValue colorRange =
-        pHeadState->attributes.colorRange;
     const NVConnectorEvoRec *pConnectorEvo = pHeadState->pConnectorEvo;
 
     nvAssert(pConnectorEvo != NULL);
@@ -1858,7 +1856,11 @@ void nvSetColorSpaceAndRangeEvo(
                                          &pHeadState->attributes.colorRange);
 
     /* Update hardware's current colorSpace and colorRange */
-    nvUpdateCurrentHardwareColorSpaceAndRangeEvo(pDispEvo, head, pUpdateState);
+    nvUpdateCurrentHardwareColorSpaceAndRangeEvo(pDispEvo,
+                                                 head,
+                                                 pHeadState->attributes.colorSpace,
+                                                 pHeadState->attributes.colorRange,
+                                                 pUpdateState);
 }
 
 void nvEvoHeadSetControlOR(NVDispEvoPtr pDispEvo,
@@ -2974,7 +2976,11 @@ NvBool nvQueryRasterLockEvo(const NVDpyEvoRec *pDpyEvo, NvS64 *val)
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVEvoSubDevPtr pEvoSubDev;
-    const NvU32 head = pDpyEvo->head;
+    /*
+     * XXX[2Heads1OR] Loop over hardware heads to determine if this api-head
+     * is rasterlocked with any other api-head.
+     */
+    const NvU32 head = pDpyEvo->apiHead;
     NVEvoHeadControlPtr pHC;
 
     if ((head == NV_INVALID_HEAD) || (pDevEvo->gpus == NULL)) {
@@ -3136,7 +3142,12 @@ static NvBool UpdateFlipLock50(const NVDpyEvoRec *pDpyEvo,
                                NvU32 *val, NvBool set)
 {
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
-    const NvU32 head = pDpyEvo->head;
+    /*
+     * XXX[2Heads1OR] Loop over hardware heads to determine is this api-head
+     * is rasterlocked with any other api-head and flip lock is not prohibited
+     * on its corresponding hardware heads.
+     */
+    const NvU32 head = pDpyEvo->apiHead;
     NVEvoUpdateState updateState = { };
     NvBool ret;
 
@@ -3358,18 +3369,6 @@ void nvSetViewPortsEvo(NVDispEvoPtr pDispEvo,
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
     const NVHwModeViewPortEvo *pViewPort = &pHeadState->timings.viewPort;
-
-    // Image sharpening is available when scaling is enabled.
-    pHeadState->attributes.imageSharpening.available =
-        (pViewPort->out.width != pViewPort->in.width) ||
-        (pViewPort->out.height != pViewPort->in.height);
-
-    // cache HEAD_SET_CONTROL_OUTPUT_SCALER H/V taps for use in
-    // SetOutputScaler().  This is needed because SetOutputScaler may be called
-    // from nvSetImageSharpeningEvo where the NVHwModeViewPortEvo
-    // isn't as easily accessible.
-    pHeadState->hTaps = pViewPort->hTaps;
-    pHeadState->vTaps = pViewPort->vTaps;
 
     nvPushEvoSubDevMaskDisp(pDispEvo);
     pDevEvo->hal->SetViewportInOut(pDevEvo, head,
@@ -4111,8 +4110,6 @@ void nvSetDVCEvo(NVDispEvoPtr pDispEvo,
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
-    pHeadState->attributes.dvc = dvc;
-
     nvAssert(dvc >= NV_EVO_DVC_MIN);
     nvAssert(dvc <= NV_EVO_DVC_MAX);
 
@@ -4139,9 +4136,6 @@ void nvSetImageSharpeningEvo(NVDispEvoRec *pDispEvo, const NvU32 head,
                              NvU32 value, NVEvoUpdateState *updateState)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-
-    pHeadState->attributes.imageSharpening.value = value;
 
     /*
      * Evo values are from -128 to 127, with a default of 0.
@@ -5300,13 +5294,23 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
     } else if (pConnectorEvo->legacyType ==
                NV0073_CTRL_SPECIFIC_DISPLAY_TYPE_DFP) {
 
-        /* TMDS default, also acceptable for DSI */
-        pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_24_444;
-
-        /* Pick displayport pixel depths for raster timings */
-
-        if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
-
+        if (pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
+            switch (pDpyEvo->parsedEdid.info.input.u.digital.bpc) {
+                case 10:
+                    pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_30_444;
+                    break;
+                case 6:
+                    pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_18_444;
+                    break;
+                default:
+                    nvAssert(!"Invalid Pixel Depth for DSI");
+                    // fall through
+                case 8:
+                    pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_24_444;
+                    break;
+            }
+        } else if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
+            // Pick displayport pixel depths for raster timings.
             // Start off picking best possible depth based on monitor caps
             // If the monitor doesn't have an EDID version 1.4 or higher, assume
             // it's 8.
@@ -5319,6 +5323,9 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
                     pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_18_444;
                 }
             }
+        } else {
+            /* TMDS default */
+            pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_24_444;
         }
     }
 

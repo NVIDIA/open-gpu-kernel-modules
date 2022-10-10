@@ -144,7 +144,7 @@ NV_STATUS  rm_free_os_event         (NvHandle, NvU32);
 NV_STATUS  rm_get_event_data        (nv_file_private_t *, NvP64, NvU32 *);
 void       rm_client_free_os_events (NvHandle);
 
-NV_STATUS  rm_create_mmap_context   (nv_state_t *, NvHandle, NvHandle, NvHandle, NvP64, NvU64, NvU64, NvU32);
+NV_STATUS  rm_create_mmap_context   (nv_state_t *, NvHandle, NvHandle, NvHandle, NvP64, NvU64, NvU64, NvU32, NvU32);
 NV_STATUS  rm_update_device_mapping_info  (NvHandle, NvHandle, NvHandle, void *, void *);
 
 NV_STATUS  rm_access_registry       (NvHandle, NvHandle, NvU32, NvP64, NvU32, NvP64, NvU32, NvP64, NvU32 *, NvU32 *, NvU32 *);

@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_util.c
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 //
 
 #include "gpu/gpu.h"
@@ -131,6 +131,11 @@ NvBool rmcfg_IsGA107orBetter(POBJGPU pGpu)
     return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA107, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
 }
 
+NvBool rmcfg_IsGA10BorBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA10B, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
 NvBool rmcfg_IsGA10X(POBJGPU pGpu)
 {
     return IsGA100(pGpu) || IsGA102(pGpu) || IsGA103(pGpu) || IsGA104(pGpu) || IsGA106(pGpu) || IsGA107(pGpu);
@@ -141,9 +146,79 @@ NvBool rmcfg_IsGA10XorBetter(POBJGPU pGpu)
     return IsGA100orBetter(pGpu);
 }
 
+NvBool rmcfg_IsGA102ForBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GA102F, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsGA10XForBetter(POBJGPU pGpu)
+{
+    return IsAD102orBetter(pGpu);
+}
+
+NvBool rmcfg_IsAD102(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD102, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD102orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD102, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD103(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD103, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD103orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD103, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD104(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD104orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD10X(POBJGPU pGpu)
+{
+    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu);
+}
+
+NvBool rmcfg_IsAD10XorBetter(POBJGPU pGpu)
+{
+    return IsAD102orBetter(pGpu);
+}
+
+NvBool rmcfg_IsGH100(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_GH100, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsGH100orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_GH100, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsGH10X(POBJGPU pGpu)
+{
+    return IsGH100(pGpu);
+}
+
+NvBool rmcfg_IsGH10XorBetter(POBJGPU pGpu)
+{
+    return IsGH100orBetter(pGpu);
+}
+
 NvBool rmcfg_IsDISPLAYLESS(POBJGPU pGpu)
 {
-    return IsGA100(pGpu);
+    return IsGA100(pGpu) || IsGH100(pGpu);
 }
 
 NvBool rmcfg_IsdTURING(POBJGPU pGpu)
@@ -174,6 +249,46 @@ NvBool rmcfg_IsAMPERE_CLASSIC_GPUS(POBJGPU pGpu)
 NvBool rmcfg_IsAMPERE_CLASSIC_GPUSorBetter(POBJGPU pGpu)
 {
     return IsGA100orBetter(pGpu);
+}
+
+NvBool rmcfg_IsdADA(POBJGPU pGpu)
+{
+    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu);
+}
+
+NvBool rmcfg_IsdADAorBetter(POBJGPU pGpu)
+{
+    return IsAD102orBetter(pGpu);
+}
+
+NvBool rmcfg_IsADA_CLASSIC_GPUS(POBJGPU pGpu)
+{
+    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu);
+}
+
+NvBool rmcfg_IsADA_CLASSIC_GPUSorBetter(POBJGPU pGpu)
+{
+    return IsAD102orBetter(pGpu);
+}
+
+NvBool rmcfg_IsdHOPPER(POBJGPU pGpu)
+{
+    return IsGH100(pGpu);
+}
+
+NvBool rmcfg_IsdHOPPERorBetter(POBJGPU pGpu)
+{
+    return IsGH100orBetter(pGpu);
+}
+
+NvBool rmcfg_IsHOPPER_CLASSIC_GPUS(POBJGPU pGpu)
+{
+    return IsGH100(pGpu);
+}
+
+NvBool rmcfg_IsHOPPER_CLASSIC_GPUSorBetter(POBJGPU pGpu)
+{
+    return IsGH100orBetter(pGpu);
 }
 
 

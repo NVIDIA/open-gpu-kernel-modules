@@ -230,15 +230,6 @@
 #define NV_SWITCH_REGKEY_SOE_DISABLE_YES        0x1
 
 /*
- * NV_SWITCH_REGKEY_SOE_BOOT_CORE - Selects SOE core
- *
- * Public: Available in release drivers
- */
-#define NV_SWITCH_REGKEY_SOE_BOOT_CORE          "SoeBootCore"
-#define NV_SWITCH_REGKEY_SOE_BOOT_CORE_FALCON   0x0
-#define NV_SWITCH_REGKEY_SOE_BOOT_CORE_DEFAULT  0x2
-
-/*
  * NV_SWITCH_REGKEY_ENABLE_PM
  *
  * Used to optionally send the ENABLE_PM command to MINION on link training
@@ -409,11 +400,18 @@
  *
  * When the regkey is set to FALCON, the Nvswitch driver will run MINION on Falcon core.
  *
+ * If set to RISCV, the MINION will run on RISCV core in Non-Manifest Mode.
+ * If set to RISCV_MANIFEST, the MINION will run on RISCV core in Manifest Mode.
+ *
+ * In the default option, RISCV_BCR_CTRL register will be used to get the default core.
+ *
  * Private: Debug use only
  */
 #define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET                "MinionSetUcodeTarget"
 #define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET_DEFAULT        0x0
 #define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET_FALCON         0x1
+#define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET_RISCV          0x2
+#define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET_RISCV_MANIFEST 0x3
 
 /*
  * NV_SWITCH_REGKEY_MINION_SET_SIMMODE - Selects simmode settings to send to MINION
@@ -500,13 +498,14 @@
 /*
  * NV_SWITCH_REGKEY_LINK_TRAINING_SELECT - Select the Link training to be done
  *
- * This regkey will
+ * For LS10, links can be trained via non-ALI or ALI training. This regkey will
  * allow for overriding System Defaults and can force either training method
  * when desired.
  */
-
 #define NV_SWITCH_REGKEY_LINK_TRAINING_SELECT           "LinkTrainingMode"
 #define NV_SWITCH_REGKEY_LINK_TRAINING_SELECT_DEFAULT   0x0
+#define NV_SWITCH_REGKEY_LINK_TRAINING_SELECT_NON_ALI   0x1
+#define NV_SWITCH_REGKEY_LINK_TRAINING_SELECT_ALI       0x2
 /*
  * NV_SWITCH_REGKEY_I2C_ACCESS_CONTROL - Enable access to all I2C Ports/Devices
  *

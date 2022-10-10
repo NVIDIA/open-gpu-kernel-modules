@@ -15,58 +15,58 @@
 
                                                // RPC:VGPU_PF_REG_READ32
 RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_v15_00;
-RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:DUMP_PROTOBUF_COMPONENT
 RpcDumpProtobufComponent           rpcDumpProtobufComponent_v18_12;
-RpcDumpProtobufComponent           rpcDumpProtobufComponent_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcDumpProtobufComponent           rpcDumpProtobufComponent_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:ALLOC_MEMORY
 RpcAllocMemory                     rpcAllocMemory_v13_01;
-RpcAllocMemory                     rpcAllocMemory_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcAllocMemory                     rpcAllocMemory_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:GPU_EXEC_REG_OPS
 RpcGpuExecRegOps                   rpcGpuExecRegOps_v12_01;
-RpcGpuExecRegOps                   rpcGpuExecRegOps_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcGpuExecRegOps                   rpcGpuExecRegOps_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:RMFS_INIT
 RpcRmfsInit                        rpcRmfsInit_v15_00;
-RpcRmfsInit                        rpcRmfsInit_STUB;         // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcRmfsInit                        rpcRmfsInit_STUB;         // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:UNSET_PAGE_DIRECTORY
 RpcUnsetPageDirectory              rpcUnsetPageDirectory_v03_00;
 RpcUnsetPageDirectory              rpcUnsetPageDirectory_v1E_05;
-RpcUnsetPageDirectory              rpcUnsetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcUnsetPageDirectory              rpcUnsetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:GET_GSP_STATIC_INFO
 RpcGetGspStaticInfo                rpcGetGspStaticInfo_v14_00;
-RpcGetGspStaticInfo                rpcGetGspStaticInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcGetGspStaticInfo                rpcGetGspStaticInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:GSP_SET_SYSTEM_INFO
 RpcGspSetSystemInfo                rpcGspSetSystemInfo_v17_00;
-RpcGspSetSystemInfo                rpcGspSetSystemInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcGspSetSystemInfo                rpcGspSetSystemInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:RMFS_CLEANUP
 RpcRmfsCleanup                     rpcRmfsCleanup_v15_00;
-RpcRmfsCleanup                     rpcRmfsCleanup_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcRmfsCleanup                     rpcRmfsCleanup_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:SET_PAGE_DIRECTORY
 RpcSetPageDirectory                rpcSetPageDirectory_v03_00;
 RpcSetPageDirectory                rpcSetPageDirectory_v1E_05;
-RpcSetPageDirectory                rpcSetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcSetPageDirectory                rpcSetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:UNLOADING_GUEST_DRIVER
 RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_v03_00;
 RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_v1F_07;
-RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:SET_REGISTRY
 RpcSetRegistry                     rpcSetRegistry_v17_00;
-RpcSetRegistry                     rpcSetRegistry_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcSetRegistry                     rpcSetRegistry_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:RMFS_CLOSE_QUEUE
 RpcRmfsCloseQueue                  rpcRmfsCloseQueue_v15_00;
-RpcRmfsCloseQueue                  rpcRmfsCloseQueue_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcRmfsCloseQueue                  rpcRmfsCloseQueue_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:GET_STATIC_INFO
 RpcGetStaticInfo                   rpcGetStaticInfo_v17_05;
@@ -80,27 +80,29 @@ RpcGetStaticInfo                   rpcGetStaticInfo_v18_16;
 RpcGetStaticInfo                   rpcGetStaticInfo_v19_00;
 RpcGetStaticInfo                   rpcGetStaticInfo_v1A_00;
 RpcGetStaticInfo                   rpcGetStaticInfo_v1A_05;
-RpcGetStaticInfo                   rpcGetStaticInfo_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcGetStaticInfo                   rpcGetStaticInfo_v20_01;
+RpcGetStaticInfo                   rpcGetStaticInfo_v20_04;
+RpcGetStaticInfo                   rpcGetStaticInfo_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:IDLE_CHANNELS
 RpcIdleChannels                    rpcIdleChannels_v03_00;
-RpcIdleChannels                    rpcIdleChannels_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcIdleChannels                    rpcIdleChannels_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:UPDATE_BAR_PDE
 RpcUpdateBarPde                    rpcUpdateBarPde_v15_00;
-RpcUpdateBarPde                    rpcUpdateBarPde_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcUpdateBarPde                    rpcUpdateBarPde_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:MAP_MEMORY_DMA
 RpcMapMemoryDma                    rpcMapMemoryDma_v03_00;
-RpcMapMemoryDma                    rpcMapMemoryDma_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcMapMemoryDma                    rpcMapMemoryDma_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:UNMAP_MEMORY_DMA
 RpcUnmapMemoryDma                  rpcUnmapMemoryDma_v03_00;
-RpcUnmapMemoryDma                  rpcUnmapMemoryDma_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcUnmapMemoryDma                  rpcUnmapMemoryDma_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
                                                // RPC:RMFS_TEST
 RpcRmfsTest                        rpcRmfsTest_v15_00;
-RpcRmfsTest                        rpcRmfsTest_STUB;         // TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+RpcRmfsTest                        rpcRmfsTest_STUB;         // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 
 
 
@@ -2112,6 +2114,91 @@ static void rpc_iGrp_ipVersions_Install_v1F_0F(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 #endif // 
 }
 
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v20_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v20_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v20_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v20_03(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v20_04(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
 
 
 
@@ -2180,8 +2267,12 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v19_00;
     if (IsIPVersionInRange(pRpc, 0x1A000000, 0x1A04FFFF))
        pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v1A_00;
-    if (IsIPVersionInRange(pRpc, 0x1A050000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x1A050000, 0x2000FFFF))
        pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v1A_05;
+    if (IsIPVersionInRange(pRpc, 0x20010000, 0x2003FFFF))
+       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v20_01;
+    if (IsIPVersionInRange(pRpc, 0x20040000, 0xFFFFFFFF))
+       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v20_04;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcIdleChannels = rpcIdleChannels_v03_00;
     if (IsIPVersionInRange(pRpc, 0x15000000, 0xFFFFFFFF))
@@ -2577,6 +2668,21 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_0F[] = {
         { 0x1F0F0000, 0xFFFFFFFF, },          // 
     };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_00[] = {
+        { 0x20000000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_01[] = {
+        { 0x20010000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_02[] = {
+        { 0x20020000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_03[] = {
+        { 0x20030000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_04[] = {
+        { 0x20040000, 0xFFFFFFFF, },          // 
+    };
 
 #define _RPC_HAL_IGRP_ENTRY_INIT(v) \
     { RPC_IGRP_IP_VERSIONS_RANGES_##v, NV_ARRAY_ELEMENTS(RPC_IGRP_IP_VERSIONS_RANGES_##v), rpc_iGrp_ipVersions_Install_##v, }
@@ -2699,6 +2805,11 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0D),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0E),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0F),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v20_00),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v20_01),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v20_02),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v20_03),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v20_04),               // 
     };
 
 #undef _RPC_HAL_IGRP_ENTRY_INIT
@@ -2870,6 +2981,98 @@ static void rpcHalIfacesSetup_GA107(RPC_HAL_IFACES *pRpcHal)
 }
 
 #endif  // GA10X or GA107
+
+#if defined(RMCFG_HAL_SETUP_AD102)
+
+static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
+{
+
+    // AD102's RPC hal interface function pointer block
+    static const RPC_HAL_IFACES rpcHalIfacesInitStruct_AD102 =
+    {
+        rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
+        rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
+        rpcAllocMemory_STUB,                     // rpcAllocMemory
+        rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
+        rpcRmfsInit_STUB,                        // rpcRmfsInit
+        rpcUnsetPageDirectory_STUB,              // rpcUnsetPageDirectory
+        rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
+        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
+        rpcRmfsCleanup_STUB,                     // rpcRmfsCleanup
+        rpcSetPageDirectory_STUB,                // rpcSetPageDirectory
+        rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
+        rpcSetRegistry_STUB,                     // rpcSetRegistry
+        rpcRmfsCloseQueue_STUB,                  // rpcRmfsCloseQueue
+        rpcGetStaticInfo_STUB,                   // rpcGetStaticInfo
+        rpcIdleChannels_STUB,                    // rpcIdleChannels
+        rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
+        rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
+        rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
+        rpcRmfsTest_STUB,                        // rpcRmfsTest
+        rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
+
+    };  // rpcHalIfacesInitStruct_AD102
+
+    // init AD102's RPC function ptrs using the init struct above
+    *pRpcHal = rpcHalIfacesInitStruct_AD102;
+}
+
+#endif  // AD10X or AD102
+
+#if defined(RMCFG_HAL_SETUP_AD103)
+
+static void rpcHalIfacesSetup_AD103(RPC_HAL_IFACES *pRpcHal)
+{
+    rpcHalIfacesSetup_AD102(pRpcHal);   // AD103 interfaces identical to AD102
+}
+
+#endif  // AD10X or AD103
+
+#if defined(RMCFG_HAL_SETUP_AD104)
+
+static void rpcHalIfacesSetup_AD104(RPC_HAL_IFACES *pRpcHal)
+{
+    rpcHalIfacesSetup_AD102(pRpcHal);   // AD104 interfaces identical to AD102
+}
+
+#endif  // AD10X or AD104
+
+#if defined(RMCFG_HAL_SETUP_GH100)
+
+static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
+{
+
+    // GH100's RPC hal interface function pointer block
+    static const RPC_HAL_IFACES rpcHalIfacesInitStruct_GH100 =
+    {
+        rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
+        rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
+        rpcAllocMemory_STUB,                     // rpcAllocMemory
+        rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
+        rpcRmfsInit_STUB,                        // rpcRmfsInit
+        rpcUnsetPageDirectory_STUB,              // rpcUnsetPageDirectory
+        rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
+        rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
+        rpcRmfsCleanup_STUB,                     // rpcRmfsCleanup
+        rpcSetPageDirectory_STUB,                // rpcSetPageDirectory
+        rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
+        rpcSetRegistry_STUB,                     // rpcSetRegistry
+        rpcRmfsCloseQueue_STUB,                  // rpcRmfsCloseQueue
+        rpcGetStaticInfo_STUB,                   // rpcGetStaticInfo
+        rpcIdleChannels_STUB,                    // rpcIdleChannels
+        rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
+        rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
+        rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
+        rpcRmfsTest_STUB,                        // rpcRmfsTest
+        rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
+
+    };  // rpcHalIfacesInitStruct_GH100
+
+    // init GH100's RPC function ptrs using the init struct above
+    *pRpcHal = rpcHalIfacesInitStruct_GH100;
+}
+
+#endif  // GH10X or GH100
 
 
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -63,7 +63,7 @@ NV_STATUS  NV_API_CALL rm_gpu_ops_query_caps(nvidia_stack_t *, nvgpuDeviceHandle
 NV_STATUS  NV_API_CALL rm_gpu_ops_query_ces_caps(nvidia_stack_t *sp, nvgpuDeviceHandle_t, nvgpuCesCaps_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_get_gpu_info(nvidia_stack_t *, const NvProcessorUuid *pUuid, const nvgpuClientInfo_t *, nvgpuInfo_t *);
 NV_STATUS  NV_API_CALL rm_gpu_ops_service_device_interrupts_rm(nvidia_stack_t *, nvgpuDeviceHandle_t);
-NV_STATUS  NV_API_CALL rm_gpu_ops_dup_allocation(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuAddressSpaceHandle_t, NvU64 *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_dup_allocation(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuAddressSpaceHandle_t, NvU64, NvU64 *);
 
 NV_STATUS  NV_API_CALL  rm_gpu_ops_dup_memory (nvidia_stack_t *, nvgpuDeviceHandle_t, NvHandle, NvHandle, NvHandle *, nvgpuMemoryInfo_t);
 
@@ -97,14 +97,5 @@ void       NV_API_CALL rm_gpu_ops_paging_channel_destroy(nvidia_stack_t *, nvgpu
 NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channels_map(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuDeviceHandle_t, NvU64 *);
 void       NV_API_CALL rm_gpu_ops_paging_channels_unmap(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuDeviceHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channel_push_stream(nvidia_stack_t *, nvgpuPagingChannelHandle_t, char *, NvU32);
-
-
-
-
-
-
-
-
-
 
 #endif

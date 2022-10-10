@@ -73,6 +73,7 @@ void __nvoc_dtor_OBJCL(OBJCL *pThis) {
 void __nvoc_init_dataField_OBJCL(OBJCL *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
     pThis->setProperty(pThis, PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR, ((NvBool)(0 != 0)));
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );

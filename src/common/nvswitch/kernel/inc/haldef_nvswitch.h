@@ -79,6 +79,8 @@
     _op(NvlStatus, nvswitch_ctrl_get_ingress_response_table, (nvswitch_device *device, NVSWITCH_GET_INGRESS_RESPONSE_TABLE_PARAMS *params), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_set_ingress_response_table, (nvswitch_device *device, NVSWITCH_SET_INGRESS_RESPONSE_TABLE *p), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_set_ganged_link_table,      (nvswitch_device *device, NVSWITCH_SET_GANGED_LINK_TABLE *p), _arch)  \
+    _op(void,      nvswitch_init_npg_multicast,     (nvswitch_device *device), _arch)  \
+    _op(void,      nvswitch_init_warm_reset,        (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_set_remap_policy,  (nvswitch_device *device, NVSWITCH_SET_REMAP_POLICY *p), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_get_remap_policy,  (nvswitch_device *device, NVSWITCH_GET_REMAP_POLICY_PARAMS *params), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_set_remap_policy_valid, (nvswitch_device *device, NVSWITCH_SET_REMAP_POLICY_VALID *p), _arch)  \
@@ -114,15 +116,15 @@
     _op(NvlStatus, nvswitch_ctrl_get_fom_values,    (nvswitch_device *device, NVSWITCH_GET_FOM_VALUES_PARAMS *p), _arch)  \
     _op(NvlStatus, nvswitch_deassert_link_reset,    (nvswitch_device *device, nvlink_link *link), _arch)  \
     _op(NvBool,    nvswitch_is_soe_supported,       (nvswitch_device *device), _arch)  \
-    _op(NvlStatus, nvswitch_soe_set_ucode_core,     (nvswitch_device *device, NvBool bFalcon), _arch)  \
     _op(NvlStatus, nvswitch_init_soe, (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_inforom_supported,   (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_spi_supported,       (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_smbpbi_supported,   (nvswitch_device *device), _arch)  \
-    _op(NvlStatus, nvswitch_soe_prepare_for_reset, (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_post_init_device_setup, (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_post_init_blacklist_device_setup, (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_setup_link_system_registers, (nvswitch_device *device), _arch)  \
+    _op(NvlStatus, nvswitch_read_vbios_link_entries, (nvswitch_device *device, NvU32 tblPtr,NvU32 expected_link_entriesCount,NVLINK_CONFIG_DATA_LINKENTRY *link_entries, NvU32 *identified_link_entriesCount), _arch)  \
+    _op(NvlStatus, nvswitch_vbios_read_structure, (nvswitch_device *device, void *structure, NvU32 offset, NvU32 *ppacked_size, const char *format), _arch)  \
     _op(NvlStatus, nvswitch_get_nvlink_ecc_errors,  (nvswitch_device *device, NVSWITCH_GET_NVLINK_ECC_ERRORS_PARAMS *p), _arch)  \
     _op(NvlStatus, nvswitch_inforom_ecc_log_error_event, (nvswitch_device *device, INFOROM_ECC_OBJECT *pEccGeneric, INFOROM_NVS_ECC_ERROR_EVENT *error_event), _arch)  \
     _op(void,      nvswitch_oms_set_device_disable, (INFOROM_OMS_STATE *pOmsState, NvBool bForceDeviceDisable), _arch)  \
@@ -184,7 +186,6 @@
     _op(NvlStatus, nvswitch_init_nxbar,      (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_clear_nport_rams,       (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_pri_ring_init,          (nvswitch_device *device), _arch)  \
-    _op(NvlStatus, nvswitch_get_soe_ucode_binaries, (nvswitch_device *device, const NvU32 **soe_ucode_data, const NvU32 **soe_ucode_header), _arch)  \
     _op(NvlStatus, nvswitch_get_remap_table_selector,   (nvswitch_device *device, NVSWITCH_TABLE_SELECT_REMAP table_selector, NvU32 *remap_ram_sel), _arch)  \
     _op(NvU32,     nvswitch_get_ingress_ram_size,   (nvswitch_device *device, NvU32 ingress_ram_selector), _arch)  \
     _op(NvlStatus, nvswitch_minion_get_dl_status,   (nvswitch_device *device, NvU32 linkId, NvU32 statusIdx, NvU32 statusArgs, NvU32 *statusData), _arch)  \
@@ -202,13 +203,21 @@
     _op(NvBool,    nvswitch_is_link_in_reset, (nvswitch_device *device, nvlink_link *link), _arch) \
     _op(void,      nvswitch_init_buffer_ready, (nvswitch_device *device, nvlink_link * link, NvBool bNportBufferReady), _arch) \
     _op(NvlStatus, nvswitch_ctrl_get_nvlink_lp_counters, (nvswitch_device *device, NVSWITCH_GET_NVLINK_LP_COUNTERS_PARAMS *p), _arch) \
-    _op(NvlStatus, nvswitch_ctrl_set_residency_bins, (nvswitch_device *device, NVSWITCH_SET_RESIDENCY_BINS *p), _arch) \
-    _op(NvlStatus, nvswitch_ctrl_get_residency_bins, (nvswitch_device *device, NVSWITCH_GET_RESIDENCY_BINS *p), _arch) \
     _op(void,      nvswitch_apply_recal_settings, (nvswitch_device *device, nvlink_link *), _arch) \
     _op(NvlStatus, nvswitch_service_nvldl_fatal_link, (nvswitch_device *device, NvU32 nvliptInstance, NvU32 link), _arch) \
-    _op(NvlStatus, nvswitch_ctrl_get_rb_stall_busy, (nvswitch_device *device, NVSWITCH_GET_RB_STALL_BUSY *p), _arch) \
     _op(NvlStatus, nvswitch_service_minion_link, (nvswitch_device *device, NvU32 link_id), _arch) \
     _op(NvlStatus, nvswitch_ctrl_get_sw_info,  (nvswitch_device *device, NVSWITCH_GET_SW_INFO_PARAMS *p), _arch)
+
+#define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \
+    _op(NvlStatus, nvswitch_launch_ALI, (nvswitch_device *device), _arch) \
+    _op(NvlStatus, nvswitch_launch_ALI_link_training, (nvswitch_device *device, nvlink_link *link, NvBool bSync), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_inband_send_data, (nvswitch_device *device, NVSWITCH_INBAND_SEND_DATA_PARAMS *p), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_inband_read_data, (nvswitch_device *device, NVSWITCH_INBAND_READ_DATA_PARAMS *p), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_set_residency_bins, (nvswitch_device *device, NVSWITCH_SET_RESIDENCY_BINS *p), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_get_residency_bins, (nvswitch_device *device, NVSWITCH_GET_RESIDENCY_BINS *p), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_get_rb_stall_busy, (nvswitch_device *device, NVSWITCH_GET_RB_STALL_BUSY *p), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_get_multicast_id_error_vector, (nvswitch_device *device, NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR *p), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_clear_multicast_id_error_vector, (nvswitch_device *device, NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR *p), _arch) \
 
 //
 // Declare HAL function pointer table
@@ -226,6 +235,7 @@
 typedef struct nvswitch_hal_functions
 {
     NVSWITCH_HAL_FUNCTION_LIST(DECLARE_HAL_FUNCTIONS, HAL)
+    NVSWITCH_HAL_FUNCTION_LIST_LS10(DECLARE_HAL_FUNCTIONS, HAL)
 
 } nvswitch_hal;
 
@@ -243,6 +253,9 @@ typedef struct nvswitch_hal_functions
 #define NVSWITCH_INIT_HAL(device, arch)                             \
     NVSWITCH_HAL_FUNCTION_LIST(CREATE_HAL_FUNCTIONS, arch)          \
 
+#define NVSWITCH_INIT_HAL_LS10(device, arch)                         \
+    NVSWITCH_HAL_FUNCTION_LIST_LS10(CREATE_HAL_FUNCTIONS, arch)      \
+
 //
 // Declare HAL function dispatch functions
 //
@@ -255,8 +268,10 @@ typedef struct nvswitch_hal_functions
     _return _function _params;
 
 NVSWITCH_HAL_FUNCTION_LIST(DECLARE_HAL_DISPATCHERS, unused_argument)
+NVSWITCH_HAL_FUNCTION_LIST_LS10(DECLARE_HAL_DISPATCHERS, unused_argument)
 
 // HAL functions
 void nvswitch_setup_hal_lr10(nvswitch_device *device);
+void nvswitch_setup_hal_ls10(nvswitch_device *device);
 
 #endif //_HALDEF_NVSWITCH_H_

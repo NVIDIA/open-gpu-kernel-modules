@@ -53,6 +53,7 @@ extern "C" {
 /* ------------------------ OS Includes ------------------------------------- */
 #include "os/nv_memory_type.h"
 #include "os/capability.h"
+#include "os/os_fixed_mode_timings_props.h"
 
 /* ------------------------ Forward Declarations ---------------------------- */
 
@@ -306,6 +307,8 @@ typedef NV_STATUS  OSDelay(NvU32);
 typedef NV_STATUS  OSDelayUs(NvU32);
 typedef NV_STATUS  OSDelayNs(NvU32);
 typedef void       OSSpinLoop(void);
+typedef NvU64      OSGetMaxUserVa(void);
+typedef NvU32      OSGetCpuVaAddrShift(void);
 typedef NvU32      OSGetCurrentProcess(void);
 typedef void       OSGetCurrentProcessName(char *, NvU32);
 typedef NvU32      OSGetCurrentPasid(void);
@@ -763,11 +766,10 @@ NV_STATUS osRefGpuAccessNeeded(OS_GPU_INFO *pOsGpuInfo);
 NV_STATUS osIovaMap(PIOVAMAPPING pIovaMapping);
 void osIovaUnmap(PIOVAMAPPING pIovaMapping);
 NV_STATUS osGetAtsTargetAddressRange(OBJGPU *pGpu,
-                                     NvU32   *pAddr,
+                                     NvU64   *pAddr,
                                      NvU32   *pAddrWidth,
                                      NvU32   *pMask,
                                      NvU32   *pMaskWidth,
-                                     NvU32   *pGranularity,
                                      NvBool  bIsPeer,
                                      NvU32   peerIndex);
 NV_STATUS osGetFbNumaInfo(OBJGPU *pGpu,
@@ -875,6 +877,9 @@ NV_STATUS osGetSyncpointAperture(OS_GPU_INFO *pOsGpuInfo,
                                  NvU64 *limit,
                                  NvU32 *offset);
 NV_STATUS osTegraI2CGetBusState(OS_GPU_INFO *pOsGpuInfo, NvU32 port, NvS32 *scl, NvS32 *sda);
+NV_STATUS osTegraSocParseFixedModeTimings(OS_GPU_INFO *pOsGpuInfo,
+                                          NvU32 dcbIndex,
+                                          OS_FIXED_MODE_TIMINGS *pFixedModeTimings);
 
 NV_STATUS osGetVersion(NvU32 *pMajorVer,
                        NvU32 *pMinorVer,
@@ -1030,6 +1035,23 @@ NV_STATUS osTegraSocGpioSetPinInterrupt(OS_GPU_INFO *pArg1,
                                         NvU32 arg2,
                                         NvU32 arg3);
 
+NV_STATUS osTegraSocDsiParsePanelProps(OS_GPU_INFO *pArg1,
+                                       void *pArg2);
+
+NvBool osTegraSocIsDsiPanelConnected(OS_GPU_INFO *pArg1);
+
+NV_STATUS osTegraSocDsiPanelEnable(OS_GPU_INFO *pArg1,
+                                   void *pArg2);
+
+NV_STATUS osTegraSocDsiPanelReset(OS_GPU_INFO *pArg1,
+                                   void *pArg2);
+
+void osTegraSocDsiPanelDisable(OS_GPU_INFO *pArg1,
+                                   void *pArg2);
+
+void osTegraSocDsiPanelCleanup(OS_GPU_INFO *pArg1,
+                               void *pArg2);
+
 NV_STATUS osTegraSocResetMipiCal(OS_GPU_INFO *pArg1);
 
 NV_STATUS osGetTegraNumDpAuxInstances(OS_GPU_INFO *pArg1,
@@ -1126,6 +1148,8 @@ NV_STATUS osVerifySystemEnvironment(OBJGPU *pGpu);
 
 NV_STATUS osSanityTestIsr(OBJGPU *pGpu);
 
+NV_STATUS osConfigurePcieReqAtomics(OS_GPU_INFO *pOsGpuInfo, NvU32 *pMask);
+
 NvBool osDmabufIsSupported(void);
 
 static NV_INLINE NV_STATUS isrWrapper(NvBool testIntr, OBJGPU *pGpu)
@@ -1157,6 +1181,11 @@ static NV_INLINE NV_STATUS isrWrapper(NvBool testIntr, OBJGPU *pGpu)
 #define OS_PCIE_CAP_MASK_REQ_ATOMICS_64    NVBIT(1)
 #define OS_PCIE_CAP_MASK_REQ_ATOMICS_128   NVBIT(2)
 
+NV_STATUS osNumaAddGpuMemory(OS_GPU_INFO *pOsGpuInfo, NvU64 offset,
+                             NvU64 size, NvU32 *pNumaNodeId);
+void osNumaRemoveGpuMemory(OS_GPU_INFO *pOsGpuInfo, NvU64 offset,
+                           NvU64 size, NvU32 numaNodeId);
+
 // Os 1Hz timer callback functions
 NV_STATUS osInit1HzCallbacks(OBJTMR *pTmr);
 NV_STATUS osDestroy1HzCallbacks(OBJTMR *pTmr);
@@ -1180,7 +1209,6 @@ NvU32 vgpuDevReadReg032(
 
 void osInitSystemStaticConfig(SYS_STATIC_CONFIG *);
 
-NvU32 osGetReleaseAssertBehavior(void);
 void  osDbgBugCheckOnAssert(void);
 
 NvBool osBugCheckOnTimeoutEnabled(void);
@@ -1212,6 +1240,8 @@ OSGetMaximumCoreCount            osGetMaximumCoreCount;
 OSGetCurrentProcessorNumber      osGetCurrentProcessorNumber;
 OSGetVersionDump                 osGetVersionDump;
 
+OSGetMaxUserVa                   osGetMaxUserVa;
+OSGetCpuVaAddrShift              osGetCpuVaAddrShift;
 OSMemAddFilter                   osMemAddFilter;
 OSMemRemoveFilter                osMemRemoveFilter;
 OSMemGetFilter                   osMemGetFilter;

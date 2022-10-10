@@ -1773,19 +1773,6 @@ subdeviceCtrlCmdGpuGetPidInfo_IMPL
     return NV_OK;
 }
 
-NV_STATUS
-subdeviceCtrlCmdGpuInterruptFunction_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_GPU_INTERRUPT_FUNCTION_PARAMS *pParams
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    Intr *pIntr = GPU_GET_INTR(pGpu);
-
-    return intrTriggerCpuDoorbellForVF_HAL(pGpu, pIntr, pParams->gfid);
-}
-
 // Control call to fetch the Runlist pri base for the engine(s) specified
 NV_STATUS
 subdeviceCtrlCmdGpuGetEngineRunlistPriBase_IMPL

@@ -101,6 +101,8 @@ struct VirtMemAllocator {
     struct VirtMemAllocator *__nvoc_pbase_VirtMemAllocator;
     NV_STATUS (*__dmaConstructEngine__)(struct OBJGPU *, struct VirtMemAllocator *, ENGDESCRIPTOR);
     NV_STATUS (*__dmaStateInitLocked__)(struct OBJGPU *, struct VirtMemAllocator *);
+    NV_STATUS (*__dmaAllocBar1P2PMapping__)(struct OBJGPU *, struct VirtMemAllocator *, DMA_BAR1P2P_MAPPING_PRARAMS *);
+    void (*__dmaFreeBar1P2PMapping__)(struct VirtMemAllocator *, CLI_DMA_MAPPING_INFO *);
     NV_STATUS (*__dmaStatePostLoad__)(struct OBJGPU *, struct VirtMemAllocator *, NvU32);
     NV_STATUS (*__dmaReconcileTunableState__)(POBJGPU, struct VirtMemAllocator *, void *);
     NV_STATUS (*__dmaStateLoad__)(POBJGPU, struct VirtMemAllocator *, NvU32);
@@ -180,6 +182,10 @@ NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator**, Dynamic*, NvU32)
 
 #define dmaConstructEngine(pGpu, pDma, arg0) dmaConstructEngine_DISPATCH(pGpu, pDma, arg0)
 #define dmaStateInitLocked(pGpu, pDma) dmaStateInitLocked_DISPATCH(pGpu, pDma)
+#define dmaAllocBar1P2PMapping(pGpu, pDma, params) dmaAllocBar1P2PMapping_DISPATCH(pGpu, pDma, params)
+#define dmaAllocBar1P2PMapping_HAL(pGpu, pDma, params) dmaAllocBar1P2PMapping_DISPATCH(pGpu, pDma, params)
+#define dmaFreeBar1P2PMapping(pDma, arg0) dmaFreeBar1P2PMapping_DISPATCH(pDma, arg0)
+#define dmaFreeBar1P2PMapping_HAL(pDma, arg0) dmaFreeBar1P2PMapping_DISPATCH(pDma, arg0)
 #define dmaStatePostLoad(pGpu, pDma, arg0) dmaStatePostLoad_DISPATCH(pGpu, pDma, arg0)
 #define dmaStatePostLoad_HAL(pGpu, pDma, arg0) dmaStatePostLoad_DISPATCH(pGpu, pDma, arg0)
 #define dmaReconcileTunableState(pGpu, pEngstate, pTunableState) dmaReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
@@ -266,35 +272,6 @@ static inline NV_STATUS dmaFreeMapping(struct OBJGPU *pGpu, struct VirtMemAlloca
 #endif //__nvoc_virt_mem_allocator_h_disabled
 
 #define dmaFreeMapping_HAL(pGpu, pDma, arg0, arg1, arg2, arg3, arg4) dmaFreeMapping(pGpu, pDma, arg0, arg1, arg2, arg3, arg4)
-
-static inline NV_STATUS dmaAllocBar1P2PMapping_46f6a7(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, DMA_BAR1P2P_MAPPING_PRARAMS *params) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaAllocBar1P2PMapping(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, DMA_BAR1P2P_MAPPING_PRARAMS *params) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaAllocBar1P2PMapping(pGpu, pDma, params) dmaAllocBar1P2PMapping_46f6a7(pGpu, pDma, params)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaAllocBar1P2PMapping_HAL(pGpu, pDma, params) dmaAllocBar1P2PMapping(pGpu, pDma, params)
-
-static inline void dmaFreeBar1P2PMapping_b3696a(struct VirtMemAllocator *pDma, CLI_DMA_MAPPING_INFO *arg0) {
-    return;
-}
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline void dmaFreeBar1P2PMapping(struct VirtMemAllocator *pDma, CLI_DMA_MAPPING_INFO *arg0) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaFreeBar1P2PMapping(pDma, arg0) dmaFreeBar1P2PMapping_b3696a(pDma, arg0)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaFreeBar1P2PMapping_HAL(pDma, arg0) dmaFreeBar1P2PMapping(pDma, arg0)
 
 NV_STATUS dmaUpdateVASpace_GF100(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, NvU32 aperture, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse);
 
@@ -398,6 +375,26 @@ NV_STATUS dmaStateInitLocked_IMPL(struct OBJGPU *pGpu, struct VirtMemAllocator *
 
 static inline NV_STATUS dmaStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma) {
     return pDma->__dmaStateInitLocked__(pGpu, pDma);
+}
+
+NV_STATUS dmaAllocBar1P2PMapping_GH100(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, DMA_BAR1P2P_MAPPING_PRARAMS *params);
+
+static inline NV_STATUS dmaAllocBar1P2PMapping_46f6a7(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, DMA_BAR1P2P_MAPPING_PRARAMS *params) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS dmaAllocBar1P2PMapping_DISPATCH(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, DMA_BAR1P2P_MAPPING_PRARAMS *params) {
+    return pDma->__dmaAllocBar1P2PMapping__(pGpu, pDma, params);
+}
+
+void dmaFreeBar1P2PMapping_GH100(struct VirtMemAllocator *pDma, CLI_DMA_MAPPING_INFO *arg0);
+
+static inline void dmaFreeBar1P2PMapping_b3696a(struct VirtMemAllocator *pDma, CLI_DMA_MAPPING_INFO *arg0) {
+    return;
+}
+
+static inline void dmaFreeBar1P2PMapping_DISPATCH(struct VirtMemAllocator *pDma, CLI_DMA_MAPPING_INFO *arg0) {
+    pDma->__dmaFreeBar1P2PMapping__(pDma, arg0);
 }
 
 NV_STATUS dmaStatePostLoad_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, NvU32 arg0);

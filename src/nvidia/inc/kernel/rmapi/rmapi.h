@@ -191,6 +191,10 @@ struct _RM_API
     NV_STATUS (*MapToCpuWithSecInfo)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemory,
                                      NvU64 offset, NvU64 length, NvP64 *ppCpuVirtAddr, NvU32 flags, API_SECURITY_INFO *pSecInfo);
 
+    // Map memory v2. Pass in flags as a pointer for in/out access
+    NV_STATUS (*MapToCpuWithSecInfoV2)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemory,
+                                       NvU64 offset, NvU64 length, NvP64 *ppCpuVirtAddr, NvU32 *flags, API_SECURITY_INFO *pSecInfo);
+
     // Unmap memory with default security attributes and local pointers (no NvP64)
     NV_STATUS (*UnmapFromCpu)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemory, void *pLinearAddress,
                               NvU32 flags, NvU32 ProcessId);

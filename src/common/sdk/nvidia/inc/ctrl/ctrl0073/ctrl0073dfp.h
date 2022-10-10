@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0073/ctrl0073dfp.finn
 //
 
-
-
-
 #include "ctrl/ctrl0073/ctrl0073base.h"
 
 /* NV04_DISPLAY_COMMON dfp-display-specific control commands and parameters */
@@ -1095,11 +1092,53 @@ typedef struct NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS {
 *   vActive
 *     This parameter specifies the vertical lines of the active pixel
 *     data in the raster.
+*   hFrontPorch
+*     This parameter specifies the number of horizontal front porch
+*     blanking pixels in the raster.
+*   vFrontPorch
+*     This parameter specifies the numer of lines of the vertical front
+*     porch in the raster.
+*   hBackPorch
+*     This parameter specifies the number of horizontal back porch
+*     blanking pixels in the raster.
+*   vBackPorch
+*     This parameter specifies the numer of lines of the vertical back
+*     porch in the raster.
+*   hSyncWidth
+*     This parameter specifies the number of horizontal sync pixels in
+*     the raster.
+*   vSyncWidth
+*     This parameter specifies the numer of lines of the vertical sync
+*     in the raster.
 *   bpp
 *     This parameter specifies the depth (Bits per Pixel) of the output
 *     display stream.
 *   refresh
 *     This parameter specifies the refresh rate of the panel (in Hz).
+*   pclkHz
+*     This parameter specifies the pixel clock rate in Hz.
+*   numLanes
+*     Number of DSI data lanes.
+*   dscEnable
+*     Flag to indicate if DSC an be enabled, which in turn indicates if
+*     panel supports DSC.
+*   dscBpp
+*     DSC Bits per pixel
+*   dscNumSlices
+*     Number of slices for DSC.
+*   dscDuaDsc
+*     Flag to indicate if panel supports DSC streams from two DSI
+*     controllers.
+*   dscSliceHeight
+*     Height of DSC slices.
+*   dscBlockPrediction
+*     Flag to indicate if DSC Block Prediction needs to be enabled.
+*   dscDecoderVersionMajor
+*     Major version number of DSC decoder on Panel.
+*   dscDecoderVersionMinor
+*     Minor version number of DSC decoder on Panel.
+*   dscEncoderCaps
+*     Capabilities of DSC encoder in SoC.
 *
 *  Possible status values returned are:
 *   NV_OK
@@ -1116,10 +1155,107 @@ typedef struct NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS {
     NvU32 displayId;
     NvU32 hActive;
     NvU32 vActive;
+    NvU32 hFrontPorch;
+    NvU32 vFrontPorch;
+    NvU32 hBackPorch;
+    NvU32 vBackPorch;
+    NvU32 hSyncWidth;
+    NvU32 vSyncWidth;
     NvU32 bpp;
     NvU32 refresh;
+    NvU32 pclkHz;
+    NvU32 numLanes;
+    NvU32 dscEnable;
+    NvU32 dscBpp;
+    NvU32 dscNumSlices;
+    NvU32 dscDualDsc;
+    NvU32 dscSliceHeight;
+    NvU32 dscBlockPrediction;
+    NvU32 dscDecoderVersionMajor;
+    NvU32 dscDecoderVersionMinor;
+
+    struct {
+        NvBool bDscSupported;
+        NvU32  encoderColorFormatMask;
+        NvU32  lineBufferSizeKB;
+        NvU32  rateBufferSizeKB;
+        NvU32  bitsPerPixelPrecision;
+        NvU32  maxNumHztSlices;
+        NvU32  lineBufferBitDepth;
+    } dscEncoderCaps;
 } NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS;
 
 
+
+/*
+ * NV0073_CTRL_CMD_DFP_GET_FIXED_MODE_TIMING
+ *
+ * This control call is used to retrieve the display mode timing info that's
+ * specified for a given DFP from an offline configuration blob (e.g., Device Tree).
+ * This display timing info is intended to replace the timings exposed in a
+ * sink's EDID.
+ *
+ * subDeviceInstance (in)
+ *   This parameter specifies the subdevice instance within the
+ *   NV04_DISPLAY_COMMON parent device to which the operation should be
+ *   directed.
+ * displayId (in)
+ *   ID of the display device for which the timings should be retrieved.
+ * stream (in)
+ *   For MST connectors with static topologies (e.g., DP serializers),
+ *   this parameter further identifies the video stream for which the
+ *   timings should be retrieved.
+ * valid (out)
+ *   Indicates whether a valid display timing was found for this DFP.
+ * hActive (out)
+ *   Horizontal active width in pixels
+ * hFrontPorch (out)
+ *   Horizontal front porch
+ * hSyncWidth (out)
+ *   Horizontal sync width
+ * hBackPorch (out)
+ *   Horizontal back porch
+ * vActive (out)
+ *   Vertical active height in lines
+ * vFrontPorch (out)
+ *   Vertical front porch
+ * vSyncWidth (out)
+ *   Vertical sync width
+ * vBackPorch (out)
+ *   Vertical back porch
+ * pclkKHz (out)
+ *   Pixel clock frequency in KHz
+ * rrx1k (out)
+ *   Refresh rate in units of 0.001Hz
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV0073_CTRL_CMD_DFP_GET_FIXED_MODE_TIMING (0x731172) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8 | NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS_MESSAGE_ID)" */
+
+#define NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS_MESSAGE_ID (0x72U)
+
+typedef struct NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU8   stream;
+
+    NvBool valid;
+
+    NvU16  hActive;
+    NvU16  hFrontPorch;
+    NvU16  hSyncWidth;
+    NvU16  hBackPorch;
+
+    NvU16  vActive;
+    NvU16  vFrontPorch;
+    NvU16  vSyncWidth;
+    NvU16  vBackPorch;
+
+    NvU32  pclkKHz;
+    NvU32  rrx1k;
+} NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS;
 
 /* _ctrl0073dfp_h_ */

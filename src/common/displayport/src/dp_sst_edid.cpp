@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -240,10 +240,13 @@ bool DisplayPort::EdidReadSST(Edid & edid, AuxBus * auxBus, Timer* timer,
     Edid previousEdid;
     Buffer *buffer;
     bool status;
-
+    bool firstTrial = true;
+    NvU64 startTime, elapsedTime;
     for (unsigned i = 0; i < ddcAddrListSize; i++)
     {
-        for (unsigned j = 0; j < EDID_READ_MAX_RETRY_COUNT; j++)
+        startTime = timer->getTimeUs();
+        elapsedTime = 0;
+        do
         {
             //
             // Client asks to use RM control code to fetch EDID.
@@ -312,9 +315,10 @@ bool DisplayPort::EdidReadSST(Edid & edid, AuxBus * auxBus, Timer* timer,
                 }
                 else
                 {
-                    if (j == 0) // first failure?
+                    if (firstTrial) // first failure?
                     {
                         previousEdid.swap(edid);
+                        firstTrial = false;
                     }
                     else
                     {
@@ -327,7 +331,9 @@ bool DisplayPort::EdidReadSST(Edid & edid, AuxBus * auxBus, Timer* timer,
                     }
                 }
             }
-        }
+            elapsedTime = timer->getTimeUs() - startTime;
+            timer->sleep(1);
+        } while (elapsedTime < (EDID_READ_RETRY_TIMEOUT_MS * 1000));
     }
 
     DP_LOG(("EDID> Failed to ping sst DDC addresses"));

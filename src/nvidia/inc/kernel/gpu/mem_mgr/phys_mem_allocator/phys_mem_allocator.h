@@ -45,6 +45,12 @@
 #include "addrtree.h"
 #include "nvmisc.h"
 
+#if defined(SRT_BUILD)
+#define RMCFG_MODULE_x 1
+#else
+#include "rmconfig.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

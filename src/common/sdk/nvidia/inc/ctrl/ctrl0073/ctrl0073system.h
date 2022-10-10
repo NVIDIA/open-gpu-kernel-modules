@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0073/ctrl0073system.finn
 //
 
-
-
-
 #include "ctrl/ctrl0073/ctrl0073base.h"
 
 /* NV04_DISPLAY_COMMON system-level control commands and parameters */

@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl2080/ctrl2080i2c.finn
 //
 
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 /* NV20_SUBDEVICE_XX i2c-related control commands and parameters */

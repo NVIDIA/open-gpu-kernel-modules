@@ -273,6 +273,25 @@ _gmmuPrintPde
 
     _gmmuPrintPa(pa, aperture, 0);
 
+    if (pFmtGmmu->version == GMMU_FMT_VERSION_3)
+    {
+        NvU32 pdePcfSw   = 0;
+        NvU32 pdePcfHw   = 0;
+
+        PRINT_FIELD_32("PdePcf=%d", pFmtPde, PdePcf, pGmmuEntry);
+        pdePcfHw = nvFieldGet32(&pFmtPde->fldPdePcf, pGmmuEntry->v8);
+        NV_ASSERT(kgmmuTranslatePdePcfFromHw_HAL(GPU_GET_KERNEL_GMMU(pGpu),
+                                                pdePcfHw,
+                                                aperture,
+                                                &pdePcfSw) == NV_OK);
+        NV_PRINTF_EX(NV_PRINTF_MODULE,
+                     LEVEL_INFO,
+                     "(Sparse=%d, Vol=%d, ATS=%d)",
+                     ((pdePcfSw >> SW_MMU_PCF_SPARSE_IDX) & 0x1),
+                     ((pdePcfSw >> SW_MMU_PCF_UNCACHED_IDX) & 0x1),
+                     ((pdePcfSw >> SW_MMU_PCF_ATS_ALLOWED_IDX) & 0x1));
+    }
+    else
     {
         PRINT_FIELD_BOOL("Vol=%d", pFmtPde, Volatile, pGmmuEntry);
     }
@@ -369,6 +388,28 @@ _gmmuPrintPte
     NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "[0x%x]: ", index);
     _gmmuPrintPa(pa, aperture, peerIndex);
 
+    if (pFmt->version == GMMU_FMT_VERSION_3)
+    {
+        NvU32 ptePcfSw   = 0;
+        NvU32 ptePcfHw   = 0;
+
+        PRINT_FIELD_BOOL("Vld=%d, ",   pFmt, Valid,  pGmmuEntry);
+        PRINT_FIELD_32("Kind=0x%x, ",  pFmt, Kind,   pGmmuEntry);
+        PRINT_FIELD_32("PtePcf=%d",   pFmt, PtePcf, pGmmuEntry);
+        ptePcfHw = nvFieldGet32(&pFmt->fldPtePcf, pGmmuEntry->v8);
+        NV_ASSERT(kgmmuTranslatePtePcfFromHw_HAL(GPU_GET_KERNEL_GMMU(pGpu),
+                                                ptePcfHw,
+                                                nvFieldGetBool(&pFmt->fldValid, pGmmuEntry->v8),
+                                                &ptePcfSw) == NV_OK);
+        NV_PRINTF_EX(NV_PRINTF_MODULE,
+                     LEVEL_INFO, "(Vol=%d, Priv=%d, RO=%d, Atomic=%d, ACE=%d)",
+                     ((ptePcfSw >> SW_MMU_PCF_UNCACHED_IDX) & 0x1),
+                     !((ptePcfSw >> SW_MMU_PCF_REGULAR_IDX) & 0x1),
+                     ((ptePcfSw >> SW_MMU_PCF_RO_IDX) & 0x1),
+                     !((ptePcfSw >> SW_MMU_PCF_NOATOMIC_IDX) & 0x1),
+                     ((ptePcfSw >> SW_MMU_PCF_ACE_IDX) & 0x1));
+    }
+    else
     {
         PRINT_FIELD_BOOL("Vld=%d, ",        pFmt, Valid,           pGmmuEntry);
         PRINT_FIELD_BOOL("Priv=%d, ",       pFmt, Privilege,       pGmmuEntry);
@@ -402,6 +443,19 @@ _gmmuIsInvalidPdeOk
     const GMMU_ENTRY_VALUE *pGmmuEntry  = (GMMU_ENTRY_VALUE*)pPde;
     NvBool bSparse  = NV_FALSE;
 
+    if (pFmtGmmu->version == GMMU_FMT_VERSION_3)
+    {
+        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+        NvU32       pdePcfHw = 0;
+        NvU32       pdePcfSw = 0;
+
+        pdePcfHw = nvFieldGet32(&pFmtPde->fldPdePcf, pGmmuEntry->v8);
+        NV_ASSERT(kgmmuTranslatePdePcfFromHw_HAL(pKernelGmmu, pdePcfHw,
+                                                 gmmuFieldGetAperture(&pFmtPde->fldAperture, pGmmuEntry->v8),
+                                                 &pdePcfSw) == NV_OK);
+        bSparse = pdePcfSw & (1 << SW_MMU_PCF_SPARSE_IDX);
+    }
+    else
     {
         bSparse = nvFieldGetBool(&pFmtPde->fldVolatile, pGmmuEntry->v8);
     }
@@ -472,9 +526,14 @@ _gmmuSwToHwLevel
 )
 {
     const GMMU_FMT *pFmtGmmu = (GMMU_FMT*)pFmt;
+    NvU32 maxV3Levels        = 0;
 
     switch (pFmtGmmu->version)
     {
+    case GMMU_FMT_VERSION_3:
+        maxV3Levels = (pFmtGmmu->pRoot->virtAddrBitHi == 56) ? 5 : 4;
+        NV_ASSERT_OR_RETURN(level < maxV3Levels, 0);
+        return (maxV3Levels - 1) - level;
     case GMMU_FMT_VERSION_2:
         NV_ASSERT_OR_RETURN(level < 4, 0);
         return 3 - level;

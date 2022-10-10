@@ -1365,6 +1365,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdSpecificGetHdmiScdcData__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_GET_HDMI_SCDC_DATA_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificIsDirectmodeDisplay__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_IS_DIRECTMODE_DISPLAY_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSpecificDispI2cReadWrite__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetInfo__)(struct DispCommon *, NV0073_CTRL_DFP_GET_INFO_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetDisplayportDongleInfo__)(struct DispCommon *, NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpSetEldAudioCaps__)(struct DispCommon *, NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS *);
@@ -1376,6 +1377,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDfpGetDsiModeTiming__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpConfigTwoHeadOneOr__)(struct DispCommon *, NV0073_CTRL_DFP_CONFIG_TWO_HEAD_ONE_OR_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetPadlinkMask__)(struct DispCommon *, NV0073_CTRL_DFP_GET_PADLINK_MASK_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdDfpGetFixedModeTiming__)(struct DispCommon *, NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpAuxchCtrl__)(struct DispCommon *, NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpAuxchSetSema__)(struct DispCommon *, NV0073_CTRL_DP_AUXCH_SET_SEMA_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpCtrl__)(struct DispCommon *, NV0073_CTRL_DP_CTRL_PARAMS *);
@@ -1394,7 +1396,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDpSendACT__)(struct DispCommon *, NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpSetManualDisplayPort__)(struct DispCommon *, NV0073_CTRL_CMD_DP_SET_MANUAL_DISPLAYPORT_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpGetCaps__)(struct DispCommon *, NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS *);
-    NV_STATUS (*__dispcmnCtrlCmdDpSetMSAProperties__)(struct DispCommon *, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdDpSetMSAPropertiesv2__)(struct DispCommon *, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpSetStereoMSAProperties__)(struct DispCommon *, NV0073_CTRL_CMD_DP_SET_STEREO_MSA_PROPERTIES_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpGenerateFakeInterrupt__)(struct DispCommon *, NV0073_CTRL_CMD_DP_GENERATE_FAKE_INTERRUPT_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpConfigRadScratchReg__)(struct DispCommon *, NV0073_CTRL_CMD_DP_CONFIG_RAD_SCRATCH_REG_PARAMS *);
@@ -1523,6 +1525,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdSpecificGetHdmiScdcData(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetHdmiScdcData_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificIsDirectmodeDisplay(pDispCommon, pParams) dispcmnCtrlCmdSpecificIsDirectmodeDisplay_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdSpecificDispI2cReadWrite(pDispCommon, pParams) dispcmnCtrlCmdSpecificDispI2cReadWrite_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetDisplayportDongleInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDisplayportDongleInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpSetEldAudioCaps(pDispCommon, pEldAudioCapsParams) dispcmnCtrlCmdDfpSetEldAudioCaps_DISPATCH(pDispCommon, pEldAudioCapsParams)
@@ -1534,6 +1537,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDfpGetDsiModeTiming(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDsiModeTiming_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpConfigTwoHeadOneOr(pDispCommon, pParams) dispcmnCtrlCmdDfpConfigTwoHeadOneOr_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetPadlinkMask(pDispCommon, pParams) dispcmnCtrlCmdDfpGetPadlinkMask_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDfpGetFixedModeTiming(pDispCommon, pParams) dispcmnCtrlCmdDfpGetFixedModeTiming_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpAuxchCtrl(pDispCommon, pAuxchCtrlParams) dispcmnCtrlCmdDpAuxchCtrl_DISPATCH(pDispCommon, pAuxchCtrlParams)
 #define dispcmnCtrlCmdDpAuxchSetSema(pDispCommon, pSemaParams) dispcmnCtrlCmdDpAuxchSetSema_DISPATCH(pDispCommon, pSemaParams)
 #define dispcmnCtrlCmdDpCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpCtrl_DISPATCH(pDispCommon, pParams)
@@ -1552,7 +1556,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDpSendACT(pDispCommon, pParams) dispcmnCtrlCmdDpSendACT_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpSetManualDisplayPort(pDispCommon, pParams) dispcmnCtrlCmdDpSetManualDisplayPort_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpGetCaps(pDispCommon, pParams) dispcmnCtrlCmdDpGetCaps_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpSetMSAProperties(pDispCommon, pParams) dispcmnCtrlCmdDpSetMSAProperties_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDpSetMSAPropertiesv2(pDispCommon, pParams) dispcmnCtrlCmdDpSetMSAPropertiesv2_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpSetStereoMSAProperties(pDispCommon, pParams) dispcmnCtrlCmdDpSetStereoMSAProperties_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpGenerateFakeInterrupt(pDispCommon, pParams) dispcmnCtrlCmdDpGenerateFakeInterrupt_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpConfigRadScratchReg(pDispCommon, pParams) dispcmnCtrlCmdDpConfigRadScratchReg_DISPATCH(pDispCommon, pParams)
@@ -1949,6 +1953,12 @@ static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation_DISP
     return pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation__(pDispCommon, pParams);
 }
 
+NV_STATUS dispcmnCtrlCmdSpecificDispI2cReadWrite_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSpecificDispI2cReadWrite_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdSpecificDispI2cReadWrite__(pDispCommon, pParams);
+}
+
 NV_STATUS dispcmnCtrlCmdDfpGetInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_INFO_PARAMS *pParams);
 
 static inline NV_STATUS dispcmnCtrlCmdDfpGetInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_INFO_PARAMS *pParams) {
@@ -2013,6 +2023,12 @@ NV_STATUS dispcmnCtrlCmdDfpGetPadlinkMask_IMPL(struct DispCommon *pDispCommon, N
 
 static inline NV_STATUS dispcmnCtrlCmdDfpGetPadlinkMask_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_PADLINK_MASK_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdDfpGetPadlinkMask__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdDfpGetFixedModeTiming_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdDfpGetFixedModeTiming_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDfpGetFixedModeTiming__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdDpAuxchCtrl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_AUXCH_CTRL_PARAMS *pAuxchCtrlParams);
@@ -2123,10 +2139,10 @@ static inline NV_STATUS dispcmnCtrlCmdDpGetCaps_DISPATCH(struct DispCommon *pDis
     return pDispCommon->__dispcmnCtrlCmdDpGetCaps__(pDispCommon, pParams);
 }
 
-NV_STATUS dispcmnCtrlCmdDpSetMSAProperties_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS *pParams);
+NV_STATUS dispcmnCtrlCmdDpSetMSAPropertiesv2_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *pParams);
 
-static inline NV_STATUS dispcmnCtrlCmdDpSetMSAProperties_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpSetMSAProperties__(pDispCommon, pParams);
+static inline NV_STATUS dispcmnCtrlCmdDpSetMSAPropertiesv2_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDpSetMSAPropertiesv2__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdDpSetStereoMSAProperties_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_SET_STEREO_MSA_PROPERTIES_PARAMS *pParams);

@@ -21,11 +21,12 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-
 #include "nvkms-types.h"
 #include "nvkms-cursor.h"
 #include "nvkms-hal.h"
 #include "nvkms-rm.h"
+
+
 
 #include "class/cl9470.h" // NV9470_DISPLAY
 #include "class/cl9570.h" // NV9570_DISPLAY
@@ -34,6 +35,7 @@
 #include "class/clc370.h" // NVC370_DISPLAY
 #include "class/clc570.h" // NVC570_DISPLAY
 #include "class/clc670.h" // NVC670_DISPLAY
+#include "class/clc770.h" // NVC770_DISPLAY
 
 #include "class/cl947d.h" // NV947D_CORE_CHANNEL_DMA
 #include "class/cl957d.h" // NV957D_CORE_CHANNEL_DMA
@@ -45,6 +47,7 @@
 #include "class/clc57e.h" // NVC57E_WINDOW_CHANNEL_DMA
 #include "class/clc67d.h" // NVC67D_CORE_CHANNEL_DMA
 #include "class/clc67e.h" // NVC67E_WINDOW_CHANNEL_DMA
+#include "class/clc77d.h" // NVC67D_CORE_CHANNEL_DMA
 
 extern NVEvoHAL nvEvo94;
 extern NVEvoHAL nvEvoC3;
@@ -155,14 +158,14 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
 
 
 /* NVDisplay and later entries */
-#define ENTRY_NVD(_classPrefix, ...) \
-    ENTRY(_classPrefix, __VA_ARGS__,  \
+#define ENTRY_NVD(_coreClassPrefix, _windowClassPrefix, ...) \
+    ENTRY(_coreClassPrefix, __VA_ARGS__,  \
           (1 << NVKMS_NISO_FORMAT_FOUR_WORD_NVDISPLAY), \
-          DRF_MASK(NV ## _classPrefix ## 7E_SET_PLANAR_STORAGE_PITCH), \
-          DRF_MASK(NV ## _classPrefix ## 7E_SET_PLANAR_STORAGE_PITCH) * \
+          DRF_MASK(NV ## _windowClassPrefix ## 7E_SET_PLANAR_STORAGE_PITCH), \
+          DRF_MASK(NV ## _windowClassPrefix ## 7E_SET_PLANAR_STORAGE_PITCH) * \
                    NVKMS_BLOCK_LINEAR_GOB_WIDTH, \
-          DRF_MASK(NV ## _classPrefix ## 7E_SET_SIZE_IN_WIDTH), \
-          DRF_MASK(NV ## _classPrefix ## 7E_SET_SIZE_IN_WIDTH), \
+          DRF_MASK(NV ## _windowClassPrefix ## 7E_SET_SIZE_IN_WIDTH), \
+          DRF_MASK(NV ## _windowClassPrefix ## 7E_SET_SIZE_IN_WIDTH), \
           NVD_CORE_CHANNEL_DMA_ARMED_OFFSET, \
           NVD_CORE_CHANNEL_DMA_ARMED_SIZE)
 
@@ -173,22 +176,24 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
         const NVEvoCapsRec evoCaps;
     } dispTable[] = {
         /*
-         * genericPageKind--------------------+
-         * inputLutAppliesToBase --------+    |
-         * supportsHDMI20 ------------+  |    |
-         * supportsDP13 -----------+  |  |    |
-         * inbandStereoSignaling+  |  |  |    |
-         * pEvoHal ----------+  |  |  |  |    |
-         * classPrefix       |  |  |  |  |    |
-         *         |         |  |  |  |  |    |
+         * genericPageKind------------------------+
+         * inputLutAppliesToBase ------------+    |
+         * supportsHDMI20 ----------------+  |    |
+         * supportsDP13 ---------------+  |  |    |
+         * inbandStereoSignaling----+  |  |  |    |
+         * pEvoHal --------------+  |  |  |  |    |
+         * windowClassPrefix     |  |  |  |  |    |
+         * classPrefix |         |  |  |  |  |    |
+         *         |   |         |  |  |  |  |    |
          */
-        ENTRY_NVD(C6, &nvEvoC6, 1, 1, 1, 0, TURING_GENERIC_KIND),
-        ENTRY_NVD(C5, &nvEvoC5, 1, 1, 1, 0, TURING_GENERIC_KIND),
-        ENTRY_NVD(C3, &nvEvoC3, 1, 1, 1, 0, FERMI_GENERIC_KIND),
-        ENTRY_EVO(98, &nvEvo94, 1, 1, 1, 1, FERMI_GENERIC_KIND),
-        ENTRY_EVO(97, &nvEvo94, 1, 1, 1, 1, FERMI_GENERIC_KIND),
-        ENTRY_EVO(95, &nvEvo94, 1, 0, 1, 1, FERMI_GENERIC_KIND),
-        ENTRY_EVO(94, &nvEvo94, 1, 0, 0, 1, FERMI_GENERIC_KIND),
+        ENTRY_NVD(C7, C6, &nvEvoC6, 1, 1, 1, 0, TURING_GENERIC_KIND),
+        ENTRY_NVD(C6, C6, &nvEvoC6, 1, 1, 1, 0, TURING_GENERIC_KIND),
+        ENTRY_NVD(C5, C5, &nvEvoC5, 1, 1, 1, 0, TURING_GENERIC_KIND),
+        ENTRY_NVD(C3, C3, &nvEvoC3, 1, 1, 1, 0, FERMI_GENERIC_KIND),
+        ENTRY_EVO(98,     &nvEvo94, 1, 1, 1, 1, FERMI_GENERIC_KIND),
+        ENTRY_EVO(97,     &nvEvo94, 1, 1, 1, 1, FERMI_GENERIC_KIND),
+        ENTRY_EVO(95,     &nvEvo94, 1, 0, 1, 1, FERMI_GENERIC_KIND),
+        ENTRY_EVO(94,     &nvEvo94, 1, 0, 0, 1, FERMI_GENERIC_KIND),
     };
 
     int i;

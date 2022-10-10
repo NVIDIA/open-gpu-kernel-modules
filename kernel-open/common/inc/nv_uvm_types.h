@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -217,12 +217,6 @@ typedef struct UvmGpuChannelInstanceInfo_tag
     // Out: Type of the engine the channel is bound to
     NvU32 channelEngineType;
 
-    // Out: Channel handle required to ring the doorbell
-    NvU32 workSubmissionToken;
-
-    // Out: Address of the doorbell
-    volatile NvU32 *workSubmissionOffset;
-
     // Out: Channel handle to be used in the CLEAR_FAULTED method
     NvU32 clearFaultedToken;
 
@@ -230,6 +224,10 @@ typedef struct UvmGpuChannelInstanceInfo_tag
     // ENG_FAULTED/PBDMA_FAULTED bits after servicing non-replayable faults on
     // Ampere+ GPUs
     volatile NvU32 *pChramChannelRegister;
+
+    // Out: Address of the Runlist PRI Base Register required to ring the
+    // doorbell after clearing the faulted bit.
+    volatile NvU32 *pRunlistPRIBaseRegister;
 
     // Out: SMC engine id to which the GR channel is bound, or zero if the GPU
     // does not support SMC or it is a CE channel
@@ -372,10 +370,8 @@ typedef enum
     UVM_LINK_TYPE_NVLINK_1,
     UVM_LINK_TYPE_NVLINK_2,
     UVM_LINK_TYPE_NVLINK_3,
-
-
-
-
+    UVM_LINK_TYPE_NVLINK_4,
+    UVM_LINK_TYPE_C2C,
 } UVM_LINK_TYPE;
 
 typedef struct UvmGpuCaps_tag
@@ -433,19 +429,13 @@ typedef struct UvmGpuAddressSpaceInfo_tag
 
 typedef struct UvmGpuAllocInfo_tag
 {
-    NvU64   rangeBegin;             // Allocation will be made between
-    NvU64   rangeEnd;               // rangeBegin & rangeEnd both included
     NvU64   gpuPhysOffset;          // Returns gpuPhysOffset if contiguous requested
     NvU32   pageSize;               // default is RM big page size - 64K or 128 K" else use 4K or 2M
-    NvU64   alignment;              // Alignment of allocation
+    NvU64   alignment;              // Virtual alignment
     NvBool  bContiguousPhysAlloc;   // Flag to request contiguous physical allocation
     NvBool  bMemGrowsDown;          // Causes RM to reserve physical heap from top of FB
     NvBool  bPersistentVidmem;      // Causes RM to allocate persistent video memory
     NvHandle hPhysHandle;           // Handle for phys allocation either provided or retrieved
-
-
-
-
 } UvmGpuAllocInfo;
 
 typedef enum
@@ -576,10 +566,8 @@ typedef struct UvmPlatformInfo_tag
     // Out: ATS (Address Translation Services) is supported
     NvBool atsSupported;
 
-
-
-
-
+    // Out: AMD SEV (Secure Encrypted Virtualization) is enabled
+    NvBool sevEnabled;
 } UvmPlatformInfo;
 
 typedef struct UvmGpuClientInfo_tag
@@ -588,24 +576,6 @@ typedef struct UvmGpuClientInfo_tag
 
     NvHandle hSmcPartRef;
 } UvmGpuClientInfo;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #define UVM_GPU_NAME_LENGTH 0x40
 
@@ -671,10 +641,6 @@ typedef struct UvmGpuInfo_tag
 
     UvmGpuClientInfo smcUserClientInfo;
 
-
-
-
-
 } UvmGpuInfo;
 
 typedef struct UvmGpuFbInfo_tag
@@ -717,11 +683,6 @@ typedef struct UvmPmaStatistics_tag
     volatile NvU64 numPages2m;                // PMA-wide 2MB pages count across all regions
     volatile NvU64 numFreePages64k;           // PMA-wide free 64KB page count across all regions
     volatile NvU64 numFreePages2m;            // PMA-wide free 2MB pages count across all regions
-
-
-
-
-
 } UvmPmaStatistics;
 
 /*******************************************************************************
@@ -960,11 +921,5 @@ typedef UvmGpuPagingChannel *gpuPagingChannelHandle;
 typedef UvmGpuPagingChannelInfo gpuPagingChannelInfo;
 typedef UvmGpuPagingChannelAllocParams gpuPagingChannelAllocParams;
 typedef UvmPmaAllocationOptions gpuPmaAllocationOptions;
-
-
-
-
-
-
 
 #endif // _NV_UVM_TYPES_H_

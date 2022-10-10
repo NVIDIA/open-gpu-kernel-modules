@@ -5176,16 +5176,17 @@ static void EvoSetOutputScalerC3(const NVDispEvoRec *pDispEvo, const NvU32 head,
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVEvoChannelPtr pChannel = pDevEvo->core;
     const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+    const NVHwModeViewPortEvo *pViewPort = &pHeadState->timings.viewPort;
 
     /* These methods should only apply to a single pDpyEvo */
     nvAssert(pDevEvo->subDevMaskStackDepth > 0);
 
     nvUpdateUpdateState(pDevEvo, updateState, pChannel);
 
-    NvU32 vTaps = pHeadState->vTaps > NV_EVO_SCALER_2TAPS ?
+    NvU32 vTaps = pViewPort->vTaps > NV_EVO_SCALER_2TAPS ?
                     NVC37D_HEAD_SET_CONTROL_OUTPUT_SCALER_VERTICAL_TAPS_TAPS_5 :
                     NVC37D_HEAD_SET_CONTROL_OUTPUT_SCALER_VERTICAL_TAPS_TAPS_2;
-    NvU32 hTaps = pHeadState->hTaps > NV_EVO_SCALER_2TAPS ?
+    NvU32 hTaps = pViewPort->hTaps > NV_EVO_SCALER_2TAPS ?
                     NVC37D_HEAD_SET_CONTROL_OUTPUT_SCALER_HORIZONTAL_TAPS_TAPS_5 :
                     NVC37D_HEAD_SET_CONTROL_OUTPUT_SCALER_HORIZONTAL_TAPS_TAPS_2;
 
@@ -6675,7 +6676,7 @@ EvoEnableMidFrameAndDWCFWatermarkC5(NVDevEvoPtr pDevEvo,
 
 static NvU32 EvoGetActiveViewportOffsetC3(NVDispEvoRec *pDispEvo, NvU32 head)
 {
-    NVC372_CTRL_CMD_GET_ACTIVE_VIEWPORT_POINT_IN_PARAMS params = {0};
+    NVC372_CTRL_CMD_GET_ACTIVE_VIEWPORT_POINT_IN_PARAMS params = { };
     NvU32 ret;
     NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
 

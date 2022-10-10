@@ -185,6 +185,10 @@ typedef struct
                                                 uvm_page_index_t page_index,
                                                 uvm_page_index_t *outerp);
 
+    // Clear thrashing policy information from all HMM va_blocks.
+    // Locking: va_space lock must be held in write mode.
+    NV_STATUS uvm_hmm_clear_thrashing_policy(uvm_va_space_t *va_space);
+
 #else // UVM_IS_CONFIG_HMM()
 
     static bool uvm_hmm_is_enabled(uvm_va_space_t *va_space)
@@ -278,6 +282,11 @@ typedef struct
                                                        uvm_va_block_context_t *va_block_context,
                                                        uvm_page_index_t page_index,
                                                        uvm_page_index_t *outerp)
+    {
+        return NV_OK;
+    }
+
+    static NV_STATUS uvm_hmm_clear_thrashing_policy(uvm_va_space_t *va_space)
     {
         return NV_OK;
     }

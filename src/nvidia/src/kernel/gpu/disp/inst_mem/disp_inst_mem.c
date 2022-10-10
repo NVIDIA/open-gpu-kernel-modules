@@ -540,6 +540,44 @@ _instmemFreeContextDma
     return NV_OK;
 }
 
+static void
+_instmemClearHashEntry
+(
+    OBJGPU                *pGpu,
+    DisplayInstanceMemory *pInstMem,
+    NvU32                  htEntry
+)
+{
+    MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    TRANSFER_SURFACE    dest = {0};
+    NvU32               entryOffset;
+    DISP_HW_HASH_TABLE_ENTRY entry;
+
+    pInstMem->pHashTable[htEntry].pContextDma = NULL;
+    pInstMem->pHashTable[htEntry].pDispChannel = NULL;
+
+    //
+    // If we found the entry, clear the inst mem copy of the entry
+    // Start with offset of base of inst mem
+    // Add offset of base of hash table from base of inst mem
+    // Add the offset of entry from base of hash table
+    //
+    entryOffset = pInstMem->hashTableBaseAddr +
+                      (sizeof(DISP_HW_HASH_TABLE_ENTRY) * htEntry);
+
+    dest.pMemDesc = pInstMem->pInstMemDesc;
+    dest.offset = entryOffset;
+
+    entry.ht_ObjectHandle = 0;
+    entry.ht_Context = instmemGenerateHashTableData_HAL(pGpu, pInstMem,
+                            0 /* client id */,
+                            0 /* NV_UDISP_HASH_TBL_INSTANCE_INVALID */,
+                            0 /* dispChannelNum */);
+
+    NV_ASSERT_OK(memmgrMemWrite(pMemoryManager, &dest, &entry, sizeof(entry),
+                                TRANSFER_FLAGS_NONE));
+}
+
 static NV_STATUS
 _instmemRemoveHashEntry
 (
@@ -549,40 +587,14 @@ _instmemRemoveHashEntry
     DispChannel           *pDispChannel
 )
 {
-    MemoryManager      *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU32               htEntry, entryOffset;
-    TRANSFER_SURFACE    dest = {0};
-    DISP_HW_HASH_TABLE_ENTRY entry;
+    NvU32 htEntry;
 
     for (htEntry = 0; htEntry < pInstMem->nHashTableEntries; htEntry++)
     {
         if ( (pInstMem->pHashTable[htEntry].pContextDma == pContextDma) &&
              (pInstMem->pHashTable[htEntry].pDispChannel == pDispChannel))
         {
-            pInstMem->pHashTable[htEntry].pContextDma = NULL;
-            pInstMem->pHashTable[htEntry].pDispChannel = NULL;
-
-            //
-            // If we found the entry, clear the inst mem copy of the entry
-            // Start with offset of base of inst mem
-            // Add offset of base of hash table from base of inst mem
-            // Add the offset of entry from base of hash table
-            //
-            entryOffset = pInstMem->hashTableBaseAddr +
-                          (sizeof(DISP_HW_HASH_TABLE_ENTRY) * htEntry);
-
-            dest.pMemDesc = pInstMem->pInstMemDesc;
-            dest.offset = entryOffset;
-
-            entry.ht_ObjectHandle = 0;
-            entry.ht_Context = instmemGenerateHashTableData_HAL(pGpu, pInstMem,
-                                    0 /* client id */,
-                                    0 /* NV_UDISP_HASH_TBL_INSTANCE_INVALID */,
-                                    0 /* dispChannelNum */);
-
-            NV_ASSERT_OK_OR_RETURN(memmgrMemWrite(pMemoryManager, &dest, &entry, sizeof(entry),
-                                                  TRANSFER_FLAGS_NONE));
-
+            _instmemClearHashEntry(pGpu, pInstMem, htEntry);
             return NV_OK;
         }
     }
@@ -845,6 +857,34 @@ exit:
 }
 
 /*!
+ * @brief Remove reference to an instance allocation.  Free after last reference.
+ */
+void
+_instmemRemoveReference
+(
+    OBJGPU                *pGpu,
+    DisplayInstanceMemory *pInstMem,
+    ContextDma            *pContextDma
+)
+{
+    NvU32 gpuSubDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+
+    NV_ASSERT(pContextDma->InstRefCount[gpuSubDevInst]);
+    if (pContextDma->InstRefCount[gpuSubDevInst])
+    {
+        pContextDma->InstRefCount[gpuSubDevInst]--;
+
+        // Remove DMA object if this is the last binding
+        if (pContextDma->InstRefCount[gpuSubDevInst] == 0)
+        {
+            instmemDecommitContextDma_HAL(pGpu, pInstMem, pContextDma);
+            _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance[gpuSubDevInst]);
+            pContextDma->Instance[gpuSubDevInst] = 0;
+        }
+    }
+}
+
+/*!
  * @brief Unbind the ContextDma from the given Display Channel
  */
 NV_STATUS
@@ -856,29 +896,66 @@ instmemUnbindContextDma_IMPL
     DispChannel           *pDispChannel
 )
 {
-    NvU32     gpuSubDevInst;
     NV_STATUS status;
-
-    gpuSubDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
     // If ContextDma is not bound to this subdevice, there is no bookkeeping to do
     status = _instmemRemoveHashEntry(pGpu, pInstMem, pContextDma, pDispChannel);
     if (status == NV_OK)
     {
-        NV_ASSERT(pContextDma->InstRefCount[gpuSubDevInst]);
-        if (pContextDma->InstRefCount[gpuSubDevInst])
-        {
-            pContextDma->InstRefCount[gpuSubDevInst]--;
-
-            // Remove DMA object if this is the last binding
-            if (pContextDma->InstRefCount[gpuSubDevInst] == 0)
-            {
-                instmemDecommitContextDma_HAL(pGpu, pInstMem, pContextDma);
-                _instmemFreeContextDma(pGpu, pInstMem, pContextDma->Instance[gpuSubDevInst]);
-                pContextDma->Instance[gpuSubDevInst] = 0;
-            }
-        }
+        _instmemRemoveReference(pGpu, pInstMem, pContextDma);
     }
 
     return status;
+}
+
+/*!
+ * @brief Unbind the ContextDma from all Display channels on the given context
+ */
+void
+instmemUnbindContextDmaFromAllChannels_IMPL
+(
+    OBJGPU                *pGpu,
+    DisplayInstanceMemory *pInstMem,
+    ContextDma            *pContextDma
+)
+{
+    NvU32 htEntry;
+
+    // Check all entries in the hash table
+    for (htEntry = 0; htEntry < pInstMem->nHashTableEntries; htEntry++)
+    {
+        if (pInstMem->pHashTable[htEntry].pContextDma == pContextDma)
+        {
+            _instmemClearHashEntry(pGpu, pInstMem, htEntry);
+            _instmemRemoveReference(pGpu, pInstMem, pContextDma);
+        }
+    }
+
+}
+
+/*!
+ * @brief Unbind the ContextDma from all Display channels on the given context
+ */
+void
+instmemUnbindDispChannelContextDmas_IMPL
+(
+    OBJGPU                *pGpu,
+    DisplayInstanceMemory *pInstMem,
+    DispChannel           *pDispChannel
+)
+{
+    NvU32 htEntry;
+
+    // Check all entries in the hash table
+    for (htEntry = 0; htEntry < pInstMem->nHashTableEntries; htEntry++)
+    {
+        if (pInstMem->pHashTable[htEntry].pDispChannel == pDispChannel)
+        {
+            ContextDma *pContextDma = pInstMem->pHashTable[htEntry].pContextDma;
+
+            _instmemClearHashEntry(pGpu, pInstMem, htEntry);
+            _instmemRemoveReference(pGpu, pInstMem, pContextDma);
+        }
+    }
+
 }

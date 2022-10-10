@@ -99,7 +99,7 @@ static void nv_init_dynamic_power_management
                    NV_PCI_DOMAIN_NUMBER(pci_dev),
                    NV_PCI_BUS_NUMBER(pci_dev),
                    NV_PCI_SLOT_NUMBER(pci_dev));
-    if (ret > 0 || ret < sizeof(filename))
+    if (ret > 0 && ret < sizeof(filename))
     {
         struct file *file = filp_open(filename, O_RDONLY, 0);
         if (!IS_ERR(file))
@@ -156,75 +156,6 @@ static void nv_init_dynamic_power_management
     rm_init_dynamic_power_management(sp, nv, pr3_acpi_method_present);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* find nvidia devices and set initial state */
 static int
 nv_pci_probe
@@ -249,7 +180,6 @@ nv_pci_probe
     {
         return -1;
     }
-
 
 #ifdef NV_PCI_SRIOV_SUPPORT
     if (pci_dev->is_virtfn)
@@ -295,7 +225,6 @@ nv_pci_probe
 #endif /* NV_VGPU_KVM_BUILD */
     }
 #endif /* NV_PCI_SRIOV_SUPPORT */
-
 
     if (!rm_is_supported_pci_device(
                 (pci_dev->class >> 16) & 0xFF,
@@ -498,20 +427,11 @@ next_bar:
 
     nv_init_ibmnpu_info(nv);
 
-
-
-
-
 #if defined(NVCPU_PPC64LE)
     // Use HW NUMA support as a proxy for ATS support. This is true in the only
     // PPC64LE platform where ATS is currently supported (IBM P9).
     nv_ats_supported &= nv_platform_supports_numa(nvl);
 #else
-
-
-
-
-
 #endif
     if (nv_ats_supported)
     {
@@ -589,18 +509,18 @@ next_bar:
     /* Parse and set any per-GPU registry keys specified. */
     nv_parse_per_device_option_string(sp);
 
+    rm_set_rm_firmware_requested(sp, nv);
+
 #if defined(NV_VGPU_KVM_BUILD)
     if (nvidia_vgpu_vfio_probe(nvl->pci_dev) != NV_OK)
     {
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "Failed to register device to vGPU VFIO module");
         nvidia_frontend_remove_device((void *)&nv_fops, nvl);
-        goto err_remove_device;
+        goto err_vgpu_kvm;
     }
 #endif
 
     nv_check_and_exclude_gpu(sp, nv);
-
-    rm_set_rm_firmware_requested(sp, nv);
 
 #if defined(DPM_FLAG_NO_DIRECT_COMPLETE)
     dev_pm_set_driver_flags(nvl->dev, DPM_FLAG_NO_DIRECT_COMPLETE);
@@ -619,11 +539,18 @@ next_bar:
 
     return 0;
 
+#if defined(NV_VGPU_KVM_BUILD)
+err_vgpu_kvm:
+#endif
+    nv_procfs_remove_gpu(nvl);
+    rm_cleanup_dynamic_power_management(sp, nv);
+#if defined(NV_PM_VT_SWITCH_REQUIRED_PRESENT)
+    pm_vt_switch_unregister(nvl->dev);
+#endif
 err_remove_device:
     LOCK_NV_LINUX_DEVICES();
     nv_linux_remove_device_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
-    rm_cleanup_dynamic_power_management(sp, nv);
 err_zero_dev:
     rm_free_private_state(sp, nv);
 err_not_supported:
@@ -654,7 +581,6 @@ nv_pci_remove(struct pci_dev *pci_dev)
               NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
               NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
 
-
 #ifdef NV_PCI_SRIOV_SUPPORT
     if (pci_dev->is_virtfn)
     {
@@ -665,7 +591,6 @@ nv_pci_remove(struct pci_dev *pci_dev)
         return;
     }
 #endif /* NV_PCI_SRIOV_SUPPORT */
-
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
     {

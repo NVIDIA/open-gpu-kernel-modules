@@ -895,9 +895,10 @@ _memdescAllocInternal
             goto done;
     }
 
-    memdescPrintMemdesc(pMemDesc, NV_TRUE, "memdesc allocated");
-
 done:
+    if (status == NV_OK)
+        memdescPrintMemdesc(pMemDesc, NV_TRUE, MAKE_NV_PRINTF_STR("memdesc allocated"));
+
     portMemFree(pFbAllocPageFormat);
     portMemFree(pFbAllocInfo);
 
@@ -951,6 +952,7 @@ memdescAlloc
                 !gpuIsCacheOnlyModeEnabled(pGpu))
             {
                 status = NV_ERR_BROKEN_FB;
+                NV_PRINTF(LEVEL_ERROR, "Unsupported FB bound allocation on broken FB(0FB) platform\n");
                 DBG_BREAKPOINT();
             }
 
@@ -1266,7 +1268,7 @@ _memdescFreeInternal
     if (memdescHasSubDeviceMemDescs(pMemDesc))
         return;
 
-    memdescPrintMemdesc(pMemDesc, NV_FALSE, "memdesc being freed");
+    memdescPrintMemdesc(pMemDesc, NV_FALSE, MAKE_NV_PRINTF_STR("memdesc being freed"));
 
     // Bail our early in case this memdesc describes a MODS managed VPR region.
     if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_VPR_REGION_CLIENT_MANAGED))
@@ -2787,8 +2789,8 @@ memdescGetApertureString
     NV_ADDRESS_SPACE addressSpace
 )
 {
-    static const char* ADDR_FBMEM_STR  = "VIDEO MEMORY";
-    static const char* ADDR_SYSMEM_STR = "SYSTEM MEMORY";
+    static NV_PRINTF_STRING_SECTION const char ADDR_FBMEM_STR[]  = "VIDEO MEMORY";
+    static NV_PRINTF_STRING_SECTION const char ADDR_SYSMEM_STR[] = "SYSTEM MEMORY";
 
     if (addressSpace == ADDR_FBMEM)
     {

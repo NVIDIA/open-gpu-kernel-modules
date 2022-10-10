@@ -339,6 +339,7 @@ void osEnableInterrupts(OBJGPU *pGpu)
                 intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
             }
         }
+
     }
 }
 

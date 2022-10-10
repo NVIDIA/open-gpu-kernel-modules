@@ -96,6 +96,7 @@
 #define INFOROM_ERASE_LIMIT_EXCEEDED                    (93)
 #define ROBUST_CHANNEL_CONTAINED_ERROR                  (94)
 #define ROBUST_CHANNEL_UNCONTAINED_ERROR                (95)
+#define SEC_FAULT_ERROR                                 (110)
 #define GSP_RPC_TIMEOUT                                 (119)
 #define GSP_ERROR                                       (120)
 #define C2C_ERROR                                       (121)

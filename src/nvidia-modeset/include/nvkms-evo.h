@@ -222,6 +222,8 @@ void nvChooseCurrentColorSpaceAndRangeEvo(
 void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
     NVDispEvoPtr pDispEvo,
     const NvU32 head,
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorRangeValue colorRange,
     NVEvoUpdateState *pUpdateState);
 
 void nvSetColorSpaceAndRangeEvo(

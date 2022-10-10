@@ -152,6 +152,14 @@ rmapiGetEffectiveAddrSpace
     return NV_OK;
 }
 
+// Asserts to check caching type matches across sdk and nv_memory_types
+ct_assert(NVOS33_FLAGS_CACHING_TYPE_CACHED        == NV_MEMORY_CACHED);
+ct_assert(NVOS33_FLAGS_CACHING_TYPE_UNCACHED      == NV_MEMORY_UNCACHED);
+ct_assert(NVOS33_FLAGS_CACHING_TYPE_WRITECOMBINED == NV_MEMORY_WRITECOMBINED);
+ct_assert(NVOS33_FLAGS_CACHING_TYPE_WRITEBACK     == NV_MEMORY_WRITEBACK);
+ct_assert(NVOS33_FLAGS_CACHING_TYPE_DEFAULT       == NV_MEMORY_DEFAULT);
+ct_assert(NVOS33_FLAGS_CACHING_TYPE_UNCACHED_WEAK == NV_MEMORY_UNCACHED_WEAK);
+
 //
 // Map memory entry points.
 //
@@ -218,12 +226,12 @@ memMap_IMPL
     //
     // CPU to directly access protected memory is allowed on MODS
     //
-    if ((pMemoryInfo->Flags & NVOS32_ALLOC_FLAGS_PROTECTED) &&
-        (pMapParams->protect != NV_PROTECT_WRITEABLE) &&
-        ! RMCFG_FEATURE_PLATFORM_MODS)
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
+        if ((pMemoryInfo->Flags & NVOS32_ALLOC_FLAGS_PROTECTED) &&
+            (pMapParams->protect != NV_PROTECT_WRITEABLE) &&
+            ! RMCFG_FEATURE_PLATFORM_MODS)
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
 
     if (!pMapParams->bKernel &&
         FLD_TEST_DRF(OS32, _ATTR2, _PROTECTION_USER, _READ_ONLY, pMemoryInfo->Attr2) &&
@@ -487,6 +495,7 @@ memMap_IMPL
         // direct mapping.
         //
         pMapParams->flags = FLD_SET_DRF(OS33, _FLAGS, _MAPPING, _REFLECTED, pMapParams->flags);
+        pMapParams->flags = FLD_SET_DRF_NUM(OS33, _FLAGS, _CACHING_TYPE, cachingType, pMapParams->flags);
 
         if (rmStatus != NV_OK)
             goto _rmMapMemory_pciFail;
@@ -1061,7 +1070,6 @@ rmapiMapToCpu
     return status;
 }
 
-
 /**
  * Call into Resource Server to register and execute a CPU mapping operation.
  *
@@ -1076,7 +1084,7 @@ rmapiMapToCpu
  *    6. Release any locks taken
  */
 NV_STATUS
-rmapiMapToCpuWithSecInfo
+rmapiMapToCpuWithSecInfoV2
 (
     RM_API            *pRmApi,
     NvHandle           hClient,
@@ -1085,7 +1093,7 @@ rmapiMapToCpuWithSecInfo
     NvU64              offset,
     NvU64              length,
     NvP64             *ppCpuVirtAddr,
-    NvU32              flags,
+    NvU32             *flags,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -1099,13 +1107,13 @@ rmapiMapToCpuWithSecInfo
               hDevice, hMemory);
     NV_PRINTF(LEVEL_INFO,
               "Nv04MapMemory:  offset: %llx length: %llx flags:0x%x\n",
-              offset, length, flags);
+              offset, length, *flags);
 
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
         return status;
 
-    NV_PRINTF(LEVEL_INFO, "MMU_PROFILER Nv04MapMemory 0x%x\n", flags);
+    NV_PRINTF(LEVEL_INFO, "MMU_PROFILER Nv04MapMemory 0x%x\n", *flags);
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
     rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
@@ -1122,13 +1130,15 @@ rmapiMapToCpuWithSecInfo
     rmMapParams.offset = offset;
     rmMapParams.length = length;
     rmMapParams.ppCpuVirtAddr = ppCpuVirtAddr;
-    rmMapParams.flags = flags;
+    rmMapParams.flags = *flags;
     rmMapParams.pLockInfo = &lockInfo;
     rmMapParams.pSecInfo = pSecInfo;
 
     status = serverMap(&g_resServ, rmMapParams.hClient, rmMapParams.hMemory, &rmMapParams);
 
     rmapiEpilogue(pRmApi, &rmApiContext);
+
+    *flags = rmMapParams.flags;
 
     if (status == NV_OK)
     {
@@ -1145,6 +1155,25 @@ rmapiMapToCpuWithSecInfo
     }
 
     return status;
+}
+
+NV_STATUS
+rmapiMapToCpuWithSecInfo
+(
+    RM_API            *pRmApi,
+    NvHandle           hClient,
+    NvHandle           hDevice,
+    NvHandle           hMemory,
+    NvU64              offset,
+    NvU64              length,
+    NvP64             *ppCpuVirtAddr,
+    NvU32              flags,
+    API_SECURITY_INFO *pSecInfo
+)
+{
+    return rmapiMapToCpuWithSecInfoV2(pRmApi, hClient, 
+        hDevice, hMemory, offset, length, ppCpuVirtAddr, 
+        &flags, pSecInfo);
 }
 
 NV_STATUS
@@ -1166,7 +1195,32 @@ rmapiMapToCpuWithSecInfoTls
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    status = rmapiMapToCpuWithSecInfo(pRmApi, hClient, hDevice, hMemory, offset, length, ppCpuVirtAddr, flags, pSecInfo);
+    status = rmapiMapToCpuWithSecInfoV2(pRmApi, hClient, hDevice, hMemory, offset, length, ppCpuVirtAddr, &flags, pSecInfo);
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    return status;
+}
+NV_STATUS
+rmapiMapToCpuWithSecInfoTlsV2
+(
+    RM_API            *pRmApi,
+    NvHandle           hClient,
+    NvHandle           hDevice,
+    NvHandle           hMemory,
+    NvU64              offset,
+    NvU64              length,
+    NvP64             *ppCpuVirtAddr,
+    NvU32             *flags,
+    API_SECURITY_INFO *pSecInfo
+)
+{
+    THREAD_STATE_NODE threadState;
+    NV_STATUS         status;
+
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    status = rmapiMapToCpuWithSecInfoV2(pRmApi, hClient, hDevice, hMemory, offset, length, ppCpuVirtAddr, flags, pSecInfo);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 

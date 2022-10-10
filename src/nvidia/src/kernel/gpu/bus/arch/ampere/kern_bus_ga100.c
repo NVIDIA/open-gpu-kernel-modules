@@ -532,7 +532,8 @@ kbusInitFla_GA100
     //       Bug: 2985556, re-enable once we fix this bug.
     //
     if (((NULL != pKernelMIGManager) && !kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager)) ||
-        (IsSLIEnabled(pGpu)))
+        (IsSLIEnabled(pGpu)) || pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
     {
         NV_PRINTF(LEVEL_INFO, "FLA is disabled, gpu %x is in MIG/SLI mode \n", pGpu->gpuInstance);
         pKernelBus->bFlaSupported = NV_FALSE;
@@ -577,6 +578,7 @@ kbusInitFla_GA100
                 NV_PRINTF(LEVEL_INFO, "Failed to enable FLA for GPU: %x\n", pGpu->gpuInstance);
                 return status;
             }
+
             base = params.addr;
         }
         else
@@ -713,36 +715,34 @@ kbusDestroyHostManagedFlaVaspace_GA100
     NV_PRINTF(LEVEL_INFO, "Freeing the FLA client: 0x%x FLAVASpace:%x, gpu:%x \n",
              pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hFlaVASpace, pGpu->gpuInstance);
 
-    if (pKernelBus->flaInfo.pFlaVAS)
+    if (pKernelBus->flaInfo.bFlaAllocated)
     {
-        NV_ASSERT(pKernelBus->flaInfo.bFlaBind == NV_FALSE);
-        if (pKernelBus->flaInfo.bFlaAllocated)
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+        if (pKernelBus->flaInfo.pFlaVAS != NULL)
         {
-            KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
             vaspaceUnpinRootPageDir(pKernelBus->flaInfo.pFlaVAS, pGpu);
-
-            if (pGpu->pFabricVAS != NULL)
-            {
-                vaspaceUnpinRootPageDir(pGpu->pFabricVAS, pGpu);
-                vmmDestroyVaspace(pVmm, pGpu->pFabricVAS);
-                pGpu->pFabricVAS = NULL;
-            }
-
-            kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
-            pKernelBus->flaInfo.hClient = NV01_NULL_OBJECT;
-            pKernelBus->flaInfo.hDevice = NV01_NULL_OBJECT;
-            pKernelBus->flaInfo.hSubDevice = NV01_NULL_OBJECT;
             pKernelBus->flaInfo.hFlaVASpace = NV01_NULL_OBJECT;
             pKernelBus->flaInfo.pFlaVAS = NULL;
-            pKernelBus->flaInfo.bFlaAllocated = NV_FALSE;
+        }
 
-            if (pKernelNvlink == NULL || !knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
-            {
-                pKernelBus->flaInfo.bFlaRangeRegistered = NV_FALSE;
-                pKernelBus->flaInfo.base = 0;
-                pKernelBus->flaInfo.size = 0;
-            }
+        if (pGpu->pFabricVAS != NULL)
+        {
+            vaspaceUnpinRootPageDir(pGpu->pFabricVAS, pGpu);
+            vmmDestroyVaspace(pVmm, pGpu->pFabricVAS);
+            pGpu->pFabricVAS = NULL;
+        }
+
+        kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
+        pKernelBus->flaInfo.hClient = NV01_NULL_OBJECT;
+        pKernelBus->flaInfo.hDevice = NV01_NULL_OBJECT;
+        pKernelBus->flaInfo.hSubDevice = NV01_NULL_OBJECT;
+        pKernelBus->flaInfo.bFlaAllocated = NV_FALSE;
+        if (pKernelNvlink == NULL || !knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
+        {
+            pKernelBus->flaInfo.bFlaRangeRegistered = NV_FALSE;
+            pKernelBus->flaInfo.base = 0;
+            pKernelBus->flaInfo.size = 0;
         }
     }
 }

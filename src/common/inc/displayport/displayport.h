@@ -104,6 +104,7 @@ typedef enum
     linkBW_3_24Gbps                = 0x0C,
     linkBW_4_32Gbps                = 0x10,
     linkBW_5_40Gbps                = 0x14,
+    linkBW_6_75Gbps                = 0x19,
     linkBW_8_10Gbps                = 0x1E,
     linkBW_Supported
 } DP_LINK_BANDWIDTH;
@@ -118,6 +119,7 @@ typedef enum
     linkSpeedId_2_43Gbps                = 0x05,
     linkSpeedId_3_24Gbps                = 0x06,
     linkSpeedId_4_32Gbps                = 0x07,
+    linkSpeedId_6_75Gbps                = 0x08,
     linkSpeedId_Supported
 } DP_LINK_SPEED_INDEX;
 
@@ -535,7 +537,8 @@ typedef struct PanelReplayConfig
 #define IS_INTERMEDIATE_LINKBW(val) (((NvU32)(val)==linkBW_2_16Gbps) || \
                                      ((NvU32)(val)==linkBW_2_43Gbps) || \
                                      ((NvU32)(val)==linkBW_3_24Gbps) || \
-                                     ((NvU32)(val)==linkBW_4_32Gbps))
+                                     ((NvU32)(val)==linkBW_4_32Gbps) || \
+                                     ((NvU32)(val)==linkBW_6_75Gbps))
 
 #define IS_VALID_LINKBW(val) (IS_STANDARD_LINKBW(val) || \
                               IS_INTERMEDIATE_LINKBW(val))

@@ -41,6 +41,7 @@
 #include "class/clc6b5sw.h"
 #include "class/clc7b5.h"
 
+#include "class/clc8b5.h"
 /*
  * This function returns an engine descriptor corresponding to the class
  * and engine instance passed in.
@@ -92,6 +93,7 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
         case AMPERE_DMA_COPY_A:
         case AMPERE_DMA_COPY_B:
 
+        case HOPPER_DMA_COPY_A:
         {
             NVB0B5_ALLOCATION_PARAMETERS *pNvA0b5CreateParms = pAllocParams;
 

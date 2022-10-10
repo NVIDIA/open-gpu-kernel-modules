@@ -458,6 +458,27 @@ NvU32 vgpuDevReadReg032(
     return 0;
 }
 
+NvU64 osGetMaxUserVa(void);
+
+/**
+ * @brief Get the Max User VA address shift
+ *
+ * The max user VA address shift may not be power-2 aligned,
+ * so do some math to round it up.
+ *
+ * @return max user VA address shift
+ */
+NvU32
+osGetCpuVaAddrShift(void)
+{
+    NvU64 maxUserVa = osGetMaxUserVa();
+    
+    //
+    // Add 1 to account for kernel VA space, on the assumption
+    // that kernel VA space is the top half of the address space.
+    //
+    return (64 - portUtilCountLeadingZeros64(maxUserVa - 1)) + 1;
+}
 
 /**
  * @brief Adds a filter to trap a certain CPU virtual address range

@@ -52,6 +52,7 @@
 #include "ctrl/ctrl0073.h"
 #include "ctrl/ctrlb06f.h"
 #include "ctrl/ctrl83de.h"
+#include "ctrl/ctrla083.h"
 #ifdef USE_AMAPLIB
 #include "amap_v1.h"
 #endif
@@ -310,23 +311,6 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             ((NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS*)pParams)->pChannelList,
                             ((NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS*)pParams)->numChannels, sizeof(NvU32));
             paramsCnt++;
-
-            break;
-        }
-        case NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES:
-        {
-            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS);
-
-            NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS *pUserParams = (NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS*)pParams;
-            NvU32  featureDebugValuesSize = (pUserParams->pFeatureDebugValues != NULL) ? sizeof(NV0073_CTRL_DP_MSA_PROPERTIES_VALUES)
-                                                                                       : 0;
-
-            RMAPI_PARAM_COPY_INIT(paramCopies[0],
-                            pUserParams->pFeatureDebugValues,
-                            pUserParams->pFeatureDebugValues,
-                            1, featureDebugValuesSize);
-            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
-            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
 
             break;
         }
@@ -917,12 +901,6 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
         {
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_I2C_ACCESS_PARAMS*)pParams)->data = paramCopies[0].pUserParams;
-            break;
-        }
-        case NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES:
-        {
-            status = rmapiParamsRelease(&paramCopies[0]);
-            ((NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS*)pParams)->pFeatureDebugValues = NvP64_VALUE(paramCopies[0].pUserParams);
             break;
         }
         case NV2080_CTRL_CMD_GR_GET_INFO:

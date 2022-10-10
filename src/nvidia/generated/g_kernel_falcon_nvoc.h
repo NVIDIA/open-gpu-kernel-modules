@@ -502,18 +502,6 @@ NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon**, Dynamic*, 
 #define gkflcnServiceNotificationInterrupt(arg0, arg1, arg2) gkflcnServiceNotificationInterrupt_DISPATCH(arg0, arg1, arg2)
 #define gkflcnClearInterrupt(pGpu, pIntrService, pParams) gkflcnClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define gkflcnServiceInterrupt(pGpu, pIntrService, pParams) gkflcnServiceInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-void gkflcnNonstallIntrCheckAndClear_TU102(struct OBJGPU *arg0, struct GenericKernelFalcon *pKernelFlcn, struct THREAD_STATE_NODE *arg1);
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline void gkflcnNonstallIntrCheckAndClear(struct OBJGPU *arg0, struct GenericKernelFalcon *pKernelFlcn, struct THREAD_STATE_NODE *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("GenericKernelFalcon was disabled!");
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define gkflcnNonstallIntrCheckAndClear(arg0, pKernelFlcn, arg1) gkflcnNonstallIntrCheckAndClear_TU102(arg0, pKernelFlcn, arg1)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define gkflcnNonstallIntrCheckAndClear_HAL(arg0, pKernelFlcn, arg1) gkflcnNonstallIntrCheckAndClear(arg0, pKernelFlcn, arg1)
-
 NV_STATUS gkflcnResetHw_IMPL(struct OBJGPU *pGpu, struct GenericKernelFalcon *pGenKernFlcn);
 
 static inline NV_STATUS gkflcnResetHw_DISPATCH(struct OBJGPU *pGpu, struct GenericKernelFalcon *pGenKernFlcn) {

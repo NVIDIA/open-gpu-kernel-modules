@@ -488,6 +488,11 @@ typedef struct _def_acr_reserved_dmem
 #define NV_FLCN_ACR_DESC_FLAGS_SIG_VERIF_DISABLE   0
 #define NV_FLCN_ACR_DESC_FLAGS_SIG_VERIF_ENABLE    1
 
+// Macro defines to be consumed by RM to get GH100 GSP Inst_in_sys FMC boot status.
+#define GSP_INST_IN_SYS_COMPLETION_STATUS_OK          0x55
+#define GSP_INST_IN_SYS_COMPLETION_STATUS_ERROR       0xAA
+#define GSP_INST_IN_SYS_COMPLETION_STATUS_IN_PROGRESS 0x00
+
 /*!
  * Size of ACR phase in dword
  */

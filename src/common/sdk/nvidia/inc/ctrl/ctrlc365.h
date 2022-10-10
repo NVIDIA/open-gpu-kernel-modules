@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrlc365.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 #define NVC365_CTRL_CMD(cat,idx)          NVXXXX_CTRL_CMD(0xC365, NVC365_CTRL_##cat, idx)
 

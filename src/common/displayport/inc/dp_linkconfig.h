@@ -145,6 +145,7 @@ namespace DisplayPort
         EDP_3_24GHZ = 324000000,
         EDP_4_32GHZ = 432000000,
         HBR2        = 540000000,
+        EDP_6_75GHZ = 675000000,
         HBR3        = 810000000
     };
 

@@ -58,6 +58,7 @@
 #include <nvSha256.h>
 #include <gpu/gsp/kernel_gsp.h>
 #include <logdecode.h>
+#include <gpu/fsp/kern_fsp.h>
 
 #include <mem_mgr/virt_mem_mgr.h>
 
@@ -637,6 +638,15 @@ osInitNvMapping(
     sysApplyLockingPolicy(pSys);
 
     pGpu->busInfo.IntLine = nv->interrupt_line;
+
+    //
+    // Set the DMA address size as soon as we have the HAL to call to
+    // determine the precise number of physical address bits supported
+    // by the architecture. DMA allocations should not be made before
+    // this point.
+    //
+    nv_set_dma_address_size(nv, gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM));
+
     pGpu->dmaStartAddress = (RmPhysAddr)nv_get_dma_start_address(nv);
     if (nv->fb != NULL)
     {
@@ -723,15 +733,6 @@ osTeardownScalability(
     OBJCL *pCl = SYS_GET_CL(pSys);
 
     return clTeardownPcie(pGpu, pCl);
-}
-
-static inline void
-RmSetDeviceDmaAddressSize(
-    nv_state_t *nv,
-    NvU8 numDmaAddressBits
-)
-{
-    nv_set_dma_address_size(nv, numDmaAddressBits);
 }
 
 static void
@@ -882,8 +883,6 @@ RmInitNvDevice(
         RM_SET_ERROR(*status, RM_INIT_GPU_PRE_INIT_FAILED);
         return;
     }
-
-    RmSetDeviceDmaAddressSize(nv, gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM));
 
     os_disable_console_access();
 
@@ -1188,7 +1187,7 @@ NvBool RmInitPrivateState(
     // Set up a reasonable default DMA address size, based on the minimum
     // possible on currently supported GPUs.
     //
-    RmSetDeviceDmaAddressSize(pNv, NV_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
+    nv_set_dma_address_size(pNv, NV_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
 
     os_mem_set(nvp, 0, sizeof(*nvp));
     nvp->status = NV_ERR_INVALID_STATE;
@@ -1582,7 +1581,7 @@ NvBool RmInitAdapter(
     //
     if (nv->request_firmware)
     {
-        RmSetDeviceDmaAddressSize(nv, NV_GSP_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
+        nv_set_dma_address_size(nv, NV_GSP_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
 
         gspFwHandle = nv_get_firmware(nv, NV_FIRMWARE_GSP,
                                       &gspFw.pBuf,
@@ -1653,6 +1652,17 @@ NvBool RmInitAdapter(
     {
         RM_SET_ERROR(status, RM_INIT_SCALABILITY_FAILED);
         goto shutdown;
+    }
+
+    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    if ((pKernelFsp != NULL) && !IS_GSP_CLIENT(pGpu) && !IS_VIRTUAL(pGpu))
+    {
+        status.rmStatus = kfspSendBootCommands_HAL(pGpu, pKernelFsp);
+        if (status.rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "FSP boot command failed.\n");
+            goto shutdown;
+        }
     }
 
     RmSetConsolePreservationParams(pGpu);
@@ -1830,7 +1840,7 @@ NvBool RmInitAdapter(
     RmInitS0ixPowerManagement(nv);
     RmInitDeferredDynamicPowerManagement(nv);
 
-    if (!NV_IS_SOC_DISPLAY_DEVICE(nv))
+    if (!NV_IS_SOC_DISPLAY_DEVICE(nv) && !NV_IS_SOC_IGPU_DEVICE(nv))
     {
         status.rmStatus = RmRegisterGpudb(pGpu);
         if (status.rmStatus != NV_OK)

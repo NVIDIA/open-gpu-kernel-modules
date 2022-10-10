@@ -111,8 +111,6 @@ rmapiDupObjectWithSecInfo
               "Nv04DupObject:  hClientSrc:0x%x hObjectSrc:0x%x flags:0x%x\n",
               hClientSrc, hObjectSrc, flags);
 
-    NVRM_TRACE_API('DUPH', hClient, hObject, hObjectSrc);
-
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
     {
@@ -145,7 +143,6 @@ rmapiDupObjectWithSecInfo
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "...handle dup complete\n");
-        NVRM_TRACE('DUPH');
     }
     else
     {
@@ -244,8 +241,6 @@ rmapiShareWithSecInfo
               "Nv04Share: hClient:0x%x hObject:0x%x pSharePolicy:%p\n",
               hClient, hObject, pSharePolicy);
 
-    NVRM_TRACE_API('SHAR', hClient, hObject, 0);
-
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
     {
@@ -270,7 +265,6 @@ rmapiShareWithSecInfo
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "...resource share complete\n");
-        NVRM_TRACE('SHAR');
     }
     else
     {

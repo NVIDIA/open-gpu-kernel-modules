@@ -653,7 +653,7 @@ done:
 static void thrashing_reset_pages_in_region(uvm_va_block_t *va_block, NvU64 address, NvU64 bytes);
 
 // Destroy the thrashing detection struct for the given block
-static void thrashing_info_destroy(uvm_va_block_t *va_block)
+void uvm_perf_thrashing_info_destroy(uvm_va_block_t *va_block)
 {
     block_thrashing_info_t *block_thrashing = thrashing_info_get(va_block);
 
@@ -687,7 +687,7 @@ void thrashing_block_destroy_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t
     if (!va_block)
         return;
 
-    thrashing_info_destroy(va_block);
+    uvm_perf_thrashing_info_destroy(va_block);
 }
 
 // Sanity checks of the thrashing tracking state
@@ -1118,9 +1118,9 @@ static NV_STATUS unmap_remote_pinned_pages_from_processors(uvm_va_block_t *va_bl
 
 // Unmap remote mappings from all processors on the pinned pages
 // described by region and block_thrashing->pinned pages.
-static NV_STATUS unmap_remote_pinned_pages_from_all_processors(uvm_va_block_t *va_block,
-                                                               uvm_va_block_context_t *va_block_context,
-                                                               uvm_va_block_region_t region)
+NV_STATUS unmap_remote_pinned_pages_from_all_processors(uvm_va_block_t *va_block,
+                                                        uvm_va_block_context_t *va_block_context,
+                                                        uvm_va_block_region_t region)
 {
     block_thrashing_info_t *block_thrashing;
     uvm_processor_mask_t unmap_processors;
@@ -2111,7 +2111,7 @@ NV_STATUS uvm_test_set_page_thrashing_policy(UVM_TEST_SET_PAGE_THRASHING_POLICY_
                                                                                                  block_context,
                                                                                                  va_block_region));
 
-                thrashing_info_destroy(va_block);
+                uvm_perf_thrashing_info_destroy(va_block);
 
                 uvm_mutex_unlock(&va_block->lock);
 
@@ -2122,6 +2122,15 @@ NV_STATUS uvm_test_set_page_thrashing_policy(UVM_TEST_SET_PAGE_THRASHING_POLICY_
                     goto done_unlock_va_space;
                 }
             }
+        }
+
+        status = uvm_hmm_clear_thrashing_policy(va_space);
+
+        // Re-enable thrashing on failure to avoid getting asserts
+        // about having state while thrashing is disabled
+        if (status != NV_OK) {
+            va_space_thrashing->params.enable = true;
+            goto done_unlock_va_space;
         }
     }
 

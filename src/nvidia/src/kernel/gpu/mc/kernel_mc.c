@@ -28,9 +28,15 @@
 #include "diagnostics/nv_debug_dump.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mmu/kern_gmmu.h"
+#include "kernel/gpu/bif/kernel_bif.h"
+#include "nvRmReg.h"
+#include "nv_ref.h"
 
 #include "lib/protobuf/prb_util.h"
 #include "g_nvdebug_pb.h"
+
+static void      _kmcInitPciRegistryOverrides(OBJGPU *, KernelMc *);
+static NV_STATUS _kmcSetPciLatencyTimer(OBJGPU *, KernelMc *);
 
 //
 // MC RM SubDevice Controls
@@ -200,6 +206,8 @@ kmcStateInitLocked_IMPL
     KernelMc *pKernelMc
 )
 {
+    _kmcInitPciRegistryOverrides(pGpu, pKernelMc);
+
     NvDebugDump *pNvd = GPU_GET_NVD(pGpu);
     if(pNvd != NULL)
     {
@@ -211,5 +219,79 @@ kmcStateInitLocked_IMPL
                         REF_DEF(NVD_ENGINE_FLAGS_SOURCE,   _BOTH),
                         (void *)pKernelMc);
     }
+
+    return NV_OK;
+}
+
+NV_STATUS
+kmcStateLoad_IMPL
+(
+    OBJGPU *pGpu,
+    KernelMc *pKernelMc,
+    NvU32 flags
+)
+{
+    if (!RMCFG_FEATURE_PLATFORM_GSP &&
+        kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
+        NV2080_CTRL_BUS_INFO_TYPE_AXI)
+    {
+        // Adjust the pci latency timer if needed
+        _kmcSetPciLatencyTimer(pGpu, pKernelMc);
+    }
+    
+    return NV_OK;
+}
+
+static void
+_kmcInitPciRegistryOverrides
+(
+    OBJGPU *pGpu,
+    KernelMc *pKernelMc
+)
+{
+    NvU32 data32;
+
+    // Initialize pci latency timer control state
+    pKernelMc->LatencyTimerControl.DontModifyTimerValue = NV_FALSE;
+    pKernelMc->LatencyTimerControl.LatencyTimerValue = NV_CONFIG_PCI_NV_3_LATENCY_TIMER_248_CLOCKS;
+
+    // See if there is a requested override
+    if (osReadRegistryDword(pGpu,
+                            NV_REG_STR_PCI_LATENCY_TIMER_CONTROL, &data32) == NV_OK)
+    {
+        if(data32 == 0xFFFFFFFF)
+        {
+            pKernelMc->LatencyTimerControl.DontModifyTimerValue = NV_TRUE;
+        }
+        else
+        {
+            pKernelMc->LatencyTimerControl.LatencyTimerValue = (data32 >> 3) & 0x1F;
+        }
+    }
+}
+
+static NV_STATUS
+_kmcSetPciLatencyTimer
+(
+    OBJGPU *pGpu,
+    KernelMc *pKernelMc
+)
+{
+    NvU32 data;
+
+    // Should we skip the set?
+    if(!(pKernelMc->LatencyTimerControl.DontModifyTimerValue) && !IS_VIRTUAL(pGpu))
+    {
+        // No, so update with our cached value
+        // BUG 229902, use read and update, was trashing "cache line size", even though
+        //     HW doc says that is not mapped.
+        if (NV_OK != GPU_BUS_CFG_RD32(pGpu, NV_CONFIG_PCI_NV_3, &data))
+        {
+            return NV_ERR_GENERIC;
+        }
+        data = FLD_SET_DRF_NUM(_CONFIG, _PCI_NV_3, _LATENCY_TIMER, pKernelMc->LatencyTimerControl.LatencyTimerValue, data);
+        GPU_BUS_CFG_WR32(pGpu, NV_CONFIG_PCI_NV_3, data);
+    }
+
     return NV_OK;
 }

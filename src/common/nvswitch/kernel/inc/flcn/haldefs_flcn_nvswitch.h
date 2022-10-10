@@ -97,6 +97,7 @@ void flcnQueueSetupHal(struct FLCN *pFlcn);
 void flcnRtosSetupHal(struct FLCN *pFlcn);
 void flcnQueueRdSetupHal(struct FLCN *pFlcn);
 
+void flcnSetupHal_LS10(struct FLCN *pFlcn);
 void flcnSetupHal_LR10(struct FLCN *pFlcn);
 
 void flcnSetupHal_v03_00(struct FLCN *pFlcn);

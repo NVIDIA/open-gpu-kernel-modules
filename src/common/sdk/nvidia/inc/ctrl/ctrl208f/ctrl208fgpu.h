@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,9 +29,6 @@
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file: ctrl/ctrl208f/ctrl208fgpu.finn
 //
-
-
-
 
 #include "ctrl/ctrl2080/ctrl2080gr.h"        /* 208F is partially derivative of 2080 */
 #include "ctrl/ctrl208f/ctrl208fbase.h"

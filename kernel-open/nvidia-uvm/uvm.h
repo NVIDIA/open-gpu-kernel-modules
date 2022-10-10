@@ -216,12 +216,6 @@ NV_STATUS UvmDeinitialize(void);
 // Note that it is not required to release VA ranges that were reserved with
 // UvmReserveVa().
 //
-
-
-
-
-
-
 // UvmReopen() closes the open file returned by UvmGetFileDescriptor() and 
 // replaces it with a new open file with the same name.
 //
@@ -416,14 +410,6 @@ NV_STATUS UvmRegisterGpuSmc(const NvProcessorUuid *gpuUuid,
 // location will have their range group association changed to
 // UVM_RANGE_GROUP_ID_NONE.
 //
-
-
-
-
-
-
-
-
 // Arguments:
 //     gpuUuid: (INPUT)
 //         UUID of the GPU to unregister.
@@ -1276,14 +1262,6 @@ NV_STATUS UvmCleanUpZombieResources(void);
 //
 // The VA range can be unmapped and freed via a call to UvmFree.
 //
-
-
-
-
-
-
-
-
 // Arguments:
 //     base: (INPUT)
 //         Base address of the virtual address range.
@@ -1320,10 +1298,6 @@ NV_STATUS UvmCleanUpZombieResources(void);
 //     NV_ERR_INVALID_ARGUMENT:
 //         perGpuAttribs is NULL but gpuAttribsCount is non-zero or vice-versa,
 //         or caching is requested on more than one GPU.
-
-
-
-
 //
 //     NV_ERR_NOT_SUPPORTED:
 //         The current process is not the one which called UvmInitialize, and

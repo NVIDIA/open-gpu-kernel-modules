@@ -381,8 +381,8 @@ static void _nv04MapMemoryWithSecInfo
 {
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL);
 
-    pArgs->status = pRmApi->MapToCpuWithSecInfo(pRmApi, pArgs->hClient, pArgs->hDevice, pArgs->hMemory, pArgs->offset,
-                                                pArgs->length, &pArgs->pLinearAddress, pArgs->flags, &secInfo);
+    pArgs->status = pRmApi->MapToCpuWithSecInfoV2(pRmApi, pArgs->hClient, pArgs->hDevice, pArgs->hMemory, pArgs->offset,
+                                                  pArgs->length, &pArgs->pLinearAddress, &pArgs->flags, &secInfo);
 }
 
 /*

@@ -31,7 +31,6 @@ MODULE_PARM_DESC(uvm_disable_hmm,
                  "HMM is not supported in the driver, or if ATS settings "
                  "conflict with HMM.");
 
-
 #if UVM_IS_CONFIG_HMM()
 
 #include <linux/hmm.h>
@@ -785,6 +784,60 @@ NV_STATUS uvm_hmm_find_policy_vma_and_outer(uvm_va_block_t *va_block,
     return NV_OK;
 }
 
-#endif // UVM_IS_CONFIG_HMM()
+static NV_STATUS hmm_clear_thrashing_policy(uvm_va_block_t *va_block,
+                                            uvm_va_block_context_t *block_context)
+{
+    uvm_va_policy_t *policy;
+    uvm_va_policy_node_t *node;
+    uvm_va_block_region_t region;
+    NV_STATUS status = NV_OK;
 
+    uvm_mutex_lock(&va_block->lock);
+
+    uvm_for_each_va_policy_in(policy, va_block, va_block->start, va_block->end, node, region) {
+        block_context->policy = policy;
+
+        // Unmap may split PTEs and require a retry. Needs to be called
+        // before the pinned pages information is destroyed.
+        status = UVM_VA_BLOCK_RETRY_LOCKED(va_block,
+                                           NULL,
+                                           unmap_remote_pinned_pages_from_all_processors(va_block,
+                                                                                         block_context,
+                                                                                         region));
+
+        uvm_perf_thrashing_info_destroy(va_block);
+
+        if (status != NV_OK)
+            break;
+    }
+
+    uvm_mutex_unlock(&va_block->lock);
+
+    return status;
+}
+
+NV_STATUS uvm_hmm_clear_thrashing_policy(uvm_va_space_t *va_space)
+{
+    uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
+    uvm_range_tree_node_t *node, *next;
+    uvm_va_block_t *va_block;
+    NV_STATUS status = NV_OK;
+
+    if (!uvm_hmm_is_enabled(va_space))
+        return NV_OK;
+
+    uvm_assert_rwsem_locked_write(&va_space->lock);
+
+    uvm_range_tree_for_each_safe(node, next, &va_space->hmm.blocks) {
+        va_block = hmm_va_block_from_node(node);
+
+        status = hmm_clear_thrashing_policy(va_block, block_context);
+        if (status != NV_OK)
+            break;
+    }
+
+    return status;
+}
+
+#endif // UVM_IS_CONFIG_HMM()
 

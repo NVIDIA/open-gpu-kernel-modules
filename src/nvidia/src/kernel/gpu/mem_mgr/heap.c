@@ -4524,6 +4524,13 @@ heapStoreBlackList_IMPL
 
     for (i = 0; i < maxInputPages; i++)
     {
+        //
+        // Bug: 2999257
+        // currently pre-Hopper we have 37b FB PA, whose PFN will be 25b
+        // From Hopper+ we have 52b PA, whose PFN will be 40b PA and hence
+        // the macro NV_INFOROM_BLACKLIST_PAGE_NUMBER width of 28b will not be
+        // sufficient to capture the entire address, this needs to be fixed.
+        //
         status = heapAddPageToBlackList(pGpu, pHeap,
                 DRF_VAL64(_HEAP, _PAGE_OFFLINE, _PAGE_NUMBER, pPageNumbers[i]),
                 (NvU32)DRF_VAL64(_HEAP, _PAGE_OFFLINE, _TYPE, pPageNumbers[i]));

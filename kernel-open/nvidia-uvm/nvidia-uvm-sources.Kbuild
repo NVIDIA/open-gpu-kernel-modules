@@ -1,6 +1,12 @@
 NVIDIA_UVM_SOURCES ?=
 NVIDIA_UVM_SOURCES_CXX ?=
 
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hopper.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hopper_fault_buffer.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hopper_ce.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hopper_host.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hopper_mmu.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_ada.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_common.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_linux.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_debug_optimized.c

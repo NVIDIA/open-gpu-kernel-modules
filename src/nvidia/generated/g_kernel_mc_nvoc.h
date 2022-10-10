@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,13 @@ extern "C" {
 #include "gpu/eng_state.h"
 #include "gpu/gpu_halspec.h"
 
+// Latency Timer Control determines how we set or dont set the PCI latency timer.
+typedef struct LATENCY_TIMER_CONTROL
+{
+    NvBool DontModifyTimerValue;      // Dont touch the timer value at all.
+    NvU32 LatencyTimerValue;        // Requested value for PCI latency timer.
+} LATENCY_TIMER_CONTROL;
+
 #ifdef NVOC_KERNEL_MC_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
@@ -56,10 +63,10 @@ struct KernelMc {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct KernelMc *__nvoc_pbase_KernelMc;
     NV_STATUS (*__kmcStateInitLocked__)(struct OBJGPU *, struct KernelMc *);
+    NV_STATUS (*__kmcStateLoad__)(struct OBJGPU *, struct KernelMc *, NvU32);
     NV_STATUS (*__kmcWritePmcEnableReg__)(struct OBJGPU *, struct KernelMc *, NvU32, NvBool, NvBool);
     NvU32 (*__kmcReadPmcEnableReg__)(struct OBJGPU *, struct KernelMc *, NvBool);
     NV_STATUS (*__kmcReconcileTunableState__)(POBJGPU, struct KernelMc *, void *);
-    NV_STATUS (*__kmcStateLoad__)(POBJGPU, struct KernelMc *, NvU32);
     NV_STATUS (*__kmcStateUnload__)(POBJGPU, struct KernelMc *, NvU32);
     NV_STATUS (*__kmcStatePreLoad__)(POBJGPU, struct KernelMc *, NvU32);
     NV_STATUS (*__kmcStatePostUnload__)(POBJGPU, struct KernelMc *, NvU32);
@@ -77,6 +84,7 @@ struct KernelMc {
     NV_STATUS (*__kmcSetTunableState__)(POBJGPU, struct KernelMc *, void *);
     NV_STATUS (*__kmcConstructEngine__)(POBJGPU, struct KernelMc *, ENGDESCRIPTOR);
     NvBool (*__kmcIsPresent__)(POBJGPU, struct KernelMc *);
+    LATENCY_TIMER_CONTROL LatencyTimerControl;
 };
 
 #ifndef __NVOC_CLASS_KernelMc_TYPEDEF__
@@ -110,12 +118,12 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelMc((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 #define kmcStateInitLocked(pGpu, pKernelMc) kmcStateInitLocked_DISPATCH(pGpu, pKernelMc)
+#define kmcStateLoad(pGpu, pKernelMc, arg0) kmcStateLoad_DISPATCH(pGpu, pKernelMc, arg0)
 #define kmcWritePmcEnableReg(pGpu, pKernelMc, arg0, arg1, arg2) kmcWritePmcEnableReg_DISPATCH(pGpu, pKernelMc, arg0, arg1, arg2)
 #define kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, arg0, arg1, arg2) kmcWritePmcEnableReg_DISPATCH(pGpu, pKernelMc, arg0, arg1, arg2)
 #define kmcReadPmcEnableReg(pGpu, pKernelMc, arg0) kmcReadPmcEnableReg_DISPATCH(pGpu, pKernelMc, arg0)
 #define kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, arg0) kmcReadPmcEnableReg_DISPATCH(pGpu, pKernelMc, arg0)
 #define kmcReconcileTunableState(pGpu, pEngstate, pTunableState) kmcReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kmcStateLoad(pGpu, pEngstate, arg0) kmcStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kmcStateUnload(pGpu, pEngstate, arg0) kmcStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kmcStatePreLoad(pGpu, pEngstate, arg0) kmcStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kmcStatePostUnload(pGpu, pEngstate, arg0) kmcStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -165,6 +173,12 @@ static inline NV_STATUS kmcStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct 
     return pKernelMc->__kmcStateInitLocked__(pGpu, pKernelMc);
 }
 
+NV_STATUS kmcStateLoad_IMPL(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0);
+
+static inline NV_STATUS kmcStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0) {
+    return pKernelMc->__kmcStateLoad__(pGpu, pKernelMc, arg0);
+}
+
 NV_STATUS kmcWritePmcEnableReg_GK104(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0, NvBool arg1, NvBool arg2);
 
 NV_STATUS kmcWritePmcEnableReg_GA100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0, NvBool arg1, NvBool arg2);
@@ -191,10 +205,6 @@ static inline NvU32 kmcReadPmcEnableReg_DISPATCH(struct OBJGPU *pGpu, struct Ker
 
 static inline NV_STATUS kmcReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelMc *pEngstate, void *pTunableState) {
     return pEngstate->__kmcReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kmcStateLoad_DISPATCH(POBJGPU pGpu, struct KernelMc *pEngstate, NvU32 arg0) {
-    return pEngstate->__kmcStateLoad__(pGpu, pEngstate, arg0);
 }
 
 static inline NV_STATUS kmcStateUnload_DISPATCH(POBJGPU pGpu, struct KernelMc *pEngstate, NvU32 arg0) {

@@ -29,9 +29,6 @@
 // Source file: ctrl/ctrl0000/ctrl0000system.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 #include "ctrl/ctrl0000/ctrl0000base.h"
 
@@ -222,6 +219,27 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS {
     NvU8  stepping;                           /* Silicon stepping      */
     NvU32 coresOnDie;                         /* cpu cores per die     */
 } NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS;
+
+// Macros for CPU family information
+#define NV0000_CTRL_SYSTEM_CPU_FAMILY                         3:0
+#define NV0000_CTRL_SYSTEM_CPU_EXTENDED_FAMILY               11:4
+
+// Macros for CPU model information
+#define NV0000_CTRL_SYSTEM_CPU_MODEL                          3:0
+#define NV0000_CTRL_SYSTEM_CPU_EXTENDED_MODEL                 7:4
+
+// Macros for AMD CPU information
+#define NV0000_CTRL_SYSTEM_CPU_ID_AMD_FAMILY                  0xF
+#define NV0000_CTRL_SYSTEM_CPU_ID_AMD_EXTENDED_FAMILY         0xA
+#define NV0000_CTRL_SYSTEM_CPU_ID_AMD_MODEL                   0x0
+#define NV0000_CTRL_SYSTEM_CPU_ID_AMD_EXTENDED_MODEL          0x4
+
+// Macros for Intel CPU information
+#define NV0000_CTRL_SYSTEM_CPU_ID_INTEL_FAMILY                0x6
+#define NV0000_CTRL_SYSTEM_CPU_ID_INTEL_EXTENDED_FAMILY       0x0
+#define NV0000_CTRL_SYSTEM_CPU_ID_INTEL_CORE_S_MODEL          0x7
+#define NV0000_CTRL_SYSTEM_CPU_ID_INTEL_CORE_P_MODEL          0xA
+#define NV0000_CTRL_SYSTEM_CPU_ID_INTEL_EXTENDED_MODEL        0x9
 
 /*  processor type values */
 #define NV0000_CTRL_SYSTEM_CPU_TYPE_UNKNOWN            (0x00000000)

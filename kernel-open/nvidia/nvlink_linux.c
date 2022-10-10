@@ -207,11 +207,6 @@ static int nvlink_fops_release(struct inode *inode, struct file *filp)
 
     nvlink_print(NVLINK_DBG_INFO, "nvlink driver close\n");
 
-
-
-
-
-
     mutex_lock(&nvlink_drvctx.lock);
 
     if (private->capability_fds.fabric_mgmt > 0)

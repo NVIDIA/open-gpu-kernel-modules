@@ -308,7 +308,9 @@ namespace DisplayPort
 
     static const NvU8 ddcAddrList[] = {EDID_DDC_ADR0, EDID_DDC_ADR1, EDID_DDC_ADR2};
     const NvU8 ddcAddrListSize = sizeof(ddcAddrList)/sizeof(NvU8);
-    const NvU8 EDID_READ_MAX_RETRY_COUNT = 6;
+
+    // HDMI 1.4 Section 8.5: HDMI Sink can have up to 100ms to get EDID ready.
+    const NvU8 EDID_READ_RETRY_TIMEOUT_MS = 100;
     const NvU8 EDID_MAX_AUX_RETRIES = 10;
     const NvU8 EDID_AUX_WAIT_TIME = 1;
     NvU8 getEDIDBlockChecksum(const Buffer &);

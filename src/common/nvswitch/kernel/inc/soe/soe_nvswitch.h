@@ -37,10 +37,8 @@ NvlStatus soeInit(struct nvswitch_device *device, PSOE pSoe, NvU32 pci_device_id
 void soeDestroy(struct nvswitch_device *device, PSOE pSoe);
 
 //HAL functions
-NV_STATUS   soeProcessMessages          (struct nvswitch_device *device, PSOE pSoe);
-NV_STATUS   soeWaitForInitAck           (struct nvswitch_device *device, PSOE pSoe);
-
-
+NV_STATUS   soeProcessMessages_HAL      (struct nvswitch_device *device, PSOE pSoe);
+NV_STATUS   soeWaitForInitAck_HAL       (struct nvswitch_device *device, PSOE pSoe);
 NvU32       soeService_HAL              (struct nvswitch_device *device, PSOE pSoe);
 void        soeServiceHalt_HAL          (struct nvswitch_device *device, PSOE pSoe);
 void        soeEmemTransfer_HAL         (struct nvswitch_device *device, PSOE pSoe, NvU32 dmemAddr, NvU8 *pBuf, NvU32 sizeBytes, NvU8 port, NvBool bCopyFrom);

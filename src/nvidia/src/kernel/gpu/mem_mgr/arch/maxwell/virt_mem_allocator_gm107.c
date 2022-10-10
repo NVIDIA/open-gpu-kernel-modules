@@ -1776,6 +1776,54 @@ dmaUpdateVASpace_GF100
         }
 
         // Build PTE template
+        if (pFmt->version == GMMU_FMT_VERSION_3)
+        {
+            NvU32 ptePcfHw  = 0;
+            NvU32 ptePcfSw  = 0;
+
+            // Set the new PTE PCF bits
+            if (valid)
+            {
+                nvFieldSetBool(&pFmt->pPte->fldValid, NV_TRUE,
+                               mapIter.pteTemplate);
+                nvFieldSet32(&pFmt->pPte->fldAperture._enum.desc,
+                             aperture, mapIter.pteTemplate);
+                nvFieldSet32(&pFmt->pPte->fldPeerIndex, peer,
+                             mapIter.pteTemplate);
+                nvFieldSet32(&pFmt->pPte->fldKind, kindNoCompression,
+                             mapIter.pteTemplate);
+                //
+                // Initializing the PTE V3 PCF bits whose default values are as follows:
+                // 1.Regular vs Privilege : Regular (controlled by the priv flag)
+                // 2.RO vs RW             : RW (controlled by the readOnly flag)
+                // 3.Atomic Enabled vs Atomic Disabled : Atomic Enabled
+                // 4.Cached vs Uncached   : Cached (controlled by the isVolatile flag)
+                // 5.ACE vs ACD           : ACD
+                //
+                ptePcfSw |= isVolatile ? (1 << SW_MMU_PCF_UNCACHED_IDX) : 0;
+                ptePcfSw |= readOnly   ? (1 << SW_MMU_PCF_RO_IDX)       : 0;
+                ptePcfSw |= tlbLock    ? (1 << SW_MMU_PCF_NOATOMIC_IDX) : 0;
+                ptePcfSw |= !priv      ? (1 << SW_MMU_PCF_REGULAR_IDX)  : 0;
+            }
+            else
+            {
+                // NV4K and NOMAPPING are not supported right now
+                if (bSparse)
+                {
+                    ptePcfSw |= (1 << SW_MMU_PCF_SPARSE_IDX);
+                }
+                else
+                {
+                    ptePcfSw |= (1 << SW_MMU_PCF_INVALID_IDX);
+                }
+            }
+            NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                               (kgmmuTranslatePtePcfFromSw_HAL(pKernelGmmu, ptePcfSw, &ptePcfHw) == NV_OK),
+                               NV_ERR_INVALID_ARGUMENT);
+
+            nvFieldSet32(&pFmt->pPte->fldPtePcf, ptePcfHw, mapIter.pteTemplate);
+        }
+        else
         {
             if (bSparse)
             {

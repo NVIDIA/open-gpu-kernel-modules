@@ -928,9 +928,6 @@ void nvHdmiDpConstructHeadAudioState(const NvU32 displayId,
     }
 }
 
-#define MAX_AUDIO_DEVICE_ENTRIES \
-    (NV0073_CTRL_DFP_ELD_AUDIO_CAPS_DEVICE_ENTRY_3 + 1)
-
 /*
  * Returns audio device entry of connector, which should
  * be attached to given head. Returns NONE if head is inactive.
@@ -955,7 +952,7 @@ static NvU32 GetAudioDeviceEntry(const NVDispEvoRec *pDispEvo, const NvU32 head)
         return NV0073_CTRL_DFP_ELD_AUDIO_CAPS_DEVICE_ENTRY_NONE;
     }
 
-    ct_assert(MAX_AUDIO_DEVICE_ENTRIES == NVKMS_MAX_HEADS_PER_DISP);
+    ct_assert(NV_MAX_AUDIO_DEVICE_ENTRIES == NVKMS_MAX_HEADS_PER_DISP);
 
     if (nvConnectorUsesDPLib(pConnectorEvo) &&
             (nvDPGetActiveLinkMode(pConnectorEvo->pDpLibConnector) ==
@@ -966,66 +963,10 @@ static NvU32 GetAudioDeviceEntry(const NVDispEvoRec *pDispEvo, const NvU32 head)
     return NV0073_CTRL_DFP_ELD_AUDIO_CAPS_DEVICE_ENTRY_0;
 }
 
-static NvBool IsAudioDeviceEntryActive(
-    const NVConnectorEvoRec *pConnectorEvo, const NvU32 deviceEntry)
-{
-    NvU32 primaryOrIndex;
-    NvU32 head, headsCount = 0;
-    NvBool isInMSTMode, isConnectorActive;
-
-    if ((pConnectorEvo->or.mask == 0x0) ||
-        (deviceEntry >= MAX_AUDIO_DEVICE_ENTRIES)) {
-        return FALSE;
-    }
-
-    primaryOrIndex = nvEvoConnectorGetPrimaryOr(pConnectorEvo);
-
-    isInMSTMode = FALSE;
-    isConnectorActive = FALSE;
-
-    FOR_EACH_INDEX_IN_MASK(
-        32,
-        head,
-        pConnectorEvo->or.ownerHeadMask[primaryOrIndex]) {
-
-        const NVDispEvoRec *pDispEvo = pConnectorEvo->pDispEvo;
-        const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-        NVDpyEvoRec *pDpyEvo = nvGetOneArbitraryDpyEvo(
-            pHeadState->activeDpys, pDispEvo);
-
-        if (headsCount == 0) {
-            isInMSTMode = nvDpyEvoIsDPMST(pDpyEvo);
-        } else {
-            nvAssert(isInMSTMode == nvDpyEvoIsDPMST(pDpyEvo));
-        }
-        headsCount++;
-        isConnectorActive = TRUE;
-    } FOR_EACH_INDEX_IN_MASK_END
-
-    if (!isConnectorActive) {
-        return FALSE;
-    }
-
-    nvAssert(isInMSTMode || headsCount == 1);
-
-    if (isInMSTMode) {
-        return (NVBIT(deviceEntry) &
-                pConnectorEvo->or.ownerHeadMask[primaryOrIndex]) ? TRUE : FALSE;
-    } else if (!isInMSTMode && deviceEntry == 0) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
 /*!
  * Send EDID-Like-Data (ELD) to RM.
  *
- * The ELD contains a subset of the digital display device's EDID
- * information related to audio capabilities. The GPU driver sends the
- * ELD to hardware and the audio driver reads it by issuing the ELD
- * command verb. The ELD should be updated under the following
- * situations:
+ * ELD should be updated under the following situations:
  *
  * 1. Power on reset
  * 2. Pre modeset
@@ -1042,6 +983,15 @@ static NvBool IsAudioDeviceEntryActive(
  * NV_ELD_PRE_MODESET    : isPD = 1, isELDV = 0
  * NV_ELD_POST_MODESET   : isPD = 1, isELDV = 1
  *
+ * The initial ELD case of each audio device entry in hardware is unknown.
+ * Fortunately, NVConnectorEvoRec::audioDevEldCase[] is zero-initialized,
+ * which means each audioDevEldCase[] array element will have initial
+ * value NV_ELD_PRE_MODESET=0.
+ *
+ * That ensures that nvRemoveUnusedHdmiDpAudioDevice(), during
+ * the first modeset, will reset all unused audio device entries to
+ * NV_ELD_POWER_ON_RESET.
+ *
  * \param[in]  pDispEvo       The disp of the displayId
  * \param[in]  displayId      The display device whose ELD should be updated.
  *                            This should be NVDispHeadStateEvoRec::activeRmId
@@ -1054,14 +1004,11 @@ static NvBool IsAudioDeviceEntryActive(
  *                            extracted.
  * \param[in]  eldCase        The condition that requires updating the ELD.
  */
-typedef enum {
-    NV_ELD_POWER_ON_RESET,
-    NV_ELD_PRE_MODESET,
-    NV_ELD_POST_MODESET,
-} NvEldCase;
 
 static void RmSetELDAudioCaps(
-    const NVDispEvoRec *pDispEvo, const NvU32 displayId,
+    const NVDispEvoRec *pDispEvo,
+    NVConnectorEvoRec *pConnectorEvo,
+    const NvU32 displayId,
     const NvU32 deviceEntry,
     const NvU32 maxFreqSupported, const NVEldEvoRec *pEld,
     const NvEldCase eldCase)
@@ -1071,6 +1018,8 @@ static void RmSetELDAudioCaps(
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NvBool isPD, isELDV;
     NvU32 ret;
+
+    pConnectorEvo->audioDevEldCase[deviceEntry] = eldCase;
 
     /* setup the ctrl flag */
     switch(eldCase) {
@@ -1154,7 +1103,7 @@ void nvHdmiDpEnableDisableAudio(const NVDispEvoRec *pDispEvo,
                                 const NvU32 head, const NvBool enable)
 {
     const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-    const NVConnectorEvoRec *pConnectorEvo = pHeadState->pConnectorEvo;
+    NVConnectorEvoRec *pConnectorEvo = pHeadState->pConnectorEvo;
     const NvU32 deviceEntry = GetAudioDeviceEntry(pDispEvo, head);
 
     /*
@@ -1173,6 +1122,7 @@ void nvHdmiDpEnableDisableAudio(const NVDispEvoRec *pDispEvo,
         if (enable) {
             /* Make sure to remove corresponding audio device */
             RmSetELDAudioCaps(pDispEvo,
+                              pConnectorEvo,
                               nvDpyIdToNvU32(pConnectorEvo->displayId),
                               deviceEntry,
                               0 /* maxFreqSupported */,
@@ -1188,6 +1138,7 @@ void nvHdmiDpEnableDisableAudio(const NVDispEvoRec *pDispEvo,
     /* Invalidate ELD buffer before disabling audio */
     if (!enable) {
         RmSetELDAudioCaps(pDispEvo,
+                          pConnectorEvo,
                           pHeadState->activeRmId,
                           deviceEntry,
                           0 /* maxFreqSupported */,
@@ -1206,6 +1157,7 @@ void nvHdmiDpEnableDisableAudio(const NVDispEvoRec *pDispEvo,
     /* Populate ELD buffer after enabling audio */
     if (enable) {
         RmSetELDAudioCaps(pDispEvo,
+                          pConnectorEvo,
                           pHeadState->activeRmId,
                           deviceEntry,
                           pHeadState->audio.maxFreqSupported,
@@ -1235,7 +1187,7 @@ void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo)
 
 void nvRemoveUnusedHdmiDpAudioDevice(const NVDispEvoRec *pDispEvo)
 {
-    const NVConnectorEvoRec *pConnectorEvo;
+    NVConnectorEvoRec *pConnectorEvo;
     const NvU32 activeSorMask = nvGetActiveSorMask(pDispEvo);
 
     FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
@@ -1258,14 +1210,24 @@ void nvRemoveUnusedHdmiDpAudioDevice(const NVDispEvoRec *pDispEvo)
         }
 
         for (deviceEntry = 0;
-             deviceEntry < MAX_AUDIO_DEVICE_ENTRIES;
+             deviceEntry < NV_MAX_AUDIO_DEVICE_ENTRIES;
              deviceEntry++) {
 
-            if (IsAudioDeviceEntryActive(pConnectorEvo, deviceEntry)) {
+            /*
+             * Skip if the audio device is enabled (ELD case is set to
+             * NV_ELD_POST_MODESET by nvHdmiDpEnableDisableAudio()), or if the
+             * audio device is already disabled (ELD case is set to
+             * NV_ELD_POWER_ON_RESET).
+             */
+            if ((pConnectorEvo->audioDevEldCase[deviceEntry] ==
+                        NV_ELD_POST_MODESET) ||
+                    (pConnectorEvo->audioDevEldCase[deviceEntry] ==
+                     NV_ELD_POWER_ON_RESET)) {
                 continue;
             }
 
             RmSetELDAudioCaps(pDispEvo,
+                              pConnectorEvo,
                               nvDpyIdToNvU32(pConnectorEvo->displayId),
                               deviceEntry,
                               0 /* maxFreqSupported */,
@@ -2114,10 +2076,4 @@ void nvHdmiFrlSetConfig(NVDispEvoRec *pDispEvo, NvU32 head)
                           "HDMI FRL link training retried %d times.",
                           retries);
     }
-
-    nvAssert(pHeadState->attributes.digitalSignal ==
-                NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL_TMDS);
-
-    pHeadState->attributes.digitalSignal =
-        NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL_HDMI_FRL;
 }

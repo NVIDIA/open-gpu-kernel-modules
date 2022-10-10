@@ -30,8 +30,6 @@
 // Source file: ctrl/ctrlc370/ctrlc370verif.finn
 //
 
-
-
 #include "ctrl/ctrlc370/ctrlc370base.h"
 /* C370 is partially derived from 5070 */
 #include "ctrl/ctrl5070/ctrl5070verif.h"

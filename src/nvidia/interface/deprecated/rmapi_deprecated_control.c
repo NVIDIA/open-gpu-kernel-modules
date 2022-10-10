@@ -32,6 +32,7 @@
 #include "ctrl/ctrl2080/ctrl2080perf.h" // NV2080_CTRL_CMD_PERF_*
 #include "ctrl/ctrl0080/ctrl0080perf.h" // NV0080_CTRL_CMD_PERF_GET_CAPS
 #include "ctrl/ctrl0080/ctrl0080bsp.h" // NV0080_CTRL_CMD_BSP_GET_CAPS
+#include "ctrl/ctrl0073/ctrl0073dp.h" // NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES
 
 //
 // TODO - deprecation shim shouldn't depend on RM internals 
@@ -61,6 +62,7 @@ static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_BIOS_GET_INFO)(API_SECURITY_INFO 
 static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_BUS_GET_INFO)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
 static NV_STATUS V2_CONVERTER(_NV0080_CTRL_CMD_BSP_GET_CAPS)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
 static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_GPU_GET_INFO)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
+static NV_STATUS V2_CONVERTER(_NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES)(API_SECURITY_INFO *pSecInfo, DEPRECATED_CONTEXT *pContextInternal, NVOS54_PARAMETERS *pArgs);
 
 typedef struct
 {
@@ -77,6 +79,7 @@ static const RmDeprecatedControlEntry rmDeprecatedControlTable[] =
     { NV2080_CTRL_CMD_BUS_GET_INFO,                 V2_CONVERTER(_NV2080_CTRL_CMD_BUS_GET_INFO),                 NV_FALSE},
     { NV0080_CTRL_CMD_BSP_GET_CAPS,                 V2_CONVERTER(_NV0080_CTRL_CMD_BSP_GET_CAPS),                 NV_FALSE},
     { NV2080_CTRL_CMD_GPU_GET_INFO,                 V2_CONVERTER(_NV2080_CTRL_CMD_GPU_GET_INFO),                 NV_FALSE},
+    { NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES,        V2_CONVERTER(_NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES),        NV_FALSE},
     { 0, NULL, NV_FALSE }
 };
 
@@ -637,4 +640,103 @@ static NV_STATUS V2_CONVERTER(_NV2080_CTRL_CMD_GPU_GET_INFO)
                   NV_TRUE, // Command SETs which info to fetch, do copy-in
                   NV_TRUE  // Command GETs info, do copy-out
                  );
+}
+
+static NV_STATUS V2_CONVERTER(_NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES)
+(
+    API_SECURITY_INFO *pSecInfo,
+    DEPRECATED_CONTEXT *pContextInternal,
+    NVOS54_PARAMETERS *pArgs
+)
+{
+    NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS *pParams = NULL;
+    NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS *pParams2 = NULL;
+    NV_STATUS status;
+
+    pParams = portMemAllocNonPaged(sizeof(*pParams));
+    if (pParams == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "No memory for pParams\n");
+        return NV_ERR_NO_MEMORY;
+    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        RmCopyUserForDeprecatedApi(RMAPI_DEPRECATED_COPYIN,
+                                   RMAPI_DEPRECATED_BUFFER_EMPLACE,
+                                   pArgs->params,
+                                   sizeof(*pParams),
+                                   (void**)&pParams,
+                                   pSecInfo->paramLocation == PARAM_LOCATION_USER),
+        done);
+
+    pParams2 = portMemAllocNonPaged(sizeof(*pParams2));
+    if (pParams2 == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "No memory for pParams2\n");
+        status = NV_ERR_NO_MEMORY;
+        goto done;
+    }
+
+    NVMISC_MEMSET(pParams2, 0, sizeof(*pParams2));
+
+    pParams2->subDeviceInstance = pParams->subDeviceInstance;
+    pParams2->displayId = pParams->displayId;
+    pParams2->bEnableMSA = pParams->bEnableMSA;
+    pParams2->bStereoPhaseInverse = pParams->bStereoPhaseInverse;
+    pParams2->bCacheMsaOverrideForNextModeset = pParams->bCacheMsaOverrideForNextModeset;
+    pParams2->featureMask = pParams->featureMask;
+    pParams2->featureValues = pParams->featureValues;
+
+    if (pParams->pFeatureDebugValues != NULL)
+    {
+        pParams2->bDebugValues = NV_TRUE;
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            RmCopyUserForDeprecatedApi(RMAPI_DEPRECATED_COPYIN,
+                                       RMAPI_DEPRECATED_BUFFER_EMPLACE,
+                                       pParams->pFeatureDebugValues,
+                                       sizeof(pParams2->featureDebugValues),
+                                       (void**)&pParams2->featureDebugValues,
+                                       pSecInfo->paramLocation != PARAM_LOCATION_KERNEL),
+            done);
+    }
+    status = pContextInternal->RmControl(pContextInternal, pArgs->hClient,
+                                         pArgs->hObject,
+                                         NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2,
+                                         pParams2,
+                                         sizeof(NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS));
+    if (status == NV_OK)
+    {
+        if (pParams->pFeatureDebugValues != NULL)
+        {
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                RmCopyUserForDeprecatedApi(RMAPI_DEPRECATED_COPYOUT,
+                                           RMAPI_DEPRECATED_BUFFER_EMPLACE,
+                                           pParams->pFeatureDebugValues,
+                                           sizeof(pParams2->featureDebugValues),
+                                           (void**)&pParams2->featureDebugValues,
+                                           pSecInfo->paramLocation != PARAM_LOCATION_KERNEL),
+                done);
+        }
+
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+             RmCopyUserForDeprecatedApi(RMAPI_DEPRECATED_COPYOUT,
+                                        RMAPI_DEPRECATED_BUFFER_EMPLACE,
+                                        pArgs->params,
+                                        sizeof(*pParams),
+                                        (void**)&pParams,
+                                        pSecInfo->paramLocation == PARAM_LOCATION_USER),
+             done);
+    }
+
+done:
+    if (pParams2 != NULL)
+    {
+        portMemFree(pParams2);
+    }
+    if (pParams != NULL)
+    {
+        portMemFree(pParams);
+    }
+
+    return status;
 }

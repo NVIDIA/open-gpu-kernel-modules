@@ -88,6 +88,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     {classId(VirtMemAllocator), 1},
     {classId(OBJDPAUX), 1},
     {classId(OBJFAN), 1},
+    {classId(OBJHSHUBMANAGER), 1},
     {classId(OBJHSHUB), 1},
     {classId(MemorySystem), 1},
     {classId(KernelMemorySystem), 1},
@@ -132,7 +133,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     {classId(OBJGRIDDISPLAYLESS), 1},
     {classId(OBJFAS), 1},
     {classId(OBJVMMU), 1},
-    {classId(KernelNvdec), 1},
     {classId(KernelSec2), 1},
     {classId(KernelGsp), 1},
 };
@@ -156,6 +156,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     {classId(VirtMemAllocator), 1},
     {classId(OBJDPAUX), 1},
     {classId(OBJFAN), 1},
+    {classId(OBJHSHUBMANAGER), 1},
     {classId(OBJHSHUB), 1},
     {classId(MemorySystem), 1},
     {classId(KernelMemorySystem), 1},
@@ -200,7 +201,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     {classId(OBJGRIDDISPLAYLESS), 1},
     {classId(OBJFAS), 1},
     {classId(OBJVMMU), 1},
-    {classId(KernelNvdec), 1},
     {classId(KernelSec2), 1},
     {classId(KernelGsp), 1},
 };
@@ -267,7 +267,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
     {classId(OBJGRIDDISPLAYLESS), 1},
     {classId(OBJFAS), 1},
     {classId(OBJVMMU), 1},
-    {classId(KernelNvdec), 1},
     {classId(KernelSec2), 1},
     {classId(KernelGsp), 1},
 };

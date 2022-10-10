@@ -327,9 +327,6 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_RANGE_INJECT_ADD_GPU_VA_SPACE_ERROR,
                                        uvm_test_va_range_inject_add_gpu_va_space_error);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DESTROY_GPU_VA_SPACE_DELAY,   uvm_test_destroy_gpu_va_space_delay);
-
-
-
         UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED, uvm_test_cgroup_accounting_supported);
     }
 

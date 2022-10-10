@@ -31,8 +31,6 @@
 
 
 /* _ctrl2080vfe_h_ */
-
-
 #include "nvfixedtypes.h"
 #include "ctrl/ctrl2080/ctrl2080base.h"
 #include "ctrl/ctrl2080/ctrl2080boardobj.h"

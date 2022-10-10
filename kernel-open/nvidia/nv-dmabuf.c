@@ -23,8 +23,6 @@
 #include <linux/dma-buf.h>
 #include "nv-dmabuf.h"
 
-
-
 #if defined(CONFIG_DMA_SHARED_BUFFER)
 typedef struct nv_dma_buf_mem_handle
 {
@@ -796,14 +794,12 @@ nv_dma_buf_reuse(
         return NV_ERR_OPERATING_SYSTEM;
     }
 
-
     if (buf->ops != &nv_dma_buf_ops)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: Invalid dma-buf fd\n");
         status = NV_ERR_INVALID_ARGUMENT;
         goto cleanup_dmabuf;
     }
-
 
     priv = buf->priv;
 
@@ -820,13 +816,8 @@ nv_dma_buf_reuse(
         goto cleanup_dmabuf;
     }
 
-
-
-
-
     if (params->index > (priv->total_objects - params->numObjects))
     {
-
         status = NV_ERR_INVALID_ARGUMENT;
         goto unlock_priv;
     }
@@ -899,16 +890,4 @@ nv_dma_buf_export(
     return NV_ERR_NOT_SUPPORTED;
 #endif // CONFIG_DMA_SHARED_BUFFER
 }
-
-
-
-
-
-
-
-
-
-
-
-
 

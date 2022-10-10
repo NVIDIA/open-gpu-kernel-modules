@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2021 NVIDIA Corporation
+    Copyright (c) 2020-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -46,7 +46,7 @@ static NV_STATUS test_semaphore_alloc_uvm_rm_mem(uvm_gpu_t *gpu, const size_t si
     uvm_rm_mem_t *mem = NULL;
     NvU64 gpu_va;
 
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, size, &mem);
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &mem);
     TEST_NV_CHECK_RET(status);
 
     gpu_va = uvm_rm_mem_get_gpu_uvm_va(mem, gpu);

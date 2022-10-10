@@ -8,7 +8,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 //
 
 #ifndef _G_RMCFG_PRIVATE_H_
@@ -242,7 +242,7 @@
 #define IsGA107orBetter(pGpu)          rmcfg_IsGA107orBetter(pGpu)
 
 #define IsGA10B(pGpu)                  ((0) && (pGpu))
-#define IsGA10BorBetter(pGpu)          ((0) && (pGpu))
+#define IsGA10BorBetter(pGpu)          rmcfg_IsGA10BorBetter(pGpu)
 
 // Any GA10X chip?
 #define IsGA10X(pGpu)                  rmcfg_IsGA10X(pGpu)
@@ -251,11 +251,35 @@
 
 // GA10XF
 #define IsGA102F(pGpu)                 ((0) && (pGpu))
-#define IsGA102ForBetter(pGpu)         ((0) && (pGpu))
+#define IsGA102ForBetter(pGpu)         rmcfg_IsGA102ForBetter(pGpu)
 
 // Any GA10XF chip?
 #define IsGA10XF(pGpu)                 (0 && (pGpu))
-#define IsGA10XForBetter(pGpu)         (0 && (pGpu))
+#define IsGA10XForBetter(pGpu)         rmcfg_IsGA10XForBetter(pGpu)
+
+
+// AD10X
+#define IsAD102(pGpu)                  rmcfg_IsAD102(pGpu)
+#define IsAD102orBetter(pGpu)          rmcfg_IsAD102orBetter(pGpu)
+
+#define IsAD103(pGpu)                  rmcfg_IsAD103(pGpu)
+#define IsAD103orBetter(pGpu)          rmcfg_IsAD103orBetter(pGpu)
+
+#define IsAD104(pGpu)                  rmcfg_IsAD104(pGpu)
+#define IsAD104orBetter(pGpu)          rmcfg_IsAD104orBetter(pGpu)
+
+// Any AD10X chip?
+#define IsAD10X(pGpu)                  rmcfg_IsAD10X(pGpu)
+#define IsAD10XorBetter(pGpu)          rmcfg_IsAD10XorBetter(pGpu)
+
+
+// GH10X
+#define IsGH100(pGpu)                  rmcfg_IsGH100(pGpu)
+#define IsGH100orBetter(pGpu)          rmcfg_IsGH100orBetter(pGpu)
+
+// Any GH10X chip?
+#define IsGH10X(pGpu)                  rmcfg_IsGH10X(pGpu)
+#define IsGH10XorBetter(pGpu)          rmcfg_IsGH10XorBetter(pGpu)
 
 
 // T12X
@@ -460,6 +484,36 @@
 
 // Any DFPGA chip?
 #define IsDFPGA(pGpu)                  (0 && (pGpu))
+
+
+// Any dADA chip?
+#define IsdADA(pGpu)                   rmcfg_IsdADA(pGpu)
+#define IsdADAorBetter(pGpu)           rmcfg_IsdADAorBetter(pGpu)
+
+
+// Any ADA chip?
+#define IsADA(pGpu)                    (IsADA_CLASSIC_GPUS(pGpu) || IsADA_TEGRA_BIG_GPUS(pGpu))
+#define IsADAorBetter(pGpu)            (IsADA_CLASSIC_GPUSorBetter(pGpu) || IsADA_TEGRA_BIG_GPUSorBetter(pGpu))
+
+
+// Any ADA_CLASSIC_GPUS chip?
+#define IsADA_CLASSIC_GPUS(pGpu)       rmcfg_IsADA_CLASSIC_GPUS(pGpu)
+#define IsADA_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsADA_CLASSIC_GPUSorBetter(pGpu)
+
+
+// Any dHOPPER chip?
+#define IsdHOPPER(pGpu)                rmcfg_IsdHOPPER(pGpu)
+#define IsdHOPPERorBetter(pGpu)        rmcfg_IsdHOPPERorBetter(pGpu)
+
+
+// Any HOPPER chip?
+#define IsHOPPER(pGpu)                 (IsHOPPER_CLASSIC_GPUS(pGpu) || IsHOPPER_TEGRA_BIG_GPUS(pGpu))
+#define IsHOPPERorBetter(pGpu)         (IsHOPPER_CLASSIC_GPUSorBetter(pGpu) || IsHOPPER_TEGRA_BIG_GPUSorBetter(pGpu))
+
+
+// Any HOPPER_CLASSIC_GPUS chip?
+#define IsHOPPER_CLASSIC_GPUS(pGpu)    rmcfg_IsHOPPER_CLASSIC_GPUS(pGpu)
+#define IsHOPPER_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsHOPPER_CLASSIC_GPUSorBetter(pGpu)
 
 
 // Any TEGRA_BIG_GPUS chip?
@@ -688,8 +742,5 @@
      } while(0)
 
 
-
-// ARCH test
-#define RMCFG_IS_ARCH(arch)      RMCFG_FEATURE_ARCH_##arch
 
 #endif  // _G_RMCFG_PRIVATE_H_

@@ -1390,14 +1390,6 @@ typedef struct
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_DESTROY_GPU_VA_SPACE_DELAY_PARAMS;
 
-
-
-
-
-
-
-
-
 #define UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED             UVM_TEST_IOCTL_BASE(96)
 typedef struct
 {

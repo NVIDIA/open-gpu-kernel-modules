@@ -259,9 +259,28 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
     va_list args;
     NV_STATUS status;
 
-    status = uvm_channel_reserve(channel);
+    status = uvm_channel_reserve(channel, 1);
     if (status != NV_OK)
         return status;
+
+    va_start(args, format);
+    status = push_begin_acquire_with_info(channel, tracker, push, filename, function, line, format, args);
+    va_end(args);
+
+    return status;
+}
+
+__attribute__ ((format(printf, 7, 8)))
+NV_STATUS __uvm_push_begin_acquire_on_reserved_channel_with_info(uvm_channel_t *channel,
+                                                                 uvm_tracker_t *tracker,
+                                                                 uvm_push_t *push,
+                                                                 const char *filename,
+                                                                 const char *function,
+                                                                 int line,
+                                                                 const char *format, ...)
+{
+    va_list args;
+    NV_STATUS status;
 
     va_start(args, format);
     status = push_begin_acquire_with_info(channel, tracker, push, filename, function, line, format, args);
@@ -422,10 +441,6 @@ NvU64 *uvm_push_timestamp(uvm_push_t *push)
 
     if (uvm_channel_is_ce(push->channel))
         gpu->parent->ce_hal->semaphore_timestamp(push, address.address);
-
-
-
-
     else
         UVM_ASSERT_MSG(0, "Semaphore release timestamp on an unsupported channel.\n");
 

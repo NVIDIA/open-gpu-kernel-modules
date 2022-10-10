@@ -314,24 +314,19 @@ static inline NV_STATUS dispchnGrabChannel(struct DispChannel *pDispChannel, NvH
 #define dispchnGrabChannel(pDispChannel, hClient, hParent, hChannel, hClass, pAllocParms) dispchnGrabChannel_IMPL(pDispChannel, hClient, hParent, hChannel, hClass, pAllocParms)
 #endif //__nvoc_disp_channel_h_disabled
 
-NV_STATUS dispchnBindCtx_IMPL(struct DispChannel *pDispChannel, struct OBJGPU *pGpu, struct ContextDma *pContextDma);
+NV_STATUS dispchnBindCtx_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma, NvHandle hDispChannel);
+#define dispchnBindCtx(pGpu, pContextDma, hDispChannel) dispchnBindCtx_IMPL(pGpu, pContextDma, hDispChannel)
+NV_STATUS dispchnUnbindCtx_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma, NvHandle hDispChannel);
+#define dispchnUnbindCtx(pGpu, pContextDma, hDispChannel) dispchnUnbindCtx_IMPL(pGpu, pContextDma, hDispChannel)
+void dispchnUnbindCtxFromAllChannels_IMPL(struct OBJGPU *pGpu, struct ContextDma *pContextDma);
+#define dispchnUnbindCtxFromAllChannels(pGpu, pContextDma) dispchnUnbindCtxFromAllChannels_IMPL(pGpu, pContextDma)
+void dispchnUnbindAllCtx_IMPL(struct OBJGPU *pGpu, struct DispChannel *pDispChannel);
 #ifdef __nvoc_disp_channel_h_disabled
-static inline NV_STATUS dispchnBindCtx(struct DispChannel *pDispChannel, struct OBJGPU *pGpu, struct ContextDma *pContextDma) {
+static inline void dispchnUnbindAllCtx(struct OBJGPU *pGpu, struct DispChannel *pDispChannel) {
     NV_ASSERT_FAILED_PRECOMP("DispChannel was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_disp_channel_h_disabled
-#define dispchnBindCtx(pDispChannel, pGpu, pContextDma) dispchnBindCtx_IMPL(pDispChannel, pGpu, pContextDma)
-#endif //__nvoc_disp_channel_h_disabled
-
-NV_STATUS dispchnUnbindCtx_IMPL(struct DispChannel *pDispChannel, struct OBJGPU *pGpu, struct ContextDma *pContextDma);
-#ifdef __nvoc_disp_channel_h_disabled
-static inline NV_STATUS dispchnUnbindCtx(struct DispChannel *pDispChannel, struct OBJGPU *pGpu, struct ContextDma *pContextDma) {
-    NV_ASSERT_FAILED_PRECOMP("DispChannel was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_disp_channel_h_disabled
-#define dispchnUnbindCtx(pDispChannel, pGpu, pContextDma) dispchnUnbindCtx_IMPL(pDispChannel, pGpu, pContextDma)
+#define dispchnUnbindAllCtx(pGpu, pDispChannel) dispchnUnbindAllCtx_IMPL(pGpu, pDispChannel)
 #endif //__nvoc_disp_channel_h_disabled
 
 NV_STATUS dispchnGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDisplayChannel, struct DispChannel **ppDispChannel);

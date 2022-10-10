@@ -40,9 +40,6 @@
 #include "uvm_va_space_mm.h"
 #include "uvm_test_ioctl.h"
 
-
-
-
 typedef enum
 {
     BLOCK_PTE_OP_MAP,
@@ -584,7 +581,6 @@ NV_STATUS uvm_va_block_create(uvm_va_range_t *va_range,
 {
     uvm_va_block_t *block = NULL;
     NvU64 size = end - start + 1;
-    NV_STATUS status;
 
     UVM_ASSERT(PAGE_ALIGNED(start));
     UVM_ASSERT(PAGE_ALIGNED(end + 1));
@@ -612,10 +608,8 @@ NV_STATUS uvm_va_block_create(uvm_va_range_t *va_range,
         block = nv_kmem_cache_zalloc(g_uvm_va_block_cache, NV_UVM_GFP_FLAGS);
     }
 
-    if (!block) {
-        status = NV_ERR_NO_MEMORY;
-        goto error;
-    }
+    if (!block)
+        return NV_ERR_NO_MEMORY;
 
     nv_kref_init(&block->kref);
     uvm_mutex_init(&block->lock, UVM_LOCK_ORDER_VA_BLOCK);
@@ -628,10 +622,6 @@ NV_STATUS uvm_va_block_create(uvm_va_range_t *va_range,
 
     *out_block = block;
     return NV_OK;
-
-error:
-    uvm_va_block_release(block);
-    return status;
 }
 
 static void block_gpu_unmap_phys_all_cpu_pages(uvm_va_block_t *block, uvm_gpu_t *gpu)
@@ -2583,10 +2573,6 @@ static NV_STATUS block_copy_resident_pages_between(uvm_va_block_t *block,
                 dst_address.address += contig_start_index * PAGE_SIZE;
 
                 uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
-
-
-
-
 
                 copying_gpu->parent->ce_hal->memcopy(&push, dst_address, src_address, contig_region_size);
             }
@@ -6883,8 +6869,11 @@ static void block_destroy_gpu_state(uvm_va_block_t *block, uvm_gpu_id_t id)
     // Unmap PTEs and free page tables
     gpu = uvm_va_space_get_gpu(va_space, id);
     gpu_va_space = uvm_gpu_va_space_get(va_space, gpu);
-    if (gpu_va_space)
-        uvm_va_block_remove_gpu_va_space(block, gpu_va_space, NULL);
+    if (gpu_va_space) {
+        uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
+
+        uvm_va_block_remove_gpu_va_space(block, gpu_va_space, block_context);
+    }
 
     UVM_ASSERT(!uvm_processor_mask_test(&block->mapped, id));
 
@@ -6962,10 +6951,10 @@ NV_STATUS uvm_va_block_add_gpu_va_space(uvm_va_block_t *va_block, uvm_gpu_va_spa
     return block_pre_populate_pde1_gpu(va_block, gpu_va_space, NULL);
 }
 
-void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block, uvm_gpu_va_space_t *gpu_va_space, struct mm_struct *mm)
+void uvm_va_block_remove_gpu_va_space(uvm_va_block_t *va_block,
+                                      uvm_gpu_va_space_t *gpu_va_space,
+                                      uvm_va_block_context_t *block_context)
 {
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
-    uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, mm);
     uvm_pte_batch_t *pte_batch = &block_context->mapping.pte_batch;
     uvm_tlb_batch_t *tlb_batch = &block_context->mapping.tlb_batch;
     uvm_gpu_t *gpu = gpu_va_space->gpu;

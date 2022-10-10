@@ -708,7 +708,6 @@ nvEventBufferFecsCallback
     NvU32               fecsReadOffsetPrev;
     NvU64               fecsBufferSize;
     NvU32               fecsRecordSize;
-    NvU64               watermark;
     NvU32               i, j;
     NvU8               *pFecsBufferMapping;
     MEMORY_DESCRIPTOR  *pFecsMemDesc = NULL;
@@ -826,12 +825,7 @@ nvEventBufferFecsCallback
             }
         }
 
-        //
-        // In order to avoid register accesses, only synchronize the position
-        // with hardware when the buffer exceeds a watermark level
-        //
-        watermark = (3 * fecsBufferSize) / 4;
-        if (pFecsTraceInfo->fecsTraceCounter > watermark)
+        if (pFecsTraceInfo->fecsTraceCounter > 0)
         {
             NvHandle hClient;
             NvHandle hSubdevice;
@@ -1189,39 +1183,53 @@ fecsBufferReset
     MEMORY_DESCRIPTOR *pFecsMemDesc = NULL;
     NV_STATUS status;
     KGRAPHICS_FECS_TRACE_INFO *pFecsTraceInfo = kgraphicsGetFecsTraceInfo(pGpu, pKernelGraphics);
+    NV2080_CTRL_INTERNAL_GR_GET_FECS_TRACE_HW_ENABLE_PARAMS getHwEnableParams;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvHandle hClient;
+    NvHandle hSubdevice;
 
     NV_ASSERT_OR_RETURN_VOID(pFecsTraceInfo != NULL);
 
     if (pFecsTraceInfo->pFecsBufferMapping == NULL)
         return;
 
+    NV_ASSERT_OK_OR_ELSE(
+        status,
+        _fecsLoadInternalRoutingInfo(pGpu,
+                                        pKernelGraphics,
+                                        &hClient,
+                                        &hSubdevice,
+                                        &getHwEnableParams.grRouteInfo),
+        return);
+
+    NV_ASSERT_OK_OR_ELSE(
+        status,
+        pRmApi->Control(pRmApi,
+                        hClient,
+                        hSubdevice,
+                        NV2080_CTRL_CMD_INTERNAL_GR_GET_FECS_TRACE_HW_ENABLE,
+                        &getHwEnableParams,
+                        sizeof(getHwEnableParams)),
+        return);
+
     status = _getFecsMemDesc(pGpu, pKernelGraphics, &pFecsMemDesc);
 
-    if ((status == NV_OK) && (pFecsMemDesc != NULL))
+    if ((status == NV_OK) && (pFecsMemDesc != NULL) && (getHwEnableParams.bEnable != NV_TRUE))
     {
-        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-        NvHandle hClient;
-        NvHandle hSubdevice;
         NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_WR_OFFSET_PARAMS traceWrOffsetParams;
         NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_RD_OFFSET_PARAMS traceRdOffsetParams;
-        NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_HW_ENABLE_PARAMS hwEnableParams;
+        NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_HW_ENABLE_PARAMS setHwEnableParams;
 
-        portMemSet(pFecsTraceInfo->pFecsBufferMapping, (NvU8)(NV_FECS_TRACE_MAGIC_INVALIDATED & 0xff), memdescGetSize(pFecsMemDesc));
-
-        traceWrOffsetParams.offset = 0;
-        NV_ASSERT_OK_OR_ELSE(
-            status,
-            _fecsLoadInternalRoutingInfo(pGpu,
-                                         pKernelGraphics,
-                                         &hClient,
-                                         &hSubdevice,
-                                         &traceWrOffsetParams.grRouteInfo),
-            return);
+        portMemSet(pFecsTraceInfo->pFecsBufferMapping,
+                   (NvU8)(NV_FECS_TRACE_MAGIC_INVALIDATED & 0xff),
+                   memdescGetSize(pFecsMemDesc));
 
         // Routing info is the same for all future calls in this series
-        traceRdOffsetParams.grRouteInfo = traceWrOffsetParams.grRouteInfo;
-        hwEnableParams.grRouteInfo = traceWrOffsetParams.grRouteInfo;
+        traceWrOffsetParams.grRouteInfo = getHwEnableParams.grRouteInfo;
+        traceRdOffsetParams.grRouteInfo = getHwEnableParams.grRouteInfo;
+        setHwEnableParams.grRouteInfo   = getHwEnableParams.grRouteInfo;
 
+        traceWrOffsetParams.offset = 0;
         NV_ASSERT_OK_OR_ELSE(
             status,
             pRmApi->Control(pRmApi,
@@ -1244,15 +1252,15 @@ fecsBufferReset
              return);
         pFecsTraceInfo->fecsTraceRdOffset = 0;
 
-        hwEnableParams.bEnable = NV_TRUE;
+        setHwEnableParams.bEnable = NV_TRUE;
         NV_ASSERT_OK_OR_ELSE(
             status,
             pRmApi->Control(pRmApi,
                             hClient,
                             hSubdevice,
                             NV2080_CTRL_CMD_INTERNAL_GR_SET_FECS_TRACE_HW_ENABLE,
-                            &hwEnableParams,
-                            sizeof(hwEnableParams)),
+                            &setHwEnableParams,
+                            sizeof(setHwEnableParams)),
             return);
     }
 }

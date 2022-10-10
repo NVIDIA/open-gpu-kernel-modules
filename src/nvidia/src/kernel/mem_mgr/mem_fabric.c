@@ -52,19 +52,9 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "ctrl/ctrl0041.h"
 
 #include "published/ampere/ga100/dev_mmu.h"
-
-typedef struct
-{
-    //
-    // TODO: Only sticky non-partial mappings are supported currently, so all
-    // the fabric addrs are mapped to the single vidmem memory object. However,
-    // when partial mappings are supported, we will need a per-fabric memdesc
-    // tree to track the mappings for multiple vidmem memory objects.
-    //
-    NvHandle hDupedVidmem;
-} FABRIC_MEMDESC_DATA;
 
 static NvU32
 _memoryfabricMemDescGetNumAddr
@@ -638,6 +628,32 @@ memoryfabricConstruct_IMPL
         goto freeCallback;
     }
 
+    if (!(pAllocParams->allocFlags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA))
+    {
+        NV0041_CTRL_SURFACE_INFO surfaceInfo[2] = {0};
+        NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParam = {0};
+
+        surfaceInfo[0].index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
+        surfaceInfo[1].index = NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE;
+        surfaceInfoParam.surfaceInfoListSize = 2;
+        surfaceInfoParam.surfaceInfoList = NvP64_VALUE(&surfaceInfo);
+
+        status = pRmApi->Control(pRmApi,
+                                 pFabricVAS->hClient,
+                                 pMemdescData->hDupedVidmem,
+                                 NV0041_CTRL_CMD_GET_SURFACE_INFO,
+                                 &surfaceInfoParam,
+                                 sizeof(surfaceInfoParam));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to query physical video memory info\n");
+            goto freeDupedMem;
+        }
+
+        pMemdescData->physAttrs.addressSpace = surfaceInfo[0].data;
+        pMemdescData->physAttrs.compressionCoverage = surfaceInfo[1].data;
+    }
+
     status = fabricvaspaceVaToGpaMapInsert(pFabricVAS, pAddr[0], pVidMemDesc,
                                            pAllocParams->map.offset);
     if (status != NV_OK)
@@ -654,7 +670,7 @@ memoryfabricConstruct_IMPL
         goto memFabricRemoveVaToGpaMap;
     }
 
-    pMemoryFabric->flags = pAllocParams->allocFlags;
+    pMemdescData->allocFlags = pAllocParams->allocFlags;
     pMemory->bRpcAlloc = pFabricVAS->bRpcAlloc;
 
     portMemFree(pAddr);
@@ -744,6 +760,14 @@ memoryfabricCanExport_IMPL
     MemoryFabric *pMemoryFabric
 )
 {
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    FABRIC_MEMDESC_DATA *pMemdescData;
+
+    if (pMemory->pMemDesc == NULL)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pMemory->pMemDesc);
+
     //
     // Check if FLA->PA mappings are present. Only then allow export.
     // FLA->PA mappings are guaranteed for STICKY FLA mappings, which is only
@@ -751,7 +775,7 @@ memoryfabricCanExport_IMPL
     // TODO: Re-visit this function when support for FLEXIBLE FLA mappings is
     // added.
     //
-    return !(pMemoryFabric->flags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA);
+    return !(pMemdescData->allocFlags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA);
 }
 
 NV_STATUS
@@ -781,13 +805,17 @@ memoryfabricCtrlGetInfo_IMPL
 )
 {
     Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    FABRIC_MEMDESC_DATA *pMemdescData;
 
     if (pMemory->pMemDesc == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pMemory->pMemDesc);
+
     pParams->size = memdescGetSize(pMemory->pMemDesc);
     pParams->pageSize = memdescGetPageSize(pMemory->pMemDesc, AT_GPU);
-    pParams->allocFlags = pMemoryFabric->flags;
+    pParams->allocFlags = pMemdescData->allocFlags;
+    pParams->physAttrs = pMemdescData->physAttrs;
 
     return NV_OK;
 }

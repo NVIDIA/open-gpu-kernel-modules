@@ -118,12 +118,6 @@ struct NvKmsKapiSurface {
     NvKmsSurfaceHandle hKmsHandle;
 };
 
-
-enum NvKmsKapiAllocationType {
-    NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT  = 0,
-    NVKMS_KAPI_ALLOCATION_TYPE_NOTIFIER = 1,
-};
-
 static inline void *nvKmsKapiCalloc(size_t nmem, size_t size)
 {
     return nvInternalAlloc(nmem * size, NV_TRUE);

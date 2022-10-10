@@ -2431,6 +2431,15 @@ struct NvKmsRegisterSurfaceRequest {
     NvBool noDisplayHardwareAccess;
 
     /*
+     * This flag should be set if the surface can potentially be updated
+     * directly on the screen after the flip. For example, this is the case
+     * if the surface is CPU mapped, accessible by more than one GPU, or in
+     * a similar situation. If this flag is set NVKMS knows not to consider
+     * the surface content cacheable between flips.
+     */
+    NvBool noDisplayCaching;
+
+    /*
      * If isoType == NVKMS_MEMORY_NISO, NVKMS will create CPU and GPU mappings
      * for the surface memory.
      */

@@ -172,6 +172,102 @@ uvm_va_policy_node_t *uvm_va_policy_node_iter_next(uvm_va_block_t *va_block,
     return uvm_va_policy_node_container(tree_node);
 }
 
+uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
+                                          NvU64 start,
+                                          NvU64 end,
+                                          uvm_va_policy_node_t **out_node,
+                                          uvm_va_block_region_t *out_region)
+{
+    uvm_range_tree_node_t *tree_node;
+    uvm_va_policy_node_t *node;
+    uvm_va_policy_t *policy;
+    uvm_va_block_region_t region;
+
+    UVM_ASSERT(uvm_va_block_is_hmm(va_block));
+    uvm_assert_mutex_locked(&va_block->lock);
+    UVM_ASSERT(start >= va_block->start);
+    UVM_ASSERT(end <= va_block->end);
+    UVM_ASSERT(start < end);
+
+    region.first = uvm_va_block_cpu_page_index(va_block, start);
+
+    // Even if no policy is found, we return the default policy and loop
+    // one time.
+    tree_node = uvm_range_tree_iter_first(&va_block->hmm.va_policy_tree, start, end);
+    if (tree_node) {
+        node = uvm_va_policy_node_container(tree_node);
+        if (node->node.start <= start) {
+            policy = &node->policy;
+            region.outer = uvm_va_block_cpu_page_index(va_block, min(end, node->node.end)) + 1;
+        }
+        else {
+            // This node starts after the requested start so use the default,
+            // then use this policy node.
+            policy = &uvm_va_policy_default;
+            region.outer = uvm_va_block_cpu_page_index(va_block, node->node.start - 1) + 1;
+        }
+    }
+    else {
+        node = NULL;
+        policy = &uvm_va_policy_default;
+        region.outer = uvm_va_block_cpu_page_index(va_block, end) + 1;
+    }
+
+    *out_node = node;
+    *out_region = region;
+    return policy;
+}
+
+uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
+                                         uvm_va_policy_t *policy,
+                                         NvU64 end,
+                                         uvm_va_policy_node_t **inout_node,
+                                         uvm_va_block_region_t *inout_region)
+{
+    uvm_va_policy_node_t *node = *inout_node;
+    uvm_va_policy_node_t *next;
+    uvm_va_block_region_t region;
+
+    if (!node)
+        return NULL;
+
+    next = uvm_va_policy_node_iter_next(va_block, node, end);
+
+    if (policy == &uvm_va_policy_default) {
+        // We haven't used the current policy node yet so use it now.
+        next = node;
+        policy = &node->policy;
+        region = uvm_va_block_region_from_start_end(va_block,
+                                                    node->node.start,
+                                                    min(end, node->node.end));
+    }
+    else if (!next) {
+        if (node->node.end >= end)
+            return NULL;
+        policy = &uvm_va_policy_default;
+        region.first = inout_region->outer;
+        region.outer = uvm_va_block_cpu_page_index(va_block, end) + 1;
+    }
+    else {
+        region.first = inout_region->outer;
+
+        if (next->node.start <= uvm_va_block_region_start(va_block, region)) {
+            policy = &next->policy;
+            region.outer = uvm_va_block_cpu_page_index(va_block, min(end, next->node.end)) + 1;
+        }
+        else {
+            // There is a gap between the last node and next so use the
+            // default policy.
+            policy = &uvm_va_policy_default;
+            region.outer = uvm_va_block_cpu_page_index(va_block, next->node.start - 1) + 1;
+        }
+    }
+
+    *inout_node = next;
+    *inout_region = region;
+    return policy;
+}
+
 NV_STATUS uvm_va_policy_node_split(uvm_va_block_t *va_block,
                                    uvm_va_policy_node_t *old,
                                    NvU64 new_end,

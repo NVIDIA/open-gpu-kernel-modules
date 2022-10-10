@@ -228,6 +228,9 @@ kgmmuDetermineMaxVASize_GM107
         case GMMU_FMT_VERSION_2:
             pKernelGmmu->maxVASize = 1ULL << 49;
         break;
+        case GMMU_FMT_VERSION_3:
+            pKernelGmmu->maxVASize = 1ULL << 57;
+        break;
         default:
             pKernelGmmu->maxVASize = 1ULL << 40;
     }

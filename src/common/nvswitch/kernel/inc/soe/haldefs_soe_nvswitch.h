@@ -116,5 +116,6 @@ typedef struct {
 
 // HAL functions
 void soeSetupHal_LR10(struct SOE *pSoe);
+void soeSetupHal_LS10(struct SOE *pSoe);
 
 #endif //_HALDEFS_SOE_NVSWITCH_H_

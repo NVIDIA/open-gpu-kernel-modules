@@ -534,6 +534,27 @@ static void NV_API_CALL rm_nvlink_ops_training_complete
     NV_EXIT_RM_RUNTIME(sp, fp);
 }
 
+static NvlStatus NV_API_CALL rm_nvlink_ops_ali_training
+(
+    struct nvlink_link *link
+)
+{
+    void *fp;
+    NvlStatus status;
+    THREAD_STATE_NODE threadState = {0};
+    KNVLINK_RM_LINK * pLink = link->link_info;
+    nvidia_stack_t * sp = (nvidia_stack_t *)pLink->pOsInfo;
+
+    NV_ENTER_RM_RUNTIME(sp, fp);
+
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+    status = knvlinkCoreAliTrainingCallback(link);
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    NV_EXIT_RM_RUNTIME(sp, fp);
+    return status;
+}
+
 #endif /* defined(INCLUDE_NVLINK_LIB) */
 
 const struct nvlink_link_handlers* osGetNvlinkLinkCallbacks(void)
@@ -560,6 +581,7 @@ const struct nvlink_link_handlers* osGetNvlinkLinkCallbacks(void)
         .read_discovery_token       = rm_nvlink_ops_read_link_discovery_token,
         .training_complete          = rm_nvlink_ops_training_complete,
         .get_uphy_load              = rm_nvlink_get_uphy_load,
+        .ali_training               = rm_nvlink_ops_ali_training,
     };
 
     return &rm_nvlink_link_ops;
@@ -647,7 +669,7 @@ osGetPlatformNvlinkLinerate
 )
 {
 #if defined(NVCPU_PPC64LE)
-    nv_state_t   *nv            = NV_GET_NV_STATE(pGpu);
+    nv_state_t *nv      = NV_GET_NV_STATE(pGpu);
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
 
     if (!pKernelNvlink)

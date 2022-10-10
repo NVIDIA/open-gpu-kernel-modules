@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
 //
 
 //
@@ -26,6 +26,8 @@
 #if defined(RMCFG_HAL_SETUP_ALL)
 #  define RMCFG_HAL_SETUP_TU10X          1
 #  define RMCFG_HAL_SETUP_GA10X          1
+#  define RMCFG_HAL_SETUP_AD10X          1
+#  define RMCFG_HAL_SETUP_GH10X          1
 #endif   // RMCFG_HAL_SETUP_ALL
 
 //
@@ -48,6 +50,16 @@
 #  define RMCFG_HAL_SETUP_GA106          1
 #  define RMCFG_HAL_SETUP_GA107          1
 #endif // GA10X
+
+#if defined(RMCFG_HAL_SETUP_AD10X)
+#  define RMCFG_HAL_SETUP_AD102          1
+#  define RMCFG_HAL_SETUP_AD103          1
+#  define RMCFG_HAL_SETUP_AD104          1
+#endif // AD10X
+
+#if defined(RMCFG_HAL_SETUP_GH10X)
+#  define RMCFG_HAL_SETUP_GH100          1
+#endif // GH10X
 
 #endif  // RMCFG_ENGINE_SETUP
 
@@ -227,6 +239,66 @@ NV_STATUS registerHalModule_GA107(void)
 }
 
 #endif  // GA10X or GA107
+
+#if defined(RMCFG_HAL_SETUP_AD102)
+
+static const HAL_IFACE_SETUP halIface_AD102 = {
+
+    rpcHalIfacesSetup_AD102,
+
+};
+
+NV_STATUS registerHalModule_AD102(void)
+{
+    return registerHalModule(HAL_IMPL_AD102, &halIface_AD102);
+}
+
+#endif  // AD10X or AD102
+
+#if defined(RMCFG_HAL_SETUP_AD103)
+
+static const HAL_IFACE_SETUP halIface_AD103 = {
+
+    rpcHalIfacesSetup_AD103,
+
+};
+
+NV_STATUS registerHalModule_AD103(void)
+{
+    return registerHalModule(HAL_IMPL_AD103, &halIface_AD103);
+}
+
+#endif  // AD10X or AD103
+
+#if defined(RMCFG_HAL_SETUP_AD104)
+
+static const HAL_IFACE_SETUP halIface_AD104 = {
+
+    rpcHalIfacesSetup_AD104,
+
+};
+
+NV_STATUS registerHalModule_AD104(void)
+{
+    return registerHalModule(HAL_IMPL_AD104, &halIface_AD104);
+}
+
+#endif  // AD10X or AD104
+
+#if defined(RMCFG_HAL_SETUP_GH100)
+
+static const HAL_IFACE_SETUP halIface_GH100 = {
+
+    rpcHalIfacesSetup_GH100,
+
+};
+
+NV_STATUS registerHalModule_GH100(void)
+{
+    return registerHalModule(HAL_IMPL_GH100, &halIface_GH100);
+}
+
+#endif  // GH10X or GH100
 
 
 

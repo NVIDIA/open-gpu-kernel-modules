@@ -95,21 +95,8 @@ typedef enum
     // Memory type for backing user pages. On Pascal+ it can be evicted.
     UVM_PMM_GPU_MEMORY_TYPE_USER,
 
-
-
-
-
-
-
-
     // Memory type for internal UVM allocations. It cannot be evicted.
     UVM_PMM_GPU_MEMORY_TYPE_KERNEL,
-
-
-
-
-
-
 
     // Number of types - MUST BE LAST.
     UVM_PMM_GPU_MEMORY_TYPE_COUNT
@@ -447,10 +434,6 @@ NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
 //
 // Internally calls uvm_pmm_gpu_alloc() and sets the state of all chunks to
 // allocated on success.
-
-
-
-
 NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
                                    size_t num_chunks,
                                    uvm_chunk_size_t chunk_size,
@@ -466,11 +449,6 @@ NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
 // If the memory returned by the PMM allocator cannot be physically addressed,
 // the MMU interface provides user chunk mapping and unmapping functions
 // (uvm_mmu_chunk_map/unmap) that enable virtual addressing.
-
-
-
-
-
 static NV_STATUS uvm_pmm_gpu_alloc_user(uvm_pmm_gpu_t *pmm,
                                         size_t num_chunks,
                                         uvm_chunk_size_t chunk_size,

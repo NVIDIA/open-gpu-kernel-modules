@@ -389,6 +389,9 @@ struct nvswitch_device
 
     // List of client events
     NVListRec                            client_events_list;
+
+    // To be removed once newer vbios is on TOT.
+    NvBool  bIsNvlinkVbiosTableVersion2;
 };
 
 #define NVSWITCH_IS_DEVICE_VALID(device) \
@@ -485,6 +488,7 @@ typedef struct NVSWITCH_TIMEOUT
 #define NVSWITCH_INTERVAL_1MSEC_IN_NS     1000000LL
 #define NVSWITCH_INTERVAL_5MSEC_IN_NS     5000000LL
 #define NVSWITCH_INTERVAL_1SEC_IN_NS      1000000000LL
+#define NVSWITCH_INTERVAL_4SEC_IN_NS      4000000000LL
 
 #define NVSWITCH_HEARTBEAT_INTERVAL_NS    NVSWITCH_INTERVAL_1SEC_IN_NS
 
@@ -505,6 +509,7 @@ do                                                              \
 #define NVSWITCH_SET_CAP(tbl,cap,field) ((tbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)]) |= (0?cap##field))
 
 NvBool nvswitch_is_lr10_device_id(NvU32 device_id);
+NvBool nvswitch_is_ls10_device_id(NvU32 device_id);
 
 NvU32 nvswitch_reg_read_32(nvswitch_device *device, NvU32 offset);
 void nvswitch_reg_write_32(nvswitch_device *device, NvU32 offset, NvU32 data);
@@ -529,6 +534,10 @@ void      nvswitch_setup_link_loopback_mode(nvswitch_device *device, NvU32 linkN
 void      nvswitch_reset_persistent_link_hw_state(nvswitch_device *device, NvU32 linkNumber);
 void      nvswitch_store_topology_information(nvswitch_device *device, nvlink_link *link);
 
+NvlStatus nvswitch_launch_ALI(nvswitch_device *device);
+NvlStatus nvswitch_launch_ALI_link_training(nvswitch_device *device, nvlink_link *link, NvBool bSync);
+NvlStatus nvswitch_inband_read_data(nvswitch_device *device, NvU8 *dest, NvU32 linkId, NvU32 *dataSize);
+void      nvswitch_filter_messages(nvswitch_device *device, NvU32 linkId);
 NvlStatus nvswitch_set_training_mode(nvswitch_device *device);
 NvBool    nvswitch_is_link_in_reset(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_apply_recal_settings(nvswitch_device *device, nvlink_link *link);

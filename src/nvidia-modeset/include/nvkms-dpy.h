@@ -44,9 +44,6 @@ void nvUpdateInfoFrames(const NVDispEvoRec *pDispEvo, const NvU32 head);
 NvBool nvDpyRequiresDualLinkEvo(const NVDpyEvoRec *pDpyEvo,
                                 const NVHwModeTimingsEvo *pTimings);
 
-NVHwModeTimingsEvoPtr
-nvGetCurrentModeTimingsForDpyEvo(const NVDpyEvoRec *pDpyEvo);
-
 NVDpyEvoPtr nvGetDpyEvoFromDispEvo(const NVDispEvoRec *pDispEvo, NVDpyId dpyId);
 
 NVDpyEvoPtr nvGetDPMSTDpyEvo(NVConnectorEvoPtr pConnectorEvo,

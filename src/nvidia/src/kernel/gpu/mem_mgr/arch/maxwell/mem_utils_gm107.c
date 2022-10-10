@@ -50,6 +50,7 @@
 #include "class/clc637.h"      // AMPERE_SMC_PARTITION_REF
 #include "class/cl00c2.h"      // NV01_MEMORY_LOCAL_PHYSICAL
 #include "class/clb0b5.h"      // MAXWELL_DMA_COPY_A
+#include "class/clc8b5.h"      // HOPPER_DMA_COPY_A
 #include "class/cl0005.h"      // NV01_EVENT
 #include "class/cl90f1.h"      // FERMI_VASPACE_A
 
@@ -2327,6 +2328,7 @@ _ceChannelPushMethodsBlock_GM107
     NvU32 *ptr                = *pPtr;
     NvU32 *pStartPtr          = ptr;
     NvBool addReductionOp     = channel->isChannelSynchronized;
+    NvBool bMemoryScrubEnable = NV_FALSE;
     NvU32  remapConstB        = 0;
     NvU32  remapComponentSize = 0;
 
@@ -2375,6 +2377,23 @@ _ceChannelPushMethodsBlock_GM107
         }
         else
         {
+            bMemoryScrubEnable = memmgrMemUtilsCheckMemoryFastScrubEnable_HAL(pGpu,
+                                                   pMemoryManager,
+                                                   channel->hTdCopyClass,
+                                                   channel->bUseVasForCeCopy,
+                                                   dst,
+                                                   NvU64_LO32(size),
+                                                   dstAddressSpace);
+            if (bMemoryScrubEnable)
+            {
+                NV_PRINTF(LEVEL_INFO, "Using Fast memory scrubber\n");
+                remapConstB        = DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _DST_X, _CONST_B);
+                PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVB0B5_SET_REMAP_CONST_B, 0x00000000);
+
+                remapComponentSize = DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _COMPONENT_SIZE, _ONE);
+                PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVB0B5_LINE_LENGTH_IN, NvU64_LO32(size));
+            }
+            else
             {
                 remapComponentSize = DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _COMPONENT_SIZE, _FOUR);
                 PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVB0B5_LINE_LENGTH_IN, NvU64_LO32(size >> 2));
@@ -2416,6 +2435,17 @@ _ceChannelPushMethodsBlock_GM107
             launchParams |= DRF_DEF(B0B5, _LAUNCH_DMA, _SEMAPHORE_TYPE, _NONE);
         }
 
+        if (bMemoryScrubEnable)
+        {
+            PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVC8B5_SET_MEMORY_SCRUB_PARAMETERS,
+                          DRF_DEF(C8B5, _SET_MEMORY_SCRUB_PARAMETERS, _DISCARDABLE, _FALSE));
+
+            launchParams |= DRF_DEF(C8B5, _LAUNCH_DMA, _MEMORY_SCRUB_ENABLE, _TRUE);
+            launchParams |= DRF_DEF(C8B5, _LAUNCH_DMA, _REMAP_ENABLE, _FALSE);
+
+            PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVC8B5_LAUNCH_DMA, launchParams);
+        }
+        else
         {
             if (!bMemcopy)
             {

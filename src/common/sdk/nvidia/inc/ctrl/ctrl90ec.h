@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl90ec.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* GK104 HDACODEC control commands and parameters */
 

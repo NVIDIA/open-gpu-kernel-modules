@@ -22,7 +22,6 @@
  */
 #include "gpu/falcon/kernel_falcon.h"
 #include "gpu/sec2/kernel_sec2.h"
-#include "gpu/nvdec/kernel_nvdec.h"
 #include "gpu/gsp/kernel_gsp.h"
 
 #include "gpu/fifo/kernel_fifo.h"
@@ -64,7 +63,6 @@ KernelFalcon *kflcnGetKernelFalconForEngine_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR phy
         // this list is mirrored in subdeviceCtrlCmdInternalGetConstructedFalconInfo_IMPL
         case ENG_SEC2:     return staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
         case ENG_GSP:      return staticCast(GPU_GET_KERNEL_GSP(pGpu), KernelFalcon);
-        case ENG_NVDEC(0): return staticCast(GPU_GET_KERNEL_NVDEC(pGpu), KernelFalcon);
         default:
             return staticCast(gpuGetGenericKernelFalconForEngine(pGpu, physEngDesc), KernelFalcon);
     }
@@ -358,8 +356,6 @@ NV_STATUS gkflcnServiceNotificationInterrupt_IMPL(OBJGPU *pGpu, GenericKernelFal
     }
 
     NV_ASSERT_OR_RETURN(idx2080 != NV2080_ENGINE_TYPE_NULL, NV_ERR_INVALID_STATE);
-
-    gkflcnNonstallIntrCheckAndClear_HAL(pGpu, pGenericKernelFalcon, pParams->pThreadState);
 
     // Wake up channels waiting on this event
     engineNonStallIntrNotify(pGpu, idx2080);
