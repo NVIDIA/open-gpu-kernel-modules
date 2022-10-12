@@ -3756,7 +3756,6 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     Memory *pMemory;
     ContextDma *pContextDma;
     NvU32 addressSpace;
-    NvU64 notificationBufferSize;
     NV_STATUS status;
 
     hNotifier = pKernelChannel->hErrorContext;
@@ -3764,8 +3763,6 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     // Clobbering error notifier index is illegal
     NV_CHECK_OR_RETURN(LEVEL_INFO, index != NV_CHANNELGPFIFO_NOTIFICATION_TYPE_ERROR,
                      NV_ERR_INVALID_ARGUMENT);
-
-    notificationBufferSize = (index + 1) * sizeof(NvNotification);
 
     status = deviceGetByInstance(pClient, gpuGetDeviceInstance(pGpu), &pDevice);
     if (status != NV_OK)
@@ -3775,7 +3772,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     {
         addressSpace = memdescGetAddressSpace(pMemory->pMemDesc);
 
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pMemory->Length >= notificationBufferSize,
+        NV_CHECK_OR_RETURN(LEVEL_INFO, pMemory->Length >= ((index + 1) * sizeof(NvNotification)),
                          NV_ERR_OUT_OF_RANGE);
         switch (addressSpace)
         {
@@ -3793,7 +3790,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
                                          &pDmaMappingInfo),
                     NV_ERR_GENERIC);
 
-                NV_CHECK_OR_RETURN(LEVEL_INFO, pDmaMappingInfo->pMemDesc->Size >= notificationBufferSize,
+                NV_CHECK_OR_RETURN(LEVEL_INFO, pDmaMappingInfo->pMemDesc->Size >= ((index + 1) * sizeof(NvNotification)),
                                  NV_ERR_OUT_OF_RANGE);
                 break;
             }
@@ -3808,7 +3805,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     }
     else if (NV_OK == ctxdmaGetByHandle(pClient, hNotifier, &pContextDma))
     {
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pContextDma->Limit >= (notificationBufferSize - 1),
+        NV_CHECK_OR_RETURN(LEVEL_INFO, pContextDma->Limit >= (((index + 1) * sizeof(NvNotification)) - 1),
                          NV_ERR_OUT_OF_RANGE);
     }
     else

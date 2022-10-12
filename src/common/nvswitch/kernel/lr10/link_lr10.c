@@ -2047,8 +2047,7 @@ NvlStatus
 nvswitch_launch_ALI_link_training_lr10
 (
     nvswitch_device *device,
-    nvlink_link     *link,
-    NvBool           bSync
+    nvlink_link     *link
 )
 {
     return NVL_ERR_NOT_IMPLEMENTED;

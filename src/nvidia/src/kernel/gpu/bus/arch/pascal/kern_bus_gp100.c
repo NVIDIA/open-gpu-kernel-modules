@@ -309,7 +309,6 @@ kbusRemoveNvlinkPeerMapping_GP100
     NvU32         peerGpuInst     = gpuGetInstance(pGpu1);
     KernelNvlink *pKernelNvlink0  = GPU_GET_KERNEL_NVLINK(pGpu0);
     NvBool        bLoopback       = (pGpu0 == pGpu1);
-    NvBool        bBufferReady     = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pKernelNvlink0 != NULL, NV_ERR_NOT_SUPPORTED);
 
@@ -416,23 +415,8 @@ kbusRemoveNvlinkPeerMapping_GP100
             }
         }
 
-        //
         // Call knvlinkUpdateCurrentConfig to flush settings to the registers
-        // Skip this call if buffer ready is set and CONFIG_REQUIRE_INITIALIZED is true
-        //
-        status = knvlinkSyncLinkMasksAndVbiosInfo(pGpu0, pKernelNvlink0);
-        if (status != NV_OK)
-        {
-            NV_ASSERT(status == NV_OK);
-            return status;
-        }
-
-        bBufferReady = ((pKernelNvlink0->initializedLinks & pKernelNvlink0->peerLinkMasks[peerId]) != 0) ? NV_TRUE : NV_FALSE;
-        if (!pKernelNvlink0->getProperty(pKernelNvlink0, PDB_PROP_KNVLINK_CONFIG_REQUIRE_INITIALIZED_LINKS_CHECK) ||
-            !bBufferReady)
-        {
-            status = knvlinkUpdateCurrentConfig(pGpu0, pKernelNvlink0);
-        }
+        status = knvlinkUpdateCurrentConfig(pGpu0, pKernelNvlink0);
     }
 
     return status;

@@ -648,7 +648,7 @@ NvlStatus nvswitch_ctrl_get_nvlink_lp_counters_lr10(nvswitch_device *device, NVS
 NvlStatus nvswitch_service_nvldl_fatal_link_lr10(nvswitch_device *device, NvU32 nvliptInstance, NvU32 link);
 NvlStatus nvswitch_ctrl_inband_send_data_lr10(nvswitch_device *device, NVSWITCH_INBAND_SEND_DATA_PARAMS *p);
 NvlStatus nvswitch_ctrl_inband_read_data_lr10(nvswitch_device *device, NVSWITCH_INBAND_READ_DATA_PARAMS *p);
-NvlStatus nvswitch_launch_ALI_link_training_lr10(nvswitch_device *device, nvlink_link *link, NvBool bSync);
+NvlStatus nvswitch_launch_ALI_link_training_lr10(nvswitch_device *device, nvlink_link *link);
 NvlStatus nvswitch_service_minion_link_lr10(nvswitch_device *device, NvU32 nvliptInstance);
 void      nvswitch_apply_recal_settings_lr10(nvswitch_device *device, nvlink_link *link);
 NvlStatus nvswitch_ctrl_get_sw_info_lr10(nvswitch_device *device, NVSWITCH_GET_SW_INFO_PARAMS *p);

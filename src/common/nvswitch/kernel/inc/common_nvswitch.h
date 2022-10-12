@@ -535,7 +535,6 @@ void      nvswitch_reset_persistent_link_hw_state(nvswitch_device *device, NvU32
 void      nvswitch_store_topology_information(nvswitch_device *device, nvlink_link *link);
 
 NvlStatus nvswitch_launch_ALI(nvswitch_device *device);
-NvlStatus nvswitch_launch_ALI_link_training(nvswitch_device *device, nvlink_link *link, NvBool bSync);
 NvlStatus nvswitch_inband_read_data(nvswitch_device *device, NvU8 *dest, NvU32 linkId, NvU32 *dataSize);
 void      nvswitch_filter_messages(nvswitch_device *device, NvU32 linkId);
 NvlStatus nvswitch_set_training_mode(nvswitch_device *device);

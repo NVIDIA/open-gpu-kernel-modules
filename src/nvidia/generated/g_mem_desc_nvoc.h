@@ -1077,7 +1077,6 @@ void memdescUnmapInternal(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags
 // currently for this, so a WAR is required for r515. The intent
 // is to remove this by r525.
 //
-#define MEMDESC_FLAGS_WSL_SHARED_MEMORY             NVBIT64(46)
 
 #endif // _MEMDESC_H_
 

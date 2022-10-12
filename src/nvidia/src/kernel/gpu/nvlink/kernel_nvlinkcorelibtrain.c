@@ -75,13 +75,16 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
 
 #if defined(INCLUDE_NVLINK_LIB)
 
-    OBJSYS *pSys                  = SYS_GET_INSTANCE();
-    NvU32   flags                 = NVLINK_STATE_CHANGE_SYNC;
-    NvBool  bNvswitchProxyPresent = NV_FALSE;
-    NvBool  bUpdateConnStatus     = NV_FALSE;
-    NvBool  bCheckDegradedMode    = NV_FALSE;
+    OBJSYS   *pSys                  = SYS_GET_INSTANCE();
+    NvU32     flags                 = NVLINK_STATE_CHANGE_SYNC;
+    NvBool    bNvswitchProxyPresent = NV_FALSE;
+    NvBool    bUpdateConnStatus     = NV_FALSE;
+    NvBool    bCheckDegradedMode    = NV_FALSE;
+    NvU32     linkId;
+    NvU32     tmpDisabledLinkMask    = 0;
+    NvU32     tmpEnabledLinkMask     = 0;
     nvlink_conn_info conn_info;
-    NvU32   linkId;
+
     NvU32     numActiveLinksPerIoctrl = 0;
     NvU32     numLinksPerIoctrl       = 0;
 
@@ -91,6 +94,18 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
     //
     if (!knvlinkPoweredUpForD3_HAL(pGpu, pKernelNvlink))
     {
+        if (pKernelNvlink->bEnableAli)
+        {
+            // Update the post Rx Det link Mask for the GPU
+            knvlinkUpdatePostRxDetectLinkMask(pGpu, pKernelNvlink);
+        }
+
+        if (pKernelNvlink->ipVerNvlink >= NVLINK_VERSION_40)
+        {
+            numActiveLinksPerIoctrl = knvlinkGetNumActiveLinksPerIoctrl(pGpu, pKernelNvlink);
+            numLinksPerIoctrl       = knvlinkGetTotalNumLinksPerIoctrl(pGpu, pKernelNvlink);
+        }
+
         //
         // Optimization: Check for nvlink proxy only when system fabric is externally
         // managed. This would avoid RPCs in non-nvswitch cases.
@@ -100,26 +115,115 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
             bNvswitchProxyPresent = knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink);
         }
 
-        if (pKernelNvlink->bEnableAli)
-        {
-            // Update the post Rx Det link Mask for the GPU
-            knvlinkUpdatePostRxDetectLinkMask(pGpu, pKernelNvlink);
-        }
-
+        //
+        // If on Nvlink4.0+ then before topology discovery is performed then
+        // first enter the corelib floorsweeping function to floorsweep down
+        // the GPU if requested.
+        // This path does not cache connection info since its main purpose is to
+        // edit the connection information before RM tries to cache and update itself
+        //
         if (pKernelNvlink->ipVerNvlink >= NVLINK_VERSION_40                     &&
             !bNvswitchProxyPresent                                              &&
             !pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED) &&
-            pKernelNvlink->pNvlinkDev != NULL)
+            pKernelNvlink->pNvlinkDev != NULL                                   &&
+            !pKernelNvlink->bFloorSwept                                         &&
+            IS_SILICON(pGpu)                                                    &&
+            numActiveLinksPerIoctrl < numLinksPerIoctrl)
         {
-            numLinksPerIoctrl = knvlinkGetTotalNumLinksPerIoctrl(pGpu, pKernelNvlink);
-            status = knvlinkFloorSweep(pGpu, pKernelNvlink,
-                                    numLinksPerIoctrl, &numActiveLinksPerIoctrl);
+            // The path here is important not getting the connection info
+            FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
+            {
+                nvlink_lib_discover_and_get_remote_conn_info(
+                            pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, 0);
+            }
+            FOR_EACH_INDEX_IN_MASK_END;
 
+            // floorsweeping in corelib will update connection info that RM qill query below
+            (void)nvlink_lib_powerdown_floorswept_links_to_off(pKernelNvlink->pNvlinkDev);
+
+            //
+            // If a link in the enabledLinkMask is not trained after floorsweeping then
+            // then add it to a tmp disabled linkMask
+            //
+
+            // Get the link train status for the enabled link masks
+            NV2080_CTRL_NVLINK_ARE_LINKS_TRAINED_PARAMS linkTrainedParams;
+
+            portMemSet(&linkTrainedParams, 0, sizeof(linkTrainedParams));
+            linkTrainedParams.linkMask    = pKernelNvlink->enabledLinks;
+            linkTrainedParams.bActiveOnly = NV_TRUE;
+
+            // Reset timeout to clear any accumulated timeouts from link init
+            if (IS_GSP_CLIENT(pGpu))
+            {
+                threadStateResetTimeout(pGpu);
+            }
+
+            status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                         NV2080_CTRL_CMD_NVLINK_ARE_LINKS_TRAINED,
+                                         (void *)&linkTrainedParams,
+                                         sizeof(linkTrainedParams));
             if (status != NV_OK)
             {
-                NV_PRINTF(LEVEL_ERROR, "Failed to floorsweep valid nvlink config!\n");
-                return NV_ERR_NOT_READY;
+                NV_PRINTF(LEVEL_ERROR, "Failed to get the link train status for links\n");
+                return status;
+            }
+
+            //
+            // Create a temporary mask of all links that are now enabled:
+            // classified as a link in active
+            //
+            FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
+            {
+                if (linkTrainedParams.bIsLinkActive[linkId])
+                {
+                    tmpEnabledLinkMask |= BIT(linkId);
                 }
+                else
+                {
+                    tmpDisabledLinkMask |= BIT(linkId);
+                }
+            }
+            FOR_EACH_INDEX_IN_MASK_END;
+
+            // Redo linkMasks based on the search above being the ground truth
+            pKernelNvlink->enabledLinks           = tmpEnabledLinkMask;
+
+            //
+            // remove any links not in active in the tmpEnabledLinkMask from all
+            // other link masks as these have been floorswept by the corelib
+            //
+            pKernelNvlink->disconnectedLinkMask    = tmpEnabledLinkMask;
+            pKernelNvlink->initDisabledLinksMask   = tmpDisabledLinkMask;
+
+
+            status = knvlinkProcessInitDisabledLinks(pGpu, pKernelNvlink);
+            if (status != NV_OK)
+            {
+                NV_ASSERT(status == NV_OK);
+                return status;
+            }
+
+            // Re-sync the link masks with GSP
+            status = knvlinkSyncLinkMasksAndVbiosInfo(pGpu, pKernelNvlink);
+            if (status != NV_OK)
+            {
+                NV_ASSERT(status == NV_OK);
+                return status;
+            }
+
+
+            NV_PRINTF(LEVEL_INFO,
+                  "Post Floorsweeping: discoveredLinks: 0x%x; enabledLinks:0x%x; disconnectedLinks:0x%x; initDisabledLinksMask:0x%x\n",
+                  pKernelNvlink->discoveredLinks, pKernelNvlink->enabledLinks, pKernelNvlink->disconnectedLinkMask, pKernelNvlink->initDisabledLinksMask);
+            pKernelNvlink->bFloorSwept = NV_TRUE;
+
+            //
+            // Assert that the number of links in active is always less then
+            // or equal to the number of active links on the chips
+            //
+            NV_ASSERT_OR_ELSE_STR((nvPopCount32(tmpEnabledLinkMask) <= numActiveLinksPerIoctrl * nvPopCount32(pKernelNvlink->ioctrlMask)),
+                        "Mismatch between links in active and #of links supported!\n", return NV_ERR_INVALID_STATE);
         }
 
         // We only need to look at links that are still considered disconnected
@@ -438,7 +542,7 @@ knvlinkCheckTrainingIsComplete_IMPL
         {
             if (pKernelNvlink0->bLinkTrainingDebugSpew)
             {
-            NV_PRINTF(LEVEL_INFO, "Links aren't fully trained yet!\n");
+                NV_PRINTF(LEVEL_INFO, "Links aren't fully trained yet!\n");
             }
             return NV_ERR_GENERIC;
         }
@@ -495,7 +599,7 @@ knvlinkCheckTrainingIsComplete_IMPL
             {
                 if (pKernelNvlink1->bLinkTrainingDebugSpew)
                 {
-                NV_PRINTF(LEVEL_INFO, "Links aren't fully trained yet!\n");
+                    NV_PRINTF(LEVEL_INFO, "Links aren't fully trained yet!\n");
                 }
 
                 return NV_ERR_GENERIC;
@@ -1277,140 +1381,6 @@ knvlinkRetrainLink_IMPL
     }
 
     return status;
-}
-
-/*!
- * @brief Floorsweep the nvlink config for the chip
- *
- * @param[in]  pGpu            OBJGPU pointer
- * @param[in]  pKernelNvlink   KernelNvlink pointer
- * @param[in]  numLinksPerIp   number of total links found in discovery
- * @param[out] pNumLinkActive  number of links needed to be active
- *
- * @returns On success, sets unique fabric address and returns NV_OK.
- *          On failure, returns NV_ERR_XXX.
- */
-NV_STATUS
-knvlinkFloorSweep_IMPL
-(
-    OBJGPU *pGpu,
-    KernelNvlink *pKernelNvlink,
-    NvU32         numLinksPerIoctrl,
-    NvU32        *pNumActiveLinksPerIoctrl
-)
-{
-
-#if defined(INCLUDE_NVLINK_LIB)
-    NV_STATUS status = NV_OK;
-    NvU32   linkId;
-    NvU32   tmpDisabledLinkMask    = 0;
-    NvU32   tmpEnabledLinkMask     = 0;
-    nvlink_conn_info conn_info;
-
-    *pNumActiveLinksPerIoctrl = knvlinkGetNumActiveLinksPerIoctrl(pGpu, pKernelNvlink);
-    if (!knvlinkIsFloorSweepingNeeded_HAL(pGpu, pKernelNvlink, *pNumActiveLinksPerIoctrl, numLinksPerIoctrl))
-    {
-        return NV_OK;
-    }
-
-    // The path here is important not getting the connection info
-    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
-    {
-        nvlink_lib_discover_and_get_remote_conn_info(
-                    pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, 0);
-    }
-    FOR_EACH_INDEX_IN_MASK_END;
-
-    // floorsweeping in corelib will update connection info that RM qill query below
-    (void)nvlink_lib_powerdown_floorswept_links_to_off(pKernelNvlink->pNvlinkDev);
-
-    //
-    // If a link in the enabledLinkMask is not trained after floorsweeping then
-    // then add it to a tmp disabled linkMask
-    //
-
-    // Get the link train status for the enabled link masks
-    NV2080_CTRL_NVLINK_ARE_LINKS_TRAINED_PARAMS linkTrainedParams;
-
-    portMemSet(&linkTrainedParams, 0, sizeof(linkTrainedParams));
-    linkTrainedParams.linkMask    = pKernelNvlink->enabledLinks;
-    linkTrainedParams.bActiveOnly = NV_TRUE;
-
-    // Reset timeout to clear any accumulated timeouts from link init
-    if (IS_GSP_CLIENT(pGpu))
-    {
-        threadStateResetTimeout(pGpu);
-    }
-
-    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                 NV2080_CTRL_CMD_NVLINK_ARE_LINKS_TRAINED,
-                                 (void *)&linkTrainedParams,
-                                 sizeof(linkTrainedParams));
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to get the link train status for links\n");
-        return status;
-    }
-
-    //
-    // Create a temporary mask of all links that are now enabled:
-    // classified as a link in active
-    //
-    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
-    {
-        if (linkTrainedParams.bIsLinkActive[linkId])
-        {
-            tmpEnabledLinkMask |= BIT(linkId);
-        }
-        else
-        {
-            tmpDisabledLinkMask |= BIT(linkId);
-        }
-    }
-    FOR_EACH_INDEX_IN_MASK_END;
-
-    // Redo linkMasks based on the search above being the ground truth
-    pKernelNvlink->enabledLinks          = tmpEnabledLinkMask;
-
-    //
-    // remove any links not in active in the tmpEnabledLinkMask from all
-    // other link masks as these have been floorswept by the corelib
-    //
-    pKernelNvlink->disconnectedLinkMask    = tmpEnabledLinkMask;
-    pKernelNvlink->initDisabledLinksMask   = tmpDisabledLinkMask;
-
-
-    status = knvlinkProcessInitDisabledLinks(pGpu, pKernelNvlink);
-    if (status != NV_OK)
-    {
-        NV_ASSERT(status == NV_OK);
-        return status;
-    }
-
-    // Re-sync the link masks with GSP
-    status = knvlinkSyncLinkMasksAndVbiosInfo(pGpu, pKernelNvlink);
-    if (status != NV_OK)
-    {
-        NV_ASSERT(status == NV_OK);
-        return status;
-    }
-
-    //
-    // Assert that the number of links in active is always less then
-    // or equal to the number of active links on the chips
-    //
-    if(!(nvPopCount32(tmpEnabledLinkMask) <= *pNumActiveLinksPerIoctrl * nvPopCount32(pKernelNvlink->ioctrlMask)))
-    {
-        NV_PRINTF(LEVEL_INFO,
-              "Floorsweeping didn't work! enabledMaskCount: 0x%x and numActiveLinksTotal: 0x%x. Current link info cached in SW: discoveredLinks: 0x%x; enabledLinks:0x%x; disconnectedLinks:0x%x; initDisabledLinksMask:0x%x\n",
-              nvPopCount32(tmpEnabledLinkMask), *pNumActiveLinksPerIoctrl * nvPopCount32(pKernelNvlink->ioctrlMask), pKernelNvlink->discoveredLinks, pKernelNvlink->enabledLinks, pKernelNvlink->disconnectedLinkMask, pKernelNvlink->initDisabledLinksMask);
-
-        return NV_ERR_NOT_READY;
-    }
-
-    pKernelNvlink->bFloorSwept = NV_TRUE;
-#endif //INCLUDE_NVLINK_LIB
-    return NV_OK;
 }
 
 /*!

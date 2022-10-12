@@ -307,7 +307,7 @@ _nvswitch_corelib_ali_training
 )
 {
     nvswitch_device *device = link->dev->pDevInfo;
-    return device->hal.nvswitch_launch_ALI_link_training(device, link, NV_FALSE);
+    return device->hal.nvswitch_launch_ALI_link_training(device, link);
 }
 
 void
@@ -4191,11 +4191,10 @@ NvlStatus
 nvswitch_launch_ALI_link_training
 (
     nvswitch_device *device,
-    nvlink_link *link,
-    NvBool bSync
+    nvlink_link *link
 )
 {
-    return device->hal.nvswitch_launch_ALI_link_training(device, link, bSync);
+    return device->hal.nvswitch_launch_ALI_link_training(device, link);
 }
 
 NvlStatus

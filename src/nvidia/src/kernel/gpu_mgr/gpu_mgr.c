@@ -758,8 +758,6 @@ NvBool gpumgrIsDeviceRmFirmwareCapable
         0x2236, // A10   SKU215     Pris-24
         0x2237, // A10G  SKU215     Pris-24
         0x25B6, // A16
-        0x20F5, // A800-80
-        0x20F6, // A800-40
     };
     NvU32 count = NV_ARRAY_ELEMENTS(defaultGspRmGpus);
     NvU32 i;

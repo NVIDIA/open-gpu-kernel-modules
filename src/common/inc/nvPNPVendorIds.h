@@ -136,6 +136,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "CLO",    _VENDOR_NAME_ENTRY("Clone Computers/Analogy")           },
     { "CLT",    _VENDOR_NAME_ENTRY("automated computer control systems")},
     { "CMD",    _VENDOR_NAME_ENTRY("CMD Technology")                    },
+    { "CMN",    _VENDOR_NAME_ENTRY("Chimei innolux corp.")              },
     { "CMO",    _VENDOR_NAME_ENTRY("Chi Mei Optoelectronics corp.")     },
     { "CNI",    _VENDOR_NAME_ENTRY("Connect International")             },
     { "CNT",    _VENDOR_NAME_ENTRY("CNet Technology")                   },

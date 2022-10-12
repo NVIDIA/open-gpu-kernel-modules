@@ -241,7 +241,6 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
     NvU32  r = 0;
     NvBool bPeerLink, bSysmemLink, bSwitchLink;
     NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_INFO_PARAMS nvlinkLinkAndClockInfoParams;
-    NvBool bIsNvlinkReady = NV_TRUE;
 
     //
     // vGPU:
@@ -288,28 +287,9 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
     {
         // Get the nvlink connections for this device from the core
         knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
-
-
-        //
-        // Get the nvlink connections for this device from the core
-        // If the function fails then the corelib doesn't have enough
-        // info to validate connectivity so we should mark the API call
-        // as not ready
-        //
-        status = knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
-        if (status == NV_ERR_NOT_READY)
-        {
-            NV_PRINTF(LEVEL_INFO, "Nvlink is not ready yet!\n");
-            bIsNvlinkReady = NV_FALSE;
-        }
-        else if (status != NV_OK)
-        {
-            return status;
-        }
     }
 
-    // If nvlink is not ready don't report back any links as being enabled
-    pParams->enabledLinkMask = (bIsNvlinkReady) ? pKernelNvlink->enabledLinks : 0x0;
+    pParams->enabledLinkMask = pKernelNvlink->enabledLinks;
 
     r = pParams->enabledLinkMask;
     while (r >>= 1 ) i++;

@@ -2334,6 +2334,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_DEV_HAS_ATS_ENABLED" "" "types"
         ;;
 
+        mt_device_gre)
+            #
+            # Determine if MT_DEVICE_GRE flag is present.
+            #
+            # MT_DEVICE_GRE flag is removed by commit 58cc6b72a21274
+            # ("arm64: mm: Remove unused support for Device-GRE memory type") in v5.14-rc1
+            # (2021-06-01).
+            #
+            CODE="
+            #include <asm/memory.h>
+            unsigned int conftest_mt_device_gre(void) {
+                return MT_DEVICE_GRE;
+            }"
+
+            compile_check_conftest "$CODE" "NV_MT_DEVICE_GRE_PRESENT" "" "types"
+        ;;
+
         get_user_pages)
             #
             # Conftest for get_user_pages()

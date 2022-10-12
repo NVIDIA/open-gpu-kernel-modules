@@ -210,7 +210,7 @@
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \
     _op(NvlStatus, nvswitch_launch_ALI, (nvswitch_device *device), _arch) \
-    _op(NvlStatus, nvswitch_launch_ALI_link_training, (nvswitch_device *device, nvlink_link *link, NvBool bSync), _arch) \
+    _op(NvlStatus, nvswitch_launch_ALI_link_training, (nvswitch_device *device, nvlink_link *link), _arch) \
     _op(NvlStatus, nvswitch_ctrl_inband_send_data, (nvswitch_device *device, NVSWITCH_INBAND_SEND_DATA_PARAMS *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_inband_read_data, (nvswitch_device *device, NVSWITCH_INBAND_READ_DATA_PARAMS *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_set_residency_bins, (nvswitch_device *device, NVSWITCH_SET_RESIDENCY_BINS *p), _arch) \

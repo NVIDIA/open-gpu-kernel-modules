@@ -349,11 +349,7 @@ knvlinkGetP2pConnectionStatus_IMPL
     }
 
     // Get the remote ends of the links of local GPU from the nvlink core
-    status = knvlinkCoreGetRemoteDeviceInfo(pGpu0, pKernelNvlink0);
-    if (status != NV_OK)
-    {
-        return status;
-    }
+    knvlinkCoreGetRemoteDeviceInfo(pGpu0, pKernelNvlink0);
 
     // Post topology link enable on links of local GPU
     status = knvlinkEnableLinksPostTopology_HAL(pGpu0, pKernelNvlink0,
@@ -369,11 +365,7 @@ knvlinkGetP2pConnectionStatus_IMPL
         if (knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0) != numPeerLinks)
         {
             // Get the remote ends of the links of remote GPU from the nvlink core
-            status = knvlinkCoreGetRemoteDeviceInfo(pGpu1, pKernelNvlink1);
-            if (status != NV_OK)
-            {
-                return status;
-            }
+            knvlinkCoreGetRemoteDeviceInfo(pGpu1, pKernelNvlink1);
 
             // Post topology link enable on links of remote GPU
             status = knvlinkEnableLinksPostTopology_HAL(pGpu1, pKernelNvlink1,
@@ -492,12 +484,12 @@ knvlinkUpdateCurrentConfig_IMPL
         {
             pKCe = GPU_GET_KCE(pGpu, i);
             if (pKCe)
-        {
-            status = kceTopLevelPceLceMappingsUpdate(pGpu, pKCe);
-            if (status != NV_OK)
             {
-                NV_PRINTF(LEVEL_ERROR, "Failed to update PCE-LCE mappings\n");
-            }
+                status = kceTopLevelPceLceMappingsUpdate(pGpu, pKCe);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Failed to update PCE-LCE mappings\n");
+                }
                 break;
             }
         }
@@ -815,8 +807,8 @@ knvlinkPrepareForXVEReset_IMPL
 
     // Remove all NVLink mappings in HSHUB config registers to init values
     if (!API_GPU_IN_RESET_SANITY_CHECK(pGpu) && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
-    status = knvlinkRemoveMapping_HAL(pGpu, pKernelNvlink, NV_TRUE, ((1 << NVLINK_MAX_PEERS_SW) - 1),
-                                      NV_FALSE /* bL2Entry */);
+        status = knvlinkRemoveMapping_HAL(pGpu, pKernelNvlink, NV_TRUE, ((1 << NVLINK_MAX_PEERS_SW) - 1),
+                                          NV_FALSE /* bL2Entry */);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1217,7 +1209,7 @@ knvlinkUpdateLinkConnectionStatus_IMPL
 
 #if defined(INCLUDE_NVLINK_LIB)
 
-    params.bConnected = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bConnected;
+    params.bConnected       = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bConnected;
     params.remoteDeviceType = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.deviceType;
     params.remoteLinkNumber = pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.linkNumber;
 

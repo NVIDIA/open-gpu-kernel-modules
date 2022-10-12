@@ -78,18 +78,7 @@ nvlink_core_check_link_state
                 return NV_FALSE;
             }
 
-            status = link->link_handlers->get_dl_link_mode(link, &crntDlLinkMode);
-            if (status != NVL_SUCCESS)
-            {
-                NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                    "%s: Unable to get DL link mode for %s:%s\n",
-                    __FUNCTION__, link->dev->deviceName, link->linkName));
-                return NV_FALSE;
-            }
-
-            if (crntTlLinkMode == NVLINK_LINKSTATE_HS &&
-                (crntDlLinkMode == NVLINK_LINKSTATE_HS ||
-                 crntDlLinkMode == NVLINK_LINKSTATE_SLEEP))
+            if (crntTlLinkMode == NVLINK_LINKSTATE_HS)
             {
                 return NV_TRUE;
             }

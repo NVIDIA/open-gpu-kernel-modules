@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -206,6 +206,8 @@ static int nvlink_fops_release(struct inode *inode, struct file *filp)
     nvlink_file_private_t *private = NVLINK_GET_FILE_PRIVATE(filp);
 
     nvlink_print(NVLINK_DBG_INFO, "nvlink driver close\n");
+
+    WARN_ON(private == NULL);
 
     mutex_lock(&nvlink_drvctx.lock);
 

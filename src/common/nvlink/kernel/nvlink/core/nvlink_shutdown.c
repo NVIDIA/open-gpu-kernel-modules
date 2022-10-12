@@ -430,7 +430,7 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
                 
             // to track Failure
             conns[i]->end0->inSWCFG = NV_FALSE;        
-	    }
+	}
         else
         {
             conns[i]->end0->inSWCFG = NV_TRUE;
@@ -448,14 +448,14 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
 
             // to track Failure
             conns[i]->end1->inSWCFG = NV_FALSE; 
-	    }
+	}
         else
         {
             conns[i]->end1->inSWCFG = NV_TRUE;
         }
 
         // Change each sublink state to SAFE
-	    if(conns[i]->end0->inSWCFG == NV_TRUE)
+	if(conns[i]->end0->inSWCFG == NV_TRUE)
         {
             conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
                                                        NVLINK_SUBLINK_STATE_TX_SAFE,
@@ -928,8 +928,7 @@ nvlink_core_powerdown_floorswept_conns_to_off
             {
                 nvlink_core_get_intranode_conn(links[j], &(conn));
                 if (conn == NULL ||
-                    _nvlink_core_check_if_conn_in_array(visitedConns, connCount, conn) ||
-                    (conn->end0 == NULL || conn->end1 == NULL))
+                    _nvlink_core_check_if_conn_in_array(visitedConns, connCount, conn))
                 {
                     continue;
                 }

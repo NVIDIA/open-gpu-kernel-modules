@@ -2,6 +2,12 @@
 
 ## Release 520 Entries
 
+### [520.56.06] 2022-10-12
+
+#### Added
+
+- Introduce support for GeForce RTX 4090 GPUs.
+
 ### [520.61.05] 2022-10-10
 
 #### Added
