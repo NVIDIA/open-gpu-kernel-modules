@@ -283,14 +283,12 @@ nv_alloc_t *nvos_create_alloc(
     nv_alloc_t *at;
     unsigned int pt_size, i;
 
-    NV_KMALLOC(at, sizeof(nv_alloc_t));
+    NV_KZALLOC(at, sizeof(nv_alloc_t));
     if (at == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate alloc info\n");
         return NULL;
     }
-
-    memset(at, 0, sizeof(nv_alloc_t));
 
     at->dev = dev;
     pt_size = num_pages *  sizeof(nvidia_pte_t *);
@@ -885,11 +883,9 @@ static void *nv_alloc_file_private(void)
     nv_linux_file_private_t *nvlfp;
     unsigned int i;
 
-    NV_KMALLOC(nvlfp, sizeof(nv_linux_file_private_t));
+    NV_KZALLOC(nvlfp, sizeof(nv_linux_file_private_t));
     if (!nvlfp)
         return NULL;
-
-    memset(nvlfp, 0, sizeof(nv_linux_file_private_t));
 
     for (i = 0; i < NV_FOPS_STACK_INDEX_COUNT; ++i)
     {

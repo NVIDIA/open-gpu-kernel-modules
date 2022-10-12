@@ -77,23 +77,19 @@ nv_dma_buf_alloc_file_private(
 {
     nv_dma_buf_file_private_t *priv = NULL;
 
-    NV_KMALLOC(priv, sizeof(nv_dma_buf_file_private_t));
+    NV_KZALLOC(priv, sizeof(nv_dma_buf_file_private_t));
     if (priv == NULL)
     {
         return NULL;
     }
 
-    memset(priv, 0, sizeof(nv_dma_buf_file_private_t));
-
     mutex_init(&priv->lock);
 
-    NV_KMALLOC(priv->handles, num_handles * sizeof(priv->handles[0]));
+    NV_KZALLOC(priv->handles, num_handles * sizeof(priv->handles[0]));
     if (priv->handles == NULL)
     {
         goto failed;
     }
-
-    memset(priv->handles, 0, num_handles * sizeof(priv->handles[0]));
 
     return priv;
 
@@ -352,13 +348,11 @@ nv_dma_buf_map(
         goto unlock_api_lock;
     }
 
-    NV_KMALLOC(sgt, sizeof(struct sg_table));
+    NV_KZALLOC(sgt, sizeof(struct sg_table));
     if (sgt == NULL)
     {
         goto unlock_gpu_lock;
     }
-
-    memset(sgt, 0, sizeof(struct sg_table));
 
     //
     // RM currently returns contiguous BAR1, so we create as many
