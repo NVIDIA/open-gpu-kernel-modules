@@ -194,16 +194,13 @@ bool DeviceImpl::isPendingZombie()
     if (isZombie() && !shadow.zombie)
         return true;
     else if (!isZombie() && shadow.zombie && plugged)
-        return (connector->policyModesetOrderMitigation ? false : true);
+        return !connector->policyModesetOrderMitigation;
     return false;
 }
 
 bool DeviceImpl::isPendingHDCPCapDone()
 {
-    if ((isHDCPCap != Indeterminate) && !shadow.hdcpCapDone)
-        return true;
-    else
-        return false;
+    return ((isHDCPCap != Indeterminate) && !shadow.hdcpCapDone);
 }
 
 bool DeviceImpl::isPendingCableOk()

@@ -229,7 +229,7 @@ ParseResponseStatus EnumPathResMessage::parseResponseAck(EncodedMessage * messag
 {
     reply.portNumber = reader->readOrDefault(4 /*Port_Number*/, 0xF);
     reader->readOrDefault(3 /*zeroes*/, 0);
-    reply.bFECCapability = (reader->readOrDefault(1 /*FEC*/, 0x0) == 1) ? true : false;
+    reply.bFECCapability = (reader->readOrDefault(1 /*FEC*/, 0x0) == 1);
     reply.TotalPBN = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
     reply.FreePBN  = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
 
