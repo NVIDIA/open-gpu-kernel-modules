@@ -874,7 +874,7 @@ _kfspCheckGspBootStatus
     // In Inst_in_sys mode GSP-FMC will write status to NV_PGSP_MAILBOX(0).
     if (kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp))
     {
-        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
         while(FLD_TEST_DRF_NUM(_PGSP, _MAILBOX, _DATA, GSP_INST_IN_SYS_COMPLETION_STATUS_IN_PROGRESS , GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0))))
         {
             status = gpuCheckTimeout(pGpu, &timeout);
@@ -896,7 +896,7 @@ _kfspCheckGspBootStatus
      }
 
     // Ensure priv lockdown is released before polling interrupts
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
     do
     {
         if (flcnIsRiscvLockdownReleased_HAL(pGpu, pFlcn))
