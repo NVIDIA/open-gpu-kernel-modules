@@ -150,6 +150,15 @@ static void FlipBaseToNull(NVDevEvoPtr pDevEvo)
                 pRequestHead->layer[layer].compositionParams.specified = TRUE;
                 pRequestHead->layer[layer].completionNotifier.specified = TRUE;
                 pRequestHead->layer[layer].syncObjects.specified = TRUE;
+
+                // Disable HDR
+                pRequestHead->tf.val = NVKMS_OUTPUT_TF_NONE;
+                pRequestHead->tf.specified = TRUE;
+                pRequestHead->layer[layer].hdr.enabled = FALSE;
+                pRequestHead->layer[layer].hdr.specified = TRUE;
+                pRequestHead->layer[layer].colorspace.val =
+                    NVKMS_INPUT_COLORSPACE_NONE;
+                pRequestHead->layer[layer].colorspace.specified = TRUE;
             }
 
             pRequest->commit = TRUE;

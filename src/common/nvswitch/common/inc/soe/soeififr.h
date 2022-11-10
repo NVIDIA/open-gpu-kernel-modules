@@ -30,8 +30,12 @@
 
 enum
 {
-	RM_SOE_IFR_READ,
-	RM_SOE_IFR_WRITE,
+    RM_SOE_IFR_READ,
+    RM_SOE_IFR_WRITE,
+    RM_SOE_IFR_BBX_INITIALIZE,
+    RM_SOE_IFR_BBX_SHUTDOWN,
+    RM_SOE_IFR_BBX_SXID_ADD,
+    RM_SOE_IFR_BBX_SXID_GET,
 };
 
 typedef struct
@@ -43,10 +47,39 @@ typedef struct
     char        fileName[INFOROM_FS_FILE_NAME_SIZE];
 } RM_SOE_IFR_CMD_PARAMS;
 
+typedef struct
+{
+    NvU8        cmdType;
+    RM_FLCN_U64 time;
+    NvU8        osType;
+    NvU32       osVersion;
+} RM_SOE_IFR_CMD_BBX_INIT_PARAMS;
+
+typedef struct
+{
+    NvU8        cmdType;
+} RM_SOE_IFR_CMD_BBX_SHUTDOWN_PARAMS;
+
+typedef struct
+{
+    NvU8        cmdType;
+    NvU32       exceptionType;
+    NvU32       data[3];
+} RM_SOE_IFR_CMD_BBX_SXID_ADD_PARAMS;
+
+typedef struct
+{
+    NvU8 cmdType;
+    RM_FLCN_U64 dmaHandle;
+} RM_SOE_IFR_CMD_BBX_SXID_GET_PARAMS;
+
 typedef union
 {
 	NvU8	cmdType;
 	RM_SOE_IFR_CMD_PARAMS params;
+    RM_SOE_IFR_CMD_BBX_INIT_PARAMS bbxInit;
+    RM_SOE_IFR_CMD_BBX_SXID_ADD_PARAMS bbxSxidAdd;
+    RM_SOE_IFR_CMD_BBX_SXID_GET_PARAMS bbxSxidGet;
 } RM_SOE_IFR_CMD;
 
 #endif // _SOEIFIFR_H_

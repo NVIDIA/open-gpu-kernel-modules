@@ -24,6 +24,7 @@
 #include "uvm_channel.h"
 
 #include "uvm_api.h"
+#include "uvm_common.h"
 #include "uvm_global.h"
 #include "uvm_hal.h"
 #include "uvm_procfs.h"
@@ -68,6 +69,38 @@ typedef enum
     UVM_CHANNEL_UPDATE_MODE_FORCE_ALL
 } uvm_channel_update_mode_t;
 
+static void channel_pool_lock_init(uvm_channel_pool_t *pool)
+{
+    if (uvm_channel_pool_is_proxy(pool))
+        uvm_mutex_init(&pool->mutex, UVM_LOCK_ORDER_CHANNEL);
+    else
+        uvm_spin_lock_init(&pool->spinlock, UVM_LOCK_ORDER_CHANNEL);
+}
+
+void uvm_channel_pool_lock(uvm_channel_pool_t *pool)
+{
+    if (uvm_channel_pool_is_proxy(pool))
+        uvm_mutex_lock(&pool->mutex);
+    else
+        uvm_spin_lock(&pool->spinlock);
+}
+
+void uvm_channel_pool_unlock(uvm_channel_pool_t *pool)
+{
+    if (uvm_channel_pool_is_proxy(pool))
+        uvm_mutex_unlock(&pool->mutex);
+    else
+        uvm_spin_unlock(&pool->spinlock);
+}
+
+void uvm_channel_pool_assert_locked(uvm_channel_pool_t *pool)
+{
+    if (uvm_channel_pool_is_proxy(pool))
+        uvm_assert_mutex_locked(&pool->mutex);
+    else
+        uvm_assert_spinlock_locked(&pool->spinlock);
+}
+
 // Update channel progress, completing up to max_to_complete entries
 static NvU32 uvm_channel_update_progress_with_max(uvm_channel_t *channel,
                                                   NvU32 max_to_complete,
@@ -80,7 +113,7 @@ static NvU32 uvm_channel_update_progress_with_max(uvm_channel_t *channel,
 
     NvU64 completed_value = uvm_channel_update_completed_value(channel);
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     // Completed value should never exceed the queued value
     UVM_ASSERT_MSG_RELEASE(completed_value <= channel->tracking_sem.queued_value,
@@ -108,7 +141,7 @@ static NvU32 uvm_channel_update_progress_with_max(uvm_channel_t *channel,
 
     channel->gpu_get = gpu_get;
 
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
 
     if (cpu_put >= gpu_get)
         pending_gpfifos = cpu_put - gpu_get;
@@ -157,7 +190,7 @@ static bool channel_is_available(uvm_channel_t *channel, NvU32 num_gpfifo_entrie
 {
     NvU32 pending_entries;
 
-    uvm_assert_spinlock_locked(&channel->pool->lock);
+    uvm_channel_pool_assert_locked(channel->pool);
 
     if (channel->cpu_put >= channel->gpu_get)
         pending_entries = channel->cpu_put - channel->gpu_get;
@@ -174,14 +207,14 @@ static bool try_claim_channel(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
     UVM_ASSERT(num_gpfifo_entries > 0);
     UVM_ASSERT(num_gpfifo_entries < channel->num_gpfifo_entries);
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     if (channel_is_available(channel, num_gpfifo_entries)) {
         channel->current_gpfifo_count += num_gpfifo_entries;
         claimed = true;
     }
 
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
 
     return claimed;
 }
@@ -248,7 +281,8 @@ static NV_STATUS channel_reserve_in_pool(uvm_channel_pool_t *pool, uvm_channel_t
 
 NV_STATUS uvm_channel_reserve_type(uvm_channel_manager_t *manager, uvm_channel_type_t type, uvm_channel_t **channel_out)
 {
-	UVM_ASSERT(type < UVM_CHANNEL_TYPE_COUNT);
+    UVM_ASSERT(type < UVM_CHANNEL_TYPE_COUNT);
+
     return channel_reserve_in_pool(manager->pool_to_use.default_for_type[type], channel_out);
 }
 
@@ -289,14 +323,14 @@ static NvU32 channel_get_available_push_info_index(uvm_channel_t *channel)
 {
     uvm_push_info_t *push_info;
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     push_info = list_first_entry_or_null(&channel->available_push_infos, uvm_push_info_t, available_list_node);
     UVM_ASSERT(push_info != NULL);
     UVM_ASSERT(push_info->on_complete == NULL && push_info->on_complete_data == NULL);
     list_del(&push_info->available_list_node);
 
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
 
     return push_info - channel->push_infos;
 }
@@ -355,10 +389,6 @@ static void proxy_channel_submit_work(uvm_push_t *push, NvU32 push_size)
 
     UVM_ASSERT(uvm_channel_is_proxy(channel));
 
-    // nvUvmInterfacePagingChannelPushStream should not sleep, because a
-    // spinlock is currently held.
-    uvm_assert_spinlock_locked(&channel->pool->lock);
-
     status = nvUvmInterfacePagingChannelPushStream(channel->proxy.handle, (char *) push->begin, push_size);
 
     if (status != NV_OK) {
@@ -409,7 +439,7 @@ void uvm_channel_end_push(uvm_push_t *push)
     NvU32 cpu_put;
     NvU32 new_cpu_put;
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     new_tracking_value = ++channel->tracking_sem.queued_value;
     new_payload = (NvU32)new_tracking_value;
@@ -446,7 +476,7 @@ void uvm_channel_end_push(uvm_push_t *push)
     // may notice the GPU work to be completed and hence all state tracking the
     // push must be updated before that. Notably uvm_pushbuffer_end_push() has
     // to be called first.
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
     unlock_push(channel);
 
     // This memory barrier is borrowed from CUDA, as it supposedly fixes perf
@@ -470,7 +500,7 @@ static void write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_entry_valu
     NvU32 new_cpu_put;
     uvm_gpu_t *gpu = channel->pool->manager->gpu;
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     cpu_put = channel->cpu_put;
     new_cpu_put = (cpu_put + 1) % channel->num_gpfifo_entries;
@@ -505,7 +535,7 @@ static void write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_entry_valu
     // The moment the channel is unlocked uvm_channel_update_progress_with_max()
     // may notice the GPU work to be completed and hence all state tracking the
     // push must be updated before that.
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
     unlock_push(channel);
 
     // This memory barrier is borrowed from CUDA, as it supposedly fixes perf
@@ -591,12 +621,12 @@ static uvm_gpfifo_entry_t *uvm_channel_get_first_pending_entry(uvm_channel_t *ch
     if (pending_count == 0)
         return NULL;
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     if (channel->gpu_get != channel->cpu_put)
         entry = &channel->gpfifo_entries[channel->gpu_get];
 
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
 
     return entry;
 }
@@ -720,9 +750,9 @@ static void channel_destroy(uvm_channel_pool_t *pool, uvm_channel_t *channel)
         channel_update_progress_all(channel, UVM_CHANNEL_UPDATE_MODE_FORCE_ALL);
     }
 
-    uvm_procfs_destroy_entry(channel->procfs.pushes);
-    uvm_procfs_destroy_entry(channel->procfs.info);
-    uvm_procfs_destroy_entry(channel->procfs.dir);
+    proc_remove(channel->procfs.pushes);
+    proc_remove(channel->procfs.info);
+    proc_remove(channel->procfs.dir);
 
     uvm_kvfree(channel->push_acquire_infos);
     uvm_kvfree(channel->push_infos);
@@ -977,7 +1007,7 @@ static NV_STATUS channel_pool_add(uvm_channel_manager_t *channel_manager,
     pool->engine_index = engine_index;
     pool->pool_type = pool_type;
 
-    uvm_spin_lock_init(&pool->lock, UVM_LOCK_ORDER_CHANNEL);
+    channel_pool_lock_init(pool);
 
     num_channels = channel_pool_type_num_channels(pool_type);
 
@@ -1482,11 +1512,11 @@ void uvm_channel_manager_destroy(uvm_channel_manager_t *channel_manager)
     if (channel_manager == NULL)
         return;
 
-    uvm_procfs_destroy_entry(channel_manager->procfs.pending_pushes);
+    proc_remove(channel_manager->procfs.pending_pushes);
 
     channel_manager_destroy_pools(channel_manager);
 
-    uvm_procfs_destroy_entry(channel_manager->procfs.channels_dir);
+    proc_remove(channel_manager->procfs.channels_dir);
 
     uvm_pushbuffer_destroy(channel_manager->pushbuffer);
 
@@ -1583,7 +1613,7 @@ static void uvm_channel_print_info(uvm_channel_t *channel, struct seq_file *s)
     uvm_channel_manager_t *manager = channel->pool->manager;
     UVM_SEQ_OR_DBG_PRINT(s, "Channel %s\n", channel->name);
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     UVM_SEQ_OR_DBG_PRINT(s, "completed          %llu\n", uvm_channel_update_completed_value(channel));
     UVM_SEQ_OR_DBG_PRINT(s, "queued             %llu\n", channel->tracking_sem.queued_value);
@@ -1595,7 +1625,7 @@ static void uvm_channel_print_info(uvm_channel_t *channel, struct seq_file *s)
     UVM_SEQ_OR_DBG_PRINT(s, "Semaphore GPU VA   0x%llx\n", uvm_channel_tracking_semaphore_get_gpu_va(channel));
     UVM_SEQ_OR_DBG_PRINT(s, "Semaphore CPU VA   0x%llx\n", (NvU64)(uintptr_t)channel->tracking_sem.semaphore.payload);
 
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
 }
 
 static void channel_print_push_acquires(uvm_push_acquire_info_t *push_acquire_info, struct seq_file *seq)
@@ -1639,7 +1669,7 @@ static void channel_print_pushes(uvm_channel_t *channel, NvU32 finished_pushes_c
 
     NvU64 completed_value = uvm_channel_update_completed_value(channel);
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     cpu_put = channel->cpu_put;
 
@@ -1687,7 +1717,7 @@ static void channel_print_pushes(uvm_channel_t *channel, NvU32 finished_pushes_c
                 channel_print_push_acquires(push_acquire_info, seq);
         }
     }
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
 }
 
 void uvm_channel_print_pending_pushes(uvm_channel_t *channel)

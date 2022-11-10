@@ -207,6 +207,10 @@ static void __nvoc_thunk_RsResource_kchannelPreDestruct(struct KernelChannel *pR
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannel_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_kchannelIsDuplicate(struct KernelChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannel_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_kchannelGetNotificationListPtr(struct KernelChannel *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelChannel_Notifier.offset));
 }
@@ -691,12 +695,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [31] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x42204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kchannelCtrlCmdMigrateEngineCtxData_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
-        /*flags=*/      0x2204u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x42204u)
+        /*flags=*/      0x42204u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb06f010du,
         /*paramSize=*/  sizeof(NVB06F_CTRL_MIGRATE_ENGINE_CTX_DATA_PARAMS),
@@ -736,12 +740,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [34] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x102204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kchannelCtrlCmdSetChannelHwState_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
-        /*flags=*/      0x2204u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x102204u)
+        /*flags=*/      0x102204u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb06f0110u,
         /*paramSize=*/  sizeof(NVB06F_CTRL_SET_CHANNEL_HW_STATE_PARAMS),
@@ -766,12 +770,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [36] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x102204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kchannelCtrlCmdRestoreEngineCtxData_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
-        /*flags=*/      0x2204u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x102204u)
+        /*flags=*/      0x102204u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb06f0112u,
         /*paramSize=*/  sizeof(NVB06F_CTRL_RESTORE_ENGINE_CTX_DATA_PARAMS),
@@ -1023,16 +1027,13 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     pThis->__kchannelCheckMemInterUnmap__ = &kchannelCheckMemInterUnmap_IMPL;
 
     // Hal function -- kchannelCreateUserMemDesc
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0070ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
         pThis->__kchannelCreateUserMemDesc__ = &kchannelCreateUserMemDesc_GM107;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x08000000UL) )) /* ChipHal: GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kchannelCreateUserMemDesc__ = &kchannelCreateUserMemDesc_GA10B;
-    }
-    else if (0)
-    {
     }
 
     // Hal function -- kchannelIsUserdAddrSizeValid
@@ -1040,16 +1041,13 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GV100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0070fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GA100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x08000000UL) )) /* ChipHal: GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GH100;
-    }
-    else if (0)
-    {
     }
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
@@ -1156,7 +1154,7 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     pThis->__kchannelCtrlCmdGetEngineCtxData__ = &kchannelCtrlCmdGetEngineCtxData_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x42204u)
     pThis->__kchannelCtrlCmdMigrateEngineCtxData__ = &kchannelCtrlCmdMigrateEngineCtxData_IMPL;
 #endif
 
@@ -1168,7 +1166,7 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     pThis->__kchannelCtrlCmdGetChannelHwState__ = &kchannelCtrlCmdGetChannelHwState_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x102204u)
     pThis->__kchannelCtrlCmdSetChannelHwState__ = &kchannelCtrlCmdSetChannelHwState_IMPL;
 #endif
 
@@ -1176,7 +1174,7 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     pThis->__kchannelCtrlCmdSaveEngineCtxData__ = &kchannelCtrlCmdSaveEngineCtxData_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2204u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x102204u)
     pThis->__kchannelCtrlCmdRestoreEngineCtxData__ = &kchannelCtrlCmdRestoreEngineCtxData_IMPL;
 #endif
 
@@ -1291,6 +1289,8 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     pThis->__kchannelCanCopy__ = &__nvoc_thunk_RsResource_kchannelCanCopy;
 
     pThis->__kchannelPreDestruct__ = &__nvoc_thunk_RsResource_kchannelPreDestruct;
+
+    pThis->__kchannelIsDuplicate__ = &__nvoc_thunk_RsResource_kchannelIsDuplicate;
 
     pThis->__kchannelGetNotificationListPtr__ = &__nvoc_thunk_Notifier_kchannelGetNotificationListPtr;
 

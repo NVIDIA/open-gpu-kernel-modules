@@ -40,6 +40,7 @@
 #include <nvstatus.h>
 #include "nv_stdarg.h"
 #include <nv-caps.h>
+#include <nv-firmware.h>
 #include <nv-ioctl.h>
 #include <nvmisc.h>
 
@@ -160,8 +161,14 @@ typedef enum _TEGRASOC_WHICH_CLK
     TEGRASOC_WHICH_CLK_MAUD,
     TEGRASOC_WHICH_CLK_AZA_2XBIT,
     TEGRASOC_WHICH_CLK_AZA_BIT,
-    TEGRA234_CLK_MIPI_CAL,
-    TEGRA234_CLK_UART_FST_MIPI_CAL,
+    TEGRASOC_WHICH_CLK_MIPI_CAL,
+    TEGRASOC_WHICH_CLK_UART_FST_MIPI_CAL,
+    TEGRASOC_WHICH_CLK_SOR0_DIV,
+    TEGRASOC_WHICH_CLK_DISP_ROOT,
+    TEGRASOC_WHICH_CLK_HUB_ROOT,
+    TEGRASOC_WHICH_CLK_PLLA_DISP,
+    TEGRASOC_WHICH_CLK_PLLA_DISPHUB,
+    TEGRASOC_WHICH_CLK_PLLA,
     TEGRASOC_WHICH_CLK_MAX, // TEGRASOC_WHICH_CLK_MAX is defined for boundary checks only.
 } TEGRASOC_WHICH_CLK;
 
@@ -304,7 +311,7 @@ typedef struct nv_alloc_mapping_context_s {
 
 typedef enum
 {
-    NV_SOC_IRQ_DISPLAY_TYPE,
+    NV_SOC_IRQ_DISPLAY_TYPE = 0x1,
     NV_SOC_IRQ_DPAUX_TYPE,
     NV_SOC_IRQ_GPIO_TYPE,
     NV_SOC_IRQ_HDACODEC_TYPE,
@@ -368,6 +375,7 @@ typedef struct nv_state_t
     nv_aperture_t *mipical_regs;
     nv_aperture_t *fb, ud;
     nv_aperture_t *simregs;
+    nv_aperture_t *emc_regs;
 
     NvU32  num_dpaux_instance;
     NvU32  interrupt_line;
@@ -430,9 +438,6 @@ typedef struct nv_state_t
     /* Variable to force allocation of 32-bit addressable memory */
     NvBool force_dma32_alloc;
 
-    /* Variable to track if device has entered dynamic power state */
-    NvBool dynamic_power_entered;
-
     /* PCI power state should be D0 during system suspend */
     NvBool d0_state_in_suspend;
 
@@ -465,6 +470,9 @@ typedef struct nv_state_t
     /* Check if NVPCF DSM function is implemented under NVPCF or GPU device scope */
     NvBool nvpcf_dsm_in_gpu_scope;
 
+    /* Bool to check if the device received a shutdown notification */
+    NvBool is_shutdown;
+
 } nv_state_t;
 
 // These define need to be in sync with defines in system.h
@@ -472,6 +480,10 @@ typedef struct nv_state_t
 #define OS_TYPE_FREEBSD 0x2
 #define OS_TYPE_SUNOS   0x3
 #define OS_TYPE_VMWARE  0x4
+
+#define NVFP_TYPE_NONE       0x0
+#define NVFP_TYPE_REFCOUNTED 0x1
+#define NVFP_TYPE_REGISTERED 0x2
 
 struct nv_file_private_t
 {
@@ -482,6 +494,7 @@ struct nv_file_private_t
 
     nv_file_private_t *ctl_nvfp;
     void *ctl_nvfp_priv;
+    NvU32 register_or_refcount;
 };
 
 // Forward define the gpu ops structures
@@ -513,8 +526,9 @@ typedef struct UvmGpuChannelResourceBindParams_tag  *nvgpuChannelResourceBindPar
 typedef struct UvmGpuPagingChannelAllocParams_tag    nvgpuPagingChannelAllocParams_t;
 typedef struct UvmGpuPagingChannel_tag              *nvgpuPagingChannelHandle_t;
 typedef struct UvmGpuPagingChannelInfo_tag          *nvgpuPagingChannelInfo_t;
-typedef NV_STATUS (*nvPmaEvictPagesCallback)(void *, NvU32, NvU64 *, NvU32, NvU64, NvU64);
-typedef NV_STATUS (*nvPmaEvictRangeCallback)(void *, NvU64, NvU64);
+typedef enum   UvmPmaGpuMemoryType_tag               nvgpuGpuMemoryType_t;
+typedef NV_STATUS (*nvPmaEvictPagesCallback)(void *, NvU32, NvU64 *, NvU32, NvU64, NvU64, nvgpuGpuMemoryType_t);
+typedef NV_STATUS (*nvPmaEvictRangeCallback)(void *, NvU64, NvU64, nvgpuGpuMemoryType_t);
 
 /*
  * flags
@@ -566,12 +580,6 @@ typedef enum
     NV_POWER_STATE_RUNNING
 } nv_power_state_t;
 
-typedef enum
-{
-    NV_FIRMWARE_GSP,
-    NV_FIRMWARE_GSP_LOG
-} nv_firmware_t;
-
 #define NV_PRIMARY_VGA(nv)      ((nv)->primary_vga)
 
 #define NV_IS_CTL_DEVICE(nv)    ((nv)->flags & NV_FLAG_CONTROL)
@@ -588,12 +596,6 @@ typedef enum
         ((nv)->iso_iommu_present)
 
 /*
- * NVIDIA ACPI event ID to be passed into the core NVIDIA driver for
- * AC/DC event.
- */
-#define NV_SYSTEM_ACPI_BATTERY_POWER_EVENT   0x8002
-
-/*
  * GPU add/remove events
  */
 #define NV_SYSTEM_GPU_ADD_EVENT             0x9001
@@ -604,8 +606,6 @@ typedef enum
  * to core NVIDIA driver for ACPI events.
  */
 #define NV_SYSTEM_ACPI_EVENT_VALUE_DISPLAY_SWITCH_DEFAULT    0
-#define NV_SYSTEM_ACPI_EVENT_VALUE_POWER_EVENT_AC            0
-#define NV_SYSTEM_ACPI_EVENT_VALUE_POWER_EVENT_BATTERY       1
 #define NV_SYSTEM_ACPI_EVENT_VALUE_DOCK_EVENT_UNDOCKED       0
 #define NV_SYSTEM_ACPI_EVENT_VALUE_DOCK_EVENT_DOCKED         1
 
@@ -616,14 +616,18 @@ typedef enum
 #define NV_EVAL_ACPI_METHOD_NVIF     0x01
 #define NV_EVAL_ACPI_METHOD_WMMX     0x02
 
-#define NV_I2C_CMD_READ              1
-#define NV_I2C_CMD_WRITE             2
-#define NV_I2C_CMD_SMBUS_READ        3
-#define NV_I2C_CMD_SMBUS_WRITE       4
-#define NV_I2C_CMD_SMBUS_QUICK_WRITE 5
-#define NV_I2C_CMD_SMBUS_QUICK_READ  6
-#define NV_I2C_CMD_SMBUS_BLOCK_READ  7
-#define NV_I2C_CMD_SMBUS_BLOCK_WRITE 8
+typedef enum {
+    NV_I2C_CMD_READ = 1,
+    NV_I2C_CMD_WRITE,
+    NV_I2C_CMD_SMBUS_READ,
+    NV_I2C_CMD_SMBUS_WRITE,
+    NV_I2C_CMD_SMBUS_QUICK_WRITE,
+    NV_I2C_CMD_SMBUS_QUICK_READ,
+    NV_I2C_CMD_SMBUS_BLOCK_READ,
+    NV_I2C_CMD_SMBUS_BLOCK_WRITE,
+    NV_I2C_CMD_BLOCK_READ,
+    NV_I2C_CMD_BLOCK_WRITE
+} nv_i2c_cmd_t;
 
 // Flags needed by OSAllocPagesNode
 #define NV_ALLOC_PAGES_NODE_NONE                0x0
@@ -636,27 +640,33 @@ typedef enum
 #define NV_GET_NV_STATE(pGpu) \
     (nv_state_t *)((pGpu) ? (pGpu)->pOsGpuInfo : NULL)
 
-#define IS_REG_OFFSET(nv, offset, length)                                       \
-    (((offset) >= (nv)->regs->cpu_address) &&                                   \
-    (((offset) + ((length)-1)) <=                                               \
-        (nv)->regs->cpu_address + ((nv)->regs->size-1)))
+static inline NvBool IS_REG_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
+{
+    return ((offset >= nv->regs->cpu_address) &&
+            ((offset + (length - 1)) <= (nv->regs->cpu_address + (nv->regs->size - 1))));
+}
 
-#define IS_FB_OFFSET(nv, offset, length)                                        \
-    (((nv)->fb) && ((offset) >= (nv)->fb->cpu_address) &&                       \
-    (((offset) + ((length)-1)) <= (nv)->fb->cpu_address + ((nv)->fb->size-1)))
+static inline NvBool IS_FB_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
+{
+    return  ((nv->fb) && (offset >= nv->fb->cpu_address) &&
+             ((offset + (length - 1)) <= (nv->fb->cpu_address + (nv->fb->size - 1))));
+}
 
-#define IS_UD_OFFSET(nv, offset, length)                                        \
-    (((nv)->ud.cpu_address != 0) && ((nv)->ud.size != 0) &&                     \
-    ((offset) >= (nv)->ud.cpu_address) &&                                       \
-    (((offset) + ((length)-1)) <= (nv)->ud.cpu_address + ((nv)->ud.size-1)))
+static inline NvBool IS_UD_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
+{
+    return ((nv->ud.cpu_address != 0) && (nv->ud.size != 0) &&
+            (offset >= nv->ud.cpu_address) &&
+            ((offset + (length - 1)) <= (nv->ud.cpu_address + (nv->ud.size - 1))));
+}
 
-#define IS_IMEM_OFFSET(nv, offset, length)                                      \
-    (((nv)->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address != 0) &&                    \
-     ((nv)->bars[NV_GPU_BAR_INDEX_IMEM].size != 0) &&                           \
-     ((offset) >= (nv)->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address) &&             \
-     (((offset) + ((length) - 1)) <=                                            \
-        (nv)->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address +                         \
-            ((nv)->bars[NV_GPU_BAR_INDEX_IMEM].size - 1)))
+static inline NvBool IS_IMEM_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
+{
+    return ((nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address != 0) &&
+            (nv->bars[NV_GPU_BAR_INDEX_IMEM].size != 0) &&
+            (offset >= nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address) &&
+            ((offset + (length - 1)) <= (nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address +
+                                         (nv->bars[NV_GPU_BAR_INDEX_IMEM].size - 1))));
+}
 
 #define NV_RM_MAX_MSIX_LINES  8
 
@@ -787,7 +797,7 @@ NV_STATUS  NV_API_CALL  nv_pci_trigger_recovery  (nv_state_t *);
 NvBool     NV_API_CALL  nv_requires_dma_remap    (nv_state_t *);
 
 NvBool     NV_API_CALL  nv_is_rm_firmware_active(nv_state_t *);
-const void*NV_API_CALL  nv_get_firmware(nv_state_t *, nv_firmware_t, const void **, NvU32 *);
+const void*NV_API_CALL  nv_get_firmware(nv_state_t *, nv_firmware_type_t, nv_firmware_chip_family_t, const void **, NvU32 *);
 void       NV_API_CALL  nv_put_firmware(const void *);
 
 nv_file_private_t* NV_API_CALL nv_get_file_private(NvS32, NvBool, void **);
@@ -828,6 +838,7 @@ NV_STATUS NV_API_CALL nv_acquire_fabric_mgmt_cap (int, int*);
 int       NV_API_CALL nv_cap_drv_init(void);
 void      NV_API_CALL nv_cap_drv_exit(void);
 NvBool    NV_API_CALL nv_is_gpu_accessible(nv_state_t *);
+NvBool    NV_API_CALL nv_match_gpu_os_info(nv_state_t *, void *);
 
 NvU32     NV_API_CALL nv_get_os_type(void);
 
@@ -916,11 +927,11 @@ NvBool     NV_API_CALL  rm_is_supported_pci_device(NvU8   pci_class,
 
 void       NV_API_CALL  rm_i2c_remove_adapters    (nvidia_stack_t *, nv_state_t *);
 NvBool     NV_API_CALL  rm_i2c_is_smbus_capable   (nvidia_stack_t *, nv_state_t *, void *);
-NV_STATUS  NV_API_CALL  rm_i2c_transfer           (nvidia_stack_t *, nv_state_t *, void *, NvU8, NvU8, NvU8, NvU32, NvU8 *);
+NV_STATUS  NV_API_CALL  rm_i2c_transfer           (nvidia_stack_t *, nv_state_t *, void *, nv_i2c_cmd_t, NvU8, NvU8, NvU32, NvU8 *);
 
 NV_STATUS  NV_API_CALL  rm_perform_version_check  (nvidia_stack_t *, void *, NvU32);
 
-NV_STATUS  NV_API_CALL  rm_system_event           (nvidia_stack_t *, NvU32, NvU32);
+void       NV_API_CALL  rm_power_source_change_event        (nvidia_stack_t *, NvU32);
 
 void       NV_API_CALL  rm_disable_gpu_state_persistence    (nvidia_stack_t *sp, nv_state_t *);
 NV_STATUS  NV_API_CALL  rm_p2p_init_mapping       (nvidia_stack_t *, NvU64, NvU64 *, NvU64 *, NvU64 *, NvU64 *, NvU64, NvU64, NvU64, NvU64, void (*)(void *), void *);
@@ -944,6 +955,7 @@ void       NV_API_CALL rm_kernel_rmapi_op(nvidia_stack_t *sp, void *ops_cmd);
 NvBool     NV_API_CALL rm_get_device_remove_flag(nvidia_stack_t *sp, NvU32 gpu_id);
 NV_STATUS  NV_API_CALL rm_gpu_copy_mmu_faults(nvidia_stack_t *, nv_state_t *, NvU32 *);
 NV_STATUS  NV_API_CALL rm_gpu_copy_mmu_faults_unlocked(nvidia_stack_t *, nv_state_t *, NvU32 *);
+NV_STATUS  NV_API_CALL rm_gpu_handle_mmu_faults(nvidia_stack_t *, nv_state_t *, NvU32 *);
 NvBool     NV_API_CALL rm_gpu_need_4k_page_isolation(nv_state_t *);
 NvBool     NV_API_CALL rm_is_chipset_io_coherent(nv_stack_t *);
 NvBool     NV_API_CALL rm_init_event_locks(nvidia_stack_t *, nv_state_t *);
@@ -969,12 +981,13 @@ const char* NV_API_CALL rm_get_dynamic_power_management_status(nvidia_stack_t *,
 const char* NV_API_CALL rm_get_gpu_gcx_support(nvidia_stack_t *, nv_state_t *, NvBool);
 
 void       NV_API_CALL rm_acpi_notify(nvidia_stack_t *, nv_state_t *, NvU32);
-NV_STATUS  NV_API_CALL rm_get_clientnvpcf_power_limits(nvidia_stack_t *, nv_state_t *, NvU32 *, NvU32 *);
+
+NvBool     NV_API_CALL rm_is_altstack_in_use(void);
 
 /* vGPU VFIO specific functions */
 NV_STATUS  NV_API_CALL  nv_vgpu_create_request(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU32, NvU16 *, NvU32, NvBool *);
 NV_STATUS  NV_API_CALL  nv_vgpu_delete(nvidia_stack_t *, const NvU8 *, NvU16);
-NV_STATUS  NV_API_CALL  nv_vgpu_get_type_ids(nvidia_stack_t *, nv_state_t *, NvU32 *, NvU32 **, NvBool);
+NV_STATUS  NV_API_CALL  nv_vgpu_get_type_ids(nvidia_stack_t *, nv_state_t *, NvU32 *, NvU32 *, NvBool, NvU8, NvBool);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_type_info(nvidia_stack_t *, nv_state_t *, NvU32, char *, int, NvU8);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_bar_info(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU64 *, NvU32, void *);
 NV_STATUS  NV_API_CALL  nv_vgpu_start(nvidia_stack_t *, const NvU8 *, void *, NvS32 *, NvU8 *, NvU32);
@@ -987,6 +1000,10 @@ NV_STATUS NV_API_CALL nv_get_usermap_access_params(nv_state_t*, nv_usermap_acces
 nv_soc_irq_type_t NV_API_CALL nv_get_current_irq_type(nv_state_t*);
 void       NV_API_CALL  nv_flush_coherent_cpu_cache_range(nv_state_t *nv, NvU64 cpu_virtual, NvU64 size);
 
+#if defined(NV_VMWARE)
+const void* NV_API_CALL rm_get_firmware(nv_firmware_type_t fw_type, const void **fw_buf, NvU32 *fw_size);
+#endif
+
 /* Callbacks should occur roughly every 10ms. */
 #define NV_SNAPSHOT_TIMER_HZ 100
 void NV_API_CALL nv_start_snapshot_timer(void (*snapshot_callback)(void *context));
@@ -997,6 +1014,16 @@ static inline const NvU8 *nv_get_cached_uuid(nv_state_t *nv)
 {
     return nv->nv_uuid_cache.valid ? nv->nv_uuid_cache.uuid : NULL;
 }
+
+/* nano second resolution timer callback structure */
+typedef struct nv_nano_timer nv_nano_timer_t;
+
+/* nano timer functions */
+void        NV_API_CALL nv_create_nano_timer(nv_state_t *, void *pTmrEvent, nv_nano_timer_t **);
+void        NV_API_CALL nv_start_nano_timer(nv_state_t *nv, nv_nano_timer_t *, NvU64 timens);
+NV_STATUS   NV_API_CALL rm_run_nano_timer_callback(nvidia_stack_t *, nv_state_t *, void *pTmrEvent);
+void        NV_API_CALL nv_cancel_nano_timer(nv_state_t *, nv_nano_timer_t *);
+void        NV_API_CALL nv_destroy_nano_timer(nv_state_t *nv, nv_nano_timer_t *);
 
 #if defined(NVCPU_X86_64)
 

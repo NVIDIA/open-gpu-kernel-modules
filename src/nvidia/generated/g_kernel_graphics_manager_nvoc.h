@@ -229,18 +229,25 @@ static inline NvBool kgrmgrIsPresent_DISPATCH(POBJGPU pGpu, struct KernelGraphic
 }
 
 void kgrmgrGetGrObjectType_IMPL(NvU32 classNum, NvU32 *pObjectType);
+
 #define kgrmgrGetGrObjectType(classNum, pObjectType) kgrmgrGetGrObjectType_IMPL(classNum, pObjectType)
 NvBool kgrmgrIsCtxBufSupported_IMPL(GR_CTX_BUFFER arg0, NvBool bClassSupported2D);
+
 #define kgrmgrIsCtxBufSupported(arg0, bClassSupported2D) kgrmgrIsCtxBufSupported_IMPL(arg0, bClassSupported2D)
 NvBool kgrmgrIsGlobalCtxBufSupported_IMPL(GR_GLOBALCTX_BUFFER arg0, NvBool bClassSupported2D);
+
 #define kgrmgrIsGlobalCtxBufSupported(arg0, bClassSupported2D) kgrmgrIsGlobalCtxBufSupported_IMPL(arg0, bClassSupported2D)
 void kgrmgrCtrlSetEngineID_IMPL(NvU32 engID, NV2080_CTRL_GR_ROUTE_INFO *arg0);
+
 #define kgrmgrCtrlSetEngineID(engID, arg0) kgrmgrCtrlSetEngineID_IMPL(engID, arg0)
 void kgrmgrCtrlSetChannelHandle_IMPL(NvHandle hChannel, NV2080_CTRL_GR_ROUTE_INFO *arg0);
+
 #define kgrmgrCtrlSetChannelHandle(hChannel, arg0) kgrmgrCtrlSetChannelHandle_IMPL(hChannel, arg0)
 void kgrmgrDestruct_IMPL(struct KernelGraphicsManager *arg0);
+
 #define __nvoc_kgrmgrDestruct(arg0) kgrmgrDestruct_IMPL(arg0)
 void kgrmgrSetLegacyKgraphicsStaticInfo_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, struct KernelGraphics *arg2);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline void kgrmgrSetLegacyKgraphicsStaticInfo(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, struct KernelGraphics *arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -250,6 +257,7 @@ static inline void kgrmgrSetLegacyKgraphicsStaticInfo(struct OBJGPU *arg0, struc
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NV_STATUS kgrmgrCtrlRouteKGR_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvHandle hClient, const NV2080_CTRL_GR_ROUTE_INFO *pGrRouteInfo, struct KernelGraphics **ppKernelGraphics);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NV_STATUS kgrmgrCtrlRouteKGR(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvHandle hClient, const NV2080_CTRL_GR_ROUTE_INFO *pGrRouteInfo, struct KernelGraphics **ppKernelGraphics) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -260,6 +268,7 @@ static inline NV_STATUS kgrmgrCtrlRouteKGR(struct OBJGPU *arg0, struct KernelGra
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NvU32 kgrmgrGetLegacyGpcMask_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NvU32 kgrmgrGetLegacyGpcMask(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -270,6 +279,7 @@ static inline NvU32 kgrmgrGetLegacyGpcMask(struct OBJGPU *arg0, struct KernelGra
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NvU32 kgrmgrGetLegacyTpcMask_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 gpcId);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NvU32 kgrmgrGetLegacyTpcMask(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 gpcId) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -280,6 +290,7 @@ static inline NvU32 kgrmgrGetLegacyTpcMask(struct OBJGPU *arg0, struct KernelGra
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NV_STATUS kgrmgrGetLegacyPpcMask_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 physGpcId, NvU32 *pPpcMask);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NV_STATUS kgrmgrGetLegacyPpcMask(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 physGpcId, NvU32 *pPpcMask) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -290,6 +301,7 @@ static inline NV_STATUS kgrmgrGetLegacyPpcMask(struct OBJGPU *arg0, struct Kerne
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NvU32 kgrmgrGetLegacyZcullMask_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 physGpcId);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NvU32 kgrmgrGetLegacyZcullMask(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 physGpcId) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -299,17 +311,19 @@ static inline NvU32 kgrmgrGetLegacyZcullMask(struct OBJGPU *arg0, struct KernelG
 #define kgrmgrGetLegacyZcullMask(arg0, arg1, physGpcId) kgrmgrGetLegacyZcullMask_IMPL(arg0, arg1, physGpcId)
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
-NV_STATUS kgrmgrAllocVeidsForGrIdx_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 grIdx, NvU32 gpcCount, KERNEL_MIG_GPU_INSTANCE *arg2);
+NV_STATUS kgrmgrAllocVeidsForGrIdx_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 grIdx, NvU32 veidSpanOffset, NvU32 veidCount, KERNEL_MIG_GPU_INSTANCE *arg2);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
-static inline NV_STATUS kgrmgrAllocVeidsForGrIdx(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 grIdx, NvU32 gpcCount, KERNEL_MIG_GPU_INSTANCE *arg2) {
+static inline NV_STATUS kgrmgrAllocVeidsForGrIdx(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 grIdx, NvU32 veidSpanOffset, NvU32 veidCount, KERNEL_MIG_GPU_INSTANCE *arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_graphics_manager_h_disabled
-#define kgrmgrAllocVeidsForGrIdx(arg0, arg1, grIdx, gpcCount, arg2) kgrmgrAllocVeidsForGrIdx_IMPL(arg0, arg1, grIdx, gpcCount, arg2)
+#define kgrmgrAllocVeidsForGrIdx(arg0, arg1, grIdx, veidSpanOffset, veidCount, arg2) kgrmgrAllocVeidsForGrIdx_IMPL(arg0, arg1, grIdx, veidSpanOffset, veidCount, arg2)
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 void kgrmgrClearVeidsForGrIdx_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 grIdx);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline void kgrmgrClearVeidsForGrIdx(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 grIdx) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -319,6 +333,7 @@ static inline void kgrmgrClearVeidsForGrIdx(struct OBJGPU *arg0, struct KernelGr
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NV_STATUS kgrmgrGetMaxVeidsPerGpc_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 *pMaxVeidsPerGpc);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NV_STATUS kgrmgrGetMaxVeidsPerGpc(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 *pMaxVeidsPerGpc) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -329,6 +344,7 @@ static inline NV_STATUS kgrmgrGetMaxVeidsPerGpc(struct OBJGPU *arg0, struct Kern
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NV_STATUS kgrmgrGetVeidBaseForGrIdx_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 grIdx, NvU32 *pVeidStart);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NV_STATUS kgrmgrGetVeidBaseForGrIdx(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 grIdx, NvU32 *pVeidStart) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -339,6 +355,7 @@ static inline NV_STATUS kgrmgrGetVeidBaseForGrIdx(struct OBJGPU *arg0, struct Ke
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NV_STATUS kgrmgrGetGrIdxForVeid_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 veid, NvU32 *pGrIdx);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NV_STATUS kgrmgrGetGrIdxForVeid(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 veid, NvU32 *pGrIdx) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -349,6 +366,7 @@ static inline NV_STATUS kgrmgrGetGrIdxForVeid(struct OBJGPU *arg0, struct Kernel
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NV_STATUS kgrmgrDiscoverMaxLocalCtxBufInfo_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, struct KernelGraphics *arg2, NvU32 swizzId);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NV_STATUS kgrmgrDiscoverMaxLocalCtxBufInfo(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, struct KernelGraphics *arg2, NvU32 swizzId) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -359,6 +377,7 @@ static inline NV_STATUS kgrmgrDiscoverMaxLocalCtxBufInfo(struct OBJGPU *arg0, st
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 const CTX_BUF_INFO *kgrmgrGetGlobalCtxBufInfo_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, GR_GLOBALCTX_BUFFER arg2);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline const CTX_BUF_INFO *kgrmgrGetGlobalCtxBufInfo(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, GR_GLOBALCTX_BUFFER arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -369,6 +388,7 @@ static inline const CTX_BUF_INFO *kgrmgrGetGlobalCtxBufInfo(struct OBJGPU *arg0,
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 void kgrmgrSetGlobalCtxBufInfo_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, GR_GLOBALCTX_BUFFER arg2, NvU64 size, NvU64 align, RM_ATTR_PAGE_SIZE attr, NvBool bContiguous);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline void kgrmgrSetGlobalCtxBufInfo(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, GR_GLOBALCTX_BUFFER arg2, NvU64 size, NvU64 align, RM_ATTR_PAGE_SIZE attr, NvBool bContiguous) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -378,6 +398,7 @@ static inline void kgrmgrSetGlobalCtxBufInfo(struct OBJGPU *arg0, struct KernelG
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NV_STATUS kgrmgrDiscoverMaxGlobalCtxBufSizes_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, struct KernelGraphics *arg2, NvBool bMemoryPartitioningNeeded);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NV_STATUS kgrmgrDiscoverMaxGlobalCtxBufSizes(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, struct KernelGraphics *arg2, NvBool bMemoryPartitioningNeeded) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -388,6 +409,7 @@ static inline NV_STATUS kgrmgrDiscoverMaxGlobalCtxBufSizes(struct OBJGPU *arg0, 
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NvU32 kgrmgrGetLegacyGpcTpcCount_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 gpcId);
+
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
 static inline NvU32 kgrmgrGetLegacyGpcTpcCount(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 gpcId) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
@@ -395,6 +417,17 @@ static inline NvU32 kgrmgrGetLegacyGpcTpcCount(struct OBJGPU *arg0, struct Kerne
 }
 #else //__nvoc_kernel_graphics_manager_h_disabled
 #define kgrmgrGetLegacyGpcTpcCount(arg0, arg1, gpcId) kgrmgrGetLegacyGpcTpcCount_IMPL(arg0, arg1, gpcId)
+#endif //__nvoc_kernel_graphics_manager_h_disabled
+
+NV_STATUS kgrmgrCheckVeidsRequest_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU64 *pInUseMask, NvU32 veidCount, NvU32 *pSpanStart, KERNEL_MIG_GPU_INSTANCE *arg2);
+
+#ifdef __nvoc_kernel_graphics_manager_h_disabled
+static inline NV_STATUS kgrmgrCheckVeidsRequest(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU64 *pInUseMask, NvU32 veidCount, NvU32 *pSpanStart, KERNEL_MIG_GPU_INSTANCE *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_graphics_manager_h_disabled
+#define kgrmgrCheckVeidsRequest(arg0, arg1, pInUseMask, veidCount, pSpanStart, arg2) kgrmgrCheckVeidsRequest_IMPL(arg0, arg1, pInUseMask, veidCount, pSpanStart, arg2)
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 #undef PRIVATE_FIELD

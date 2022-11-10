@@ -642,6 +642,12 @@ nvswitch_os_get_platform_time
     void
 );
 
+NvU64
+nvswitch_os_get_platform_time_epoch
+(
+    void
+);
+
 #define NVSWITCH_PRINT_ATTRIB(str, arg1)             \
     __attribute__ ((format (printf, (str), (arg1))))
 

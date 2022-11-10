@@ -31,7 +31,6 @@
 #include "ctrl/ctrlc365.h"
 #include "published/turing/tu102/dev_access_counter.h"
 #include "published/turing/tu102/dev_vm.h"
-#include "published/turing/tu102/dev_fb.h"
 
 NV_STATUS
 uvmReadAccessCntrBufferPutPtr_TU102
@@ -147,7 +146,7 @@ uvmReadAccessCntrBufferFullPtr_TU102
     NvU32 fullPtrValue;
 
     fullPtrValue = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_INFO);
-    if (fullPtrValue & NV_PFB_NISO_ACCESS_COUNTER_NOTIFY_BUFFER_INFO_FULL_TRUE)
+    if (fullPtrValue & NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_INFO_FULL_TRUE)
     {
         *fullFlag = NV_TRUE;
     }
@@ -225,46 +224,46 @@ uvmAccessCntrSetGranularity_TU102(POBJGPU pGpu, POBJUVM pUvm, ACCESS_CNTR_TYPE a
 }
 
 void
-uvmWriteAccessCntrBufferHiReg_TU102
+uvmProgramWriteAccessCntrBufferAddress_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
-    NvU32   hiVal
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
+    NvU64   addr
 )
 {
-   GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_HI, hiVal);
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_HI, NvU64_HI32(addr));
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO, NvU64_LO32(addr));
 }
 
 void
-uvmWriteAccessCntrBufferLoReg_TU102
+uvmProgramAccessCntrBufferEnabled_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
-    NvU32   loVal
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
+    NvBool  bEn
 )
 {
-
-   GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO, loVal);
+    GPU_VREG_FLD_WR_DRF_NUM(pGpu, _VIRTUAL_FUNCTION, _PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO, _EN, bEn);
 }
 
-NvU32
-uvmReadAccessCntrBufferLoReg_TU102
+NvBool
+uvmIsAccessCntrBufferEnabled_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm
+    OBJGPU *pGpu,
+    OBJUVM *pUvm
 )
 {
-    return GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO);
+    return (NvBool) GPU_VREG_RD_DRF(pGpu, _VIRTUAL_FUNCTION, _PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO, _EN);
 }
 
-NvU32
-uvmReadAccessCntrBufferInfoReg_TU102
+NvBool
+uvmIsAccessCntrBufferPushed_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm
+    OBJGPU *pGpu,
+    OBJUVM *pUvm
 )
 {
-    return GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_INFO);
+    return GPU_VREG_FLD_TEST_DRF_DEF(pGpu, _VIRTUAL_FUNCTION, _PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_INFO, _PUSHED, _TRUE);
 }
 
 NV_STATUS

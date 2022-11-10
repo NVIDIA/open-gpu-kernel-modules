@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -930,7 +930,13 @@ NV_STATUS uvm_va_space_unregister_gpu(uvm_va_space_t *va_space, const NvProcesso
     uvm_processor_mask_clear(&va_space->gpu_unregister_in_progress, gpu->id);
 
     uvm_va_space_up_write(va_space);
-    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
+
+    // Unlock the mm since the call to uvm_deferred_free_object_list() requires
+    // that we don't hold any locks. We don't release the mm yet because that
+    // could call uvm_va_space_mm_shutdown() which waits for the deferred free
+    // list to be empty which would cause a deadlock.
+    if (mm)
+        uvm_up_read_mmap_lock(mm);
 
     uvm_deferred_free_object_list(&deferred_free_list);
 
@@ -948,6 +954,8 @@ NV_STATUS uvm_va_space_unregister_gpu(uvm_va_space_t *va_space, const NvProcesso
     uvm_gpu_release_locked(gpu);
 
     uvm_mutex_unlock(&g_uvm_global.global_lock);
+
+    uvm_va_space_mm_or_current_release(va_space, mm);
 
     return NV_OK;
 }
@@ -1611,11 +1619,20 @@ NV_STATUS uvm_va_space_unregister_gpu_va_space(uvm_va_space_t *va_space, const N
     }
 
     uvm_va_space_up_write(va_space);
-    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
+
+    // Unlock the mm since the call to uvm_deferred_free_object_list() requires
+    // that we don't hold any locks. We don't release the mm yet because that
+    // could call uvm_va_space_mm_shutdown() which waits for the deferred free
+    // list to be empty which would cause a deadlock.
+    if (mm)
+        uvm_up_read_mmap_lock(mm);
 
     uvm_deferred_free_object_list(&deferred_free_list);
     uvm_gpu_va_space_release(gpu_va_space);
     uvm_gpu_release(gpu);
+
+    uvm_va_space_mm_or_current_release(va_space, mm);
+
     return status;
 }
 
@@ -1958,6 +1975,7 @@ NV_STATUS uvm_test_va_space_inject_error(UVM_TEST_VA_SPACE_INJECT_ERROR_PARAMS *
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
 
     atomic_set(&va_space->test.migrate_vma_allocation_fail_nth, params->migrate_vma_allocation_fail_nth);
+    atomic_set(&va_space->test.va_block_allocation_fail_nth, params->va_block_allocation_fail_nth);
 
     return NV_OK;
 }
@@ -2067,4 +2085,236 @@ NV_STATUS uvm_test_destroy_gpu_va_space_delay(UVM_TEST_DESTROY_GPU_VA_SPACE_DELA
     atomic64_set(&va_space->test.destroy_gpu_va_space_delay_us, params->delay_us);
 
     return NV_OK;
+}
+
+// List of fault service contexts for CPU faults
+static LIST_HEAD(g_cpu_service_block_context_list);
+
+static uvm_spinlock_t g_cpu_service_block_context_list_lock;
+
+NV_STATUS uvm_service_block_context_init(void)
+{
+    unsigned num_preallocated_contexts = 4;
+
+    uvm_spin_lock_init(&g_cpu_service_block_context_list_lock, UVM_LOCK_ORDER_LEAF);
+
+    // Pre-allocate some fault service contexts for the CPU and add them to the global list
+    while (num_preallocated_contexts-- > 0) {
+        uvm_service_block_context_t *service_context = uvm_kvmalloc(sizeof(*service_context));
+        if (!service_context)
+            return NV_ERR_NO_MEMORY;
+
+        list_add(&service_context->cpu_fault.service_context_list, &g_cpu_service_block_context_list);
+    }
+
+    return NV_OK;
+}
+
+void uvm_service_block_context_exit(void)
+{
+    uvm_service_block_context_t *service_context, *service_context_tmp;
+
+    // Free fault service contexts for the CPU and add clear the global list
+    list_for_each_entry_safe(service_context, service_context_tmp, &g_cpu_service_block_context_list,
+                             cpu_fault.service_context_list) {
+        uvm_kvfree(service_context);
+    }
+    INIT_LIST_HEAD(&g_cpu_service_block_context_list);
+}
+
+// Get a fault service context from the global list or allocate a new one if
+// there are no available entries.
+static uvm_service_block_context_t *service_block_context_cpu_alloc(void)
+{
+    uvm_service_block_context_t *service_context;
+
+    uvm_spin_lock(&g_cpu_service_block_context_list_lock);
+
+    service_context = list_first_entry_or_null(&g_cpu_service_block_context_list, uvm_service_block_context_t,
+                                               cpu_fault.service_context_list);
+
+    if (service_context)
+        list_del(&service_context->cpu_fault.service_context_list);
+
+    uvm_spin_unlock(&g_cpu_service_block_context_list_lock);
+
+    if (!service_context)
+        service_context = uvm_kvmalloc(sizeof(*service_context));
+
+    return service_context;
+}
+
+// Put a fault service context in the global list.
+static void service_block_context_cpu_free(uvm_service_block_context_t *service_context)
+{
+    uvm_spin_lock(&g_cpu_service_block_context_list_lock);
+
+    list_add(&service_context->cpu_fault.service_context_list, &g_cpu_service_block_context_list);
+
+    uvm_spin_unlock(&g_cpu_service_block_context_list_lock);
+}
+
+static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
+                                         struct vm_area_struct *vma,
+                                         struct vm_fault *vmf,
+                                         bool is_hmm)
+{
+    uvm_va_block_t *va_block;
+    NvU64 fault_addr = nv_page_fault_va(vmf);
+    bool is_write = vmf->flags & FAULT_FLAG_WRITE;
+    NV_STATUS status = uvm_global_get_status();
+    bool tools_enabled;
+    bool major_fault = false;
+    uvm_service_block_context_t *service_context;
+    uvm_global_processor_mask_t gpus_to_check_for_ecc;
+
+    if (status != NV_OK)
+        goto convert_error;
+
+    // TODO: Bug 2583279: Lock tracking is disabled for the power management
+    // lock in order to suppress reporting of a lock policy violation.
+    // The violation consists in acquiring the power management lock multiple
+    // times, and it is manifested as an error during release. The
+    // re-acquisition of the power management locks happens upon re-entry in the
+    // UVM module, and it is benign on itself, but when combined with certain
+    // power management scenarios, it is indicative of a potential deadlock.
+    // Tracking will be re-enabled once the power management locking strategy is
+    // modified to avoid deadlocks.
+    if (!uvm_down_read_trylock_no_tracking(&g_uvm_global.pm.lock)) {
+        status = NV_ERR_BUSY_RETRY;
+        goto convert_error;
+    }
+
+    service_context = service_block_context_cpu_alloc();
+    if (!service_context) {
+        status = NV_ERR_NO_MEMORY;
+        goto unlock;
+    }
+
+    service_context->cpu_fault.wakeup_time_stamp = 0;
+
+    // There are up to three mm_structs to worry about, and they might all be
+    // different:
+    //
+    // 1) vma->vm_mm
+    // 2) current->mm
+    // 3) va_space->va_space_mm.mm (though note that if this is valid, then it
+    //    must match vma->vm_mm).
+    //
+    // The kernel guarantees that vma->vm_mm has a reference taken with
+    // mmap_lock held on the CPU fault path, so tell the fault handler to use
+    // that one. current->mm might differ if we're on the access_process_vm
+    // (ptrace) path or if another driver is calling get_user_pages.
+    service_context->block_context.mm = vma->vm_mm;
+
+    // The mmap_lock might be held in write mode, but the mode doesn't matter
+    // for the purpose of lock ordering and we don't rely on it being in write
+    // anywhere so just record it as read mode in all cases.
+    uvm_record_lock_mmap_lock_read(vma->vm_mm);
+
+    do {
+        bool do_sleep = false;
+
+        if (status == NV_WARN_MORE_PROCESSING_REQUIRED) {
+            NvU64 now = NV_GETTIME();
+            if (now < service_context->cpu_fault.wakeup_time_stamp)
+                do_sleep = true;
+
+            if (do_sleep)
+                uvm_tools_record_throttling_start(va_space, fault_addr, UVM_ID_CPU);
+
+            // Drop the VA space lock while we sleep
+            uvm_va_space_up_read(va_space);
+
+            // usleep_range is preferred because msleep has a 20ms granularity
+            // and udelay uses a busy-wait loop. usleep_range uses
+            // high-resolution timers and, by adding a range, the Linux
+            // scheduler may coalesce our wakeup with others, thus saving some
+            // interrupts.
+            if (do_sleep) {
+                unsigned long nap_us = (service_context->cpu_fault.wakeup_time_stamp - now) / 1000;
+
+                usleep_range(nap_us, nap_us + nap_us / 2);
+            }
+        }
+
+        uvm_va_space_down_read(va_space);
+
+        if (do_sleep)
+            uvm_tools_record_throttling_end(va_space, fault_addr, UVM_ID_CPU);
+
+        if (!is_hmm) {
+            status = uvm_va_block_find_create_managed(va_space, fault_addr, &va_block);
+            if (status != NV_OK) {
+                UVM_ASSERT_MSG(status == NV_ERR_NO_MEMORY, "status: %s\n", nvstatusToString(status));
+                break;
+            }
+
+            // Watch out, current->mm might not be vma->vm_mm
+            UVM_ASSERT(vma == uvm_va_range_vma(va_block->va_range));
+        }
+
+        // Loop until thrashing goes away.
+        status = uvm_va_block_cpu_fault(va_block, fault_addr, is_write, service_context);
+    } while (status == NV_WARN_MORE_PROCESSING_REQUIRED);
+
+    if (status != NV_OK) {
+        UvmEventFatalReason reason;
+
+        reason = uvm_tools_status_to_fatal_fault_reason(status);
+        UVM_ASSERT(reason != UvmEventFatalReasonInvalid);
+
+        uvm_tools_record_cpu_fatal_fault(va_space, fault_addr, is_write, reason);
+    }
+
+    tools_enabled = va_space->tools.enabled;
+
+    if (status == NV_OK) {
+        uvm_va_space_global_gpus_in_mask(va_space,
+                                         &gpus_to_check_for_ecc,
+                                         &service_context->cpu_fault.gpus_to_check_for_ecc);
+        uvm_global_mask_retain(&gpus_to_check_for_ecc);
+    }
+
+    uvm_va_space_up_read(va_space);
+    uvm_record_unlock_mmap_lock_read(vma->vm_mm);
+
+    if (status == NV_OK) {
+        status = uvm_global_mask_check_ecc_error(&gpus_to_check_for_ecc);
+        uvm_global_mask_release(&gpus_to_check_for_ecc);
+    }
+
+    if (tools_enabled)
+        uvm_tools_flush_events();
+
+    // Major faults involve I/O in order to resolve the fault.
+    // If any pages were DMA'ed between the GPU and host memory, that makes it
+    // a major fault. A process can also get statistics for major and minor
+    // faults by calling readproc().
+    major_fault = service_context->cpu_fault.did_migrate;
+    service_block_context_cpu_free(service_context);
+
+unlock:
+    // TODO: Bug 2583279: See the comment above the matching lock acquisition
+    uvm_up_read_no_tracking(&g_uvm_global.pm.lock);
+
+convert_error:
+    switch (status) {
+        case NV_OK:
+        case NV_ERR_BUSY_RETRY:
+            return VM_FAULT_NOPAGE | (major_fault ? VM_FAULT_MAJOR : 0);
+        case NV_ERR_NO_MEMORY:
+            return VM_FAULT_OOM;
+        default:
+            return VM_FAULT_SIGBUS;
+    }
+}
+
+vm_fault_t uvm_va_space_cpu_fault_managed(uvm_va_space_t *va_space,
+                                          struct vm_area_struct *vma,
+                                          struct vm_fault *vmf)
+{
+    UVM_ASSERT(va_space == uvm_va_space_get(vma->vm_file));
+
+    return uvm_va_space_cpu_fault(va_space, vma, vmf, false);
 }

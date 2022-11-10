@@ -159,6 +159,17 @@ dispchnConstruct_IMPL
     if (rmStatus != NV_OK)
         return rmStatus;
 
+    if (internalDispChnClass == dispChnClass_Any)
+    {
+        //
+        // Any channel is kernel only channel, Physical RM doesn't need ANY channel information.
+        // return from here as ANY channel is constructed.
+        //
+        pDispChannel->DispClass        = internalDispChnClass;
+        pDispChannel->InstanceNumber   = channelInstance;
+        return NV_OK;
+    }
+
     API_GPU_FULL_POWER_SANITY_CHECK(pGpu, NV_TRUE, NV_FALSE);
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY);
     {

@@ -353,10 +353,14 @@ struct uvm_va_space_struct
 
         atomic_t migrate_vma_allocation_fail_nth;
 
+        atomic_t va_block_allocation_fail_nth;
+
         uvm_thread_context_wrapper_t *dummy_thread_context_wrappers;
         size_t num_dummy_thread_context_wrappers;
 
         atomic64_t destroy_gpu_va_space_delay_us;
+
+        atomic64_t split_invalidate_delay_us;
     } test;
 
     // Queue item for deferred f_ops->release() handling
@@ -517,10 +521,10 @@ uvm_gpu_t *uvm_va_space_get_gpu_by_uuid_with_gpu_va_space(uvm_va_space_t *va_spa
 // LOCKING: The function takes and releases the VA space lock in read mode.
 uvm_gpu_t *uvm_va_space_retain_gpu_by_uuid(uvm_va_space_t *va_space, const NvProcessorUuid *gpu_uuid);
 
-// Returns whether read-duplication is supported
+// Returns whether read-duplication is supported.
 // If gpu is NULL, returns the current state.
-// otherwise, it retuns what the result would be once the gpu's va space is added or removed
-// (by inverting the gpu's current state)
+// otherwise, it returns what the result would be once the gpu's va space is
+// added or removed (by inverting the gpu's current state).
 bool uvm_va_space_can_read_duplicate(uvm_va_space_t *va_space, uvm_gpu_t *changing_gpu);
 
 // Register a gpu in the va space
@@ -846,4 +850,22 @@ NV_STATUS uvm_test_get_pageable_mem_access_type(UVM_TEST_GET_PAGEABLE_MEM_ACCESS
 NV_STATUS uvm_test_enable_nvlink_peer_access(UVM_TEST_ENABLE_NVLINK_PEER_ACCESS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_disable_nvlink_peer_access(UVM_TEST_DISABLE_NVLINK_PEER_ACCESS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_destroy_gpu_va_space_delay(UVM_TEST_DESTROY_GPU_VA_SPACE_DELAY_PARAMS *params, struct file *filp);
+
+// Handle a CPU fault in the given VA space for a managed allocation,
+// performing any operations necessary to establish a coherent CPU mapping
+// (migrations, cache invalidates, etc.).
+//
+// Locking:
+//  - vma->vm_mm->mmap_lock must be held in at least read mode. Note, that
+//    might not be the same as current->mm->mmap_lock.
+// Returns:
+// VM_FAULT_NOPAGE: if page was faulted in OK
+//     (possibly or'ed with VM_FAULT_MAJOR if a migration was needed).
+// VM_FAULT_OOM: if system memory wasn't available.
+// VM_FAULT_SIGBUS: if a CPU mapping to fault_addr cannot be accessed,
+//     for example because it's within a range group which is non-migratable.
+vm_fault_t uvm_va_space_cpu_fault_managed(uvm_va_space_t *va_space,
+                                          struct vm_area_struct *vma,
+                                          struct vm_fault *vmf);
+
 #endif // __UVM_VA_SPACE_H__

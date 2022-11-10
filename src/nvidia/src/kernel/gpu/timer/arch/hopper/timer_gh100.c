@@ -43,7 +43,6 @@
  *  @param[in] pTmr- Timer Object pointer
  *
  *  @return NV_OK
- *  @return NV_ERR_PRIV_SEC_VIOLATION - PTIMER_TIME is read-only.
  */
 NV_STATUS tmrSetCurrentTime_GH100
 (
@@ -51,37 +50,22 @@ NV_STATUS tmrSetCurrentTime_GH100
     OBJTMR *pTmr
 )
 {
-    NV_STATUS status;
+    NvU64 ns;
+    NvU32 seconds;
+    NvU32 useconds;
 
-    // We can only set the time if level 0 is allowed to write
-    if (GPU_FLD_TEST_DRF_DEF(pGpu, _PTIMER, _TIME_PRIV_LEVEL_MASK, _WRITE_PROTECTION_LEVEL0, _ENABLE))
-    {
-        NvU64 ns;
-        NvU32 seconds;
-        NvU32 useconds;
+    osGetCurrentTime(&seconds, &useconds);
 
-        osGetCurrentTime(&seconds, &useconds);
+    NV_PRINTF(LEVEL_INFO,
+        "osGetCurrentTime returns 0x%x seconds, 0x%x useconds\n",
+        seconds, useconds);
 
-        NV_PRINTF(LEVEL_INFO,
-            "osGetCurrentTime returns 0x%x seconds, 0x%x useconds\n",
-            seconds, useconds);
+    ns = ((NvU64)seconds * 1000000 + useconds) * 1000;
 
-        ns = ((NvU64)seconds * 1000000 + useconds) * 1000;
+    GPU_REG_WR32(pGpu, NV_PGC6_SCI_SYS_TIMER_OFFSET_1, NvU64_HI32(ns));
+    GPU_REG_WR32(pGpu, NV_PGC6_SCI_SYS_TIMER_OFFSET_0, NvU64_LO32(ns));
 
-        GPU_REG_WR32(pGpu, NV_PGC6_SCI_SYS_TIMER_OFFSET_1, NvU64_HI32(ns));
-        GPU_REG_WR32(pGpu, NV_PGC6_SCI_SYS_TIMER_OFFSET_0, NvU64_LO32(ns));
-
-        status = NV_OK;
-    }
-    else
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "ERROR: Write to PTIMER attempted even though Level 0 PLM is disabled.\n");
-        NV_ASSERT(0);
-        status = NV_ERR_PRIV_SEC_VIOLATION;
-    }
-
-    return status;
+    return NV_OK;
 }
 
 NV_STATUS

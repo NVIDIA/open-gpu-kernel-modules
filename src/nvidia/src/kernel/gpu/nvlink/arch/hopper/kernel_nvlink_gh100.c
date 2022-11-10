@@ -26,6 +26,7 @@
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "nverror.h"
 
 /*!
  * @brief Check if ALI is supported for the given device
@@ -248,3 +249,165 @@ knvlinkDiscoverPostRxDetLinks_GH100
 
     return status;
 }
+
+NV_STATUS
+knvlinkLogAliDebugMessages_GH100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV2080_CTRL_NVLINK_GET_ERR_INFO_PARAMS *nvlinkErrInfoParams = portMemAllocNonPaged(sizeof(NV2080_CTRL_NVLINK_GET_ERR_INFO_PARAMS));
+    portMemSet(nvlinkErrInfoParams, 0, sizeof(NV2080_CTRL_NVLINK_GET_ERR_INFO_PARAMS));
+    nvlinkErrInfoParams->ErrInfoFlags |= NV2080_CTRL_NVLINK_ERR_INFO_FLAGS_ALI_STATUS;
+    NvU32         i;
+    // This is a Physical, Hopper specific HAL for debug purposes.
+    NV_STATUS status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                        NV2080_CTRL_CMD_NVLINK_GET_ERR_INFO,
+                        (void *)nvlinkErrInfoParams,
+                        sizeof(NV2080_CTRL_NVLINK_GET_ERR_INFO_PARAMS));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Error getting debug info for link training!\n");
+        return status;
+    }
+
+    FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink->postRxDetLinkMask)
+    {
+        nvErrorLog_va((void *)pGpu, ALI_TRAINING_FAIL,
+                "NVLink: Link training failed for link %u",
+                "(0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x)",
+                i,
+                nvlinkErrInfoParams->linkErrInfo[i].NVLIPTLnkCtrlLinkStateRequest,
+                nvlinkErrInfoParams->linkErrInfo[i].NVLDLRxSlsmErrCntl,
+                nvlinkErrInfoParams->linkErrInfo[i].NVLDLTopLinkState,
+                nvlinkErrInfoParams->linkErrInfo[i].NVLDLTopIntr,
+                nvlinkErrInfoParams->linkErrInfo[i].DLStatMN00,
+                nvlinkErrInfoParams->linkErrInfo[i].DLStatUC01,
+                nvlinkErrInfoParams->linkErrInfo[i].MinionNvlinkLinkIntr);
+
+        if (pKernelNvlink->bLinkTrainingDebugSpew)
+            NV_PRINTF(LEVEL_ERROR,"ALI Error for GPU %d::linkId %d:"
+                    "\nNVLIPT:\n\tCTRL_LINK_STATE_REQUEST_STATUS = %X\n"
+                    "\nNVLDL :\n\tNV_NVLDL_RXSLSM_ERR_CNTL = %X\n"
+                    "\n\tNV_NVLDL_TOP_LINK_STATE = %X\n"
+                    "\n\tNV_NVLDL_TOP_INTR = %X\n"
+                    "\nMINION DLSTAT:\n\tDLSTAT MN00 = %X\n"
+                    "\n\tDLSTAT UC01 = %X\n"
+                    "\n\tNV_MINION_NVLINK_LINK_INTR = %X\n",
+                    pGpu->gpuInstance, i,
+                    nvlinkErrInfoParams->linkErrInfo[i].NVLIPTLnkCtrlLinkStateRequest,
+                    nvlinkErrInfoParams->linkErrInfo[i].NVLDLRxSlsmErrCntl,
+                    nvlinkErrInfoParams->linkErrInfo[i].NVLDLTopLinkState,
+                    nvlinkErrInfoParams->linkErrInfo[i].NVLDLTopIntr,
+                    nvlinkErrInfoParams->linkErrInfo[i].DLStatMN00,
+                    nvlinkErrInfoParams->linkErrInfo[i].DLStatUC01,
+                    nvlinkErrInfoParams->linkErrInfo[i].MinionNvlinkLinkIntr);
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+    portMemFree(nvlinkErrInfoParams);
+    return NV_OK;
+}
+
+/*!
+ * @brief   Set unique fabric address for NVSwitch enabled systems.
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ * @param[in] fabricBaseAddr Fabric Address to set
+ *
+ * @returns On success, sets unique fabric address and returns NV_OK.
+ *          On failure, returns NV_ERR_XXX.
+ */
+NV_STATUS
+knvlinkSetUniqueFabricBaseAddress_GH100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU64         fabricBaseAddr
+)
+{
+    NV_STATUS status = NV_OK;
+
+    status = knvlinkValidateFabricBaseAddress_HAL(pGpu, pKernelNvlink,
+                                                  fabricBaseAddr);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Fabric addr validation failed for GPU %x\n",
+                  pGpu->gpuInstance);
+        return status;
+    }
+
+    if (IsSLIEnabled(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Operation is unsupported on SLI enabled GPU %x\n",
+                  pGpu->gpuInstance);
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (pKernelNvlink->fabricBaseAddr == fabricBaseAddr)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "The same fabric addr is being re-assigned to GPU %x\n",
+                  pGpu->gpuInstance);
+        return NV_OK;
+    }
+
+    if (pKernelNvlink->fabricBaseAddr != NVLINK_INVALID_FABRIC_ADDR)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Fabric addr is already assigned to GPU %x\n",
+                  pGpu->gpuInstance);
+        return NV_ERR_STATE_IN_USE;
+    }
+
+    pKernelNvlink->fabricBaseAddr = fabricBaseAddr;
+
+    NV_PRINTF(LEVEL_INFO, "Fabric base addr %llx is assigned to GPU %x\n",
+              pKernelNvlink->fabricBaseAddr, pGpu->gpuInstance);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief  Check if floorsweeping is needed for this particular chip
+ *
+ * @param[in]  pGpu            OBJGPU pointer
+ * @param[in]  pKernelNvlink   KernelNvlink pointer
+ *
+ * @returns On success, sets unique fabric address and returns NV_OK.
+ *          On failure, returns NV_ERR_XXX.
+ */
+NvBool
+knvlinkIsFloorSweepingNeeded_GH100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32         numActiveLinksPerIoctrl,
+    NvU32         numLinksPerIoctrl
+)
+{
+
+    //
+    // Only floorsweep down the given GPU if the following conditions are met:
+    // 1. The number of active links allowed for the IOCTRL is less then the
+    //    total number of links for the IOCTRL. No reason to spend time in code
+    //    if the exectution of it will be a NOP
+    //
+    // 2. If the GPU has never been floorswept. An optimization to make sure RM
+    //    doesn't burn cycles repeatedly running running code that will be a NOP
+    //
+    // 3. (temporary) Run only on Silicon chips. Fmodel currently doesn't support
+    //    this feature
+    //
+
+    if (numActiveLinksPerIoctrl < numLinksPerIoctrl &&
+        !pKernelNvlink->bFloorSwept                 &&
+        IS_SILICON(pGpu))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+

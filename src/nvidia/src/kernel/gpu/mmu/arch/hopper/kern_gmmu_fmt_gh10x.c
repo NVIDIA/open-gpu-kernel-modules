@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #if !defined(SRT_BUILD)
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 #include "gpu/mmu/kern_gmmu.h"
 #endif
 #include "mmu/gmmu_fmt.h"
@@ -59,54 +60,61 @@ void kgmmuFmtInitLevels_GH10X(KernelGmmu    *pKernelGmmu,
     NV_ASSERT_OR_RETURN_VOID(numLevels >= 7);
     
     // Page directory 4 (root).
-    pLevels[0].virtAddrBitHi = 56;
-    pLevels[0].virtAddrBitLo = 56;
-    pLevels[0].entrySize     = NV_MMU_VER3_PDE__SIZE;
-    pLevels[0].numSubLevels  = 1;
-    pLevels[0].subLevels     = pLevels + 1;
+    pLevels[0].virtAddrBitHi  = 56;
+    pLevels[0].virtAddrBitLo  = 56;
+    pLevels[0].entrySize      = NV_MMU_VER3_PDE__SIZE;
+    pLevels[0].numSubLevels   = 1;
+    pLevels[0].subLevels      = pLevels + 1;
+    pLevels[0].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD0;
 
     // Page directory 3.
-    pLevels[1].virtAddrBitHi = 55;
-    pLevels[1].virtAddrBitLo = 47;
-    pLevels[1].entrySize     = NV_MMU_VER3_PDE__SIZE;
-    pLevels[1].numSubLevels  = 1;
-    pLevels[1].subLevels     = pLevels + 2;
+    pLevels[1].virtAddrBitHi  = 55;
+    pLevels[1].virtAddrBitLo  = 47;
+    pLevels[1].entrySize      = NV_MMU_VER3_PDE__SIZE;
+    pLevels[1].numSubLevels   = 1;
+    pLevels[1].subLevels      = pLevels + 2;
+    pLevels[1].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD1;
 
     // Page directory 2.
-    pLevels[2].virtAddrBitHi = 46;
-    pLevels[2].virtAddrBitLo = 38;
-    pLevels[2].entrySize     = NV_MMU_VER3_PDE__SIZE;
-    pLevels[2].numSubLevels  = 1;
-    pLevels[2].subLevels     = pLevels + 3;
+    pLevels[2].virtAddrBitHi  = 46;
+    pLevels[2].virtAddrBitLo  = 38;
+    pLevels[2].entrySize      = NV_MMU_VER3_PDE__SIZE;
+    pLevels[2].numSubLevels   = 1;
+    pLevels[2].subLevels      = pLevels + 3;
+    pLevels[2].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD2;
 
     // Page directory 1.
-    pLevels[3].virtAddrBitHi = 37;
-    pLevels[3].virtAddrBitLo = 29;
-    pLevels[3].entrySize     = NV_MMU_VER3_PDE__SIZE;
-    pLevels[3].numSubLevels  = 1;
-    pLevels[3].subLevels     = pLevels + 4;
+    pLevels[3].virtAddrBitHi  = 37;
+    pLevels[3].virtAddrBitLo  = 29;
+    pLevels[3].entrySize      = NV_MMU_VER3_PDE__SIZE;
+    pLevels[3].numSubLevels   = 1;
+    pLevels[3].subLevels      = pLevels + 4;
     // Page directory 1 can hold a PTE pointing to a 512MB Page
-    pLevels[3].bPageTable    = NV_TRUE;
+    pLevels[3].bPageTable     = NV_TRUE;
+    pLevels[3].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD3;
 
     // Page directory 0.
-    pLevels[4].virtAddrBitHi = 28;
-    pLevels[4].virtAddrBitLo = 21;
-    pLevels[4].entrySize     = NV_MMU_VER3_DUAL_PDE__SIZE;
-    pLevels[4].numSubLevels  = 2;
-    pLevels[4].bPageTable    = NV_TRUE;
-    pLevels[4].subLevels     = pLevels + 5;
+    pLevels[4].virtAddrBitHi  = 28;
+    pLevels[4].virtAddrBitLo  = 21;
+    pLevels[4].entrySize      = NV_MMU_VER3_DUAL_PDE__SIZE;
+    pLevels[4].numSubLevels   = 2;
+    pLevels[4].bPageTable     = NV_TRUE;
+    pLevels[4].subLevels      = pLevels + 5;
+    pLevels[4].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD4;
 
     // Big page table.
-    pLevels[5].virtAddrBitHi = 20;
-    pLevels[5].virtAddrBitLo = (NvU8)bigPageShift;
-    pLevels[5].entrySize     = NV_MMU_VER3_PTE__SIZE;
-    pLevels[5].bPageTable    = NV_TRUE;
+    pLevels[5].virtAddrBitHi  = 20;
+    pLevels[5].virtAddrBitLo  = (NvU8)bigPageShift;
+    pLevels[5].entrySize      = NV_MMU_VER3_PTE__SIZE;
+    pLevels[5].bPageTable     = NV_TRUE;
+    pLevels[5].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_BIG;
 
     // Small page table.
-    pLevels[6].virtAddrBitHi = 20;
-    pLevels[6].virtAddrBitLo = 12;
-    pLevels[6].entrySize     = NV_MMU_VER3_PTE__SIZE;
-    pLevels[6].bPageTable    = NV_TRUE;
+    pLevels[6].virtAddrBitHi  = 20;
+    pLevels[6].virtAddrBitLo  = 12;
+    pLevels[6].entrySize      = NV_MMU_VER3_PTE__SIZE;
+    pLevels[6].bPageTable     = NV_TRUE;
+    pLevels[5].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_4K;
 }
 
 void kgmmuFmtInitPdeMulti_GH10X(KernelGmmu                *pKernelGmmu,

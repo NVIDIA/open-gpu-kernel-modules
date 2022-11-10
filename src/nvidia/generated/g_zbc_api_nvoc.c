@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_zbcapiUnmapFrom(struct ZbcApi *pResourc
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_zbcapiIsDuplicate(struct ZbcApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_zbcapiControl_Epilogue(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ZbcApi_RmResource.offset), pCallContext, pParams);
 }
@@ -407,6 +411,8 @@ static void __nvoc_init_funcTable_ZbcApi_1(ZbcApi *pThis, RmHalspecOwner *pRmhal
     pThis->__zbcapiPreDestruct__ = &__nvoc_thunk_RsResource_zbcapiPreDestruct;
 
     pThis->__zbcapiUnmapFrom__ = &__nvoc_thunk_RsResource_zbcapiUnmapFrom;
+
+    pThis->__zbcapiIsDuplicate__ = &__nvoc_thunk_RsResource_zbcapiIsDuplicate;
 
     pThis->__zbcapiControl_Epilogue__ = &__nvoc_thunk_RmResource_zbcapiControl_Epilogue;
 

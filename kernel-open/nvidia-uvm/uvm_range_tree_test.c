@@ -303,10 +303,93 @@ error:
     return status;
 }
 
+static NV_STATUS rtt_check_between(rtt_state_t *state, uvm_range_tree_node_t *lower, uvm_range_tree_node_t *upper)
+{
+    bool hole_exists = true;
+    NvU64 hole_start = 0, hole_end = ULLONG_MAX;
+    NvU64 test_start, test_end;
+
+    if (lower) {
+        if (lower->end == ULLONG_MAX) {
+            UVM_ASSERT(!upper);
+            hole_exists = false;
+        }
+        else {
+            hole_start = lower->end + 1;
+        }
+    }
+
+    if (upper) {
+        if (upper->start == 0) {
+            UVM_ASSERT(!lower);
+            hole_exists = false;
+        }
+        else {
+            hole_end = upper->start - 1;
+        }
+    }
+
+    if (hole_start > hole_end)
+        hole_exists = false;
+
+    if (hole_exists) {
+        size_t i;
+        NvU64 hole_mid = hole_start + ((hole_end - hole_start) / 2);
+        NvU64 inputs[] = {hole_start, hole_mid, hole_end};
+
+        for (i = 0; i < ARRAY_SIZE(inputs); i++) {
+            TEST_CHECK_RET(uvm_range_tree_find(&state->tree, inputs[i]) == NULL);
+
+            TEST_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, inputs[i], &test_start, &test_end));
+            TEST_CHECK_RET(test_start == hole_start);
+            TEST_CHECK_RET(test_end == hole_end);
+
+            test_start = 0;
+            test_end = ULLONG_MAX;
+            TEST_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, inputs[i], &test_start, &test_end));
+            TEST_CHECK_RET(test_start == hole_start);
+            TEST_CHECK_RET(test_end == hole_end);
+
+            test_start = hole_start;
+            test_end = inputs[i];
+            TEST_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, inputs[i], &test_start, &test_end));
+            TEST_CHECK_RET(test_start == hole_start);
+            TEST_CHECK_RET(test_end == inputs[i]);
+
+            test_start = inputs[i];
+            test_end = hole_end;
+            TEST_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, inputs[i], &test_start, &test_end));
+            TEST_CHECK_RET(test_start == inputs[i]);
+            TEST_CHECK_RET(test_end == hole_end);
+        }
+    }
+    else {
+        test_start = 0;
+        test_end = ULLONG_MAX;
+
+        if (lower) {
+            MEM_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, lower->end, NULL, NULL),
+                             NV_ERR_UVM_ADDRESS_IN_USE);
+            MEM_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, lower->end, &test_start, &test_end),
+                             NV_ERR_UVM_ADDRESS_IN_USE);
+        }
+
+        if (upper) {
+            MEM_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, upper->start, NULL, NULL),
+                             NV_ERR_UVM_ADDRESS_IN_USE);
+            MEM_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, upper->start, &test_start, &test_end),
+                             NV_ERR_UVM_ADDRESS_IN_USE);
+        }
+    }
+
+    return NV_OK;
+}
+
 static NV_STATUS rtt_check_node(rtt_state_t *state, uvm_range_tree_node_t *node)
 {
     uvm_range_tree_node_t *temp, *prev, *next;
     NvU64 start, mid, end;
+    NvU64 hole_start = 0, hole_end = ULLONG_MAX;
 
     start = node->start;
     end   = node->end;
@@ -320,12 +403,26 @@ static NV_STATUS rtt_check_node(rtt_state_t *state, uvm_range_tree_node_t *node)
     TEST_CHECK_RET(uvm_range_tree_find(&state->tree, start) == node);
     TEST_CHECK_RET(uvm_range_tree_find(&state->tree, mid)   == node);
     TEST_CHECK_RET(uvm_range_tree_find(&state->tree, end)   == node);
+
+    MEM_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, start, NULL, NULL), NV_ERR_UVM_ADDRESS_IN_USE);
+    MEM_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, mid, NULL, NULL), NV_ERR_UVM_ADDRESS_IN_USE);
+    MEM_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, end, NULL, NULL), NV_ERR_UVM_ADDRESS_IN_USE);
+
+    MEM_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, start, &hole_start, &hole_end),
+                     NV_ERR_UVM_ADDRESS_IN_USE);
+    MEM_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, mid, &hole_start, &hole_end),
+                     NV_ERR_UVM_ADDRESS_IN_USE);
+    MEM_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, end, &hole_start, &hole_end),
+                     NV_ERR_UVM_ADDRESS_IN_USE);
+
     TEST_CHECK_RET(uvm_range_tree_node_size(node) == end - start + 1);
 
     if (end < ULLONG_MAX)
         TEST_CHECK_RET(uvm_range_tree_find(&state->tree, end + 1) != node);
 
     uvm_range_tree_for_each_in(temp, &state->tree, start, end)
+        TEST_CHECK_RET(temp == node);
+    uvm_range_tree_for_each_in_safe(temp, next, &state->tree, start, end)
         TEST_CHECK_RET(temp == node);
 
     prev = uvm_range_tree_prev(&state->tree, node);
@@ -341,10 +438,15 @@ static NV_STATUS rtt_check_node(rtt_state_t *state, uvm_range_tree_node_t *node)
     if (next) {
         TEST_CHECK_RET(node->end < next->start);
         TEST_CHECK_RET(uvm_range_tree_prev(&state->tree, next) == node);
+        TEST_CHECK_RET(uvm_range_tree_last(&state->tree) != node);
     }
     else {
         TEST_CHECK_RET(uvm_range_tree_iter_next(&state->tree, node, ULLONG_MAX) == NULL);
+        TEST_CHECK_RET(uvm_range_tree_last(&state->tree) == node);
     }
+
+    TEST_NV_CHECK_RET(rtt_check_between(state, prev, node));
+    TEST_NV_CHECK_RET(rtt_check_between(state, node, next));
 
     return NV_OK;
 }
@@ -362,13 +464,17 @@ static NV_STATUS rtt_check_iterator_all(rtt_state_t *state)
             TEST_CHECK_RET(prev->end < node->start);
         TEST_CHECK_RET(uvm_range_tree_prev(&state->tree, node) == prev);
 
+        TEST_NV_CHECK_RET(rtt_check_between(state, prev, node));
+
         ++iter_count;
         prev = node;
         expected = uvm_range_tree_next(&state->tree, node);
     }
-    TEST_CHECK_RET(expected == NULL);
 
+    TEST_CHECK_RET(expected == NULL);
+    TEST_CHECK_RET(uvm_range_tree_last(&state->tree) == prev);
     TEST_CHECK_RET(iter_count == state->count);
+    TEST_NV_CHECK_RET(rtt_check_between(state, prev, NULL));
 
     iter_count = 0;
     expected = NULL;
@@ -381,13 +487,17 @@ static NV_STATUS rtt_check_iterator_all(rtt_state_t *state)
             TEST_CHECK_RET(prev->end < node->start);
         TEST_CHECK_RET(uvm_range_tree_prev(&state->tree, node) == prev);
 
+        // Skip rtt_check_between since it was done in the loop above
+
         ++iter_count;
         prev = node;
         expected = uvm_range_tree_next(&state->tree, node);
     }
-    TEST_CHECK_RET(expected == NULL);
 
+    TEST_CHECK_RET(expected == NULL);
+    TEST_CHECK_RET(uvm_range_tree_last(&state->tree) == prev);
     TEST_CHECK_RET(iter_count == state->count);
+
     return NV_OK;
 }
 
@@ -424,20 +534,32 @@ static NV_STATUS rtt_range_add_check(rtt_state_t *state, rtt_range_t *range)
         }
     }
 
-    status = rtt_range_add(state, range, &node);
-
+    // Verify tree state
     if (overlap) {
-        // Verify failure
-        MEM_NV_CHECK_RET(status, NV_ERR_UVM_ADDRESS_IN_USE);
-
-        // The tree said there's already a range there. Check whether its
-        // internal state is consistent.
         node = uvm_range_tree_iter_first(&state->tree, range->start, range->end);
         TEST_CHECK_RET(node);
         TEST_CHECK_RET(rtt_range_overlaps_node(node, range));
     }
     else {
-        // Verify success
+        NvU64 hole_start, hole_end;
+
+        TEST_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, range->start, &hole_start, &hole_end));
+        TEST_CHECK_RET(hole_start <= range->start);
+        TEST_CHECK_RET(hole_end >= range->end);
+
+        hole_start = range->start;
+        hole_end = range->end;
+        TEST_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, range->start, &hole_start, &hole_end));
+        TEST_CHECK_RET(hole_start == range->start);
+        TEST_CHECK_RET(hole_end == range->end);
+    }
+
+    status = rtt_range_add(state, range, &node);
+
+    if (overlap) {
+        MEM_NV_CHECK_RET(status, NV_ERR_UVM_ADDRESS_IN_USE);
+    }
+    else {
         MEM_NV_CHECK_RET(status, NV_OK);
         status = rtt_check_node(state, node);
     }
@@ -450,6 +572,7 @@ static NV_STATUS rtt_index_remove_check(rtt_state_t *state, size_t index)
 {
     uvm_range_tree_node_t *node, *prev, *next;
     NvU64 start, end;
+    NvU64 hole_start, hole_end;
     NV_STATUS status;
 
     TEST_CHECK_RET(index < state->count);
@@ -472,12 +595,35 @@ static NV_STATUS rtt_index_remove_check(rtt_state_t *state, size_t index)
     TEST_CHECK_RET(uvm_range_tree_find(&state->tree, start) == NULL);
     TEST_CHECK_RET(uvm_range_tree_find(&state->tree, end) == NULL);
     TEST_CHECK_RET(uvm_range_tree_iter_first(&state->tree, start, end) == NULL);
-    if (prev)
+
+    hole_start = start;
+    hole_end = end;
+    TEST_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, start, &hole_start, &hole_end));
+    TEST_CHECK_RET(hole_start == start);
+    TEST_CHECK_RET(hole_end == end);
+
+    TEST_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, start, &hole_start, &hole_end));
+    TEST_CHECK_RET(hole_start <= start);
+    TEST_CHECK_RET(hole_end >= end);
+
+    if (prev) {
         TEST_CHECK_RET(uvm_range_tree_next(&state->tree, prev) == next);
-    if (next)
+        TEST_CHECK_RET(hole_start == prev->end + 1);
+    }
+
+    if (next) {
         TEST_CHECK_RET(uvm_range_tree_prev(&state->tree, next) == prev);
+        TEST_CHECK_RET(hole_end == next->start - 1);
+    }
+    else {
+        TEST_CHECK_RET(uvm_range_tree_last(&state->tree) == prev);
+    }
+
     if (!prev && !next) {
         TEST_CHECK_RET(uvm_range_tree_empty(&state->tree));
+        TEST_CHECK_RET(uvm_range_tree_last(&state->tree) == NULL);
+        TEST_CHECK_RET(hole_start == 0);
+        TEST_CHECK_RET(hole_end == ULLONG_MAX);
         TEST_CHECK_RET(state->count == 0);
     }
     else {
@@ -749,10 +895,11 @@ static NV_STATUS rtt_index_merge_check_next_val(rtt_state_t *state, NvU64 addr)
 
 static NV_STATUS rtt_directed(rtt_state_t *state)
 {
-    uvm_range_tree_node_t *node;
+    uvm_range_tree_node_t *node, *next;
 
     // Empty tree
     TEST_CHECK_RET(uvm_range_tree_empty(&state->tree));
+    TEST_CHECK_RET(uvm_range_tree_last(&state->tree) == NULL);
     TEST_CHECK_RET(uvm_range_tree_find(&state->tree, 0) == NULL);
     TEST_CHECK_RET(uvm_range_tree_find(&state->tree, ULLONG_MAX) == NULL);
     uvm_range_tree_for_each(node, &state->tree)
@@ -763,6 +910,13 @@ static NV_STATUS rtt_directed(rtt_state_t *state)
         TEST_CHECK_RET(0);
     uvm_range_tree_for_each_in(node, &state->tree, ULLONG_MAX, ULLONG_MAX)
         TEST_CHECK_RET(0);
+    uvm_range_tree_for_each_in_safe(node, next, &state->tree, 0,          0)
+        TEST_CHECK_RET(0);
+    uvm_range_tree_for_each_in_safe(node, next, &state->tree, 0,          ULLONG_MAX)
+        TEST_CHECK_RET(0);
+    uvm_range_tree_for_each_in_safe(node, next, &state->tree, ULLONG_MAX, ULLONG_MAX)
+        TEST_CHECK_RET(0);
+    TEST_NV_CHECK_RET(rtt_check_between(state, NULL, NULL));
 
     // Consume entire range
     MEM_NV_CHECK_RET(rtt_range_add_check_val(state,  0,          ULLONG_MAX), NV_OK);
@@ -1038,8 +1192,8 @@ static NV_STATUS rtt_batch_remove(rtt_state_t *state, UVM_TEST_RANGE_TREE_RANDOM
     return NV_OK;
 }
 
-// Attempts to shrink a randomly-selected range in the tree. On selecting a range
-// of size 1, the attempt is repeated with another range up to the
+// Attempts to shrink a randomly-selected range in the tree. On selecting a
+// range of size 1, the attempt is repeated with another range up to the
 // params->max_attempts threshold.
 static NV_STATUS rtt_rand_shrink(rtt_state_t *state, UVM_TEST_RANGE_TREE_RANDOM_PARAMS *params)
 {
@@ -1151,11 +1305,12 @@ static NV_STATUS rtt_rand_split(rtt_state_t *state, UVM_TEST_RANGE_TREE_RANDOM_P
     return NV_OK;
 }
 
-// Attempts to merge a randomly-selected range in the tree in a randomly-selected
-// direction (next or prev). On selecting a range with a non-adjacent neighbor,
-// the attempt is repeated with another range up to the params->max_attempts
-// threshold. On reaching the attempt threshold the RNG probabilities are
-// adjusted to prefer split operations and NV_ERR_BUSY_RETRY is returned.
+// Attempts to merge a randomly-selected range in the tree in a randomly-
+// selected direction (next or prev). On selecting a range with a non-adjacent
+// neighbor, the attempt is repeated with another range up to the
+// params->max_attempts threshold. On reaching the attempt threshold the RNG
+// probabilities are adjusted to prefer split operations and NV_ERR_BUSY_RETRY
+// is returned.
 static NV_STATUS rtt_rand_merge(rtt_state_t *state, UVM_TEST_RANGE_TREE_RANDOM_PARAMS *params)
 {
     uvm_range_tree_node_t *node;
@@ -1236,20 +1391,113 @@ static NV_STATUS rtt_rand_collision_check(rtt_state_t *state, NvU64 max_end)
 // in that range in order.
 static NV_STATUS rtt_rand_iterator_check(rtt_state_t *state, NvU64 max_end)
 {
-    uvm_range_tree_node_t *node, *prev = NULL;
+    uvm_range_tree_node_t *node;
+    uvm_range_tree_node_t *prev = NULL, *first = NULL, *last = NULL, *next = NULL;
     size_t i, target_count = 0, iter_count = 0;
+    NvU64 hole_start, hole_end, test_start, test_end;
     rtt_range_t range;
 
     // Generate the range to check
     rtt_get_rand_range(&state->rng, max_end, &range);
 
     // Phase 1: Iterate through the unordered list, counting how many nodes we
-    // ought to see from the tree iterator.
-    for (i = 0; i < state->count; i++)
-        target_count += rtt_range_overlaps_node(state->nodes[i], &range);
+    // ought to see from the tree iterator and finding the boundary nodes.
+    for (i = 0; i < state->count; i++) {
+        node = state->nodes[i];
 
-    // Phase 2: Use the tree iterator
+        if (rtt_range_overlaps_node(node, &range)) {
+            ++target_count;
+
+            // first is the lowest node with any overlap
+            if (!first || first->start > node->start)
+                first = node;
+
+            // last is the highest node with any overlap
+            if (!last || last->end < node->end)
+                last = node;
+        }
+        else {
+            // prev is the highest node with end < range.start
+            if (node->end < range.start && (!prev || node->end > prev->end))
+                prev = node;
+
+            // next is the lowest node with start > range.end
+            if (node->start > range.end && (!next || node->start < next->start))
+                next = node;
+        }
+    }
+
+    // Phase 2: Use the tree iterators
+
+    // The holes between the nodes will be checked within the iterator loop.
+    // Here we check the holes at the start and end of the range, if any.
+    if (first) {
+        if (range.start < first->start) {
+            // Check hole at range.start
+            hole_start = prev ? prev->end + 1 : 0;
+            hole_end = first->start - 1;
+            TEST_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, range.start, &test_start, &test_end));
+            TEST_CHECK_RET(test_start == hole_start);
+            TEST_CHECK_RET(test_end == hole_end);
+
+            test_start = range.start;
+            test_end = ULLONG_MAX;
+            TEST_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, range.start, &test_start, &test_end));
+            TEST_CHECK_RET(test_start == range.start);
+            TEST_CHECK_RET(test_end == hole_end);
+        }
+
+        // Else, no hole at start
+    }
+    else {
+        // No nodes intersect the range
+        UVM_ASSERT(target_count == 0);
+        UVM_ASSERT(!last);
+
+        hole_start = prev ? prev->end + 1 : 0;
+        hole_end = next ? next->start - 1 : ULLONG_MAX;
+        TEST_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, range.start, &test_start, &test_end));
+        TEST_CHECK_RET(test_start == hole_start);
+        TEST_CHECK_RET(test_end == hole_end);
+
+        test_start = range.start;
+        test_end = range.end;
+        TEST_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, range.start, &test_start, &test_end));
+        TEST_CHECK_RET(test_start == range.start);
+        TEST_CHECK_RET(test_end == range.end);
+    }
+
+    if (last && range.end > last->end) {
+        // Check hole at range.end
+        hole_start = last->end + 1;
+        hole_end = next ? next->start - 1 : ULLONG_MAX;
+        TEST_NV_CHECK_RET(uvm_range_tree_find_hole(&state->tree, range.end, &test_start, &test_end));
+        TEST_CHECK_RET(test_start == hole_start);
+        TEST_CHECK_RET(test_end == hole_end);
+
+        test_start = 0;
+        test_end = range.end;
+        TEST_NV_CHECK_RET(uvm_range_tree_find_hole_in(&state->tree, range.end, &test_start, &test_end));
+        TEST_CHECK_RET(test_start == hole_start);
+        TEST_CHECK_RET(test_end == range.end);
+    }
+
     uvm_range_tree_for_each_in(node, &state->tree, range.start, range.end) {
+        TEST_CHECK_RET(rtt_range_overlaps_node(node, &range));
+        if (prev) {
+            TEST_CHECK_RET(prev->end < node->start);
+            TEST_NV_CHECK_RET(rtt_check_between(state, prev, node));
+        }
+
+        ++iter_count;
+        prev = node;
+    }
+
+    TEST_CHECK_RET(iter_count == target_count);
+
+    prev = NULL;
+    iter_count = 0;
+    uvm_range_tree_for_each_in_safe(node, next, &state->tree, range.start, range.end) {
         TEST_CHECK_RET(rtt_range_overlaps_node(node, &range));
         if (prev)
             TEST_CHECK_RET(prev->end < node->start);
@@ -1277,9 +1525,9 @@ static rtt_op_t rtt_get_rand_op(rtt_state_t *state, UVM_TEST_RANGE_TREE_RANDOM_P
     if (state->count == 1 && state->count == params->max_ranges)
         return RTT_OP_REMOVE;
 
-    // r_group selects between the two groups of operations, either {add/remove/shrink}
-    // or {merge/split}. r_sub selects the sub operation within that group based
-    // on the current probability settings.
+    // r_group selects between the two groups of operations, either {add/remove/
+    // shrink} or {merge/split}. r_sub selects the sub operation within that
+    // group based on the current probability settings.
     r_group = uvm_test_rng_range_32(&state->rng, 1, 100);
     r_sub   = uvm_test_rng_range_32(&state->rng, 1, 100);
 
@@ -1287,7 +1535,9 @@ static rtt_op_t rtt_get_rand_op(rtt_state_t *state, UVM_TEST_RANGE_TREE_RANDOM_P
         if (r_group <= params->add_remove_shrink_group_probability) {
             if (r_sub <= state->shrink_probability)
                 return RTT_OP_SHRINK;
-            // After giving shrink a chance, redo the randomization for add/remove.
+
+            // After giving shrink a chance, redo the randomization for add/
+            // remove.
             r_sub = uvm_test_rng_range_32(&state->rng, 1, 100);
 
             if (r_sub <= state->add_chance)

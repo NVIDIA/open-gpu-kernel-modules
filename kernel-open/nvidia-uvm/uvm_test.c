@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -247,6 +247,7 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_CHANNEL_STRESS,               uvm_test_channel_stress);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_CE_SANITY,                    uvm_test_ce_sanity);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_HOST_SANITY,                  uvm_test_host_sanity);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN, uvm_test_va_space_mm_or_current_retain);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_BLOCK_INFO,                uvm_test_va_block_info);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_LOCK_SANITY,                  uvm_test_lock_sanity);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PERF_UTILS_SANITY,            uvm_test_perf_utils_sanity);
@@ -328,6 +329,8 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
                                        uvm_test_va_range_inject_add_gpu_va_space_error);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DESTROY_GPU_VA_SPACE_DELAY,   uvm_test_destroy_gpu_va_space_delay);
         UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED, uvm_test_cgroup_accounting_supported);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_HMM_INIT, uvm_test_hmm_init);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SPLIT_INVALIDATE_DELAY, uvm_test_split_invalidate_delay);
     }
 
     return -EINVAL;

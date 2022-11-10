@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         System Object Function Definitions.                               *
 *                                                                           *
@@ -47,8 +47,11 @@
 #include "platform/cpu.h"
 #include "platform/platform.h"
 #include "diagnostics/gpu_acct.h"
+#include "gpu/external_device/gsync.h"
+#include "virtualization/kernel_vgpu_mgr.h"
 #include "mem_mgr/virt_mem_mgr.h"
 #include "diagnostics/journal.h"
+#include "virtualization/hypervisor/hypervisor.h"
 #include "power/gpu_boost_mgr.h"
 #include "compute/fabric.h"
 #include "gpu_mgr/gpu_db.h"
@@ -74,12 +77,15 @@ static sysChildObject sysChildObjects[] =
 {
     { NV_OFFSETOF(OBJSYS, pHalMgr),         classInfo(OBJHALMGR),       NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pPfm),            classInfo(OBJPFM),          NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pHypervisor),     classInfo(OBJHYPERVISOR),   NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pOS),             classInfo(OBJOS),           NV_FALSE }, //  OS: Wrapper macros must be enabled to use :CONSTRUCT.
     { NV_OFFSETOF(OBJSYS, pCl),             classInfo(OBJCL),           NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuMgr),         classInfo(OBJGPUMGR),       NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pGsyncMgr),       classInfo(OBJGSYNCMGR),     NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuAcct),        classInfo(GpuAccounting),   NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pRcDB),           classInfo(OBJRCDB),         NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pVmm),            classInfo(OBJVMM),          NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pKernelVgpuMgr),  classInfo(KernelVgpuMgr),   NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuBoostMgr),    classInfo(OBJGPUBOOSTMGR),  NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pFabric),         classInfo(Fabric),          NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuDb),          classInfo(GpuDb),           NV_TRUE },
@@ -110,6 +116,13 @@ sysConstruct_IMPL(OBJSYS *pSys)
     pOS = SYS_GET_OS(pSys);
     osGetCurrentTime(&sec, &uSec);
     pSys->rmInstanceId = (NvU64)sec * 1000000 + (NvU64)uSec;
+
+    {
+        // Using Hypervisor native interface to detect
+        OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
+        if (pHypervisor)
+            hypervisorDetection(pHypervisor, pOS);
+    }
 
     if (!pOS->osRmInitRm(pOS))
     {
@@ -448,7 +461,7 @@ coreShutdownRm(void)
     objDelete(pSys);
 
     //
-    // Deinitalize libraries used by RM
+    // Deinitialize libraries used by RM
     //
     nvAssertDestroy();
 
@@ -636,6 +649,15 @@ sysInitRegistryOverrides_IMPL
         pSys->setProperty(pSys, PDB_PROP_SYS_PRIORITY_THROTTLE_DELAY_US, data32);
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_MULTICAST_FLA,
+                            &data32) == NV_OK)
+    {
+        if (data32 == NV_REG_STR_RM_MULTICAST_FLA_ENABLED)
+        {
+            pSys->bMulticastFlaEnabled = NV_TRUE;
+        }
+    }
+
     _sysRegistryOverrideExternalFabricMgmt(pSys, pGpu);
     _sysRegistryOverrideResourceServer(pSys, pGpu);
 
@@ -643,11 +665,18 @@ sysInitRegistryOverrides_IMPL
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_BUGCHECK_ON_TIMEOUT, NV_TRUE);
     }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_ROUTE_TO_PHYSICAL_LOCK_BYPASS,
+                            &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, !!data32);
+    }
 }
 
 void
 sysApplyLockingPolicy_IMPL(OBJSYS *pSys)
 {
+    g_resServ.bRouteToPhysicalLockBypass = pSys->getProperty(pSys, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS);
     g_resServ.roTopLockApiMask = pSys->apiLockMask;
 }
 

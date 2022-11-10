@@ -35,6 +35,8 @@
 #include <linux/list.h>
 #include <linux/rwsem.h>
 
+#include <acpi/video.h>
+
 #include "nvstatus.h"
 
 #include "nv-register-module.h"
@@ -956,6 +958,12 @@ nvkms_register_backlight(NvU32 gpu_id, NvU32 display_id, void *drv_priv,
     struct nvkms_backlight_device *nvkms_bd = NULL;
     int i;
 
+#if defined(NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE)
+    if (!acpi_video_backlight_use_native()) {
+        return NULL;
+    }
+#endif
+
     gpu_info = nvkms_alloc(NV_MAX_GPUS * sizeof(*gpu_info), NV_TRUE);
     if (gpu_info == NULL) {
         return NULL;
@@ -1346,29 +1354,7 @@ static void nvkms_proc_exit(void)
         return;
     }
 
-#if defined(NV_PROC_REMOVE_PRESENT)
     proc_remove(nvkms_proc_dir);
-#else
-    /*
-     * On kernel versions without proc_remove(), we need to explicitly
-     * remove each proc file beneath nvkms_proc_dir.
-     * nvkms_proc_init() only creates files directly under
-     * nvkms_proc_dir, so those are the only files we need to remove
-     * here: warn if there is any deeper directory nesting.
-     */
-    {
-        struct proc_dir_entry *entry = nvkms_proc_dir->subdir;
-
-        while (entry != NULL) {
-            struct proc_dir_entry *next = entry->next;
-            WARN_ON(entry->subdir != NULL);
-            remove_proc_entry(entry->name, entry->parent);
-            entry = next;
-        }
-    }
-
-    remove_proc_entry(nvkms_proc_dir->name, nvkms_proc_dir->parent);
-#endif /* NV_PROC_REMOVE_PRESENT */
 #endif /* CONFIG_PROC_FS */
 }
 
@@ -1630,12 +1616,7 @@ restart:
 module_init(nvkms_init);
 module_exit(nvkms_exit);
 
-#if defined(MODULE_LICENSE)
   MODULE_LICENSE("Dual MIT/GPL");
-#endif
-#if defined(MODULE_INFO)
-  MODULE_INFO(supported, "external");
-#endif
-#if defined(MODULE_VERSION)
-  MODULE_VERSION(NV_VERSION_STRING);
-#endif
+
+MODULE_INFO(supported, "external");
+MODULE_VERSION(NV_VERSION_STRING);

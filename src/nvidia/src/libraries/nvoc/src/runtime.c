@@ -256,6 +256,41 @@ void __nvoc_destructFromBase(Dynamic *pDynamic)
     pDerivedObj->__nvoc_rtti->dtor(pDerivedObj);
 }
 
+const struct NVOC_EXPORTED_METHOD_DEF* nvocGetExportedMethodDefFromMethodInfo_IMPL(const struct NVOC_EXPORT_INFO *pExportInfo, NvU32 methodId)
+{
+    NvU32 exportLength;
+    const struct NVOC_EXPORTED_METHOD_DEF *exportArray;
+
+    if (pExportInfo == NULL)
+        return NULL;
+
+    exportLength = pExportInfo->numEntries;
+    exportArray =  pExportInfo->pExportEntries;
+
+    if (exportArray != NULL && exportLength > 0)
+    {
+        // The export array is sorted by methodId, so we can binary search it
+        NvU32 low = 0;
+        NvU32 high = exportLength;
+        while (1)
+        {
+            NvU32 mid  = (low + high) / 2;
+
+            if (exportArray[mid].methodId == methodId)
+                return &exportArray[mid];
+
+            if (high == mid || low == mid)
+                break;
+
+            if (exportArray[mid].methodId > methodId)
+                high = mid;
+            else
+                low = mid;
+        }
+    }
+
+    return NULL;
+}
 
 const struct NVOC_EXPORTED_METHOD_DEF *objGetExportedMethodDef_IMPL(Dynamic *pObj, NvU32 methodId)
 {
@@ -264,41 +299,11 @@ const struct NVOC_EXPORTED_METHOD_DEF *objGetExportedMethodDef_IMPL(Dynamic *pOb
     const struct NVOC_RTTI *const *relatives = pCastInfo->relatives;
     NvU32 i;
 
-
     for (i = 0; i < numRelatives; i++)
     {
-        const struct NVOC_RTTI *relative;
-        const struct NVOC_EXPORT_INFO* exportData;
-        NvU32 exportLength;
-        const struct NVOC_EXPORTED_METHOD_DEF *exportArray;
-
-        relative = relatives[i];
-
-        exportData = relative->pClassDef->pExportInfo;
-        exportLength = exportData->numEntries;
-        exportArray =  exportData->pExportEntries;
-
-        if (exportArray != NULL && exportLength > 0)
-        {
-            // The export array is sorted by methodId, so we can binary search it
-            NvU32 low = 0;
-            NvU32 high = exportLength;
-            while (1)
-            {
-                NvU32 mid  = (low + high) / 2;
-
-                if (exportArray[mid].methodId == methodId)
-                    return &exportArray[mid];
-
-                if (high == mid || low == mid)
-                    break;
-
-                if (exportArray[mid].methodId > methodId)
-                    high = mid;
-                else
-                    low = mid;
-            }
-        }
+        const void *pDef = nvocGetExportedMethodDefFromMethodInfo_IMPL(relatives[i]->pClassDef->pExportInfo, methodId);
+        if (pDef != NULL)
+            return pDef;
     }
 
     return NULL;

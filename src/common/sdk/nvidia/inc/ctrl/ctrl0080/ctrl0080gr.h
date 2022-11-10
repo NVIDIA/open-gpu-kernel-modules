@@ -150,13 +150,14 @@ typedef struct NV0080_CTRL_GR_INFO {
 #define NV0080_CTRL_GR_INFO_INDEX_MAX_PER_ENGINE_SUBCONTEXT_COUNT   (0x0000002E)
 
 
+#define NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_SLICES_PER_LTC         (0x00000032)
 
 /* When adding a new INDEX, please update MAX_SIZE accordingly
  * NOTE: 0080 functionality is merged with 2080 functionality, so this max size
  * reflects that.
  */
-#define NV0080_CTRL_GR_INFO_INDEX_MAX                               (0x00000031)
-#define NV0080_CTRL_GR_INFO_MAX_SIZE                                (0x32) /* finn: Evaluated from "(NV0080_CTRL_GR_INFO_INDEX_MAX + 1)" */
+#define NV0080_CTRL_GR_INFO_INDEX_MAX                               (0x00000032)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE                                (0x33) /* finn: Evaluated from "(NV0080_CTRL_GR_INFO_INDEX_MAX + 1)" */
 
 /*
  * NV0080_CTRL_CMD_GR_GET_INFO

@@ -24,6 +24,7 @@
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
+#include "gpu/mem_mgr/mem_desc.h"
 
 #include "nvRmReg.h"
 
@@ -118,6 +119,8 @@ kchangrpAllocFaultMethodBuffers_GV100
             pFaultMthdBuf->pMemDesc = NULL;
             goto fail;
         }
+
+        memdescSetName(pGpu, pFaultMthdBuf->pMemDesc, NV_RM_SURF_NAME_CE_FAULT_METHOD_BUFFER, NULL);
 
         // Map the buffer to RM
         pRmMapAddr = kbusMapRmAperture_HAL(pGpu, pFaultMthdBuf->pMemDesc);

@@ -48,7 +48,6 @@ kmigmgrIsGPUInstanceFlagValid_GH100
                                 _MEMORY_SIZE, gpuInstanceFlag);
     NvU32 computeSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG,
                                     _COMPUTE_SIZE, gpuInstanceFlag);
-
     switch (memSizeFlag)
     {
         case NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL:
@@ -76,7 +75,6 @@ kmigmgrIsGPUInstanceFlagValid_GH100
                       computeSizeFlag);
             return NV_FALSE;
     }
-
     return NV_TRUE;
 }
 
@@ -128,8 +126,8 @@ kmigmgrIsGPUInstanceCombinationValid_GH100
                                NV_FALSE);
             break;
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_QUARTER:
-            // TODO: Add in extra check once NVML supports MINI_QUARTER being broadcast 
-            return NV_FALSE;
+            NV_CHECK_OR_RETURN(LEVEL_SILENT, memSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_QUARTER,
+                               NV_FALSE);
             break;
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_EIGHTH:
             NV_CHECK_OR_RETURN(LEVEL_SILENT, memSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_EIGHTH,

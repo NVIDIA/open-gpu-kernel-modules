@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_msencctxPreDestruct(struct MsencContext *pRe
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MsencContext_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_msencctxIsDuplicate(struct MsencContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MsencContext_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_msencctxGetNotificationListPtr(struct MsencContext *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_MsencContext_Notifier.offset));
 }
@@ -334,6 +338,8 @@ static void __nvoc_init_funcTable_MsencContext_1(MsencContext *pThis, RmHalspecO
     pThis->__msencctxCanCopy__ = &__nvoc_thunk_RsResource_msencctxCanCopy;
 
     pThis->__msencctxPreDestruct__ = &__nvoc_thunk_RsResource_msencctxPreDestruct;
+
+    pThis->__msencctxIsDuplicate__ = &__nvoc_thunk_RsResource_msencctxIsDuplicate;
 
     pThis->__msencctxGetNotificationListPtr__ = &__nvoc_thunk_Notifier_msencctxGetNotificationListPtr;
 

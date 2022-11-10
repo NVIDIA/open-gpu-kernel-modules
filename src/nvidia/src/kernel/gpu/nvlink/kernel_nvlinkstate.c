@@ -193,6 +193,12 @@ knvlinkConstructEngine_IMPL
         return status;
     }
 
+    // 
+    // When GSP inform about link error occurs on this GPU
+    // it will updated to NV_TRUE
+    //
+    pKernelNvlink->bIsGpuDegraded = NV_FALSE;
+
     //
     // Create MAX KernelIoctrl objects.
     // Later in knvlinkStatePreInit_IMPL, we will remove the objects for
@@ -545,6 +551,10 @@ knvlinkStateLoad_IMPL
         sysEnableExternalFabricMgmt(pSys);
         sysForceInitFabricManagerState(pSys);
     }
+    if (GPU_IS_NVSWITCH_DETECTED(pGpu))
+    {
+        sysEnableExternalFabricMgmt(pSys);
+    }
 
     //
     // WAR Bug# 3261027: Sync-up External Fabric Management status with GSP-RM.
@@ -562,6 +572,7 @@ knvlinkStateLoad_IMPL
     // If we are running on CPU-RM or monolithic, process SYSMEM links, if present
     // on the system.
     //
+
     status = _knvlinkProcessSysmemLinks(pGpu, pKernelNvlink,
                         (preInitializedLinks != pKernelNvlink->initializedLinks));
     if (status != NV_OK)
@@ -578,7 +589,7 @@ knvlinkStateLoad_IMPL
     //
     if (!(flags & GPU_STATE_FLAGS_PRESERVING))
     {
-        if ((status = kbusInitFla_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), 0, 0)) != NV_OK)
+        if ((status = kbusCheckFlaSupportedAndInit_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), 0, 0)) != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Init FLA failed, status:0x%x\n", status);
             NV_ASSERT(status == NV_OK);
@@ -852,7 +863,8 @@ knvlinkStatePostUnload_IMPL
     // platforms (in discussion with ARCH for non-NVSwitch platforms).
     //
     if (pSys->getProperty(pSys, PDB_PROP_SYS_NVSWITCH_IS_PRESENT) ||
-        knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink))
+        knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink)        ||
+        (GPU_IS_NVSWITCH_DETECTED(pGpu)))
     {
         knvlinkRemoveMapping_HAL(pGpu, pKernelNvlink, NV_FALSE,
                                  ((1 << NVLINK_MAX_PEERS_SW) - 1),
@@ -903,6 +915,7 @@ knvlinkStatePostUnload_IMPL
         if (!API_GPU_IN_RESET_SANITY_CHECK(pRemoteGpu))
         {
             KernelNvlink *pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
+
             pRemoteKernelNvlink->disconnectedLinkMask |= NVBIT(pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.linkNumber);
         }
     }
@@ -1000,13 +1013,92 @@ _knvlinkPurgeState_end:
     }
 
     // Destroy the chiplib configuration memory
-    if (pKernelNvlink->pLinkConnection)
-    {
-        portMemFree(pKernelNvlink->pLinkConnection);
-        pKernelNvlink->pLinkConnection = NULL;
-    }
+    portMemFree(pKernelNvlink->pLinkConnection);
+    pKernelNvlink->pLinkConnection = NULL;
 
     return NV_OK;
+}
+
+/*!
+ * @brief Degraded Mode will be set if other end of the linkId
+ *        is not degraded.
+ *        Once degraded destroy the RM NVLink SW state
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ * @param[in] linkId         linkId of the error link
+ *
+ */
+void
+knvlinkSetDegradedMode_IMPL
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32         linkId
+)
+{
+    NvU32         status = NV_ERR_GENERIC;
+    NvU32         gpuInstance;
+    OBJGPU       *pRemoteGpu = NULL;
+    KernelNvlink *pRemoteKernelNvlink = NULL;
+
+    if (!pKernelNvlink)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                "Failed to get Local Nvlink info for linkId %d to update Degraded GPU%d status\n", 
+                linkId, pGpu->gpuInstance);
+                
+        return; 
+    }
+
+    if(pKernelNvlink->bIsGpuDegraded)
+    {
+        return; 
+    }
+
+    //Find the remote GPU/NVLink attached to this link, if any
+    for (gpuInstance = 0; gpuInstance < NV_MAX_DEVICES; gpuInstance++)
+    {
+        if (pKernelNvlink->peerLinkMasks[gpuInstance] & NVBIT(linkId))
+        {
+            pRemoteGpu = gpumgrGetGpu(gpuInstance);
+            break;
+        }
+    }
+
+    if (pRemoteGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                "Failed to get Remote GPU info for linkId %d to update Degraded GPU%d status\n", 
+                linkId, pGpu->gpuInstance);
+                
+        return; 
+    }
+
+    pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
+    if (!pRemoteKernelNvlink)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                "Failed to get Remote Nvlink info for linkId %d to update Degraded GPU%d status\n", 
+                linkId, pGpu->gpuInstance);
+                
+        return; 
+    }
+
+    if (pRemoteKernelNvlink->bIsGpuDegraded == NV_FALSE)
+    {
+        pKernelNvlink->bIsGpuDegraded = NV_TRUE;
+
+        // shutdown all the links on this GPU
+        status = knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, NV_TRUE);
+        if (status != NV_OK)
+        {
+           NV_PRINTF(LEVEL_ERROR,
+                     "failed to shutdown links on degraded GPU%d\n", pGpu->gpuInstance);
+        }
+    }
+    
+    return;
 }
 
 void

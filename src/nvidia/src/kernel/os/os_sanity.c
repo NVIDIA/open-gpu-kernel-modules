@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,8 +35,6 @@
 #include "kernel/gpu/intr/intr.h"
 #include <gpu/bif/kernel_bif.h>
 #include <objtmr.h>
-
-#include "g_os_private.h"
 
 /*!
  * @brief Wait for interrupt
@@ -111,7 +109,7 @@ NV_STATUS osSanityTestIsr(
 
     osWaitForInterrupt(pGpu, &serviced);
 
-    return (serviced) ? NV_OK : NV_ERR_GENERIC;
+    return (serviced) ? NV_OK : NV_ERR_INVALID_STATE;
 }
 
 //
@@ -123,10 +121,8 @@ static NV_STATUS _osVerifyInterrupts(
     OBJGPU *pGpu
 )
 {
-#if !defined(NV_UNIX) || defined(NV_MODS)
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-#endif
     Intr *pIntr = GPU_GET_INTR(pGpu);
+    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
     OBJGPU *pGpuSaved = pGpu;
     NvU32  *pIntrEn0, *pIntrEn1;
     MC_ENGINE_BITVECTOR intrMask;
@@ -243,6 +239,7 @@ static NV_STATUS _osVerifyInterrupts(
         osDelay(50);
         Bailout += 50 * 1000;
 #else
+        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
         tmrDelay(pTmr, 5 * 1000);
         Bailout += 5;
 #endif
@@ -254,7 +251,6 @@ static NV_STATUS _osVerifyInterrupts(
     // Message Signalled Interrupt (MSI) support
     // This call checks if MSI is enabled and if it is, we need re-arm it.
     //
-    KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
     kbifCheckAndRearmMSI(pGpu, pKernelBif);
 
     pGpu->testIntr = NV_FALSE;

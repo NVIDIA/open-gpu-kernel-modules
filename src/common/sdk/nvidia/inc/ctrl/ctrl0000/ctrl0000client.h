@@ -63,18 +63,20 @@ typedef struct NV0000_CTRL_CLIENT_GET_ADDR_SPACE_TYPE_PARAMS {
     NvU32    addrSpaceType;             /* [out] - Memory Address Space Type */
 } NV0000_CTRL_CLIENT_GET_ADDR_SPACE_TYPE_PARAMS;
 
-#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_INVALID 0x00000000
-#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_SYSMEM  0x00000001
-#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM  0x00000002
-#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_REGMEM  0x00000003
-#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_FABRIC  0x00000004
+#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_INVALID   0x00000000
+#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_SYSMEM    0x00000001
+#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM    0x00000002
+#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_REGMEM    0x00000003
+#define NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_FABRIC    0x00000004
+
+
 
 /*
  * NV0000_CTRL_CMD_CLIENT_GET_HANDLE_INFO
  *
  * This command may be used to query information on a handle
  */
-#define NV0000_CTRL_CMD_CLIENT_GET_HANDLE_INFO             (0xd02) /* finn: Evaluated from "(FINN_NV01_ROOT_CLIENT_INTERFACE_ID << 8) | NV0000_CTRL_CLIENT_GET_HANDLE_INFO_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_CLIENT_GET_HANDLE_INFO               (0xd02) /* finn: Evaluated from "(FINN_NV01_ROOT_CLIENT_INTERFACE_ID << 8) | NV0000_CTRL_CLIENT_GET_HANDLE_INFO_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_CLIENT_GET_HANDLE_INFO_PARAMS_MESSAGE_ID (0x2U)
 
@@ -159,6 +161,23 @@ typedef struct NV0000_CTRL_CLIENT_SHARE_OBJECT_PARAMS {
     NvHandle        hObject;                /* [in]  - Handle of object to share */
     RS_SHARE_POLICY sharePolicy;     /* [in]  - Share Policy to apply */
 } NV0000_CTRL_CLIENT_SHARE_OBJECT_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_CLIENT_OBJECTS_ARE_DUPLICATES
+ *
+ * This command returns true if the objects are duplicates.
+ *
+ * Currently supported only for memory objects.
+ */
+#define NV0000_CTRL_CMD_CLIENT_OBJECTS_ARE_DUPLICATES (0xd07) /* finn: Evaluated from "(FINN_NV01_ROOT_CLIENT_INTERFACE_ID << 8) | NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS_MESSAGE_ID (0x7U)
+
+typedef struct NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS {
+    NvHandle hObject1;   /* [in]  - Handle of object to be checked */
+    NvHandle hObject2;   /* [in]  - Handle of object to be checked */
+    NvBool   bDuplicates;     /* [out] - Returns true if duplicates     */
+} NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS;
 
 /* _ctrl0000client_h_ */
 

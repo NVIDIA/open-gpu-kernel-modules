@@ -63,7 +63,7 @@ dispapiConstruct_IMPL
     NvBool           bBcResource;
     NvU32            i;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     // Use gpuGetByRef instead of GpuResource because it will work even if resource
     // isn't a GpuResource.

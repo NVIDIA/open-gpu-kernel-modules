@@ -301,7 +301,8 @@ static NV_STATUS heapReserveRegion
     NvU64               offset,
     NvU64               size,
     MEMORY_DESCRIPTOR **ppMemDesc,
-    NvBool              isRmRsvdRegion
+    NvBool              isRmRsvdRegion,
+    NvBool              bProtected
 )
 {
     NV_STATUS                    rmStatus           = NV_OK;
@@ -334,6 +335,9 @@ static NV_STATUS heapReserveRegion
     allocData.alignment = align;
     allocData.size = NV_MIN(size, (heapSize - offset));
     allocData.offset = offset;
+
+    if (bProtected)
+        allocData.flags |= NVOS32_ALLOC_FLAGS_PROTECTED;
 
     pFbAllocInfo = portMemAllocNonPaged(sizeof(FB_ALLOC_INFO));
     NV_ASSERT_TRUE_OR_GOTO(rmStatus, pFbAllocInfo != NULL, NV_ERR_NO_MEMORY, done);
@@ -612,7 +616,8 @@ NV_STATUS heapInitInternal_IMPL
                         fbRegionBase,
                         (pFbRegion->limit - fbRegionBase + 1),
                         &pMemDesc,
-                        pFbRegion->bRsvdRegion);
+                        pFbRegion->bRsvdRegion,
+                        pFbRegion->bProtected);
 
                     if (status != NV_OK || pMemDesc == NULL)
                     {
@@ -650,13 +655,16 @@ NV_STATUS heapInitInternal_IMPL
         (memmgrIsPmaInitialized(pMemoryManager)))
     {
         MEMORY_DESCRIPTOR *pMemDesc = NULL;
+        NvBool bProtected = NV_FALSE;
+
         status = heapReserveRegion(
             pMemoryManager,
             pHeap,
             base,
             size,
             &pMemDesc,
-            NV_FALSE);
+            NV_FALSE,
+            bProtected);
 
         if (status != NV_OK || pMemDesc == NULL)
         {
@@ -771,10 +779,7 @@ heapDestruct_IMPL
         if (pHeap->heapType == HEAP_TYPE_PHYS_MEM_SUBALLOCATOR)
         {
             pPmsaMemDesc = ((PHYS_MEM_SUBALLOCATOR_DATA *)(pHeap->pHeapTypeSpecificData))->pMemDesc;
-            if (pPmsaMemDesc != NULL)
-            {
-                memdescDestroy(pPmsaMemDesc);
-            }
+            memdescDestroy(pPmsaMemDesc);
         }
         portMemFree(pHeap->pHeapTypeSpecificData);
         pHeap->pHeapTypeSpecificData = NULL;
@@ -3156,7 +3161,7 @@ NV_STATUS heapHwAlloc_IMPL
     *pAttr2 = pFbAllocInfo->retAttr2;
 
 failed:
-    portMemFree(pFbAllocInfo->pageFormat);
+    portMemFree(pFbAllocPageFormat);
     portMemFree(pFbAllocInfo);
 
     return status;
@@ -4664,7 +4669,7 @@ heapAddRef_IMPL
     if (pHeap == NULL)
         return 0;
 
-    return (NvU32)portAtomicIncrementS32((NvS32*)&(pHeap->refCount));
+    return portAtomicExIncrementU64(&pHeap->refCount);
 }
 
 /*!
@@ -4681,12 +4686,12 @@ heapRemoveRef_IMPL
     Heap   *pHeap
 )
 {
-    NvU32 refCount = 0;
+    NvU64 refCount = 0;
 
     if (pHeap == NULL)
         return 0;
 
-    refCount = (NvU32)portAtomicDecrementS32((NvS32*)&(pHeap->refCount));
+    refCount = portAtomicExDecrementU64(&pHeap->refCount);
     if (refCount == 0)
     {
         objDelete(pHeap);

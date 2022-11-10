@@ -140,6 +140,10 @@ static NV_STATUS __nvoc_thunk_RsResource_eventbufferUnmapFrom(struct EventBuffer
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_eventbufferIsDuplicate(struct EventBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_EventBuffer_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_eventbufferControl_Epilogue(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_EventBuffer_RmResource.offset), pCallContext, pParams);
 }
@@ -307,6 +311,8 @@ static void __nvoc_init_funcTable_EventBuffer_1(EventBuffer *pThis) {
     pThis->__eventbufferPreDestruct__ = &__nvoc_thunk_RsResource_eventbufferPreDestruct;
 
     pThis->__eventbufferUnmapFrom__ = &__nvoc_thunk_RsResource_eventbufferUnmapFrom;
+
+    pThis->__eventbufferIsDuplicate__ = &__nvoc_thunk_RsResource_eventbufferIsDuplicate;
 
     pThis->__eventbufferControl_Epilogue__ = &__nvoc_thunk_RmResource_eventbufferControl_Epilogue;
 

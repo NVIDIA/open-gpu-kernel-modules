@@ -57,4 +57,28 @@ typedef volatile struct Nvc86fControl_struct {
 #define NVC86F_SEM_EXECUTE_RELEASE_WFI_DIS                          0x00000000
 #define NVC86F_SEM_EXECUTE_PAYLOAD_SIZE                                  24:24
 #define NVC86F_SEM_EXECUTE_PAYLOAD_SIZE_32BIT                       0x00000000
+
+/* GPFIFO entry format */
+#define NVC86F_GP_ENTRY__SIZE                                          8
+#define NVC86F_GP_ENTRY0_FETCH                                       0:0
+#define NVC86F_GP_ENTRY0_FETCH_UNCONDITIONAL                  0x00000000
+#define NVC86F_GP_ENTRY0_FETCH_CONDITIONAL                    0x00000001
+#define NVC86F_GP_ENTRY0_GET                                        31:2
+#define NVC86F_GP_ENTRY0_OPERAND                                    31:0
+#define NVC86F_GP_ENTRY0_PB_EXTENDED_BASE_OPERAND                   24:8
+#define NVC86F_GP_ENTRY1_GET_HI                                      7:0
+#define NVC86F_GP_ENTRY1_LEVEL                                       9:9
+#define NVC86F_GP_ENTRY1_LEVEL_MAIN                           0x00000000
+#define NVC86F_GP_ENTRY1_LEVEL_SUBROUTINE                     0x00000001
+#define NVC86F_GP_ENTRY1_LENGTH                                    30:10
+#define NVC86F_GP_ENTRY1_SYNC                                      31:31
+#define NVC86F_GP_ENTRY1_SYNC_PROCEED                         0x00000000
+#define NVC86F_GP_ENTRY1_SYNC_WAIT                            0x00000001
+#define NVC86F_GP_ENTRY1_OPCODE                                      7:0
+#define NVC86F_GP_ENTRY1_OPCODE_NOP                           0x00000000
+#define NVC86F_GP_ENTRY1_OPCODE_ILLEGAL                       0x00000001
+#define NVC86F_GP_ENTRY1_OPCODE_GP_CRC                        0x00000002
+#define NVC86F_GP_ENTRY1_OPCODE_PB_CRC                        0x00000003
+#define NVC86F_GP_ENTRY1_OPCODE_SET_PB_SEGMENT_EXTENDED_BASE  0x00000004
+
 #endif // __gh100_clc86f_h__

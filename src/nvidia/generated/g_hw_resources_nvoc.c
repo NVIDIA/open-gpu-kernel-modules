@@ -145,8 +145,12 @@ static NV_STATUS __nvoc_thunk_RmResource_hwresControl_Prologue(struct MemoryHwRe
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_hwresIsReady(struct MemoryHwResources *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset));
+static NvBool __nvoc_thunk_Memory_hwresIsGpuMapAllowed(struct MemoryHwResources *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_hwresIsReady(struct MemoryHwResources *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_hwresCheckCopyPermissions(struct MemoryHwResources *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -155,6 +159,10 @@ static NV_STATUS __nvoc_thunk_Memory_hwresCheckCopyPermissions(struct MemoryHwRe
 
 static void __nvoc_thunk_RsResource_hwresPreDestruct(struct MemoryHwResources *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_hwresIsDuplicate(struct MemoryHwResources *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_hwresUnmapFrom(struct MemoryHwResources *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -244,11 +252,15 @@ static void __nvoc_init_funcTable_MemoryHwResources_1(MemoryHwResources *pThis) 
 
     pThis->__hwresControl_Prologue__ = &__nvoc_thunk_RmResource_hwresControl_Prologue;
 
+    pThis->__hwresIsGpuMapAllowed__ = &__nvoc_thunk_Memory_hwresIsGpuMapAllowed;
+
     pThis->__hwresIsReady__ = &__nvoc_thunk_Memory_hwresIsReady;
 
     pThis->__hwresCheckCopyPermissions__ = &__nvoc_thunk_Memory_hwresCheckCopyPermissions;
 
     pThis->__hwresPreDestruct__ = &__nvoc_thunk_RsResource_hwresPreDestruct;
+
+    pThis->__hwresIsDuplicate__ = &__nvoc_thunk_Memory_hwresIsDuplicate;
 
     pThis->__hwresUnmapFrom__ = &__nvoc_thunk_RsResource_hwresUnmapFrom;
 

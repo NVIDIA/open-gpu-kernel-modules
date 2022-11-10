@@ -94,6 +94,8 @@
     _op(NvlStatus, nvswitch_ctrl_set_latency_bins,  (nvswitch_device *device, NVSWITCH_SET_LATENCY_BINS *p), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_get_ingress_reqlinkid, (nvswitch_device *device, NVSWITCH_GET_INGRESS_REQLINKID_PARAMS *params), _arch)  \
     _op(NvU32,     nvswitch_i2c_get_port_info,      (nvswitch_device *device, NvU32 port), _arch)  \
+    _op(NvlStatus, nvswitch_ctrl_register_read,     (nvswitch_device *device, NVSWITCH_REGISTER_READ *p), _arch)  \
+    _op(NvlStatus, nvswitch_ctrl_register_write,    (nvswitch_device *device, NVSWITCH_REGISTER_WRITE *p), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_i2c_indexed,       (nvswitch_device *device, NVSWITCH_CTRL_I2C_INDEXED_PARAMS *pParams), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_therm_read_temperature, (nvswitch_device *device, NVSWITCH_CTRL_GET_TEMPERATURE_PARAMS *info), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_therm_get_temperature_limit, (nvswitch_device *device, NVSWITCH_CTRL_GET_TEMPERATURE_LIMIT_PARAMS *info), _arch)  \
@@ -122,7 +124,9 @@
     _op(NvBool,    nvswitch_is_smbpbi_supported,   (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_post_init_device_setup, (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_post_init_blacklist_device_setup, (nvswitch_device *device), _arch)  \
-    _op(NvlStatus, nvswitch_setup_link_system_registers, (nvswitch_device *device), _arch)  \
+    _op(NvlStatus, nvswitch_setup_system_registers, (nvswitch_device *device), _arch)  \
+    _op(void,      nvswitch_setup_link_system_registers, (nvswitch_device *device, nvlink_link *link), _arch)  \
+    _op(void,      nvswitch_load_link_disable_settings, (nvswitch_device *device, nvlink_link *link), _arch)  \
     _op(NvlStatus, nvswitch_read_vbios_link_entries, (nvswitch_device *device, NvU32 tblPtr,NvU32 expected_link_entriesCount,NVLINK_CONFIG_DATA_LINKENTRY *link_entries, NvU32 *identified_link_entriesCount), _arch)  \
     _op(NvlStatus, nvswitch_vbios_read_structure, (nvswitch_device *device, void *structure, NvU32 offset, NvU32 *ppacked_size, const char *format), _arch)  \
     _op(NvlStatus, nvswitch_get_nvlink_ecc_errors,  (nvswitch_device *device, NVSWITCH_GET_NVLINK_ECC_ERRORS_PARAMS *p), _arch)  \
@@ -137,19 +141,25 @@
     _op(void,      nvswitch_load_uuid,              (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_i2c_set_hw_speed_mode,  (nvswitch_device *device, NvU32 port, NvU32 speedMode), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_get_bios_info,     (nvswitch_device *device, NVSWITCH_GET_BIOS_INFO_PARAMS *p), _arch)  \
+    _op(NvlStatus, nvswitch_ctrl_get_inforom_version,  (nvswitch_device *device, NVSWITCH_GET_INFOROM_VERSION_PARAMS *p), _arch)  \
     _op(NvlStatus, nvswitch_read_oob_blacklist_state, (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_write_fabric_state,     (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_initialize_oms_state,   (nvswitch_device *device, INFOROM_OMS_STATE *pOmsState), _arch)  \
     _op(NvlStatus, nvswitch_oms_inforom_flush,      (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_inforom_ecc_get_total_errors,   (nvswitch_device *device, INFOROM_ECC_OBJECT *pEccGeneric, NvU64 *corCount, NvU64 *uncCount), _arch)  \
-    _op(NvlStatus, nvswitch_bbx_setup_prologue,     (nvswitch_device *device, void *pInforomBbxState), _arch)  \
-    _op(NvlStatus, nvswitch_bbx_setup_epilogue,     (nvswitch_device *device, void *pInforomBbxState), _arch)  \
-    _op(NvlStatus, nvswitch_bbx_add_data_time,      (nvswitch_device *device, void *pInforomBbxState, void *pInforomBbxData), _arch)  \
-    _op(NvlStatus, nvswitch_bbx_add_sxid,   (nvswitch_device *device, void *pInforomBbxState, void *pInforomBbxData), _arch)  \
-    _op(NvlStatus, nvswitch_bbx_add_temperature,    (nvswitch_device *device, void *pInforomBbxState, void *pInforomBbxData), _arch)  \
-    _op(void,      nvswitch_bbx_set_initial_temperature,    (nvswitch_device *device, void *pInforomBbxState, void *pInforomBbxData), _arch)  \
-    _op(NvlStatus, nvswitch_inforom_bbx_get_sxid,  (nvswitch_device *device, NVSWITCH_GET_SXIDS_PARAMS *p), _arch)  \
+    _op(NvlStatus, nvswitch_bbx_add_sxid, (nvswitch_device *device, NvU32 exceptionType, NvU32 data0, NvU32 data1, NvU32 data2), _arch)  \
+    _op(NvlStatus, nvswitch_bbx_unload, (nvswitch_device *device), _arch)  \
+    _op(NvlStatus, nvswitch_bbx_load, (nvswitch_device *device, NvU64 time_ns, NvU8 osType, NvU32 osVersion), _arch)  \
+    _op(NvlStatus, nvswitch_bbx_get_sxid, (nvswitch_device *device, NVSWITCH_GET_SXIDS_PARAMS * params), _arch)  \
+    _op(NvlStatus, nvswitch_smbpbi_alloc,           (nvswitch_device *device), _arch)  \
+    _op(NvlStatus, nvswitch_smbpbi_post_init_hal,   (nvswitch_device *device), _arch)  \
+    _op(void,      nvswitch_smbpbi_destroy_hal,     (nvswitch_device *device), _arch)  \
+    _op(void,      nvswitch_smbpbi_send_unload,     (nvswitch_device *device), _arch)  \
+    _op(NvlStatus, nvswitch_smbpbi_dem_load,        (nvswitch_device *device), _arch)  \
+    _op(void,      nvswitch_smbpbi_dem_flush,       (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_smbpbi_get_dem_num_messages,    (nvswitch_device *device, NvU8 *pMsgCount), _arch)  \
+    _op(void,      nvswitch_smbpbi_log_message,     (nvswitch_device *device, NvU32 num, NvU32 msglen, NvU8 *osErrorString), _arch)  \
+    _op(NvlStatus, nvswitch_smbpbi_send_init_data,  (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_set_minion_initialized, (nvswitch_device *device, NvU32 idx_minion, NvBool initialized), _arch)  \
     _op(NvBool,    nvswitch_is_minion_initialized,  (nvswitch_device *device, NvU32 idx_minion), _arch)  \
     _op(NvlStatus, nvswitch_get_link_public_id, (nvswitch_device *device, NvU32 linkId, NvU32 *publicId), _arch)  \
@@ -206,13 +216,19 @@
     _op(void,      nvswitch_apply_recal_settings, (nvswitch_device *device, nvlink_link *), _arch) \
     _op(NvlStatus, nvswitch_service_nvldl_fatal_link, (nvswitch_device *device, NvU32 nvliptInstance, NvU32 link), _arch) \
     _op(NvlStatus, nvswitch_service_minion_link, (nvswitch_device *device, NvU32 link_id), _arch) \
-    _op(NvlStatus, nvswitch_ctrl_get_sw_info,  (nvswitch_device *device, NVSWITCH_GET_SW_INFO_PARAMS *p), _arch)
+    _op(NvlStatus, nvswitch_ctrl_get_sw_info,  (nvswitch_device *device, NVSWITCH_GET_SW_INFO_PARAMS *p), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_get_err_info, (nvswitch_device *device, NVSWITCH_NVLINK_GET_ERR_INFO_PARAMS *ret), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_clear_counters, (nvswitch_device *device, NVSWITCH_NVLINK_CLEAR_COUNTERS_PARAMS *ret), _arch)
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \
     _op(NvlStatus, nvswitch_launch_ALI, (nvswitch_device *device), _arch) \
-    _op(NvlStatus, nvswitch_launch_ALI_link_training, (nvswitch_device *device, nvlink_link *link), _arch) \
+    _op(NvlStatus, nvswitch_launch_ALI_link_training, (nvswitch_device *device, nvlink_link *link, NvBool bSync), _arch) \
     _op(NvlStatus, nvswitch_ctrl_inband_send_data, (nvswitch_device *device, NVSWITCH_INBAND_SEND_DATA_PARAMS *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_inband_read_data, (nvswitch_device *device, NVSWITCH_INBAND_READ_DATA_PARAMS *p), _arch) \
+    _op(void,      nvswitch_send_inband_nack, (nvswitch_device *device, NvU32 *msghdr, NvU32  linkId), _arch) \
+    _op(NvU32,     nvswitch_get_max_persistent_message_count, (nvswitch_device *device), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_set_mc_rid_table,  (nvswitch_device *device, NVSWITCH_SET_MC_RID_TABLE_PARAMS *p), _arch)  \
+    _op(NvlStatus, nvswitch_ctrl_get_mc_rid_table,  (nvswitch_device *device, NVSWITCH_GET_MC_RID_TABLE_PARAMS *p), _arch)  \
     _op(NvlStatus, nvswitch_ctrl_set_residency_bins, (nvswitch_device *device, NVSWITCH_SET_RESIDENCY_BINS *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_get_residency_bins, (nvswitch_device *device, NVSWITCH_GET_RESIDENCY_BINS *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_get_rb_stall_busy, (nvswitch_device *device, NVSWITCH_GET_RB_STALL_BUSY *p), _arch) \

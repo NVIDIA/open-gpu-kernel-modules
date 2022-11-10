@@ -85,6 +85,16 @@
  *
  *  veidStartOffset[OUT]
  *      - VEID start offset within GPU partition
+ *
+ *  smCount[IN/OUT]
+ *      - Number of active SMs in this partition
+ *
+ *  spanStart[IN/OUT]
+ *      - First slot in the span for an execution partition placement
+ *
+ *  computeSize[IN/OUT]
+ *      - Flag corresponding to the compute profile used 
+ *        
  */
 typedef struct NVC637_CTRL_EXEC_PARTITIONS_INFO {
     NvU32 gpcCount;
@@ -97,6 +107,9 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_INFO {
     NvU32 ofaCount;
     NvU32 sharedEngFlag;
     NvU32 veidStartOffset;
+    NvU32 smCount;
+    NvU32 spanStart;
+    NvU32 computeSize;
 } NVC637_CTRL_EXEC_PARTITIONS_INFO;
 
 #define NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG         31:0
@@ -128,6 +141,12 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_INFO {
  *      when vgpu plugin implements virtualized execution partition ID support.
  *      (bug 2938187)
  *
+ *      REQUEST_AT_SPAN
+ *      - If set, RM will try to assign execution partition resources at the specified span.
+ *      This flag currently is only useful for chips in which CTS IDs are mandatory in RM,
+ *      as it allows the requester to position compute instances without using RM best fit
+ *      allocation.
+ *
  * execPartCount[IN]
  *      - Number of execution partitions requested
  *
@@ -145,8 +164,9 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_INFO {
 #define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_WITH_PART_ID                   0:0
 #define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_WITH_PART_ID_FALSE (0x00000000)
 #define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_WITH_PART_ID_TRUE  (0x00000001)
-
-
+#define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_AT_SPAN                        1:1
+#define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_AT_SPAN_FALSE      (0x00000000)
+#define NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_AT_SPAN_TRUE       (0x00000001)
 
 #define NVC637_CTRL_CMD_EXEC_PARTITIONS_CREATE (0xc6370101) /* finn: Evaluated from "(FINN_AMPERE_SMC_PARTITION_REF_EXEC_PARTITIONS_INTERFACE_ID << 8) | NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS_MESSAGE_ID" */
 
@@ -284,11 +304,89 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_EXPORTED_INFO {
     NvU32 gpcMask;
     NvU32 veidOffset;
     NvU32 veidCount;
+    NvU32 smCount;
+    NvU32 spanStart;
+    NvU32 computeSize;
 } NVC637_CTRL_EXEC_PARTITIONS_EXPORTED_INFO;
 
 typedef struct NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS {
     NvU32 id;
     NV_DECLARE_ALIGNED(NVC637_CTRL_EXEC_PARTITIONS_EXPORTED_INFO info, 8);
 } NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS;
+
+/*
+ * NVC637_CTRL_EXEC_PARTITION_PARTITION_SPAN
+ *
+ * This struct represents the span of a compute instance, which represents the
+ * resource slots a given partition occupies (or may occupy) within a fixed range which
+ * is defined per-chip. A partition containing more resources will cover more
+ * resource slots and therefore cover a larger span.
+ *
+ *   lo
+ *      - The starting unit of this span, inclusive
+ *
+ *   hi
+ *      - The ending unit of this span, inclusive
+ *
+ */
+typedef struct NVC637_CTRL_EXEC_PARTITION_PARTITION_SPAN {
+    NV_DECLARE_ALIGNED(NvU64 lo, 8);
+    NV_DECLARE_ALIGNED(NvU64 hi, 8);
+} NVC637_CTRL_EXEC_PARTITION_PARTITION_SPAN;
+
+/*
+ * NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY
+ *
+ * This command returns the count of compute instances which can be created 
+ * of the given commpute profile size (represented by the computeSize field
+ * within a profile) which can be requested via NV2080_CTRL_CMD_GPU_GET_COMPUTE_PROFILES
+ * Note that this API does not "reserve" any partitions, and there is no
+ * guarantee that the reported count of available partitions of a given size
+ * will remain consistent following creation of partitions of different size
+ * through NV2080_CTRL_GPU_SET_PARTITIONS.
+ * Note that this API is unsupported if SMC is feature-disabled.
+ * Note that the caller of this CTRL must be subscribed to a valid GPU instance
+ *
+ *   computeSize[IN]
+ *      - Partition flag indicating size of requested profile
+ *
+ *   profileCount[OUT]
+ *      - Available number of profiles of the given size which can currently be created.
+ *
+ *   availableSpans[OUT]
+ *      - For each profile able to be created of the specified size, the span
+ *        it could occupy.
+ *
+ *   availableSpansCount[OUT]
+ *      - Number of valid entries in availableSpans.
+ *
+ *   totalProfileCount[OUT]
+ *      - Total number of profiles of the given size which can be created.
+ *
+ *   totalSpans[OUT]
+ *      - List of spans which can possibly be occupied by profiles of the
+ *        given type.
+ *
+ *   totalSpansCount[OUT]
+ *      - Number of valid entries in totalSpans.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NVC637_CTRL_CMD_EXEC_PARTITIONS_GET_PROFILE_CAPACITY (0xc63701a9U) /* finn: Evaluated from "(FINN_AMPERE_SMC_PARTITION_REF_EXEC_PARTITIONS_INTERFACE_ID << 8) | NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS_MESSAGE_ID" */
+
+#define NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS_MESSAGE_ID (0xA9U)
+
+typedef struct NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS {
+    NvU32 computeSize;
+    NvU32 profileCount;
+    NV_DECLARE_ALIGNED(NVC637_CTRL_EXEC_PARTITION_PARTITION_SPAN availableSpans[NVC637_CTRL_MAX_EXEC_PARTITIONS], 8);
+    NvU32 availableSpansCount;
+    NvU32 totalProfileCount;
+    NV_DECLARE_ALIGNED(NVC637_CTRL_EXEC_PARTITION_PARTITION_SPAN totalSpans[NVC637_CTRL_MAX_EXEC_PARTITIONS], 8);
+    NvU32 totalSpansCount;
+} NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS;
 
 //  _ctrlc637_h_

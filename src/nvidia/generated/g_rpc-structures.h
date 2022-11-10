@@ -176,6 +176,31 @@ typedef struct rpc_vgpu_pf_reg_read32_v15_00
 
 typedef rpc_vgpu_pf_reg_read32_v15_00 rpc_vgpu_pf_reg_read32_v;
 
+typedef struct rpc_ctrl_subdevice_get_p2p_caps_v21_02
+{
+    NV2080_CTRL_GET_P2P_CAPS_PARAMS_v21_02 ctrlParams;
+} rpc_ctrl_subdevice_get_p2p_caps_v21_02;
+
+typedef rpc_ctrl_subdevice_get_p2p_caps_v21_02 rpc_ctrl_subdevice_get_p2p_caps_v;
+
+typedef struct rpc_ctrl_bus_set_p2p_mapping_v21_03
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v21_03 params;
+} rpc_ctrl_bus_set_p2p_mapping_v21_03;
+
+typedef rpc_ctrl_bus_set_p2p_mapping_v21_03 rpc_ctrl_bus_set_p2p_mapping_v;
+
+typedef struct rpc_ctrl_bus_unset_p2p_mapping_v21_03
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_BUS_UNSET_P2P_MAPPING_PARAMS_v21_03 params;
+} rpc_ctrl_bus_unset_p2p_mapping_v21_03;
+
+typedef rpc_ctrl_bus_unset_p2p_mapping_v21_03 rpc_ctrl_bus_unset_p2p_mapping_v;
+
 typedef struct rpc_rmfs_init_v15_00
 {
     NvU64      statusQueuePhysAddr NV_ALIGN_BYTES(8);
@@ -221,7 +246,8 @@ typedef struct rpc_gsp_rm_control_v03_00
     NvU32      status;
     NvU32      paramsSize;
     NvBool     serialized;
-    NvU8       reserved[3];
+    NvBool     copyOutOnError;
+    NvU8       reserved[2];
     NvU8       params[];
 } rpc_gsp_rm_control_v03_00;
 
@@ -379,6 +405,18 @@ typedef struct rpc_semaphore_schedule_callback_v17_00
 
 typedef rpc_semaphore_schedule_callback_v17_00 rpc_semaphore_schedule_callback_v;
 
+typedef struct rpc_timed_semaphore_release_v01_00
+{
+    NvU64      semaphoreVA NV_ALIGN_BYTES(8);
+    NvU64      notifierVA NV_ALIGN_BYTES(8);
+    NvU32      hVASpace;
+    NvU32      releaseValue;
+    NvU32      completionStatus;
+    NvHandle   hClient;
+} rpc_timed_semaphore_release_v01_00;
+
+typedef rpc_timed_semaphore_release_v01_00 rpc_timed_semaphore_release_v;
+
 typedef struct rpc_perf_gpu_boost_sync_limits_callback_v17_00
 {
     NV2080_CTRL_INTERNAL_PERF_GPU_BOOST_SYNC_SET_LIMITS_PARAMS_v17_00 params;
@@ -393,6 +431,48 @@ typedef struct rpc_perf_bridgeless_info_update_v17_00
 
 typedef rpc_perf_bridgeless_info_update_v17_00 rpc_perf_bridgeless_info_update_v;
 
+typedef struct rpc_nvlink_inband_received_data_256_v17_00
+{
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_256_PARAMS_v17_00 params;
+} rpc_nvlink_inband_received_data_256_v17_00;
+
+typedef rpc_nvlink_inband_received_data_256_v17_00 rpc_nvlink_inband_received_data_256_v;
+
+typedef struct rpc_nvlink_inband_received_data_512_v17_00
+{
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_512_PARAMS_v17_00 params;
+} rpc_nvlink_inband_received_data_512_v17_00;
+
+typedef rpc_nvlink_inband_received_data_512_v17_00 rpc_nvlink_inband_received_data_512_v;
+
+typedef struct rpc_nvlink_inband_received_data_1024_v17_00
+{
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_1024_PARAMS_v17_00 params;
+} rpc_nvlink_inband_received_data_1024_v17_00;
+
+typedef rpc_nvlink_inband_received_data_1024_v17_00 rpc_nvlink_inband_received_data_1024_v;
+
+typedef struct rpc_nvlink_inband_received_data_2048_v17_00
+{
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_2048_PARAMS_v17_00 params;
+} rpc_nvlink_inband_received_data_2048_v17_00;
+
+typedef rpc_nvlink_inband_received_data_2048_v17_00 rpc_nvlink_inband_received_data_2048_v;
+
+typedef struct rpc_nvlink_inband_received_data_4096_v17_00
+{
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_4096_PARAMS_v17_00 params;
+} rpc_nvlink_inband_received_data_4096_v17_00;
+
+typedef rpc_nvlink_inband_received_data_4096_v17_00 rpc_nvlink_inband_received_data_4096_v;
+
+typedef struct rpc_nvlink_is_gpu_degraded_v17_00
+{
+    NV2080_CTRL_NVLINK_IS_GPU_DEGRADED_PARAMS_v17_00 params;
+} rpc_nvlink_is_gpu_degraded_v17_00;
+
+typedef rpc_nvlink_is_gpu_degraded_v17_00 rpc_nvlink_is_gpu_degraded_v;
+
 typedef struct rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 {
     NvU32      sysmemPfnBitmapRing;
@@ -401,6 +481,23 @@ typedef struct rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 } rpc_set_sysmem_dirty_page_tracking_buffer_v20_00;
 
 typedef rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 rpc_set_sysmem_dirty_page_tracking_buffer_v;
+
+typedef struct rpc_extdev_intr_service_v17_00
+{
+    NvU8       lossRegStatus;
+    NvU8       gainRegStatus;
+    NvU8       miscRegStatus;
+    NvBool     rmStatus;
+} rpc_extdev_intr_service_v17_00;
+
+typedef rpc_extdev_intr_service_v17_00 rpc_extdev_intr_service_v;
+
+typedef struct rpc_pfm_req_hndlr_state_sync_callback_v21_04
+{
+    NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_PARAMS_v21_04 params;
+} rpc_pfm_req_hndlr_state_sync_callback_v21_04;
+
+typedef rpc_pfm_req_hndlr_state_sync_callback_v21_04 rpc_pfm_req_hndlr_state_sync_callback_v;
 
 
 #endif
@@ -921,6 +1018,83 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_pf_reg_read32_v15_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_subdevice_get_p2p_caps_v21_02
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_GET_P2P_CAPS_PARAMS_v21_02,
+        .offset               = NV_OFFSETOF(rpc_ctrl_subdevice_get_p2p_caps_v21_02, ctrlParams),
+        .name                 = "ctrlParams"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02 = {
+    .name = "rpc_ctrl_subdevice_get_p2p_caps",
+    .header_length = NV_SIZEOF32(rpc_ctrl_subdevice_get_p2p_caps_v21_02),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_bus_set_p2p_mapping_v21_03
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_bus_set_p2p_mapping_v21_03, hClient),
+        .name                 = "hClient"
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_bus_set_p2p_mapping_v21_03, hObject),
+        .name                 = "hObject"
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v21_03,
+        .offset               = NV_OFFSETOF(rpc_ctrl_bus_set_p2p_mapping_v21_03, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03 = {
+    .name = "rpc_ctrl_bus_set_p2p_mapping",
+    .header_length = NV_SIZEOF32(rpc_ctrl_bus_set_p2p_mapping_v21_03),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_bus_unset_p2p_mapping_v21_03
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_bus_unset_p2p_mapping_v21_03, hClient),
+        .name                 = "hClient"
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_bus_unset_p2p_mapping_v21_03, hObject),
+        .name                 = "hObject"
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_BUS_UNSET_P2P_MAPPING_PARAMS_v21_03,
+        .offset               = NV_OFFSETOF(rpc_ctrl_bus_unset_p2p_mapping_v21_03, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03 = {
+    .name = "rpc_ctrl_bus_unset_p2p_mapping",
+    .header_length = NV_SIZEOF32(rpc_ctrl_bus_unset_p2p_mapping_v21_03),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_rmfs_init_v15_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_init_v15_00[] = {
     {
@@ -1115,9 +1289,14 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_control_v03_00[] = {
         .name                 = "serialized"
     },
     {
+        .vtype                = vtype_NvBool,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, copyOutOnError),
+        .name                 = "copyOutOnError"
+    },
+    {
         .vtype                = vtype_NvU8_array,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, reserved),
-        .array_length         = 3,
+        .array_length         = 2,
         .name                 = "reserved"
     },
     {
@@ -1650,6 +1829,50 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_semaphore_schedule_callback_v17_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_timed_semaphore_release_v01_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_timed_semaphore_release_v01_00[] = {
+    {
+        .vtype                = vtype_NvU64,
+        .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, semaphoreVA),
+        .name                 = "semaphoreVA"
+    },
+    {
+        .vtype                = vtype_NvU64,
+        .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, notifierVA),
+        .name                 = "notifierVA"
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, hVASpace),
+        .name                 = "hVASpace"
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, releaseValue),
+        .name                 = "releaseValue"
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, completionStatus),
+        .name                 = "completionStatus"
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, hClient),
+        .name                 = "hClient"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_timed_semaphore_release_v01_00 = {
+    .name = "rpc_timed_semaphore_release",
+    .header_length = NV_SIZEOF32(rpc_timed_semaphore_release_v01_00),
+    .fdesc = vmiopd_fdesc_t_rpc_timed_semaphore_release_v01_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_perf_gpu_boost_sync_limits_callback_v17_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_perf_gpu_boost_sync_limits_callback_v17_00[] = {
     {
@@ -1688,6 +1911,120 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_perf_bridgeless_info_update_v17_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_256_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_256_v17_00[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_256_PARAMS_v17_00,
+        .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_256_v17_00, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_256_v17_00 = {
+    .name = "rpc_nvlink_inband_received_data_256",
+    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_256_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_256_v17_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_512_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_512_v17_00[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_512_PARAMS_v17_00,
+        .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_512_v17_00, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_512_v17_00 = {
+    .name = "rpc_nvlink_inband_received_data_512",
+    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_512_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_512_v17_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_1024_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_1024_v17_00[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_1024_PARAMS_v17_00,
+        .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_1024_v17_00, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_1024_v17_00 = {
+    .name = "rpc_nvlink_inband_received_data_1024",
+    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_1024_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_1024_v17_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_2048_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_2048_v17_00[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_2048_PARAMS_v17_00,
+        .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_2048_v17_00, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_2048_v17_00 = {
+    .name = "rpc_nvlink_inband_received_data_2048",
+    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_2048_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_2048_v17_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_4096_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_4096_v17_00[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_4096_PARAMS_v17_00,
+        .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_4096_v17_00, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_4096_v17_00 = {
+    .name = "rpc_nvlink_inband_received_data_4096",
+    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_4096_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_4096_v17_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_is_gpu_degraded_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_is_gpu_degraded_v17_00[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_NVLINK_IS_GPU_DEGRADED_PARAMS_v17_00,
+        .offset               = NV_OFFSETOF(rpc_nvlink_is_gpu_degraded_v17_00, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_is_gpu_degraded_v17_00 = {
+    .name = "rpc_nvlink_is_gpu_degraded",
+    .header_length = NV_SIZEOF32(rpc_nvlink_is_gpu_degraded_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_nvlink_is_gpu_degraded_v17_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00[] = {
     {
@@ -1714,6 +2051,59 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v
     .name = "rpc_set_sysmem_dirty_page_tracking_buffer",
     .header_length = NV_SIZEOF32(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00),
     .fdesc = vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_extdev_intr_service_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_extdev_intr_service_v17_00[] = {
+    {
+        .vtype                = vtype_NvU8,
+        .offset               = NV_OFFSETOF(rpc_extdev_intr_service_v17_00, lossRegStatus),
+        .name                 = "lossRegStatus"
+    },
+    {
+        .vtype                = vtype_NvU8,
+        .offset               = NV_OFFSETOF(rpc_extdev_intr_service_v17_00, gainRegStatus),
+        .name                 = "gainRegStatus"
+    },
+    {
+        .vtype                = vtype_NvU8,
+        .offset               = NV_OFFSETOF(rpc_extdev_intr_service_v17_00, miscRegStatus),
+        .name                 = "miscRegStatus"
+    },
+    {
+        .vtype                = vtype_NvBool,
+        .offset               = NV_OFFSETOF(rpc_extdev_intr_service_v17_00, rmStatus),
+        .name                 = "rmStatus"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_extdev_intr_service_v17_00 = {
+    .name = "rpc_extdev_intr_service",
+    .header_length = NV_SIZEOF32(rpc_extdev_intr_service_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_extdev_intr_service_v17_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_pfm_req_hndlr_state_sync_callback_v21_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_04[] = {
+    {
+        .vtype                = vtype_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_PARAMS_v21_04,
+        .offset               = NV_OFFSETOF(rpc_pfm_req_hndlr_state_sync_callback_v21_04, params),
+        .name                 = "params"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_04 = {
+    .name = "rpc_pfm_req_hndlr_state_sync_callback",
+    .header_length = NV_SIZEOF32(rpc_pfm_req_hndlr_state_sync_callback_v21_04),
+    .fdesc = vmiopd_fdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_04
 };
 #endif
 
@@ -1847,6 +2237,27 @@ vmiopd_mdesc_t *rpcdebugUpdateBarPde_v15_00(void)
 vmiopd_mdesc_t *rpcdebugVgpuPfRegRead32_v15_00(void)
 {
     return &vmiopd_mdesc_t_rpc_vgpu_pf_reg_read32_v15_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_subdevice_get_p2p_caps_v21_02
+vmiopd_mdesc_t *rpcdebugCtrlSubdeviceGetP2pCaps_v21_02(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_bus_set_p2p_mapping_v21_03
+vmiopd_mdesc_t *rpcdebugCtrlBusSetP2pMapping_v21_03(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_bus_unset_p2p_mapping_v21_03
+vmiopd_mdesc_t *rpcdebugCtrlBusUnsetP2pMapping_v21_03(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03;
 }
 #endif
 
@@ -2018,6 +2429,13 @@ vmiopd_mdesc_t *rpcdebugSemaphoreScheduleCallback_v17_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_timed_semaphore_release_v01_00
+vmiopd_mdesc_t *rpcdebugTimedSemaphoreRelease_v01_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_timed_semaphore_release_v01_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_perf_gpu_boost_sync_limits_callback_v17_00
 vmiopd_mdesc_t *rpcdebugPerfGpuBoostSyncLimitsCallback_v17_00(void)
 {
@@ -2032,10 +2450,66 @@ vmiopd_mdesc_t *rpcdebugPerfBridgelessInfoUpdate_v17_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_256_v17_00
+vmiopd_mdesc_t *rpcdebugNvlinkInbandReceivedData256_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_nvlink_inband_received_data_256_v17_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_512_v17_00
+vmiopd_mdesc_t *rpcdebugNvlinkInbandReceivedData512_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_nvlink_inband_received_data_512_v17_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_1024_v17_00
+vmiopd_mdesc_t *rpcdebugNvlinkInbandReceivedData1024_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_nvlink_inband_received_data_1024_v17_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_2048_v17_00
+vmiopd_mdesc_t *rpcdebugNvlinkInbandReceivedData2048_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_nvlink_inband_received_data_2048_v17_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_4096_v17_00
+vmiopd_mdesc_t *rpcdebugNvlinkInbandReceivedData4096_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_nvlink_inband_received_data_4096_v17_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_nvlink_is_gpu_degraded_v17_00
+vmiopd_mdesc_t *rpcdebugNvlinkIsGpuDegraded_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_nvlink_is_gpu_degraded_v17_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 vmiopd_mdesc_t *rpcdebugSetSysmemDirtyPageTrackingBuffer_v20_00(void)
 {
     return &vmiopd_mdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_extdev_intr_service_v17_00
+vmiopd_mdesc_t *rpcdebugExtdevIntrService_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_extdev_intr_service_v17_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_pfm_req_hndlr_state_sync_callback_v21_04
+vmiopd_mdesc_t *rpcdebugPfmReqHndlrStateSyncCallback_v21_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_04;
 }
 #endif
 
@@ -2075,6 +2549,12 @@ typedef union rpc_generic_union {
     rpc_update_bar_pde_v update_bar_pde_v;
     rpc_vgpu_pf_reg_read32_v15_00 vgpu_pf_reg_read32_v15_00;
     rpc_vgpu_pf_reg_read32_v vgpu_pf_reg_read32_v;
+    rpc_ctrl_subdevice_get_p2p_caps_v21_02 ctrl_subdevice_get_p2p_caps_v21_02;
+    rpc_ctrl_subdevice_get_p2p_caps_v ctrl_subdevice_get_p2p_caps_v;
+    rpc_ctrl_bus_set_p2p_mapping_v21_03 ctrl_bus_set_p2p_mapping_v21_03;
+    rpc_ctrl_bus_set_p2p_mapping_v ctrl_bus_set_p2p_mapping_v;
+    rpc_ctrl_bus_unset_p2p_mapping_v21_03 ctrl_bus_unset_p2p_mapping_v21_03;
+    rpc_ctrl_bus_unset_p2p_mapping_v ctrl_bus_unset_p2p_mapping_v;
     rpc_rmfs_init_v15_00 rmfs_init_v15_00;
     rpc_rmfs_init_v rmfs_init_v;
     rpc_rmfs_test_v15_00 rmfs_test_v15_00;
@@ -2117,12 +2597,30 @@ typedef union rpc_generic_union {
     rpc_init_done_v init_done_v;
     rpc_semaphore_schedule_callback_v17_00 semaphore_schedule_callback_v17_00;
     rpc_semaphore_schedule_callback_v semaphore_schedule_callback_v;
+    rpc_timed_semaphore_release_v01_00 timed_semaphore_release_v01_00;
+    rpc_timed_semaphore_release_v timed_semaphore_release_v;
     rpc_perf_gpu_boost_sync_limits_callback_v17_00 perf_gpu_boost_sync_limits_callback_v17_00;
     rpc_perf_gpu_boost_sync_limits_callback_v perf_gpu_boost_sync_limits_callback_v;
     rpc_perf_bridgeless_info_update_v17_00 perf_bridgeless_info_update_v17_00;
     rpc_perf_bridgeless_info_update_v perf_bridgeless_info_update_v;
+    rpc_nvlink_inband_received_data_256_v17_00 nvlink_inband_received_data_256_v17_00;
+    rpc_nvlink_inband_received_data_256_v nvlink_inband_received_data_256_v;
+    rpc_nvlink_inband_received_data_512_v17_00 nvlink_inband_received_data_512_v17_00;
+    rpc_nvlink_inband_received_data_512_v nvlink_inband_received_data_512_v;
+    rpc_nvlink_inband_received_data_1024_v17_00 nvlink_inband_received_data_1024_v17_00;
+    rpc_nvlink_inband_received_data_1024_v nvlink_inband_received_data_1024_v;
+    rpc_nvlink_inband_received_data_2048_v17_00 nvlink_inband_received_data_2048_v17_00;
+    rpc_nvlink_inband_received_data_2048_v nvlink_inband_received_data_2048_v;
+    rpc_nvlink_inband_received_data_4096_v17_00 nvlink_inband_received_data_4096_v17_00;
+    rpc_nvlink_inband_received_data_4096_v nvlink_inband_received_data_4096_v;
+    rpc_nvlink_is_gpu_degraded_v17_00 nvlink_is_gpu_degraded_v17_00;
+    rpc_nvlink_is_gpu_degraded_v nvlink_is_gpu_degraded_v;
     rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 set_sysmem_dirty_page_tracking_buffer_v20_00;
     rpc_set_sysmem_dirty_page_tracking_buffer_v set_sysmem_dirty_page_tracking_buffer_v;
+    rpc_extdev_intr_service_v17_00 extdev_intr_service_v17_00;
+    rpc_extdev_intr_service_v extdev_intr_service_v;
+    rpc_pfm_req_hndlr_state_sync_callback_v21_04 pfm_req_hndlr_state_sync_callback_v21_04;
+    rpc_pfm_req_hndlr_state_sync_callback_v pfm_req_hndlr_state_sync_callback_v;
 } rpc_generic_union;
 
 #endif

@@ -747,14 +747,14 @@ static NvU32 get_available_gpfifo_entries(uvm_channel_t *channel)
 {
     NvU32 pending_entries;
 
-    uvm_spin_lock(&channel->pool->lock);
+    uvm_channel_pool_lock(channel->pool);
 
     if (channel->cpu_put >= channel->gpu_get)
         pending_entries = channel->cpu_put - channel->gpu_get;
     else
         pending_entries = channel->cpu_put + channel->num_gpfifo_entries - channel->gpu_get;
 
-    uvm_spin_unlock(&channel->pool->lock);
+    uvm_channel_pool_unlock(channel->pool);
 
     return channel->num_gpfifo_entries - pending_entries - 1;
 }

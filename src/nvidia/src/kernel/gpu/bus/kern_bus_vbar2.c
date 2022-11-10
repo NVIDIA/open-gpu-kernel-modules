@@ -338,7 +338,10 @@ kbusFlushVirtualBar2_VBAR2(OBJGPU *pGpu, KernelBus *pKernelBus, NvBool shutdown,
         return;
     }
 
-    // Enforce RM unmapping up all BAR2 mappings
+    //
+    // There should be no there are no active BAR2 mappings on shutdown. Failure indicates
+    // there is a missing unmap BAR2 call somewhere in RM.
+    //
     NV_ASSERT(listCount(&pKernelBus->virtualBar2[gfid].usedMapList) == 0);
 
     // There should be no unreleased mappings at shutdown
@@ -688,7 +691,7 @@ kbusMapBar2ApertureCached_VBAR2
     if (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping == NULL ||
         (!KBUS_BAR2_TUNNELLED(pKernelBus) &&
          NV_OK != kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, vAddr,
-            pMemDesc->PageCount * RM_PAGE_SIZE,
+            pMemDesc->PageCount * pMemDesc->pageArrayGranularity,
             UPDATE_RM_APERTURE_FLAGS_INVALIDATE)))
     {
         pVASpaceHeap->eheapFree(pVASpaceHeap, vAddr);
@@ -862,6 +865,7 @@ kbusMapBar2Aperture_SCRATCH
     NvU32              flags
 )
 {
+
     return portMemAllocNonPaged((NvU32)pMemDesc->Size);
 }
 
@@ -998,22 +1002,17 @@ kbusUnmapBar2ApertureWithFlags_VBAR2
     NvU32              flags
 )
 {
-    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+    //
+    // Free the dummy data we allocated for handling a reset GPU.
+    // Let a map created before the reset go through the normal path
+    // to clear out the memory.
+    //
+    if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET))
     {
-        // Free the dummy data we allocated earlier.
-        if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET))
-        {
-            kbusUnmapBar2ApertureWithFlags_SCRATCH(pGpu, pKernelBus, pMemDesc, pCpuPtr, flags);
-            memdescSetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET, NV_FALSE);
-            return;
-        }
-        //
-        // Let a map created before the reset go through the normal path
-        // to clear out the memory.
-        //
+        kbusUnmapBar2ApertureWithFlags_SCRATCH(pGpu, pKernelBus, pMemDesc, pCpuPtr, flags);
+        memdescSetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET, NV_FALSE);
+        return;
     }
-
-    NV_ASSERT(!memdescGetFlag(pMemDesc, MEMDESC_FLAGS_GPU_IN_RESET));
 
     // Call the lower-level routine
     kbusUnmapBar2ApertureCached_VBAR2(pGpu, pKernelBus, pMemDesc, flags);
@@ -1141,7 +1140,7 @@ NV_STATUS kbusMapCpuInvisibleBar2Aperture_VBAR2
     }
 
     status = kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, *pVaddr,
-                pMemDesc->PageCount * RM_PAGE_SIZE, UPDATE_RM_APERTURE_FLAGS_INVALIDATE |
+                pMemDesc->PageCount * pMemDesc->pageArrayGranularity, UPDATE_RM_APERTURE_FLAGS_INVALIDATE |
                                            UPDATE_RM_APERTURE_FLAGS_CPU_INVISIBLE_RANGE);
 
     if (IS_GFID_VF(gfid) && (pKernelBus->virtualBar2[gfid].pPageLevels != NULL))

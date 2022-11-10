@@ -141,12 +141,16 @@ static NV_STATUS __nvoc_thunk_RmResource_nodevicememControl_Prologue(struct NoDe
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RmResource.offset), pCallContext, pParams);
 }
 
+static NvBool __nvoc_thunk_Memory_nodevicememIsGpuMapAllowed(struct NoDeviceMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_NoDeviceMemory_Memory.offset), pGpu);
+}
+
 static NvBool __nvoc_thunk_RsResource_nodevicememCanCopy(struct NoDeviceMemory *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_nodevicememIsReady(struct NoDeviceMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_NoDeviceMemory_Memory.offset));
+static NV_STATUS __nvoc_thunk_Memory_nodevicememIsReady(struct NoDeviceMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_NoDeviceMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_nodevicememCheckCopyPermissions(struct NoDeviceMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -155,6 +159,10 @@ static NV_STATUS __nvoc_thunk_Memory_nodevicememCheckCopyPermissions(struct NoDe
 
 static void __nvoc_thunk_RsResource_nodevicememPreDestruct(struct NoDeviceMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_nodevicememIsDuplicate(struct NoDeviceMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_NoDeviceMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_nodevicememUnmapFrom(struct NoDeviceMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -242,6 +250,8 @@ static void __nvoc_init_funcTable_NoDeviceMemory_1(NoDeviceMemory *pThis) {
 
     pThis->__nodevicememControl_Prologue__ = &__nvoc_thunk_RmResource_nodevicememControl_Prologue;
 
+    pThis->__nodevicememIsGpuMapAllowed__ = &__nvoc_thunk_Memory_nodevicememIsGpuMapAllowed;
+
     pThis->__nodevicememCanCopy__ = &__nvoc_thunk_RsResource_nodevicememCanCopy;
 
     pThis->__nodevicememIsReady__ = &__nvoc_thunk_Memory_nodevicememIsReady;
@@ -249,6 +259,8 @@ static void __nvoc_init_funcTable_NoDeviceMemory_1(NoDeviceMemory *pThis) {
     pThis->__nodevicememCheckCopyPermissions__ = &__nvoc_thunk_Memory_nodevicememCheckCopyPermissions;
 
     pThis->__nodevicememPreDestruct__ = &__nvoc_thunk_RsResource_nodevicememPreDestruct;
+
+    pThis->__nodevicememIsDuplicate__ = &__nvoc_thunk_Memory_nodevicememIsDuplicate;
 
     pThis->__nodevicememUnmapFrom__ = &__nvoc_thunk_RsResource_nodevicememUnmapFrom;
 

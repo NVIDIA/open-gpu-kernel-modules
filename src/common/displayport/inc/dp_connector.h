@@ -262,6 +262,7 @@ namespace DisplayPort
 
         virtual bool setPanelReplayConfig(panelReplayConfig prcfg) = 0;
         virtual bool isPanelReplaySupported() = 0;
+        virtual bool getPanelReplayStatus(PanelReplayStatus *pPrStatus) = 0;
 
     protected:
             virtual ~Device() {}

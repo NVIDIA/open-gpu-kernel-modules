@@ -523,7 +523,7 @@ static NV_STATUS mem_alloc_sysmem_chunks(uvm_mem_t *mem, struct mm_struct *mm, g
 
 // In case of failure, the caller is required to handle cleanup by calling
 // uvm_mem_free
-static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero)
+static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero, bool is_protected)
 {
     NV_STATUS status;
 
@@ -559,7 +559,7 @@ static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero)
     return NV_OK;
 }
 
-static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zero)
+static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zero, bool is_protected)
 {
     if (uvm_mem_is_sysmem(mem)) {
         gfp_t gfp_flags;
@@ -581,7 +581,7 @@ static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zer
         return status;
     }
 
-    return mem_alloc_vidmem_chunks(mem, zero);
+    return mem_alloc_vidmem_chunks(mem, zero, is_protected);
 }
 
 static const char *mem_physical_source(uvm_mem_t *mem)
@@ -618,6 +618,7 @@ NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_ou
 {
     NV_STATUS status;
     uvm_mem_t *mem = NULL;
+    bool is_protected = false;
 
     UVM_ASSERT(params->size > 0);
 
@@ -639,7 +640,7 @@ NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_ou
     mem->physical_allocation_size = UVM_ALIGN_UP(mem->size, mem->chunk_size);
     mem->chunks_count = mem->physical_allocation_size / mem->chunk_size;
 
-    status = mem_alloc_chunks(mem, params->mm, params->zero);
+    status = mem_alloc_chunks(mem, params->mm, params->zero, is_protected);
     if (status != NV_OK)
         goto error;
 
@@ -893,7 +894,7 @@ static void sysmem_unmap_gpu_phys(uvm_mem_t *mem, uvm_gpu_t *gpu)
             // partial map_gpu_sysmem_iommu() operation.
             break;
         }
-        uvm_gpu_unmap_cpu_pages(gpu, dma_addrs[i], mem->chunk_size);
+        uvm_gpu_unmap_cpu_pages(gpu->parent, dma_addrs[i], mem->chunk_size);
         dma_addrs[i] = 0;
     }
 
@@ -914,7 +915,7 @@ static NV_STATUS sysmem_map_gpu_phys(uvm_mem_t *mem, uvm_gpu_t *gpu)
         return status;
 
     for (i = 0; i < mem->chunks_count; ++i) {
-        status = uvm_gpu_map_cpu_pages(gpu,
+        status = uvm_gpu_map_cpu_pages(gpu->parent,
                                        mem->sysmem.pages[i],
                                        mem->chunk_size,
                                        &mem->sysmem.dma_addrs[uvm_global_id_gpu_index(gpu->global_id)][i]);

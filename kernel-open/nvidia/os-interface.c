@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -231,6 +231,90 @@ NV_STATUS NV_API_CALL os_release_semaphore
     os_semaphore_t *os_sema = (os_semaphore_t *)pSema;
     up(os_sema);
     return NV_OK;
+}
+
+typedef struct rw_semaphore os_rwlock_t;
+
+void* NV_API_CALL os_alloc_rwlock(void)
+{
+    os_rwlock_t *os_rwlock = NULL;
+
+    NV_STATUS rmStatus = os_alloc_mem((void *)&os_rwlock, sizeof(os_rwlock_t));
+    if (rmStatus != NV_OK)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate rw_semaphore!\n");
+        return NULL;
+    }
+
+    init_rwsem(os_rwlock);
+
+    return os_rwlock;
+}
+
+void NV_API_CALL os_free_rwlock(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+    os_free_mem(os_rwlock);
+}
+
+NV_STATUS NV_API_CALL os_acquire_rwlock_read(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+
+    if (!NV_MAY_SLEEP())
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+    down_read(os_rwlock);
+    return NV_OK;
+}
+
+NV_STATUS NV_API_CALL os_acquire_rwlock_write(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+
+    if (!NV_MAY_SLEEP())
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+    down_write(os_rwlock);
+    return NV_OK;
+}
+
+NV_STATUS NV_API_CALL os_cond_acquire_rwlock_read(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+
+    if (down_read_trylock(os_rwlock))
+    {
+        return NV_ERR_TIMEOUT_RETRY;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS NV_API_CALL os_cond_acquire_rwlock_write(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+
+    if (down_write_trylock(os_rwlock))
+    {
+        return NV_ERR_TIMEOUT_RETRY;
+    }
+
+    return NV_OK;
+}
+
+void NV_API_CALL os_release_rwlock_read(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+    up_read(os_rwlock);
+}
+
+void NV_API_CALL os_release_rwlock_write(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+    up_write(os_rwlock);
 }
 
 NvBool NV_API_CALL os_semaphore_may_sleep(void)
@@ -473,6 +557,7 @@ NV_STATUS NV_API_CALL os_alloc_mem(
     NvU64 size
 )
 {
+    NvU64 original_size = size;
     unsigned long alloc_size;
 
     if (address == NULL)
@@ -480,6 +565,10 @@ NV_STATUS NV_API_CALL os_alloc_mem(
 
     *address = NULL;
     NV_MEM_TRACKING_PAD_SIZE(size);
+
+    // check for integer overflow on size
+    if (size < original_size)
+        return NV_ERR_INVALID_ARGUMENT;
 
     //
     // NV_KMALLOC, nv_vmalloc take an input of 4 bytes in x86. To avoid
@@ -515,7 +604,7 @@ NV_STATUS NV_API_CALL os_alloc_mem(
 
 void NV_API_CALL os_free_mem(void *address)
 {
-    NvU32 size;
+    NvU64 size;
 
     NV_MEM_TRACKING_RETRIEVE_SIZE(address, size);
 
@@ -1100,7 +1189,7 @@ NvBool NV_API_CALL os_pat_supported(void)
 
 NvBool NV_API_CALL os_is_efi_enabled(void)
 {
-    return NV_EFI_ENABLED();
+    return efi_enabled(EFI_BOOT);
 }
 
 void NV_API_CALL os_get_screen_info(
@@ -1760,7 +1849,6 @@ NV_STATUS NV_API_CALL os_write_file
     NvU64 offset
 )
 {
-#if defined(NV_KERNEL_WRITE_PRESENT)
     loff_t f_pos = offset;
     ssize_t num_written;
     int num_retries = NV_MAX_NUM_FILE_IO_RETRIES;
@@ -1791,9 +1879,6 @@ retry:
     }
 
     return NV_OK;
-#else
-    return NV_ERR_NOT_SUPPORTED;
-#endif
 }
 
 NV_STATUS NV_API_CALL os_read_file

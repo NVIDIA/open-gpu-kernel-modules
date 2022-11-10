@@ -50,7 +50,7 @@ typedef enum
 //
 // A policy covers one or more contiguous Linux VMAs or portion of a VMA and
 // does not cover non-existant VMAs.
-// The VA range is determined from either the uvm_va_range_t for UVM managed
+// The VA range is determined from either the uvm_va_range_t for managed
 // allocations or the uvm_va_policy_node_t for HMM allocations.
 //
 typedef struct uvm_va_policy_struct
@@ -93,6 +93,12 @@ bool uvm_va_policy_is_read_duplicate(uvm_va_policy_t *policy, uvm_va_space_t *va
 // The va_block can be either a UVM or HMM va_block.
 // Locking: The va_block lock must be held.
 uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr);
+
+// Return a uvm_va_policy_node_t given a uvm_va_policy_t pointer.
+static uvm_va_policy_node_t *uvm_va_policy_node_from_policy(uvm_va_policy_t *policy)
+{
+    return container_of(policy, uvm_va_policy_node_t, policy);
+}
 
 #if UVM_IS_CONFIG_HMM()
 
@@ -237,6 +243,11 @@ static NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
                                          uvm_read_duplication_policy_t new_policy)
 {
     return NV_OK;
+}
+
+static uvm_va_policy_node_t *uvm_va_policy_node_iter_first(uvm_va_block_t *va_block, NvU64 start, NvU64 end)
+{
+    return NULL;
 }
 
 #endif // UVM_IS_CONFIG_HMM()

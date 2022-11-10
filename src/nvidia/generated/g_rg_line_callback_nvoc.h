@@ -85,6 +85,7 @@ struct RgLineCallback {
     NV_STATUS (*__rglcbInternalControlForward__)(struct RgLineCallback *, NvU32, void *, NvU32);
     void (*__rglcbPreDestruct__)(struct RgLineCallback *);
     NV_STATUS (*__rglcbUnmapFrom__)(struct RgLineCallback *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__rglcbIsDuplicate__)(struct RgLineCallback *, NvHandle, NvBool *);
     void (*__rglcbControl_Epilogue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__rglcbControlLookup__)(struct RgLineCallback *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__rglcbMap__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -93,7 +94,7 @@ struct RgLineCallback {
     NvU32 head;
     NvU32 rgLineNum;
     NV0092_REGISTER_RG_LINE_CALLBACK_FN pCallbkFn;
-    void *pCallbkParams;
+    NvP64 pCallbkParams;
     NvU32 rgIntrLine;
     struct DispCommon *pDispCommon;
 };
@@ -144,6 +145,7 @@ NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback**, Dynamic*, NvU32, str
 #define rglcbInternalControlForward(pGpuResource, command, pParams, size) rglcbInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define rglcbPreDestruct(pResource) rglcbPreDestruct_DISPATCH(pResource)
 #define rglcbUnmapFrom(pResource, pParams) rglcbUnmapFrom_DISPATCH(pResource, pParams)
+#define rglcbIsDuplicate(pResource, hMemory, pDuplicate) rglcbIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define rglcbControl_Epilogue(pResource, pCallContext, pParams) rglcbControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define rglcbControlLookup(pResource, pParams, ppEntry) rglcbControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define rglcbMap(pGpuResource, pCallContext, pParams, pCpuMapping) rglcbMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -220,6 +222,10 @@ static inline NV_STATUS rglcbUnmapFrom_DISPATCH(struct RgLineCallback *pResource
     return pResource->__rglcbUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS rglcbIsDuplicate_DISPATCH(struct RgLineCallback *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__rglcbIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void rglcbControl_Epilogue_DISPATCH(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__rglcbControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -237,10 +243,13 @@ static inline NvBool rglcbAccessCallback_DISPATCH(struct RgLineCallback *pResour
 }
 
 NV_STATUS rglcbConstruct_IMPL(struct RgLineCallback *arg_pRgLineCallback, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_rglcbConstruct(arg_pRgLineCallback, arg_pCallContext, arg_pParams) rglcbConstruct_IMPL(arg_pRgLineCallback, arg_pCallContext, arg_pParams)
 void rglcbDestruct_IMPL(struct RgLineCallback *pRgLineCallback);
+
 #define __nvoc_rglcbDestruct(pRgLineCallback) rglcbDestruct_IMPL(pRgLineCallback)
 void rglcbInvoke_IMPL(struct RgLineCallback *pRgLineCallback, NvBool bIsIrqlIsr);
+
 #ifdef __nvoc_rg_line_callback_h_disabled
 static inline void rglcbInvoke(struct RgLineCallback *pRgLineCallback, NvBool bIsIrqlIsr) {
     NV_ASSERT_FAILED_PRECOMP("RgLineCallback was disabled!");

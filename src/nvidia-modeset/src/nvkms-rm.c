@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,9 +40,13 @@
 #include "nvkms-surface.h"
 #include "nvkms-vrr.h"
 
+#include "nvkms-push.h"
+#include "nvkms-difr.h"
+
 #include "class/cl0002.h" /* NV01_CONTEXT_DMA */
 #include "class/cl0005.h" /* NV01_EVENT */
 
+#include <class/cl0070.h> // NV01_MEMORY_VIRTUAL
 #include <class/cl0073.h> /* NV04_DISPLAY_COMMON */
 #include <class/cl003e.h> /* NV01_MEMORY_SYSTEM */
 #include <class/cl0076.h> /* NV01_MEMORY_FRAMEBUFFER_CONSOLE */
@@ -64,7 +68,6 @@
 #include "class/cl917e.h" /* NV917E_OVERLAY_CHANNEL_DMA */
 
 #include <ctrl/ctrl0000/ctrl0000gpu.h> /* NV0000_CTRL_GPU_* */
-#include <ctrl/ctrl0000/ctrl0000system.h> /* NV0073_CTRL_SYSTEM_GET_VRR_CONFIG */
 #include <ctrl/ctrl0002.h> /* NV0002_CTRL_CMD_BIND_CONTEXTDMA */
 #include <ctrl/ctrl0073/ctrl0073dfp.h> /* NV0073_CTRL_CMD_DFP_GET_INFO */
 #include <ctrl/ctrl0073/ctrl0073dp.h> /* NV0073_CTRL_CMD_DP_TOPOLOGY_ALLOCATE_DISPLAYID */
@@ -76,7 +79,6 @@
 #include <ctrl/ctrl2080/ctrl2080bios.h> /* NV2080_CTRL_CMD_BIOS_GET_NBSI */
 #include <ctrl/ctrl2080/ctrl2080bus.h> /* NV2080_CTRL_CMD_BUS_GET_INFO */
 #include <ctrl/ctrl2080/ctrl2080event.h> /* NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION */
-#include <ctrl/ctrl2080/ctrl2080gpu.h> /* NV2080_CTRL_CMD_GPU_GET_SW_FEATURES */
 #include <ctrl/ctrl2080/ctrl2080tmr.h> /* NV2080_CTRL_CMD_TIMER_GET_TIME */
 #include <ctrl/ctrl2080/ctrl2080unix.h> /* NV2080_CTRL_CMD_OS_UNIX_GC6_BLOCKER_REFCNT */
 #include <ctrl/ctrl5070/ctrl5070chnc.h> /* NV5070_CTRL_CMD_SET_RMFREE_FLAGS */
@@ -90,6 +92,35 @@ static NvU32 GetLegacyConnectorType(NVDispEvoPtr pDispEvo, NVDpyId dpyId);
 
 static void RmFreeEvoChannel(NVDevEvoPtr pDevEvo, NVEvoChannelPtr pChannel);
 
+static NvBool EngineListCheckOneSubdevice(const NVEvoSubDeviceRec *pSubDevice,
+                                          NvU32 engineType)
+{
+    const NvU32 *engines = pSubDevice->supportedEngines;
+    int i;
+
+    for (i = 0; i < pSubDevice->numEngines; i++) {
+        if (engines[i] == engineType) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+static NvBool EngineListCheck(const NVDevEvoRec *pDevEvo, NvU32 engineType)
+{
+    int sd;
+
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+        if (!EngineListCheckOneSubdevice(pDevEvo->pSubDevices[sd],
+                                         engineType)) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
 static NvBool QueryGpuCapabilities(NVDevEvoPtr pDevEvo)
 {
     NvBool ctxDmaCoherentAllowedDev = FALSE;
@@ -100,9 +131,24 @@ static NvBool QueryGpuCapabilities(NVDevEvoPtr pDevEvo)
 
     pDevEvo->isHeadSurfaceSupported = FALSE;
 
-    pDevEvo->validResamplingMethodMask =
-        NVBIT(NVKMS_RESAMPLING_METHOD_BILINEAR) |
-        NVBIT(NVKMS_RESAMPLING_METHOD_NEAREST);
+    if (EngineListCheck(pDevEvo, NV2080_ENGINE_TYPE_GRAPHICS)) {
+        NV0080_CTRL_GR_GET_CAPS_V2_PARAMS grCaps = { 0 };
+
+        ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                             pDevEvo->deviceHandle,
+                             NV0080_CTRL_CMD_GR_GET_CAPS_V2,
+                             &grCaps,
+                             sizeof(grCaps));
+
+        if (ret != NVOS_STATUS_SUCCESS) {
+            return FALSE;
+        }
+
+        /* Assume headSurface is supported if there is a graphics engine
+         * and headSurface support is included in the NVKMS build.
+         */
+        pDevEvo->isHeadSurfaceSupported = NVKMS_INCLUDE_HEADSURFACE;
+    }
 
     /* ctxDma{,Non}CoherentAllowed */
 
@@ -237,7 +283,10 @@ static void FreeDisplay(NVDispEvoPtr pDispEvo)
     }
 
     for (head = 0; head < ARRAY_LEN(pDispEvo->pSwapGroup); head++) {
-        nvAssert(pDispEvo->pSwapGroup[head] == NULL);
+#if defined(DEBUG)
+        const NvU32 apiHead = nvHardwareHeadToApiHead(head);
+        nvAssert(pDispEvo->pSwapGroup[apiHead] == NULL);
+#endif
         nvAssert(nvListIsEmpty(&pDispEvo->headState[head].vblankCallbackList));
     }
 
@@ -268,8 +317,6 @@ static inline NVDispEvoPtr AllocDisplay(NVDevEvoPtr pDevEvo)
     pDispEvo->framelock.currentServerHead = NV_INVALID_HEAD;
 
     for (head = 0; head < ARRAY_LEN(pDispEvo->headState); head++) {
-        pDispEvo->headState[head].activeDpys = nvEmptyDpyIdList();
-        pDispEvo->headState[head].attributes = NV_EVO_DEFAULT_ATTRIBUTES_SET;
         nvListInit(&pDispEvo->headState[head].vblankCallbackList);
     }
 
@@ -831,27 +878,45 @@ static NvBool AllocConnectors(NVDispEvoPtr pDispEvo)
     return FALSE;
 }
 
+static NvBool IsFlexibleWindowMapping(NvU32 windowHeadMask)
+{
+    return (windowHeadMask ==
+            NV0073_CTRL_SPECIFIC_FLEXIBLE_HEAD_WINDOW_ASSIGNMENT);
+}
 
 /*!
  * Query the number of heads and save the result in pDevEvo->numHeads.
+ * Get window head assignment and save it in pDevEvo->headForWindow[win].
  *
  * Query the number of heads on each pDisp of the pDev and limit to
- * the minimum across all pDisps.  Query the headMask on each pDisp
- * and take the intersection across pDisps.  Limit the number of heads
- * to the number of bits in the headMask.
+ * the minimum across all pDisps. Query the headMask on each pDisp and
+ * take the intersection across pDisps. Query the window-head assignment
+ * and if it is fully flexible, assign WINDOWs (2N) and (2N + 1) to HEAD N.
+ * Otherwise, use the queried assignment.
+ *
+ * Limit the number of heads to the number of bits in the headMask. Ignore
+ * the heads which don't have any windows assigned to them and heads which
+ * create holes in the headMask. If a head which has assigned windows gets
+ * pruned out, assign NV_INVALID_HEAD to those windows.
  *
  * \param[in,out] pDev   This is the device pointer; the pDisps within
  *                       it are used to query per-GPU information.
  *                       The result is written to pDevEvo->numHeads.
  *
- * \return               Return TRUE if numHeads could be correctly assigned;
- *                       return FALSE if numHeads could not be queried.
+ * \return               Return TRUE if numHeads are correctly queried and
+ *                       window-head assignment is done.
+ *                       Return FALSE if numHeads or window-head assignment
+ *                       could not be queried.
  */
-static NvBool ProbeHeadCount(NVDevEvoPtr pDevEvo)
+static NvBool ProbeHeadCountAndWindowAssignment(NVDevEvoPtr pDevEvo)
 {
     NvU32 numHeads = 0, headMask = 0;
+    NvU32 headsWithWindowsMask = 0;
     int sd, head, numBits;
     NVDispEvoPtr pDispEvo;
+    NvBool first = TRUE;
+    NvBool isFlexibleWindowMapping = NV_TRUE;
+    NvU32 win;
     NvU32 ret;
 
     pDevEvo->numHeads = 0;
@@ -860,6 +925,7 @@ static NvBool ProbeHeadCount(NVDevEvoPtr pDevEvo)
 
         NV0073_CTRL_SYSTEM_GET_NUM_HEADS_PARAMS numHeadsParams = { 0 };
         NV0073_CTRL_SPECIFIC_GET_ALL_HEAD_MASK_PARAMS headMaskParams = { 0 };
+        NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS winHeadAssignParams = { };
 
         numHeadsParams.subDeviceInstance = sd;
         numHeadsParams.flags = 0;
@@ -922,7 +988,81 @@ static NvBool ProbeHeadCount(NVDevEvoPtr pDevEvo)
                 headMask = intersectedHeadMask;
             }
         }
+
+        winHeadAssignParams.subDeviceInstance = sd;
+        ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                             pDevEvo->displayCommonHandle,
+                             NV0073_CTRL_CMD_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT,
+                             &winHeadAssignParams, sizeof(winHeadAssignParams));
+
+        if (ret == NVOS_STATUS_SUCCESS) {
+            for (win = 0; win < NVKMS_MAX_WINDOWS_PER_DISP; win++) {
+                NvU32 windowHeadMask = winHeadAssignParams.windowHeadMask[win];
+
+                if ((win == 0) && first) {
+                    isFlexibleWindowMapping = IsFlexibleWindowMapping(windowHeadMask);
+                } else if (isFlexibleWindowMapping) {
+                    /*
+                     * Currently, if one window is completely flexible, then all are.
+                     * In case of fully flexible window mapping, if windowHeadMask is
+                     * zero for a window, then that window is not present in HW.
+                     */
+                    nvAssert(!windowHeadMask || (isFlexibleWindowMapping ==
+                             IsFlexibleWindowMapping(windowHeadMask)));
+                }
+
+                /*
+                 * For custom window mapping, if windowHeadMask is 0, then head
+                 * is not assigned to this window. For flexible window mapping,
+                 * if windowHeadMask is 0, then the window is not present in HW.
+                 */
+                if (windowHeadMask == 0) {
+                    continue;
+                }
+
+                if (isFlexibleWindowMapping) {
+                    /*
+                     * TODO: For now assign WINDOWs (2N) and (2N + 1) to HEAD N when
+                     * completely flexible window assignment is specified by window
+                     * head assignment mask.
+                     */
+                    head = win >> 1;
+                    windowHeadMask = NVBIT_TYPE(head, NvU8);
+                    nvAssert(head < numHeads);
+                } else {
+                    // We don't support same window assigned to multiple heads.
+                    nvAssert(ONEBITSET(windowHeadMask));
+
+                    head = BIT_IDX_32(windowHeadMask);
+                }
+
+                if (first) {
+                    pDevEvo->headForWindow[win] = head;
+                    headsWithWindowsMask |= windowHeadMask;
+                } else {
+                    nvAssert(pDevEvo->headForWindow[win] == head);
+                }
+            }
+        } else if (ret != NVOS_STATUS_ERROR_NOT_SUPPORTED) {
+            nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
+                             "Failed to get window-head assignment");
+            return FALSE;
+        } else {
+            // Pre-Volta, we don't need to populate pDevEvo->headForWindow[] and
+            // each HW head has a window assigned.
+            headsWithWindowsMask = headMask;
+        }
+
+        if (first) {
+            first = FALSE;
+        }
     }
+
+    /* Check whether heads which have windows assigned are actually present in HW */
+    nvAssert(!(~headMask & headsWithWindowsMask));
+
+    /* Intersect heads present in HW with heads which have windows assigned */
+    headMask &= headsWithWindowsMask;
 
     /* clamp numHeads to the number of bits in headMask */
 
@@ -961,6 +1101,18 @@ static NvBool ProbeHeadCount(NVDevEvoPtr pDevEvo)
 
     pDevEvo->numHeads = numHeads;
 
+    /*
+     * If a head which has assigned windows gets pruned out, assign
+     * NV_INVALID_HEAD to those windows.
+     */
+    for (win = 0; win < NVKMS_MAX_WINDOWS_PER_DISP; win++) {
+        if ((pDevEvo->headForWindow[win] == NV_INVALID_HEAD) ||
+            (pDevEvo->headForWindow[win] < pDevEvo->numHeads)) {
+            continue;
+        }
+        pDevEvo->headForWindow[win] = NV_INVALID_HEAD;
+    }
+
     return TRUE;
 }
 
@@ -971,7 +1123,6 @@ static void MarkConnectorBootHeadActive(NVDispEvoPtr pDispEvo, NvU32 head)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVDpyId displayId, rootPortId;
-    NVDpyEvoPtr pDpyEvo;
     NVConnectorEvoPtr pConnectorEvo;
     NVDispHeadStateEvoPtr pHeadState;
     NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS params = { 0 };
@@ -1031,19 +1182,10 @@ static void MarkConnectorBootHeadActive(NVDispEvoPtr pDispEvo, NvU32 head)
     }
     nvAssert((pConnectorEvo->or.mask & NVBIT(params.index)) != 0x0);
 
-    // Use the pDpyEvo for the connector, since we may not have one for
-    // display id if it's a dynamic one.
-    pDpyEvo = nvGetDpyEvoFromDispEvo(pDispEvo, pConnectorEvo->displayId);
-
     pHeadState = &pDispEvo->headState[head];
 
-    nvAssert(pDpyEvo->apiHead == NV_INVALID_HEAD);
     nvAssert(!nvHeadIsActive(pDispEvo, head));
 
-    pDpyEvo->apiHead = nvHardwareHeadToApiHead(head);
-
-    pHeadState->activeDpys =
-        nvAddDpyIdToEmptyDpyIdList(pConnectorEvo->displayId);
     pHeadState->pConnectorEvo = pConnectorEvo;
     pHeadState->activeRmId = nvDpyIdToNvU32(displayId);
 
@@ -1309,15 +1451,18 @@ static NvBool AllocDPSerializerDpys(NVConnectorEvoPtr pConnectorEvo)
     supportsMST = pConnectorEvo->dpSerializerCaps.supportsMST;
     numHeads = pConnectorEvo->pDispEvo->pDevEvo->numHeads;
     for (i = 0; i < numHeads && supportsMST; i++) {
+        NVDpyEvoPtr pDpyEvo = NULL;
         NvBool dynamicDpyCreated = FALSE;
         char address[5] = { };
 
         nvkms_snprintf(address, sizeof(address), "0.%d", i + 1);
-        if ((nvGetDPMSTDpyEvo(pConnectorEvo, address,
-                              &dynamicDpyCreated) == NULL) ||
-            !dynamicDpyCreated) {
+        pDpyEvo = nvGetDPMSTDpyEvo(pConnectorEvo, address,
+                                   &dynamicDpyCreated);
+        if ((pDpyEvo == NULL) || !dynamicDpyCreated) {
             return FALSE;
         }
+
+        pDpyEvo->dp.serializerStreamIndex = i;
     }
 
     return TRUE;
@@ -1439,6 +1584,32 @@ static NvBool RegisterDispCallback(NVOS10_EVENT_KERNEL_CALLBACK_EX *cb,
                                 handle, func, event);
 }
 
+static void
+DifrPrefetchEventDeferredWork(void *dataPtr, NvU32 dataU32)
+{
+    NVDevEvoPtr pDevEvo = dataPtr;
+    size_t l2CacheSize = (size_t)dataU32;
+    NvU32 status;
+
+    nvAssert(pDevEvo->pDifrState);
+
+    status = nvDIFRPrefetchSurfaces(pDevEvo->pDifrState, l2CacheSize);
+    nvDIFRSendPrefetchResponse(pDevEvo->pDifrState, status);
+}
+
+static void DifrPrefetchEvent(void *arg, void *pEventDataVoid,
+                              NvU32 hEvent, NvU32 Data, NV_STATUS Status)
+{
+    Nv2080LpwrDifrPrefetchNotification *notif =
+        (Nv2080LpwrDifrPrefetchNotification *)pEventDataVoid;
+
+    (void)nvkms_alloc_timer_with_ref_ptr(
+        DifrPrefetchEventDeferredWork, /* callback */
+        arg, /* argument (this is a ref_ptr to a pDevEvo) */
+        notif->l2CacheSize, /* dataU32 */
+        0);  /* timeout: schedule the work immediately */
+}
+
 enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
 {
     NVDispEvoPtr pDispEvo;
@@ -1502,7 +1673,7 @@ enum NvKmsAllocDeviceStatus nvRmAllocDisplays(NVDevEvoPtr pDevEvo)
         goto fail;
     }
 
-    if (!ProbeHeadCount(pDevEvo)) {
+    if (!ProbeHeadCountAndWindowAssignment(pDevEvo)) {
         status = NVKMS_ALLOC_DEVICE_STATUS_NO_HARDWARE_AVAILABLE;
         goto fail;
     }
@@ -1680,9 +1851,8 @@ void nvRmDestroyDisplays(NVDevEvoPtr pDevEvo)
 
     FreeDisplays(pDevEvo);
 
-    if (pDevEvo->supportsSyncpts) {
-        nvFree(pDevEvo->preSyncptTable);
-    }
+    nvFree(pDevEvo->preSyncptTable);
+    pDevEvo->preSyncptTable = NULL;
 
     if (pDevEvo->displayCommonHandle != 0) {
         ret = nvRmApiFree(nvEvoGlobal.clientHandle,
@@ -3308,9 +3478,15 @@ static void FreeCoreRGSyncpts(NVDevEvoPtr pDevEvo)
         return;
     }
 
+    /* We can get here in teardown cases from alloc failures */
+    if (pDevEvo->nDispEvo == 0) {
+        return;
+    }
+
     /* If Syncpts are supported, we're on Orin, which only has one display. */
     nvAssert(pDevEvo->nDispEvo == 1);
     pDispEvo = pDevEvo->pDispEvo[0];
+
     /* For each Head: */
     for (int i = 0; i < pDevEvo->numHeads; i++) {
         /* Free all core RG syncpts. */
@@ -4232,6 +4408,46 @@ fail:
     return FALSE;
 }
 
+static void FreeGpuVASpace(NVDevEvoPtr pDevEvo)
+{
+    if (pDevEvo->nvkmsGpuVASpace != 0) {
+        nvRmApiFree(nvEvoGlobal.clientHandle,
+                    pDevEvo->deviceHandle,
+                    pDevEvo->nvkmsGpuVASpace);
+        nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
+                           pDevEvo->nvkmsGpuVASpace);
+        pDevEvo->nvkmsGpuVASpace = 0;
+    }
+}
+
+static NvBool AllocGpuVASpace(NVDevEvoPtr pDevEvo)
+{
+    NvU32 ret;
+    NV_MEMORY_VIRTUAL_ALLOCATION_PARAMS memoryVirtualParams = { };
+
+    pDevEvo->nvkmsGpuVASpace =
+        nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
+
+    memoryVirtualParams.offset = 0;
+    memoryVirtualParams.limit = 0;          // no limit on VA space
+    memoryVirtualParams.hVASpace = 0;       // client's default VA space
+
+    ret = nvRmApiAlloc(nvEvoGlobal.clientHandle,
+                       pDevEvo->deviceHandle,
+                       pDevEvo->nvkmsGpuVASpace,
+                       NV01_MEMORY_VIRTUAL,
+                       &memoryVirtualParams);
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
+                           pDevEvo->nvkmsGpuVASpace);
+        pDevEvo->nvkmsGpuVASpace = 0;
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 static void NonStallInterruptCallback(
     void *arg,
     void *pEventDataVoid,
@@ -4441,6 +4657,14 @@ NvBool nvRmAllocDeviceEvo(NVDevEvoPtr pDevEvo,
         goto failure;
     }
 
+    if (!AllocGpuVASpace(pDevEvo)) {
+        goto failure;
+    }
+
+    if (!nvAllocNvPushDevice(pDevEvo)) {
+        goto failure;
+    }
+
     return TRUE;
 
 failure:
@@ -4451,6 +4675,10 @@ failure:
 void nvRmFreeDeviceEvo(NVDevEvoPtr pDevEvo)
 {
     NvU32 sd;
+
+    nvFreeNvPushDevice(pDevEvo);
+
+    FreeGpuVASpace(pDevEvo);
 
     UnregisterNonStallInterruptCallback(pDevEvo);
 
@@ -4476,6 +4704,78 @@ void nvRmFreeDeviceEvo(NVDevEvoPtr pDevEvo)
     pDevEvo->dpTimer = NULL;
 
     CloseDevice(pDevEvo);
+}
+
+/*
+ * Set up DIFR notifier listener to drive framebuffer prefetching once the
+ * h/w gets idle enough.
+ */
+NvBool nvRmRegisterDIFREventHandler(NVDevEvoPtr pDevEvo)
+{
+    pDevEvo->difrPrefetchEventHandler =
+        nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
+
+    if (pDevEvo->difrPrefetchEventHandler != 0) {
+        NvBool registered;
+
+        /*
+         * Allocate event callback.
+         */
+        registered = nvRmRegisterCallback(
+            pDevEvo,
+            &pDevEvo->difrPrefetchCallback,
+            pDevEvo->ref_ptr,
+            pDevEvo->pSubDevices[0]->handle,
+            pDevEvo->difrPrefetchEventHandler,
+            DifrPrefetchEvent,
+            NV2080_NOTIFIERS_LPWR_DIFR_PREFETCH_REQUEST);
+
+        /*
+         * Configure event notification.
+         */
+        if (registered) {
+            NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS prefetchEventParams = { 0 };
+
+            prefetchEventParams.event = NV2080_NOTIFIERS_LPWR_DIFR_PREFETCH_REQUEST;
+            prefetchEventParams.action = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
+
+            if (nvRmApiControl(nvEvoGlobal.clientHandle,
+                               pDevEvo->pSubDevices[0]->handle,
+                               NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION,
+                               &prefetchEventParams,
+                               sizeof(prefetchEventParams))
+                == NVOS_STATUS_SUCCESS) {
+                return TRUE;
+
+            }
+        }
+        nvRmUnregisterDIFREventHandler(pDevEvo);
+    }
+    return FALSE;
+}
+
+void nvRmUnregisterDIFREventHandler(NVDevEvoPtr pDevEvo)
+{
+    if (pDevEvo->difrPrefetchEventHandler != 0) {
+        NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS prefetchEventParams = { 0 };
+
+        prefetchEventParams.event = NV2080_NOTIFIERS_LPWR_DIFR_PREFETCH_REQUEST;
+        prefetchEventParams.action = NV2080_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
+
+        nvRmApiControl(nvEvoGlobal.clientHandle,
+                       pDevEvo->pSubDevices[0]->handle,
+                       NV2080_CTRL_CMD_EVENT_SET_NOTIFICATION,
+                       &prefetchEventParams,
+                       sizeof(prefetchEventParams));
+
+        nvRmApiFree(nvEvoGlobal.clientHandle,
+                    pDevEvo->pSubDevices[0]->handle,
+                    pDevEvo->difrPrefetchEventHandler);
+
+        nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
+                           pDevEvo->difrPrefetchEventHandler);
+        pDevEvo->difrPrefetchEventHandler = 0;
+    }
 }
 
 
@@ -4701,12 +5001,166 @@ done:
     nvFreeUnixRmHandle(&pDevEvo->handleAllocator, hMemory);
 }
 
-NvBool nvRmQueryDpAuxLog(NVDispEvoRec *pDispEvo, NvS64 *pValue)
+static void LogAuxPacket(const NVDispEvoRec *pDispEvo, const DPAUXPACKET *pkt)
 {
-    *pValue = FALSE;
-    return TRUE;
+    const char *req, *rep;
+    char str[DP_MAX_MSG_SIZE * 3 + 1];
+    char *p = str;
+    int i;
+
+    switch (DRF_VAL(_DP, _AUXLOGGER, _REQUEST_TYPE, pkt->auxEvents)) {
+        case NV_DP_AUXLOGGER_REQUEST_TYPE_AUXWR:
+            req = "auxwr";
+            break;
+        case NV_DP_AUXLOGGER_REQUEST_TYPE_AUXRD:
+            req = "auxrd";
+            break;
+        case NV_DP_AUXLOGGER_REQUEST_TYPE_MOTWR:
+            // MOT is "middle of transaction", which is just another type of i2c
+            // access.
+            req = "motwr";
+            break;
+        case NV_DP_AUXLOGGER_REQUEST_TYPE_I2CWR:
+            req = "i2cwr";
+            break;
+        case NV_DP_AUXLOGGER_REQUEST_TYPE_MOTRD:
+            req = "motrd";
+            break;
+        case NV_DP_AUXLOGGER_REQUEST_TYPE_I2CRD:
+            req = "i2crd";
+            break;
+        default:
+            // Only log I2C and AUX transactions.
+            return;
+    }
+
+    switch (DRF_VAL(_DP, _AUXLOGGER, _REPLY_TYPE, pkt->auxEvents)) {
+        case NV_DP_AUXLOGGER_REPLY_TYPE_NULL:
+            rep = "none";
+            break;
+        case NV_DP_AUXLOGGER_REPLY_TYPE_SB_ACK:
+            rep = "sb_ack";
+            break;
+        case NV_DP_AUXLOGGER_REPLY_TYPE_RETRY:
+            rep = "retry";
+            break;
+        case NV_DP_AUXLOGGER_REPLY_TYPE_TIMEOUT:
+            rep = "timeout";
+            break;
+        case NV_DP_AUXLOGGER_REPLY_TYPE_DEFER:
+            rep = "defer";
+            break;
+        case NV_DP_AUXLOGGER_REPLY_TYPE_DEFER_TO:
+            rep = "defer_to";
+            break;
+        case NV_DP_AUXLOGGER_REPLY_TYPE_ACK:
+            rep = "ack";
+            break;
+        case NV_DP_AUXLOGGER_REPLY_TYPE_ERROR:
+            rep = "error";
+            break;
+        default:
+        case NV_DP_AUXLOGGER_REPLY_TYPE_UNKNOWN:
+            rep = "unknown";
+            break;
+    }
+
+    for (i = 0; i < pkt->auxMessageReplySize; i++) {
+        p += nvkms_snprintf(p, str + sizeof(str) - p, "%02x ",
+                            pkt->auxPacket[i]);
+    }
+
+    nvAssert(p < str + sizeof(str));
+    *p = '\0';
+
+    nvEvoLogDisp(pDispEvo, EVO_LOG_INFO,
+                 "%04u: port %u @ 0x%05x: [%10u] %s %2u, [%10u] %-8s %s",
+                 pkt->auxCount, pkt->auxOutPort, pkt->auxPortAddress,
+                 pkt->auxRequestTimeStamp, req,
+                 pkt->auxMessageReqSize,
+                 pkt->auxReplyTimeStamp, rep,
+                 str);
 }
 
+/*!
+ * This "attribute" queries the RM DisplayPort AUX channel log and dumps it to
+ * the kernel log. It returns a value of TRUE if any RM AUX transactions were
+ * logged, and FALSE otherwise.
+ *
+ * This attribute is intended to be queried in a loop as long as it reads TRUE.
+ *
+ * \return TRUE if the query succeeded (even if no events were logged).
+ * \return FALSE if the query failed.
+ */
+NvBool nvRmQueryDpAuxLog(NVDispEvoRec *pDispEvo, NvS64 *pValue)
+{
+    NV0073_CTRL_CMD_DP_GET_AUXLOGGER_BUFFER_DATA_PARAMS *pParams =
+        nvCalloc(sizeof(*pParams), 1);
+    NvU32 status;
+    int i;
+    NvBool ret = FALSE;
+
+    pDispEvo->dpAuxLoggingEnabled = TRUE;
+    *pValue = FALSE;
+
+    if (!pParams) {
+        return FALSE;
+    }
+
+    pParams->subDeviceInstance = pDispEvo->displayOwner;
+    pParams->dpAuxBufferReadSize = MAX_LOGS_PER_POLL;
+
+    status = nvRmApiControl(nvEvoGlobal.clientHandle,
+                            pDispEvo->pDevEvo->displayCommonHandle,
+                            NV0073_CTRL_CMD_DP_GET_AUXLOGGER_BUFFER_DATA,
+                            pParams, sizeof(*pParams));
+    if (status != NVOS_STATUS_SUCCESS) {
+        goto done;
+    }
+
+    nvAssert(pParams->dpNumMessagesRead <= MAX_LOGS_PER_POLL);
+    for (i = 0; i < pParams->dpNumMessagesRead; i++) {
+        const DPAUXPACKET *pkt = &pParams->dpAuxBuffer[i];
+
+        switch (DRF_VAL(_DP, _AUXLOGGER, _EVENT_TYPE, pkt->auxEvents)) {
+            case NV_DP_AUXLOGGER_EVENT_TYPE_AUX:
+                LogAuxPacket(pDispEvo, pkt);
+                break;
+            case NV_DP_AUXLOGGER_EVENT_TYPE_HOT_PLUG:
+                nvEvoLogDisp(pDispEvo, EVO_LOG_INFO,
+                             "%04u: port %u [%10u] hotplug",
+                             pkt->auxCount, pkt->auxOutPort,
+                             pkt->auxRequestTimeStamp);
+                break;
+            case NV_DP_AUXLOGGER_EVENT_TYPE_HOT_UNPLUG:
+                nvEvoLogDisp(pDispEvo, EVO_LOG_INFO,
+                             "%04u: port %u [%10u] unplug",
+                             pkt->auxCount, pkt->auxOutPort,
+                             pkt->auxRequestTimeStamp);
+                break;
+            case NV_DP_AUXLOGGER_EVENT_TYPE_IRQ:
+                nvEvoLogDisp(pDispEvo, EVO_LOG_INFO,
+                             "%04u: port %u [%10u] irq",
+                             pkt->auxCount, pkt->auxOutPort,
+                             pkt->auxRequestTimeStamp);
+                break;
+            default:
+                nvEvoLogDisp(pDispEvo, EVO_LOG_INFO,
+                             "%04u: port %u [%10u] unknown event",
+                             pkt->auxCount, pkt->auxOutPort,
+                             pkt->auxRequestTimeStamp);
+                break;
+        }
+
+        *pValue = TRUE;
+    }
+
+    ret = TRUE;
+
+done:
+    nvFree(pParams);
+    return ret;
+}
 
 /*!
  * Return the GPU's current PTIMER, or 0 if the query fails.

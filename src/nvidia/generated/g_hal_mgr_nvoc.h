@@ -63,7 +63,7 @@ struct OBJHALMGR {
     struct Object __nvoc_base_Object;
     struct Object *__nvoc_pbase_Object;
     struct OBJHALMGR *__nvoc_pbase_OBJHALMGR;
-    struct OBJHAL *pHalList[64];
+    struct OBJHAL *pHalList[66];
 };
 
 #ifndef __NVOC_CLASS_OBJHALMGR_TYPEDEF__
@@ -95,10 +95,13 @@ NV_STATUS __nvoc_objCreate_OBJHALMGR(OBJHALMGR**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJHALMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS halmgrConstruct_IMPL(struct OBJHALMGR *arg_);
+
 #define __nvoc_halmgrConstruct(arg_) halmgrConstruct_IMPL(arg_)
 void halmgrDestruct_IMPL(struct OBJHALMGR *arg0);
+
 #define __nvoc_halmgrDestruct(arg0) halmgrDestruct_IMPL(arg0)
 NV_STATUS halmgrCreateHal_IMPL(struct OBJHALMGR *arg0, NvU32 arg1);
+
 #ifdef __nvoc_hal_mgr_h_disabled
 static inline NV_STATUS halmgrCreateHal(struct OBJHALMGR *arg0, NvU32 arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJHALMGR was disabled!");
@@ -109,6 +112,7 @@ static inline NV_STATUS halmgrCreateHal(struct OBJHALMGR *arg0, NvU32 arg1) {
 #endif //__nvoc_hal_mgr_h_disabled
 
 NV_STATUS halmgrGetHalForGpu_IMPL(struct OBJHALMGR *arg0, NvU32 arg1, NvU32 arg2, NvU32 *arg3);
+
 #ifdef __nvoc_hal_mgr_h_disabled
 static inline NV_STATUS halmgrGetHalForGpu(struct OBJHALMGR *arg0, NvU32 arg1, NvU32 arg2, NvU32 *arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJHALMGR was disabled!");
@@ -119,6 +123,7 @@ static inline NV_STATUS halmgrGetHalForGpu(struct OBJHALMGR *arg0, NvU32 arg1, N
 #endif //__nvoc_hal_mgr_h_disabled
 
 struct OBJHAL *halmgrGetHal_IMPL(struct OBJHALMGR *arg0, NvU32 arg1);
+
 #ifdef __nvoc_hal_mgr_h_disabled
 static inline struct OBJHAL *halmgrGetHal(struct OBJHALMGR *arg0, NvU32 arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJHALMGR was disabled!");

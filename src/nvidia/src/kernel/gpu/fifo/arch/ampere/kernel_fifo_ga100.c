@@ -86,22 +86,23 @@ kfifoEngineInfoXlate_GA100
             {
                 subctxId = inVal - baseGrFaultId;
                 NV_ASSERT_OK_OR_RETURN(kgrmgrGetGrIdxForVeid(pGpu, pKernelGraphicsManager, subctxId, &grIdx));
-                inVal = NV2080_ENGINE_TYPE_GR(grIdx);
-                inType = ENGINE_INFO_TYPE_NV2080;
+                inVal = RM_ENGINE_TYPE_GR(grIdx);
+                inType = ENGINE_INFO_TYPE_RM_ENGINE_TYPE;
             }
         }
 
         if (outType == ENGINE_INFO_TYPE_MMU_FAULT_ID)
         {
-            NvU32 engineId, grIdx, startSubctxId;
+            NvU32 grIdx, startSubctxId;
+            RM_ENGINE_TYPE rmEngineType;
 
             NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_GV100(pGpu, pKernelFifo, inType, inVal,
-                                                              ENGINE_INFO_TYPE_NV2080, &engineId));
+                                                              ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType));
 
-            // check if engineId corresponding to input is GR
-            if (NV2080_ENGINE_TYPE_IS_GR(engineId))
+            // check if rmEngineType corresponding to input is GR
+            if (RM_ENGINE_TYPE_IS_GR(rmEngineType))
             {
-                grIdx = NV2080_ENGINE_TYPE_GR_IDX(engineId);
+                grIdx = RM_ENGINE_TYPE_GR_IDX(rmEngineType);
                 NV_ASSERT_OK_OR_RETURN(kgrmgrGetVeidBaseForGrIdx(pGpu, pKernelGraphicsManager, grIdx, &startSubctxId));
                 *pOutVal = baseGrFaultId + startSubctxId;
                 return NV_OK;
@@ -135,10 +136,9 @@ kfifoChannelGroupGetLocalMaxSubcontext_GA100
     NV_ASSERT_OR_RETURN(pKernelChannelGroup != NULL, NV_ERR_INVALID_ARGUMENT);
 
     if (IS_MIG_IN_USE(pGpu) && !bLegacyMode &&
-        NV2080_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
+        RM_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
     {
-        NvU32 grIdx = NV2080_ENGINE_TYPE_GR_IDX(
-            pKernelChannelGroup->engineType);
+        NvU32 grIdx = RM_ENGINE_TYPE_GR_IDX(pKernelChannelGroup->engineType);
         return nvPopCount64(pKernelGraphicsManager->grIdxVeidMask[grIdx]);
     }
 
@@ -238,9 +238,10 @@ kfifoGenerateWorkSubmitToken_GA100
 
     chId = pKernelChannel->ChID;
 
-    if (!RMCFG_FEATURE_PLATFORM_GSP)
+    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfId));
+
+    if (!RMCFG_FEATURE_PLATFORM_GSP || (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_GFID_VF(gfId)))
     {
-        NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfId));
 
         // TODO: Remove check on Ampere. Bug 200606706.
         if (!bUsedForHost && IS_GFID_VF(gfId))
@@ -330,7 +331,7 @@ kfifoGetMaxCeChannelGroups_GA100
         // All GR CE use the same pool as GR
         if ((eng == ENG_GR(0)) ||
             (IS_CE(eng) &&
-             (!ceIsCeGrce(pGpu, pEngineInfo->engineInfoList[deviceIndex].engineData[ENGINE_INFO_TYPE_NV2080]))))
+             (!ceIsCeGrce(pGpu, pEngineInfo->engineInfoList[deviceIndex].engineData[ENGINE_INFO_TYPE_RM_ENGINE_TYPE]))))
         {
             maxCeChannels += kfifoRunlistQueryNumChannels_HAL(pGpu, pKernelFifo, 0);
         }

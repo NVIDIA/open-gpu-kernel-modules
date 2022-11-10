@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 #include <nvlimits.h>
 
 #define NVKMS_MAX_SUBDEVICES                  NV_MAX_SUBDEVICES
+#define NVKMS_MAX_HEADS_PER_DISP              NV_MAX_HEADS
 
 #define NVKMS_LEFT                            0
 #define NVKMS_RIGHT                           1
@@ -529,5 +530,79 @@ typedef struct {
     NvBool coherent;
     NvBool noncoherent;
 } NvKmsDispIOCoherencyModes;
+
+enum NvKmsInputColorSpace {
+    /* Unknown colorspace; no de-gamma will be applied */
+    NVKMS_INPUT_COLORSPACE_NONE = 0,
+
+    /* Linear, Rec.709 [-0.5, 7.5) */
+    NVKMS_INPUT_COLORSPACE_SCRGB_LINEAR = 1,
+
+    /* PQ, Rec.2020 unity */
+    NVKMS_INPUT_COLORSPACE_BT2100_PQ = 2,
+};
+
+enum NvKmsOutputTf {
+    /*
+     * NVKMS itself won't apply any OETF (clients are still
+     * free to provide a custom OLUT)
+     */
+    NVKMS_OUTPUT_TF_NONE = 0,
+    NVKMS_OUTPUT_TF_TRADITIONAL_GAMMA_SDR = 1,
+    NVKMS_OUTPUT_TF_PQ = 2,
+};
+
+/*!
+ * HDR Static Metadata Type1 Descriptor as per CEA-861.3 spec.
+ * This is expected to match exactly with the spec.
+ */
+struct NvKmsHDRStaticMetadata {
+    /*!
+     * Color primaries of the data.
+     * These are coded as unsigned 16-bit values in units of 0.00002,
+     * where 0x0000 represents zero and 0xC350 represents 1.0000.
+     */
+    struct {
+        NvU16 x, y;
+    } displayPrimaries[3];
+
+    /*!
+     * White point of colorspace data.
+     * These are coded as unsigned  16-bit values in units of 0.00002,
+     * where 0x0000 represents zero and 0xC350 represents 1.0000.
+     */
+    struct {
+        NvU16 x, y;
+    } whitePoint;
+
+    /**
+     * Maximum mastering display luminance.
+     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
+     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
+     */
+    NvU16 maxDisplayMasteringLuminance;
+
+    /*!
+     * Minimum mastering display luminance.
+     * This value is coded as an unsigned 16-bit value in units of
+     * 0.0001 cd/m2, where 0x0001 represents 0.0001 cd/m2 and 0xFFFF
+     * represents 6.5535 cd/m2.
+     */
+    NvU16 minDisplayMasteringLuminance;
+
+    /*!
+     * Maximum content light level.
+     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
+     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
+     */
+    NvU16 maxCLL;
+
+    /*!
+     * Maximum frame-average light level.
+     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
+     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
+     */
+    NvU16 maxFALL;
+};
 
 #endif /* NVKMS_API_TYPES_H */

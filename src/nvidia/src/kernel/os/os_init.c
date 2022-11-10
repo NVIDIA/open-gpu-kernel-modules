@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         Common Operating System Object Function Pointer Initializations.  *
 *         All the function pointers in the OS object are initialized here.  *
@@ -48,8 +48,7 @@
 #include "gpu/bif/kernel_bif.h"
 
 #include "kernel/gpu/rc/kernel_rc.h"
-
-#include "g_os_private.h"
+#include "platform/nbsi/nbsi_read.h"
 
 //
 // Functions to fill function stubs
@@ -637,6 +636,10 @@ NV_STATUS osReadRegistryDword
     NV_ASSERT_OR_RETURN(pData != NULL, NV_ERR_INVALID_ARGUMENT);
 
     status = osReadRegistryDwordBase(pGpu, pRegParmStr, pData);
+    if (status != NV_OK)
+    {
+        status = nbsiReadRegistryDword(pGpu, pRegParmStr, pData);
+    }
 
     return status;
 }
@@ -667,6 +670,10 @@ NV_STATUS osReadRegistryString
     NV_ASSERT_OR_RETURN(!(*pCbLen != 0 && pData == NULL), NV_ERR_INVALID_ARGUMENT);
 
     status = osReadRegistryStringBase(pGpu, pRegParmStr, pData, pCbLen);
+    if (status != NV_OK)
+    {
+        status = nbsiReadRegistryString(pGpu, pRegParmStr, pData, pCbLen);
+    }
 
     return status;
 }

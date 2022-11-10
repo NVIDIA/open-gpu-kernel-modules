@@ -474,7 +474,7 @@ typedef struct NV2080_CTRL_CMD_FIFO_GET_USERD_LOCATION_PARAMS {
  *  NV2080_CTRL_CMD_FIFO_GET_DEVICE_INFO_TABLE
  *
  *  This command retrieves entries from the SW encoded GPU device info table
- *  from Host RM. 
+ *  from Host RM.
  *
  *  Parameters:
  *
@@ -517,7 +517,7 @@ typedef struct NV2080_CTRL_CMD_FIFO_GET_USERD_LOCATION_PARAMS {
  *   pbdmaFaultIds
  *     List of pbdma fault ids associated with engine
  *   numPbdmas
- *     Number of pbdmas 
+ *     Number of pbdmas
  *   engineName
  *     Name of the engine
  */
@@ -643,8 +643,8 @@ typedef struct NV2080_CTRL_CMD_FIFO_CLEAR_FAULTED_BIT_PARAMS {
  *          description for more details.
  *      - NV2080_CTRL_FIFO_RUNLIST_SCHED_POLICY_CHANNEL_INTERLEAVED_WDDM
  *          This scheduling policy will make channels to be scheduled according
- *          to their interleave level per WDDM policy. 
- *          See NVA06C_CTRL_CMD_SET_INTERLEAVE_LEVEL description for more details.       
+ *          to their interleave level per WDDM policy.
+ *          See NVA06C_CTRL_CMD_SET_INTERLEAVE_LEVEL description for more details.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -734,10 +734,10 @@ typedef struct NV2080_CTRL_FIFO_DISABLE_USERMODE_CHANNELS_PARAMS {
  *
  * When a VF subcontext is marked as a zombie, host RM points its PDB to a dummy
  * page allocated by guest RM in GPA space. This command provides the parameters
- * of the guest RMs memory descriptor to be able to create a corresponding 
+ * of the guest RMs memory descriptor to be able to create a corresponding
  * memory descriptor on the host RM. Host RM uses this to program the PDB of a
  * zombie subcontext.
- * 
+ *
  *  Parameters:
  *  Input parameters to describe the memory descriptor
  *     [in] base
@@ -755,5 +755,37 @@ typedef struct NV2080_CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB_PARAMS {
     NvU32 addressSpace;
     NvU32 cacheAttrib;
 } NV2080_CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FIFO_GET_ALLOCATED_CHANNELS
+ *
+ * Get's a bitmask of allocated channels. No guarantees are made about
+ * synchronization. A channel returned as allocated by this ctrl cmd might have
+ * already been destructed.
+ *
+ * Parameters:
+ * [in]     runlistId
+ * [in,out] bitMask   A 1 bit indicates that a channel with this index/id is
+ *                    allocated. This field is a multiple of 32 bits and each 32
+ *                    bit group must be accessed as a platform 32 bit int to
+ *                    correctly map channel IDs.
+ *
+ */
+#define NV2080_CTRL_CMD_FIFO_GET_ALLOCATED_CHANNELS          (0x20801119) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FIFO_INTERFACE_ID << 8) | NV2080_CTRL_FIFO_GET_ALLOCATED_CHANNELS_PARAMS_MESSAGE_ID" */
+
+/*
+ * The maximum number than can be returned by
+ * NV2080_CTRL_CMD_INTERNAL_FIFO_GET_NUM_CHANNELS
+ */
+#define NV2080_CTRL_FIFO_GET_ALLOCATED_CHANNELS_MAX_CHANNELS 4096
+
+#define NV2080_CTRL_FIFO_GET_ALLOCATED_CHANNELS_PARAMS_MESSAGE_ID (0x19U)
+
+typedef struct NV2080_CTRL_FIFO_GET_ALLOCATED_CHANNELS_PARAMS {
+    NvU32 runlistId;
+    NvU32 bitMask[NV2080_CTRL_FIFO_GET_ALLOCATED_CHANNELS_MAX_CHANNELS / 32];
+} NV2080_CTRL_FIFO_GET_ALLOCATED_CHANNELS_PARAMS;
+
+
 
 /* _ctrl2080fifo_h_ */

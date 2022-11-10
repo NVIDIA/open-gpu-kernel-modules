@@ -3573,10 +3573,10 @@ nvlink_lib_ctrl_get_device_link_states
     //
     FOR_EACH_LINK_REGISTERED(endpoint, dev, node)
     {
-        if (numLinks >= NVLINK_MAX_NVLINK_ENDPOINTS)
+        if (numLinks >= NVLINK_MAX_SYSTEM_LINK_NUM)
         {
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: numLinks >= NVLINK_MAX_NVLINK_ENDPOINTS",
+                "%s: numLinks >= NVLINK_MAX_SYSTEM_LINK_NUM",
                 __FUNCTION__));
 
             nvlink_assert(0);

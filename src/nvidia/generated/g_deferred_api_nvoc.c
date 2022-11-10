@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_defapiPreDestruct(struct DeferredApiObject *
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_defapiIsDuplicate(struct DeferredApiObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_defapiGetNotificationListPtr(struct DeferredApiObject *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DeferredApiObject_Notifier.offset));
 }
@@ -394,6 +398,8 @@ static void __nvoc_init_funcTable_DeferredApiObject_1(DeferredApiObject *pThis) 
     pThis->__defapiCanCopy__ = &__nvoc_thunk_RsResource_defapiCanCopy;
 
     pThis->__defapiPreDestruct__ = &__nvoc_thunk_RsResource_defapiPreDestruct;
+
+    pThis->__defapiIsDuplicate__ = &__nvoc_thunk_RsResource_defapiIsDuplicate;
 
     pThis->__defapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_defapiGetNotificationListPtr;
 

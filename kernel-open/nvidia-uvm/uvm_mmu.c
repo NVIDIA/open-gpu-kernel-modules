@@ -132,7 +132,7 @@ static NV_STATUS phys_mem_allocate_sysmem(uvm_page_tree_t *tree, NvLength size, 
 
     // Check for fake GPUs from the unit test
     if (tree->gpu->parent->pci_dev)
-        status = uvm_gpu_map_cpu_pages(tree->gpu, out->handle.page, UVM_PAGE_ALIGN_UP(size), &dma_addr);
+        status = uvm_gpu_map_cpu_pages(tree->gpu->parent, out->handle.page, UVM_PAGE_ALIGN_UP(size), &dma_addr);
     else
         dma_addr = page_to_phys(out->handle.page);
 
@@ -217,7 +217,7 @@ static void phys_mem_deallocate_sysmem(uvm_page_tree_t *tree, uvm_mmu_page_table
 
     UVM_ASSERT(ptr->addr.aperture == UVM_APERTURE_SYS);
     if (tree->gpu->parent->pci_dev)
-        uvm_gpu_unmap_cpu_pages(tree->gpu, ptr->addr.address, UVM_PAGE_ALIGN_UP(ptr->size));
+        uvm_gpu_unmap_cpu_pages(tree->gpu->parent, ptr->addr.address, UVM_PAGE_ALIGN_UP(ptr->size));
     __free_pages(ptr->handle.page, get_order(ptr->size));
 }
 

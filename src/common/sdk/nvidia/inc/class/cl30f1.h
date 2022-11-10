@@ -33,7 +33,7 @@
 #include "cl30f1_notification.h"
 
 /* class NV30_GSYNC */
-#define NV30_GSYNC                       (0x000030F1)
+#define NV30_GSYNC                       (0x30f1U) /* finn: Evaluated from "NV30F1_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 #define NV30F1_GSYNC_CONNECTOR_ONE       (0)
 #define NV30F1_GSYNC_CONNECTOR_TWO       (1)

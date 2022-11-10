@@ -214,6 +214,8 @@
                                                                 0x0000000f
 #define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_POWER_HINT_GET                     \
                                                                 0x00000010
+#define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_CONFIGURE_PROGRAMMABLE_EDPP        \
+                                                                0x00000011
 #define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_POLL                   0x000000ff
 
 
@@ -310,6 +312,11 @@
 
 #define NV_MSGBOX_CMD_ARG1_BUNDLE_REQUEST_COUNT                       11:8
 #define NV_MSGBOX_CMD_ARG1_BUNDLE_DISP_RULE_COUNT                    15:12
+
+#define NV_MSGBOX_CMD_ARG1_GET_DEM_OLDEST                       0x00000000
+#define NV_MSGBOX_CMD_ARG1_GET_DEM_BY_SEQ_NUMBER                0x00000001
+#define NV_MSGBOX_CMD_ARG1_GET_DEM_BY_TIMESTAMP                 0x00000002
+
 #define NV_MSGBOX_CMD_ARG1_ECC_V6_ERROR_TYPE                          15:8
 #define NV_MSGBOX_CMD_ARG1_ECC_V6_ERROR_TYPE_CORRECTABLE_ERROR           0
 #define NV_MSGBOX_CMD_ARG1_ECC_V6_ERROR_TYPE_UNCORRECTABLE_ERROR         1
@@ -346,6 +353,16 @@
 #define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVDEC_UTILIZATION           0x0000000E
 #define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVJPG_UTILIZATION           0x0000000F
 #define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVOFA_UTILIZATION           0x00000010
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVLINK_RAW_TX_BW_PER_LINK   0x00000011
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVLINK_DATA_TX_BW_PER_LINK  0x00000012
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVLINK_RAW_RX_BW_PER_LINK   0x00000013
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVLINK_DATA_RX_BW_PER_LINK  0x00000014
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVDEC_UTIL_PER_INSTANCE     0x00000015
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_NVJPG_UTIL_PER_INSTANCE     0x00000016
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_INTEGER_UTILIZATION         0x00000017
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_DMMA_UTILIZATION            0x00000018
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_HMMA_UTILIZATION            0x00000019
+#define NV_MSGBOX_CMD_ARG1_GPM_METRIC_IMMA_UTILIZATION            0x0000001A
 
 #define NV_MSGBOX_CMD_ARG1_DYN_SYS_INFO_DRIVER_VERSION_V1         0x00000000
 
@@ -440,8 +457,11 @@
             (NV_MSGBOX_CMD_ARG2_GET_POWER_HINT_INFO_PROFILES_PAGE_3 + 1)
 
 // Arg2 for _GPU_PERFORMANCE_MONITORING
-#define NV_MSGBOX_CMD_ARG2_GPM_PARTITION                               23:16
 #define NV_MSGBOX_CMD_ARG2_GPM_PARTITION_AGGREGATE                0x000000FF
+#define NV_MSGBOX_CMD_ARG2_GPM_PARTITION_INDEX                         21:16
+#define NV_MSGBOX_CMD_ARG2_GPM_CI_METRICS_REQUESTED                    23:23
+#define NV_MSGBOX_CMD_ARG2_GPM_CI_METRICS_REQUESTED_YES           0x00000001
+#define NV_MSGBOX_CMD_ARG2_GPM_CI_METRICS_REQUESTED_NO            0x00000000
 
 #define NV_MSGBOX_CMD_ARG2_GPM_MULTIPLIER                              23:16
 #define NV_MSGBOX_CMD_ARG2_GPM_MULTIPLIER_1X                      0x00000001
@@ -816,6 +836,12 @@
 #define NV_MSGBOX_DATA_CAP_4_SET_DEVICE_DISABLE                                7:7
 #define NV_MSGBOX_DATA_CAP_4_SET_DEVICE_DISABLE_NOT_AVAILABLE           0x00000000
 #define NV_MSGBOX_DATA_CAP_4_SET_DEVICE_DISABLE_AVAILABLE               0x00000001
+#define NV_MSGBOX_DATA_CAP_4_SET_ECC_MODE                                      8:8
+#define NV_MSGBOX_DATA_CAP_4_SET_ECC_MODE_NOT_AVAILABLE                 0x00000000
+#define NV_MSGBOX_DATA_CAP_4_SET_ECC_MODE_AVAILABLE                     0x00000001
+#define NV_MSGBOX_DATA_CAP_4_SET_MIG_MODE                                    10:10
+#define NV_MSGBOX_DATA_CAP_4_SET_MIG_MODE_NOT_AVAILABLE                 0x00000000
+#define NV_MSGBOX_DATA_CAP_4_SET_MIG_MODE_AVAILABLE                     0x00000001
 #define NV_MSGBOX_DATA_CAP_4_FAN_CURVE_POINTS_GET_SET                        11:11
 #define NV_MSGBOX_DATA_CAP_4_FAN_CURVE_POINTS_GET_SET_NOT_AVAILABLE     0x00000000
 #define NV_MSGBOX_DATA_CAP_4_FAN_CURVE_POINTS_GET_SET_AVAILABLE         0x00000001
@@ -828,6 +854,9 @@
 #define NV_MSGBOX_DATA_CAP_4_GPU_PERFORMANCE_MONITORING                                  24:24
 #define NV_MSGBOX_DATA_CAP_4_GPU_PERFORMANCE_MONITORING_NOT_AVAILABLE               0x00000000
 #define NV_MSGBOX_DATA_CAP_4_GPU_PERFORMANCE_MONITORING_AVAILABLE                   0x00000001
+#define NV_MSGBOX_DATA_CAP_4_CONFIGURE_PROGRAMMABLE_EDPP                                 30:30
+#define NV_MSGBOX_DATA_CAP_4_CONFIGURE_PROGRAMMABLE_EDPP_NOT_AVAILABLE              0x00000000
+#define NV_MSGBOX_DATA_CAP_4_CONFIGURE_PROGRAMMABLE_EDPP_AVAILABLE                  0x00000001
 
 /* ECC counters */
 #define NV_MSGBOX_DATA_ECC_CNT_16BIT_DBE                             31:16
@@ -1145,6 +1174,20 @@
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_2_REPLAY_ROLLOVER_COUNT        15:0
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_2_NAKS_RCVD_COUNT             31:16
 
+/*
+ * Input for NV_MSGBOX_CMD_OPCODE_GPU_PERFORMANCE_MONITORING. Value is valid
+ * only if Arg2 != GPM_PARTITION_AGGREGATE and Arg2.Bit7 == 1
+ */
+#define NV_MSGBOX_DATA_GPM_COMPUTE_INSTANCE_INDEX                             15:8
+
+/*
+ * The following three fields correspond to the data which is interpreted
+ * differently depending on GPM Metric specified in Arg1.
+ */
+#define NV_MSGBOX_DATA_GPM_NVLINK_INDEX                                        7:0
+#define NV_MSGBOX_DATA_GPM_NVDEC_INSTANCE                                      7:0
+#define NV_MSGBOX_DATA_GPM_NVJPG_INSTANCE                                      7:0
+
 /* MSGBOX Extended Data Register */
 #define NV_MSGBOX_EXT_DATA_REG                                            31:0
 
@@ -1265,15 +1308,21 @@
 /* Event types */
 typedef enum
 {
-    NV_MSGBOX_EVENT_TYPE_SERVER_RESTART = 0,
+    NV_MSGBOX_EVENT_TYPE_SERVER_RESTART_COLD = 0,
     NV_MSGBOX_EVENT_TYPE_GPU_RESET_REQUIRED,
-    NV_MSGBOX_EVENT_TYPE_DRIVER_ERROR_MESSAGE,
+    NV_MSGBOX_EVENT_TYPE_DRIVER_ERROR_MESSAGE_OLDEST,
     NV_MSGBOX_EVENT_TYPE_TGP_LIMIT_SET_SUCCESS,
     NV_MSGBOX_EVENT_TYPE_CLOCK_LIMIT_SET_SUCCESS,
     NV_MSGBOX_EVENT_TYPE_ECC_TOGGLE_SUCCESS,
     NV_MSGBOX_EVENT_TYPE_MIG_TOGGLE_SUCCESS,
+    NV_MSGBOX_EVENT_TYPE_SERVER_RESTART_WARM,
+    NV_MSGBOX_EVENT_TYPE_DRIVER_ERROR_MESSAGE_NEW,
     NV_MSGBOX_NUM_EVENTS,                       /* insert new event types before this line */
 }   NvMsgboxEventType;
+
+/* Legacy event names for compatipility */
+#define NV_MSGBOX_EVENT_TYPE_SERVER_RESTART         NV_MSGBOX_EVENT_TYPE_SERVER_RESTART_COLD
+#define NV_MSGBOX_EVENT_TYPE_DRIVER_ERROR_MESSAGE   NV_MSGBOX_EVENT_TYPE_DRIVER_ERROR_MESSAGE_OLDEST
 
 /* Bit mask of all defined events */
 #define NV_MSGBOX_EVENT_TYPE__ALL   (NVBIT(NV_MSGBOX_NUM_EVENTS) - 1)
@@ -2013,6 +2062,34 @@ typedef struct
 } NV_MSGBOX_POWER_HINT_PARAMS;
 
 /*!
+ * This param is used for NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_CONFIGURE_PROGRAMMABLE_EDPP
+ */
+typedef struct
+{
+    /*!
+     * [out] Power Hint in mW
+     */
+    NvU32  data;
+} NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS;
+
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA                      31:0
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_OPERATION            1:0
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_OPERATION_GET        0x0
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_OPERATION_SET        0x1
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_OPERATION_CLEAR      0x2
+
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_MODE                 3:2
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_MODE_PERSISTENT      0x0
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_MODE_ONESHOT         0x1
+
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_LIMIT_CURRENT         10:4
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_LIMIT_RATED          17:11
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_LIMIT_MAXIMUM        24:18
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_DATA_LIMIT_MINIMUM        31:25
+
+#define NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS_LIMIT_NOT_SET             0x7F
+
+/*!
  * @brief Union of all possible parameter struct. Used to determine the maximum
  * amount of space parameter blocks can take.
  */
@@ -2031,6 +2108,7 @@ typedef union {
     NV_MSGBOX_CLOCK_LIMIT_GET_PARAMS clockLimitGet;
     NV_MSGBOX_THERMAL_FAN_V3_FAN_CURVE_POINTS_PARAMS fanCurvePointsV3;
     NV_MSGBOX_POWER_HINT_PARAMS powerHintParams;
+    NV_MSGBOX_PROGRAMMABLE_EDPP_PARAMS programmableEdppParams;
 } NV_MSGBOX_ASYNC_REQ_PARAMS_UNION;
 
 #endif  // !NV_MSGBOX_NO_PARAM_STRUCTS
@@ -2446,15 +2524,15 @@ typedef union {
         (                                                                              \
             NV_MSGBOX_CMD(_GPU_PERFORMANCE_MONITORING, 0, 0)                         | \
             DRF_DEF(_MSGBOX, _CMD, _ARG1_GPM_ACTION, type)                           | \
-            DRF_DEF(_MSGBOX, _CMD, _ARG1_GPM_METRIC, metric)                         | \
-            DRF_DEF(_MSGBOX, _CMD, _ARG2_GPM_PARTITION, partition)                     \
+            DRF_NUM(_MSGBOX, _CMD, _ARG1_GPM_METRIC, metric)                         | \
+            DRF_NUM(_MSGBOX, _CMD, _ARG2_GPM_PARTITION, partition)                     \
         )
 
-#define NV_MSGBOX_CMD_GPM_SET_INTERVAL(interval)                                       \
+#define NV_MSGBOX_CMD_GPM_SET_MULTIPLIER(multiplier)                                   \
         (                                                                              \
             NV_MSGBOX_CMD(_GPU_PERFORMANCE_MONITORING, 0, 0)                         | \
-            DRF_DEF(_MSGBOX, _CMD, _ARG1_GPM_ACTION, _SET_INTERVAL)                  | \
-            DRF_DEF(_MSGBOX, _CMD, _ARG1_GPM_INTERVAL, (interval))                     \
+            DRF_DEF(_MSGBOX, _CMD, _ARG1_GPM_ACTION, _SET_MULTIPLIER)                | \
+            DRF_NUM(_MSGBOX, _CMD, _ARG2_GPM_MULTIPLIER, (multiplier))                 \
         )
 
 #define NV_MSGBOX_GET_CMD_OPCODE(cmd)           DRF_VAL(_MSGBOX, _CMD, _OPCODE, (cmd))

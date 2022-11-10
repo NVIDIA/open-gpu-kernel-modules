@@ -168,6 +168,9 @@ physmemConstruct_IMPL
     }
 
     status = memCreateMemDesc(pGpu, &pMemDesc, ADDR_FBMEM, 0, trueLength, attr, attr2);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+
     memdescDescribe(pMemDesc, ADDR_FBMEM, heapBase, trueLength);
 
     if (status == NV_OK)

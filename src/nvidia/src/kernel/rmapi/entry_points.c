@@ -53,12 +53,8 @@ static void _nv01AllocObject(NVOS05_PARAMETERS *pArgs, NvBool bUserModeArgs)    
 static void _nv04AddVblankCallback(NVOS61_PARAMETERS *pArgs, NvBool bUserModeArgs)          { RMAPI_DEPRECATED(RmDeprecatedAddVblankCallback, pArgs, bUserModeArgs); }
 static void _nv04AllocContextDma(NVOS39_PARAMETERS *pArgs, NvBool bUserModeArgs)            { RMAPI_DEPRECATED(RmDeprecatedAllocContextDma, pArgs, bUserModeArgs); }
 static void _nv04BindContextDma(NVOS49_PARAMETERS *pArgs, NvBool bUserModeArgs)             { RMAPI_DEPRECATED(RmDeprecatedBindContextDma, pArgs, bUserModeArgs); }
-static void _nv04GetMemoryInfo(NVOS58_PARAMETERS *pArgs, NvBool bUserModeArgs)              { RMAPI_NOT_SUPPORTED(pArgs); }
 static void _nv04I2CAccess(NVOS_I2C_ACCESS_PARAMS *pArgs, NvBool bUserModeArgs)             { RMAPI_DEPRECATED(RmDeprecatedI2CAccess, pArgs, bUserModeArgs); }
 static void _nv04IdleChannels(NVOS30_PARAMETERS *pArgs, NvBool bUserModeArgs)               { RMAPI_DEPRECATED(RmDeprecatedIdleChannels, pArgs, bUserModeArgs); }
-static void _nv04MapMemoryDmaOffset(NVOS59_PARAMETERS *pArgs, NvBool bUserModeArgs)         { RMAPI_NOT_SUPPORTED(pArgs); }
-static void _nv04UnmapMemoryDmaOffset(NVOS60_PARAMETERS *pArgs, NvBool bUserModeArgs)       { RMAPI_NOT_SUPPORTED(pArgs); }
-static void _nv04UpdateContextDma(NVOS37_PARAMETERS *pArgs, NvBool bUserModeArgs)           { RMAPI_NOT_SUPPORTED(pArgs); }
 static void _nv04VidHeapControl(NVOS32_PARAMETERS *pArgs, NvBool bUserModeArgs)             { RMAPI_DEPRECATED(RmDeprecatedVidHeapControl, pArgs, bUserModeArgs); }
 
 static void _nv04AllocWithSecInfo(NVOS21_PARAMETERS*, API_SECURITY_INFO);
@@ -94,16 +90,12 @@ void Nv04BindContextDma(NVOS49_PARAMETERS *pArgs)                   { _nv04BindC
 void Nv04Control(NVOS54_PARAMETERS  *pArgs)                         { _nv04Control(pArgs, NV_TRUE, NV_FALSE); }
 void Nv04DupObject(NVOS55_PARAMETERS *pArgs)                        { _nv04DupObject(pArgs, NV_TRUE); }
 void Nv04Share(NVOS57_PARAMETERS *pArgs)                            { _nv04Share(pArgs, NV_TRUE); }
-void Nv04GetMemoryInfo(NVOS58_PARAMETERS *pArgs)                    { _nv04GetMemoryInfo(pArgs, NV_TRUE); }
 void Nv04I2CAccess(NVOS_I2C_ACCESS_PARAMS  *pArgs)                  { _nv04I2CAccess(pArgs, NV_TRUE); }
 void Nv04IdleChannels(NVOS30_PARAMETERS *pArgs)                     { _nv04IdleChannels(pArgs, NV_TRUE); }
 void Nv04MapMemory(NVOS33_PARAMETERS *pArgs)                        { _nv04MapMemory(pArgs, NV_TRUE, NV_FALSE); }
 void Nv04MapMemoryDma(NVOS46_PARAMETERS *pArgs)                     { _nv04MapMemoryDma(pArgs, NV_TRUE); }
-void Nv04MapMemoryDmaOffset (NVOS59_PARAMETERS *pArgs)              { _nv04MapMemoryDmaOffset(pArgs, NV_TRUE); }
 void Nv04UnmapMemory(NVOS34_PARAMETERS *pArgs)                      { _nv04UnmapMemory(pArgs, NV_TRUE, NV_FALSE); }
 void Nv04UnmapMemoryDma(NVOS47_PARAMETERS *pArgs)                   { _nv04UnmapMemoryDma(pArgs, NV_TRUE); }
-void Nv04UnmapMemoryDmaOffset(NVOS60_PARAMETERS *pArgs)             { _nv04UnmapMemoryDmaOffset(pArgs, NV_TRUE); }
-void Nv04UpdateContextDma(NVOS37_PARAMETERS *pArgs)                 { _nv04UpdateContextDma(pArgs, NV_TRUE); }
 void Nv04VidHeapControl(NVOS32_PARAMETERS *pArgs)                   { _nv04VidHeapControl(pArgs, NV_TRUE); }
 
 void Nv01AllocMemoryUser(NVOS02_PARAMETERS *pArgs)                  { _nv01AllocMemory(pArgs, NV_TRUE); }
@@ -117,16 +109,12 @@ void Nv04BindContextDmaUser(NVOS49_PARAMETERS *pArgs)               { _nv04BindC
 void Nv04ControlUser(NVOS54_PARAMETERS  *pArgs)                     { _nv04Control(pArgs, NV_TRUE, NV_FALSE); }
 void Nv04DupObjectUser(NVOS55_PARAMETERS *pArgs)                    { _nv04DupObject(pArgs, NV_TRUE); }
 void Nv04ShareUser(NVOS57_PARAMETERS *pArgs)                        { _nv04Share(pArgs, NV_TRUE); }
-void Nv04GetMemoryInfoUser(NVOS58_PARAMETERS *pArgs)                { _nv04GetMemoryInfo(pArgs, NV_TRUE); }
 void Nv04I2CAccessUser(NVOS_I2C_ACCESS_PARAMS  *pArgs)              { _nv04I2CAccess(pArgs, NV_TRUE); }
 void Nv04IdleChannelsUser(NVOS30_PARAMETERS *pArgs)                 { _nv04IdleChannels(pArgs, NV_TRUE); }
 void Nv04MapMemoryUser(NVOS33_PARAMETERS *pArgs)                    { _nv04MapMemory(pArgs, NV_TRUE, NV_FALSE); }
 void Nv04MapMemoryDmaUser(NVOS46_PARAMETERS *pArgs)                 { _nv04MapMemoryDma(pArgs, NV_TRUE); }
-void Nv04MapMemoryDmaOffsetUser(NVOS59_PARAMETERS *pArgs)           { _nv04MapMemoryDmaOffset(pArgs, NV_TRUE); }
 void Nv04UnmapMemoryUser(NVOS34_PARAMETERS *pArgs)                  { _nv04UnmapMemory(pArgs, NV_TRUE, NV_FALSE); }
 void Nv04UnmapMemoryDmaUser(NVOS47_PARAMETERS *pArgs)               { _nv04UnmapMemoryDma(pArgs, NV_TRUE); }
-void Nv04UnmapMemoryDmaOffsetUser(NVOS60_PARAMETERS *pArgs)         { _nv04UnmapMemoryDmaOffset(pArgs, NV_TRUE); }
-void Nv04UpdateContextDmaUser(NVOS37_PARAMETERS *pArgs)             { _nv04UpdateContextDma(pArgs, NV_TRUE); }
 void Nv04VidHeapControlUser(NVOS32_PARAMETERS *pArgs)               { _nv04VidHeapControl(pArgs, NV_TRUE); }
 
 void Nv01AllocMemoryKernel(NVOS02_PARAMETERS *pArgs)                { _nv01AllocMemory(pArgs, NV_FALSE); }
@@ -140,16 +128,12 @@ void Nv04BindContextDmaKernel(NVOS49_PARAMETERS *pArgs)             { _nv04BindC
 void Nv04ControlKernel(NVOS54_PARAMETERS  *pArgs)                   { _nv04Control(pArgs, NV_FALSE, NV_FALSE); }
 void Nv04DupObjectKernel(NVOS55_PARAMETERS *pArgs)                  { _nv04DupObject(pArgs, NV_FALSE); }
 void Nv04ShareKernel(NVOS57_PARAMETERS *pArgs)                      { _nv04Share(pArgs, NV_FALSE); }
-void Nv04GetMemoryInfoKernel(NVOS58_PARAMETERS *pArgs)              { _nv04GetMemoryInfo(pArgs, NV_FALSE); }
 void Nv04I2CAccessKernel(NVOS_I2C_ACCESS_PARAMS  *pArgs)            { _nv04I2CAccess(pArgs, NV_FALSE); }
 void Nv04IdleChannelsKernel(NVOS30_PARAMETERS *pArgs)               { _nv04IdleChannels(pArgs, NV_FALSE); }
 void Nv04MapMemoryKernel(NVOS33_PARAMETERS *pArgs)                  { _nv04MapMemory(pArgs, NV_FALSE, NV_FALSE); }
 void Nv04MapMemoryDmaKernel(NVOS46_PARAMETERS *pArgs)               { _nv04MapMemoryDma(pArgs, NV_FALSE); }
-void Nv04MapMemoryDmaOffsetKernel(NVOS59_PARAMETERS *pArgs)         { _nv04MapMemoryDmaOffset(pArgs, NV_FALSE); }
 void Nv04UnmapMemoryKernel(NVOS34_PARAMETERS *pArgs)                { _nv04UnmapMemory(pArgs, NV_FALSE, NV_FALSE); }
 void Nv04UnmapMemoryDmaKernel(NVOS47_PARAMETERS *pArgs)             { _nv04UnmapMemoryDma(pArgs, NV_FALSE); }
-void Nv04UnmapMemoryDmaOffsetKernel(NVOS60_PARAMETERS *pArgs)       { _nv04UnmapMemoryDmaOffset(pArgs, NV_FALSE); }
-void Nv04UpdateContextDmaKernel(NVOS37_PARAMETERS *pArgs)           { _nv04UpdateContextDma(pArgs, NV_FALSE); }
 void Nv04VidHeapControlKernel(NVOS32_PARAMETERS *pArgs)             { _nv04VidHeapControl(pArgs, NV_FALSE); }
 
 // MODS-specific API functions which ignore RM locking model

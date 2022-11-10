@@ -42,10 +42,11 @@ void pmaRegionPrint(PMA *pPma, PMA_REGION_DESCRIPTOR *pRegion, void *pMap);
 NvBool pmaStateCheck(PMA *pPma);
 
 // Temporary putting these here. TODO refactor them in the next CL.
-NV_STATUS _pmaEvictContiguous(PMA *pPma, void *pMap, NvU64 evictStart, NvU64 evictEnd);
+NV_STATUS _pmaEvictContiguous(PMA *pPma, void *pMap, NvU64 evictStart, NvU64 evictEnd,
+                              MEMORY_PROTECTION prot);
 NV_STATUS _pmaEvictPages(PMA *pPma, void *pMap, NvU64 *evictPages, NvU64 evictPageCount,
-                         NvU64 *allocPages, NvU64 allocPageCount, NvU32 pageSize, NvU64 physBegin,
-                         NvU64 physEnd);
+                         NvU64 *allocPages, NvU64 allocPageCount, NvU32 pageSize,
+                         NvU64 physBegin, NvU64 physEnd, MEMORY_PROTECTION prot);
 void      _pmaClearScrubBit(PMA *pPma, SCRUB_NODE *pPmaScrubList, NvU64 count);
 NV_STATUS _pmaCheckScrubbedPages(PMA *pPma, NvU64 chunkSize, NvU64 *pPages, NvU32 pageCount);
 NV_STATUS _pmaPredictOutOfMemory(PMA *pPma, NvLength allocationCount, NvU32 pageSize,

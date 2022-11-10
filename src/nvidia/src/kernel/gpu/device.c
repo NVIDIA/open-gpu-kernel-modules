@@ -344,7 +344,6 @@ deviceInit_IMPL
 
     pDevice->hTargetClient  = hTargetClient;
     pDevice->hTargetDevice  = hTargetDevice;
-    pDevice->pHostVgpuDevice = NULL;
     pDevice->pKernelHostVgpuDevice = NULL;
 
     pDevice->deviceInst = deviceInst;
@@ -380,6 +379,12 @@ deviceInit_IMPL
                           pClient->ProcID, pClient->SubProcessID);
             }
         }
+    }
+
+    if (allocFlags & NV_DEVICE_ALLOCATION_FLAGS_PLUGIN_CONTEXT)
+    {
+        NV_ASSERT_OR_RETURN(allocFlags & NV_DEVICE_ALLOCATION_FLAGS_HOST_VGPU_DEVICE,
+            NV_ERR_INVALID_ARGUMENT);
     }
 
 done:

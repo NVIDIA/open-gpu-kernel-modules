@@ -89,6 +89,12 @@ typedef struct _def_sys_error_info
     void *          pNextError;                       // Used to walk error list
 } SYS_ERROR_INFO;
 
+// Max errors that should be logged into a SYS_ERROR_INFO.
+#define MAX_ERROR_LOG_COUNT (0x10)
+
+// Max error that should be added to SYS_ERROR_INFO.pErrorList
+#define MAX_ERROR_LIST_COUNT (0x10)
+
 typedef struct RING_BUFFER_LOG RING_BUFFER_LOG, *PRING_BUFFER_LOG;
 
 // A node in the linked list of ring buffers
@@ -156,6 +162,7 @@ typedef struct _nocatQueueDescriptor
     NvU8    tag[NV2080_NOCAT_JOURNAL_MAX_STR_LEN];
     NvU64   cacheFreshnessPeriodticks;
     NV2080_NOCAT_JOURNAL_GPU_STATE  nocatGpuState;      // cache contains the state of the
+                                                        // associated GPU if there is one.
 
     NvU32   nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_COUNTER_COUNT];
 } nocatQueueDescriptor;
@@ -189,6 +196,8 @@ struct OBJRCDB {
     NvBool RcErrRptRecordsDropped;
     struct Falcon *pCrashedFlcn;
     nocatQueueDescriptor nocatJournalDescriptor;
+    NvU64 systemTimeReference;
+    NvU64 timeStampFreq;
 };
 
 #ifndef __NVOC_CLASS_OBJRCDB_TYPEDEF__
@@ -224,10 +233,13 @@ NV_STATUS __nvoc_objCreate_OBJRCDB(OBJRCDB**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJRCDB((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS rcdbConstruct_IMPL(struct OBJRCDB *arg_pRcdb);
+
 #define __nvoc_rcdbConstruct(arg_pRcdb) rcdbConstruct_IMPL(arg_pRcdb)
 void rcdbDestruct_IMPL(struct OBJRCDB *pRcdb);
+
 #define __nvoc_rcdbDestruct(pRcdb) rcdbDestruct_IMPL(pRcdb)
 NV_STATUS rcdbSavePreviousDriverVersion_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbSavePreviousDriverVersion(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -238,6 +250,7 @@ static inline NV_STATUS rcdbSavePreviousDriverVersion(struct OBJGPU *pGpu, struc
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbClearErrorHistory_IMPL(struct OBJRCDB *pRcdb);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbClearErrorHistory(struct OBJRCDB *pRcdb) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -248,6 +261,7 @@ static inline NV_STATUS rcdbClearErrorHistory(struct OBJRCDB *pRcdb) {
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbDeleteErrorElement_IMPL(struct OBJRCDB *pRcdb, void *arg0);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbDeleteErrorElement(struct OBJRCDB *pRcdb, void *arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -258,6 +272,7 @@ static inline NV_STATUS rcdbDeleteErrorElement(struct OBJRCDB *pRcdb, void *arg0
 #endif //__nvoc_journal_h_disabled
 
 void rcdbDestroyRingBufferCollection_IMPL(struct OBJRCDB *pRcdb);
+
 #ifdef __nvoc_journal_h_disabled
 static inline void rcdbDestroyRingBufferCollection(struct OBJRCDB *pRcdb) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -267,6 +282,7 @@ static inline void rcdbDestroyRingBufferCollection(struct OBJRCDB *pRcdb) {
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbAllocNextJournalRec_IMPL(struct OBJRCDB *pRcdb, NVCD_RECORD **arg0, NvU8 arg1, NvU8 arg2, NvU16 arg3);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbAllocNextJournalRec(struct OBJRCDB *pRcdb, NVCD_RECORD **arg0, NvU8 arg1, NvU8 arg2, NvU16 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -277,6 +293,7 @@ static inline NV_STATUS rcdbAllocNextJournalRec(struct OBJRCDB *pRcdb, NVCD_RECO
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbAddBugCheckRec_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, NvU32 bugCheckCode);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbAddBugCheckRec(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, NvU32 bugCheckCode) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -287,6 +304,7 @@ static inline NV_STATUS rcdbAddBugCheckRec(struct OBJGPU *pGpu, struct OBJRCDB *
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbAddPowerStateRec_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, NvU32 powerEvent, NvU32 state, NvU32 fastBootPowerState);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbAddPowerStateRec(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, NvU32 powerEvent, NvU32 state, NvU32 fastBootPowerState) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -297,6 +315,7 @@ static inline NV_STATUS rcdbAddPowerStateRec(struct OBJGPU *pGpu, struct OBJRCDB
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbDumpInitGpuAccessibleFlag_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbDumpInitGpuAccessibleFlag(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -307,6 +326,7 @@ static inline NV_STATUS rcdbDumpInitGpuAccessibleFlag(struct OBJGPU *pGpu, struc
 #endif //__nvoc_journal_h_disabled
 
 NvU8 *rcdbCreateRingBuffer_IMPL(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 maxEntries);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NvU8 *rcdbCreateRingBuffer(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 maxEntries) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -317,6 +337,7 @@ static inline NvU8 *rcdbCreateRingBuffer(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE
 #endif //__nvoc_journal_h_disabled
 
 void rcdbDestroyRingBuffer_IMPL(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type);
+
 #ifdef __nvoc_journal_h_disabled
 static inline void rcdbDestroyRingBuffer(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -326,6 +347,7 @@ static inline void rcdbDestroyRingBuffer(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE
 #endif //__nvoc_journal_h_disabled
 
 void rcdbAddRecToRingBuffer_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord);
+
 #ifdef __nvoc_journal_h_disabled
 static inline void rcdbAddRecToRingBuffer(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -335,6 +357,7 @@ static inline void rcdbAddRecToRingBuffer(struct OBJGPU *pGpu, struct OBJRCDB *p
 #endif //__nvoc_journal_h_disabled
 
 NvU32 rcdbGetOcaRecordSize_IMPL(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NvU32 rcdbGetOcaRecordSize(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -345,6 +368,7 @@ static inline NvU32 rcdbGetOcaRecordSize(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE
 #endif //__nvoc_journal_h_disabled
 
 NvU32 rcdbDumpJournal_IMPL(struct OBJRCDB *pRcdb, struct OBJGPU *pGpu, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, const PRB_FIELD_DESC *pFieldDesc);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NvU32 rcdbDumpJournal(struct OBJRCDB *pRcdb, struct OBJGPU *pGpu, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, const PRB_FIELD_DESC *pFieldDesc) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -355,6 +379,7 @@ static inline NvU32 rcdbDumpJournal(struct OBJRCDB *pRcdb, struct OBJGPU *pGpu, 
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbDumpComponent_IMPL(struct OBJRCDB *pRcdb, NvU32 component, NVDUMP_BUFFER *pBuffer, NVDUMP_BUFFER_POLICY policy, PrbBufferCallback *pBufferCallback);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbDumpComponent(struct OBJRCDB *pRcdb, NvU32 component, NVDUMP_BUFFER *pBuffer, NVDUMP_BUFFER_POLICY policy, PrbBufferCallback *pBufferCallback) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -365,6 +390,7 @@ static inline NV_STATUS rcdbDumpComponent(struct OBJRCDB *pRcdb, NvU32 component
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbDumpSystemInfo_IMPL(struct OBJRCDB *pRcdb, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbDumpSystemInfo(struct OBJRCDB *pRcdb, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -375,6 +401,7 @@ static inline NV_STATUS rcdbDumpSystemInfo(struct OBJRCDB *pRcdb, PRB_ENCODER *p
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbDumpSystemFunc_IMPL(struct OBJRCDB *pRcdb, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbDumpSystemFunc(struct OBJRCDB *pRcdb, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -385,6 +412,7 @@ static inline NV_STATUS rcdbDumpSystemFunc(struct OBJRCDB *pRcdb, PRB_ENCODER *p
 #endif //__nvoc_journal_h_disabled
 
 NvU32 rcdbDumpErrorCounters_IMPL(struct OBJRCDB *pRcDB, struct OBJGPU *pGpu, PRB_ENCODER *pPrbEnc);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NvU32 rcdbDumpErrorCounters(struct OBJRCDB *pRcDB, struct OBJGPU *pGpu, PRB_ENCODER *pPrbEnc) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -395,6 +423,7 @@ static inline NvU32 rcdbDumpErrorCounters(struct OBJRCDB *pRcDB, struct OBJGPU *
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbGetRcDiagRecBoundaries_IMPL(struct OBJRCDB *pRcdb, NvU16 *arg0, NvU16 *arg1, NvU32 arg2, NvU32 arg3);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbGetRcDiagRecBoundaries(struct OBJRCDB *pRcdb, NvU16 *arg0, NvU16 *arg1, NvU32 arg2, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -405,6 +434,7 @@ static inline NV_STATUS rcdbGetRcDiagRecBoundaries(struct OBJRCDB *pRcdb, NvU16 
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbAddRcDiagRec_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbAddRcDiagRec(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -415,6 +445,7 @@ static inline NV_STATUS rcdbAddRcDiagRec(struct OBJGPU *pGpu, struct OBJRCDB *pR
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbGetRcDiagRec_IMPL(struct OBJRCDB *pRcdb, NvU16 arg0, RmRCCommonJournal_RECORD **arg1, NvU32 arg2, NvU32 arg3);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbGetRcDiagRec(struct OBJRCDB *pRcdb, NvU16 arg0, RmRCCommonJournal_RECORD **arg1, NvU32 arg2, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -425,6 +456,7 @@ static inline NV_STATUS rcdbGetRcDiagRec(struct OBJRCDB *pRcdb, NvU16 arg0, RmRC
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbUpdateRcDiagRecContext_IMPL(struct OBJRCDB *pRcdb, NvU16 arg0, NvU16 arg1, NvU32 arg2, NvU32 arg3);
+
 #ifdef __nvoc_journal_h_disabled
 static inline NV_STATUS rcdbUpdateRcDiagRecContext(struct OBJRCDB *pRcdb, NvU16 arg0, NvU16 arg1, NvU32 arg2, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
@@ -435,8 +467,10 @@ static inline NV_STATUS rcdbUpdateRcDiagRecContext(struct OBJRCDB *pRcdb, NvU16 
 #endif //__nvoc_journal_h_disabled
 
 void rcdbInitNocatGpuCache_IMPL(struct OBJGPU *pGpu);
+
 #define rcdbInitNocatGpuCache(pGpu) rcdbInitNocatGpuCache_IMPL(pGpu)
 void rcdbCleanupNocatGpuCache_IMPL(struct OBJGPU *pGpu);
+
 #define rcdbCleanupNocatGpuCache(pGpu) rcdbCleanupNocatGpuCache_IMPL(pGpu)
 #undef PRIVATE_FIELD
 

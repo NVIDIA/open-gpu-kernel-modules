@@ -108,7 +108,7 @@ struct nvlink_device
     // Device type and status
     NvU64  type;
     NvBool initialized;
-
+    
     // Training type: ALI or Non-ALI
     NvBool enableALI;
 
@@ -328,7 +328,7 @@ typedef struct nvlink_inband_data      nvlink_inband_data;
 #define NVLINK_LINKSTATE_CONTAIN                        0x19   // TL is in contain mode
 #define NVLINK_LINKSTATE_INITTL                         0x1A   // INITTL
 #define NVLINK_LINKSTATE_INITPHASE5                     0x1B   // INITPHASE5
-#define NVLINK_LINKSTATE_ALI                            0x1C   // ALI
+#define NVLINK_LINKSTATE_ALI                            0x1C   // ALI 
 #define NVLINK_LINKSTATE_ACTIVE_PENDING                 0x1D   // Intermediate state for a link going to active
 #define NVLINK_LINKSTATE_INVALID                        0xFF   // Invalid state
 

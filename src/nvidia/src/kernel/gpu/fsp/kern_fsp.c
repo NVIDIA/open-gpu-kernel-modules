@@ -148,11 +148,8 @@ kfspStateDestroy_IMPL
     KernelFsp *pKernelFsp
 )
 {
-    if (pKernelFsp->pCotPayload != NULL)
-    {
-        portMemFree(pKernelFsp->pCotPayload);
-        pKernelFsp->pCotPayload = NULL;
-    }
+    portMemFree(pKernelFsp->pCotPayload);
+    pKernelFsp->pCotPayload = NULL;
 
     if (pKernelFsp->pSysmemFrtsMemdesc != NULL)
     {
@@ -249,7 +246,7 @@ kfspPollForQueueEmpty_IMPL
 {
     RMTIMEOUT timeout;
 
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
 
     while (!kfspIsQueueEmpty(pGpu, pKernelFsp))
     {
@@ -315,7 +312,7 @@ kfspPollForResponse_IMPL
     NV_STATUS status = NV_OK;
 
     // Poll for message queue to wait for FSP's reply
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
     while (kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
     {
         if (gpuCheckTimeout(pGpu, &timeout) == NV_ERR_TIMEOUT)

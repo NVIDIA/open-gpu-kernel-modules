@@ -666,7 +666,7 @@ kbifProbePcieReqAtomicCaps_GH100
 /*!
  * @brief Enable PCIe atomics if PCIe hierarchy supports it
  *
- * @param[in] Gpu GPU object pointer
+ * @param[in] pGpu GPU object pointer
  */
 static void
 _kbifEnablePcieAtomics_GH100

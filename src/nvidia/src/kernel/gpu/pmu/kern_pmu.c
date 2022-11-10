@@ -58,7 +58,9 @@ kpmuInitLibosLoggingStructures_IMPL
     NV_STATUS nvStatus = NV_OK;
 
     if (!IS_GSP_CLIENT(pGpu))
+    {
         return NV_OK;
+    }
 
     NV_ASSERT_OR_RETURN(pKernelPmu->pPrintBuf == NULL, NV_ERR_INVALID_STATE);
 
@@ -74,10 +76,10 @@ kpmuInitLibosLoggingStructures_IMPL
     // Add PMU log buffer (use a fake "task name" - NVRISCV)
     libosLogAddLogEx(&pKernelPmu->logDecode, pKernelPmu->pPrintBuf, pKernelPmu->printBufSize,
                      pGpu->gpuInstance, (gpuGetChipArch(pGpu) >> GPU_ARCH_SHIFT), gpuGetChipImpl(pGpu),
-                     "NVRISCV");
+                     "NVRISCV", NULL);
 
     // Finish PMU log init (setting the lossless-print flag and resolve-pointers flag)
-    libosLogInitEx(&pKernelPmu->logDecode, pKernelPmu->pLogElf, NV_TRUE, NV_TRUE);
+    libosLogInitEx(&pKernelPmu->logDecode, pKernelPmu->pLogElf, NV_TRUE, NV_TRUE, pKernelPmu->logElfSize);
 
     if (nvStatus != NV_OK)
         kpmuFreeLibosLoggingStructures(pGpu, pKernelPmu);
@@ -95,7 +97,9 @@ kpmuFreeLibosLoggingStructures_IMPL
 )
 {
     if (!IS_GSP_CLIENT(pGpu))
+    {
         return;
+    }
 
     // Destroy PMU log
     libosLogDestroy(&pKernelPmu->logDecode);
@@ -122,4 +126,14 @@ kpmuLogBuf_IMPL
     portMemCopy(pKernelPmu->pPrintBuf, pKernelPmu->printBufSize,
                 pBuf, bufSize);
     libosExtractLogs(&pKernelPmu->logDecode, NV_FALSE);
+}
+
+NV_STATUS kpmuStateInitLocked_IMPL
+(
+    OBJGPU *pGpu,
+    KernelPmu *pKernelPmu
+)
+{
+
+    return NV_OK;
 }

@@ -337,7 +337,9 @@
 //
 // - Channel lock
 //      Order: UVM_LOCK_ORDER_CHANNEL
-//      Spinlock (uvm_spinlock_t)
+//      Spinlock (uvm_spinlock_t) or exclusive lock (mutex)
+//
+//      Lock protecting the state of all the channels in a channel pool.
 //
 // - Tools global VA space list lock (g_tools_va_space_list_lock)
 //      Order: UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST

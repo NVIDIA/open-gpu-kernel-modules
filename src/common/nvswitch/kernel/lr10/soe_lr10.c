@@ -1584,7 +1584,7 @@ _soeDmaStartTest
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 
     cmd.hdr.unitId = RM_SOE_UNIT_CORE;
-    cmd.hdr.size   = sizeof(cmd);
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, DMA_TEST);
 
     pDmaCmd = &cmd.cmd.core.dma_test;
     RM_FLCN_U64_PACK(&pDmaCmd->dmaHandle, &dmaHandle);
@@ -2064,7 +2064,7 @@ _soeForceThermalSlowdown_LR10
 
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
     cmd.hdr.unitId = RM_SOE_UNIT_THERM;
-    cmd.hdr.size = sizeof(cmd);
+    cmd.hdr.size = RM_SOE_CMD_SIZE(THERM, FORCE_SLOWDOWN);
     cmd.cmd.therm.cmdType = RM_SOE_THERM_FORCE_SLOWDOWN;
     cmd.cmd.therm.slowdown.slowdown = slowdown;
     cmd.cmd.therm.slowdown.periodUs = periodUs;

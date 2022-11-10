@@ -53,6 +53,7 @@ typedef struct EVENTNOTIFICATION EVENTNOTIFICATION;
 #define RM_PAGE_MASK        0x0FFF
 #define RM_PAGE_SHIFT       12
 #define RM_PAGE_SHIFT_64K   16
+#define RM_PAGE_SHIFT_128K  17
 
 // Huge page size is 2 MB
 #define RM_PAGE_SHIFT_HUGE 21

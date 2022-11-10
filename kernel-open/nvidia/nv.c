@@ -21,6 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <linux/module.h>  // for MODULE_FIRMWARE
+
+// must precede "nv.h" and "nv-firmware.h" includes
+#define NV_FIRMWARE_PATH_FOR_FILENAME(filename)  "nvidia/" NV_VERSION_STRING "/" filename
+#define NV_FIRMWARE_DECLARE_GSP_FILENAME(filename) \
+    MODULE_FIRMWARE(NV_FIRMWARE_PATH_FOR_FILENAME(filename));
+#include "nv-firmware.h"
+
 #include "nvmisc.h"
 #include "os-interface.h"
 #include "nv-linux.h"
@@ -89,11 +97,6 @@ const NvBool nv_is_rm_firmware_supported_os = NV_TRUE;
 // Deprecated, use NV_REG_ENABLE_GPU_FIRMWARE instead
 char *rm_firmware_active = NULL;
 NV_MODULE_STRING_PARAMETER(rm_firmware_active);
-
-#define NV_FIRMWARE_GSP_FILENAME     "nvidia/" NV_VERSION_STRING "/gsp.bin"
-#define NV_FIRMWARE_GSP_LOG_FILENAME "nvidia/" NV_VERSION_STRING "/gsp_log.bin"
-
-MODULE_FIRMWARE(NV_FIRMWARE_GSP_FILENAME);
 
 /*
  * Global NVIDIA capability state, for GPU driver
@@ -283,14 +286,12 @@ nv_alloc_t *nvos_create_alloc(
     nv_alloc_t *at;
     unsigned int pt_size, i;
 
-    NV_KMALLOC(at, sizeof(nv_alloc_t));
+    NV_KZALLOC(at, sizeof(nv_alloc_t));
     if (at == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate alloc info\n");
         return NULL;
     }
-
-    memset(at, 0, sizeof(nv_alloc_t));
 
     at->dev = dev;
     pt_size = num_pages *  sizeof(nvidia_pte_t *);
@@ -885,16 +886,18 @@ static void *nv_alloc_file_private(void)
     nv_linux_file_private_t *nvlfp;
     unsigned int i;
 
-    NV_KMALLOC(nvlfp, sizeof(nv_linux_file_private_t));
+    NV_KZALLOC(nvlfp, sizeof(nv_linux_file_private_t));
     if (!nvlfp)
         return NULL;
 
-    memset(nvlfp, 0, sizeof(nv_linux_file_private_t));
-
-    for (i = 0; i < NV_FOPS_STACK_INDEX_COUNT; ++i)
+    if (rm_is_altstack_in_use())
     {
-        NV_INIT_MUTEX(&nvlfp->fops_sp_lock[i]);
+        for (i = 0; i < NV_FOPS_STACK_INDEX_COUNT; ++i)
+        {
+            NV_INIT_MUTEX(&nvlfp->fops_sp_lock[i]);
+        }
     }
+
     init_waitqueue_head(&nvlfp->waitqueue);
     NV_SPIN_LOCK_INIT(&nvlfp->fp_lock);
 
@@ -1167,7 +1170,7 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
         goto failed;
     }
 
-    if (nv_dev_is_pci(nvl->dev) && (nv->pci_info.device_id == 0))
+    if (dev_is_pci(nvl->dev) && (nv->pci_info.device_id == 0))
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: open of non-existent GPU with minor number %d\n", nvl->minor_num);
         rc = -ENXIO;
@@ -1210,7 +1213,7 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
     }
 
 #if defined(NV_LINUX_PCIE_MSI_SUPPORTED)
-    if (nv_dev_is_pci(nvl->dev))
+    if (dev_is_pci(nvl->dev))
     {
         if (!(nv->flags & NV_FLAG_PERSISTENT_SW_STATE))
         {
@@ -1354,7 +1357,7 @@ failed:
         if(nvl->irq_count)
             NV_KFREE(nvl->irq_count, nvl->num_intr * sizeof(nv_irq_count_info_t));
     }
-    if (nv->flags & NV_FLAG_USES_MSIX)
+    else if (nv->flags & NV_FLAG_USES_MSIX)
     {
         nv->flags &= ~NV_FLAG_USES_MSIX;
         pci_disable_msix(nvl->pci_dev);
@@ -1464,7 +1467,7 @@ static void nv_init_mapping_revocation(nv_linux_state_t *nvl,
     down(&nvl->mmap_lock);
 
     /* Set up struct address_space for use with unmap_mapping_range() */
-    nv_address_space_init_once(&nvlfp->mapping);
+    address_space_init_once(&nvlfp->mapping);
     nvlfp->mapping.host = inode;
     nvlfp->mapping.a_ops = inode->i_mapping->a_ops;
 #if defined(NV_ADDRESS_SPACE_HAS_BACKING_DEV_INFO)
@@ -1976,7 +1979,7 @@ static int nvidia_read_card_info(nv_ioctl_card_info_t *ci, size_t num_entries)
         ci[i].reg_address        = nv->regs->cpu_address;
         ci[i].reg_size           = nv->regs->size;
         ci[i].minor_number       = nvl->minor_num;
-        if (nv_dev_is_pci(nvl->dev))
+        if (dev_is_pci(nvl->dev))
         {
             ci[i].fb_address         = nv->fb->cpu_address;
             ci[i].fb_size            = nv->fb->size;
@@ -2015,8 +2018,7 @@ nvidia_ioctl(
     if (status < 0)
         return status;
 
-    down(&nvlfp->fops_sp_lock[NV_FOPS_STACK_INDEX_IOCTL]);
-    sp = nvlfp->fops_sp[NV_FOPS_STACK_INDEX_IOCTL];
+    sp = nv_nvlfp_get_sp(nvlfp, NV_FOPS_STACK_INDEX_IOCTL);
 
     rmStatus = nv_check_gpu_state(nv);
     if (rmStatus == NV_ERR_GPU_IS_LOST)
@@ -2327,7 +2329,7 @@ unlock:
     }
 
 done:
-    up(&nvlfp->fops_sp_lock[NV_FOPS_STACK_INDEX_IOCTL]);
+    nv_nvlfp_put_sp(nvlfp, NV_FOPS_STACK_INDEX_IOCTL);
 
     up_read(&nv_system_pm_lock);
 
@@ -2392,7 +2394,7 @@ nvidia_isr(
     NvU64 currentTime = 0;
     NvBool found_irq = NV_FALSE;
 
-    rm_gpu_copy_mmu_faults_unlocked(nvl->sp[NV_DEV_STACK_ISR], nv, &rm_serviceable_fault_cnt);
+    rm_gpu_handle_mmu_faults(nvl->sp[NV_DEV_STACK_ISR], nv, &rm_serviceable_fault_cnt);
     rm_fault_handling_needed = (rm_serviceable_fault_cnt != 0);
 
 #if defined (NV_UVM_ENABLE)
@@ -3546,23 +3548,10 @@ NvBool NV_API_CALL nv_is_rm_firmware_active(
     return NV_FALSE;
 }
 
-const char *nv_firmware_path(
-    nv_firmware_t fw_type
-)
-{
-    switch (fw_type)
-    {
-        case NV_FIRMWARE_GSP:
-            return NV_FIRMWARE_GSP_FILENAME;
-        case NV_FIRMWARE_GSP_LOG:
-            return NV_FIRMWARE_GSP_LOG_FILENAME;
-    }
-    return "";
-}
-
 const void* NV_API_CALL nv_get_firmware(
     nv_state_t *nv,
-    nv_firmware_t fw_type,
+    nv_firmware_type_t fw_type,
+    nv_firmware_chip_family_t fw_chip_family,
     const void **fw_buf,
     NvU32 *fw_size
 )
@@ -3572,7 +3561,7 @@ const void* NV_API_CALL nv_get_firmware(
 
     // path is relative to /lib/firmware
     // if this fails it will print an error to dmesg
-    if (request_firmware(&fw, nv_firmware_path(fw_type), nvl->dev) != 0)
+    if (request_firmware(&fw, nv_firmware_path(fw_type, fw_chip_family), nvl->dev) != 0)
         return NULL;
 
     *fw_size = fw->size;
@@ -3972,7 +3961,7 @@ nvidia_suspend(
     nv_linux_state_t *nvl;
     nv_state_t *nv;
 
-    if (nv_dev_is_pci(dev))
+    if (dev_is_pci(dev))
     {
         pci_dev = to_pci_dev(dev);
         nvl = pci_get_drvdata(pci_dev);
@@ -4050,7 +4039,7 @@ nvidia_resume(
     nv_linux_state_t *nvl;
     nv_state_t *nv;
 
-    if (nv_dev_is_pci(dev))
+    if (dev_is_pci(dev))
     {
         pci_dev = to_pci_dev(dev);
         nvl = pci_get_drvdata(pci_dev);
@@ -4904,7 +4893,7 @@ NV_STATUS NV_API_CALL nv_get_nvlink_line_rate(
     NvU32      *linerate
 )
 {
-#if defined(NV_PNV_PCI_GET_NPU_DEV_PRESENT) && defined(NV_OF_GET_PROPERTY_PRESENT)
+#if defined(NV_PNV_PCI_GET_NPU_DEV_PRESENT)
 
     nv_linux_state_t *nvl;
     struct pci_dev   *npuDev;
@@ -5141,7 +5130,7 @@ void NV_API_CALL nv_audio_dynamic_power(
     struct pci_dev *audio_pci_dev, *pci_dev;
     struct snd_card *card;
 
-    if (!nv_dev_is_pci(dev))
+    if (!dev_is_pci(dev))
         return;
 
     pci_dev = to_pci_dev(dev);
@@ -5291,45 +5280,19 @@ static int nv_match_dev_state(const void *data, struct file *filp, unsigned fd)
     return (data == nvl);
 }
 
+NvBool NV_API_CALL nv_match_gpu_os_info(nv_state_t *nv, void *os_info)
+{
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+
+    return nv_match_dev_state(nvl, os_info, -1);
+}
+
 NvBool NV_API_CALL nv_is_gpu_accessible(nv_state_t *nv)
 {
     struct files_struct *files = current->files;
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
-#ifdef NV_ITERATE_FD_PRESENT
     return !!iterate_fd(files, 0, nv_match_dev_state, nvl);
-#else
-    struct fdtable *fdtable;
-    int ret_val = 0;
-    int fd = 0;
-
-    if (files == NULL)
-        return 0;
-
-    spin_lock(&files->file_lock);
-
-    for (fdtable = files_fdtable(files); fd < fdtable->max_fds; fd++)
-    {
-        struct file *filp;
-
-#ifdef READ_ONCE
-        filp = READ_ONCE(fdtable->fd[fd]);
-#else
-        filp = ACCESS_ONCE(fdtable->fd[fd]);
-        smp_read_barrier_depends();
-#endif
-        if (filp == NULL)
-            continue;
-
-        ret_val = nv_match_dev_state(nvl, filp, fd);
-        if (ret_val)
-            break;
-    }
-
-    spin_unlock(&files->file_lock);
-
-    return !!ret_val;
-#endif
 }
 
 NvBool NV_API_CALL nv_platform_supports_s0ix(void)

@@ -118,6 +118,11 @@ __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
         return false;
     }
 
+#if defined(NV_DRM_CONNECTOR_HAS_VRR_CAPABLE_PROPERTY)
+    drm_connector_attach_vrr_capable_property(&nv_connector->base);
+    drm_connector_set_vrr_capable_property(&nv_connector->base, pDetectParams->vrrSupported ? true : false);
+#endif
+
     if (pDetectParams->connected) {
         if (!pDetectParams->overrideEdid && pDetectParams->edid.bufferSize) {
 

@@ -226,6 +226,7 @@ static NvU32 EvoOverlayFormatFromKmsFormat91(enum NvKmsSurfaceMemoryFormat forma
         case NvKmsSurfaceMemoryFormatX2B10G10R10:
             return NV917E_SURFACE_SET_PARAMS_FORMAT_A2B10G10R10;
         case NvKmsSurfaceMemoryFormatRF16GF16BF16AF16:
+        case NvKmsSurfaceMemoryFormatRF16GF16BF16XF16:
             return NV917E_SURFACE_SET_PARAMS_FORMAT_RF16_GF16_BF16_AF16;
         case NvKmsSurfaceMemoryFormatR16G16B16A16:
             return NV917E_SURFACE_SET_PARAMS_FORMAT_R16_G16_B16_A16;
@@ -1264,6 +1265,7 @@ static NvU32 nvHwFormatFromKmsFormat90(
     case NvKmsSurfaceMemoryFormatX2B10G10R10:
         return NV917D_HEAD_SET_PARAMS_FORMAT_A2B10G10R10;
     case NvKmsSurfaceMemoryFormatRF16GF16BF16AF16:
+    case NvKmsSurfaceMemoryFormatRF16GF16BF16XF16:
         return NV917D_HEAD_SET_PARAMS_FORMAT_RF16_GF16_BF16_AF16;
     case NvKmsSurfaceMemoryFormatR16G16B16A16:
         return NV917D_HEAD_SET_PARAMS_FORMAT_R16_G16_B16_A16;
@@ -2171,6 +2173,7 @@ static void EvoPackColorKey91(enum NvKmsSurfaceMemoryFormat format,
         break;
     case NvKmsSurfaceMemoryFormatI8:
     case NvKmsSurfaceMemoryFormatRF16GF16BF16AF16:
+    case NvKmsSurfaceMemoryFormatRF16GF16BF16XF16:
     case NvKmsSurfaceMemoryFormatR16G16B16A16:
     case NvKmsSurfaceMemoryFormatRF32GF32BF32AF32:
     case NvKmsSurfaceMemoryFormatY8_U8__Y8_V8_N422:
@@ -3738,14 +3741,27 @@ static NvBool SetAccelerators(
 static void EvoAccelerateChannel91(NVDevEvoPtr pDevEvo,
                                    NVEvoChannelPtr pChannel,
                                    const NvU32 sd,
+                                   const NvBool trashPendingMethods,
+                                   const NvBool unblockMethodsInExecutation,
                                    NvU32 *pOldAccelerators)
 {
+    NvU32 accelMask = 0x0;
+
+    if (trashPendingMethods) {
+        accelMask |= NV5070_CTRL_ACCL_TRASH_ONLY;
+    }
+
     /* Start with a conservative set of accelerators; may need to add more
      * later. */
-    const NvU32 accelMask =
-        NV5070_CTRL_ACCL_IGNORE_PI |
-        NV5070_CTRL_ACCL_SKIP_SEMA |
-        NV5070_CTRL_ACCL_IGNORE_FLIPLOCK;
+    if (unblockMethodsInExecutation) {
+        accelMask |= NV5070_CTRL_ACCL_IGNORE_PI |
+                     NV5070_CTRL_ACCL_SKIP_SEMA |
+                     NV5070_CTRL_ACCL_IGNORE_FLIPLOCK;
+    }
+
+    if (accelMask == 0x0) {
+        return;
+    }
 
     *pOldAccelerators = GetAccelerators(pDevEvo, pChannel, sd);
 
@@ -3758,14 +3774,27 @@ static void EvoAccelerateChannel91(NVDevEvoPtr pDevEvo,
 static void EvoResetChannelAccelerators91(NVDevEvoPtr pDevEvo,
                                           NVEvoChannelPtr pChannel,
                                           const NvU32 sd,
+                                          const NvBool trashPendingMethods,
+                                          const NvBool unblockMethodsInExecutation,
                                           NvU32 oldAccelerators)
 {
+    NvU32 accelMask = 0x0;
+
+    if (trashPendingMethods) {
+        accelMask |= NV5070_CTRL_ACCL_TRASH_ONLY;
+    }
+
     /* Start with a conservative set of accelerators; may need to add more
      * later. */
-    const NvU32 accelMask =
-        NV5070_CTRL_ACCL_IGNORE_PI |
-        NV5070_CTRL_ACCL_SKIP_SEMA |
-        NV5070_CTRL_ACCL_IGNORE_FLIPLOCK;
+    if (unblockMethodsInExecutation) {
+        accelMask |= NV5070_CTRL_ACCL_IGNORE_PI |
+                     NV5070_CTRL_ACCL_SKIP_SEMA |
+                     NV5070_CTRL_ACCL_IGNORE_FLIPLOCK;
+    }
+
+    if (accelMask == 0x0) {
+        return;
+    }
 
     /* Accelerate window channel. */
     if (!SetAccelerators(pDevEvo, pChannel, sd, oldAccelerators, accelMask)) {
@@ -3846,5 +3875,6 @@ NVEvoHAL nvEvo94 = {
         NV_EVO2_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_1TAP,                       /* minScalerTaps */
+        0,                                        /* xEmulatedSurfaceMemoryFormats */
     },
 };

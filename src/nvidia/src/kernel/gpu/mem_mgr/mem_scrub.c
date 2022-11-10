@@ -512,6 +512,7 @@ scrubSubmitPages
     NvU64       freeEntriesInList = 0;
     NvU64       scrubCount        = 0;
     NvU64       numPagesToScrub   = pageCount;
+    NV_STATUS   status            = NV_OK;
 
     portSyncMutexAcquire(pScrubber->pScrubberMutex);
     *pSize  = 0;
@@ -519,58 +520,64 @@ scrubSubmitPages
 
     NV_PRINTF(LEVEL_INFO, "submitting pages, pageCount:%llx\n", pageCount);
 
-     freeEntriesInList = _scrubGetFreeEntries(pScrubber);
-     if (freeEntriesInList < pageCount)
-     {
-         pScrubList = (PSCRUB_NODE)
-                      portMemAllocNonPaged((NvLength)(sizeof(SCRUB_NODE) * (pageCount - freeEntriesInList)));
+    freeEntriesInList = _scrubGetFreeEntries(pScrubber);
+    if (freeEntriesInList < pageCount)
+    {
+        pScrubList = (PSCRUB_NODE)
+                     portMemAllocNonPaged((NvLength)(sizeof(SCRUB_NODE) * (pageCount - freeEntriesInList)));
+        
+        while (freeEntriesInList < pageCount)
+        {
+            if (pageCount > MAX_SCRUB_ITEMS)
+            {
+                pagesToScrubCheck = (NvLength)(MAX_SCRUB_ITEMS - freeEntriesInList);
+                scrubCount        = MAX_SCRUB_ITEMS;
+            }
+            else
+            {
+                pagesToScrubCheck  = (NvLength)(pageCount - freeEntriesInList);
+                scrubCount         = pageCount;
+            }
 
-         while (freeEntriesInList < pageCount)
-         {
-             if (pageCount > MAX_SCRUB_ITEMS)
-             {
-                 pagesToScrubCheck = (NvLength)(MAX_SCRUB_ITEMS - freeEntriesInList);
-                 scrubCount        = MAX_SCRUB_ITEMS;
-             }
-             else
-             {
-                 pagesToScrubCheck  = (NvLength)(pageCount - freeEntriesInList);
-                 scrubCount         = pageCount;
-             }
+            numFinished = _scrubCheckAndSubmit(pScrubber, chunkSize, &pPages[totalSubmitted],
+                                               scrubCount, &pScrubList[curPagesSaved],
+                                               pagesToScrubCheck);
 
-             numFinished = _scrubCheckAndSubmit(pScrubber, chunkSize, &pPages[totalSubmitted],
-                                                scrubCount, &pScrubList[curPagesSaved],
-                                                pagesToScrubCheck);
+            pageCount         -= numFinished;
+            curPagesSaved     += pagesToScrubCheck;
+            totalSubmitted    += numFinished;
+            freeEntriesInList  = _scrubGetFreeEntries(pScrubber);
+        }
 
-             pageCount         -= numFinished;
-             curPagesSaved     += pagesToScrubCheck;
-             totalSubmitted    += numFinished;
-             freeEntriesInList  = _scrubGetFreeEntries(pScrubber);
-         }
+        *ppList = pScrubList;
+        *pSize  = curPagesSaved;
+    }
+    else
+    {
+        totalSubmitted = _scrubCheckAndSubmit(pScrubber, chunkSize, pPages,
+                                              pageCount, NULL,
+                                              0);
+        *ppList = NULL;
+        *pSize  = 0;
+    }
 
-         *ppList = pScrubList;
-         *pSize  = curPagesSaved;
-     }
-     else
-     {
+    portSyncMutexRelease(pScrubber->pScrubberMutex);
 
-         totalSubmitted = _scrubCheckAndSubmit(pScrubber, chunkSize, pPages,
-                                               pageCount, NULL,
-                                               0);
-          *ppList = NULL;
-          *pSize  = 0;
-      }
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, status);
 
-     portSyncMutexRelease(pScrubber->pScrubberMutex);
-     if (totalSubmitted == numPagesToScrub)
-         return NV_OK;
-     else
-     {
+    if (totalSubmitted == numPagesToScrub)
+    {
+        status = NV_OK;
+    }
+    else
+    {
         NV_PRINTF(LEVEL_FATAL, "totalSubmitted :%llx != pageCount: %llx\n",
                   totalSubmitted, pageCount);
         DBG_BREAKPOINT();
-         return NV_ERR_GENERIC;
-     }
+        status = NV_ERR_GENERIC;
+    }
+
+    return status;
 }
 
 /**

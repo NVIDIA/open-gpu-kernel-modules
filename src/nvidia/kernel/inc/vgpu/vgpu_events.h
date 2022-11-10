@@ -35,14 +35,11 @@
 
 #include "rmconfig.h"
 
-#include "ctrl/ctrla083.h"
-#include "ctrl/ctrlc637.h"
 #include "ctrl/ctrl2080/ctrl2080bios.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 #include "ctrl/ctrl2080/ctrl2080gr.h"
 #include "ctrl/ctrl0080/ctrl0080nvjpg.h"
-
 #include "vgpu/rpc_headers.h"
 
 #include "gpu/device/device.h"
@@ -51,7 +48,8 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
 typedef MC_ENGINE_BITVECTOR *PMC_ENGINE_BITVECTOR;
-typedef struct HOST_VGPU_DEVICE HOST_VGPU_DEVICE, KERNEL_HOST_VGPU_DEVICE;
+typedef struct HOST_VGPU_DEVICE HOST_VGPU_DEVICE;
+typedef struct KERNEL_HOST_VGPU_DEVICE KERNEL_HOST_VGPU_DEVICE;
 typedef struct _object_vgpu OBJVGPU, *POBJVGPU;
 
 // Create and destroy OBJVGPU *object
@@ -70,36 +68,18 @@ void vgpuInitRegistryOverWrite(OBJGPU *pGpu);
 // Get the device pointer from the calling context
 Device *vgpuGetCallingContextDevice(OBJGPU *pGpu);
 
-// Stubs for virtualization-disabled builds
-static inline NV_STATUS vgpuGetCallingContextHostVgpuDevice(OBJGPU *pGpu, HOST_VGPU_DEVICE **ppHostVgpuDevice)
-{
-    *ppHostVgpuDevice = NULL;
-    return NV_OK;
-}
+// Get the host VGPU device pointer from the calling context
+NV_STATUS vgpuGetCallingContextHostVgpuDevice(OBJGPU *pGpu, HOST_VGPU_DEVICE **ppHostVgpuDevice);
+NV_STATUS vgpuGetCallingContextKernelHostVgpuDevice(OBJGPU *pGpu, KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice);
 
-static inline NV_STATUS vgpuGetCallingContextKernelHostVgpuDevice(OBJGPU *pGpu, KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice)
-{
-    *ppKernelHostVgpuDevice = NULL;
-    return NV_OK;
-}
+// Get the GFID for from the VGPU device of the calling context
+NV_STATUS vgpuGetCallingContextGfid(OBJGPU *pGpu, NvU32 *pGfid);
 
-static inline NV_STATUS vgpuGetCallingContextGfid(OBJGPU *pGpu, NvU32 *pGfid)
-{
-    *pGfid = GPU_GFID_PF;
-    return NV_OK;
-}
+// Check is the calling context if VGPU plugin
+NV_STATUS vgpuIsCallingContextPlugin(OBJGPU *pGpu, NvBool *pIsCallingContextPlugin);
 
-static inline NV_STATUS vgpuIsCallingContextPlugin(OBJGPU *pGpu, NvBool *pIsCallingContextPlugin)
-{
-    *pIsCallingContextPlugin = NV_FALSE;
-    return NV_OK;
-}
-
-static inline NV_STATUS vgpuGetGfidFromDeviceInfo(OBJGPU *pGpu, Device *pDevice, NvU32 *pGfid)
-{
-    *pGfid = GPU_GFID_PF;
-    return NV_OK;
-}
+// Get the GFID from DeviceInfo
+NV_STATUS vgpuGetGfidFromDeviceInfo(OBJGPU *pGpu, Device *pDevice, NvU32 *pGfid);
 
 // Update Interrupt using shared memory through vGPU
 void vgpuUpdateShmIntr(OBJGPU *pGpu, NvU32 offset, NvU32 value, THREAD_STATE_NODE *pThreadState);

@@ -108,6 +108,7 @@ struct ContextDma {
     NV_STATUS (*__ctxdmaControl_Prologue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__ctxdmaAddAdditionalDependants__)(struct RsClient *, struct ContextDma *, RsResourceRef *);
     void (*__ctxdmaPreDestruct__)(struct ContextDma *);
+    NV_STATUS (*__ctxdmaIsDuplicate__)(struct ContextDma *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__ctxdmaGetNotificationListPtr__)(struct ContextDma *);
     void (*__ctxdmaControl_Epilogue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__ctxdmaGetNotificationShare__)(struct ContextDma *);
@@ -184,6 +185,7 @@ NV_STATUS __nvoc_objCreate_ContextDma(ContextDma**, Dynamic*, NvU32, struct CALL
 #define ctxdmaControl_Prologue(pResource, pCallContext, pParams) ctxdmaControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaAddAdditionalDependants(pClient, pResource, pReference) ctxdmaAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define ctxdmaPreDestruct(pResource) ctxdmaPreDestruct_DISPATCH(pResource)
+#define ctxdmaIsDuplicate(pResource, hMemory, pDuplicate) ctxdmaIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define ctxdmaGetNotificationListPtr(pNotifier) ctxdmaGetNotificationListPtr_DISPATCH(pNotifier)
 #define ctxdmaControl_Epilogue(pResource, pCallContext, pParams) ctxdmaControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaGetNotificationShare(pNotifier) ctxdmaGetNotificationShare_DISPATCH(pNotifier)
@@ -292,6 +294,10 @@ static inline void ctxdmaPreDestruct_DISPATCH(struct ContextDma *pResource) {
     pResource->__ctxdmaPreDestruct__(pResource);
 }
 
+static inline NV_STATUS ctxdmaIsDuplicate_DISPATCH(struct ContextDma *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__ctxdmaIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *ctxdmaGetNotificationListPtr_DISPATCH(struct ContextDma *pNotifier) {
     return pNotifier->__ctxdmaGetNotificationListPtr__(pNotifier);
 }
@@ -317,10 +323,13 @@ static inline NV_STATUS ctxdmaGetOrAllocNotifShare_DISPATCH(struct ContextDma *p
 }
 
 NV_STATUS ctxdmaConstruct_IMPL(struct ContextDma *arg_pCtxdma, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_ctxdmaConstruct(arg_pCtxdma, arg_pCallContext, arg_pParams) ctxdmaConstruct_IMPL(arg_pCtxdma, arg_pCallContext, arg_pParams)
 void ctxdmaDestruct_IMPL(struct ContextDma *pCtxdma);
+
 #define __nvoc_ctxdmaDestruct(pCtxdma) ctxdmaDestruct_IMPL(pCtxdma)
 NvBool ctxdmaIsBound_IMPL(struct ContextDma *pContextDma);
+
 #ifdef __nvoc_context_dma_h_disabled
 static inline NvBool ctxdmaIsBound(struct ContextDma *pContextDma) {
     NV_ASSERT_FAILED_PRECOMP("ContextDma was disabled!");
@@ -331,6 +340,7 @@ static inline NvBool ctxdmaIsBound(struct ContextDma *pContextDma) {
 #endif //__nvoc_context_dma_h_disabled
 
 NV_STATUS ctxdmaGetByHandle_IMPL(struct RsClient *pClient, NvHandle hContextDma, struct ContextDma **arg0);
+
 #define ctxdmaGetByHandle(pClient, hContextDma, arg0) ctxdmaGetByHandle_IMPL(pClient, hContextDma, arg0)
 #undef PRIVATE_FIELD
 

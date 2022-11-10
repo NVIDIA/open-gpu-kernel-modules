@@ -104,7 +104,8 @@ RmDeprecatedControlHandler RmDeprecatedGetControlHandler(NVOS54_PARAMETERS *pArg
                         serverGetClientUnderLock(&g_resServ, pArgs->hClient, &pClient),
                         return NULL);
 
-    gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu);
+    // pGpu is expected to be NULL on some controls, addi ng a void to avoid coverity failure.
+    (void)gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu);
 
     // search rmDeprecatedControlTable for handler
     for (i = 0; rmDeprecatedControlTable[i].cmd != 0; i++)
@@ -740,3 +741,4 @@ done:
 
     return status;
 }
+

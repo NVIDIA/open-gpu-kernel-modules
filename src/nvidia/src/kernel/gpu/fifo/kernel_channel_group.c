@@ -158,7 +158,7 @@ kchangrpInit_IMPL
         //
         NV_ASSERT_OK_OR_RETURN(
             kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                     ENGINE_INFO_TYPE_NV2080,
+                                     ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
                                      pKernelChannelGroup->engineType,
                                      ENGINE_INFO_TYPE_RUNLIST,
                                      &runlistId));
@@ -371,7 +371,7 @@ kchangrpDestroy_IMPL
         //
         NV_ASSERT_OK_OR_RETURN(
             kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                     ENGINE_INFO_TYPE_NV2080,
+                                     ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
                                      pKernelChannelGroup->engineType,
                                      ENGINE_INFO_TYPE_RUNLIST,
                                      &runlistId));

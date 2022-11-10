@@ -8,7 +8,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 //
 
 #ifndef _G_RMCFG_PRIVATE_H_
@@ -267,6 +267,12 @@
 
 #define IsAD104(pGpu)                  rmcfg_IsAD104(pGpu)
 #define IsAD104orBetter(pGpu)          rmcfg_IsAD104orBetter(pGpu)
+
+#define IsAD106(pGpu)                  rmcfg_IsAD106(pGpu)
+#define IsAD106orBetter(pGpu)          rmcfg_IsAD106orBetter(pGpu)
+
+#define IsAD107(pGpu)                  rmcfg_IsAD107(pGpu)
+#define IsAD107orBetter(pGpu)          rmcfg_IsAD107orBetter(pGpu)
 
 // Any AD10X chip?
 #define IsAD10X(pGpu)                  rmcfg_IsAD10X(pGpu)

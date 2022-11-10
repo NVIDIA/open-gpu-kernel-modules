@@ -22,6 +22,7 @@
  */
 
 #include "core/core.h"
+#include "core/locks.h"
 #include <rmp2pdefines.h>
 #include "gpu/gpu.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
@@ -62,20 +63,17 @@ NV_STATUS RmP2PValidateSubDevice
  * @brief frees given third party p2p memory extent
  */
 static
-NV_STATUS _freeMappingExtentInfo
+void _freeMappingExtentInfo
 (
     PCLI_THIRD_PARTY_P2P_MAPPING_EXTENT_INFO pExtentInfo
 )
 {
     if (pExtentInfo == NULL)
-        return NV_OK;
+        return;
 
-    if (pExtentInfo->pMemDesc != NULL)
-        memdescDestroy(pExtentInfo->pMemDesc);
+    memdescDestroy(pExtentInfo->pMemDesc);
 
     portMemFree(pExtentInfo);
-
-    return NV_OK;
 }
 
 /*!
@@ -202,11 +200,12 @@ NV_STATUS _createThirdPartyP2PMappingExtent
                              0,
                              &fbApertureOffset, status);
     }
-    else
+    else if ((status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
     {
         status = kbusMapFbAperture_HAL(pGpu, pKernelBus, (*ppExtentInfo)->pMemDesc, 0,
-                                       &fbApertureOffset, &fbApertureMapLength,
-                                       BUS_MAP_FB_FLAGS_MAP_UNICAST, hClient);
+                                        &fbApertureOffset, &fbApertureMapLength,
+                                        BUS_MAP_FB_FLAGS_MAP_UNICAST, hClient);
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
     }
     if (status != NV_OK)
     {
@@ -247,13 +246,14 @@ out:
                                        0,
                                        fbApertureOffset, tmpStatus);
             }
-            else
+            else if ((tmpStatus = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
             {
                 tmpStatus = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
                                                     (*ppExtentInfo)->pMemDesc,
                                                     fbApertureOffset,
                                                     fbApertureMapLength,
                                                     BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
             }
             NV_ASSERT(tmpStatus == NV_OK);
         }
@@ -377,13 +377,14 @@ NV_STATUS RmThirdPartyP2PMappingFree
                                        0,
                                        pExtentInfo->fbApertureOffset, status);
             }
-            else
+            else if ((status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
             {
-               status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
-                                                pExtentInfo->pMemDesc,
-                                                pExtentInfo->fbApertureOffset,
-                                                pExtentInfo->length,
-                                                BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
+                                                 pExtentInfo->pMemDesc,
+                                                 pExtentInfo->fbApertureOffset,
+                                                 pExtentInfo->length,
+                                                 BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
             }
             NV_ASSERT(status == NV_OK);
 

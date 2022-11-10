@@ -779,7 +779,7 @@ kbifGetGpuLinkControlStatus
 static NvBool
 _doesBoardHaveMultipleGpusAndSwitch(OBJGPU *pGpu)
 {
-    if (((gpuIsMultiGpuBoard(pGpu, NULL, NULL)) ||
+    if (((gpuIsMultiGpuBoard(pGpu, NULL)) ||
         (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_GEMINI)))&&
         ((pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_PLX_PRESENT))  ||
          (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_BR03_PRESENT)) ||
@@ -855,7 +855,12 @@ kbifControlGetPCIEInfo_IMPL
                 else
                 {
                     temp = REF_VAL(NV2080_CTRL_BUS_INFO_PCIE_LINK_CTRL_STATUS_LINK_SPEED, temp);
-                    if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CTRL_STATUS_LINK_SPEED_32000MBPS)
+                    if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CTRL_STATUS_LINK_SPEED_64000MBPS)
+                    {
+                        data = FLD_SET_DRF(2080, _CTRL_BUS_INFO_PCIE_LINK_CAP,
+                                           _CURR_LEVEL, _GEN6, data);
+                    }
+                    else if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CTRL_STATUS_LINK_SPEED_32000MBPS)
                     {
                         data = FLD_SET_DRF(2080, _CTRL_BUS_INFO_PCIE_LINK_CAP,
                                            _CURR_LEVEL, _GEN5, data);
@@ -892,7 +897,12 @@ kbifControlGetPCIEInfo_IMPL
                 else
                 {
                     temp = REF_VAL(NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED, temp);
-                    if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_32000MBPS)
+                    if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_64000MBPS)
+                    {
+                        data = FLD_SET_DRF(2080, _CTRL_BUS_INFO_PCIE_LINK_CAP,
+                                           _GEN, _GEN6, data);
+                    }
+                    else if (temp == NV2080_CTRL_BUS_INFO_PCIE_LINK_CAP_MAX_SPEED_32000MBPS)
                     {
                         data = FLD_SET_DRF(2080, _CTRL_BUS_INFO_PCIE_LINK_CAP,
                                            _GEN, _GEN5, data);

@@ -40,8 +40,9 @@
 #include "nvkms-surface.h"
 #include "nvkms-3dvision.h"
 #include "nvkms-ioctl.h"
-#include "nvkms-cursor.h" /* nvSetCursorImage, nvEvoMoveCursor */
-#include "nvkms-flip.h" /* nvFlipEvo */
+#include "nvkms-headsurface.h"
+#include "nvkms-headsurface-ioctl.h"
+#include "nvkms-headsurface-swapgroup.h"
 #include "nvkms-vrr.h"
 
 #include "dp/nvdp-connector.h"
@@ -115,6 +116,10 @@ enum NvKmsUnicastEventType {
      *  NVKMS_IOCTL_JOIN_SWAP_GROUP */
     NvKmsUnicastEventTypeDeferredRequest,
 
+    /* Used by:
+     *  NVKMS_IOCTL_NOTIFY_VBLANK */
+    NvKmsUnicastEventTypeVblankNotification,
+
     /* Undefined, this indicates the unicast fd is available for use. */
     NvKmsUnicastEventTypeUndefined,
 };
@@ -137,6 +142,7 @@ struct NvKmsPerOpenDisp {
     NVEvoApiHandlesRec           connectorHandles;
     struct NvKmsPerOpenConnector connector[NVKMS_MAX_CONNECTORS_PER_DISP];
     NVEvoApiHandlesRec           vblankSyncObjectHandles[NVKMS_MAX_HEADS_PER_DISP];
+    NVEvoApiHandlesRec           vblankCallbackHandles[NVKMS_MAX_HEADS_PER_DISP];
 };
 
 struct NvKmsPerOpenDev {
@@ -149,6 +155,7 @@ struct NvKmsPerOpenDev {
     struct NvKmsPerOpenDisp      disp[NVKMS_MAX_SUBDEVICES];
     NvBool                       isPrivileged;
     NVEvoApiHandlesRec           deferredRequestFifoHandles;
+    NVEvoApiHandlesRec           swapGroupHandles;
 };
 
 struct NvKmsPerOpenEventListEntry {
@@ -198,6 +205,12 @@ struct NvKmsPerOpen {
                 struct {
                     NVDeferredRequestFifoPtr pDeferredRequestFifo;
                 } deferred;
+
+                struct {
+                    NvKmsGenericHandle       hCallback;
+                    struct NvKmsPerOpenDisp *pOpenDisp;
+                    NvU32                    head;
+                } vblankNotification;
             } e;
         } unicastEvent;
     };
@@ -656,6 +669,9 @@ static void ClearPerOpenDisp(
     struct NvKmsPerOpenConnector *pOpenConnector;
     NvKmsGenericHandle connector;
 
+    NVVBlankCallbackPtr pCallbackData;
+    NvKmsGenericHandle callback;
+
     FreePerOpenFrameLock(pOpen, pOpenDisp);
 
     FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->connectorHandles,
@@ -668,6 +684,12 @@ static void ClearPerOpenDisp(
 
     for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
         nvEvoDestroyApiHandles(&pOpenDisp->vblankSyncObjectHandles[i]);
+
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->vblankCallbackHandles[i],
+                                            pCallbackData, callback) {
+            nvRemoveUnicastEvent(pCallbackData->pUserData);
+        }
+        nvEvoDestroyApiHandles(&pOpenDisp->vblankCallbackHandles[i]);
     }
 
     nvEvoDestroyApiHandle(&pOpenDev->dispHandles, pOpenDisp->nvKmsApiHandle);
@@ -733,6 +755,17 @@ static NvBool InitPerOpenDisp(
         }
     }
 
+    /* Initialize the vblankCallbackHandles for each head.
+     *
+     * The limit of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply here, but
+     * we need something. */
+    for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
+        if (!nvEvoInitApiHandles(&pOpenDisp->vblankCallbackHandles[i],
+                                 NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
+            goto fail;
+        }
+    }
+
     if (!AllocPerOpenFrameLock(pOpen, pOpenDisp)) {
         goto fail;
     }
@@ -742,6 +775,28 @@ static NvBool InitPerOpenDisp(
 fail:
     ClearPerOpenDisp(pOpen, pOpenDev, pOpenDisp);
     return FALSE;
+}
+
+/*!
+ * Free any SwapGroups tracked by this pOpenDev.
+ */
+static void FreeSwapGroups(struct NvKmsPerOpenDev *pOpenDev)
+{
+    NVSwapGroupRec *pSwapGroup;
+    NvKmsSwapGroupHandle handle;
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+
+    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->swapGroupHandles,
+                                        pSwapGroup,
+                                        handle) {
+        nvEvoDestroyApiHandle(&pOpenDev->swapGroupHandles, handle);
+
+        if (pDevEvo->modesetOwner == pOpenDev) {
+            nvHsFreeSwapGroup(pDevEvo, pSwapGroup);
+        } else {
+            nvHsDecrementSwapGroupRefCnt(pSwapGroup);
+        }
+    }
 }
 
 /*!
@@ -884,8 +939,6 @@ static NvBool GrabModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
     AssignFullNvKmsFlipPermissions(pDevEvo, &pOpenDev->flipPermissions);
     AssignFullNvKmsModesetPermissions(pDevEvo, &pOpenDev->modesetPermissions);
 
-    pDevEvo->modesetOwnerChanged = TRUE;
-
     return TRUE;
 }
 
@@ -953,8 +1006,6 @@ static void ReallocCoreChannel(NVDevEvoRec *pDevEvo)
 
 static void RestoreConsole(NVDevEvoPtr pDevEvo)
 {
-    pDevEvo->modesetOwnerChanged = TRUE;
-
     // Try to issue a modeset and flip to the framebuffer console surface.
     if (!nvEvoRestoreConsole(pDevEvo, TRUE /* allowMST */)) {
         // If that didn't work, free the core channel to trigger RM's console
@@ -984,6 +1035,8 @@ static NvBool ReleaseModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
         // Only the current owner can release ownership.
         return FALSE;
     }
+
+    FreeSwapGroups(pOpenDev);
 
     pDevEvo->modesetOwner = NULL;
     pDevEvo->handleConsoleHotplugs = TRUE;
@@ -1026,6 +1079,8 @@ void nvFreePerOpenDev(struct NvKmsPerOpen *pOpen,
     nvEvoDestroyApiHandle(&pOpen->ioctl.devHandles, pOpenDev->nvKmsApiHandle);
 
     nvEvoDestroyApiHandles(&pOpenDev->deferredRequestFifoHandles);
+
+    nvEvoDestroyApiHandles(&pOpenDev->swapGroupHandles);
 
     nvFree(pOpenDev);
 }
@@ -1098,6 +1153,10 @@ struct NvKmsPerOpenDev *nvAllocPerOpenDev(struct NvKmsPerOpen *pOpen,
         goto fail;
     }
 
+    if (!nvEvoInitApiHandles(&pOpenDev->swapGroupHandles, 4)) {
+        goto fail;
+    }
+
     return pOpenDev;
 
 fail:
@@ -1163,6 +1222,30 @@ static NvBool AssignNvKmsPerOpenType(struct NvKmsPerOpen *pOpen,
 
     pOpen->type = type;
     return TRUE;
+}
+
+/*!
+ * Return whether the PerOpen can be used as a unicast event.
+ */
+static inline NvBool PerOpenIsValidForUnicastEvent(
+    const struct NvKmsPerOpen *pOpen)
+{
+    /* If the type is Undefined, it can be made a unicast event. */
+
+    if (pOpen->type == NvKmsPerOpenTypeUndefined) {
+        return TRUE;
+    }
+
+    /*
+     * If the type is already UnicastEvent but there is no active user, it can
+     * be made a unicast event.
+     */
+    if ((pOpen->type == NvKmsPerOpenTypeUnicastEvent) &&
+        (pOpen->unicastEvent.type == NvKmsUnicastEventTypeUndefined)) {
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 /*!
@@ -1278,10 +1361,19 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
 
     pParams->reply.maxCursorSize     = pDevEvo->cursorHal->caps.maxSize;
 
+    /* NVKMS swap groups and warp&blend depends on headSurface functionality. */
+    pParams->reply.supportsSwapGroups = pDevEvo->isHeadSurfaceSupported;
+    pParams->reply.supportsWarpAndBlend = pDevEvo->isHeadSurfaceSupported;
+
     pParams->reply.validLayerRRTransforms = pDevEvo->caps.validLayerRRTransforms;
 
     pParams->reply.isoIOCoherencyModes = pDevEvo->isoIOCoherencyModes;
     pParams->reply.nisoIOCoherencyModes = pDevEvo->nisoIOCoherencyModes;
+
+    /*
+     * TODO: Replace the isSOCDisplay check with an RM query. See Bug 3689635.
+     */
+    pParams->reply.displayIsGpuL2Coherent = !pDevEvo->isSOCDisplay;
 
     pParams->reply.supportsSyncpts = pDevEvo->supportsSyncpts;
 
@@ -1381,6 +1473,8 @@ static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
     /* Disable all client-owned vblank sync objects that still exist. */
     DisableRemainingVblankSyncObjects(pOpen, pOpenDev);
 
+    FreeSwapGroups(pOpenDev);
+
     UnregisterDeferredRequestFifos(pOpenDev);
 
     nvEvoFreeClientSurfaces(pOpenDev->pDevEvo, pOpenDev,
@@ -1395,6 +1489,7 @@ static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
         ReleaseModesetOwnership(pOpenDev);
 
         nvAssert(pOpenDev->pDevEvo->modesetOwner != pOpenDev);
+        nvAssert(pOpenDev->pDevEvo->lastModesettingClient != pOpenDev);
     }
 
     nvFreePerOpenDev(pOpen, pOpenDev);
@@ -1445,8 +1540,6 @@ static NvBool QueryDisp(struct NvKmsPerOpen *pOpen,
 
     pDispEvo = pOpenDisp->pDispEvo;
 
-    pParams->reply.displayOwner    = pDispEvo->displayOwner;
-    pParams->reply.subDeviceMask   = nvDispSubDevMaskEvo(pDispEvo);
     // Don't include dynamic displays in validDpys.  The data returned here is
     // supposed to be static for the lifetime of the pDispEvo.
     pParams->reply.validDpys       =
@@ -1990,20 +2083,6 @@ static NvBool SetMode(struct NvKmsPerOpen *pOpen,
                             TRUE /* doRasterLock */);
 }
 
-static inline NvBool nvHsIoctlSetCursorImage(
-    NVDispEvoPtr pDispEvo,
-    const struct NvKmsPerOpenDev *pOpenDevice,
-    const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
-    NvU32 head,
-    const struct NvKmsSetCursorImageCommonParams *pParams)
-{
-    return nvSetCursorImage(pDispEvo,
-                            pOpenDevice,
-                            pOpenDevSurfaceHandles,
-                            head,
-                            pParams);
-}
-
 /*!
  * Set the cursor image.
  */
@@ -2034,15 +2113,6 @@ static NvBool SetCursorImage(struct NvKmsPerOpen *pOpen,
                                    &pOpenDev->surfaceHandles,
                                    pParams->request.head,
                                    &pParams->request.common);
-}
-
-static inline NvBool nvHsIoctlMoveCursor(
-    NVDispEvoPtr pDispEvo,
-    NvU32 head,
-    const struct NvKmsMoveCursorCommonParams *pParams)
-{
-    nvEvoMoveCursor(pDispEvo, head, pParams);
-    return TRUE;
 }
 
 /*!
@@ -2154,6 +2224,12 @@ static NvBool IdleBaseChannelCheckIdleOneHead(
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
 
+    const NvU32 apiHead = nvHardwareHeadToApiHead(head);
+    NVHsChannelEvoPtr pHsChannel = pDispEvo->pHsChannel[apiHead];
+
+    if (pHsChannel != NULL) {
+        return nvHsIdleFlipQueue(pHsChannel, FALSE /* force */);
+    } else
     {
         NVEvoChannelPtr pMainLayerChannel =
             pDevEvo->head[head].layer[NVKMS_MAIN_LAYER];
@@ -2285,20 +2361,6 @@ static NvBool IdleBaseChannel(struct NvKmsPerOpen *pOpen,
                               &pParams->request, &pParams->reply);
 }
 
-
-static inline NvBool nvHsIoctlFlip(
-    NVDevEvoPtr pDevEvo,
-    const struct NvKmsPerOpenDev *pOpenDev,
-    const struct NvKmsFlipRequest *pRequest,
-    struct NvKmsFlipReply *pReply)
-{
-    return nvFlipEvo(pOpenDev->pDevEvo,
-                     pOpenDev,
-                     pRequest,
-                     pReply,
-                     FALSE /* skipUpdate */,
-                     TRUE /* allowFlipLock */);
-}
 
 /*!
  * Flip the specified head.
@@ -2515,6 +2577,170 @@ static NvBool ReleaseSurface(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
     return TRUE;
 }
 
+
+/*!
+ * Associate a swap group with the NvKmsPerOpen specified by
+ * NvKmsGrantSwapGroupParams::request::fd.
+ */
+static NvBool GrantSwapGroup(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
+{
+    struct NvKmsGrantSwapGroupParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev;
+    NVSwapGroupRec *pSwapGroup;
+    struct NvKmsPerOpen *pOpenFd;
+
+    pOpenDev = GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+        return FALSE;
+    }
+
+    pSwapGroup = nvHsGetSwapGroup(&pOpenDev->swapGroupHandles,
+                                  pParams->request.swapGroupHandle);
+
+    if (pSwapGroup == NULL) {
+        return FALSE;
+    }
+
+    pOpenFd = nvkms_get_per_open_data(pParams->request.fd);
+
+    if (pOpenFd == NULL) {
+        return FALSE;
+    }
+
+    /*
+     * Increment the swap group refcnt while granting it so the SwapGroup
+     * won't be freed out from under the grant fd.  To complement this,
+     * nvKmsClose() on NvKmsPerOpenTypeGrantSwapGroup calls
+     * DecrementSwapGroupRefCnt().
+     */
+    if (!nvHsIncrementSwapGroupRefCnt(pSwapGroup)) {
+        return FALSE;
+    }
+
+    if (!AssignNvKmsPerOpenType(
+            pOpenFd, NvKmsPerOpenTypeGrantSwapGroup, FALSE)) {
+        nvHsDecrementSwapGroupRefCnt(pSwapGroup);
+        return FALSE;
+    }
+
+    /* we must not fail beyond this point */
+
+    pOpenFd->grantSwapGroup.pSwapGroup = pSwapGroup;
+
+    pOpenFd->grantSwapGroup.pDevEvo = pOpenDev->pDevEvo;
+
+    return TRUE;
+}
+
+
+/*!
+ * Retrieve the swap group and device associated with
+ * NvKmsAcquireSwapGroupParams::request::fd, give the client an
+ * NvKmsSwapGroupHandle to the swap group, and increment the
+ * swap group's reference count.
+ */
+static NvBool AcquireSwapGroup(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
+{
+    struct NvKmsAcquireSwapGroupParams *pParams = pParamsVoid;
+    struct NvKmsPerOpen *pOpenFd;
+    struct NvKmsPerOpenDev *pOpenDev;
+    NvKmsSwapGroupHandle swapGroupHandle = 0;
+
+    pOpenFd = nvkms_get_per_open_data(pParams->request.fd);
+
+    if (pOpenFd == NULL) {
+        return FALSE;
+    }
+
+    if (pOpenFd->type != NvKmsPerOpenTypeGrantSwapGroup) {
+        return FALSE;
+    }
+
+    /*
+     * pSwapGroup is only freed when its last reference goes away; if pOpenFd
+     * hasn't yet been closed, then its reference incremented in
+     * GrantSwapGroup() couldn't have been decremented in nvKmsClose()
+     */
+    nvAssert(pOpenFd->grantSwapGroup.pSwapGroup != NULL);
+    nvAssert(pOpenFd->grantSwapGroup.pDevEvo != NULL);
+
+    if (pOpenFd->grantSwapGroup.pSwapGroup->zombie) {
+        return FALSE;
+    }
+
+    pOpenDev = DevEvoToOpenDev(pOpen, pOpenFd->grantSwapGroup.pDevEvo);
+
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    if (nvEvoApiHandlePointerIsPresent(&pOpenDev->swapGroupHandles,
+                                       pOpenFd->grantSwapGroup.pSwapGroup)) {
+        return FALSE;
+    }
+
+    if (!nvHsIncrementSwapGroupRefCnt(pOpenFd->grantSwapGroup.pSwapGroup)) {
+        return FALSE;
+    }
+
+    swapGroupHandle =
+        nvEvoCreateApiHandle(&pOpenDev->swapGroupHandles,
+                             pOpenFd->grantSwapGroup.pSwapGroup);
+
+    if (swapGroupHandle == 0) {
+        nvHsDecrementSwapGroupRefCnt(pOpenFd->grantSwapGroup.pSwapGroup);
+        return FALSE;
+    }
+
+    /* we must not fail beyond this point */
+
+    pParams->reply.deviceHandle = pOpenDev->nvKmsApiHandle;
+    pParams->reply.swapGroupHandle = swapGroupHandle;
+
+    return TRUE;
+}
+
+
+/*!
+ * Free this client's reference to the swap group.
+ *
+ * This is meant to be called by clients that have acquired the swap group
+ * handle through AcquireSwapGroup().
+ */
+static NvBool ReleaseSwapGroup(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
+{
+    struct NvKmsReleaseSwapGroupParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev;
+    NVSwapGroupRec *pSwapGroup;
+    NvKmsSwapGroupHandle handle = pParams->request.swapGroupHandle;
+
+    pOpenDev = GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    /*
+     * This may operate on a swap group that has already been freed
+     * (pSwapGroup->zombie is TRUE).
+     */
+    pSwapGroup = nvHsGetSwapGroupStruct(&pOpenDev->swapGroupHandles,
+                                        handle);
+    if (pSwapGroup == NULL) {
+        return FALSE;
+    }
+
+    nvEvoDestroyApiHandle(&pOpenDev->swapGroupHandles, handle);
+
+    nvHsDecrementSwapGroupRefCnt(pSwapGroup);
+
+    return TRUE;
+}
 
 /*!
  * Change the value of the specified attribute.
@@ -3137,6 +3363,394 @@ static NvBool QueryDpyCRC32(struct NvKmsPerOpen *pOpen,
     return TRUE;
 }
 
+static NvBool AllocSwapGroup(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsAllocSwapGroupParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev;
+    NVSwapGroupRec *pSwapGroup;
+    NvKmsSwapGroupHandle handle;
+
+    pOpenDev = GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+        return FALSE;
+    }
+
+    pSwapGroup = nvHsAllocSwapGroup(pOpenDev->pDevEvo, &pParams->request);
+
+    if (pSwapGroup == NULL) {
+        return FALSE;
+    }
+
+    handle = nvEvoCreateApiHandle(&pOpenDev->swapGroupHandles, pSwapGroup);
+
+    if (handle == 0) {
+        nvHsFreeSwapGroup(pOpenDev->pDevEvo, pSwapGroup);
+        return FALSE;
+    }
+
+    pParams->reply.swapGroupHandle = handle;
+
+    return TRUE;
+}
+
+static NvBool FreeSwapGroup(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsFreeSwapGroupParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev;
+    NVSwapGroupRec *pSwapGroup;
+    NvKmsSwapGroupHandle handle = pParams->request.swapGroupHandle;
+
+    pOpenDev = GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+        return FALSE;
+    }
+
+    pSwapGroup = nvHsGetSwapGroup(&pOpenDev->swapGroupHandles,
+                                  handle);
+    if (pSwapGroup == NULL) {
+        return FALSE;
+    }
+
+    nvEvoDestroyApiHandle(&pOpenDev->swapGroupHandles, handle);
+
+    nvHsFreeSwapGroup(pOpenDev->pDevEvo, pSwapGroup);
+
+    return TRUE;
+}
+
+static NvBool JoinSwapGroup(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsJoinSwapGroupParams *pParams = pParamsVoid;
+    const struct NvKmsJoinSwapGroupRequestOneMember *pMember =
+        pParams->request.member;
+    NvU32 i;
+    NvBool anySwapGroupsPending = FALSE;
+    NVHsJoinSwapGroupWorkArea *pJoinSwapGroupWorkArea;
+
+    if ((pParams->request.numMembers == 0) ||
+        (pParams->request.numMembers >
+         ARRAY_LEN(pParams->request.member))) {
+        return FALSE;
+    }
+
+    pJoinSwapGroupWorkArea = nvCalloc(pParams->request.numMembers,
+                                      sizeof(NVHsJoinSwapGroupWorkArea));
+
+    if (!pJoinSwapGroupWorkArea) {
+        return FALSE;
+    }
+
+    /*
+     * When a client is joining multiple swap groups simultaneously, all of its
+     * deferred request fifos must enter the pendingJoined state if any of the
+     * swap groups it's joining have pending flips.  Otherwise, this sequence
+     * can lead to a deadlock:
+     *
+     * - Client 0 joins DRF 0 to SG 0, DRF 1 to SG 1, with SG 0 and SG 1
+     *   fliplocked
+     * - Client 0 submits DRF 0 ready, SG 0 flips, but the flip won't complete
+     *   and [Client 0.DRF 0] won't be released until SG 1 flips due to
+     *   fliplock
+     * - Client 1 joins DRF 0 to SG 0, DRF 1 to SG 1
+     * - Client 0 submits DRF 1 ready, but SG 1 doesn't flip because
+     *   [Client 1.DRF 0] has joined.
+     *
+     * With the pendingJoined behavior, this sequence works as follows:
+     *
+     * - Client 0 joins DRF 0 to SG 0, DRF 1 to SG 1, with SG 0 and SG 1
+     *   fliplocked
+     * - Client 0 submits DRF 0 ready, SG 0 flips, but the flip won't complete
+     *   and [Client 0.DRF 0] won't be released until SG 1 flips due to
+     *   fliplock
+     * - Client 1 joins DRF 0 to SG 0, DRF 1 to SG 1, but both enter the
+     *   pendingJoined state because [Client 0.DRF 0] has a pending flip.
+     * - Client 0 submits DRF 1 ready, both swap groups flip, Client 0's
+     *   DRFs are both released, and Client 1's DRFs both leave the
+     *   pendingJoined state.
+     */
+    for (i = 0; i < pParams->request.numMembers; i++) {
+        struct NvKmsPerOpenDev *pOpenDev;
+        NVSwapGroupRec *pSwapGroup;
+        NVDeferredRequestFifoRec *pDeferredRequestFifo;
+        struct NvKmsPerOpen *pEventOpenFd = NULL;
+        NvKmsDeviceHandle deviceHandle = pMember[i].deviceHandle;
+        NvKmsSwapGroupHandle swapGroupHandle = pMember[i].swapGroupHandle;
+        NvKmsDeferredRequestFifoHandle deferredRequestFifoHandle =
+            pMember[i].deferredRequestFifoHandle;
+
+        pOpenDev = GetPerOpenDev(pOpen, deviceHandle);
+
+        if (pOpenDev == NULL) {
+            goto fail;
+        }
+
+        pSwapGroup = nvHsGetSwapGroup(&pOpenDev->swapGroupHandles,
+                                      swapGroupHandle);
+
+        if (pSwapGroup == NULL) {
+            goto fail;
+        }
+
+        if (pSwapGroup->pendingFlip) {
+            anySwapGroupsPending = TRUE;
+        }
+
+        /*
+         * In addition to the check for pending swap groups above, validate
+         * the remainder of the request now.
+         */
+
+        /*
+         * Prevent pSwapGroup->nMembers from overflowing NV_U32_MAX.
+         *
+         * Ideally we would want to count how many members are being added to
+         * each swap group in the request, but as an optimization, just verify
+         * that the number of {fifo, swapgroup} tuples joining would not
+         * overflow any swapgroup even if every one was joining the same
+         * swapgroup.
+         */
+        if (NV_U32_MAX - pSwapGroup->nMembers < pParams->request.numMembers) {
+            goto fail;
+        }
+
+        pDeferredRequestFifo =
+            nvEvoGetPointerFromApiHandle(
+                &pOpenDev->deferredRequestFifoHandles,
+                deferredRequestFifoHandle);
+
+        if (pDeferredRequestFifo == NULL) {
+            goto fail;
+        }
+
+        /*
+         * If the pDeferredRequestFifo is already a member of a SwapGroup, then
+         * fail.
+         */
+        if (pDeferredRequestFifo->swapGroup.pSwapGroup != NULL) {
+            goto fail;
+        }
+
+        if (pMember[i].unicastEvent.specified) {
+            pEventOpenFd = nvkms_get_per_open_data(pMember[i].unicastEvent.fd);
+
+            if (pEventOpenFd == NULL) {
+                goto fail;
+            }
+
+            if (!PerOpenIsValidForUnicastEvent(pEventOpenFd)) {
+                goto fail;
+            }
+        }
+
+        pJoinSwapGroupWorkArea[i].pDevEvo = pOpenDev->pDevEvo;
+        pJoinSwapGroupWorkArea[i].pSwapGroup = pSwapGroup;
+        pJoinSwapGroupWorkArea[i].pDeferredRequestFifo = pDeferredRequestFifo;
+        pJoinSwapGroupWorkArea[i].pEventOpenFd = pEventOpenFd;
+        pJoinSwapGroupWorkArea[i].enabledHeadSurface = FALSE;
+    }
+
+    if (!nvHsJoinSwapGroup(pJoinSwapGroupWorkArea,
+                           pParams->request.numMembers,
+                           anySwapGroupsPending)) {
+        goto fail;
+    }
+
+    /* Beyond this point, the function cannot fail. */
+
+    for (i = 0; i < pParams->request.numMembers; i++) {
+        struct NvKmsPerOpen *pEventOpenFd =
+            pJoinSwapGroupWorkArea[i].pEventOpenFd;
+        NVDeferredRequestFifoRec *pDeferredRequestFifo =
+            pJoinSwapGroupWorkArea[i].pDeferredRequestFifo;
+
+        if (pEventOpenFd) {
+            pDeferredRequestFifo->swapGroup.pOpenUnicastEvent = pEventOpenFd;
+
+            pEventOpenFd->unicastEvent.type =
+                NvKmsUnicastEventTypeDeferredRequest;
+            pEventOpenFd->unicastEvent.e.deferred.pDeferredRequestFifo =
+                pDeferredRequestFifo;
+
+            pEventOpenFd->type = NvKmsPerOpenTypeUnicastEvent;
+        }
+    }
+
+    nvFree(pJoinSwapGroupWorkArea);
+    return TRUE;
+
+fail:
+    nvFree(pJoinSwapGroupWorkArea);
+    return FALSE;
+}
+
+static NvBool LeaveSwapGroup(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsLeaveSwapGroupParams *pParams = pParamsVoid;
+    const struct NvKmsLeaveSwapGroupRequestOneMember *pMember =
+        pParams->request.member;
+    NvU32 i;
+
+    if ((pParams->request.numMembers == 0) ||
+        (pParams->request.numMembers >
+         ARRAY_LEN(pParams->request.member))) {
+        return FALSE;
+    }
+
+    /*
+     * Validate all handles passed by the caller and fail if any are invalid.
+     */
+    for (i = 0; i < pParams->request.numMembers; i++) {
+        struct NvKmsPerOpenDev *pOpenDev;
+        NVDeferredRequestFifoRec *pDeferredRequestFifo;
+        NvKmsDeviceHandle deviceHandle =
+            pMember[i].deviceHandle;
+        NvKmsDeferredRequestFifoHandle deferredRequestFifoHandle =
+            pMember[i].deferredRequestFifoHandle;
+
+        pOpenDev = GetPerOpenDev(pOpen, deviceHandle);
+
+        if (pOpenDev == NULL) {
+            return FALSE;
+        }
+
+        pDeferredRequestFifo =
+            nvEvoGetPointerFromApiHandle(
+                &pOpenDev->deferredRequestFifoHandles,
+                deferredRequestFifoHandle);
+
+        if (pDeferredRequestFifo == NULL) {
+            return FALSE;
+        }
+
+        if (pDeferredRequestFifo->swapGroup.pSwapGroup == NULL) {
+            return FALSE;
+        }
+    }
+
+    /* Beyond this point, the function cannot fail. */
+
+    for (i = 0; i < pParams->request.numMembers; i++) {
+        struct NvKmsPerOpenDev *pOpenDev;
+        NVDeferredRequestFifoRec *pDeferredRequestFifo;
+        NvKmsDeviceHandle deviceHandle =
+            pMember[i].deviceHandle;
+        NvKmsDeferredRequestFifoHandle deferredRequestFifoHandle =
+            pMember[i].deferredRequestFifoHandle;
+
+        pOpenDev = GetPerOpenDev(pOpen, deviceHandle);
+
+        pDeferredRequestFifo =
+            nvEvoGetPointerFromApiHandle(
+                &pOpenDev->deferredRequestFifoHandles,
+                deferredRequestFifoHandle);
+
+        nvHsLeaveSwapGroup(pOpenDev->pDevEvo, pDeferredRequestFifo,
+                           FALSE /* teardown */);
+    }
+
+    return TRUE;
+}
+
+static NvBool SetSwapGroupClipList(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsSetSwapGroupClipListParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev;
+    NVSwapGroupRec *pSwapGroup;
+    struct NvKmsRect *pClipList;
+    NvBool ret;
+
+    pOpenDev = GetPerOpenDev(pOpen, pParams->request.deviceHandle);
+
+    if (pOpenDev == NULL) {
+        return FALSE;
+    }
+
+    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+        return FALSE;
+    }
+
+    pSwapGroup = nvHsGetSwapGroup(&pOpenDev->swapGroupHandles,
+                                  pParams->request.swapGroupHandle);
+
+    if (pSwapGroup == NULL) {
+        return FALSE;
+    }
+
+    /*
+     * Create a copy of the passed-in pClipList, to be stored in pSwapGroup.
+     * Copy from the client using nvkms_copyin() or nvkms_memcpy(), depending on
+     * the clientType.
+     *
+     * We do not use the nvKmsIoctl() prepUser/doneUser infrastructure here
+     * because that would require creating two copies of pClipList in the
+     * user-space client case: one allocated in prepUser and freed in doneUser,
+     * and a second in nvHsSetSwapGroupClipList().
+     */
+    if (pParams->request.nClips == 0) {
+        pClipList = NULL;
+    } else {
+        const size_t len = sizeof(struct NvKmsRect) * pParams->request.nClips;
+
+        if ((pParams->request.pClipList == 0) ||
+            !nvKmsNvU64AddressIsSafe(pParams->request.pClipList)) {
+            return FALSE;
+        }
+
+        pClipList = nvAlloc(len);
+
+        if (pClipList == NULL) {
+            return FALSE;
+        }
+
+        if (pOpen->clientType == NVKMS_CLIENT_USER_SPACE) {
+            int status =
+                nvkms_copyin(pClipList, pParams->request.pClipList, len);
+
+            if (status != 0) {
+                nvFree(pClipList);
+                return FALSE;
+            }
+        } else {
+            const void *pKernelPointer =
+                nvKmsNvU64ToPointer(pParams->request.pClipList);
+
+            nvkms_memcpy(pClipList, pKernelPointer, len);
+        }
+    }
+
+    ret = nvHsSetSwapGroupClipList(
+            pOpenDev->pDevEvo,
+            pSwapGroup,
+            pParams->request.nClips,
+            pClipList);
+
+    if (!ret) {
+        nvFree(pClipList);
+    }
+
+    return ret;
+}
+
 static NvBool SwitchMux(
     struct NvKmsPerOpen *pOpen,
     void *pParamsVoid)
@@ -3399,6 +4013,70 @@ static NvBool DisableVblankSyncObject(
     return TRUE;
 }
 
+static void NotifyVblankCallback(NVDispEvoRec *pDispEvo,
+                                 const NvU32 head,
+                                 NVVBlankCallbackPtr pCallbackData)
+{
+    struct NvKmsPerOpen *pEventOpenFd = pCallbackData->pUserData;
+
+    /*
+     * NOTIFY_VBLANK events are single-shot so notify the unicast FD, then
+     * immediately unregister the callback. The unregister step is done in
+     * nvRemoveUnicastEvent which resets the unicast event data.
+     */
+    nvSendUnicastEvent(pEventOpenFd);
+    nvRemoveUnicastEvent(pEventOpenFd);
+}
+
+static NvBool NotifyVblank(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsNotifyVblankParams *pParams = pParamsVoid;
+    struct NvKmsPerOpen *pEventOpenFd = NULL;
+    NVVBlankCallbackPtr pCallbackData = NULL;
+    struct NvKmsPerOpenDisp* pOpenDisp =
+        GetPerOpenDisp(pOpen, pParams->request.deviceHandle,
+                       pParams->request.dispHandle);
+    NvU32 head = pParams->request.head;
+
+    pEventOpenFd = nvkms_get_per_open_data(pParams->request.unicastEvent.fd);
+
+    if (pEventOpenFd == NULL) {
+        return NV_FALSE;
+    }
+
+    if (!PerOpenIsValidForUnicastEvent(pEventOpenFd)) {
+        return NV_FALSE;
+    }
+
+    pEventOpenFd->type = NvKmsPerOpenTypeUnicastEvent;
+
+    pCallbackData = nvRegisterVBlankCallback(pOpenDisp->pDispEvo,
+                                  head,
+                                  NotifyVblankCallback,
+                                  pEventOpenFd);
+    if (pCallbackData == NULL) {
+        return NV_FALSE;
+    }
+
+    pEventOpenFd->unicastEvent.type = NvKmsUnicastEventTypeVblankNotification;
+    pEventOpenFd->unicastEvent.e.vblankNotification.pOpenDisp = pOpenDisp;
+    pEventOpenFd->unicastEvent.e.vblankNotification.head = head;
+    pEventOpenFd->unicastEvent.e.vblankNotification.hCallback
+        = nvEvoCreateApiHandle(&pOpenDisp->vblankCallbackHandles[head],
+                               pCallbackData);
+
+    if (pEventOpenFd->unicastEvent.e.vblankNotification.hCallback == 0) {
+        nvUnregisterVBlankCallback(pOpenDisp->pDispEvo,
+                                   head,
+                                   pCallbackData);
+        return NV_FALSE;
+    }
+
+    return NV_TRUE;
+}
+
 /*!
  * Perform the ioctl operation requested by the client.
  *
@@ -3506,11 +4184,20 @@ NvBool nvKmsIoctl(
               RegisterDeferredRequestFifo),
         ENTRY(NVKMS_IOCTL_UNREGISTER_DEFERRED_REQUEST_FIFO,
               UnregisterDeferredRequestFifo),
+        ENTRY(NVKMS_IOCTL_ALLOC_SWAP_GROUP, AllocSwapGroup),
+        ENTRY(NVKMS_IOCTL_FREE_SWAP_GROUP, FreeSwapGroup),
+        ENTRY(NVKMS_IOCTL_JOIN_SWAP_GROUP, JoinSwapGroup),
+        ENTRY(NVKMS_IOCTL_LEAVE_SWAP_GROUP, LeaveSwapGroup),
+        ENTRY(NVKMS_IOCTL_SET_SWAP_GROUP_CLIP_LIST, SetSwapGroupClipList),
+        ENTRY(NVKMS_IOCTL_GRANT_SWAP_GROUP, GrantSwapGroup),
+        ENTRY(NVKMS_IOCTL_ACQUIRE_SWAP_GROUP, AcquireSwapGroup),
+        ENTRY(NVKMS_IOCTL_RELEASE_SWAP_GROUP, ReleaseSwapGroup),
         ENTRY(NVKMS_IOCTL_SWITCH_MUX, SwitchMux),
         ENTRY(NVKMS_IOCTL_GET_MUX_STATE, GetMuxState),
         ENTRY(NVKMS_IOCTL_EXPORT_VRR_SEMAPHORE_SURFACE, ExportVrrSemaphoreSurface),
         ENTRY(NVKMS_IOCTL_ENABLE_VBLANK_SYNC_OBJECT, EnableVblankSyncObject),
         ENTRY(NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT, DisableVblankSyncObject),
+        ENTRY(NVKMS_IOCTL_NOTIFY_VBLANK, NotifyVblank),
     };
 
     struct NvKmsPerOpen *pOpen = pOpenVoid;
@@ -3648,6 +4335,7 @@ void nvKmsClose(void *pOpenVoid)
 
     if (pOpen->type == NvKmsPerOpenTypeGrantSwapGroup) {
         nvAssert(pOpen->grantSwapGroup.pSwapGroup != NULL);
+        nvHsDecrementSwapGroupRefCnt(pOpen->grantSwapGroup.pSwapGroup);
     }
 
     if (pOpen->type == NvKmsPerOpenTypeUnicastEvent) {
@@ -3714,8 +4402,9 @@ static const char *ProcFsUnicastEventTypeString(
     enum NvKmsUnicastEventType type)
 {
     switch (type) {
-    case NvKmsUnicastEventTypeDeferredRequest:  return "DeferredRequest";
-    case NvKmsUnicastEventTypeUndefined:        return "undefined";
+    case NvKmsUnicastEventTypeDeferredRequest:      return "DeferredRequest";
+    case NvKmsUnicastEventTypeVblankNotification:   return "VblankNotification";
+    case NvKmsUnicastEventTypeUndefined:            return "undefined";
     }
 
     return "unknown";
@@ -3880,6 +4569,11 @@ ProcFsPrintClients(
                         "  pDeferredRequestFifo      : %p",
                         pOpen->unicastEvent.e.deferred.pDeferredRequestFifo);
                     break;
+                case NvKmsUnicastEventTypeVblankNotification:
+                    nvEvoLogInfoString(&infoString,
+                        "  head      : %x",
+                        pOpen->unicastEvent.e.vblankNotification.head);
+                    break;
                 default:
                     break;
             }
@@ -3970,6 +4664,9 @@ static void PrintSurface(
         "log2GobsPerBlockY:%d",
         pSurfaceEvo->log2GobsPerBlockY);
     nvEvoLogInfoString(pInfoString,
+        "  gpuAddress                : 0x%016" NvU64_fmtx,
+        pSurfaceEvo->gpuAddress);
+    nvEvoLogInfoString(pInfoString,
         "  memory                    : layout:%s format:%s",
         NvKmsSurfaceMemoryLayoutToString(pSurfaceEvo->layout),
         nvKmsSurfaceMemoryFormatToString(pSurfaceEvo->format));
@@ -4046,6 +4743,44 @@ ProcFsPrintSurfaces(
                         pSurfaceEvo->procFsFlag = FALSE;
                     }
                 }
+            }
+        }
+    }
+}
+
+static void
+ProcFsPrintHeadSurface(
+    void *data,
+    char *buffer,
+    size_t size,
+    nvkms_procfs_out_string_func_t *outString)
+{
+    NVDevEvoPtr pDevEvo;
+    NVDispEvoPtr pDispEvo;
+    NvU32 dispIndex, head;
+    NVEvoInfoStringRec infoString;
+
+    FOR_ALL_EVO_DEVS(pDevEvo) {
+
+        nvInitInfoString(&infoString, buffer, size);
+        nvEvoLogInfoString(&infoString,
+                           "pDevEvo (deviceId:%02d)         : %p",
+                           pDevEvo->deviceId, pDevEvo);
+        outString(data, buffer);
+
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+
+            nvInitInfoString(&infoString, buffer, size);
+            nvEvoLogInfoString(&infoString,
+                               " pDispEvo (dispIndex:%02d)      : %p",
+                               dispIndex, pDispEvo);
+            outString(data, buffer);
+
+            for (head = 0; head < pDevEvo->numHeads; head++) {
+                nvInitInfoString(&infoString, buffer, size);
+                nvHsProcFs(&infoString, pDevEvo, dispIndex, head);
+                nvEvoLogInfoString(&infoString, "");
+                outString(data, buffer);
             }
         }
     }
@@ -4333,6 +5068,7 @@ void nvKmsGetProcFiles(const nvkms_procfs_file_t **ppProcFiles)
     static const nvkms_procfs_file_t procFiles[] = {
         { "clients",                ProcFsPrintClients },
         { "surfaces",               ProcFsPrintSurfaces },
+        { "headsurface",            ProcFsPrintHeadSurface },
         { "deferred-request-fifos", ProcFsPrintDeferredRequestFifos },
         { "crcs",                   ProcFsPrintDpyCrcs },
         { NULL, NULL },
@@ -4648,6 +5384,10 @@ void nvSendUnicastEvent(struct NvKmsPerOpen *pOpen)
 void nvRemoveUnicastEvent(struct NvKmsPerOpen *pOpen)
 {
     NVDeferredRequestFifoPtr pDeferredRequestFifo;
+    NvKmsGenericHandle callbackHandle;
+    NVVBlankCallbackPtr pCallbackData;
+    struct NvKmsPerOpenDisp *pOpenDisp;
+    NvU32 head;
 
     if (pOpen == NULL) {
         return;
@@ -4663,6 +5403,31 @@ void nvRemoveUnicastEvent(struct NvKmsPerOpen *pOpen)
 
             pDeferredRequestFifo->swapGroup.pOpenUnicastEvent = NULL;
             pOpen->unicastEvent.e.deferred.pDeferredRequestFifo = NULL;
+            break;
+        case NvKmsUnicastEventTypeVblankNotification:
+            /* grab fields from the unicast fd */
+            callbackHandle =
+                pOpen->unicastEvent.e.vblankNotification.hCallback;
+            pOpenDisp =
+                pOpen->unicastEvent.e.vblankNotification.pOpenDisp;
+            head = pOpen->unicastEvent.e.vblankNotification.head;
+
+            /* Unregister the vblank callback */
+            pCallbackData =
+                nvEvoGetPointerFromApiHandle(&pOpenDisp->vblankCallbackHandles[head],
+                                             callbackHandle);
+
+            nvUnregisterVBlankCallback(pOpenDisp->pDispEvo,
+                                       head,
+                                       pCallbackData);
+
+            nvEvoDestroyApiHandle(&pOpenDisp->vblankCallbackHandles[head],
+                                  callbackHandle);
+
+            /* invalidate the pOpen data */
+            pOpen->unicastEvent.e.vblankNotification.hCallback = 0;
+            pOpen->unicastEvent.e.vblankNotification.pOpenDisp = NULL;
+            pOpen->unicastEvent.e.vblankNotification.head = NV_INVALID_HEAD;
             break;
         default:
             nvAssert("Invalid Unicast Event Type!");
@@ -4946,6 +5711,13 @@ static void ServiceOneDeferredRequestFifo(
         case NVKMS_DEFERRED_REQUEST_OPCODE_NOP:
             break;
 
+        case NVKMS_DEFERRED_REQUEST_OPCODE_SWAP_GROUP_READY:
+            nvHsSwapGroupReady(
+                pDevEvo,
+                pDeferredRequestFifo,
+                request);
+            break;
+
         default:
             nvAssert(!"Invalid NVKMS deferred request opcode");
             break;
@@ -4984,6 +5756,7 @@ void nvKmsServiceNonStallInterrupt(void *dataPtr, NvU32 dataU32)
         }
     }
 
+    nvHsProcessPendingViewportFlips(pDevEvo);
 }
 
 NvBool nvKmsGetBacklight(NvU32 display_id, void *drv_priv, NvU32 *brightness)

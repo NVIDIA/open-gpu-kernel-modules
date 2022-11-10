@@ -93,9 +93,6 @@ static bool __will_generate_flip_event(struct drm_crtc *crtc,
         to_nv_crtc_state(new_crtc_state);
     struct drm_plane_state *old_plane_state = NULL;
     struct drm_plane *plane = NULL;
-    struct drm_plane *primary_plane = crtc->primary;
-    bool primary_event = false;
-    bool overlay_event = false;
     int i;
 
     if (!old_crtc_state->active  && !new_crtc_state->active) {
@@ -274,6 +271,9 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
 
                 nv_new_crtc_state->nv_flip = NULL;
             }
+#if defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
+            requested_config->headRequestedConfig[nv_crtc->head].modeSetConfig.vrrEnabled = new_crtc_state->vrr_enabled;
+#endif
         }
     }
 

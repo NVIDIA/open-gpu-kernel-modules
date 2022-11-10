@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -448,6 +448,7 @@ nvdDumpDebugBuffers_IMPL
     NvP64 pUmdBuffer = NvP64_NULL;
     NvP64 priv = NvP64_NULL;
     NvU32 bufSize = 0;
+    NvU8 *dataBuffer = NULL;
 
     status = prbEncNestedStart(pPrbEnc, NVDEBUG_NVDUMP_DCL_MSG);
     if (status != NV_OK)
@@ -463,8 +464,8 @@ nvdDumpDebugBuffers_IMPL
         if (status != NV_OK)
             break;
 
-        status = prbAppendSubMsg(pPrbEnc, pCurrent->tag, NvP64_VALUE(pUmdBuffer), bufSize);
-
+        dataBuffer = NvP64_VALUE(pUmdBuffer);
+        status = prbAppendSubMsg(pPrbEnc, pCurrent->tag, dataBuffer, bufSize);
         // Unmap DebugBuffer address
         memdescUnmap(pCurrent->pMemDesc, NV_TRUE, // Kernel mapping?
                      osGetCurrentProcess(), pUmdBuffer, priv);
@@ -495,7 +496,7 @@ prbAppendSubMsg
     NvU8 *subAlloc = NULL;
     NV_STATUS status = NV_OK;
     NV_STATUS endStatus = NV_OK;
-    NvU32 subMsgLen = 0;
+    NvU16 subMsgLen = 0;
     NvU32 i;
 
     // Create field descriptor
@@ -522,10 +523,10 @@ prbAppendSubMsg
         header = (NVDUMP_SUB_ALLOC_HEADER *)pCurrent;
         subAlloc = pCurrent + sizeof(NVDUMP_SUB_ALLOC_HEADER);
 
+        subMsgLen = header->end - header->start;
         // If valid, copy contents
         if (header->flags & NVDUMP_SUB_ALLOC_VALID)
         {
-            subMsgLen = header->end - header->start;
             status = prbEncStubbedAddBytes(pPrbEnc, subAlloc, subMsgLen);
             if (status != NV_OK)
                 goto done;

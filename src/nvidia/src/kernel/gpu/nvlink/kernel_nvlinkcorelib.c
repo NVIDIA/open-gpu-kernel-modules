@@ -211,7 +211,7 @@ knvlinkCoreAddDevice_IMPL
     dev->numIoctrls               = nvPopCount32(pKernelNvlink->ioctrlMask);
     dev->numActiveLinksPerIoctrl  = knvlinkGetNumActiveLinksPerIoctrl(pGpu, pKernelNvlink);
     dev->numLinksPerIoctrl        = knvlinkGetTotalNumLinksPerIoctrl(pGpu, pKernelNvlink);
-  
+
     // Register the GPU in nvlink core
     if (nvlink_lib_register_device(dev) != 0)
     {

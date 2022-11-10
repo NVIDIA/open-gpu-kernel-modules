@@ -41,10 +41,10 @@
  * Parameters:
  *
  * location
- *   Only used for HSHUB.
+ *   Only used for HSHUBMMU.
  *
  * sublocation
- *   Only used for HSHUB.
+ *   Only used for HSHUBMMU.
  *
  * unit
  *   Specifies the MMU HW unit where the injection will occur.
@@ -93,7 +93,7 @@ typedef struct NV208F_CTRL_MMU_ECC_INJECT_ERROR_PARAMS {
  *      NV_ERR_NOT_SUPPORTED otherwise
  *
  */
-#define NV208F_CTRL_CMD_MMU_ECC_INJECTION_SUPPORTED              (0x208f0b02) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_MMU_INTERFACE_ID << 8) | NV208F_CTRL_MMU_ECC_INJECTION_SUPPORTED_PARAMS_MESSAGE_ID" */
+#define NV208F_CTRL_CMD_MMU_ECC_INJECTION_SUPPORTED                 (0x208f0b02) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_MMU_INTERFACE_ID << 8) | NV208F_CTRL_MMU_ECC_INJECTION_SUPPORTED_PARAMS_MESSAGE_ID" */
 
 
 

@@ -22,12 +22,17 @@
  */
 #include "kernel/gpu/rc/kernel_rc.h"
 
+#include "kernel/diagnostics/journal.h"
+#include "kernel/gpu/disp/head/kernel_head.h"
+#include "kernel/gpu/disp/kern_disp.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/gpu.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
 
 #include "ctrl/ctrl906f.h"
+
+#include "nverror.h"
 
 
 // Seconds before watchdog tries to reset itself
@@ -139,7 +144,7 @@ void krcWatchdogTimerProc
         KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
 
         krcWatchdog_HAL(pGpu, pKernelRc);
-        krcWatchdogCallbackVblankRecovery_HAL(pGpu, pKernelRc);
+        krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc);
         krcWatchdogCallbackPerf_HAL(pGpu, pKernelRc);
     }
 }
@@ -350,3 +355,94 @@ krcWatchdogRecovery_KERNEL
                     NULL,
                     0);
 }
+
+
+/*!
+ * @brief Recover VBlank callbacks that may have missed due to missing VBlank
+ */
+void krcWatchdogCallbackVblankRecovery_IMPL
+(
+    OBJGPU   *pGpu,
+    KernelRc *pKernelRc
+)
+{
+    NvU32           head;
+    KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
+    if (!pKernelRc->bRobustChannelsEnabled ||
+        (pKernelRc->watchdog.flags & WATCHDOG_FLAGS_DISABLED) ||
+        !gpuIsGpuFullPower(pGpu) || (pKernelDisplay == NULL))
+    {
+        return;
+    }
+
+    for (head = 0; head < kdispGetNumHeads(pKernelDisplay); head++)
+    {
+        KernelHead *pKernelHead = KDISP_GET_HEAD(pKernelDisplay, head);
+
+        if (kheadReadVblankIntrState(pGpu, pKernelHead) !=
+            NV_HEAD_VBLANK_INTR_ENABLED)
+        {
+            continue;
+        }
+
+        //
+        // Sliding windows -- we expect some failures around mode switches
+        // since vblank and watchdog are async to each other. This will
+        // dispose of these.
+        //
+        if (pKernelRc->watchdog.oldVblank[head] ==
+            kheadGetVblankTotalCounter_HAL(pKernelHead))
+        {
+            // VBlank Failed to Advance
+            pKernelRc->watchdog.vblankFailureCount[head]++;
+
+            if (pKernelRc->watchdog.vblankFailureCount[head] >
+                pKernelRc->watchdogPersistent.timeoutSecs)
+            {
+                Journal        *pRcDB = SYS_GET_RCDB(SYS_GET_INSTANCE());
+                SYS_ERROR_INFO *pSysErrorInfo = &pRcDB->ErrorInfo;
+
+                if (pKernelRc->bLogEvents &&
+                    pSysErrorInfo->LogCount < MAX_ERROR_LOG_COUNT)
+                {
+                    pSysErrorInfo->LogCount++;
+                    nvErrorLog_va((void *)pGpu,
+                                  ROBUST_CHANNEL_VBLANK_CALLBACK_TIMEOUT,
+                                  "Head %08x Count %08x",
+                                  head,
+                                  pKernelRc->watchdog.oldVblank[head]);
+                }
+
+                NV_PRINTF(LEVEL_ERROR,
+                    "NVRM-RC: RM has detected that %x Seconds without a Vblank Counter Update on head:%c%d\n",
+                    pKernelRc->watchdogPersistent.timeoutSecs,
+                    'A' + head,
+                    gpuGetInstance(pGpu));
+
+                //
+                // Have the VBlank Service run through in IMMEDIATE mode and
+                // process all queues
+                //
+                kdispServiceVblank_HAL(pGpu, pKernelDisplay,
+                                       NVBIT(head),
+                                       (VBLANK_STATE_PROCESS_IMMEDIATE |
+                                        VBLANK_STATE_PROCESS_ALL_CALLBACKS),
+                                       NULL /* threadstate */);
+
+                pKernelRc->watchdog.vblankFailureCount[head] = 0;
+            }
+        }
+        else
+        {
+            if (pKernelRc->watchdog.vblankFailureCount[head] > 0)
+            {
+                pKernelRc->watchdog.vblankFailureCount[head]--;
+            }
+        }
+
+        pKernelRc->watchdog.oldVblank[head] = kheadGetVblankTotalCounter_HAL(
+            pKernelHead);
+    }
+}
+

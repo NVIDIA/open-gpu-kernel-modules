@@ -78,6 +78,7 @@ struct DispCapabilities {
     NV_STATUS (*__dispcapInternalControlForward__)(struct DispCapabilities *, NvU32, void *, NvU32);
     void (*__dispcapPreDestruct__)(struct DispCapabilities *);
     NV_STATUS (*__dispcapUnmapFrom__)(struct DispCapabilities *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__dispcapIsDuplicate__)(struct DispCapabilities *, NvHandle, NvBool *);
     void (*__dispcapControl_Epilogue__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispcapControlLookup__)(struct DispCapabilities *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__dispcapMap__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -132,6 +133,7 @@ NV_STATUS __nvoc_objCreate_DispCapabilities(DispCapabilities**, Dynamic*, NvU32,
 #define dispcapInternalControlForward(pGpuResource, command, pParams, size) dispcapInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dispcapPreDestruct(pResource) dispcapPreDestruct_DISPATCH(pResource)
 #define dispcapUnmapFrom(pResource, pParams) dispcapUnmapFrom_DISPATCH(pResource, pParams)
+#define dispcapIsDuplicate(pResource, hMemory, pDuplicate) dispcapIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispcapControl_Epilogue(pResource, pCallContext, pParams) dispcapControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define dispcapControlLookup(pResource, pParams, ppEntry) dispcapControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispcapMap(pGpuResource, pCallContext, pParams, pCpuMapping) dispcapMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -210,6 +212,10 @@ static inline NV_STATUS dispcapUnmapFrom_DISPATCH(struct DispCapabilities *pReso
     return pResource->__dispcapUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS dispcapIsDuplicate_DISPATCH(struct DispCapabilities *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__dispcapIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void dispcapControl_Epilogue_DISPATCH(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__dispcapControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -227,6 +233,7 @@ static inline NvBool dispcapAccessCallback_DISPATCH(struct DispCapabilities *pRe
 }
 
 NV_STATUS dispcapConstruct_IMPL(struct DispCapabilities *arg_pDispCapabilities, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_dispcapConstruct(arg_pDispCapabilities, arg_pCallContext, arg_pParams) dispcapConstruct_IMPL(arg_pDispCapabilities, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

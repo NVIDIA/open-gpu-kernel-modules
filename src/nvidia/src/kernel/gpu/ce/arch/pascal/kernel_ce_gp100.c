@@ -30,22 +30,16 @@
 
 NV_STATUS kceStateLoad_GP100(OBJGPU *pGpu, KernelCE *pKCe, NvU32 flags)
 {
-    if (!IS_VIRTUAL(pGpu) && !pGpu->bIsKCeMapInitialized)
+    KernelCE *pKCeShim;
+
+    // Mark first CE to load as the owner
+    if (kceFindShimOwner(pGpu, pKCe, &pKCeShim) != NV_OK)
+        pKCe->bShimOwner = NV_TRUE;
+
+    if (!IS_VIRTUAL(pGpu) && pKCe->bShimOwner)
     {
         NV_ASSERT_OK_OR_RETURN(kceTopLevelPceLceMappingsUpdate(pGpu, pKCe));
-        pGpu->bIsKCeMapInitialized = NV_TRUE;
     }
-
-    return NV_OK;
-}
-
-NV_STATUS kceStateUnload_GP100(OBJGPU *pGpu, KernelCE *pKCe, NvU32 flags)
-{
-    // Apply mappings again at resume, bug 3456067
-    pGpu->bIsKCeMapInitialized = NV_FALSE;
-
-    // On vgpu, sync with the mappings of PF at resume
-    pGpu->bIsCeMapInitialized = NV_FALSE;
 
     return NV_OK;
 }

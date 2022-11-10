@@ -155,11 +155,14 @@ void nvCancelVrrFrameReleaseTimers(
     return;
 }
 
-void nvSetNextVrrFlipTypeAndIndex(
-    NVDevEvoPtr pDevEvo,
-    struct NvKmsFlipReply *reply)
+enum NvKmsVrrFlipType nvGetActiveVrrType(const NVDevEvoRec *pDevEvo)
 {
-    return;
+    return NV_KMS_VRR_FLIP_NON_VRR;
+}
+
+NvS32 nvIncVrrSemaphoreIndex(NVDevEvoPtr pDevEvo)
+{
+    return -1;
 }
 
 void nvTriggerVrrUnstallMoveCursor(

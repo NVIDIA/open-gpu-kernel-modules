@@ -41,6 +41,7 @@
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "virtualization/hypervisor/hypervisor.h"
 
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
@@ -215,6 +216,11 @@ gpuresShareCallback_IMPL
                     //
                     case NV01_MEMORY_LOCAL_USER:
                     case NV01_MEMORY_SYSTEM:
+                    //
+                    // We also exempt this check for cases when KernelHostVgpuDeviceApi(NVA084_KERNEL_HOST_VGPU_DEVICE) is being duped
+                    //  by plugins under every client it creates for itself or guest.
+                    //
+                    case NVA084_KERNEL_HOST_VGPU_DEVICE:
                         return NV_TRUE;
                     //
                     // We exempt this check for cases when a kernel client is trying to dup AMPERE_SMC_PARTITION_REF object.
@@ -224,14 +230,14 @@ gpuresShareCallback_IMPL
                     {
                         RmClient *pRmClient = dynamicCast(pInvokingClient, RmClient);
                         RS_PRIV_LEVEL privLevel = RS_PRIV_LEVEL_USER;
+                        NvBool bOverrideDupAllow = NV_FALSE;
 
                         if (pRmClient != NULL)
                         {
                             privLevel = rmclientGetCachedPrivilege(pRmClient);
                         }
 
-                        if ((privLevel >= RS_PRIV_LEVEL_KERNEL)
-                           )
+                        if ((privLevel >= RS_PRIV_LEVEL_KERNEL) || bOverrideDupAllow)
                             return NV_TRUE;
 
                         break;

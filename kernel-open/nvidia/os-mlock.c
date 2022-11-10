@@ -222,7 +222,7 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
     struct mm_struct *mm = current->mm;
     struct page **user_pages;
     NvU64 i, pinned;
-    NvBool write = DRF_VAL(_LOCK_USER_PAGES, _FLAGS, _WRITE, flags), force = 0;
+    unsigned int gup_flags = DRF_VAL(_LOCK_USER_PAGES, _FLAGS, _WRITE, flags) ? FOLL_WRITE : 0;
     int ret;
 
     if (!NV_MAY_SLEEP())
@@ -242,8 +242,8 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
     }
 
     nv_mmap_read_lock(mm);
-    ret = NV_GET_USER_PAGES((unsigned long)address,
-                            page_count, write, force, user_pages, NULL);
+    ret = NV_PIN_USER_PAGES((unsigned long)address,
+                            page_count, gup_flags, user_pages, NULL);
     nv_mmap_read_unlock(mm);
     pinned = ret;
 
@@ -255,7 +255,7 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
     else if (pinned < page_count)
     {
         for (i = 0; i < pinned; i++)
-            put_page(user_pages[i]);
+            NV_UNPIN_USER_PAGE(user_pages[i]);
         os_free_mem(user_pages);
         return NV_ERR_INVALID_ADDRESS;
     }
@@ -278,7 +278,7 @@ NV_STATUS NV_API_CALL os_unlock_user_pages(
     {
         if (write)
             set_page_dirty_lock(user_pages[i]);
-        put_page(user_pages[i]);
+        NV_UNPIN_USER_PAGE(user_pages[i]);
     }
 
     os_free_mem(user_pages);

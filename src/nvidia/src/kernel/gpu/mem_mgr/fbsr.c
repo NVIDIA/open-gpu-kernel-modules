@@ -33,6 +33,10 @@ fbsrObjectInit_IMPL(OBJFBSR *pFbsr, NvU32 type)
     pFbsr->type   = type;
     pFbsr->bValid = NV_FALSE;
     pFbsr->bInitialized = NV_FALSE;
+    pFbsr->pRegionRecords = NULL;
+    pFbsr->numRegions = 0;
+    pFbsr->regionRecordIndex = 0;
+
     return NV_OK;
 }
 

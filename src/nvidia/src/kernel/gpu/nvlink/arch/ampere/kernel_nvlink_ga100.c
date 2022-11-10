@@ -132,6 +132,8 @@ knvlinkRemoveMapping_GA100
 )
 {
     NV_STATUS status = NV_OK;
+    NvU32     peerId;
+    NvBool    bBufferReady;
 
     NV2080_CTRL_NVLINK_REMOVE_NVLINK_MAPPING_PARAMS params;
     portMemSet(&params, 0, sizeof(params));
@@ -161,7 +163,35 @@ knvlinkRemoveMapping_GA100
     // the MUX registers and the connection config registers. So, we have
     // to call nvlinkCurrentConfig instead of nvlinkUpdateHshubConfigRegs
     //
-    return knvlinkUpdateCurrentConfig(pGpu, pKernelNvlink);
+    status = knvlinkSyncLinkMasksAndVbiosInfo(pGpu, pKernelNvlink);
+    if (status != NV_OK)
+    {
+        NV_ASSERT(status == NV_OK);
+        return status;
+    }
+
+    if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_CONFIG_REQUIRE_INITIALIZED_LINKS_CHECK))
+    {
+        FOR_EACH_INDEX_IN_MASK(32, peerId, peerMask)
+        {
+            if (pKernelNvlink->initializedLinks & pKernelNvlink->peerLinkMasks[peerId])
+            {
+                bBufferReady = NV_TRUE;
+                break;
+            }
+        } FOR_EACH_INDEX_IN_MASK_END;
+
+        if (!bBufferReady)
+        {
+            status = knvlinkUpdateCurrentConfig(pGpu, pKernelNvlink);
+        }
+    }
+    else
+    {
+        status = knvlinkUpdateCurrentConfig(pGpu, pKernelNvlink);
+    }
+
+    return status;
 }
 
 /*!
@@ -184,6 +214,7 @@ knvlinkValidateFabricBaseAddress_GA100
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU64          fbSizeBytes;
+    NvU64          fbUpperLimit;
 
     fbSizeBytes = pMemoryManager->Ram.fbTotalMemSizeMb << 20;
 
@@ -202,8 +233,11 @@ knvlinkValidateFabricBaseAddress_GA100
     // Align fbSize to mapslot size.
     fbSizeBytes = RM_ALIGN_UP(fbSizeBytes, NVBIT64(36));
 
+
+    fbUpperLimit = fabricBaseAddr + fbSizeBytes;
+
     // Make sure the address range doesn't go beyond the limit, (2K * 64GB).
-    if ((fabricBaseAddr + fbSizeBytes) > NVBIT64(47))
+    if (fbUpperLimit > NVBIT64(47))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }

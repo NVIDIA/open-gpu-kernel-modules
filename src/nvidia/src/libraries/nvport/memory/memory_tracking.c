@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -439,7 +439,7 @@ static void *_portMemAllocatorAllocNonPagedWrapper(PORT_MEM_ALLOCATOR *pAlloc, N
 static void _portMemAllocatorFreeWrapper(PORT_MEM_ALLOCATOR *pAlloc, void *pMem);
 static void _portMemAllocatorReleaseWrapper(PORT_MEM_ALLOCATOR *pAlloc);
 
-static PORT_MEM_ALLOCATOR *_portMemAllocatorCreateOnExistingBlock(void *pAlloc, NvLength blockSizeBytes, void *pSpinlock);
+static PORT_MEM_ALLOCATOR *_portMemAllocatorCreateOnExistingBlock(void *pAlloc, NvLength blockSizeBytes, void *pSpinlock PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM);
 static void    *_portMemAllocatorAllocExistingWrapper(PORT_MEM_ALLOCATOR *pAlloc, NvLength length);
 static void     _portMemAllocatorFreeExistingWrapper(PORT_MEM_ALLOCATOR *pAlloc, void *pMem);
 
@@ -560,7 +560,7 @@ portMemShutdown(NvBool bForceSilent)
     {
         portMemPrintTrackingInfo(NULL);
     }
-#endif 
+#endif
     PORT_MEM_LOG_DESTROY();
 
     if (PORT_MEM_TRACK_USE_FENCEPOSTS)
@@ -586,6 +586,9 @@ portMemAllocPaged
     PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 )
 {
+#if defined(__COVERITY__)
+    return __coverity_alloc__(length);
+#endif
     PORT_MEM_ALLOCATOR *pAlloc = portMemAllocatorGetGlobalPaged();
     return _portMemAllocatorAlloc(pAlloc, length PORT_MEM_CALLERINFO_COMMA_PARAM);
 }
@@ -597,6 +600,9 @@ portMemAllocNonPaged
     PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 )
 {
+#if defined(__COVERITY__)
+    return __coverity_alloc__(length);
+#endif
     PORT_MEM_ALLOCATOR *pAlloc = portMemAllocatorGetGlobalNonPaged();
     return _portMemAllocatorAlloc(pAlloc, length PORT_MEM_CALLERINFO_COMMA_PARAM);
 }
@@ -640,7 +646,7 @@ portMemAllocatorCreatePaged(PORT_MEM_CALLERINFO_TYPE_PARAM)
     portMemInitializeAllocatorTracking(pAllocator, &pAllocator->pImpl->tracking
                                        PORT_MEM_CALLERINFO_COMMA_PARAM);
 
-    PORT_MEM_PRINT_INFO("Acquired paged allocator %p", pAllocator);
+    PORT_MEM_PRINT_INFO("Acquired paged allocator %p ", pAllocator);
     PORT_MEM_PRINT_INFO(PORT_MEM_CALLERINFO_PRINT_ARGS(PORT_MEM_CALLERINFO_PARAM));
 
     return pAllocator;
@@ -663,7 +669,7 @@ portMemAllocatorCreateNonPaged(PORT_MEM_CALLERINFO_TYPE_PARAM)
     portMemInitializeAllocatorTracking(pAllocator, &pAllocator->pImpl->tracking
                                        PORT_MEM_CALLERINFO_COMMA_PARAM);
 
-    PORT_MEM_PRINT_INFO("Acquired nonpaged allocator %p", pAllocator);
+    PORT_MEM_PRINT_INFO("Acquired nonpaged allocator %p ", pAllocator);
     PORT_MEM_PRINT_INFO(PORT_MEM_CALLERINFO_PRINT_ARGS(PORT_MEM_CALLERINFO_PARAM));
     return pAllocator;
 }
@@ -678,7 +684,7 @@ portMemAllocatorCreateOnExistingBlock
 )
 {
     return _portMemAllocatorCreateOnExistingBlock(pPreallocatedBlock, blockSizeBytes,
-                                                  NULL);
+                                                  NULL PORT_MEM_CALLERINFO_COMMA_PARAM);
 }
 
 PORT_MEM_ALLOCATOR *
@@ -691,7 +697,7 @@ portMemExAllocatorCreateLockedOnExistingBlock
 )
 {
     return _portMemAllocatorCreateOnExistingBlock(pPreallocatedBlock, blockSizeBytes,
-                                                  pSpinlock);
+                                                  pSpinlock PORT_MEM_CALLERINFO_COMMA_PARAM);
 }
 
 void
@@ -1029,7 +1035,7 @@ portMemExTrackingGetNext
 
     pHead = _portMemListGetHeader(pList);
 
-    // Advance itertator
+    // Advance iterator
     if (pList->pNext == pTracking->pFirstAlloc)
         *pIterator = NULL;
     else
@@ -1174,6 +1180,7 @@ _portMemAllocatorCreateOnExistingBlock
     void *pPreallocatedBlock,
     NvLength blockSizeBytes,
     void *pSpinlock
+    PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 )
 {
     PORT_MEM_ALLOCATOR *pAllocator = (PORT_MEM_ALLOCATOR *)pPreallocatedBlock;
@@ -1225,7 +1232,7 @@ _portMemAllocatorCreateOnExistingBlock
     }
     portMemSet(pBitVector->bits, 0, bitVectorSize);
 
-    PORT_MEM_PRINT_INFO("Acquired preallocated block allocator %p (%llu bytes)", pAllocator, (NvU64)blockSizeBytes);
+    PORT_MEM_PRINT_INFO("Acquired preallocated block allocator %p (%llu bytes) ", pAllocator, (NvU64)blockSizeBytes);
     PORT_MEM_PRINT_INFO(PORT_MEM_CALLERINFO_PRINT_ARGS(PORT_MEM_CALLERINFO_PARAM));
     return pAllocator;
 }

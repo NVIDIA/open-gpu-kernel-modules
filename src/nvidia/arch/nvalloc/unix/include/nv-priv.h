@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include <os/os.h>
 #include <ctrl/ctrl402c.h>
 #include <gpu/disp/kern_disp_max.h>
+#include <gpu/disp/kern_disp_type.h>
 
 #include <efi-console.h>
 
@@ -39,13 +40,16 @@
 #define NV_PRIV_REG_RD16(b,o)     ((b)->Reg016[(o)/2])
 #define NV_PRIV_REG_RD32(b,o)     ((b)->Reg032[(o)/4])
 
-#define NV_NUM_CR_REGS      0x99
-
 struct OBJGPU;
 
-
-#define NV_BIT_PLANE_SIZE  64 * 1024
-#define NV_NUM_VGA_BIT_PLANES 4
+typedef struct
+{
+    NvBool              baseValid;
+    VGAADDRDESC         base;
+    NvBool              workspaceBaseValid;
+    VGAADDRDESC         workspaceBase;
+    NvU32               vesaMode;
+} nv_vga_t;
 
 /*
 * device state during Power Management
@@ -113,12 +117,10 @@ typedef struct nv_i2c_adapter_entry_s
 #define NV_INIT_FLAG_GPU_STATE_LOAD       0x0008
 #define NV_INIT_FLAG_FIFO_WATCHDOG        0x0010
 #define NV_INIT_FLAG_CORE_LOGIC           0x0020
-#define NV_INIT_FLAG_HIRES                0x0040
-#define NV_INIT_FLAG_DISP_STATE_SAVED     0x0080
-#define NV_INIT_FLAG_GPUMGR_ATTACH        0x0100
-#define NV_INIT_FLAG_PUBLIC_I2C           0x0400
-#define NV_INIT_FLAG_SCALABILITY          0x0800
-#define NV_INIT_FLAG_DMA                  0x1000
+#define NV_INIT_FLAG_GPUMGR_ATTACH        0x0040
+#define NV_INIT_FLAG_PUBLIC_I2C           0x0080
+#define NV_INIT_FLAG_SCALABILITY          0x0100
+#define NV_INIT_FLAG_DMA                  0x0200
 
 #define MAX_I2C_ADAPTERS    NV402C_CTRL_NUM_I2C_PORTS
 
@@ -299,6 +301,12 @@ typedef struct nv_dynamic_power_s
     NvBool b_fine_not_supported;
 
     /*
+     * This flag is used to check if a workitem is queued for 
+     * RmQueueIdleSustainedWorkitem().
+     */
+    NvBool b_idle_sustained_workitem_queued;
+
+    /*
      * Counter to track clients disallowing GCOFF.
      */
     NvU32 clients_gcoff_disallow_refcount;
@@ -321,13 +329,9 @@ typedef struct
 
     NvU32 pmc_boot_0;
 
+    nv_vga_t vga;
+
     nv_efi_t efi;
-
-    NvU8 scr_vga_active[OBJ_MAX_HEADS];
-    NvU8 scr_dcb_index_lo[OBJ_MAX_HEADS];
-    NvU8 scr_dcb_index_hi[OBJ_MAX_HEADS];
-
-    NvU8 font_bitplanes[NV_NUM_VGA_BIT_PLANES][NV_BIT_PLANE_SIZE];
 
     NvU32 flags;
     NvU32 status;

@@ -35,10 +35,10 @@ extern "C" {
 #define KERNEL_SM_DEBUGGER_SESSION_H
 
 #include "gpu/gpu_halspec.h"
-#include "utils/nv_enum.h"
 #include "gpu/gpu_resource.h"
 #include "rmapi/event.h"
 #include "rmapi/control.h"
+#include "kernel/gpu/gr/kernel_sm_debugger_exception.h"
 
 #include "ctrl/ctrl83de.h"
 
@@ -72,30 +72,6 @@ typedef struct KernelGraphicsObject KernelGraphicsObject;
  */
 #define  STOP_ON_ANYSM_MODE_ENABLED     (0x00000001)
 #define  STOP_ON_ANYSM_MODE_DISABLED    (0x00000002)
-
-#define SMDBG_EXCEPTION_TYPE_DEF(x)                                             \
-    NV_ENUM_ENTRY(x, SMDBG_EXCEPTION_TYPE_FATAL,                0)              \
-    NV_ENUM_ENTRY(x, SMDBG_EXCEPTION_TYPE_TRAP,                 1)              \
-    NV_ENUM_ENTRY(x, SMDBG_EXCEPTION_TYPE_SINGLE_STEP,          2)              \
-    NV_ENUM_ENTRY(x, SMDBG_EXCEPTION_TYPE_INT,                  3)              \
-    NV_ENUM_ENTRY(x, SMDBG_EXCEPTION_TYPE_CILP,                 4)              \
-    NV_ENUM_ENTRY(x, SMDBG_EXCEPTION_TYPE_PREEMPTION_STARTED,   5)
-
-NV_ENUM_DEF(SMDBG_EXCEPTION_TYPE, SMDBG_EXCEPTION_TYPE_DEF);
-ct_assert(NV_ENUM_IS_CONTIGUOUS(SMDBG_EXCEPTION_TYPE));
-
-ct_assert(NVBIT32(SMDBG_EXCEPTION_TYPE_FATAL) ==
-          NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_FATAL);
-ct_assert(NVBIT32(SMDBG_EXCEPTION_TYPE_TRAP) ==
-          NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_TRAP);
-ct_assert(NVBIT32(SMDBG_EXCEPTION_TYPE_SINGLE_STEP) ==
-          NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_SINGLE_STEP);
-ct_assert(NVBIT32(SMDBG_EXCEPTION_TYPE_INT) ==
-          NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_INT);
-ct_assert(NVBIT32(SMDBG_EXCEPTION_TYPE_CILP) ==
-          NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_CILP);
-ct_assert(NVBIT32(SMDBG_EXCEPTION_TYPE_PREEMPTION_STARTED) ==
-          NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_PREEMPTION_STARTED);
 
 //
 // Debugger Session object for automatically freeing and
@@ -208,6 +184,7 @@ struct KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_GET_SINGLE_SM_DEBUGGER_STATUS_PARAMS *);
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadBatchMemory__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugWriteBatchMemory__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);
+    NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *);
     NvBool (*__ksmdbgssnShareCallback__)(struct KernelSMDebuggerSession *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__ksmdbgssnMapTo__)(struct KernelSMDebuggerSession *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__ksmdbgssnGetOrAllocNotifShare__)(struct KernelSMDebuggerSession *, NvHandle, NvHandle, struct NotifShare **);
@@ -229,6 +206,7 @@ struct KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnUnregisterEvent__)(struct KernelSMDebuggerSession *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__ksmdbgssnCanCopy__)(struct KernelSMDebuggerSession *);
     void (*__ksmdbgssnPreDestruct__)(struct KernelSMDebuggerSession *);
+    NV_STATUS (*__ksmdbgssnIsDuplicate__)(struct KernelSMDebuggerSession *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__ksmdbgssnGetNotificationListPtr__)(struct KernelSMDebuggerSession *);
     struct NotifShare *(*__ksmdbgssnGetNotificationShare__)(struct KernelSMDebuggerSession *);
     NV_STATUS (*__ksmdbgssnMap__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -303,6 +281,7 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugGetSingleSmDebuggerStatus_DISPATCH(pKernelSMDebuggerSession, pParams)
 #define ksmdbgssnCtrlCmdDebugReadBatchMemory(arg0, arg1) ksmdbgssnCtrlCmdDebugReadBatchMemory_DISPATCH(arg0, arg1)
 #define ksmdbgssnCtrlCmdDebugWriteBatchMemory(arg0, arg1) ksmdbgssnCtrlCmdDebugWriteBatchMemory_DISPATCH(arg0, arg1)
+#define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo(arg0, arg1) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(arg0, arg1)
 #define ksmdbgssnShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) ksmdbgssnShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define ksmdbgssnMapTo(pResource, pParams) ksmdbgssnMapTo_DISPATCH(pResource, pParams)
 #define ksmdbgssnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ksmdbgssnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
@@ -324,6 +303,7 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ksmdbgssnUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define ksmdbgssnCanCopy(pResource) ksmdbgssnCanCopy_DISPATCH(pResource)
 #define ksmdbgssnPreDestruct(pResource) ksmdbgssnPreDestruct_DISPATCH(pResource)
+#define ksmdbgssnIsDuplicate(pResource, hMemory, pDuplicate) ksmdbgssnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define ksmdbgssnGetNotificationListPtr(pNotifier) ksmdbgssnGetNotificationListPtr_DISPATCH(pNotifier)
 #define ksmdbgssnGetNotificationShare(pNotifier) ksmdbgssnGetNotificationShare_DISPATCH(pNotifier)
 #define ksmdbgssnMap(pGpuResource, pCallContext, pParams, pCpuMapping) ksmdbgssnMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -528,6 +508,12 @@ static inline NV_STATUS ksmdbgssnCtrlCmdDebugWriteBatchMemory_DISPATCH(struct Ke
     return arg0->__ksmdbgssnCtrlCmdDebugWriteBatchMemory__(arg0, arg1);
 }
 
+NV_STATUS ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL(struct KernelSMDebuggerSession *arg0, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *arg1);
+
+static inline NV_STATUS ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(struct KernelSMDebuggerSession *arg0, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *arg1) {
+    return arg0->__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__(arg0, arg1);
+}
+
 static inline NvBool ksmdbgssnShareCallback_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pGpuResource->__ksmdbgssnShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
@@ -612,6 +598,10 @@ static inline void ksmdbgssnPreDestruct_DISPATCH(struct KernelSMDebuggerSession 
     pResource->__ksmdbgssnPreDestruct__(pResource);
 }
 
+static inline NV_STATUS ksmdbgssnIsDuplicate_DISPATCH(struct KernelSMDebuggerSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__ksmdbgssnIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *ksmdbgssnGetNotificationListPtr_DISPATCH(struct KernelSMDebuggerSession *pNotifier) {
     return pNotifier->__ksmdbgssnGetNotificationListPtr__(pNotifier);
 }
@@ -629,10 +619,13 @@ static inline NvBool ksmdbgssnAccessCallback_DISPATCH(struct KernelSMDebuggerSes
 }
 
 NV_STATUS ksmdbgssnConstruct_IMPL(struct KernelSMDebuggerSession *arg_pKernelSMDebuggerSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_ksmdbgssnConstruct(arg_pKernelSMDebuggerSession, arg_pCallContext, arg_pParams) ksmdbgssnConstruct_IMPL(arg_pKernelSMDebuggerSession, arg_pCallContext, arg_pParams)
 void ksmdbgssnDestruct_IMPL(struct KernelSMDebuggerSession *arg0);
+
 #define __nvoc_ksmdbgssnDestruct(arg0) ksmdbgssnDestruct_IMPL(arg0)
 void ksmdbgssnFreeCallback_IMPL(struct KernelSMDebuggerSession *arg0);
+
 #ifdef __nvoc_kernel_sm_debugger_session_h_disabled
 static inline void ksmdbgssnFreeCallback(struct KernelSMDebuggerSession *arg0) {
     NV_ASSERT_FAILED_PRECOMP("KernelSMDebuggerSession was disabled!");

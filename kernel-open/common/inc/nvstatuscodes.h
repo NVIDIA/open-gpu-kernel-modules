@@ -24,11 +24,6 @@
 #ifndef SDK_NVSTATUSCODES_H
 #define SDK_NVSTATUSCODES_H
 
-/* XAPIGEN - this file is not suitable for (nor needed by) xapigen.         */
-/*           Rather than #ifdef out every such include in every sdk         */
-/*           file, punt here.                                               */
-#if !defined(XAPIGEN)        /* rest of file */
-
 NV_STATUS_CODE(NV_OK,                                  0x00000000, "Success")
 NV_STATUS_CODE(NV_ERR_GENERIC,                         0x0000FFFF, "Failure: Generic Error")
 
@@ -153,6 +148,7 @@ NV_STATUS_CODE(NV_ERR_NVLINK_CLOCK_ERROR,              0x00000076, "Nvlink Clock
 NV_STATUS_CODE(NV_ERR_NVLINK_TRAINING_ERROR,           0x00000077, "Nvlink Training Error")
 NV_STATUS_CODE(NV_ERR_NVLINK_CONFIGURATION_ERROR,      0x00000078, "Nvlink Configuration Error")
 NV_STATUS_CODE(NV_ERR_RISCV_ERROR,                     0x00000079, "Generic RISC-V assert or halt")
+NV_STATUS_CODE(NV_ERR_FABRIC_MANAGER_NOT_PRESENT,      0x0000007A, "Fabric Manager is not loaded")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")
@@ -163,7 +159,5 @@ NV_STATUS_CODE(NV_WARN_MORE_PROCESSING_REQUIRED,       0x00010005, "WARNING More
 NV_STATUS_CODE(NV_WARN_NOTHING_TO_DO,                  0x00010006, "WARNING Nothing to do")
 NV_STATUS_CODE(NV_WARN_NULL_OBJECT,                    0x00010007, "WARNING NULL object found")
 NV_STATUS_CODE(NV_WARN_OUT_OF_RANGE,                   0x00010008, "WARNING value out of range")
-
-#endif // XAPIGEN
 
 #endif /* SDK_NVSTATUSCODES_H */

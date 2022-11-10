@@ -115,11 +115,15 @@ kctxshareapiConstruct_IMPL
         NV_PRINTF(LEVEL_INFO, "Constructing Legacy Context Share\n");
         NV_ASSERT(hVASpace == NV01_NULL_OBJECT);
         pVAS = pKernelChannelGroup->pVAS;
+
+        pKernelCtxShareApi->hVASpace = pKernelChannelGroupApi->hVASpace;
     }
     else
     {
         NV_PRINTF(LEVEL_INFO, "Constructing Client Allocated Context Share\n");
         rmStatus = vaspaceGetByHandleOrDeviceDefault(pClient, hDevice, hVASpace, &pVAS);
+
+        pKernelCtxShareApi->hVASpace = hVASpace;
     }
 
     NV_ASSERT_OR_RETURN((rmStatus == NV_OK), rmStatus);
@@ -577,8 +581,6 @@ kctxshareDestroyCommon_IMPL
             kgrmgrCtrlSetChannelHandle(hParent, &grRouteInfo);
 
             kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics);
-
-            kgrctxReleaseSubctxResources_HAL(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelCtxShare->pVAS, pKernelCtxShare->subctxId);
 
             pEngCtxDesc = pKernelChannelGroup->ppEngCtxDesc[subDevInst];
             if (pEngCtxDesc != NULL)

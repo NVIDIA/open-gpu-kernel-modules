@@ -28,11 +28,12 @@
 #include "mem_mgr/gpu_vaspace.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
-#include "gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
+#include "kernel/gpu/nvbitmask.h"
 #include "platform/chipset/chipset.h"
 #include "rmapi/client.h"
+#include "nvdevid.h"
 
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/gsp/gsp_static_config.h"
@@ -744,95 +745,6 @@ kbusPatchBar2Pdb_GSPCLIENT
     return NV_OK;
 }
 
-/*!
- * @brief Helper function to trigger RPC to Physical RM to unbind FLA VASpace
- *
- * @param[in]  pGpu
- * @param[in]  pKernelBus
- *
- * @return NV_OK if successful
- */
-NV_STATUS
-kbusSetupUnbindFla_KERNEL
-(
-    OBJGPU    *pGpu,
-    KernelBus *pKernelBus
-)
-{
-    NV_STATUS status = NV_OK;
-    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = { 0 };
-
-    if (!pKernelBus->flaInfo.bFlaBind)
-        return NV_OK;
-
-    params.flaAction = NV2080_CTRL_FLA_ACTION_UNBIND;
-
-    NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
-                      pKernelBus->flaInfo.hSubDevice,
-                      NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
-                      &params, sizeof(params), status);
-
-    pKernelBus->flaInfo.bFlaBind = NV_FALSE;
-    pKernelBus->bFlaEnabled      = NV_FALSE;
-
-    return status;
-}
-
-/*!
- * @brief Helper function to extract information from FLA data structure and
- *        to trigger RPC to Physical RM to BIND FLA VASpace
- *
- * @param[in]  pGpu
- * @param[in]  pKernelBus
- * @param[in]  gfid     GFID
- *
- * @return NV_OK if successful
- */
-NV_STATUS
-kbusSetupBindFla_KERNEL
-(
-    OBJGPU    *pGpu,
-    KernelBus *pKernelBus,
-    NvU32      gfid
-)
-{
-    NV_STATUS status = NV_OK;
-    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = {0};
-
-    if (!gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
-    {
-        MEMORY_DESCRIPTOR  *pMemDesc;
-        RmPhysAddr          imbPhysAddr;
-        NvU32               addrSpace;
-
-        pMemDesc     = pKernelBus->flaInfo.pInstblkMemDesc;
-        imbPhysAddr  = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
-        addrSpace    = memdescGetAddressSpace(pMemDesc);
-        NV2080_CTRL_FLA_ADDRSPACE paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_FBMEM;
-
-        switch(addrSpace)
-        {
-            case ADDR_FBMEM:
-                paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_FBMEM;
-                break;
-            case ADDR_SYSMEM:
-                paramAddrSpace = NV2080_CTRL_FLA_ADDRSPACE_SYSMEM;
-                break;
-        }
-        params.imbPhysAddr = imbPhysAddr;
-        params.addrSpace   = paramAddrSpace;
-    }
-    params.flaAction   = NV2080_CTRL_FLA_ACTION_BIND;
-    NV_RM_RPC_CONTROL(pGpu, pKernelBus->flaInfo.hClient,
-                        pKernelBus->flaInfo.hSubDevice,
-                        NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
-                        &params, sizeof(params), status);
-    // Since FLA state is tracked in the Guest, Guest RM needs to set it here
-    pKernelBus->flaInfo.bFlaBind = NV_TRUE;
-    pKernelBus->bFlaEnabled      = NV_TRUE;
-
-    return status;
-}
 
 /*!
  * @brief Checks whether an engine is available or not.
@@ -861,20 +773,28 @@ kbusCheckEngine_KERNEL
     ENGDESCRIPTOR engDesc
 )
 {
-    NvU64    engineList;
-    NvBool   bSupported;
-
-    if (!RMCFG_FEATURE_VIRTUALIZATION && !RMCFG_FEATURE_GSP_CLIENT_RM)
-        return NV_TRUE;
+    NvU32     rmEngineCaps[NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX] = {0};
+    NvU32     nv2080EngineCaps[NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX] = {0};
+    NvBool    bSupported;
+    NV_STATUS status;
 
     {
+        NvU32 i;
         GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
         if (pGSCI == NULL)
         {
             return NV_FALSE;
         }
-        engineList = pGSCI->engineCaps;
+
+        for (i=0; i<NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX; i++)
+        {
+            nv2080EngineCaps[i] = pGSCI->engineCaps[i];
+        }
     }
+
+    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
+          gpuGetRmEngineTypeCapMask(nv2080EngineCaps, NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX, rmEngineCaps),
+          return NV_FALSE);
 
     switch (engDesc)
     {
@@ -913,68 +833,67 @@ kbusCheckEngine_KERNEL
             return NV_TRUE;
 
         case ENG_CE(0):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY0))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY0) ? NV_TRUE: NV_FALSE);
         case ENG_CE(1):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY1))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY1) ? NV_TRUE: NV_FALSE);
         case ENG_CE(2):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY2))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY2) ? NV_TRUE: NV_FALSE);
         case ENG_CE(3):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY3))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY3) ? NV_TRUE: NV_FALSE);
         case ENG_CE(4):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY4))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY4) ? NV_TRUE: NV_FALSE);
         case ENG_CE(5):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY5))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY5) ? NV_TRUE: NV_FALSE);
         case ENG_CE(6):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY6))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY6) ? NV_TRUE: NV_FALSE);
         case ENG_CE(7):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY7))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY7) ? NV_TRUE: NV_FALSE);
         case ENG_CE(8):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY8))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY8) ? NV_TRUE: NV_FALSE);
         case ENG_CE(9):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_COPY9))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_COPY9) ? NV_TRUE: NV_FALSE);
         case ENG_MSENC(0):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVENC0))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVENC0) ? NV_TRUE: NV_FALSE);
         case ENG_MSENC(1):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVENC1))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVENC1) ? NV_TRUE: NV_FALSE);
         case ENG_MSENC(2):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVENC2))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVENC2) ? NV_TRUE: NV_FALSE);
         case ENG_SEC2:
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_SEC2))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_SEC2) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(0):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC0))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVDEC0) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(1):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC1))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVDEC1) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(2):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC2))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVDEC2) ? NV_TRUE: NV_FALSE);
         case ENG_OFA:
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_OFA))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_OFA) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(3):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC3))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVDEC3) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(4):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC4))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVDEC4) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(5):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC5))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVDEC5) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(6):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC6))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVDEC6) ? NV_TRUE: NV_FALSE);
         case ENG_NVDEC(7):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVDEC7))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVDEC7) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(0):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG0))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVJPEG0) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(1):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG1))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVJPEG1) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(2):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG2))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVJPEG2) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(3):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG3))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVJPEG3) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(4):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG4))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVJPEG4) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(5):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG5))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVJPEG5) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(6):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG6))) ? NV_TRUE: NV_FALSE);
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVJPEG6) ? NV_TRUE: NV_FALSE);
         case ENG_NVJPEG(7):
-                return ((engineList & (NVBIT64(NV2080_ENGINE_TYPE_NVJPEG7))) ? NV_TRUE: NV_FALSE);
-
+                return (NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps, RM_ENGINE_TYPE_NVJPEG7) ? NV_TRUE: NV_FALSE);
         case ENG_GR(1):
         case ENG_GR(2):
         case ENG_GR(3):
@@ -1270,6 +1189,41 @@ kbusSendBusInfo_IMPL
 
     pBusInfo->data = busGetInfoParams.busInfoList[0].data;
     return status;
+}
+
+/*!
+ * @brief Returns the Nvlink peer ID from pGpu0 to pGpu1
+ *
+ * @param[in]   pGpu0          (local GPU)
+ * @param[in]   pKernelBus0    (local GPU)
+ * @param[in]   pGpu1          (remote GPU)
+ * @param[in]   pKernelBus1    (remote GPU)
+ * @param[out]  nvlinkPeer     NvU32 pointer
+ *
+ * return NV_OK on success
+ */
+NV_STATUS
+kbusGetNvlinkP2PPeerId_VGPU
+(
+    OBJGPU    *pGpu0,
+    KernelBus *pKernelBus0,
+    OBJGPU    *pGpu1,
+    KernelBus *pKernelBus1,
+    NvU32     *nvlinkPeer
+)
+{
+    *nvlinkPeer = kbusGetUnusedPeerId_HAL(pGpu0, pKernelBus0);
+
+    // If could not find a free peer ID, return error
+    if (*nvlinkPeer == BUS_INVALID_PEER)
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "GPU%d: peerID not available for NVLink P2P\n",
+                  pGpu0->gpuInstance);
+        return NV_ERR_GENERIC;
+    }
+    // Reserve the peer ID for NVLink use
+    return kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(*nvlinkPeer));
 }
 
 /**

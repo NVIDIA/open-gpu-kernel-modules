@@ -344,6 +344,9 @@ typedef struct NV208F_CTRL_CMD_FB_ECC_GET_FORWARD_MAP_ADDRESS_PARAMS {
  *
  *    address
  *      The physical DRAM address to be targeted by the kill pointer
+ *
+ *    bProdInjection
+ *      Whether the kill pointer is set through the production injection flow or not
  */
 #define NV208F_CTRL_CMD_FB_ECC_SET_KILL_PTR (0x208f050e) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_ECC_SET_KILL_PTR_PARAMS_MESSAGE_ID" */
 
@@ -358,6 +361,7 @@ typedef enum NV208F_CTRL_FB_ERROR_TYPE {
 typedef struct NV208F_CTRL_FB_ECC_SET_KILL_PTR_PARAMS {
     NV208F_CTRL_FB_ERROR_TYPE errorType;
     NV_DECLARE_ALIGNED(NvU64 address, 8);
+    NvBool                    bProdInjection;
 } NV208F_CTRL_FB_ECC_SET_KILL_PTR_PARAMS;
 
 
@@ -582,5 +586,26 @@ typedef struct NV208F_CTRL_FB_TOGGLE_PHYSICAL_ADDRESS_ECC_ON_OFF_PARAMS {
 typedef struct NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS {
     NvU32 sourceMask;
 } NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS;
+
+/*
+ * NV208F_CTRL_CMD_FB_GET_FLOORSWEPT_FBPA_MASK
+ *
+ * This command calculates the floorswept fbpa mask by taking 1/2 HBM
+ * floorsweeping into account
+ *
+ *   fbpaMask
+ *     This value of the mask.
+ *
+ *   Possbile status values returned are:
+ *     NV_OK
+ *     NV_ERR_NOT_SUPPORTED
+ */
+#define NV208F_CTRL_CMD_FB_GET_FLOORSWEPT_FBPA_MASK (0x208f0516) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_FB_INTERFACE_ID << 8) | NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS_MESSAGE_ID" */
+
+#define NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS_MESSAGE_ID (0x16U)
+
+typedef struct NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS {
+    NvU32 fbpaMask;
+} NV208F_CTRL_FB_GET_FLOORSWEPT_FBPA_MASK_PARAMS;
 
 /* _ctrl208ffb_h_ */

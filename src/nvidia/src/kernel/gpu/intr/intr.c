@@ -63,36 +63,38 @@ intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
     NV_STATUS status;
     NvBool bPending;
     NvU16 nextEngine;
-    NvU32 regReadValue;
 
-    //
-    // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
-    // we wont know about GPU state until after we start processing DPCs for every
-    // pending engine. This is because, the reg read to determine pending engines
-    // return 0xFFFFFFFF due to GPU being off the bus. To prevent further processing,
-    // reading PMC_BOOT_0 register to check if the GPU was surprise removed/ off the bus
-    // and setting PDB_PROP_GPU_SECONDARY_BUS_RESET_PENDING to attempt Secondary Bus reset
-    // at lower IRQL later to attempt recover the GPU and avoid all ISR DPC processing till
-    // GPU is recovered.
-    //
-
-    regReadValue = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
-
-    if (regReadValue == GPU_REG_VALUE_INVALID)
+    if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed GPU reg read : 0x%x. Check whether GPU is present on the bus\n",
-                  regReadValue);
-    }
+        //
+        // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
+        // we wont know about GPU state until after we start processing DPCs for every
+        // pending engine. This is because, the reg read to determine pending engines
+        // return 0xFFFFFFFF due to GPU being off the bus. To prevent further processing,
+        // reading PMC_BOOT_0 register to check if the GPU was surprise removed/ off the bus
+        // and setting PDB_PROP_GPU_SECONDARY_BUS_RESET_PENDING to attempt Secondary Bus reset
+        // at lower IRQL later to attempt recover the GPU and avoid all ISR DPC processing till
+        // GPU is recovered.
+        //
 
-    if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
-    {
-        goto exit;
-    }
+        NvU32 regReadValue = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
 
-    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
-    {
-        goto exit;
+        if (regReadValue == GPU_REG_VALUE_INVALID)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Failed GPU reg read : 0x%x. Check whether GPU is present on the bus\n",
+                      regReadValue);
+        }
+
+        if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
+        {
+            goto exit;
+        }
+
+        if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+        {
+            goto exit;
+        }
     }
 
     portMemSet(stuckIntr, 0, sizeof(stuckIntr));
@@ -186,20 +188,20 @@ subdeviceCtrlCmdMcServiceInterrupts_IMPL
                 // GPU instance GR engines
                 //
                 grCount = kmigmgrCountEnginesOfType(&ref.pKernelMIGGpuInstance->resourceAllocation.engines,
-                                                    NV2080_ENGINE_TYPE_GR(0));
+                                                    RM_ENGINE_TYPE_GR(0));
             }
 
             for (i = 0; i < grCount; ++i)
             {
-                NvU32 globalEngineType;
+                RM_ENGINE_TYPE globalRmEngineType;
                 NvU32 grIdx;
 
                 NV_ASSERT_OK(
                     kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                                      NV2080_ENGINE_TYPE_GR(i),
-                                                      &globalEngineType));
+                                                      RM_ENGINE_TYPE_GR(i),
+                                                      &globalRmEngineType));
 
-                grIdx = NV2080_ENGINE_TYPE_GR_IDX(globalEngineType);
+                grIdx = RM_ENGINE_TYPE_GR_IDX(globalRmEngineType);
                 bitVectorSet(&engines, MC_ENGINE_IDX_GRn(grIdx));
             }
         }
@@ -246,7 +248,7 @@ intrGetGmmuInterrupts_IMPL
         // Check if any fault was copied only if any other interrupt on GMMU is not pending.
         if (!bitVectorTest(pEngines, MC_ENGINE_IDX_GMMU))
         {
-            if (portAtomicOrS32(&pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].fatalFaultIntrPending, 0))
+            if (portAtomicOrS32(kgmmuGetFatalFaultIntrPendingState(pKernelGmmu, GPU_GFID_PF), 0))
             {
                 bitVectorSet(pEngines, MC_ENGINE_IDX_GMMU);
             }
@@ -1008,7 +1010,7 @@ _intrInitServiceTable
 {
     ENGSTATE_ITER iter = gpuGetEngstateIter(pGpu);
     OBJENGSTATE *pEngstate;
-    
+
     portMemSet(pIntr->intrServiceTable, 0, sizeof(pIntr->intrServiceTable));
 
     while (gpuGetNextEngstate(pGpu, &iter, &pEngstate))
@@ -1078,7 +1080,7 @@ NV_STATUS intrServiceNotificationRecords_IMPL
         NV_ASSERT_FAILED("Missing notification interrupt handler");
         return NV_ERR_GENERIC;
     }
-    
+
     status = intrservServiceNotificationInterrupt(pGpu, pIntrService, &params);
     if (status != NV_OK)
     {
@@ -1086,14 +1088,14 @@ NV_STATUS intrServiceNotificationRecords_IMPL
             "Could not service notification interrupt for engine idx %d; returned NV_STATUS = 0x%x\n",
             engineIdx, status);
         NV_ASSERT_FAILED("Could not service notification interrupt");
-        return NV_ERR_GENERIC;       
+        return NV_ERR_GENERIC;
     }
 
     //
     // On Turing onwards, all non-stall interrupts, including the ones from
     // PBDMA, have moved to reporting on the runlist that is served by the
     // PBDMA. There are still some clients that use the PBDMA interrupts
-    // but currently register for a notifier of type NV2080_ENGINE_TYPE_HOST.
+    // but currently register for a notifier of type RM_ENGINE_TYPE_HOST.
     // Until those clients change to using the new notifiers, RM will fire
     // the host notifier for all non-stall interrupts from host-driven
     // engines. See bug 1866491.
@@ -1102,9 +1104,9 @@ NV_STATUS intrServiceNotificationRecords_IMPL
         pGpu->activeFifoEventMthdNotifiers != 0 &&
         !pIntr->intrServiceTable[engineIdx].bFifoWaiveNotify)
     {
-        engineNonStallIntrNotify(pGpu, NV2080_ENGINE_TYPE_HOST);
+        engineNonStallIntrNotify(pGpu, RM_ENGINE_TYPE_HOST);
     }
-    
+
     return NV_OK;
 }
 
@@ -1530,7 +1532,6 @@ intrServiceStallList_IMPL
     MC_ENGINE_BITVECTOR exactEngines;
     NvBool              bPending;
     CALL_CONTEXT       *pOldContext = NULL;
-    NvU32               regReadValue;
 
     if (gpumgrGetBcEnabledStatus(pGpu))
     {
@@ -1543,30 +1544,33 @@ intrServiceStallList_IMPL
         kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
     }
 
-    //
-    // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
-    // we wont know about GPU state until after we start processing DPCs for every
-    // pending engine. This is because, the reg read to determine pending engines
-    // return 0xFFFFFFFF due to GPU being off the bus. To prevent further processing,
-    // reading PMC_BOOT_0 register to check if the GPU was surprise removed/ off the bus
-    // and setting PDB_PROP_GPU_SECONDARY_BUS_RESET_PENDING to attempt Secondary Bus reset
-    // at lower IRQL later to attempt recover the GPU and avoid all ISR DPC processing till
-    // GPU is recovered.
-    //
-
-    regReadValue = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
-
-    if (regReadValue == GPU_REG_VALUE_INVALID)
+    if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed GPU reg read : 0x%x. Check whether GPU is present on the bus\n",
-                  regReadValue);
-    }
+        //
+        // If the GPU is off the BUS or surprise removed during servicing DPC for ISRs
+        // we wont know about GPU state until after we start processing DPCs for every
+        // pending engine. This is because, the reg read to determine pending engines
+        // return 0xFFFFFFFF due to GPU being off the bus. To prevent further processing,
+        // reading PMC_BOOT_0 register to check if the GPU was surprise removed/ off the bus
+        // and setting PDB_PROP_GPU_SECONDARY_BUS_RESET_PENDING to attempt Secondary Bus reset
+        // at lower IRQL later to attempt recover the GPU and avoid all ISR DPC processing till
+        // GPU is recovered.
+        //
 
-    // Dont service interrupts if GPU is surprise removed
-    if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu) || API_GPU_IN_RESET_SANITY_CHECK(pGpu))
-    {
-        return;
+        NvU32 regReadValue = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+
+        if (regReadValue == GPU_REG_VALUE_INVALID)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Failed GPU reg read : 0x%x. Check whether GPU is present on the bus\n",
+                      regReadValue);
+        }
+
+        // Dont service interrupts if GPU is surprise removed
+        if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu) || API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+        {
+            return;
+        }
     }
 
     resservSwapTlsCallContext(&pOldContext, NULL);

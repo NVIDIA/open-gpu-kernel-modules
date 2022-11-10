@@ -32,7 +32,7 @@
 
 #include "cl5080_notification.h"
 
-#define NV50_DEFERRED_API_CLASS (0x00005080)
+#define NV50_DEFERRED_API_CLASS (0x5080U) /* finn: Evaluated from "NV5080_ALLOC_PARAMS_MESSAGE_ID" */
 
 /* NvRmAlloc parameters */
 #define NV5080_ALLOC_PARAMS_MESSAGE_ID (0x5080U)

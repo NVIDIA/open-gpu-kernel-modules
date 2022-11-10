@@ -410,6 +410,7 @@ NV_STATUS __nvoc_objCreate_OBJCL(OBJCL**, Dynamic*, NvU32);
 
 NV_STATUS clInit_IMPL(struct OBJGPU *arg0, struct OBJCL *pCl);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clInit(struct OBJGPU *arg0, struct OBJCL *pCl) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -423,6 +424,7 @@ static inline NV_STATUS clInit(struct OBJGPU *arg0, struct OBJCL *pCl) {
 
 void clUpdateConfig_IMPL(struct OBJGPU *arg0, struct OBJCL *pCl);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clUpdateConfig(struct OBJGPU *arg0, struct OBJCL *pCl) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -434,6 +436,7 @@ static inline void clUpdateConfig(struct OBJGPU *arg0, struct OBJCL *pCl) {
 #define clUpdateConfig_HAL(arg0, pCl) clUpdateConfig(arg0, pCl)
 
 NV_STATUS clTeardown_IMPL(struct OBJGPU *arg0, struct OBJCL *pCl);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clTeardown(struct OBJGPU *arg0, struct OBJCL *pCl) {
@@ -448,6 +451,7 @@ static inline NV_STATUS clTeardown(struct OBJGPU *arg0, struct OBJCL *pCl) {
 
 void clInitPropertiesFromRegistry_IMPL(struct OBJGPU *arg0, struct OBJCL *pCl);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clInitPropertiesFromRegistry(struct OBJGPU *arg0, struct OBJCL *pCl) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -459,6 +463,7 @@ static inline void clInitPropertiesFromRegistry(struct OBJGPU *arg0, struct OBJC
 #define clInitPropertiesFromRegistry_HAL(arg0, pCl) clInitPropertiesFromRegistry(arg0, pCl)
 
 NV_STATUS clGetFHBHandle_IMPL(struct OBJCL *arg0, void **arg1, NvU16 *arg2, NvU16 *arg3);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clGetFHBHandle(struct OBJCL *arg0, void **arg1, NvU16 *arg2, NvU16 *arg3) {
@@ -473,6 +478,7 @@ static inline NV_STATUS clGetFHBHandle(struct OBJCL *arg0, void **arg1, NvU16 *a
 
 NvU32 clInitMappingPciBusDevice_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NvU32 clInitMappingPciBusDevice(struct OBJGPU *arg0, struct OBJCL *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -485,6 +491,7 @@ static inline NvU32 clInitMappingPciBusDevice(struct OBJGPU *arg0, struct OBJCL 
 #define clInitMappingPciBusDevice_HAL(arg0, arg1) clInitMappingPciBusDevice(arg0, arg1)
 
 NV_STATUS clFindFHBAndGetChipsetInfoIndex_IMPL(struct OBJCL *arg0, NvU16 *arg1);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clFindFHBAndGetChipsetInfoIndex(struct OBJCL *arg0, NvU16 *arg1) {
@@ -499,6 +506,7 @@ static inline NV_STATUS clFindFHBAndGetChipsetInfoIndex(struct OBJCL *arg0, NvU1
 
 NV_STATUS clInitPcie_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clInitPcie(struct OBJGPU *arg0, struct OBJCL *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -512,6 +520,7 @@ static inline NV_STATUS clInitPcie(struct OBJGPU *arg0, struct OBJCL *arg1) {
 
 void clUpdatePcieConfig_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clUpdatePcieConfig(struct OBJGPU *arg0, struct OBJCL *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -523,6 +532,7 @@ static inline void clUpdatePcieConfig(struct OBJGPU *arg0, struct OBJCL *arg1) {
 #define clUpdatePcieConfig_HAL(arg0, arg1) clUpdatePcieConfig(arg0, arg1)
 
 NV_STATUS clTeardownPcie_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clTeardownPcie(struct OBJGPU *arg0, struct OBJCL *arg1) {
@@ -537,6 +547,7 @@ static inline NV_STATUS clTeardownPcie(struct OBJGPU *arg0, struct OBJCL *arg1) 
 
 NV_STATUS clPcieReadPortConfigReg_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, PORTDATA *arg2, NvU32 arg3, NvU32 *arg4);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieReadPortConfigReg(struct OBJGPU *arg0, struct OBJCL *arg1, PORTDATA *arg2, NvU32 arg3, NvU32 *arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -549,6 +560,7 @@ static inline NV_STATUS clPcieReadPortConfigReg(struct OBJGPU *arg0, struct OBJC
 #define clPcieReadPortConfigReg_HAL(arg0, arg1, arg2, arg3, arg4) clPcieReadPortConfigReg(arg0, arg1, arg2, arg3, arg4)
 
 NV_STATUS clPcieWriteRootPortConfigReg_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 arg2, NvU32 arg3);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieWriteRootPortConfigReg(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 arg2, NvU32 arg3) {
@@ -563,6 +575,7 @@ static inline NV_STATUS clPcieWriteRootPortConfigReg(struct OBJGPU *arg0, struct
 
 NV_STATUS clPcieReadAerCapability_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, struct PcieAerCapability *arg2);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieReadAerCapability(struct OBJGPU *arg0, struct OBJCL *arg1, struct PcieAerCapability *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -575,6 +588,7 @@ static inline NV_STATUS clPcieReadAerCapability(struct OBJGPU *arg0, struct OBJC
 #define clPcieReadAerCapability_HAL(arg0, arg1, arg2) clPcieReadAerCapability(arg0, arg1, arg2)
 
 NV_STATUS clPcieReadL1SsCapability_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, struct PexL1SubstateCapability *arg2);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieReadL1SsCapability(struct OBJGPU *arg0, struct OBJCL *arg1, struct PexL1SubstateCapability *arg2) {
@@ -589,6 +603,7 @@ static inline NV_STATUS clPcieReadL1SsCapability(struct OBJGPU *arg0, struct OBJ
 
 NV_STATUS clPcieReadDevCtrlStatus_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 *arg2, NvU32 *arg3);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieReadDevCtrlStatus(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 *arg2, NvU32 *arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -601,6 +616,7 @@ static inline NV_STATUS clPcieReadDevCtrlStatus(struct OBJGPU *arg0, struct OBJC
 #define clPcieReadDevCtrlStatus_HAL(arg0, arg1, arg2, arg3) clPcieReadDevCtrlStatus(arg0, arg1, arg2, arg3)
 
 NV_STATUS clPcieClearDevCtrlStatus_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 *arg2);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieClearDevCtrlStatus(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 *arg2) {
@@ -615,6 +631,7 @@ static inline NV_STATUS clPcieClearDevCtrlStatus(struct OBJGPU *arg0, struct OBJ
 
 NvU16 clPcieReadWord_IMPL(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 arg3, NvU8 arg4, NvU32 arg5);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NvU16 clPcieReadWord(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 arg3, NvU8 arg4, NvU32 arg5) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -627,6 +644,7 @@ static inline NvU16 clPcieReadWord(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, Nv
 #define clPcieReadWord_HAL(arg0, arg1, arg2, arg3, arg4, arg5) clPcieReadWord(arg0, arg1, arg2, arg3, arg4, arg5)
 
 NvU32 clPcieReadDword_IMPL(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 arg3, NvU8 arg4, NvU32 arg5);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NvU32 clPcieReadDword(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 arg3, NvU8 arg4, NvU32 arg5) {
@@ -641,6 +659,7 @@ static inline NvU32 clPcieReadDword(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, N
 
 void clPcieWriteWord_IMPL(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 arg3, NvU8 arg4, NvU32 arg5, NvU16 arg6);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clPcieWriteWord(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 arg3, NvU8 arg4, NvU32 arg5, NvU16 arg6) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -653,6 +672,7 @@ static inline void clPcieWriteWord(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, Nv
 
 void clPcieWriteDword_IMPL(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 arg3, NvU8 arg4, NvU32 arg5, NvU32 arg6);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clPcieWriteDword(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 arg3, NvU8 arg4, NvU32 arg5, NvU32 arg6) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -664,6 +684,7 @@ static inline void clPcieWriteDword(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, N
 #define clPcieWriteDword_HAL(arg0, arg1, arg2, arg3, arg4, arg5, arg6) clPcieWriteDword(arg0, arg1, arg2, arg3, arg4, arg5, arg6)
 
 NvBool clFindBR04_IMPL(POBJGPU *pGpus, NvU32 NumGpus, NvBool flat, NvU32 devId, struct OBJCL *pCl);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NvBool clFindBR04(POBJGPU *pGpus, NvU32 NumGpus, NvBool flat, NvU32 devId, struct OBJCL *pCl) {
@@ -678,6 +699,7 @@ static inline NvBool clFindBR04(POBJGPU *pGpus, NvU32 NumGpus, NvBool flat, NvU3
 
 NV_STATUS clResumeBridge_IMPL(struct OBJCL *pCl);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clResumeBridge(struct OBJCL *pCl) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -690,6 +712,7 @@ static inline NV_STATUS clResumeBridge(struct OBJCL *pCl) {
 #define clResumeBridge_HAL(pCl) clResumeBridge(pCl)
 
 NV_STATUS clChangeUpstreamBusSpeed_IMPL(NvU8 primaryBus, struct OBJCL *pCl, NvU32 cmd);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clChangeUpstreamBusSpeed(NvU8 primaryBus, struct OBJCL *pCl, NvU32 cmd) {
@@ -704,6 +727,7 @@ static inline NV_STATUS clChangeUpstreamBusSpeed(NvU8 primaryBus, struct OBJCL *
 
 NV_STATUS clGetUpstreamBusSpeed_IMPL(NvU8 primaryBus, struct OBJCL *pCl, NvU32 *speed);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clGetUpstreamBusSpeed(NvU8 primaryBus, struct OBJCL *pCl, NvU32 *speed) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -716,6 +740,7 @@ static inline NV_STATUS clGetUpstreamBusSpeed(NvU8 primaryBus, struct OBJCL *pCl
 #define clGetUpstreamBusSpeed_HAL(primaryBus, pCl, speed) clGetUpstreamBusSpeed(primaryBus, pCl, speed)
 
 NV_STATUS clHWBCGetUpstreamBAR0_IMPL(NvU8 primaryBus, struct OBJCL *pCl, RmPhysAddr *pBAR0);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clHWBCGetUpstreamBAR0(NvU8 primaryBus, struct OBJCL *pCl, RmPhysAddr *pBAR0) {
@@ -730,6 +755,7 @@ static inline NV_STATUS clHWBCGetUpstreamBAR0(NvU8 primaryBus, struct OBJCL *pCl
 
 void *clFindP2PBrdg_IMPL(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 *arg3, NvU8 *arg4, NvU8 *arg5, NvU16 *arg6, NvU16 *arg7);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void *clFindP2PBrdg(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU8 *arg3, NvU8 *arg4, NvU8 *arg5, NvU16 *arg6, NvU16 *arg7) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -742,6 +768,7 @@ static inline void *clFindP2PBrdg(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2, NvU
 #define clFindP2PBrdg_HAL(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) clFindP2PBrdg(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 
 void *clFindBrdgUpstreamPort_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvBool arg2, NvU8 *arg3, NvU8 *arg4, NvU8 *arg5, NvU16 *arg6, NvU16 *arg7, NvU8 *arg8);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline void *clFindBrdgUpstreamPort(struct OBJGPU *arg0, struct OBJCL *arg1, NvBool arg2, NvU8 *arg3, NvU8 *arg4, NvU8 *arg5, NvU16 *arg6, NvU16 *arg7, NvU8 *arg8) {
@@ -756,6 +783,7 @@ static inline void *clFindBrdgUpstreamPort(struct OBJGPU *arg0, struct OBJCL *ar
 
 NV_STATUS clSetPortPcieCapOffset_IMPL(struct OBJCL *arg0, void *arg1, NvU32 *arg2);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clSetPortPcieCapOffset(struct OBJCL *arg0, void *arg1, NvU32 *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -768,6 +796,7 @@ static inline NV_STATUS clSetPortPcieCapOffset(struct OBJCL *arg0, void *arg1, N
 #define clSetPortPcieCapOffset_HAL(arg0, arg1, arg2) clSetPortPcieCapOffset(arg0, arg1, arg2)
 
 NV_STATUS clGetRsdtXsdtTablesAddr_IMPL(struct OBJCL *arg0, NvU32 *arg1, NvU64 *arg2);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clGetRsdtXsdtTablesAddr(struct OBJCL *arg0, NvU32 *arg1, NvU64 *arg2) {
@@ -782,6 +811,7 @@ static inline NV_STATUS clGetRsdtXsdtTablesAddr(struct OBJCL *arg0, NvU32 *arg1,
 
 NvBool clGetMcfgTableFromOS_IMPL(struct OBJCL *arg0, struct OBJOS *arg1, void **arg2, NvU32 *arg3);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NvBool clGetMcfgTableFromOS(struct OBJCL *arg0, struct OBJOS *arg1, void **arg2, NvU32 *arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -794,6 +824,7 @@ static inline NvBool clGetMcfgTableFromOS(struct OBJCL *arg0, struct OBJOS *arg1
 #define clGetMcfgTableFromOS_HAL(arg0, arg1, arg2, arg3) clGetMcfgTableFromOS(arg0, arg1, arg2, arg3)
 
 NvU64 clScanForTable_IMPL(struct OBJCL *arg0, struct OBJOS *arg1, NvU64 arg2, NvU64 arg3, NvU32 arg4);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NvU64 clScanForTable(struct OBJCL *arg0, struct OBJOS *arg1, NvU64 arg2, NvU64 arg3, NvU32 arg4) {
@@ -808,6 +839,7 @@ static inline NvU64 clScanForTable(struct OBJCL *arg0, struct OBJOS *arg1, NvU64
 
 NV_STATUS clStorePcieConfigSpaceBaseFromMcfg_IMPL(struct OBJCL *pCl);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clStorePcieConfigSpaceBaseFromMcfg(struct OBJCL *pCl) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -821,6 +853,7 @@ static inline NV_STATUS clStorePcieConfigSpaceBaseFromMcfg(struct OBJCL *pCl) {
 
 NV_STATUS clInsertPcieConfigSpaceBase_IMPL(struct OBJCL *arg0, RmPhysAddr arg1, NvU32 arg2, NvU8 arg3, NvU8 arg4);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clInsertPcieConfigSpaceBase(struct OBJCL *arg0, RmPhysAddr arg1, NvU32 arg2, NvU8 arg3, NvU8 arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -833,6 +866,7 @@ static inline NV_STATUS clInsertPcieConfigSpaceBase(struct OBJCL *arg0, RmPhysAd
 #define clInsertPcieConfigSpaceBase_HAL(arg0, arg1, arg2, arg3, arg4) clInsertPcieConfigSpaceBase(arg0, arg1, arg2, arg3, arg4)
 
 RmPhysAddr clFindPcieConfigSpaceBase_IMPL(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline RmPhysAddr clFindPcieConfigSpaceBase(struct OBJCL *arg0, NvU32 arg1, NvU8 arg2) {
@@ -849,6 +883,7 @@ static inline RmPhysAddr clFindPcieConfigSpaceBase(struct OBJCL *arg0, NvU32 arg
 
 void clFreePcieConfigSpaceBase_IMPL(struct OBJCL *pCl);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clFreePcieConfigSpaceBase(struct OBJCL *pCl) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -860,6 +895,7 @@ static inline void clFreePcieConfigSpaceBase(struct OBJCL *pCl) {
 #define clFreePcieConfigSpaceBase_HAL(pCl) clFreePcieConfigSpaceBase(pCl)
 
 NV_STATUS clInitDeviceInfo_IMPL(struct OBJCL *arg0, struct OBJGPU *arg1);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clInitDeviceInfo(struct OBJCL *arg0, struct OBJGPU *arg1) {
@@ -874,6 +910,7 @@ static inline NV_STATUS clInitDeviceInfo(struct OBJCL *arg0, struct OBJGPU *arg1
 
 void clCountBR_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvU8 *arg2, NvU8 *arg3, NvU8 *arg4);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clCountBR(struct OBJGPU *arg0, struct OBJCL *arg1, NvU8 *arg2, NvU8 *arg3, NvU8 *arg4) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -885,6 +922,7 @@ static inline void clCountBR(struct OBJGPU *arg0, struct OBJCL *arg1, NvU8 *arg2
 #define clCountBR_HAL(arg0, arg1, arg2, arg3, arg4) clCountBR(arg0, arg1, arg2, arg3, arg4)
 
 void clFindCommonBR_IMPL(struct OBJGPU *pGpu1, struct OBJGPU *pGpu2, struct OBJCL *pCl, NvU8 *pBR03Bus, NvU8 *pBR04Bus, NvU8 *pPLXBus, NvBool bScanAll);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline void clFindCommonBR(struct OBJGPU *pGpu1, struct OBJGPU *pGpu2, struct OBJCL *pCl, NvU8 *pBR03Bus, NvU8 *pBR04Bus, NvU8 *pPLXBus, NvBool bScanAll) {
@@ -898,6 +936,7 @@ static inline void clFindCommonBR(struct OBJGPU *pGpu1, struct OBJGPU *pGpu2, st
 
 void clFindCommonDownstreamBR_IMPL(struct OBJGPU *pGpu1, struct OBJGPU *pGpu2, struct OBJCL *pCl, NvU8 *pPciSwitchBus);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clFindCommonDownstreamBR(struct OBJGPU *pGpu1, struct OBJGPU *pGpu2, struct OBJCL *pCl, NvU8 *pPciSwitchBus) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -909,6 +948,7 @@ static inline void clFindCommonDownstreamBR(struct OBJGPU *pGpu1, struct OBJGPU 
 #define clFindCommonDownstreamBR_HAL(pGpu1, pGpu2, pCl, pPciSwitchBus) clFindCommonDownstreamBR(pGpu1, pGpu2, pCl, pPciSwitchBus)
 
 void clFindBR_IMPL(struct OBJGPU *pGpu, struct OBJCL *pCl, NvU8 *pBR03Bus, NvU8 *pBR04Bus, NvBool *pBRNotBR04A03, NvBool *pNoUnsupportedBRFound, NvBool *pNoOnboardBR04, NvU8 *pPLXBus);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline void clFindBR(struct OBJGPU *pGpu, struct OBJCL *pCl, NvU8 *pBR03Bus, NvU8 *pBR04Bus, NvBool *pBRNotBR04A03, NvBool *pNoUnsupportedBRFound, NvBool *pNoOnboardBR04, NvU8 *pPLXBus) {
@@ -922,6 +962,7 @@ static inline void clFindBR(struct OBJGPU *pGpu, struct OBJCL *pCl, NvU8 *pBR03B
 
 void clSearchBR04_IMPL(struct OBJCL *pCl, NvU8 *pBR04BusArray, NvU8 *pBR04RevArray, NvU8 *pBR04Count);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clSearchBR04(struct OBJCL *pCl, NvU8 *pBR04BusArray, NvU8 *pBR04RevArray, NvU8 *pBR04Count) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -933,6 +974,7 @@ static inline void clSearchBR04(struct OBJCL *pCl, NvU8 *pBR04BusArray, NvU8 *pB
 #define clSearchBR04_HAL(pCl, pBR04BusArray, pBR04RevArray, pBR04Count) clSearchBR04(pCl, pBR04BusArray, pBR04RevArray, pBR04Count)
 
 NV_STATUS clPcieGetMaxCapableLinkWidth_IMPL(struct OBJCL *pCl, struct OBJGPU *pGpu, NvU32 *maxCapableLinkWidth);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieGetMaxCapableLinkWidth(struct OBJCL *pCl, struct OBJGPU *pGpu, NvU32 *maxCapableLinkWidth) {
@@ -947,6 +989,7 @@ static inline NV_STATUS clPcieGetMaxCapableLinkWidth(struct OBJCL *pCl, struct O
 
 NV_STATUS clPcieIsRelaxedOrderingSafe_IMPL(struct OBJCL *pCl, struct OBJGPU *pGpu, NvBool *result);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieIsRelaxedOrderingSafe(struct OBJCL *pCl, struct OBJGPU *pGpu, NvBool *result) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -959,6 +1002,7 @@ static inline NV_STATUS clPcieIsRelaxedOrderingSafe(struct OBJCL *pCl, struct OB
 #define clPcieIsRelaxedOrderingSafe_HAL(pCl, pGpu, result) clPcieIsRelaxedOrderingSafe(pCl, pGpu, result)
 
 NV_STATUS clStoreBusTopologyCache_IMPL(struct OBJCL *pCl, NvU32 secDomain, NvU16 secBus);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clStoreBusTopologyCache(struct OBJCL *pCl, NvU32 secDomain, NvU16 secBus) {
@@ -973,6 +1017,7 @@ static inline NV_STATUS clStoreBusTopologyCache(struct OBJCL *pCl, NvU32 secDoma
 
 void clFreeBusTopologyCache_IMPL(struct OBJCL *pCl);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clFreeBusTopologyCache(struct OBJCL *pCl) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -984,6 +1029,7 @@ static inline void clFreeBusTopologyCache(struct OBJCL *pCl) {
 #define clFreeBusTopologyCache_HAL(pCl) clFreeBusTopologyCache(pCl)
 
 NvBool clAreGpusBehindSameBridge_IMPL(struct OBJCL *pCl, struct OBJGPU *pGpu1, struct OBJGPU *pGpu2);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NvBool clAreGpusBehindSameBridge(struct OBJCL *pCl, struct OBJGPU *pGpu1, struct OBJGPU *pGpu2) {
@@ -998,6 +1044,7 @@ static inline NvBool clAreGpusBehindSameBridge(struct OBJCL *pCl, struct OBJGPU 
 
 NvBool clIsL1MaskEnabledForUpstreamPort_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NvBool clIsL1MaskEnabledForUpstreamPort(struct OBJGPU *arg0, struct OBJCL *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -1010,6 +1057,7 @@ static inline NvBool clIsL1MaskEnabledForUpstreamPort(struct OBJGPU *arg0, struc
 #define clIsL1MaskEnabledForUpstreamPort_HAL(arg0, arg1) clIsL1MaskEnabledForUpstreamPort(arg0, arg1)
 
 NV_STATUS clControlL0sL1LinkControlUpstreamPort_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvBool arg2);
+
 
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clControlL0sL1LinkControlUpstreamPort(struct OBJGPU *arg0, struct OBJCL *arg1, NvBool arg2) {
@@ -1024,6 +1072,7 @@ static inline NV_STATUS clControlL0sL1LinkControlUpstreamPort(struct OBJGPU *arg
 
 NV_STATUS clChipsetAspmPublicControl_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 arg2);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clChipsetAspmPublicControl(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -1037,6 +1086,7 @@ static inline NV_STATUS clChipsetAspmPublicControl(struct OBJGPU *arg0, struct O
 
 NvBool clRootportNeedsNosnoopWAR_FWCLIENT(struct OBJGPU *arg0, struct OBJCL *arg1);
 
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NvBool clRootportNeedsNosnoopWAR(struct OBJGPU *arg0, struct OBJCL *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -1048,11 +1098,28 @@ static inline NvBool clRootportNeedsNosnoopWAR(struct OBJGPU *arg0, struct OBJCL
 
 #define clRootportNeedsNosnoopWAR_HAL(arg0, arg1) clRootportNeedsNosnoopWAR(arg0, arg1)
 
+NvU16 clPcieGetGpuLostDiagnosticData_IMPL(struct OBJGPU *pGpu, struct OBJCL *arg0, NvU8 *pBuffer, NvU32 size);
+
+
+#ifdef __nvoc_chipset_h_disabled
+static inline NvU16 clPcieGetGpuLostDiagnosticData(struct OBJGPU *pGpu, struct OBJCL *arg0, NvU8 *pBuffer, NvU32 size) {
+    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
+    return 0;
+}
+#else //__nvoc_chipset_h_disabled
+#define clPcieGetGpuLostDiagnosticData(pGpu, arg0, pBuffer, size) clPcieGetGpuLostDiagnosticData_IMPL(pGpu, arg0, pBuffer, size)
+#endif //__nvoc_chipset_h_disabled
+
+#define clPcieGetGpuLostDiagnosticData_HAL(pGpu, arg0, pBuffer, size) clPcieGetGpuLostDiagnosticData(pGpu, arg0, pBuffer, size)
+
 NV_STATUS clConstruct_IMPL(struct OBJCL *arg_pCl);
+
 #define __nvoc_clConstruct(arg_pCl) clConstruct_IMPL(arg_pCl)
 void clDestruct_IMPL(struct OBJCL *pCl);
+
 #define __nvoc_clDestruct(pCl) clDestruct_IMPL(pCl)
 NvBool clUpstreamVgaDecodeEnabled_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1);
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NvBool clUpstreamVgaDecodeEnabled(struct OBJGPU *arg0, struct OBJCL *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -1063,6 +1130,7 @@ static inline NvBool clUpstreamVgaDecodeEnabled(struct OBJGPU *arg0, struct OBJC
 #endif //__nvoc_chipset_h_disabled
 
 NV_STATUS clPcieGetRootGenSpeed_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvU8 *arg2);
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieGetRootGenSpeed(struct OBJGPU *arg0, struct OBJCL *arg1, NvU8 *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -1073,6 +1141,7 @@ static inline NV_STATUS clPcieGetRootGenSpeed(struct OBJGPU *arg0, struct OBJCL 
 #endif //__nvoc_chipset_h_disabled
 
 NV_STATUS clPcieGetDownstreamPortLinkCap2_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 *arg2);
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clPcieGetDownstreamPortLinkCap2(struct OBJGPU *arg0, struct OBJCL *arg1, NvU32 *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -1083,6 +1152,7 @@ static inline NV_STATUS clPcieGetDownstreamPortLinkCap2(struct OBJGPU *arg0, str
 #endif //__nvoc_chipset_h_disabled
 
 NV_STATUS clCheckUpstreamLtrSupport_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvBool *arg2);
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clCheckUpstreamLtrSupport(struct OBJGPU *arg0, struct OBJCL *arg1, NvBool *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -1093,6 +1163,7 @@ static inline NV_STATUS clCheckUpstreamLtrSupport(struct OBJGPU *arg0, struct OB
 #endif //__nvoc_chipset_h_disabled
 
 NV_STATUS clGetAtomicTypesSupported_IMPL(NvU32 arg0, NvU8 arg1, struct OBJCL *arg2, NvU32 *arg3);
+
 #ifdef __nvoc_chipset_h_disabled
 static inline NV_STATUS clGetAtomicTypesSupported(NvU32 arg0, NvU8 arg1, struct OBJCL *arg2, NvU32 *arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
@@ -1103,6 +1174,7 @@ static inline NV_STATUS clGetAtomicTypesSupported(NvU32 arg0, NvU8 arg1, struct 
 #endif //__nvoc_chipset_h_disabled
 
 void clSyncWithGsp_IMPL(struct OBJCL *arg0, GspSystemInfo *arg1);
+
 #ifdef __nvoc_chipset_h_disabled
 static inline void clSyncWithGsp(struct OBJCL *arg0, GspSystemInfo *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");

@@ -25,13 +25,24 @@
 #define __NVKMS_MODESET_H__
 
 #include "nvkms-types.h"
+#include "class/cl0092_callback.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+NvBool
+nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
+                   const struct NvKmsSetModeOneHeadRequest *pRequestHead,
+                   NVHwModeTimingsEvo *pTimings,
+                   NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl);
+
+NvBool nvGetAllowHeadSurfaceInNvKms(const NVDevEvoRec *pDevEvo,
+                                    const struct NvKmsPerOpenDev *pOpenDev,
+                                    const struct NvKmsSetModeRequest *pRequest);
+
 NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
-                        const struct NvKmsPerOpenDev *pOpenDev,
+                        struct NvKmsPerOpenDev *pOpenDev,
                         const struct NvKmsSetModeRequest *pRequest,
                         struct NvKmsSetModeReply *pReply,
                         NvBool bypassComposition,
@@ -50,6 +61,21 @@ NVVBlankCallbackPtr nvRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
 void nvUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
                                 NvU32 head,
                                 NVVBlankCallbackPtr pCallback);
+
+NVVBlankCallbackPtr
+nvApiHeadRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                const NvU32 apiHead,
+                                NVVBlankCallbackProc pCallback,
+                                void *pUserData);
+
+void nvApiHeadUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                       const NvU32 apiHead,
+                                       NVVBlankCallbackPtr pCallback);
+
+NvU32
+nvApiHeadAddRgLine1Callback(const NVDispEvoRec *pDispEvo,
+                            const NvU32 apiHead,
+                            NV0092_REGISTER_RG_LINE_CALLBACK_FN pCallback);
 
 #ifdef __cplusplus
 };

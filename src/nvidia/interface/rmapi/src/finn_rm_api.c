@@ -13,6 +13,7 @@
 #include "ctrl/ctrl2080/ctrl2080nvd.h"
 #include "ctrl/ctrl2080/ctrl2080perf.h"
 #include "ctrl/ctrl2080/ctrl2080rc.h"
+#include "ctrl/ctrl208f/ctrl208fgpu.h"
 #include "ctrl/ctrl402c.h"
 #include "ctrl/ctrl83de/ctrl83dedebug.h"
 #include "ctrl/ctrlb06f.h"
@@ -412,6 +413,9 @@ static NvU64 FinnNv20Subdevice0PerfGetUnserializedSize(NvU64 message);
 static NV_STATUS FinnNv20Subdevice0RcSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS FinnNv20Subdevice0RcDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_RC *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20Subdevice0RcGetUnserializedSize(NvU64 message);
+static NV_STATUS FinnNv20SubdeviceDiagGpuSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
+static NV_STATUS FinnNv20SubdeviceDiagGpuDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_DIAG_GPU *dst, NvLength dst_size, NvBool deser_up);
+static NvU64 FinnNv20SubdeviceDiagGpuGetUnserializedSize(NvU64 message);
 static NV_STATUS FinnNv40I2cI2cSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS FinnNv40I2cI2cDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV40_I2C_I2C *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv40I2cI2cGetUnserializedSize(NvU64 message);
@@ -460,6 +464,7 @@ static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_D
 static NV_STATUS Nv2080CtrlNvdGetDumpParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_NVD_GET_DUMP_PARAMS *dst, NvLength dst_size, NvBool deser_up);
 static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsDeserialize(finn_bit_pump_for_read *bp, NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *dst, NvLength dst_size, NvBool deser_up);
+
 static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEXED_PARAMS *src, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS Nv402cCtrlI2cIndexedParamsDeserialize(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_INDEXED_PARAMS *dst, NvLength dst_size, NvBool deser_up);
 static NV_STATUS Nv402cCtrlI2cTransactionTypeCheckEnum(NV402C_CTRL_I2C_TRANSACTION_TYPE id);
@@ -618,6 +623,8 @@ static NV_STATUS FinnRmApiSerializeInterface(NvU64 interface, NvU64 message, con
             return FinnNv20Subdevice0PerfSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_RC):
             return FinnNv20Subdevice0RcSerializeMessage(message, src, bp, seri_up);
+        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_DIAG_GPU):
+            return FinnNv20SubdeviceDiagGpuSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_NV40_I2C_I2C):
             return FinnNv40I2cI2cSerializeMessage(message, src, bp, seri_up);
         case FINN_INTERFACE_ID(FINN_GT200_DEBUGGER_DEBUG):
@@ -745,6 +752,8 @@ static NV_STATUS FinnRmApiDeserializeInterface(NvU64 interface, NvU64 message, f
             return FinnNv20Subdevice0PerfDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_0_PERF *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_RC):
             return FinnNv20Subdevice0RcDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_0_RC *) dst, dst_size, deser_up);
+        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_DIAG_GPU):
+            return FinnNv20SubdeviceDiagGpuDeserializeMessage(message, bp, (FINN_NV20_SUBDEVICE_DIAG_GPU *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_NV40_I2C_I2C):
             return FinnNv40I2cI2cDeserializeMessage(message, bp, (FINN_NV40_I2C_I2C *) dst, dst_size, deser_up);
         case FINN_INTERFACE_ID(FINN_GT200_DEBUGGER_DEBUG):
@@ -815,6 +824,8 @@ NvU64 FinnRmApiGetUnserializedSize(NvU64 interface, NvU64 message)
             return FinnNv20Subdevice0PerfGetUnserializedSize(message);
         case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_0_RC):
             return FinnNv20Subdevice0RcGetUnserializedSize(message);
+        case FINN_INTERFACE_ID(FINN_NV20_SUBDEVICE_DIAG_GPU):
+            return FinnNv20SubdeviceDiagGpuGetUnserializedSize(message);
         case FINN_INTERFACE_ID(FINN_NV40_I2C_I2C):
             return FinnNv40I2cI2cGetUnserializedSize(message);
         case FINN_INTERFACE_ID(FINN_GT200_DEBUGGER_DEBUG):
@@ -1488,6 +1499,46 @@ static NvU64 FinnNv20Subdevice0RcGetUnserializedSize(NvU64 message)
     }
 }
 
+static NV_STATUS FinnNv20SubdeviceDiagGpuSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
+{
+    // Forward to message-specific routine.
+    switch (message)
+    {
+
+        // Everything else is unsupported.
+        default:
+        {
+            FINN_ERROR(NV_ERR_NOT_SUPPORTED);
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+}
+
+static NV_STATUS FinnNv20SubdeviceDiagGpuDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_DIAG_GPU *dst, NvLength dst_size, NvBool deser_up)
+{
+    // Forward to message-specific routine.
+    switch (message)
+    {
+
+        // Everything else is unsupported.
+        default:
+        {
+            FINN_ERROR(NV_ERR_NOT_SUPPORTED);
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+}
+
+static NvU64 FinnNv20SubdeviceDiagGpuGetUnserializedSize(NvU64 message)
+{
+    // Forward to message-specific routine.
+    switch (message)
+    {
+        default:
+            return 0;
+    }
+}
+
 static NV_STATUS FinnNv40I2cI2cSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
     // Forward to message-specific routine.
@@ -1664,7 +1715,14 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_D
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->component
@@ -1677,7 +1735,7 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_D
     }
 
 
-    if (src->size < 0 || src->size > NV0000_CTRL_NVD_MAX_DUMP_SIZE)
+    if (src->size > NV0000_CTRL_NVD_MAX_DUMP_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -1695,7 +1753,12 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_D
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pBuffer), 1);
+    if (finn_write_buffer(bp, !!(src->pBuffer), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pBuffer)
@@ -1704,7 +1767,12 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_D
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->size); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pBuffer))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pBuffer))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -1747,7 +1815,7 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsDeserialize(finn_bit_pump_for_read *b
 
     // Deserialize 4-byte NvU32 object.
     dst->size = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->size < 0 || dst->size > NV0000_CTRL_NVD_MAX_DUMP_SIZE)
+    if (dst->size > NV0000_CTRL_NVD_MAX_DUMP_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -1809,7 +1877,14 @@ static NV_STATUS Nv0080CtrlDmaUpdatePde2PageTableParamsSerialize(const NV0080_CT
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->physAddr
@@ -1898,7 +1973,14 @@ static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsSerialize(const NV0080_CTRL_DMA_UP
 
     // Field bitmasks
     field_presence_mask = 0x3f;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->pdeIndex
@@ -1951,7 +2033,12 @@ static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsSerialize(const NV0080_CTRL_DMA_UP
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pPdeBuffer), 1);
+    if (finn_write_buffer(bp, !!(src->pPdeBuffer), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pPdeBuffer)
@@ -1960,7 +2047,12 @@ static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsSerialize(const NV0080_CTRL_DMA_UP
         // Serialize each 8-byte NvU64 element.
         for (NvU64 j = 0; j < 1; ++j)
         {
-            finn_write_buffer(bp, ((NvU64 *) NvP64_VALUE(src->pPdeBuffer))[j], 8 * 8);
+            if (finn_write_buffer(bp, ((NvU64 *) NvP64_VALUE(src->pPdeBuffer))[j], 8 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -2077,10 +2169,17 @@ static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAP
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
-    if (src->capsTblSize < 0 || src->capsTblSize > NV0080_CTRL_FB_CAPS_TBL_SIZE)
+    if (src->capsTblSize > NV0080_CTRL_FB_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -2098,7 +2197,12 @@ static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAP
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->capsTbl), 1);
+    if (finn_write_buffer(bp, !!(src->capsTbl), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->capsTbl)
@@ -2107,7 +2211,12 @@ static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAP
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->capsTblSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -2145,7 +2254,7 @@ static NV_STATUS Nv0080CtrlFbGetCapsParamsDeserialize(finn_bit_pump_for_read *bp
     // Statically sized fields
     // Deserialize 4-byte NvU32 object.
     dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->capsTblSize < 0 || dst->capsTblSize > NV0080_CTRL_FB_CAPS_TBL_SIZE)
+    if (dst->capsTblSize > NV0080_CTRL_FB_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -2207,10 +2316,17 @@ static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
-    if (src->capsTblSize < 0 || src->capsTblSize > NV0080_CTRL_FIFO_CAPS_TBL_SIZE)
+    if (src->capsTblSize > NV0080_CTRL_FIFO_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -2228,7 +2344,12 @@ static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->capsTbl), 1);
+    if (finn_write_buffer(bp, !!(src->capsTbl), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->capsTbl)
@@ -2237,7 +2358,12 @@ static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->capsTblSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -2275,7 +2401,7 @@ static NV_STATUS Nv0080CtrlFifoGetCapsParamsDeserialize(finn_bit_pump_for_read *
     // Statically sized fields
     // Deserialize 4-byte NvU32 object.
     dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->capsTblSize < 0 || dst->capsTblSize > NV0080_CTRL_FIFO_CAPS_TBL_SIZE)
+    if (dst->capsTblSize > NV0080_CTRL_FIFO_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -2337,7 +2463,14 @@ static NV_STATUS Nv0080CtrlFifoChannelSerialize(const NV0080_CTRL_FIFO_CHANNEL *
 
     // Field bitmasks
     field_presence_mask = 0x1;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->hChannel
@@ -2396,12 +2529,19 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsSerialize(const NV0080
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
-    // No range check for src->fifoStartChannelListSize
+    // No range check for src->fifoStartChannelListCount
     // Deserialize 4-byte NvU32 object.
-    if (finn_write_buffer(bp, src->fifoStartChannelListSize, 4 * 8))
+    if (finn_write_buffer(bp, src->fifoStartChannelListCount, 4 * 8))
     {
         status = NV_ERR_BUFFER_TOO_SMALL;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
@@ -2424,12 +2564,17 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsSerialize(const NV0080
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->fifoStartChannelList), 1);
+    if (finn_write_buffer(bp, !!(src->fifoStartChannelList), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->fifoStartChannelList)
     {
-        for (NvU64 i = 0; i < (src->fifoStartChannelListSize); ++i)
+        for (NvU64 i = 0; i < (src->fifoStartChannelListCount); ++i)
         {
             status = Nv0080CtrlFifoChannelSerialize(&(((const NV0080_CTRL_FIFO_CHANNEL *) (NvP64_VALUE(src->fifoStartChannelList)))[i]), bp, seri_up);
 
@@ -2472,8 +2617,8 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(finn_bit_p
 
     // Statically sized fields
     // Deserialize 4-byte NvU32 object.
-    dst->fifoStartChannelListSize = (NvU32) finn_read_buffer(bp, 4 * 8);
-    // No range check for dst->fifoStartChannelListSize
+    dst->fifoStartChannelListCount = (NvU32) finn_read_buffer(bp, 4 * 8);
+    // No range check for dst->fifoStartChannelListCount
 
 
     for (NvU64 i = 0; i < (8); ++i)
@@ -2493,8 +2638,8 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(finn_bit_p
         {
             // Data-presence indicator should be false if empty.
             // Check for integer overflow in the element size variable.
-            if ((dst->fifoStartChannelListSize) < 1 ||
-                (sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListSize)) < sizeof(NV0080_CTRL_FIFO_CHANNEL))
+            if ((dst->fifoStartChannelListCount) < 1 ||
+                (sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListCount)) < sizeof(NV0080_CTRL_FIFO_CHANNEL))
             {
                 status = NV_ERR_BUFFER_TOO_SMALL;
                 FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
@@ -2503,7 +2648,7 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(finn_bit_p
 
             // Allocate memory and set pointer when deserializing down.
             // (Calling cods is expected to do so when deserializing up.)
-            dst->fifoStartChannelList = FINN_MALLOC((sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListSize)));
+            dst->fifoStartChannelList = FINN_MALLOC((sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListCount)));
             if (!dst->fifoStartChannelList)
             {
                 status = NV_ERR_NO_MEMORY;
@@ -2511,7 +2656,7 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(finn_bit_p
                 goto exit;
             }
 
-            FINN_MEMZERO(dst->fifoStartChannelList, (sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListSize)));
+            FINN_MEMZERO(dst->fifoStartChannelList, (sizeof(NV0080_CTRL_FIFO_CHANNEL) * (dst->fifoStartChannelListCount)));
         }
 
         // Otherwise the pointer must be provided.
@@ -2522,7 +2667,7 @@ static NV_STATUS Nv0080CtrlFifoStartSelectedChannelsParamsDeserialize(finn_bit_p
             goto exit;
         }
 
-        for (NvU64 i = 0; i < (dst->fifoStartChannelListSize); ++i)
+        for (NvU64 i = 0; i < (dst->fifoStartChannelListCount); ++i)
         {
             // Deserialize each element.
             status = Nv0080CtrlFifoChannelDeserialize(bp, &(((NV0080_CTRL_FIFO_CHANNEL *) (NvP64_VALUE(dst->fifoStartChannelList)))[i]), sizeof(NV0080_CTRL_FIFO_CHANNEL), deser_up);
@@ -2552,7 +2697,14 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_F
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->numChannels
@@ -2567,7 +2719,12 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_F
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pChannelHandleList), 1);
+    if (finn_write_buffer(bp, !!(src->pChannelHandleList), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pChannelHandleList)
@@ -2576,7 +2733,12 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_F
         // Serialize each 4-byte NvU32 element.
         for (NvU64 j = 0; j < (src->numChannels); ++j)
         {
-            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->pChannelHandleList))[j], 4 * 8);
+            if (finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->pChannelHandleList))[j], 4 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -2585,7 +2747,12 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_F
     }
 
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pChannelList), 1);
+    if (finn_write_buffer(bp, !!(src->pChannelList), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pChannelList)
@@ -2594,7 +2761,12 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_F
         // Serialize each 4-byte NvU32 element.
         for (NvU64 j = 0; j < (src->numChannels); ++j)
         {
-            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->pChannelList))[j], 4 * 8);
+            if (finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->pChannelList))[j], 4 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -2727,7 +2899,14 @@ static NV_STATUS Nv0080CtrlGpuGetClasslistParamsSerialize(const NV0080_CTRL_GPU_
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->numClasses
@@ -2742,7 +2921,12 @@ static NV_STATUS Nv0080CtrlGpuGetClasslistParamsSerialize(const NV0080_CTRL_GPU_
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->classList), 1);
+    if (finn_write_buffer(bp, !!(src->classList), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->classList)
@@ -2751,7 +2935,12 @@ static NV_STATUS Nv0080CtrlGpuGetClasslistParamsSerialize(const NV0080_CTRL_GPU_
         // Serialize each 4-byte NvU32 element.
         for (NvU64 j = 0; j < (src->numClasses); ++j)
         {
-            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->classList))[j], 4 * 8);
+            if (finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->classList))[j], 4 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -2845,7 +3034,14 @@ static NV_STATUS Nv0080CtrlGrGetCapsParamsSerialize(const NV0080_CTRL_GR_GET_CAP
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->capsTblSize
@@ -2860,7 +3056,12 @@ static NV_STATUS Nv0080CtrlGrGetCapsParamsSerialize(const NV0080_CTRL_GR_GET_CAP
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->capsTbl), 1);
+    if (finn_write_buffer(bp, !!(src->capsTbl), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->capsTbl)
@@ -2869,7 +3070,12 @@ static NV_STATUS Nv0080CtrlGrGetCapsParamsSerialize(const NV0080_CTRL_GR_GET_CAP
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->capsTblSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -2963,10 +3169,17 @@ static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
-    if (src->capsTblSize < 0 || src->capsTblSize > NV0080_CTRL_HOST_CAPS_TBL_SIZE)
+    if (src->capsTblSize > NV0080_CTRL_HOST_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -2984,7 +3197,12 @@ static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->capsTbl), 1);
+    if (finn_write_buffer(bp, !!(src->capsTbl), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->capsTbl)
@@ -2993,7 +3211,12 @@ static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->capsTblSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -3031,7 +3254,7 @@ static NV_STATUS Nv0080CtrlHostGetCapsParamsDeserialize(finn_bit_pump_for_read *
     // Statically sized fields
     // Deserialize 4-byte NvU32 object.
     dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->capsTblSize < 0 || dst->capsTblSize > NV0080_CTRL_HOST_CAPS_TBL_SIZE)
+    if (dst->capsTblSize > NV0080_CTRL_HOST_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -3093,10 +3316,17 @@ static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_G
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
-    if (src->capsTblSize < 0 || src->capsTblSize > NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
+    if (src->capsTblSize > NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -3114,7 +3344,12 @@ static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_G
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->capsTbl), 1);
+    if (finn_write_buffer(bp, !!(src->capsTbl), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->capsTbl)
@@ -3123,7 +3358,12 @@ static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_G
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->capsTblSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -3161,7 +3401,7 @@ static NV_STATUS Nv0080CtrlMsencGetCapsParamsDeserialize(finn_bit_pump_for_read 
     // Statically sized fields
     // Deserialize 4-byte NvU32 object.
     dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->capsTblSize < 0 || dst->capsTblSize > NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
+    if (dst->capsTblSize > NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -3223,7 +3463,14 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAP
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->ceEngineType
@@ -3236,7 +3483,7 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAP
     }
 
 
-    if (src->capsTblSize < 0 || src->capsTblSize > NV2080_CTRL_CE_CAPS_TBL_SIZE)
+    if (src->capsTblSize > NV2080_CTRL_CE_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -3254,7 +3501,12 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAP
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->capsTbl), 1);
+    if (finn_write_buffer(bp, !!(src->capsTbl), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->capsTbl)
@@ -3263,7 +3515,12 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAP
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->capsTblSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->capsTbl))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -3306,7 +3563,7 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsDeserialize(finn_bit_pump_for_read *bp
 
     // Deserialize 4-byte NvU32 object.
     dst->capsTblSize = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->capsTblSize < 0 || dst->capsTblSize > NV2080_CTRL_CE_CAPS_TBL_SIZE)
+    if (dst->capsTblSize > NV2080_CTRL_CE_CAPS_TBL_SIZE)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -3368,7 +3625,14 @@ static NV_STATUS Nv2080CtrlGpuGetEnginesParamsSerialize(const NV2080_CTRL_GPU_GE
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->engineCount
@@ -3383,7 +3647,12 @@ static NV_STATUS Nv2080CtrlGpuGetEnginesParamsSerialize(const NV2080_CTRL_GPU_GE
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->engineList), 1);
+    if (finn_write_buffer(bp, !!(src->engineList), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->engineList)
@@ -3392,7 +3661,12 @@ static NV_STATUS Nv2080CtrlGpuGetEnginesParamsSerialize(const NV2080_CTRL_GPU_GE
         // Serialize each 4-byte NvU32 element.
         for (NvU64 j = 0; j < (src->engineCount); ++j)
         {
-            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->engineList))[j], 4 * 8);
+            if (finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->engineList))[j], 4 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -3486,7 +3760,14 @@ static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsSerialize(const NV2080_CTR
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->engineType
@@ -3511,7 +3792,12 @@ static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsSerialize(const NV2080_CTR
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->classList), 1);
+    if (finn_write_buffer(bp, !!(src->classList), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->classList)
@@ -3520,7 +3806,12 @@ static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsSerialize(const NV2080_CTR
         // Serialize each 4-byte NvU32 element.
         for (NvU64 j = 0; j < (src->numClasses); ++j)
         {
-            finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->classList))[j], 4 * 8);
+            if (finn_write_buffer(bp, ((NvU32 *) NvP64_VALUE(src->classList))[j], 4 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -3619,7 +3910,14 @@ static NV_STATUS Nv2080CtrlGpumonSamplesSerialize(const NV2080_CTRL_GPUMON_SAMPL
 
     // Field bitmasks
     field_presence_mask = 0x1f;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->bufSize
@@ -3664,7 +3962,12 @@ static NV_STATUS Nv2080CtrlGpumonSamplesSerialize(const NV2080_CTRL_GPUMON_SAMPL
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pSamples), 1);
+    if (finn_write_buffer(bp, !!(src->pSamples), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pSamples)
@@ -3673,7 +3976,12 @@ static NV_STATUS Nv2080CtrlGpumonSamplesSerialize(const NV2080_CTRL_GPUMON_SAMPL
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->bufSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pSamples))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pSamples))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -3782,7 +4090,14 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS
 
     // Field bitmasks
     field_presence_mask = 0x1ff;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->token
@@ -3835,7 +4150,7 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS
     }
 
 
-    if (src->dataBuffSize < 0 || src->dataBuffSize > NV2080_CTRL_I2C_MAX_ENTRIES)
+    if (src->dataBuffSize > NV2080_CTRL_I2C_MAX_ENTRIES)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -3873,7 +4188,12 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->data), 1);
+    if (finn_write_buffer(bp, !!(src->data), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->data)
@@ -3882,7 +4202,12 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->dataBuffSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->data))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->data))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -3945,7 +4270,7 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsDeserialize(finn_bit_pump_for_read *bp
 
     // Deserialize 4-byte NvU32 object.
     dst->dataBuffSize = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->dataBuffSize < 0 || dst->dataBuffSize > NV2080_CTRL_I2C_MAX_ENTRIES)
+    if (dst->dataBuffSize > NV2080_CTRL_I2C_MAX_ENTRIES)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -4017,7 +4342,14 @@ static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_D
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->component
@@ -4042,7 +4374,12 @@ static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_D
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pBuffer), 1);
+    if (finn_write_buffer(bp, !!(src->pBuffer), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pBuffer)
@@ -4051,7 +4388,12 @@ static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_D
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->size); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pBuffer))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pBuffer))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -4150,7 +4492,14 @@ static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_
 
     // Field bitmasks
     field_presence_mask = 0xf;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->virtAddress
@@ -4185,7 +4534,12 @@ static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->bufferPtr), 1);
+    if (finn_write_buffer(bp, !!(src->bufferPtr), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->bufferPtr)
@@ -4194,7 +4548,12 @@ static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->bufferSize); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->bufferPtr))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->bufferPtr))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -4298,7 +4657,14 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEX
 
     // Field bitmasks
     field_presence_mask = 0xff;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->flags
@@ -4311,7 +4677,7 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEX
     }
 
 
-    if (src->indexLength < 0 || src->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
+    if (src->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -4382,7 +4748,12 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEX
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pMessage), 1);
+    if (finn_write_buffer(bp, !!(src->pMessage), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pMessage)
@@ -4391,7 +4762,12 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEX
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->messageLength); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -4434,7 +4810,7 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsDeserialize(finn_bit_pump_for_read *b
 
     // Deserialize 4-byte NvU32 object.
     dst->indexLength = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->indexLength < 0 || dst->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
+    if (dst->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -4545,7 +4921,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusQuickRwSerialize(const NV402C_
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->warFlags
@@ -4619,7 +5002,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cByteRwSerialize(const NV402C_CTR
 
     // Field bitmasks
     field_presence_mask = 0x3;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->bWrite
@@ -4693,7 +5083,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(const NV402C_CT
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->messageLength
@@ -4718,7 +5115,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(const NV402C_CT
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pMessage), 1);
+    if (finn_write_buffer(bp, !!(src->pMessage), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pMessage)
@@ -4727,7 +5129,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(const NV402C_CT
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->messageLength); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -4826,7 +5233,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusByteRwSerialize(const NV402C_C
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->bWrite
@@ -4915,7 +5329,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusWordRwSerialize(const NV402C_C
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->message
@@ -5004,7 +5425,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(const NV402C_C
 
     // Field bitmasks
     field_presence_mask = 0x1f;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->warFlags
@@ -5049,7 +5477,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(const NV402C_C
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pMessage), 1);
+    if (finn_write_buffer(bp, !!(src->pMessage), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pMessage)
@@ -5058,7 +5491,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(const NV402C_C
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->messageLength); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -5167,7 +5605,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(const NV402C_
 
     // Field bitmasks
     field_presence_mask = 0xf;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->messageLength
@@ -5202,7 +5647,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(const NV402C_
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pMessage), 1);
+    if (finn_write_buffer(bp, !!(src->pMessage), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pMessage)
@@ -5211,7 +5661,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(const NV402C_
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->messageLength); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -5315,7 +5770,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusProcessCallSerialize(const NV4
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->writeMessage
@@ -5404,10 +5866,17 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(cons
 
     // Field bitmasks
     field_presence_mask = 0x1f;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
-    if (src->writeMessageLength < 0 || src->writeMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
+    if (src->writeMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -5423,7 +5892,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallSerialize(cons
     }
 
 
-    if (src->readMessageLength < 0 || src->readMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
+    if (src->readMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -5505,7 +5974,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(fi
     // Statically sized fields
     // Deserialize 4-byte NvU32 object.
     dst->writeMessageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->writeMessageLength < 0 || dst->writeMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
+    if (dst->writeMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -5516,7 +5985,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockProcessCallDeserialize(fi
 
     // Deserialize 4-byte NvU32 object.
     dst->readMessageLength = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->readMessageLength < 0 || dst->readMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
+    if (dst->readMessageLength > NV402C_CTRL_I2C_BLOCK_PROCESS_PROTOCOL_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -5559,7 +6028,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerial
 
     // Field bitmasks
     field_presence_mask = 0x3f;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->warFlags
@@ -5572,7 +6048,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerial
     }
 
 
-    if (src->indexLength < 0 || src->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
+    if (src->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -5623,7 +6099,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerial
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pMessage), 1);
+    if (finn_write_buffer(bp, !!(src->pMessage), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pMessage)
@@ -5632,7 +6113,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerial
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->messageLength); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -5675,7 +6161,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwDeseri
 
     // Deserialize 4-byte NvU32 object.
     dst->indexLength = (NvU32) finn_read_buffer(bp, 4 * 8);
-    if (dst->indexLength < 0 || dst->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
+    if (dst->indexLength > NV402C_CTRL_I2C_INDEX_LENGTH_MAX)
     {
         status = NV_ERR_OUT_OF_RANGE;
         FINN_ERROR(NV_ERR_OUT_OF_RANGE);
@@ -5755,7 +6241,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(const NV402C_C
 
     // Field bitmasks
     field_presence_mask = 0xf;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->messageLength
@@ -5790,7 +6283,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(const NV402C_C
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pMessage), 1);
+    if (finn_write_buffer(bp, !!(src->pMessage), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pMessage)
@@ -5799,7 +6297,12 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(const NV402C_C
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->messageLength); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pMessage))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -5903,7 +6406,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSerialize(const NV402C_CTRL_I2C_TRA
 
     // Field bitmasks
     field_presence_mask = 0x7ff;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Field copying based on union selector
     switch (transType)
@@ -6143,7 +6653,14 @@ static NV_STATUS Nv402cCtrlI2cTransactionParamsSerialize(const NV402C_CTRL_I2C_T
 
     // Field bitmasks
     field_presence_mask = 0x1f;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->flags
@@ -6265,7 +6782,14 @@ static NV_STATUS Nv83deCtrlDebugReadMemoryParamsSerialize(const NV83DE_CTRL_DEBU
 
     // Field bitmasks
     field_presence_mask = 0xf;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->offset
@@ -6300,7 +6824,12 @@ static NV_STATUS Nv83deCtrlDebugReadMemoryParamsSerialize(const NV83DE_CTRL_DEBU
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->buffer), 1);
+    if (finn_write_buffer(bp, !!(src->buffer), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->buffer)
@@ -6309,7 +6838,12 @@ static NV_STATUS Nv83deCtrlDebugReadMemoryParamsSerialize(const NV83DE_CTRL_DEBU
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->length); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->buffer))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->buffer))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -6413,7 +6947,14 @@ static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsSerialize(const NV83DE_CTRL_DEB
 
     // Field bitmasks
     field_presence_mask = 0xf;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->offset
@@ -6448,7 +6989,12 @@ static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsSerialize(const NV83DE_CTRL_DEB
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->buffer), 1);
+    if (finn_write_buffer(bp, !!(src->buffer), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->buffer)
@@ -6457,7 +7003,12 @@ static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsSerialize(const NV83DE_CTRL_DEB
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->length); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->buffer))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->buffer))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -6561,7 +7112,14 @@ static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsSerialize(const NVB06F_CTRL_GET
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->engineID
@@ -6586,7 +7144,12 @@ static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsSerialize(const NVB06F_CTRL_GET
 
     // Unbounded fields
     // Set data-presence indicator.
-    finn_write_buffer(bp, !!(src->pEngineCtxBuff), 1);
+    if (finn_write_buffer(bp, !!(src->pEngineCtxBuff), 1))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Skip if pointer is null.
     if (src->pEngineCtxBuff)
@@ -6595,7 +7158,12 @@ static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsSerialize(const NVB06F_CTRL_GET
         // Serialize each 1-byte NvU8 element.
         for (NvU64 j = 0; j < (src->size); ++j)
         {
-            finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pEngineCtxBuff))[j], 1 * 8);
+            if (finn_write_buffer(bp, ((NvU8 *) NvP64_VALUE(src->pEngineCtxBuff))[j], 1 * 8))
+            {
+                status = NV_ERR_BUFFER_TOO_SMALL;
+                FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+                goto exit;
+            }
         }
 
         // Free memory that was allocated during downward deserialization.
@@ -6694,7 +7262,14 @@ static NV_STATUS Nvb06fCtrlCmdMigrateEngineCtxDataFinnParamsSerialize(const NVB0
 
     // Field bitmasks
     field_presence_mask = 0x1;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Unbounded fields
     status = Nvb06fCtrlGetEngineCtxDataParamsSerialize(&src->params, bp, seri_up);
@@ -6746,7 +7321,14 @@ static NV_STATUS Nvb06fCtrlSaveEngineCtxDataParamsSerialize(const NVB06F_CTRL_SA
 
     // Field bitmasks
     field_presence_mask = 0x7;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Statically sized fields
     // No range check for src->engineID
@@ -6841,7 +7423,14 @@ static NV_STATUS Nvb06fCtrlCmdRestoreEngineCtxDataFinnParamsSerialize(const NVB0
 
     // Field bitmasks
     field_presence_mask = 0x1;
-    finn_write_buffer(bp, field_presence_mask, 64);
+
+    // Write field-presence indicators.
+    if (finn_write_buffer(bp, field_presence_mask, 64))
+    {
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
+        goto exit;
+    }
 
     // Bounded nested fields
     status = Nvb06fCtrlSaveEngineCtxDataParamsSerialize(&src->params, bp, seri_up);

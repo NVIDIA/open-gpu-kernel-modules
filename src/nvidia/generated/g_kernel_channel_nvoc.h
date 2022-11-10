@@ -39,6 +39,7 @@ extern "C" {
 #include "resserv/resserv.h"
 #include "nvoc/prelude.h"
 #include "gpu/gpu_resource.h"
+#include "kernel/gpu/gpu_engine_type.h"
 #include "kernel/gpu/fifo/kernel_ctxshare.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/gr/kernel_graphics_context.h"
@@ -84,14 +85,14 @@ typedef struct UserInfo UserInfo;
 /*!
  * @brief Type of hErrorContext or hEccErrorContext
  *
- * This is RPCed to GSP in #NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS.internalFlags
+ * This is RPCed to GSP in #NV_CHANNEL_ALLOC_PARAMS.internalFlags
  * along with the actual memdesc in
- * #NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS.errorNotifierMem and
- * #NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS.eccErrorNotifierMem.
+ * #NV_CHANNEL_ALLOC_PARAMS.errorNotifierMem and
+ * #NV_CHANNEL_ALLOC_PARAMS.eccErrorNotifierMem.
  */
 typedef enum {
     /*!
-     * Initial state as passed in NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS by
+     * Initial state as passed in NV_CHANNEL_ALLOC_PARAMS by
      * kernel CPU-RM clients.
      */
     ERROR_NOTIFIER_TYPE_UNKNOWN = 0,
@@ -113,7 +114,7 @@ typedef enum {
 //
 typedef struct {
     RS_ORDERED_ITERATOR rsIter;
-    NvU32 engineID;
+    RM_ENGINE_TYPE engineID;
     NvU32 classID;
 } KernelChannelChildIterator;
 
@@ -169,7 +170,7 @@ typedef struct _def_instance_block
     MEMORY_DESCRIPTOR  *pRLMemDesc;
 } FIFO_INSTANCE_BLOCK;
 
-/* Bitfields in NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS.internalFlags */
+/* Bitfields in NV_CHANNEL_ALLOC_PARAMS.internalFlags */
 #define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE                       1:0
 #define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_USER                  0x0
 #define NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_ADMIN                 0x1
@@ -279,6 +280,7 @@ struct KernelChannel {
     NV_STATUS (*__kchannelUnregisterEvent__)(struct KernelChannel *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__kchannelCanCopy__)(struct KernelChannel *);
     void (*__kchannelPreDestruct__)(struct KernelChannel *);
+    NV_STATUS (*__kchannelIsDuplicate__)(struct KernelChannel *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__kchannelGetNotificationListPtr__)(struct KernelChannel *);
     struct NotifShare *(*__kchannelGetNotificationShare__)(struct KernelChannel *);
     NvBool (*__kchannelAccessCallback__)(struct KernelChannel *, struct RsClient *, void *, RsAccessRight);
@@ -319,7 +321,7 @@ struct KernelChannel {
     NvU32 cid;
     struct MIG_INSTANCE_REF partitionRef;
     NvU32 runqueue;
-    NvU32 engineType;
+    RM_ENGINE_TYPE engineType;
 };
 
 #ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
@@ -426,10 +428,12 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_
 #define kchannelUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) kchannelUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define kchannelCanCopy(pResource) kchannelCanCopy_DISPATCH(pResource)
 #define kchannelPreDestruct(pResource) kchannelPreDestruct_DISPATCH(pResource)
+#define kchannelIsDuplicate(pResource, hMemory, pDuplicate) kchannelIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kchannelGetNotificationListPtr(pNotifier) kchannelGetNotificationListPtr_DISPATCH(pNotifier)
 #define kchannelGetNotificationShare(pNotifier) kchannelGetNotificationShare_DISPATCH(pNotifier)
 #define kchannelAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kchannelAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NV_STATUS kchannelNotifyRc_IMPL(struct KernelChannel *pKernelChannel);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelNotifyRc(struct KernelChannel *pKernelChannel) {
@@ -444,6 +448,7 @@ static inline NV_STATUS kchannelNotifyRc(struct KernelChannel *pKernelChannel) {
 
 NvBool kchannelIsSchedulable_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NvBool kchannelIsSchedulable(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -456,6 +461,7 @@ static inline NvBool kchannelIsSchedulable(struct OBJGPU *pGpu, struct KernelCha
 #define kchannelIsSchedulable_HAL(pGpu, pKernelChannel) kchannelIsSchedulable(pGpu, pKernelChannel)
 
 NV_STATUS kchannelAllocMem_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 Flags, NvU32 verifFlags);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelAllocMem(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 Flags, NvU32 verifFlags) {
@@ -470,6 +476,7 @@ static inline NV_STATUS kchannelAllocMem(struct OBJGPU *pGpu, struct KernelChann
 
 void kchannelDestroyMem_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline void kchannelDestroyMem(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -481,6 +488,7 @@ static inline void kchannelDestroyMem(struct OBJGPU *pGpu, struct KernelChannel 
 #define kchannelDestroyMem_HAL(pGpu, pKernelChannel) kchannelDestroyMem(pGpu, pKernelChannel)
 
 NV_STATUS kchannelGetChannelPhysicalState_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelGetChannelPhysicalState(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *pChannelStateParams) {
@@ -498,6 +506,7 @@ static inline NvU32 kchannelEmbedRunlistIDForSMC_13cd8d(struct OBJGPU *pGpu, str
     return 0;
 }
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NvU32 kchannelEmbedRunlistIDForSMC(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -510,6 +519,7 @@ static inline NvU32 kchannelEmbedRunlistIDForSMC(struct OBJGPU *pGpu, struct Ker
 #define kchannelEmbedRunlistIDForSMC_HAL(pGpu, pKernelChannel) kchannelEmbedRunlistIDForSMC(pGpu, pKernelChannel)
 
 NV_STATUS kchannelAllocHwID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle hClient, NvU32 Flags, NvU32 verifFlags2, NvU32 ChID);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelAllocHwID(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle hClient, NvU32 Flags, NvU32 verifFlags2, NvU32 ChID) {
@@ -524,6 +534,7 @@ static inline NV_STATUS kchannelAllocHwID(struct OBJGPU *pGpu, struct KernelChan
 
 NV_STATUS kchannelFreeHwID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelFreeHwID(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -536,6 +547,7 @@ static inline NV_STATUS kchannelFreeHwID(struct OBJGPU *pGpu, struct KernelChann
 #define kchannelFreeHwID_HAL(pGpu, pKernelChannel) kchannelFreeHwID(pGpu, pKernelChannel)
 
 NV_STATUS kchannelGetUserdInfo_GM107(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvU64 *userBase, NvU64 *offset, NvU64 *length);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelGetUserdInfo(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvU64 *userBase, NvU64 *offset, NvU64 *length) {
@@ -550,6 +562,7 @@ static inline NV_STATUS kchannelGetUserdInfo(struct OBJGPU *pGpu, struct KernelC
 
 NV_STATUS kchannelGetUserdBar1MapOffset_GM107(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvU64 *bar1Offset, NvU32 *bar1MapSize);
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelGetUserdBar1MapOffset(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvU64 *bar1Offset, NvU32 *bar1MapSize) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -562,6 +575,7 @@ static inline NV_STATUS kchannelGetUserdBar1MapOffset(struct OBJGPU *pGpu, struc
 #define kchannelGetUserdBar1MapOffset_HAL(pGpu, arg0, bar1Offset, bar1MapSize) kchannelGetUserdBar1MapOffset(pGpu, arg0, bar1Offset, bar1MapSize)
 
 NV_STATUS kchannelCreateUserdMemDescBc_GV100(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle arg0, NvHandle *arg1, NvU64 *arg2);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelCreateUserdMemDescBc(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle arg0, NvHandle *arg1, NvU64 *arg2) {
@@ -576,6 +590,7 @@ static inline NV_STATUS kchannelCreateUserdMemDescBc(struct OBJGPU *pGpu, struct
 
 NV_STATUS kchannelCreateUserdMemDesc_GV100(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvHandle arg1, NvHandle arg2, NvU64 arg3, NvU64 *arg4, NvU32 *arg5);
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelCreateUserdMemDesc(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvHandle arg1, NvHandle arg2, NvU64 arg3, NvU64 *arg4, NvU32 *arg5) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -587,12 +602,12 @@ static inline NV_STATUS kchannelCreateUserdMemDesc(struct OBJGPU *pGpu, struct K
 
 #define kchannelCreateUserdMemDesc_HAL(pGpu, arg0, arg1, arg2, arg3, arg4, arg5) kchannelCreateUserdMemDesc(pGpu, arg0, arg1, arg2, arg3, arg4, arg5)
 
-NV_STATUS kchannelDestroyUserdMemDesc_GV100(struct OBJGPU *pGpu, struct KernelChannel *arg0);
+void kchannelDestroyUserdMemDesc_GV100(struct OBJGPU *pGpu, struct KernelChannel *arg0);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
-static inline NV_STATUS kchannelDestroyUserdMemDesc(struct OBJGPU *pGpu, struct KernelChannel *arg0) {
+static inline void kchannelDestroyUserdMemDesc(struct OBJGPU *pGpu, struct KernelChannel *arg0) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_channel_h_disabled
 #define kchannelDestroyUserdMemDesc(pGpu, arg0) kchannelDestroyUserdMemDesc_GV100(pGpu, arg0)
@@ -601,6 +616,7 @@ static inline NV_STATUS kchannelDestroyUserdMemDesc(struct OBJGPU *pGpu, struct 
 #define kchannelDestroyUserdMemDesc_HAL(pGpu, arg0) kchannelDestroyUserdMemDesc(pGpu, arg0)
 
 NV_STATUS kchannelGetEngine_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 *engDesc);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelGetEngine(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 *engDesc) {
@@ -617,6 +633,7 @@ static inline NV_STATUS kchannelFwdToInternalCtrl_56cd7a(struct OBJGPU *pGpu, st
     return NV_OK;
 }
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelFwdToInternalCtrl(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 internalCmd, RmCtrlParams *pRmCtrlParams) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -628,12 +645,13 @@ static inline NV_STATUS kchannelFwdToInternalCtrl(struct OBJGPU *pGpu, struct Ke
 
 #define kchannelFwdToInternalCtrl_HAL(pGpu, pKernelChannel, internalCmd, pRmCtrlParams) kchannelFwdToInternalCtrl(pGpu, pKernelChannel, internalCmd, pRmCtrlParams)
 
-static inline NV_STATUS kchannelAllocChannel_56cd7a(struct KernelChannel *pKernelChannel, NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams) {
+static inline NV_STATUS kchannelAllocChannel_56cd7a(struct KernelChannel *pKernelChannel, NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams) {
     return NV_OK;
 }
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
-static inline NV_STATUS kchannelAllocChannel(struct KernelChannel *pKernelChannel, NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams) {
+static inline NV_STATUS kchannelAllocChannel(struct KernelChannel *pKernelChannel, NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -647,6 +665,7 @@ static inline NvBool kchannelIsValid_cbe027(struct KernelChannel *pKernelChannel
     return ((NvBool)(0 == 0));
 }
 
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NvBool kchannelIsValid(struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -658,20 +677,22 @@ static inline NvBool kchannelIsValid(struct KernelChannel *pKernelChannel) {
 
 #define kchannelIsValid_HAL(pKernelChannel) kchannelIsValid(pKernelChannel)
 
-NV_STATUS kchannelGetClassEngineID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, NvU32 *engineID);
+NV_STATUS kchannelGetClassEngineID_GM107(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, RM_ENGINE_TYPE *rmEngineID);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
-static inline NV_STATUS kchannelGetClassEngineID(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, NvU32 *engineID) {
+static inline NV_STATUS kchannelGetClassEngineID(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvHandle handle, NvU32 *classEngineID, NvU32 *classID, RM_ENGINE_TYPE *rmEngineID) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_channel_h_disabled
-#define kchannelGetClassEngineID(pGpu, pKernelChannel, handle, classEngineID, classID, engineID) kchannelGetClassEngineID_GM107(pGpu, pKernelChannel, handle, classEngineID, classID, engineID)
+#define kchannelGetClassEngineID(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID) kchannelGetClassEngineID_GM107(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID)
 #endif //__nvoc_kernel_channel_h_disabled
 
-#define kchannelGetClassEngineID_HAL(pGpu, pKernelChannel, handle, classEngineID, classID, engineID) kchannelGetClassEngineID(pGpu, pKernelChannel, handle, classEngineID, classID, engineID)
+#define kchannelGetClassEngineID_HAL(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID) kchannelGetClassEngineID(pGpu, pKernelChannel, handle, classEngineID, classID, rmEngineID)
 
 NV_STATUS kchannelEnableVirtualContext_GM107(struct KernelChannel *arg0);
+
 
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelEnableVirtualContext(struct KernelChannel *arg0) {
@@ -718,10 +739,6 @@ NV_STATUS kchannelCreateUserMemDesc_GM107(struct OBJGPU *pGpu, struct KernelChan
 
 NV_STATUS kchannelCreateUserMemDesc_GA10B(struct OBJGPU *pGpu, struct KernelChannel *arg0);
 
-static inline NV_STATUS kchannelCreateUserMemDesc_56cd7a(struct OBJGPU *pGpu, struct KernelChannel *arg0) {
-    return NV_OK;
-}
-
 static inline NV_STATUS kchannelCreateUserMemDesc_DISPATCH(struct OBJGPU *pGpu, struct KernelChannel *arg0) {
     return arg0->__kchannelCreateUserMemDesc__(pGpu, arg0);
 }
@@ -731,10 +748,6 @@ NvBool kchannelIsUserdAddrSizeValid_GV100(struct KernelChannel *pKernelChannel, 
 NvBool kchannelIsUserdAddrSizeValid_GA100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
 
 NvBool kchannelIsUserdAddrSizeValid_GH100(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi);
-
-static inline NvBool kchannelIsUserdAddrSizeValid_cbe027(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi) {
-    return ((NvBool)(0 == 0));
-}
 
 static inline NvBool kchannelIsUserdAddrSizeValid_DISPATCH(struct KernelChannel *pKernelChannel, NvU32 userdAddrLo, NvU32 userdAddrHi) {
     return pKernelChannel->__kchannelIsUserdAddrSizeValid__(pKernelChannel, userdAddrLo, userdAddrHi);
@@ -1154,6 +1167,10 @@ static inline void kchannelPreDestruct_DISPATCH(struct KernelChannel *pResource)
     pResource->__kchannelPreDestruct__(pResource);
 }
 
+static inline NV_STATUS kchannelIsDuplicate_DISPATCH(struct KernelChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__kchannelIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *kchannelGetNotificationListPtr_DISPATCH(struct KernelChannel *pNotifier) {
     return pNotifier->__kchannelGetNotificationListPtr__(pNotifier);
 }
@@ -1200,15 +1217,18 @@ static inline void kchannelSetRunlistId(struct KernelChannel *pKernelChannel, Nv
     pKernelChannel->runlistId = runlistId;
 }
 
-static inline NvU32 kchannelGetEngineType(struct KernelChannel *pKernelChannel) {
+static inline RM_ENGINE_TYPE kchannelGetEngineType(struct KernelChannel *pKernelChannel) {
     return pKernelChannel->engineType;
 }
 
 NV_STATUS kchannelConstruct_IMPL(struct KernelChannel *arg_pKernelChannel, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_kchannelConstruct(arg_pKernelChannel, arg_pCallContext, arg_pParams) kchannelConstruct_IMPL(arg_pKernelChannel, arg_pCallContext, arg_pParams)
 void kchannelDestruct_IMPL(struct KernelChannel *pResource);
+
 #define __nvoc_kchannelDestruct(pResource) kchannelDestruct_IMPL(pResource)
 NV_STATUS kchannelRegisterChild_IMPL(struct KernelChannel *pKernelChannel, ChannelDescendant *pObject);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelRegisterChild(struct KernelChannel *pKernelChannel, ChannelDescendant *pObject) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1219,6 +1239,7 @@ static inline NV_STATUS kchannelRegisterChild(struct KernelChannel *pKernelChann
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelDeregisterChild_IMPL(struct KernelChannel *pKernelChannel, ChannelDescendant *pObject);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelDeregisterChild(struct KernelChannel *pKernelChannel, ChannelDescendant *pObject) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1229,6 +1250,7 @@ static inline NV_STATUS kchannelDeregisterChild(struct KernelChannel *pKernelCha
 #endif //__nvoc_kernel_channel_h_disabled
 
 void kchannelNotifyGeneric_IMPL(struct KernelChannel *pKernelChannel, NvU32 notifyIndex, void *pNotifyParams, NvU32 notifyParamsSize);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline void kchannelNotifyGeneric(struct KernelChannel *pKernelChannel, NvU32 notifyIndex, void *pNotifyParams, NvU32 notifyParamsSize) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1238,6 +1260,7 @@ static inline void kchannelNotifyGeneric(struct KernelChannel *pKernelChannel, N
 #endif //__nvoc_kernel_channel_h_disabled
 
 NvBool kchannelCheckIsKernel_IMPL(struct KernelChannel *pKernelChannel);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NvBool kchannelCheckIsKernel(struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1248,6 +1271,7 @@ static inline NvBool kchannelCheckIsKernel(struct KernelChannel *pKernelChannel)
 #endif //__nvoc_kernel_channel_h_disabled
 
 NvBool kchannelCheckIsAdmin_IMPL(struct KernelChannel *pKernelChannel);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NvBool kchannelCheckIsAdmin(struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1257,17 +1281,19 @@ static inline NvBool kchannelCheckIsAdmin(struct KernelChannel *pKernelChannel) 
 #define kchannelCheckIsAdmin(pKernelChannel) kchannelCheckIsAdmin_IMPL(pKernelChannel)
 #endif //__nvoc_kernel_channel_h_disabled
 
-NV_STATUS kchannelBindToRunlist_IMPL(struct KernelChannel *pKernelChannel, NvU32 localEngineType, ENGDESCRIPTOR engineDesc);
+NV_STATUS kchannelBindToRunlist_IMPL(struct KernelChannel *pKernelChannel, RM_ENGINE_TYPE localRmEngineType, ENGDESCRIPTOR engineDesc);
+
 #ifdef __nvoc_kernel_channel_h_disabled
-static inline NV_STATUS kchannelBindToRunlist(struct KernelChannel *pKernelChannel, NvU32 localEngineType, ENGDESCRIPTOR engineDesc) {
+static inline NV_STATUS kchannelBindToRunlist(struct KernelChannel *pKernelChannel, RM_ENGINE_TYPE localRmEngineType, ENGDESCRIPTOR engineDesc) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_channel_h_disabled
-#define kchannelBindToRunlist(pKernelChannel, localEngineType, engineDesc) kchannelBindToRunlist_IMPL(pKernelChannel, localEngineType, engineDesc)
+#define kchannelBindToRunlist(pKernelChannel, localRmEngineType, engineDesc) kchannelBindToRunlist_IMPL(pKernelChannel, localRmEngineType, engineDesc)
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelSetEngineContextMemDesc_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine, MEMORY_DESCRIPTOR *pMemDesc);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelSetEngineContextMemDesc(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine, MEMORY_DESCRIPTOR *pMemDesc) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1278,6 +1304,7 @@ static inline NV_STATUS kchannelSetEngineContextMemDesc(struct OBJGPU *pGpu, str
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelMapEngineCtxBuf_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelMapEngineCtxBuf(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1288,6 +1315,7 @@ static inline NV_STATUS kchannelMapEngineCtxBuf(struct OBJGPU *pGpu, struct Kern
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelUnmapEngineCtxBuf_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelUnmapEngineCtxBuf(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, NvU32 engine) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1298,6 +1326,7 @@ static inline NV_STATUS kchannelUnmapEngineCtxBuf(struct OBJGPU *pGpu, struct Ke
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelCheckBcStateCurrent_IMPL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelCheckBcStateCurrent(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1308,6 +1337,7 @@ static inline NV_STATUS kchannelCheckBcStateCurrent(struct OBJGPU *pGpu, struct 
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelUpdateWorkSubmitTokenNotifIndex_IMPL(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvU32 index);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelUpdateWorkSubmitTokenNotifIndex(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvU32 index) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1318,6 +1348,7 @@ static inline NV_STATUS kchannelUpdateWorkSubmitTokenNotifIndex(struct OBJGPU *p
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelNotifyWorkSubmitToken_IMPL(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvU32 token);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelNotifyWorkSubmitToken(struct OBJGPU *pGpu, struct KernelChannel *arg0, NvU32 token) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1328,6 +1359,7 @@ static inline NV_STATUS kchannelNotifyWorkSubmitToken(struct OBJGPU *pGpu, struc
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelMapUserD_IMPL(struct OBJGPU *pGpu, struct KernelChannel *arg0, RS_PRIV_LEVEL arg1, NvU64 arg2, NvU32 arg3, NvP64 *arg4, NvP64 *arg5);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NV_STATUS kchannelMapUserD(struct OBJGPU *pGpu, struct KernelChannel *arg0, RS_PRIV_LEVEL arg1, NvU64 arg2, NvU32 arg3, NvP64 *arg4, NvP64 *arg5) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1338,6 +1370,7 @@ static inline NV_STATUS kchannelMapUserD(struct OBJGPU *pGpu, struct KernelChann
 #endif //__nvoc_kernel_channel_h_disabled
 
 void kchannelUnmapUserD_IMPL(struct OBJGPU *pGpu, struct KernelChannel *arg0, RS_PRIV_LEVEL arg1, NvP64 *arg2, NvP64 *arg3);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline void kchannelUnmapUserD(struct OBJGPU *pGpu, struct KernelChannel *arg0, RS_PRIV_LEVEL arg1, NvP64 *arg2, NvP64 *arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1347,10 +1380,13 @@ static inline void kchannelUnmapUserD(struct OBJGPU *pGpu, struct KernelChannel 
 #endif //__nvoc_kernel_channel_h_disabled
 
 NV_STATUS kchannelGetFromDualHandle_IMPL(NvHandle arg0, NvHandle arg1, struct KernelChannel **arg2);
+
 #define kchannelGetFromDualHandle(arg0, arg1, arg2) kchannelGetFromDualHandle_IMPL(arg0, arg1, arg2)
 NV_STATUS kchannelGetFromDualHandleRestricted_IMPL(NvHandle arg0, NvHandle arg1, struct KernelChannel **arg2);
+
 #define kchannelGetFromDualHandleRestricted(arg0, arg1, arg2) kchannelGetFromDualHandleRestricted_IMPL(arg0, arg1, arg2)
 NvU32 kchannelGetGfid_IMPL(struct KernelChannel *pKernelChannel);
+
 #ifdef __nvoc_kernel_channel_h_disabled
 static inline NvU32 kchannelGetGfid(struct KernelChannel *pKernelChannel) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
@@ -1394,7 +1430,7 @@ NV_STATUS kchannelGetNotifierInfo(struct OBJGPU *pGpu,
 // Utils to iterate over ChannelDescendants on one Channels
 void kchannelGetChildIterator(struct KernelChannel *pKernelChannel,
                               NvU32 classID,
-                              NvU32 engineID,
+                              RM_ENGINE_TYPE engineID,
                               KernelChannelChildIterator *pIter);
 ChannelDescendant *kchannelGetNextChild(KernelChannelChildIterator *pIter);
 // Simpler function to call if you just need one result

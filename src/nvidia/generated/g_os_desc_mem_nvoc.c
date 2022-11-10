@@ -145,8 +145,12 @@ static NV_STATUS __nvoc_thunk_RmResource_osdescControl_Prologue(struct OsDescMem
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_OsDescMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_osdescIsReady(struct OsDescMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_OsDescMemory_Memory.offset));
+static NvBool __nvoc_thunk_Memory_osdescIsGpuMapAllowed(struct OsDescMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_OsDescMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_osdescIsReady(struct OsDescMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_OsDescMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_osdescCheckCopyPermissions(struct OsDescMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -155,6 +159,10 @@ static NV_STATUS __nvoc_thunk_Memory_osdescCheckCopyPermissions(struct OsDescMem
 
 static void __nvoc_thunk_RsResource_osdescPreDestruct(struct OsDescMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_OsDescMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_osdescIsDuplicate(struct OsDescMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_OsDescMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_osdescUnmapFrom(struct OsDescMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -243,11 +251,15 @@ static void __nvoc_init_funcTable_OsDescMemory_1(OsDescMemory *pThis) {
 
     pThis->__osdescControl_Prologue__ = &__nvoc_thunk_RmResource_osdescControl_Prologue;
 
+    pThis->__osdescIsGpuMapAllowed__ = &__nvoc_thunk_Memory_osdescIsGpuMapAllowed;
+
     pThis->__osdescIsReady__ = &__nvoc_thunk_Memory_osdescIsReady;
 
     pThis->__osdescCheckCopyPermissions__ = &__nvoc_thunk_Memory_osdescCheckCopyPermissions;
 
     pThis->__osdescPreDestruct__ = &__nvoc_thunk_RsResource_osdescPreDestruct;
+
+    pThis->__osdescIsDuplicate__ = &__nvoc_thunk_Memory_osdescIsDuplicate;
 
     pThis->__osdescUnmapFrom__ = &__nvoc_thunk_RsResource_osdescUnmapFrom;
 

@@ -121,6 +121,8 @@ typedef enum
     HAL_IMPL_AD102,
     HAL_IMPL_AD103,
     HAL_IMPL_AD104,
+    HAL_IMPL_AD106,
+    HAL_IMPL_AD107,
     HAL_IMPL_GH100,
     HAL_IMPL_T001_FERMI_NOT_EXIST,
     HAL_IMPL_T124,
@@ -155,6 +157,8 @@ typedef enum
     { HAL_IMPL_AD102, "AD102" }, \
     { HAL_IMPL_AD103, "AD103" }, \
     { HAL_IMPL_AD104, "AD104" }, \
+    { HAL_IMPL_AD106, "AD106" }, \
+    { HAL_IMPL_AD107, "AD107" }, \
     { HAL_IMPL_GH100, "GH100" }
 
 

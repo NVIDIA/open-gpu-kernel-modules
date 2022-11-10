@@ -588,7 +588,9 @@ compile_test() {
             # is present.
             #
             # Added by commit 3c299dc22635 ("PCI: add
-            # pci_get_domain_bus_and_slot function") in 2.6.33.
+            # pci_get_domain_bus_and_slot function") in 2.6.33 but aarch64
+            # support was added by commit d1e6dc91b532 
+            # ("arm64: Add architectural support for PCI") in 3.18-rc1
             #
             CODE="
             #include <linux/pci.h>
@@ -649,7 +651,7 @@ compile_test() {
             #include <linux/cpu.h>
             void conftest_register_cpu_notifier(void) {
                 register_cpu_notifier();
-            }" > conftest$$.c
+            }"
             compile_check_conftest "$CODE" "NV_REGISTER_CPU_NOTIFIER_PRESENT" "" "functions"
         ;;
 
@@ -665,7 +667,7 @@ compile_test() {
             #include <linux/cpu.h>
             void conftest_cpuhp_setup_state(void) {
                 cpuhp_setup_state();
-            }" > conftest$$.c
+            }"
             compile_check_conftest "$CODE" "NV_CPUHP_SETUP_STATE_PRESENT" "" "functions"
         ;;
 
@@ -695,66 +697,6 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_IOREMAP_WC_PRESENT" "" "functions"
-        ;;
-
-        file_operations)
-            # 'ioctl' field removed by commit b19dd42faf41
-            # ("bkl: Remove locked .ioctl file operation") in v2.6.36
-            CODE="
-            #include <linux/fs.h>
-            int conftest_file_operations(void) {
-                return offsetof(struct file_operations, ioctl);
-            }"
-
-            compile_check_conftest "$CODE" "NV_FILE_OPERATIONS_HAS_IOCTL" "" "types"
-        ;;
-
-        sg_alloc_table)
-            #
-            # sg_alloc_table_from_pages added by commit efc42bc98058
-            # ("scatterlist: add sg_alloc_table_from_pages function") in v3.6
-            #
-            CODE="
-            #include <linux/scatterlist.h>
-            void conftest_sg_alloc_table_from_pages(void) {
-                sg_alloc_table_from_pages();
-            }"
-
-            compile_check_conftest "$CODE" "NV_SG_ALLOC_TABLE_FROM_PAGES_PRESENT" "" "functions"
-        ;;
-
-        efi_enabled)
-            #
-            # Added in 2.6.12 as a variable
-            #
-            # Determine if the efi_enabled symbol is present (as a variable),
-            # or if the efi_enabled() function is present and how many
-            # arguments it takes.
-            #
-            # Converted from a variable to a function by commit 83e68189745a
-            # ("efi: Make 'efi_enabled' a function to query EFI facilities")
-            # in v3.8
-            #
-            echo "$CONFTEST_PREAMBLE
-            #if defined(NV_LINUX_EFI_H_PRESENT)
-            #include <linux/efi.h>
-            #endif
-            int conftest_efi_enabled(void) {
-                return efi_enabled(0);
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                echo "#define NV_EFI_ENABLED_PRESENT" | append_conftest "functions"
-                echo "#define NV_EFI_ENABLED_ARGUMENT_COUNT 1" | append_conftest "functions"
-                rm -f conftest$$.o
-                return
-            else
-                echo "#define NV_EFI_ENABLED_PRESENT" | append_conftest "symbols"
-                return
-            fi
         ;;
 
         dom0_kernel_present)
@@ -967,6 +909,38 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MDEV_GET_TYPE_GROUP_ID_PRESENT" "" "functions"
         ;;
 
+        vfio_device_mig_state)
+            #
+            # Determine if vfio_device_mig_state enum is present or not
+            #
+            # Added by commit 115dcec65f61d ("vfio: Define device
+            # migration protocol v2") in v5.18
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/vfio.h>
+            enum vfio_device_mig_state device_state;
+            "
+
+            compile_check_conftest "$CODE" "NV_VFIO_DEVICE_MIG_STATE_PRESENT" "" "types"
+        ;;
+
+        vfio_migration_ops)
+            #
+            # Determine if vfio_migration_ops struct is present or not
+            #
+            # Added by commit 6e97eba8ad874 ("vfio: Split migration ops
+            # from main device ops") in v6.0
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/vfio.h>
+            struct vfio_migration_ops mig_ops;
+            "
+
+            compile_check_conftest "$CODE" "NV_VFIO_MIGRATION_OPS_PRESENT" "" "types"
+        ;;
+
         mdev_parent)
             #
             # Determine if the struct mdev_parent type is present.
@@ -1051,6 +1025,40 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MDEV_PARENT_OPS_HAS_OPEN_DEVICE" "" "types"
         ;;
 
+        mdev_parent_ops_has_device_driver)
+            #
+            # Determine if 'mdev_parent_ops' structure has 'device_driver' field.
+            #
+            # Added by commit 88a21f265ce5 ("vfio/mdev: Allow the mdev_parent_ops
+            # to specify the device driver to bind) in v5.14 (2021-06-17)
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/mdev.h>
+            int conftest_mdev_parent_ops_has_device_driver(void) {
+                return offsetof(struct mdev_parent_ops, device_driver);
+            }"
+
+            compile_check_conftest "$CODE" "NV_MDEV_PARENT_OPS_HAS_DEVICE_DRIVER" "" "types"
+        ;;
+
+        mdev_driver_has_supported_type_groups)
+            #
+            # Determine if 'mdev_driver' structure has 'supported_type_groups' field.
+            #
+            # Added by commit 6b42f491e17c ("vfio/mdev: Remove mdev_parent_ops)
+            # in v5.19 (2022-04-11)
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/mdev.h>
+            int conftest_mdev_driver_has_supported_type_groups(void) {
+                return offsetof(struct mdev_driver, supported_type_groups);
+            }"
+
+            compile_check_conftest "$CODE" "NV_MDEV_DRIVER_HAS_SUPPORTED_TYPE_GROUPS" "" "types"
+        ;;
+
         pci_irq_vector_helpers)
             #
             # Determine if pci_alloc_irq_vectors(), pci_free_irq_vectors()
@@ -1103,6 +1111,61 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_VFIO_DEVICE_MIGRATION_HAS_START_PFN" "" "types"
+        ;;
+
+        vfio_uninit_group_dev)
+            #
+            # Determine if vfio_uninit_group_dev() function is present or not.
+            #
+            # Added by commit ae03c3771b8c (vfio: Introduce a vfio_uninit_group_dev()
+            # API call) in v5.15
+            #
+            CODE="
+            #include <linux/vfio.h>
+            void conftest_vfio_uninit_group_dev() {
+                vfio_uninit_group_dev();
+            }"
+
+            compile_check_conftest "$CODE" "NV_VFIO_UNINIT_GROUP_DEV_PRESENT" "" "functions"
+        ;;
+
+
+        vfio_pci_core_available)
+            # Determine if VFIO_PCI_CORE is available
+            #
+            # Added by commit 7fa005caa35e ("vfio/pci: Introduce
+            # vfio_pci_core.ko") in v5.16 (2021-08-26)
+            #
+
+            CODE="
+            #if defined(NV_LINUX_VFIO_PCI_CORE_H_PRESENT)
+            #include <linux/vfio_pci_core.h>
+            #endif
+
+            #if !defined(CONFIG_VFIO_PCI_CORE) && !defined(CONFIG_VFIO_PCI_CORE_MODULE)
+            #error VFIO_PCI_CORE not enabled
+            #endif
+            void conftest_vfio_pci_core_available(void) {
+                struct vfio_pci_core_device dev;
+            }"
+
+            compile_check_conftest "$CODE" "NV_VFIO_PCI_CORE_PRESENT" "" "generic"
+        ;;
+
+        vfio_register_emulated_iommu_dev)
+            #
+            # Determine if vfio_register_emulated_iommu_dev() function is present or not.
+            #
+            # Added by commit c68ea0d00ad8 (vfio: simplify iommu group allocation
+            # for mediated devices) in v5.16
+            #
+            CODE="
+            #include <linux/vfio.h>
+            void conftest_vfio_register_emulated_iommu_dev() {
+                vfio_register_emulated_iommu_dev();
+            }"
+
+            compile_check_conftest "$CODE" "NV_VFIO_REGISTER_EMULATED_IOMMU_DEV_PRESENT" "" "functions"
         ;;
 
         drm_available)
@@ -1192,22 +1255,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_GET_NUM_PHYSPAGES_PRESENT" "" "functions"
         ;;
 
-        proc_remove)
-            #
-            # Determine if the proc_remove() function is present.
-            #
-            # Added by commit a8ca16ea7b0a ("proc: Supply a function to
-            # remove a proc entry by PDE") in v3.10
-            #
-            CODE="
-            #include <linux/proc_fs.h>
-            void conftest_proc_remove(void) {
-                proc_remove();
-            }"
-
-            compile_check_conftest "$CODE" "NV_PROC_REMOVE_PRESENT" "" "functions"
-        ;;
-
         backing_dev_info)
             #
             # Determine if the 'address_space' structure has
@@ -1223,77 +1270,6 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_ADDRESS_SPACE_HAS_BACKING_DEV_INFO" "" "types"
-        ;;
-
-        address_space)
-            #
-            # Determine if the 'address_space' structure has
-            # a 'tree_lock' field of type rwlock_t.
-            #
-            # 'tree_lock' was changed to spinlock_t by commit 19fd6231279b
-            # ("mm: spinlock tree_lock") in v2.6.27
-            #
-            # It was removed altogether by commit b93b016313b3 ("page cache:
-            # use xa_lock") in v4.17
-            #
-            CODE="
-            #include <linux/fs.h>
-            int conftest_address_space(void) {
-                struct address_space as;
-                rwlock_init(&as.tree_lock);
-                return offsetof(struct address_space, tree_lock);
-            }"
-
-            compile_check_conftest "$CODE" "NV_ADDRESS_SPACE_HAS_RWLOCK_TREE_LOCK" "" "types"
-        ;;
-
-        address_space_init_once)
-            #
-            # Determine if address_space_init_once is present.
-            #
-            # Added by commit 2aa15890f3c1 ("mm: prevent concurrent
-            # unmap_mapping_range() on the same inode") in v2.6.38
-            #
-            # If not present, it will be defined in uvm-linux.h.
-            #
-            CODE="
-            #include <linux/fs.h>
-            void conftest_address_space_init_once(void) {
-                address_space_init_once();
-            }"
-
-            compile_check_conftest "$CODE" "NV_ADDRESS_SPACE_INIT_ONCE_PRESENT" "" "functions"
-        ;;
-
-        kuid_t)
-            #
-            # Determine if the 'kuid_t' type is present.
-            #
-            # Added by commit 7a4e7408c5ca ("userns: Add kuid_t and kgid_t
-            # and associated infrastructure in uidgid.h") in v3.5
-            #
-            CODE="
-            #include <linux/sched.h>
-            kuid_t conftest_kuid_t;
-            "
-
-            compile_check_conftest "$CODE" "NV_KUID_T_PRESENT" "" "types"
-        ;;
-
-        pm_vt_switch_required)
-            #
-            # Determine if the pm_vt_switch_required() function is present.
-            #
-            # Added by commit f43f627d2f17 ("PM: make VT switching to the
-            # suspend console optional v3") in v3.10
-            #
-            CODE="
-            #include <linux/pm.h>
-            void conftest_pm_vt_switch_required(void) {
-                pm_vt_switch_required();
-            }"
-
-            compile_check_conftest "$CODE" "NV_PM_VT_SWITCH_REQUIRED_PRESENT" "" "functions"
         ;;
 
         xen_ioemu_inject_msi)
@@ -1473,39 +1449,6 @@ compile_test() {
            compile_check_conftest "$CODE" "NV_NVHOST_DMA_FENCE_UNPACK_PRESENT" "" "functions"
         ;;
 
-        of_get_property)
-            #
-            # Determine if the of_get_property function is present.
-            #
-            # Support for kernels without CONFIG_OF defined added by commit
-            # 89272b8c0d42 ("dt: add empty of_get_property for non-dt") in v3.1
-            #
-            # Test if linux/of.h header file inclusion is successful or not and
-            # define/undefine NV_LINUX_OF_H_USABLE depending upon status of inclusion
-            #
-            echo "$CONFTEST_PREAMBLE
-            #include <linux/of.h>
-            " > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                rm -f conftest$$.o
-                echo "#define NV_LINUX_OF_H_USABLE" | append_conftest "generic"
-                CODE="
-                #include <linux/of.h>
-                void conftest_of_get_property() {
-                    of_get_property();
-                }"
-
-                compile_check_conftest "$CODE" "NV_OF_GET_PROPERTY_PRESENT" "" "functions"
-            else
-                echo "#undef NV_LINUX_OF_H_USABLE" | append_conftest "generic"
-                echo "#undef NV_OF_GET_PROPERTY_PRESENT" | append_conftest "functions"
-            fi
-        ;;
-
         of_find_node_by_phandle)
             #
             # Determine if the of_find_node_by_phandle function is present.
@@ -1594,50 +1537,28 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PNV_PCI_GET_NPU_DEV_PRESENT" "" "functions"
         ;;
 
-        kernel_write)
+        kernel_write_has_pointer_pos_arg)
             #
-            # Determine if the function kernel_write() is present.
-            #
-            # First exported by commit 7bb307e894d5 ("export kernel_write(),
-            # convert open-coded instances") in v3.9
+            # Determine the pos argument type, which was changed by
+            # commit e13ec939e96b1 (fs: fix kernel_write prototype) on
+            # 9/1/2017.
             #
             echo "$CONFTEST_PREAMBLE
             #include <linux/fs.h>
-            void conftest_kernel_write(void) {
-                kernel_write();
+            ssize_t kernel_write(struct file *file, const void *buf,
+                                 size_t count, loff_t *pos)
+            {
+                return 0;
             }" > conftest$$.c;
 
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+	    $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
             rm -f conftest$$.c
 
-            if [ -f conftest$$.o ]; then
-                echo "#undef NV_KERNEL_WRITE_PRESENT" | append_conftest "function"
+	    if [ -f conftest$$.o ]; then
+                echo "#define NV_KERNEL_WRITE_HAS_POINTER_POS_ARG" | append_conftest "function"
                 rm -f conftest$$.o
             else
-                echo "#define NV_KERNEL_WRITE_PRESENT" | append_conftest "function"
-
-                #
-                # Determine the pos argument type, which was changed by
-                # commit e13ec939e96b1 (fs: fix kernel_write prototype) on
-                # 9/1/2017.
-                #
-                echo "$CONFTEST_PREAMBLE
-                #include <linux/fs.h>
-                ssize_t kernel_write(struct file *file, const void *buf,
-                                     size_t count, loff_t *pos)
-                {
-                    return 0;
-                }" > conftest$$.c;
-
-                $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-                rm -f conftest$$.c
-
-                if [ -f conftest$$.o ]; then
-                    echo "#define NV_KERNEL_WRITE_HAS_POINTER_POS_ARG" | append_conftest "function"
-                    rm -f conftest$$.o
-                else
-                    echo "#undef NV_KERNEL_WRITE_HAS_POINTER_POS_ARG" | append_conftest "function"
-                fi
+                echo "#undef NV_KERNEL_WRITE_HAS_POINTER_POS_ARG" | append_conftest "function"
             fi
         ;;
 
@@ -2004,6 +1925,7 @@ compile_test() {
             }" > conftest$$.c
 
             $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
 
             if [ -f conftest$$.o ]; then
                 rm -f conftest$$.o
@@ -2013,7 +1935,7 @@ compile_test() {
             else
                 echo "#undef NV_DRM_UNIVERSAL_PLANE_INIT_HAS_FORMAT_MODIFIERS_ARG" | append_conftest "types"
 
-                echo "$CONFTEST_PREAMBLE
+                CODE="
                 #if defined(NV_DRM_DRMP_H_PRESENT)
                 #include <drm/drmP.h>
                 #endif
@@ -2033,35 +1955,10 @@ compile_test() {
                                 0,     /* unsigned int format_count */
                                 DRM_PLANE_TYPE_PRIMARY,
                                 NULL);  /* const char *name */
-                }" > conftest$$.c
+                }"
 
-                $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-
-                if [ -f conftest$$.o ]; then
-                    rm -f conftest$$.o
-
-                    echo "#define NV_DRM_UNIVERSAL_PLANE_INIT_HAS_NAME_ARG" | append_conftest "types"
-                else
-                    echo "#undef NV_DRM_UNIVERSAL_PLANE_INIT_HAS_NAME_ARG" | append_conftest "types"
-                fi
+                compile_check_conftest "$CODE" "NV_DRM_UNIVERSAL_PLANE_INIT_HAS_NAME_ARG" "" "types"
             fi
-
-        ;;
-
-        vzalloc)
-            #
-            # Determine if the vzalloc function is present
-            #
-            # Added by commit e1ca7788dec6 ("mm: add vzalloc() and
-            # vzalloc_node() helpers") in v2.6.37 (2010-10-26)
-            #
-            CODE="
-            #include <linux/vmalloc.h>
-            void conftest_vzalloc() {
-                vzalloc();
-            }"
-
-            compile_check_conftest "$CODE" "NV_VZALLOC_PRESENT" "" "functions"
         ;;
 
         drm_driver_has_set_busid)
@@ -2186,29 +2083,14 @@ compile_test() {
             echo "#error wait_on_bit_lock() conftest failed!" | append_conftest "functions"
         ;;
 
-        bitmap_clear)
-            #
-            # Determine if the bitmap_clear function is present
-            #
-            # Added by commit c1a2a962a2ad ("bitmap: introduce bitmap_set,
-            # bitmap_clear, bitmap_find_next_zero_area") in v2.6.33
-            # (2009-12-15)
-            #
-            CODE="
-            #include <linux/bitmap.h>
-            void conftest_bitmap_clear() {
-                bitmap_clear();
-            }"
-
-            compile_check_conftest "$CODE" "NV_BITMAP_CLEAR_PRESENT" "" "functions"
-        ;;
-
         pci_stop_and_remove_bus_device)
             #
             # Determine if the pci_stop_and_remove_bus_device() function is present.
             #
             # Added by commit 210647af897a ("PCI: Rename pci_remove_bus_device
-            # to pci_stop_and_remove_bus_device") in v3.4 (2012-02-25)
+            # to pci_stop_and_remove_bus_device") in v3.4 (2012-02-25) but
+            # aarch64 support was added by commit d1e6dc91b532 
+            # ("arm64: Add architectural support for PCI") in v3.18-rc1.
             #
             CODE="
             #include <linux/types.h>
@@ -2218,23 +2100,6 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_PCI_STOP_AND_REMOVE_BUS_DEVICE_PRESENT" "" "functions"
-        ;;
-
-        pci_remove_bus_device)
-            #
-            # Determine if the pci_remove_bus_device() function is present.
-            # Added before Linux-2.6.12-rc2 2005-04-16
-            # Because we support builds on non-PCI platforms, we still need
-            # to check for this function's presence.
-            #
-            CODE="
-            #include <linux/types.h>
-            #include <linux/pci.h>
-            void conftest_pci_remove_bus_device() {
-                pci_remove_bus_device();
-            }"
-
-            compile_check_conftest "$CODE" "NV_PCI_REMOVE_BUS_DEVICE_PRESENT" "" "functions"
         ;;
 
         drm_helper_mode_fill_fb_struct | drm_helper_mode_fill_fb_struct_has_const_mode_cmd_arg)
@@ -2332,23 +2197,6 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_PCI_DEV_HAS_ATS_ENABLED" "" "types"
-        ;;
-
-        mt_device_gre)
-            #
-            # Determine if MT_DEVICE_GRE flag is present.
-            #
-            # MT_DEVICE_GRE flag is removed by commit 58cc6b72a21274
-            # ("arm64: mm: Remove unused support for Device-GRE memory type") in v5.14-rc1
-            # (2021-06-01).
-            #
-            CODE="
-            #include <asm/memory.h>
-            unsigned int conftest_mt_device_gre(void) {
-                return MT_DEVICE_GRE;
-            }"
-
-            compile_check_conftest "$CODE" "NV_MT_DEVICE_GRE_PRESENT" "" "types"
         ;;
 
         get_user_pages)
@@ -2668,20 +2516,146 @@ compile_test() {
             fi
         ;;
 
-        usleep_range)
+        pin_user_pages)
             #
-            # Determine if the function usleep_range() is present.
+            # Determine if the function pin_user_pages() is present.
+            # Presence of pin_user_pages() also implies the presence of
+            # unpin-user_page(). Both were added in the v5.6-rc1
             #
-            # Added by commit 5e7f5a178bba ("timer: Added usleep_range timer")
-            # in v2.6.36 (2010-08-04)
+            # pin_user_pages() was added by commit eddb1c228f7951d399240
+            # ("mm/gup: introduce pin_user_pages*() and FOLL_PIN") in
+            # v5.6-rc1 (2020-01-30)
+
+            # conftest #1: check if pin_user_pages() is available
+            # return if not available.
             #
             CODE="
-            #include <linux/delay.h>
-            void conftest_usleep_range(void) {
-                usleep_range();
+            #include <linux/mm.h>
+            void conftest_pin_user_pages(void) {
+                pin_user_pages();
             }"
 
-            compile_check_conftest "$CODE" "NV_USLEEP_RANGE_PRESENT" "" "functions"
+            compile_check_conftest "$CODE" "NV_PIN_USER_PAGES_PRESENT" "" "functions"
+        ;;
+
+        pin_user_pages_remote)
+            # Determine if the function pin_user_pages_remote() is present
+            #
+            # pin_user_pages_remote() was added by commit eddb1c228f7951d399240
+            # ("mm/gup: introduce pin_user_pages*() and FOLL_PIN")
+            # in v5.6 (2020-01-30)
+
+            # pin_user_pages_remote() removed 'tsk' parameter by
+            # commit 64019a2e467a ("mm/gup: remove task_struct pointer for
+            # all gup code") in v5.9-rc1 (2020-08-11).
+
+            #
+            # This function sets the NV_PIN_USER_PAGES_REMOTE_* macros as per
+            # the below passing conftest's
+            #
+            set_pin_user_pages_remote_defines () {
+                if [ "$1" = "" ]; then
+                    echo "#undef NV_PIN_USER_PAGES_REMOTE_PRESENT" | append_conftest "functions"
+                else
+                    echo "#define NV_PIN_USER_PAGES_REMOTE_PRESENT" | append_conftest "functions"
+                fi
+
+                if [ "$1" = "NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK" ]; then
+                    echo "#define NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK" | append_conftest "functions"
+                else
+                    echo "#undef NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK" | append_conftest "functions"
+                fi
+            }
+
+            # conftest #1: check if pin_user_pages_remote() is available
+            # return if not available.
+            # Fall through to conftest #2 if it is present
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <linux/mm.h>
+            void conftest_pin_user_pages_remote(void) {
+                pin_user_pages_remote();
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                set_pin_user_pages_remote_defines ""
+                rm -f conftest$$.o
+                return
+            fi
+
+            # conftest #2: Check if pin_user_pages_remote() has tsk argument
+            echo "$CONFTEST_PREAMBLE
+            #include <linux/mm.h>
+            long pin_user_pages_remote(struct task_struct *tsk,
+                                       struct mm_struct *mm,
+                                       unsigned long start,
+                                       unsigned long nr_pages,
+                                       unsigned int gup_flags,
+                                       struct page **pages,
+                                       struct vm_area_struct **vmas,
+                                       int *locked) {
+                return 0;
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                set_pin_user_pages_remote_defines "NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK"
+                rm -f conftest$$.o
+            else
+                set_pin_user_pages_remote_defines "NV_PIN_USER_PAGES_REMOTE_PRESENT"
+            fi
+        ;;
+
+        vfio_pin_pages)
+            #
+            # Determine if vfio_pin_pages() kABI accepts "struct vfio_device *"
+            # argument instead of "struct device *"
+            #
+            # Replaced "struct device *" with "struct vfio_device *" by commit
+            # 8e432bb015b6c ("vfio/mdev: Pass in a struct vfio_device * to
+            # vfio_pin/unpin_pages()") in v5.19
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <linux/pci.h>
+            #include <linux/vfio.h>
+            int vfio_pin_pages(struct vfio_device *device,
+                               unsigned long *user_pfn,
+                               int npage,
+                               int prot,
+                               unsigned long *phys_pfn) {
+                return 0;
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                echo "#define NV_VFIO_PIN_PAGES_HAS_VFIO_DEVICE_ARG" | append_conftest "functions"
+                rm -f conftest$$.o
+            else
+                echo "#undef NV_VFIO_PIN_PAGES_HAS_VFIO_DEVICE_ARG" | append_conftest "functions"
+            fi
+        ;;
+
+        pci_driver_has_driver_managed_dma)
+            #
+            # Determine if "struct pci_driver" has .driver_managed_dma member.
+            #
+            # Added by commit 512881eacfa7 ("bus: platform,amba,fsl-mc,PCI:
+            # Add device DMA ownership management") in v5.19
+            #
+            CODE="
+            #include <linux/pci.h>
+            int conftest_pci_driver_has_driver_managed_dma(void) {
+                return offsetof(struct pci_driver, driver_managed_dma);
+            }"
+
+            compile_check_conftest "$CODE" "NV_PCI_DRIVER_HAS_DRIVER_MANAGED_DMA" "" "types"
         ;;
 
         radix_tree_empty)
@@ -2749,6 +2723,130 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_MASTER_DROP_HAS_FROM_RELEASE_ARG" "" "types"
+        ;;
+
+        drm_connector_lookup)
+            #
+            # Determine if function drm_connector_lookup() is present.
+            #
+            # Added by commit b164d31f50b2 ("drm/modes: add connector reference
+            # counting. (v2)") in v4.7 (2016-05-04), when it replaced
+            # drm_connector_find(). 
+            # 
+            # It was originally added in drm_crtc.h, then moved to
+            # drm_connector.h by commit 522171951761
+            # ("drm: Extract drm_connector.[hc]") in v4.9 (2016-08-12)
+            #
+
+            CODE="
+            #if defined(NV_DRM_DRM_CRTC_H_PRESENT)
+            #include <drm/drm_crtc.h>
+            #endif
+            #if defined(NV_DRM_DRM_CONNECTOR_H_PRESENT)
+            #include <drm/drm_connector.h>
+            #endif
+            void conftest_drm_connector_lookup(void) {
+                drm_connector_lookup();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_LOOKUP_PRESENT" "" "functions"
+        ;;
+
+        drm_connector_put)
+            #
+            # Determine if function drm_connector_put() is present.
+            #
+            # Added by commit ad09360750af ("drm: Introduce 
+            # drm_connector_{get,put}()") in v4.12 (2017-02-28),
+            # when it replaced drm_connector_unreference() that
+            # was added with NV_DRM_CONNECTOR_LOOKUP_PRESENT.
+            #
+
+            CODE="
+            #if defined(NV_DRM_DRM_CONNECTOR_H_PRESENT)
+            #include <drm/drm_connector.h>
+            #endif
+            void conftest_drm_connector_put(void) {
+                drm_connector_put();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_PUT_PRESENT" "" "functions"
+        ;;
+
+        drm_modeset_lock_all_end)
+            #
+            # Determine the number of arguments of the
+            # DRM_MODESET_LOCK_ALL_END() macro.
+            #
+            # DRM_MODESET_LOCK_ALL_END() is added with two arguments by commit
+            # b7ea04d299c7 (drm: drm: Add DRM_MODESET_LOCK_BEGIN/END helpers)
+            # in v5.0 (2018-11-29). The definition and prototype is changed to
+            # also take the third argument drm_device, by commit 77ef38574beb
+            # (drm/modeset-lock: Take the modeset BKL for legacy drivers)
+            # in v5.9 (2020-08-17).
+            #
+            DRM_MODESET_3_COMPILED=0
+            DRM_MODESET_2_COMPILED=0
+            DRM_MODESET_INCLUDES="
+                #if defined(NV_DRM_DRM_DEVICE_H_PRESENT)
+                #include <drm/drm_device.h>
+                #endif
+                #if defined(NV_DRM_DRM_DRV_H_PRESENT)
+                #include <drm/drm_drv.h>
+                #endif
+                #if defined(NV_DRM_DRM_MODESET_LOCK_H_PRESENT)
+                #include <drm/drm_modeset_lock.h>
+                #endif"
+
+            echo "$CONFTEST_PREAMBLE
+            $DRM_MODESET_INCLUDES
+
+            void conftest_drm_modeset_lock_all_end(
+                struct drm_device *dev,
+                struct drm_modeset_acquire_ctx ctx,
+                int ret) {
+                DRM_MODESET_LOCK_ALL_BEGIN(dev, ctx, 0, ret);
+                DRM_MODESET_LOCK_ALL_END(dev, ctx, ret);
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                DRM_MODESET_3_COMPILED=1
+                rm -f conftest$$.o
+            fi
+
+            echo "$CONFTEST_PREAMBLE
+            $DRM_MODESET_INCLUDES
+
+            void conftest_drm_modeset_lock_all_end(
+                struct drm_device *dev,
+                struct drm_modeset_acquire_ctx ctx,
+                int ret) {
+                DRM_MODESET_LOCK_ALL_BEGIN(dev, ctx, 0, ret);
+                DRM_MODESET_LOCK_ALL_END(ctx, ret);
+            }" > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                DRM_MODESET_2_COMPILED=1
+                rm -f conftest$$.o
+            fi
+
+            # If the macro is undefined, both code snippets will still compile,
+            #  so we need to check both and make sure only one compiles successfully.
+            if [ "$DRM_MODESET_3_COMPILED" = "1" ] &&
+               [ "$DRM_MODESET_2_COMPILED" = "0" ]; then
+                echo "#define NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT 3" | append_conftest "functions"
+            elif [ "$DRM_MODESET_3_COMPILED" = "0" ] &&
+                 [ "$DRM_MODESET_2_COMPILED" = "1" ]; then
+                echo "#define NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT 2" | append_conftest "functions"
+            else
+                echo "#define NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT 0" | append_conftest "functions"
+            fi
         ;;
 
         drm_atomic_state_ref_counting)
@@ -3036,23 +3134,6 @@ compile_test() {
             else
                 echo "#error radix_tree_replace_slot() conftest failed!" | append_conftest "functions"
             fi
-        ;;
-
-        kthread_create_on_node)
-            #
-            # Determine if kthread_create_on_node is available
-            #
-            # kthread_create_on_node was added in by commit 207205a2ba26
-            # ("kthread: NUMA aware kthread_create_on_node()") in v2.6.39
-            # (2011-03-22).
-            #
-            CODE="
-            #include <linux/kthread.h>
-            void kthread_create_on_node_conftest(void) {
-                 (void)kthread_create_on_node();
-            }"
-
-            compile_check_conftest "$CODE" "NV_KTHREAD_CREATE_ON_NODE_PRESENT" "" "functions"
         ;;
 
         cpumask_of_node)
@@ -3397,8 +3478,16 @@ compile_test() {
             # Note that drm_connector.h by introduced by commit 522171951761
             # ("drm: Extract drm_connector.[hc]") in v4.9 (2016-08-12)
             #
+            # Note: up to 4.9 function was provided by drm_crtc.h by commit
+            # f453ba046074 in 2.6.29 (2008-12-29)
+            #
             CODE="
+            #if defined(NV_DRM_DRM_CONNECTOR_H_PRESENT)
             #include <drm/drm_connector.h>
+            #endif
+            #if defined(NV_DRM_DRM_CRTC_H_PRESENT)
+            #include <drm/drm_crtc.h>
+            #endif
             void conftest_drm_connector_funcs_have_mode_in_name(void) {
                 drm_mode_connector_attach_encoder();
             }"
@@ -3406,21 +3495,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_FUNCS_HAVE_MODE_IN_NAME" "" "functions"
         ;;
 
-
-        node_states_n_memory)
+        drm_connector_has_vrr_capable_property)
             #
-            # Determine if the N_MEMORY constant exists.
+            # Determine if drm_connector_attach_vrr_capable_property and
+            # drm_connector_set_vrr_capable_property is present
             #
-            # Added by commit 8219fc48adb3 ("mm: node_states: introduce
-            # N_MEMORY") in v3.8 (2012-12-12).
+            # Added by commit ba1b0f6c73d4ea1390f0d5381f715ffa20c75f09 ("drm:
+            # Add vrr_capable property to the drm connector") in v5.0-rc1
+            # (2018-11-28)
             #
             CODE="
-            #include <linux/nodemask.h>
-            int conftest_node_states_n_memory(void) {
-                return N_MEMORY;
+            #if defined(NV_DRM_DRM_CONNECTOR_H_PRESENT)
+            #include <drm/drm_connector.h>
+            #endif
+
+            void conftest_drm_connector_has_vrr_capable_property(void) {
+                drm_connector_attach_vrr_capable_property();
             }"
 
-            compile_check_conftest "$CODE" "NV_NODE_STATES_N_MEMORY_PRESENT" "" "types"
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HAS_VRR_CAPABLE_PROPERTY" "" "functions"
         ;;
 
         vm_fault_t)
@@ -3615,92 +3708,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PM_RUNTIME_AVAILABLE" "" "generic"
         ;;
 
-        device_driver_of_match_table)
-            #
-            # Determine if the device_driver struct has an of_match_table member.
-            #
-            # of_match_table was added by commit 597b9d1e44e9 ("drivercore:
-            # Add of_match_table to the common device drivers") in v2.6.35
-            # (2010-04-13).
-            #
-            CODE="
-            #include <linux/device.h>
-            int conftest_device_driver_of_match_table(void) {
-                return offsetof(struct device_driver, of_match_table);
-            }"
-
-            compile_check_conftest "$CODE" "NV_DEVICE_DRIVER_OF_MATCH_TABLE_PRESENT" "" "types"
-        ;;
-
-        device_of_node)
-            #
-            # Determine if the device struct has an of_node member.
-            #
-            # of_node member was added by commit d706c1b05027 ("driver-core:
-            # Add device node pointer to struct device") in v2.6.35
-            # (2010-04-13).
-            #
-            CODE="
-            #include <linux/device.h>
-            int conftest_device_of_node(void) {
-                return offsetof(struct device, of_node);
-            }"
-
-            compile_check_conftest "$CODE" "NV_DEVICE_OF_NODE_PRESENT" "" "types"
-        ;;
-
-        dev_is_pci)
-            #
-            # Determine if the dev_is_pci() macro is present.
-            #
-            # dev_is_pci() macro was added by commit fb8a0d9d1bfd ("pci: Add
-            # SR-IOV convenience functions and macros") in v2.6.34
-            # (2010-02-10).
-            #
-            CODE="
-            #include <linux/pci.h>
-            void conftest_dev_is_pci(void) {
-                if(dev_is_pci()) {}
-            }
-            "
-
-            compile_check_conftest "$CODE" "NV_DEV_IS_PCI_PRESENT" "" "functions"
-        ;;
-
-        of_find_matching_node)
-            #
-            # Determine if the of_find_matching_node() function is present.
-            #
-            # Test if linux/of.h header file inclusion is successful or not and
-            # define/undefine NV_LINUX_OF_H_USABLE depending upon status of inclusion.
-            #
-            # of_find_matching_node was added by commit 283029d16a88
-            # ("[POWERPC] Add of_find_matching_node() helper function") in
-            # v2.6.25 (2008-01-09).
-            #
-            echo "$CONFTEST_PREAMBLE
-            #include <linux/of.h>
-            " > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                rm -f conftest$$.o
-                echo "#define NV_LINUX_OF_H_USABLE" | append_conftest "generic"
-                CODE="
-                #include <linux/of.h>
-                void conftest_of_find_matching_node() {
-                    of_find_matching_node();
-                }"
-
-                compile_check_conftest "$CODE" "NV_OF_FIND_MATCHING_NODE_PRESENT" "" "functions"
-            else
-                echo "#undef NV_LINUX_OF_H_USABLE" | append_conftest "generic"
-                echo "#undef NV_OF_FIND_MATCHING_NODE_PRESENT" | append_conftest "functions"
-            fi
-        ;;
-
         dma_direct_map_resource)
             #
             # Determine whether dma_is_direct() exists.
@@ -3857,7 +3864,7 @@ compile_test() {
             #include <drm/drmP.h>
             #endif
 
-            #if defined(NV_DRM_CONNECTOR_H_PRESENT)
+            #if defined(NV_DRM_DRM_CONNECTOR_H_PRESENT)
             #include <drm/drm_connector.h>
             #endif
 
@@ -4009,6 +4016,26 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_CRTC_STATE_HAS_PAGEFLIP_FLAGS" "" "types"
         ;;
 
+        drm_crtc_state_has_vrr_enabled)
+            #
+            # Determine if 'drm_crtc_state' structure has a
+            # 'vrr_enabled' field.
+            #
+            # Added by commit 1398958cfd8d331342d657d37151791dd7256b40 ("drm:
+            # Add vrr_enabled property to drm CRTC") in v5.0-rc1 (2018-11-28)
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_CRTC_H_PRESENT)
+            #include <drm/drm_crtc.h>
+            #endif
+
+            int conftest_drm_crtc_state_has_vrr_enabled(void) {
+                return offsetof(struct drm_crtc_state, vrr_enabled);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CRTC_STATE_HAS_VRR_ENABLED" "" "types"
+        ;;
+
         ktime_get_raw_ts64)
             #
             # Determine if ktime_get_raw_ts64() is present
@@ -4143,36 +4170,6 @@ compile_test() {
                 echo "#define NV_FULL_NAME_HASH_ARGUMENT_COUNT 3" | append_conftest "functions"
             else
                 echo "#define NV_FULL_NAME_HASH_ARGUMENT_COUNT 2" | append_conftest "functions"
-            fi
-        ;;
-
-        hlist_for_each_entry)
-            #
-            # Determine how many arguments hlist_for_each_entry takes.
-            #
-            # Changed by commit b67bfe0d42c ("hlist: drop the node parameter
-            # from iterators") in v3.9 (2013-02-28)
-            #
-            echo "$CONFTEST_PREAMBLE
-            #include <linux/list.h>
-            void conftest_hlist_for_each_entry(void) {
-                struct hlist_head *head;
-                struct dummy
-                {
-                    struct hlist_node hlist;
-                };
-                struct dummy *pos;
-                hlist_for_each_entry(pos, head, hlist) {}
-            }" > conftest$$.c
-
-            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
-            rm -f conftest$$.c
-
-            if [ -f conftest$$.o ]; then
-                rm -f conftest$$.o
-                echo "#define NV_HLIST_FOR_EACH_ENTRY_ARGUMENT_COUNT 3" | append_conftest "functions"
-            else
-                echo "#define NV_HLIST_FOR_EACH_ENTRY_ARGUMENT_COUNT 4" | append_conftest "functions"
             fi
         ;;
 
@@ -4533,38 +4530,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_DRM_GEM_OBJECT_VMAP_HAS_MAP_ARG" "" "types"
         ;;
 
-        set_close_on_exec)
-            #
-            # __set_close_on_exec(() was added by
-            # commit 1dce27c5aa67 ("Wrap accesses to the fd_sets")
-            # in v3.4-rc1 (2012-02-19)
-            #
-            CODE="
-            #include <linux/types.h>
-            #include <linux/fdtable.h>
-            void conftest_set_close_on_exec(void) {
-                __set_close_on_exec();
-            }"
-
-            compile_check_conftest "$CODE" "NV_SET_CLOSE_ON_EXEC_PRESENT" "" "functions"
-        ;;
-
-        iterate_fd)
-            #
-            # iterate_fd() was added by
-            # commit c3c073f808b2 ("new helper: iterate_fd()")
-            # in v3.7-rc1 (2012-09-26)
-            #
-            CODE="
-            #include <linux/types.h>
-            #include <linux/fdtable.h>
-            void conftest_iterate_fd(void) {
-                iterate_fd();
-            }"
-
-            compile_check_conftest "$CODE" "NV_ITERATE_FD_PRESENT" "" "functions"
-        ;;
-
         seq_read_iter)
             #
             # Determine if seq_read_iter() is present
@@ -4597,23 +4562,6 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_PCI_CLASS_MULTIMEDIA_HD_AUDIO_PRESENT" "" "generic"
-        ;;
-
-        sg_page_iter_page)
-            #
-            # Determine if sg_page_iter_page() is present
-            #
-            # sg_page_iter_page() was added by commit 2db76d7c3c6db
-            # ("lib/scatterlist: sg_page_iter: support sg lists w/o backing
-            # pages") in v3.10-rc1 (2013-05-11).
-            #
-            CODE="
-            #include <linux/scatterlist.h>
-            void conftest_sg_page_iter_page(void) {
-                sg_page_iter_page();
-            }"
-
-            compile_check_conftest "$CODE" "NV_SG_PAGE_ITER_PAGE_PRESENT" "" "functions"
         ;;
 
         unsafe_follow_pfn)
@@ -5294,6 +5242,48 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PLATFORM_IRQ_COUNT_PRESENT" "" "functions"
         ;;
 
+        devm_clk_bulk_get_all)
+            #
+            # Determine if devm_clk_bulk_get_all() function is present
+            #
+            # Added by commit f08c2e286 ("clk: add managed version of clk_bulk_get_all")
+            #
+            CODE="
+            #if defined(NV_LINUX_CLK_H_PRESENT)
+            #include <linux/clk.h>
+            #endif
+            void conftest_devm_clk_bulk_get_all(void)
+            {
+                devm_clk_bulk_get_all();
+            }
+            "
+            compile_check_conftest "$CODE" "NV_DEVM_CLK_BULK_GET_ALL_PRESENT" "" "functions"
+        ;;
+
+        mmget_not_zero)
+            #
+            # Determine if mmget_not_zero() function is present
+            #
+            # mmget_not_zero() function was added by commit
+            # d2005e3f41d4f9299e2df6a967c8beb5086967a9 ("userfaultfd: don't pin
+            # the user memory in userfaultfd_file_create()") in v4.7
+            # (2016-05-20) in linux/sched.h but then moved to linux/sched/mm.h
+            # by commit 68e21be2916b359fd8afb536c1911dc014cfd03e
+            # ("sched/headers: Move task->mm handling methods to
+            # <linux/sched/mm.h>") in v4.11 (2017-02-01).
+            CODE="
+            #if defined(NV_LINUX_SCHED_MM_H_PRESENT)
+            #include <linux/sched/mm.h>
+            #elif defined(NV_LINUX_SCHED_H_PRESENT)
+            #include <linux/sched.h>
+            #endif
+            void conftest_mmget_not_zero(void) {
+                mmget_not_zero();
+            }"
+
+            compile_check_conftest "$CODE" "NV_MMGET_NOT_ZERO_PRESENT" "" "functions"
+        ;;
+
         dma_resv_add_fence)
             #
             # Determine if the dma_resv_add_fence() function is present.
@@ -5377,7 +5367,7 @@ compile_test() {
             # Determine if 'num_registered_fb' variable is present.
             #
             # 'num_registered_fb' was removed by commit 5727dcfd8486
-            # ("fbdev: Make registered_fb[] private to fbmem.c) for
+            # ("fbdev: Make registered_fb[] private to fbmem.c") for
             # v5.20 linux-next (2022-07-27).
             #
             CODE="
@@ -5387,6 +5377,31 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_NUM_REGISTERED_FB_PRESENT" "" "types"
+        ;;
+
+        acpi_video_backlight_use_native)
+            #
+            # Determine if acpi_video_backlight_use_native() function is present
+            #
+            # acpi_video_backlight_use_native was added by commit 2600bfa3df99
+            # (ACPI: video: Add acpi_video_backlight_use_native() helper) for
+            # v6.0 (2022-08-17). Note: the include directive for <linux/types.h>
+            # in this conftest is necessary in order to support kernels between
+            # commit 0b9f7d93ca61 ("ACPI / i915: ignore firmware requests for
+            # backlight change") for v3.16 (2014-07-07) and commit 3bd6bce369f5
+            # ("ACPI / video: Port to new backlight interface selection API")
+            # for v4.2 (2015-07-16). Kernels within this range use the 'bool'
+            # type and the related 'false' value in <acpi/video.h> without first
+            # including the definitions of that type and value.
+            #
+            CODE="
+            #include <linux/types.h>
+            #include <acpi/video.h>
+            void conftest_acpi_video_backglight_use_native(void) {
+                acpi_video_backlight_use_native(0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE" "" "functions"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

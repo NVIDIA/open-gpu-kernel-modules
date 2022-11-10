@@ -81,7 +81,7 @@ _nvswitch_core_bios_read
         nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 
         cmd.hdr.unitId = RM_SOE_UNIT_CORE;
-        cmd.hdr.size   = sizeof(cmd);
+        cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, BIOS);
         cmd.cmd.core.bios.cmdType = readType;
         RM_FLCN_U64_PACK(&pParams->dmaHandle, &dmaHandle);
         pParams->offset = offset;

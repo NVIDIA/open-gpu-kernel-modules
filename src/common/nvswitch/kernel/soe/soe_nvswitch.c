@@ -179,6 +179,10 @@ soeSetupHal
     {
         soeSetupHal_LR10(pSoe);
     }
+    else if (nvswitch_is_ls10_device_id(pci_device_id))
+    {
+        soeSetupHal_LS10(pSoe);
+    }
     else
     {
         // we're on a device which doesn't support SOE

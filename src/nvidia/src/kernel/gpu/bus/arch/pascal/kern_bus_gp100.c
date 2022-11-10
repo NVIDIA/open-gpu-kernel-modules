@@ -69,6 +69,111 @@ kbusCreateP2PMapping_GP100
     return NV_ERR_NOT_SUPPORTED;
 }
 
+// Grab GPU locks before RPCing into GSP-RM for NVLink RPCs
+static NV_STATUS
+_kbusExecGspRmRpcForNvlink
+(
+    OBJGPU       *pGpu,
+    NvU32         cmd,
+    void         *paramAddr,
+    NvU32         paramSize
+)
+{
+    NvU32     gpuMaskRelease = 0;
+    NvU32     gpuMaskInitial = rmGpuLocksGetOwnedMask();
+    NvU32     gpuMask        = gpuMaskInitial | NVBIT(pGpu->gpuInstance);
+    NV_STATUS status         = NV_OK;
+
+    //
+    // XXX Bug 1795328: Fix P2P path to acquire locks for the GPU
+    //  Due to platform differences in the P2P path, the GPU lock is not
+    //  consistently held at this point in the call stack. This function
+    //  requires exclusive access to RM/PMU data structures to update HSHUB,
+    //  and therefore requires the GPU lock to be held at this point.
+    //  This check should be removed once the P2P paths have been updated to
+    //  acquire the GPU locks consistently for all platforms.
+    //
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_MASK, &gpuMask))
+        {
+            status = rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                           GPU_LOCK_GRP_MASK,
+                                           GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
+                                           RM_LOCK_MODULES_NVLINK,
+                                           &gpuMask);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to acquire locks for gpumask 0x%x\n", gpuMask);
+                return status;
+            }
+
+            gpuMaskRelease = (gpuMask & (~gpuMaskInitial));
+        }
+    }
+
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             cmd, paramAddr, paramSize);
+    if (gpuMaskRelease)
+    {
+        rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+    }
+
+    return status;
+}
+
+/*!
+ * @brief Create NVLink mapping to a given peer GPU
+ *
+ * @param[in]   pGpu0           (Local)
+ * @param[in]   pKernelBus0     (Local)
+ * @param[in]   pGpu1           (Remote)
+ * @param[in]   peerId          peerID
+ * @param[in]   attributes      P2PApi attributes
+ *
+ * return NV_OK on success
+ */
+static NV_STATUS
+_kbusCreateNvlinkPeerMapping
+(
+    OBJGPU    *pGpu0,
+    KernelBus *pKernelBus0,
+    OBJGPU    *pGpu1,
+    NvU32      peerId,
+    NvU32      attributes
+)
+{
+    NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS params;
+    NV_STATUS    status          = NV_OK;
+    OBJSYS       *pSys           = SYS_GET_INSTANCE();
+
+    NV_ASSERT_OK_OR_RETURN(osAcquireRmSema(pSys->pSema));
+
+    portMemSet(&params, 0, sizeof(params));
+    params.connectionType = NV2080_CTRL_CMD_BUS_SET_P2P_MAPPING_CONNECTION_TYPE_NVLINK;
+    params.peerId = peerId;
+    params.bUseUuid = NV_FALSE;
+    params.remoteGpuId = pGpu1->gpuId;
+    params.bSpaAccessOnly = FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA, attributes);
+
+    _kbusExecGspRmRpcForNvlink(pGpu0, NV2080_CTRL_CMD_BUS_SET_P2P_MAPPING,
+                               &params, sizeof(params));
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "GPU%d NV2080_CTRL_CMD_BUS_SET_P2P_MAPPING failed for peer%d\n",
+                  gpuGetInstance(pGpu0), peerId);
+    }
+
+    osReleaseRmSema(pSys->pSema, NULL);
+
+    return status;
+}
+
 /*!
  * @brief Create a P2P mapping to a given peer GPU
  *
@@ -97,13 +202,9 @@ kbusCreateP2PMappingForNvlink_GP100
     NvU32         gpu0Instance   = gpuGetInstance(pGpu0);
     NvU32         gpu1Instance   = gpuGetInstance(pGpu1);
     NvBool        bLoopback      = (pGpu0 == pGpu1);
-    KernelNvlink *pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-    KernelNvlink *pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
     NV_STATUS     status         = NV_OK;
     NvU32         nvlinkPeer0    = BUS_INVALID_PEER;
     NvU32         nvlinkPeer1    = BUS_INVALID_PEER;
-
-    NV2080_CTRL_NVLINK_ENABLE_NVLINK_PEER_PARAMS  params;
 
     if (peer0 == NULL || peer1 == NULL)
     {
@@ -126,8 +227,7 @@ kbusCreateP2PMappingForNvlink_GP100
         return status;
     }
 
-    if ((pKernelNvlink0 == NULL) || (pKernelNvlink1 == NULL) ||
-        (nvlinkPeer0 == BUS_INVALID_PEER) || (nvlinkPeer1 == BUS_INVALID_PEER))
+    if (nvlinkPeer0 == BUS_INVALID_PEER || nvlinkPeer1 == BUS_INVALID_PEER)
     {
         return NV_ERR_INVALID_REQUEST;
     }
@@ -244,45 +344,64 @@ kbusCreateP2PMappingForNvlink_GP100
               "added NVLink P2P mapping between GPU%u (peer %u) and GPU%u (peer %u)\n",
               gpu0Instance, *peer0, gpu1Instance, *peer1);
 
-    portMemSet(&params, 0, sizeof(params));
-    params.peerMask = NVBIT(*peer0);
-    params.bEnable  = NV_TRUE;
-
-    // Set the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU0
-    status = knvlinkExecGspRmRpc(pGpu0, pKernelNvlink0,
-                                 NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
-                                 (void *)&params, sizeof(params));
-    if (status != NV_OK)
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu0))
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "GPU%d Failed to ENABLE USE_NVLINK_PEER for peer%d\n",
-                  gpuGetInstance(pGpu0), *peer0);
+        NV_ASSERT_OK_OR_RETURN(_kbusCreateNvlinkPeerMapping(pGpu0, pKernelBus0, pGpu1, *peer0, attributes));
+        NV_ASSERT_OK_OR_RETURN(_kbusCreateNvlinkPeerMapping(pGpu1, pKernelBus1, pGpu0, *peer1, attributes));
 
         return status;
     }
-
-    portMemSet(&params, 0, sizeof(params));
-    params.peerMask = NVBIT(*peer1);
-    params.bEnable  = NV_TRUE;
-
-    // Set the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU1
-    status = knvlinkExecGspRmRpc(pGpu1, pKernelNvlink1,
-                                 NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
-                                 (void *)&params, sizeof(params));
-    if (status != NV_OK)
+    else
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "GPU%d Failed to ENABLE USE_NVLINK_PEER for peer%d\n",
-                  gpuGetInstance(pGpu1), *peer1);
+        KernelNvlink *pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
+        KernelNvlink *pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
+        NV2080_CTRL_NVLINK_ENABLE_NVLINK_PEER_PARAMS params;
 
-        return status;
+        if (pKernelNvlink0 == NULL || pKernelNvlink1 == NULL)
+        {
+            return NV_ERR_INVALID_REQUEST;
+        }
+
+        portMemSet(&params, 0, sizeof(params));
+        params.peerMask = NVBIT(*peer0);
+        params.bEnable  = NV_TRUE;
+
+        // Set the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU0
+        status = knvlinkExecGspRmRpc(pGpu0, pKernelNvlink0,
+                                     NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
+                                     (void *)&params, sizeof(params));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "GPU%d Failed to ENABLE USE_NVLINK_PEER for peer%d\n",
+                      gpuGetInstance(pGpu0), *peer0);
+
+            return status;
+        }
+
+        portMemSet(&params, 0, sizeof(params));
+        params.peerMask = NVBIT(*peer1);
+        params.bEnable  = NV_TRUE;
+
+        // Set the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU1
+        status = knvlinkExecGspRmRpc(pGpu1, pKernelNvlink1,
+                                     NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
+                                     (void *)&params, sizeof(params));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "GPU%d Failed to ENABLE USE_NVLINK_PEER for peer%d\n",
+                      gpuGetInstance(pGpu1), *peer1);
+
+            return status;
+        }
+
+        // Enable the peer configuration in the HSHUB config registers
+        knvlinkSetupPeerMapping_HAL(pGpu0, pKernelNvlink0, pGpu1, *peer0);
+        knvlinkSetupPeerMapping_HAL(pGpu1, pKernelNvlink1, pGpu0, *peer1);
+
+        return NV_OK;
     }
-
-    // Enable the peer configuration in the HSHUB config registers
-    knvlinkSetupPeerMapping_HAL(pGpu0, pKernelNvlink0, pGpu1, *peer0);
-    knvlinkSetupPeerMapping_HAL(pGpu1, pKernelNvlink1, pGpu0, *peer1);
-
-    return NV_OK;
 }
 
 /*!
@@ -295,8 +414,8 @@ kbusCreateP2PMappingForNvlink_GP100
  *
  * return NV_OK on success
  */
-NV_STATUS
-kbusRemoveNvlinkPeerMapping_GP100
+static NV_STATUS
+_kbusRemoveNvlinkPeerMapping
 (
     OBJGPU    *pGpu0,
     KernelBus *pKernelBus0,
@@ -305,12 +424,9 @@ kbusRemoveNvlinkPeerMapping_GP100
     NvU32      attributes
 )
 {
-    NV_STATUS     status          = NV_OK;
-    NvU32         peerGpuInst     = gpuGetInstance(pGpu1);
-    KernelNvlink *pKernelNvlink0  = GPU_GET_KERNEL_NVLINK(pGpu0);
-    NvBool        bLoopback       = (pGpu0 == pGpu1);
-
-    NV_ASSERT_OR_RETURN(pKernelNvlink0 != NULL, NV_ERR_NOT_SUPPORTED);
+    NV_STATUS     status         = NV_OK;
+    NvU32         peerGpuInst    = gpuGetInstance(pGpu1);
+    NvBool        bBufferReady    = NV_FALSE;
 
     // If no peer mapping exists between the GPUs, return NV_WARN_NOTHING_TO_DO
     if ((pKernelBus0->p2p.busNvlinkPeerNumberMask[peerGpuInst] & NVBIT(peerId)) == 0)
@@ -326,38 +442,28 @@ kbusRemoveNvlinkPeerMapping_GP100
         return NV_ERR_INVALID_STATE;
     }
 
-    if (pKernelNvlink0->getProperty(pKernelNvlink0, PDB_PROP_KNVLINK_UNSET_NVLINK_PEER_REFCNT) ||
-        (bLoopback == NV_TRUE) || 
-        (knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0)))
+    // Decrement the mapping refcount associated with the peerID
+    pKernelBus0->p2p.busNvlinkMappingRefcountPerPeerId[peerId]--;
+
+    // Decrement the mapping refcount for the given remote GPU1
+    pKernelBus0->p2p.busNvlinkMappingRefcountPerGpu[peerGpuInst]--;
+
+    if (FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA, attributes))
     {
-        // 
-        // WAR 3740439 : Since this code fails for loopback, when we reuse peer ID and not destroy P2P
-        // objects, we will follow legacy code for loopback and nvswitch and unblock DVT while we debug
-        //
-
-        // Decrement the mapping refcount associated with the peerID
         pKernelBus0->p2p.busNvlinkMappingRefcountPerPeerId[peerId]--;
+    }
 
-        // Decrement the mapping refcount for the given remote GPU1
-        pKernelBus0->p2p.busNvlinkMappingRefcountPerGpu[peerGpuInst]--;
+    //
+    // If mapping refcount to remote GPU1 is 0, this implies the peerID is no
+    // longer used for P2P from GPU0 to GPU1. Update busNvlinkPeerNumberMask
+    //
+    if (pKernelBus0->p2p.busNvlinkMappingRefcountPerGpu[peerGpuInst] == 0)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "Removing mapping for GPU%u peer %u (GPU%u)\n",
+                  gpuGetInstance(pGpu0), peerId, peerGpuInst);
 
-        if (FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA, attributes))
-        {
-            pKernelBus0->p2p.busNvlinkMappingRefcountPerPeerId[peerId]--;
-        }
-
-        //
-        // If mapping refcount to remote GPU1 is 0, this implies the peerID is no
-        // longer used for P2P from GPU0 to GPU1. Update busNvlinkPeerNumberMask
-        //
-        if (pKernelBus0->p2p.busNvlinkMappingRefcountPerGpu[peerGpuInst] == 0)
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "Removing mapping for GPU%u peer %u (GPU%u)\n",
-                      gpuGetInstance(pGpu0), peerId, peerGpuInst);
-
-            pKernelBus0->p2p.busNvlinkPeerNumberMask[peerGpuInst] &= ~NVBIT(peerId);
-        }
+        pKernelBus0->p2p.busNvlinkPeerNumberMask[peerGpuInst] &= ~NVBIT(peerId);
     }
 
     //
@@ -366,57 +472,97 @@ kbusRemoveNvlinkPeerMapping_GP100
     //
     if (pKernelBus0->p2p.busNvlinkMappingRefcountPerPeerId[peerId] == 0)
     {
+        NV2080_CTRL_BUS_UNSET_P2P_MAPPING_PARAMS params;
+        OBJSYS *pSys = SYS_GET_INSTANCE();
+
         NV_ASSERT(pKernelBus0->p2p.busNvlinkMappingRefcountPerPeerId[peerId] == 0);
         NV_PRINTF(LEVEL_INFO,
                   "PeerID %u is not being used for P2P from GPU%d to any other "
                   "remote GPU. Can be freed\n",
                   peerId, gpuGetInstance(pGpu0));
 
-        if (pKernelNvlink0->getProperty(pKernelNvlink0,
-                                          PDB_PROP_KNVLINK_DECONFIG_HSHUB_ON_NO_MAPPING))
+        if (pKernelBus0->getProperty(pKernelBus0,
+                                          PDB_PROP_KBUS_NVLINK_DECONFIG_HSHUB_ON_NO_MAPPING))
         {
             // Before removing the NVLink peer mapping in HSHUB flush both ends
             kbusFlush_HAL(pGpu0, pKernelBus0, BUS_FLUSH_VIDEO_MEMORY | BUS_FLUSH_USE_PCIE_READ);
             kbusFlush_HAL(pGpu1, GPU_GET_KERNEL_BUS(pGpu1), BUS_FLUSH_VIDEO_MEMORY | BUS_FLUSH_USE_PCIE_READ);
         }
 
-        NV2080_CTRL_NVLINK_ENABLE_NVLINK_PEER_PARAMS  params;
-        portMemSet(&params, 0, sizeof(params));
-        params.peerMask = NVBIT(peerId);
-        params.bEnable  = NV_FALSE;
-
-        // Unset the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU0
-        status = knvlinkExecGspRmRpc(pGpu0, pKernelNvlink0,
-                                     NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
-                                     (void *)&params, sizeof(params));
-        if (status != NV_OK)
+        if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu0))
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "GPU%d Failed to UNSET USE_NVLINK_PEER for peer%d\n",
-                      gpuGetInstance(pGpu0), peerId);
+            NV_ASSERT_OK_OR_RETURN(osAcquireRmSema(pSys->pSema));
 
-            return status;
+            portMemSet(&params, 0, sizeof(params));
+            params.connectionType = NV2080_CTRL_CMD_BUS_SET_P2P_MAPPING_CONNECTION_TYPE_NVLINK;
+            params.peerId = peerId;
+            params.bUseUuid = NV_FALSE;
+            params.remoteGpuId = pGpu1->gpuId;
+
+            _kbusExecGspRmRpcForNvlink(pGpu0, NV2080_CTRL_CMD_BUS_UNSET_P2P_MAPPING,
+                                       &params, sizeof(params));
+
+            osReleaseRmSema(pSys->pSema, NULL);
         }
-
-        // Disable the peer configuration in the HSHUB config registers
-        if ((pKernelNvlink0->getProperty(pKernelNvlink0,
-                                         PDB_PROP_KNVLINK_DECONFIG_HSHUB_ON_NO_MAPPING)) &&
-            (!knvlinkIsForcedConfig(pGpu0, pKernelNvlink0)))
+        else
         {
-            status = knvlinkRemoveMapping_HAL(pGpu0, pKernelNvlink0, NV_FALSE, NVBIT(peerId),
-                                              NV_FALSE /* bL2Entry */);
+            KernelNvlink *pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
+            NV2080_CTRL_NVLINK_ENABLE_NVLINK_PEER_PARAMS params;
+
+            NV_ASSERT_OR_RETURN(pKernelNvlink0 != NULL, NV_ERR_NOT_SUPPORTED);
+
+            portMemSet(&params, 0, sizeof(params));
+            params.peerMask = NVBIT(peerId);
+            params.bEnable  = NV_FALSE;
+
+            // Unset the NVLink USE_NVLINK_PEER fields in the LTCS registers for GPU0
+            status = knvlinkExecGspRmRpc(pGpu0, pKernelNvlink0,
+                                         NV2080_CTRL_CMD_NVLINK_ENABLE_NVLINK_PEER,
+                                         (void *)&params, sizeof(params));
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "GPU%d Failed to remove hshub mapping for peer%d\n",
+                          "GPU%d Failed to UNSET USE_NVLINK_PEER for peer%d\n",
                           gpuGetInstance(pGpu0), peerId);
 
                 return status;
             }
-        }
 
-        // Call knvlinkUpdateCurrentConfig to flush settings to the registers
-        status = knvlinkUpdateCurrentConfig(pGpu0, pKernelNvlink0);
+            // Disable the peer configuration in the HSHUB config registers
+            if ((pKernelBus0->getProperty(pKernelBus0,
+                                          PDB_PROP_KBUS_NVLINK_DECONFIG_HSHUB_ON_NO_MAPPING)) &&
+                (!knvlinkIsForcedConfig(pGpu0, pKernelNvlink0)))
+            {
+                status = knvlinkRemoveMapping_HAL(pGpu0, pKernelNvlink0, NV_FALSE, NVBIT(peerId),
+                                                  NV_FALSE /* bL2Entry */);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_ERROR,
+                              "GPU%d Failed to remove hshub mapping for peer%d\n",
+                              gpuGetInstance(pGpu0), peerId);
+
+                    return status;
+                }
+            }
+
+            //
+            // Call knvlinkUpdateCurrentConfig to flush settings to the registers
+            // Skip this call if buffer ready is set and CONFIG_REQUIRE_INITIALIZED is true
+            //
+            status = knvlinkSyncLinkMasksAndVbiosInfo(pGpu0, pKernelNvlink0);
+            if (status != NV_OK)
+            {
+                NV_ASSERT(status == NV_OK);
+                return status;
+            }
+
+            bBufferReady = ((pKernelNvlink0->initializedLinks & pKernelNvlink0->peerLinkMasks[peerId]) != 0) ? NV_TRUE : NV_FALSE;
+            if (!pKernelNvlink0->getProperty(pKernelNvlink0, PDB_PROP_KNVLINK_CONFIG_REQUIRE_INITIALIZED_LINKS_CHECK) ||
+                !bBufferReady)
+            {
+                status = knvlinkUpdateCurrentConfig(pGpu0, pKernelNvlink0);
+            }
+        }
     }
 
     return status;
@@ -486,21 +632,18 @@ kbusRemoveP2PMappingForNvlink_GP100
     NvU32      attributes
 )
 {
-    KernelNvlink *pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
-    KernelNvlink *pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
     NV_STATUS     status         = NV_OK;
 
     // If there's no NVLink mapping, fall back to PCIe
-    if ((pKernelNvlink0 == NULL) || (pKernelNvlink1 == NULL) ||
-        ((pKernelBus0->p2p.busNvlinkPeerNumberMask[pGpu1->gpuInstance] & NVBIT(peer0)) == 0) ||
-        ((pKernelBus1->p2p.busNvlinkPeerNumberMask[pGpu0->gpuInstance] & NVBIT(peer1)) == 0))
+    if ((pKernelBus0->p2p.busNvlinkPeerNumberMask[pGpu1->gpuInstance] & NVBIT(peer0)) == 0 ||
+        (pKernelBus1->p2p.busNvlinkPeerNumberMask[pGpu0->gpuInstance] & NVBIT(peer1)) == 0)
     {
         return NV_ERR_INVALID_STATE;
     }
 
     // NVLink mapping exists, remove the NVLink mapping
-    NV_ASSERT_OK_OR_RETURN(kbusRemoveNvlinkPeerMapping_HAL(pGpu0, pKernelBus0, pGpu1, peer0, attributes));
-    NV_ASSERT_OK_OR_RETURN(kbusRemoveNvlinkPeerMapping_HAL(pGpu1, pKernelBus1, pGpu0, peer1, attributes));
+    NV_ASSERT_OK_OR_RETURN(_kbusRemoveNvlinkPeerMapping(pGpu0, pKernelBus0, pGpu1, peer0, attributes));
+    NV_ASSERT_OK_OR_RETURN(_kbusRemoveNvlinkPeerMapping(pGpu1, pKernelBus1, pGpu0, peer1, attributes));
 
     //
     // The P2P mapping for both the GPUs have been destroyed. If the mapping refcount
@@ -508,7 +651,7 @@ kbusRemoveP2PMappingForNvlink_GP100
     //
 
     if ((pKernelBus0->p2p.busNvlinkMappingRefcountPerPeerId[peer0] == 0) &&
-         pKernelNvlink0->getProperty(pKernelNvlink0, PDB_PROP_KNVLINK_DECONFIG_HSHUB_ON_NO_MAPPING))
+         pKernelBus0->getProperty(pKernelBus0, PDB_PROP_KBUS_NVLINK_DECONFIG_HSHUB_ON_NO_MAPPING))
     {
         // Free the reserved peer ID since its no longer used
         status = kbusUnreserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(peer0));
@@ -522,7 +665,7 @@ kbusRemoveP2PMappingForNvlink_GP100
     }
 
     if ((pKernelBus1->p2p.busNvlinkMappingRefcountPerPeerId[peer1] == 0) &&
-         pKernelNvlink1->getProperty(pKernelNvlink1, PDB_PROP_KNVLINK_DECONFIG_HSHUB_ON_NO_MAPPING))
+         pKernelBus1->getProperty(pKernelBus1, PDB_PROP_KBUS_NVLINK_DECONFIG_HSHUB_ON_NO_MAPPING))
     {
         // Free the reserved peer ID since its no longer used
         status = kbusUnreserveP2PPeerIds_HAL(pGpu1, pKernelBus1, NVBIT(peer1));

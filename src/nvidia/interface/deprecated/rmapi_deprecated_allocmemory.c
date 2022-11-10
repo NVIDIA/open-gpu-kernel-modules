@@ -410,6 +410,14 @@ _rmAllocMemoryList
         goto done;
 
     pageArrayBase = NvP64_PLUS_OFFSET(*pAddress, NV_OFFSETOF(Nv01MemoryList, pageNumber));
+
+    // Prevent integer overflow when calculating pageArraySize
+    if (pMemoryList->pageCount > NV_U32_MAX / sizeof(NvU64))
+    {
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto done;
+    }
+
     pageArraySize = sizeof(NvU64) * pMemoryList->pageCount;
 
     status = pContext->CopyUser(pContext, RMAPI_DEPRECATED_COPYIN, RMAPI_DEPRECATED_BUFFER_ALLOCATE,

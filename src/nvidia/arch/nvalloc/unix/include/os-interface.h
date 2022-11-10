@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -143,6 +143,14 @@ void        NV_API_CALL  os_free_semaphore           (void *);
 NV_STATUS   NV_API_CALL  os_acquire_semaphore        (void *);
 NV_STATUS   NV_API_CALL  os_cond_acquire_semaphore   (void *);
 NV_STATUS   NV_API_CALL  os_release_semaphore        (void *);
+void*       NV_API_CALL  os_alloc_rwlock             (void);
+void        NV_API_CALL  os_free_rwlock              (void *);
+NV_STATUS   NV_API_CALL  os_acquire_rwlock_read      (void *);
+NV_STATUS   NV_API_CALL  os_acquire_rwlock_write     (void *);
+NV_STATUS   NV_API_CALL  os_cond_acquire_rwlock_read (void *);
+NV_STATUS   NV_API_CALL  os_cond_acquire_rwlock_write(void *);
+void        NV_API_CALL  os_release_rwlock_read      (void *);
+void        NV_API_CALL  os_release_rwlock_write     (void *);
 NvBool      NV_API_CALL  os_semaphore_may_sleep      (void);
 NV_STATUS   NV_API_CALL  os_get_version_info         (os_version_info*);
 NvBool      NV_API_CALL  os_is_isr                   (void);

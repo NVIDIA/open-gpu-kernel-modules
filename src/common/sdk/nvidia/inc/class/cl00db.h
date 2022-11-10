@@ -31,7 +31,7 @@
 // Source file: class/cl00db.finn
 //
 
-#define NV40_DEBUG_BUFFER (0x000000db)
+#define NV40_DEBUG_BUFFER (0xdbU) /* finn: Evaluated from "NV00DB_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 /* NvRmAlloc() parameters */
 #define NV00DB_ALLOCATION_PARAMETERS_MESSAGE_ID (0x00dbU)

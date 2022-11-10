@@ -37,7 +37,6 @@ extern "C" {
 #include "core/core.h"
 #include "gpu/eng_state.h"
 #include "kernel/gpu/fifo/channel_descendant.h"
-#include "kernel/gpu/intrable/intrable.h"
 #include "kernel/gpu/intr/intr_service.h"
 #include "fsp/nvdm_payload_cmd_response.h"
 
@@ -165,6 +164,7 @@ struct KernelFsp {
     NV_STATUS (*__kfspProcessCommandResponse__)(struct OBJGPU *, struct KernelFsp *, NvU8 *, NvU32);
     void (*__kfspDumpDebugState__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspErrorCode2NvStatusMap__)(struct OBJGPU *, struct KernelFsp *, NvU32);
+    NvU64 (*__kfspGetExtraReservedMemorySize__)(struct OBJGPU *, struct KernelFsp *);
     NvBool (*__kfspCheckGspSecureScratch__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspReconcileTunableState__)(POBJGPU, struct KernelFsp *, void *);
     NV_STATUS (*__kfspStateLoad__)(POBJGPU, struct KernelFsp *, NvU32);
@@ -289,6 +289,8 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
 #define kfspDumpDebugState_HAL(pGpu, pKernelFsp) kfspDumpDebugState_DISPATCH(pGpu, pKernelFsp)
 #define kfspErrorCode2NvStatusMap(pGpu, pKernelFsp, errorCode) kfspErrorCode2NvStatusMap_DISPATCH(pGpu, pKernelFsp, errorCode)
 #define kfspErrorCode2NvStatusMap_HAL(pGpu, pKernelFsp, errorCode) kfspErrorCode2NvStatusMap_DISPATCH(pGpu, pKernelFsp, errorCode)
+#define kfspGetExtraReservedMemorySize(pGpu, pKernelFsp) kfspGetExtraReservedMemorySize_DISPATCH(pGpu, pKernelFsp)
+#define kfspGetExtraReservedMemorySize_HAL(pGpu, pKernelFsp) kfspGetExtraReservedMemorySize_DISPATCH(pGpu, pKernelFsp)
 #define kfspCheckGspSecureScratch(pGpu, pKernelFsp) kfspCheckGspSecureScratch_DISPATCH(pGpu, pKernelFsp)
 #define kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp) kfspCheckGspSecureScratch_DISPATCH(pGpu, pKernelFsp)
 #define kfspReconcileTunableState(pGpu, pEngstate, pTunableState) kfspReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
@@ -561,6 +563,16 @@ static inline NV_STATUS kfspErrorCode2NvStatusMap_395e98(struct OBJGPU *pGpu, st
 
 static inline NV_STATUS kfspErrorCode2NvStatusMap_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU32 errorCode) {
     return pKernelFsp->__kfspErrorCode2NvStatusMap__(pGpu, pKernelFsp, errorCode);
+}
+
+NvU64 kfspGetExtraReservedMemorySize_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline NvU64 kfspGetExtraReservedMemorySize_4a4dee(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return 0;
+}
+
+static inline NvU64 kfspGetExtraReservedMemorySize_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return pKernelFsp->__kfspGetExtraReservedMemorySize__(pGpu, pKernelFsp);
 }
 
 NvBool kfspCheckGspSecureScratch_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);

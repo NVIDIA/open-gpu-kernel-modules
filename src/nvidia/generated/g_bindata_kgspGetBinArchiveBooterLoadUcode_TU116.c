@@ -3408,6 +3408,14 @@ const BINDATA_ARCHIVE *kgspGetBinArchiveBooterLoadUcode_TU116(struct KernelGsp *
 #endif // defined(BINDATA_INCLUDE_FUNCTION)
 
 
+#if defined(BINDATA_INCLUDE_FUNCTION_STUB)
+const BINDATA_ARCHIVE *kgspGetBinArchiveBooterLoadUcode_TU116(struct KernelGsp *pKernelGsp)
+{
+    return NULL;
+}
+#endif // defined(BINDATA_INCLUDE_FUNCTION_STUB)
+
+
 
 
 

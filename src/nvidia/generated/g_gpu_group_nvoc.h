@@ -181,6 +181,7 @@ NV_STATUS __nvoc_objCreate_OBJGPUGRP(OBJGPUGRP**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJGPUGRP((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS gpugrpCreate_IMPL(struct OBJGPUGRP *pGpuGrp, NvU32 gpuMask);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline NV_STATUS gpugrpCreate(struct OBJGPUGRP *pGpuGrp, NvU32 gpuMask) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -191,6 +192,7 @@ static inline NV_STATUS gpugrpCreate(struct OBJGPUGRP *pGpuGrp, NvU32 gpuMask) {
 #endif //__nvoc_gpu_group_h_disabled
 
 NV_STATUS gpugrpDestroy_IMPL(struct OBJGPUGRP *pGpuGrp);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline NV_STATUS gpugrpDestroy(struct OBJGPUGRP *pGpuGrp) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -201,6 +203,7 @@ static inline NV_STATUS gpugrpDestroy(struct OBJGPUGRP *pGpuGrp) {
 #endif //__nvoc_gpu_group_h_disabled
 
 NvU32 gpugrpGetGpuMask_IMPL(struct OBJGPUGRP *pGpuGrp);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline NvU32 gpugrpGetGpuMask(struct OBJGPUGRP *pGpuGrp) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -211,6 +214,7 @@ static inline NvU32 gpugrpGetGpuMask(struct OBJGPUGRP *pGpuGrp) {
 #endif //__nvoc_gpu_group_h_disabled
 
 void gpugrpSetGpuMask_IMPL(struct OBJGPUGRP *pGpuGrp, NvU32 gpuMask);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline void gpugrpSetGpuMask(struct OBJGPUGRP *pGpuGrp, NvU32 gpuMask) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -220,6 +224,7 @@ static inline void gpugrpSetGpuMask(struct OBJGPUGRP *pGpuGrp, NvU32 gpuMask) {
 #endif //__nvoc_gpu_group_h_disabled
 
 NvBool gpugrpGetBcEnabledState_IMPL(struct OBJGPUGRP *pGpuGrp);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline NvBool gpugrpGetBcEnabledState(struct OBJGPUGRP *pGpuGrp) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -230,6 +235,7 @@ static inline NvBool gpugrpGetBcEnabledState(struct OBJGPUGRP *pGpuGrp) {
 #endif //__nvoc_gpu_group_h_disabled
 
 void gpugrpSetBcEnabledState_IMPL(struct OBJGPUGRP *pGpuGrp, NvBool bcState);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline void gpugrpSetBcEnabledState(struct OBJGPUGRP *pGpuGrp, NvBool bcState) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -239,6 +245,7 @@ static inline void gpugrpSetBcEnabledState(struct OBJGPUGRP *pGpuGrp, NvBool bcS
 #endif //__nvoc_gpu_group_h_disabled
 
 void gpugrpSetParentGpu_IMPL(struct OBJGPUGRP *pGpuGrp, struct OBJGPU *pParentGpu);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline void gpugrpSetParentGpu(struct OBJGPUGRP *pGpuGrp, struct OBJGPU *pParentGpu) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -248,6 +255,7 @@ static inline void gpugrpSetParentGpu(struct OBJGPUGRP *pGpuGrp, struct OBJGPU *
 #endif //__nvoc_gpu_group_h_disabled
 
 struct OBJGPU *gpugrpGetParentGpu_IMPL(struct OBJGPUGRP *pGpuGrp);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline struct OBJGPU *gpugrpGetParentGpu(struct OBJGPUGRP *pGpuGrp) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -258,6 +266,7 @@ static inline struct OBJGPU *gpugrpGetParentGpu(struct OBJGPUGRP *pGpuGrp) {
 #endif //__nvoc_gpu_group_h_disabled
 
 NV_STATUS gpugrpCreateGlobalVASpace_IMPL(struct OBJGPUGRP *pGpuGrp, struct OBJGPU *pGpu, NvU32 vaspaceClass, NvU64 vaStart, NvU64 vaEnd, NvU32 vaspaceFlags, struct OBJVASPACE **ppGlobalVAS);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline NV_STATUS gpugrpCreateGlobalVASpace(struct OBJGPUGRP *pGpuGrp, struct OBJGPU *pGpu, NvU32 vaspaceClass, NvU64 vaStart, NvU64 vaEnd, NvU32 vaspaceFlags, struct OBJVASPACE **ppGlobalVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -268,6 +277,7 @@ static inline NV_STATUS gpugrpCreateGlobalVASpace(struct OBJGPUGRP *pGpuGrp, str
 #endif //__nvoc_gpu_group_h_disabled
 
 NV_STATUS gpugrpDestroyGlobalVASpace_IMPL(struct OBJGPUGRP *pGpuGrp, struct OBJGPU *pGpu);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline NV_STATUS gpugrpDestroyGlobalVASpace(struct OBJGPUGRP *pGpuGrp, struct OBJGPU *pGpu) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -278,6 +288,7 @@ static inline NV_STATUS gpugrpDestroyGlobalVASpace(struct OBJGPUGRP *pGpuGrp, st
 #endif //__nvoc_gpu_group_h_disabled
 
 NV_STATUS gpugrpGetGlobalVASpace_IMPL(struct OBJGPUGRP *pGpuGrp, struct OBJVASPACE **ppGlobalVAS);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline NV_STATUS gpugrpGetGlobalVASpace(struct OBJGPUGRP *pGpuGrp, struct OBJVASPACE **ppGlobalVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");
@@ -288,6 +299,7 @@ static inline NV_STATUS gpugrpGetGlobalVASpace(struct OBJGPUGRP *pGpuGrp, struct
 #endif //__nvoc_gpu_group_h_disabled
 
 NV_STATUS gpugrpGetGpuFromSubDeviceInstance_IMPL(struct OBJGPUGRP *pGpuGrp, NvU32 subDeviceInst, struct OBJGPU **ppGpu);
+
 #ifdef __nvoc_gpu_group_h_disabled
 static inline NV_STATUS gpugrpGetGpuFromSubDeviceInstance(struct OBJGPUGRP *pGpuGrp, NvU32 subDeviceInst, struct OBJGPU **ppGpu) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUGRP was disabled!");

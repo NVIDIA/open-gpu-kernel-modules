@@ -880,7 +880,7 @@ void parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861,
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, NVT_DV_STATIC_METADATA *pDvInfo)
+void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag)
 {
     NvU32 vsvdbVersion = 0;
     NVT_DV_STATIC_METADATA_TYPE0   *pDvType0 = NULL;
@@ -888,7 +888,26 @@ void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, NVT_DV_
     NVT_DV_STATIC_METADATA_TYPE1_1 *pvDvType1_1 = NULL;
     NVT_DV_STATIC_METADATA_TYPE2   *pDvType2 = NULL;
 
-    if (pExt861 == NULL || pDvInfo == NULL)
+    NVT_EDID_INFO           *pInfo         = NULL;
+    NVT_DISPLAYID_2_0_INFO  *pDisplayID20  = NULL;
+    NVT_DV_STATIC_METADATA  *pDvInfo       = NULL;
+
+    if (pExt861 == NULL || pRawInfo == NULL)
+    {
+        return;
+    }
+
+    if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
+    {
+        pInfo = (NVT_EDID_INFO *)pRawInfo;
+        pDvInfo = &pInfo->dv_static_metadata_info;
+    }
+    else if (flag == FROM_DISPLAYID_20_DATA_BLOCK)
+    {
+        pDisplayID20 = (NVT_DISPLAYID_2_0_INFO *)pRawInfo;
+        pDvInfo = &pDisplayID20->cta.dvInfo;
+    }
+    else
     {
         return;
     }
@@ -897,6 +916,7 @@ void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, NVT_DV_
     {
         return;
     }
+
 
     //init
     NVMISC_MEMSET(pDvInfo, 0, sizeof(NVT_DV_STATIC_METADATA));
@@ -1004,10 +1024,10 @@ void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, NVT_DV_
             pDvInfo->supports_backlight_control  = pDvType2->supports_backlight_control;
             pDvInfo->supports_YUV422_12bit       = pDvType2->supports_YUV422_12bit;
             pDvInfo->dm_version                  = pDvType2->dm_version;
-            pDvInfo->backlt_min_luma             = pDvType2->backlt_min_luma;
             pDvInfo->supports_global_dimming     = pDvType2->supports_global_dimming;
             pDvInfo->target_min_luminance        = pDvType2->target_min_luminance;
             pDvInfo->interface_supported_by_sink = pDvType2->interface_supported_by_sink;
+            pDvInfo->parity                      = pDvType2->parity;
             pDvInfo->target_max_luminance        = pDvType2->target_max_luminance;
             pDvInfo->cc_green_x                  = NVT_DOLBY_CHROMATICITY_MSB_GX | pDvType2->unique_Gx;
             pDvInfo->cc_green_y                  = NVT_DOLBY_CHROMATICITY_MSB_GY | pDvType2->unique_Gy;
@@ -1213,8 +1233,13 @@ NVT_STATUS get861ExtInfo(NvU8 *p, NvU32 size, NVT_EDID_CEA861_INFO *p861info)
         return NVT_STATUS_ERR;
     }
 
+    // DTD offset sanity check 
+    if (p[2] >= 1 && p[2] <= 3)
+    {
+        return NVT_STATUS_ERR;
+    }
 
-    // don't do anything further if p is NULL
+    // don't do anything further if p861info is NULL
     if (p861info == NULL)
     {
         return NVT_STATUS_SUCCESS;
@@ -1251,7 +1276,8 @@ NVT_STATUS get861ExtInfo(NvU8 *p, NvU32 size, NVT_EDID_CEA861_INFO *p861info)
     return parseCta861DataBlockInfo(&p[4], dtd_offset - 4, p861info);
 }
 
-// get the  861 extension tags info
+// 1. get the  861 extension tags info
+// 2. or validation purpose if p861info == NULL
 CODE_SEGMENT(PAGE_DD_CODE)
 NVT_STATUS parseCta861DataBlockInfo(NvU8 *p, 
                                     NvU32 size, 
@@ -1265,6 +1291,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
     NvU32 yuv420vdb_index  = 0;
     NvU32 yuv420cmdb_index = 0;
     NvU8  svr_index        = 0;
+    NvU32 ieee_id          = 0;
     NvU32 tag, ext_tag, payload;
     i= 0;
 
@@ -1276,6 +1303,42 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
 
         // move the pointer to the payload section
         i++;
+        
+        // NvTiming_EDIDValidationMask will use the different tag/payload value to make sure each of cta861 data block legal
+        if (p861info == NULL)
+        {
+            switch(tag)
+            {
+                case NVT_CEA861_TAG_AUDIO:
+                case NVT_CEA861_TAG_VIDEO:
+                case NVT_CEA861_TAG_SPEAKER_ALLOC:
+                case NVT_CEA861_TAG_VESA_DTC:
+                case NVT_CEA861_TAG_RSVD:
+                case NVT_CEA861_TAG_RSVD1:
+                break;
+                case NVT_CEA861_TAG_VENDOR:
+                    if (payload < 3) return NVT_STATUS_ERR;
+                break;
+                case NVT_CEA861_TAG_EXTENDED_FLAG:
+                    if (payload >= 1)
+                    {
+                        ext_tag = p[i]; 
+                        if      (ext_tag == NVT_CEA861_EXT_TAG_VIDEO_CAP && payload < 2)               return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CEA861_EXT_TAG_COLORIMETRY && payload < 3)             return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CEA861_EXT_TAG_VIDEO_FORMAT_PREFERENCE && payload < 2) return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CEA861_EXT_TAG_YCBCR420_VIDEO && payload < 2)          return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CEA861_EXT_TAG_YCBCR420_CAP && payload < 1)            return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CEA861_EXT_TAG_HDR_STATIC_METADATA && payload < 3)     return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CEA861_EXT_TAG_VENDOR_SPECIFIC_VIDEO && payload < 4)   return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CTA861_EXT_TAG_SCDB && payload < 7)                    return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CEA861_EXT_TAG_HF_EEODB && payload != 2)               return NVT_STATUS_ERR;
+                    }
+                break;
+                default:
+                break;       
+            }
+            return NVT_STATUS_SUCCESS;
+        }
 
         // loop through all descriptors
         if (tag == NVT_CEA861_TAG_VIDEO)
@@ -1447,30 +1510,46 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
 
                     p861info->valid.hdr_static_metadata = 1;
                 }
-                else if(ext_tag == NVT_CEA861_EXT_TAG_VENDOR_SPECIFIC_VIDEO && ((payload >= 14) || (payload >= 11))) //version 2 of VSDB has 11 bytes of data and version 1 has 14
+                else if(ext_tag == NVT_CEA861_EXT_TAG_VENDOR_SPECIFIC_VIDEO)
                 {
+                    ieee_id  =  p[i + 1];           //IEEE ID low byte
+                    ieee_id |= (p[i + 2]) << 8;     //IEEE ID middle byte
+                    ieee_id |= (p[i + 3]) << 16;    //IEEE ID high byte
 
-                    // exclude the extended tag
-                    i++; payload--;
-
-                    p861info->vsvdb.ieee_id = p[i];                 //IEEE ID low byte
-                    p861info->vsvdb.ieee_id |= (p[i + 1]) << 8;     //IEEE ID middle byte
-                    p861info->vsvdb.ieee_id |= (p[i + 2]) << 16;    //IEEE ID high byte
-
-                    p861info->vsvdb.vendor_data_size = payload - 3;
-
-                    // move the pointer to the payload
-                    i += 3;
-
-                    // get the other vendor specific video data
-                    for (j = 0; j < payload - 3; j++, i++)
+                    if ((ieee_id == NVT_CEA861_DV_IEEE_ID) || (ieee_id == NVT_CEA861_HDR10PLUS_IEEE_ID))
                     {
-                        if (j < NVT_CEA861_VSDB_PAYLOAD_MAX_LENGTH)
+                        // exclude the extended tag
+                        i++; payload--;
+
+                        p861info->vsvdb.ieee_id = ieee_id;
+                        p861info->vsvdb.vendor_data_size = payload - 3;
+
+                        // move the pointer to the payload
+                        i += 3;
+
+                        // get the other vendor specific video data
+                        for (j = 0; j < payload - 3; j++, i++)
                         {
-                            p861info->vsvdb.vendor_data[j] = p[i];
+                            if (j < NVT_CEA861_VSVDB_PAYLOAD_MAX_LENGTH)
+                            {
+                                p861info->vsvdb.vendor_data[j] = p[i];
+                            }
+                        }
+                        
+                        if (p861info->vsvdb.ieee_id == NVT_CEA861_DV_IEEE_ID)
+                        {
+                            p861info->valid.dv_static_metadata = 1;
+                        }
+                        else if (p861info->vsvdb.ieee_id == NVT_CEA861_HDR10PLUS_IEEE_ID)
+                        {
+                            p861info->valid.hdr10Plus = 1;
                         }
                     }
-                    p861info->valid.dv_static_metadata = 1;
+                    else
+                    {
+                        // skip the unsupported extended block
+                        i += payload;
+                    }
                 }
                 else if(ext_tag == NVT_CTA861_EXT_TAG_SCDB && payload >= 7) // sizeof(HDMI Forum Sink Capability Data Block) ranges between 7 to 31 bytes
                 {
@@ -1527,6 +1606,9 @@ NVT_STATUS NvTiming_EnumCEA861bTiming(NvU32 ceaFormat, NVT_TIMING *pT)
     }
 
     ceaFormat = NVT_GET_CTA_8BIT_VIC(ceaFormat);
+
+    if (ceaFormat ==0)
+        return NVT_STATUS_ERR;
 
     *pT = EIA861B[ceaFormat - 1];
 
@@ -2935,8 +3017,49 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
         default:
             break;
 
+    }    
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
+void parseCea861Hdr10PlusDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag)
+{
+    NVT_EDID_INFO           *pInfo          = NULL;
+    NVT_DISPLAYID_2_0_INFO  *pDisplayID20   = NULL;
+    NVT_HDR10PLUS_INFO      *pHdr10PlusInfo = NULL;
+
+    if (pExt861 == NULL || pRawInfo == NULL)
+    {
+        return;
     }
-    
+
+    if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
+    {
+        pInfo = (NVT_EDID_INFO *)pRawInfo;
+        pHdr10PlusInfo = &pInfo->hdr10PlusInfo;
+    }
+    else if (flag == FROM_DISPLAYID_20_DATA_BLOCK)
+    {
+        pDisplayID20 = (NVT_DISPLAYID_2_0_INFO *)pRawInfo;
+        pHdr10PlusInfo = &pDisplayID20->cta.hdr10PlusInfo;
+    }
+    else
+    {
+        return;
+    }
+
+    if(pExt861->vsvdb.ieee_id != NVT_CEA861_HDR10PLUS_IEEE_ID)
+    {
+        return;
+    }
+
+    NVMISC_MEMSET(pHdr10PlusInfo, 0, sizeof(NVT_HDR10PLUS_INFO));
+
+    if (pExt861->vsvdb.vendor_data_size < sizeof(NVT_HDR10PLUS_INFO))
+    {
+        return;
+    }
+
+    NVMISC_MEMCPY(pHdr10PlusInfo, &pExt861->vsvdb.vendor_data, sizeof(NVT_HDR10PLUS_INFO));
 }
 
 POP_SEGMENTS

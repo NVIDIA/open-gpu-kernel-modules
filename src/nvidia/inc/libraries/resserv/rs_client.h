@@ -207,6 +207,19 @@ public:
     virtual NV_STATUS clientValidate(RsClient *pClient, const API_SECURITY_INFO * pSecInfo);
 
     /**
+     * Stub virtual function
+     * @param[in] NvHandle hClient
+     */
+    virtual RS_PRIV_LEVEL clientGetCachedPrivilege(RsClient *pClient);
+
+    /**
+     * Stub virtual function
+     * @param[in] NvHandle hClient
+     * @param[in] RS_PRIV_LEVEL privLevel
+     */
+    virtual NvBool clientIsAdmin(RsClient *pClient, RS_PRIV_LEVEL privLevel);
+
+    /**
      * Allocate a resource in RM for this client
      * @param[in]       pClient This client
      * @param[in]       pServer

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -141,7 +141,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     // If a GPU is DP1.2 or DP1.4 supported then set these capalibilities.
     // This is used for accessing DP1.2/DP1.4 specific register space & features
     //
-    hal->setGpuDPSupportedVersions(main->isDP1_2Supported(), main->isDP1_4Supported());
+    hal->setGpuDPSupportedVersions(main->getGpuDpSupportedVersions());
 
     // Set if GPU supports FEC. Check panel FEC caps only if GPU supports it.
     hal->setGpuFECSupported(main->isFECSupported());
@@ -657,7 +657,7 @@ create:
         // where we toggle the link state. Only after this we should read DSC caps in this case.
         // Following this assesslink calls fireEvents() which will report
         // the new devies to clients and client will have the correct DSC caps.
-        // 
+        //
         bool bGpuDscSupported;
 
         // Check GPU DSC Support
@@ -1229,14 +1229,14 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                     {
                         //
                         // Bug 3692417
-                        // Color format should only depend on device doing DSC decompression when DSC is enabled according to DP Spec. 
-                        // But when Synaptics VMM5320 is the parent of the device doing DSC decompression, if a certain color 
+                        // Color format should only depend on device doing DSC decompression when DSC is enabled according to DP Spec.
+                        // But when Synaptics VMM5320 is the parent of the device doing DSC decompression, if a certain color
                         // format is not supported by Synaptics Virtual Peer Device decoder(parent), even though it is pass through mode
-                        // and panel supports the color format, panel cannot light up. Once Synaptics fixes this issue, we will modify 
+                        // and panel supports the color format, panel cannot light up. Once Synaptics fixes this issue, we will modify
                         // the WAR to be applied only before the firmware version that fixes it.
                         //
                         if ((modesetParams.colorFormat == dpColorFormat_RGB      && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bRgb) ||
-                            (modesetParams.colorFormat == dpColorFormat_YCbCr444 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCr444) || 
+                            (modesetParams.colorFormat == dpColorFormat_YCbCr444 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCr444) ||
                             (modesetParams.colorFormat == dpColorFormat_YCbCr422 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCrSimple422))
                         {
                             if (pDscParams->forceDsc == DSC_FORCE_ENABLE)
@@ -2548,17 +2548,18 @@ bool ConnectorImpl::setDeviceDscState(Device * dev, bool bEnableDsc)
 bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Group of panels we're attaching to this head
                                       const DpModesetParams       &modesetParams)
 {
-    unsigned twoChannelAudioHz    = modesetParams.modesetInfo.twoChannelAudioHz;
-    unsigned eightChannelAudioHz  = modesetParams.modesetInfo.eightChannelAudioHz;
-    NvU64    pixelClockHz         = modesetParams.modesetInfo.pixelClockHz;
-    unsigned rasterWidth          = modesetParams.modesetInfo.rasterWidth;
-    unsigned rasterHeight         = modesetParams.modesetInfo.rasterHeight;
-    unsigned rasterBlankStartX    = modesetParams.modesetInfo.rasterBlankStartX;
-    unsigned rasterBlankEndX      = modesetParams.modesetInfo.rasterBlankEndX;
-    unsigned depth                = modesetParams.modesetInfo.depth;
-    bool     bLinkTrainingStatus  = true;
-    bool     bEnableDsc           = modesetParams.modesetInfo.bEnableDsc;
+    unsigned twoChannelAudioHz         = modesetParams.modesetInfo.twoChannelAudioHz;
+    unsigned eightChannelAudioHz       = modesetParams.modesetInfo.eightChannelAudioHz;
+    NvU64    pixelClockHz              = modesetParams.modesetInfo.pixelClockHz;
+    unsigned rasterWidth               = modesetParams.modesetInfo.rasterWidth;
+    unsigned rasterHeight              = modesetParams.modesetInfo.rasterHeight;
+    unsigned rasterBlankStartX         = modesetParams.modesetInfo.rasterBlankStartX;
+    unsigned rasterBlankEndX           = modesetParams.modesetInfo.rasterBlankEndX;
+    unsigned depth                     = modesetParams.modesetInfo.depth;
+    bool     bLinkTrainingStatus       = true;
+    bool     bEnableDsc                = modesetParams.modesetInfo.bEnableDsc;
     bool     bEnableFEC;
+    bool     bEnablePassThroughForPCON = modesetParams.modesetInfo.bEnablePassThroughForPCON;
 
     if(preferredLinkConfig.isValid())
     {
@@ -2676,7 +2677,14 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     {
         for (Device * dev = target->enumDevices(0); dev; dev = target->enumDevices(dev))
         {
-            if(!setDeviceDscState(dev, bEnableDsc))
+            if (bPConConnected)
+            {
+                if (!(((DeviceImpl *)dev)->setDscEnableDPToHDMIPCON(bEnableDsc, bEnablePassThroughForPCON)))
+                {
+                    DP_ASSERT(!"DP-CONN> Failed to configure DSC on DP to HDMI PCON!");
+                }
+            }
+            else if(!setDeviceDscState(dev, bEnableDsc))
             {
                 DP_ASSERT(!"DP-CONN> Failed to configure DSC on Sink!");
             }
@@ -3995,11 +4003,11 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
         if ((groupAttached->dscModeRequest == DSC_DUAL) && (groupAttached->dscModeActive != DSC_DUAL))
         {
             //
-            // If current modeset group requires 2Head1OR and 
+            // If current modeset group requires 2Head1OR and
             //  - group is not active yet (first modeset on the group)
             //  - group is active but not in 2Head1OR mode (last modeset on the group did not require 2Head1OR)
             // then re-train the link
-            // This is because for 2Head1OR mode, we need to set some LT parametes for slave SOR after 
+            // This is because for 2Head1OR mode, we need to set some LT parametes for slave SOR after
             // successful LT on primary SOR without which 2Head1OR modeset will lead to HW hang.
             //
             bTwoHeadOneOrLinkRetrain = true;
@@ -4090,9 +4098,9 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             //
             // Check if we are already trained to the desired link config?
             // Make sure requested FEC state matches with the current FEC state of link.
-            // If 2Head1OR mode is requested, retrain if group is not active or 
-            // last modeset on active group was not in 2Head1OR mode. 
-            // bTwoHeadOneOrLinkRetrain tracks this requirement. 
+            // If 2Head1OR mode is requested, retrain if group is not active or
+            // last modeset on active group was not in 2Head1OR mode.
+            // bTwoHeadOneOrLinkRetrain tracks this requirement.
             //
 
             //
@@ -4222,8 +4230,8 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
         //
         // Make sure link is physically active and healthy, otherwise re-train.
         // Make sure requested FEC state matches with the current FEC state of link.
-        // If 2Head1OR mode is requested, retrain if group is not active or last modeset on active group 
-        // was not in 2Head1OR mode. bTwoHeadOneOrLinkRetrain tracks this requirement. 
+        // If 2Head1OR mode is requested, retrain if group is not active or last modeset on active group
+        // was not in 2Head1OR mode. bTwoHeadOneOrLinkRetrain tracks this requirement.
         //
         bRetrainToEnsureLinkStatus = (isLinkActive() && isLinkInD3()) ||
                                      isLinkLost() ||
@@ -5670,7 +5678,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         if (hal->getSupportsMultistream() && main->hasMultistream())
         {
             bool bDeleteFirmwareVC = false;
-            const DP_REGKEY_DATABASE& dpRegkeyDatabase = main->getRegkeyDatabase();
+
             DP_LOG(("DP> Multistream panel detected, building message manager"));
 
             //
@@ -5679,7 +5687,6 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             //
             messageManager = new MessageManager(hal, timer);
             messageManager->registerReceiver(&ResStatus);
-            messageManager->applyRegkeyOverrides(dpRegkeyDatabase);
 
             //
             // Create a discovery manager to initiate detection

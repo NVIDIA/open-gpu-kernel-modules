@@ -186,8 +186,7 @@ static void uvm_global_remove_parent_gpu(uvm_parent_gpu_t *parent_gpu)
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
     uvm_assert_spinlock_locked(&g_uvm_global.gpu_table_lock);
 
-    UVM_ASSERT(g_uvm_global.parent_gpus[gpu_index]);
-    UVM_ASSERT(g_uvm_global.parent_gpus[gpu_index] == parent_gpu);
+    UVM_ASSERT(g_uvm_global.parent_gpus[gpu_index] == NULL || g_uvm_global.parent_gpus[gpu_index] == parent_gpu);
 
     g_uvm_global.parent_gpus[gpu_index] = NULL;
 }

@@ -48,7 +48,7 @@ typedef enum
     SOC_DEV_MAPPING_DPAUX1,  // Update NV_MAX_SOC_DPAUX_NUM_DEVICES if adding new DPAUX mappings
     SOC_DEV_MAPPING_HDACODEC,
     SOC_DEV_MAPPING_MIPICAL,
-    SOC_DEV_MAPPING_MAX       // Keep this as last entry
+    SOC_DEV_MAPPING_MAX
 } SOC_DEV_MAPPING;
 
 #define GPU_MAX_DEVICE_MAPPINGS                   (60)

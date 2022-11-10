@@ -33,6 +33,8 @@
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 #include "ctrl/ctrl0080/ctrl0080gr.h"        /* 2080 is partially derivative of 0080 */
+#include "nvcfg_sdk.h"
+
 /*
  * NV2080_CTRL_GR_ROUTE_INFO
  *
@@ -250,6 +252,7 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_SINGLETON_GPCS         NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_SINGLETON_GPCS
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_GPCS              NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_GPCS
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_TPCS_PER_GFXC_GPC NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_TPCS_PER_GFXC_GPC
+#define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_SLICES_PER_LTC         NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_SLICES_PER_LTC
 
 /* When adding a new INDEX, please update INDEX_MAX and MAX_SIZE accordingly
  * NOTE: 0080 functionality is merged with 2080 functionality, so this max size
@@ -297,6 +300,8 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_09                         (0x00000809U)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_9_00                         (0x00000900U)
 
+
+
 /* compatibility SM versions to match the official names in the ISA (e.g., SM5.2)  */
 #define NV2080_CTRL_GR_INFO_SM_VERSION_5_2                          (NV2080_CTRL_GR_INFO_SM_VERSION_5_02)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_5_3                          (NV2080_CTRL_GR_INFO_SM_VERSION_5_03)
@@ -312,6 +317,7 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_8                          (NV2080_CTRL_GR_INFO_SM_VERSION_8_08)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_9                          (NV2080_CTRL_GR_INFO_SM_VERSION_8_09)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_9_0                          (NV2080_CTRL_GR_INFO_SM_VERSION_9_00)
+
 
 
 /**

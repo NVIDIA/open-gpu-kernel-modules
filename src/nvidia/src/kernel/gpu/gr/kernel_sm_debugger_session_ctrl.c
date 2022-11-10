@@ -154,7 +154,7 @@ _nv8deCtrlCmdReadWriteSurface
     NvU32 i;
     NV_STATUS status = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (count > MAX_ACCESS_OPS)
         return NV_ERR_INVALID_ARGUMENT;
@@ -301,7 +301,7 @@ ksmdbgssnCtrlCmdGetMappings_IMPL
     MMU_TRACE_ARG traceArg = {0};
     MMU_TRACE_PARAM mmuParams = {0};
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     // Attempt to retrieve the VAS pointer
     NV_ASSERT_OK_OR_RETURN(
@@ -725,7 +725,6 @@ ksmdbgssnCtrlCmdDebugReadBatchMemory_IMPL
     {
         NV_STATUS localStatus = NV_OK;
         NvP64 pData = (NvP64)(((NvU8 *)pParams->pData) + pParams->entries[i].dataOffset);
-
         NV_CHECK_OR_ELSE(LEVEL_ERROR,
             pParams->entries[i].dataOffset < pParams->dataLength,
             localStatus = NV_ERR_INVALID_OFFSET;
@@ -766,9 +765,8 @@ ksmdbgssnCtrlCmdDebugWriteBatchMemory_IMPL
     {
         NV_STATUS localStatus = NV_OK;
         NvP64 pData = (NvP64)(((NvU8 *)pParams->pData) + pParams->entries[i].dataOffset);
-
         NV_CHECK_OR_ELSE(LEVEL_ERROR,
-            (pParams->entries[i].dataOffset + pParams->entries[i].length) <= pParams->dataLength,
+            pParams->entries[i].dataOffset + pParams->entries[i].length <= pParams->dataLength,
             localStatus = NV_ERR_INVALID_OFFSET;
             goto updateStatus; );
 
@@ -802,7 +800,7 @@ ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_IMPL
     NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -848,7 +846,7 @@ ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_IMPL
     NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -879,5 +877,47 @@ ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_IMPL
     }
 
     return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL
+(
+    KernelSMDebuggerSession *pKernelSMDebuggerSession,
+    NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    //
+    // SR-IOV vGPU
+    //
+    // MMU fault info is to be managed from within the guest, since host is
+    // not aware of MMU fault info about the VF.
+    // SM exception info is still fetched from host via the RPC above.
+    //
+    if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        NV_STATUS status = NV_OK;
+        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          pRmCtrlParams->hClient,
+                          pRmCtrlParams->hObject,
+                          pRmCtrlParams->cmd,
+                          pRmCtrlParams->pParams,
+                          pRmCtrlParams->paramsSize,
+                          status);
+        return status;
+    }
+
+    NV_ASSERT_OK_OR_RETURN(
+        kgrctxLookupMmuFaultInfo(pGpu,
+                                 pKernelSMDebuggerSession->pObject->pKernelGraphicsContext,
+                                 pParams));
+
+    return NV_OK;
 }
 

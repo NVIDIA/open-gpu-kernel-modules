@@ -33,7 +33,7 @@
 #include "nvlimits.h"
 #include "cl0080_notification.h"
 
-#define NV01_DEVICE_0      (0x00000080)
+#define NV01_DEVICE_0      (0x80U) /* finn: Evaluated from "NV0080_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 /* NvAlloc parameteters */
 #define NV0080_MAX_DEVICES NV_MAX_DEVICES

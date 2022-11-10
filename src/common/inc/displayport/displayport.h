@@ -289,6 +289,7 @@ typedef struct
 {
     NvBool  bSourceControlModeSupported;
     NvBool  bConcurrentLTSupported;
+    NvBool  bConv444To420Supported;
     NvU8    maxTmdsClkRate;
     NvU8    maxBpc;
     NvU8    maxHdmiLinkBandwidthGbps;
@@ -457,6 +458,20 @@ typedef struct PanelReplayConfig
 {
     NvBool   enablePanelReplay;
 } panelReplayConfig;
+
+// PR state
+typedef enum
+{
+    PanelReplay_Inactive            = 0,
+    PanelReplay_CaptureAndDisplay   = 1,
+    PanelReplay_DisplayFromRfb      = 2,
+    PanelReplay_Undefined           = 7
+} PanelReplayState;
+
+typedef struct
+{
+    PanelReplayState prState;
+} PanelReplayStatus;
 
 // Multiplier constant to get link frequency in KHZ
 // Maximum link rate of Main Link lanes = Value x 270M.

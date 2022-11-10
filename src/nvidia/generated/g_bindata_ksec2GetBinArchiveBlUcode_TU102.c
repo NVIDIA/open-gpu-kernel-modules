@@ -142,6 +142,14 @@ const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct KernelSec2 *pKerne
 #endif // defined(BINDATA_INCLUDE_FUNCTION)
 
 
+#if defined(BINDATA_INCLUDE_FUNCTION_STUB)
+const BINDATA_ARCHIVE *ksec2GetBinArchiveBlUcode_TU102(struct KernelSec2 *pKernelSec2)
+{
+    return NULL;
+}
+#endif // defined(BINDATA_INCLUDE_FUNCTION_STUB)
+
+
 
 
 

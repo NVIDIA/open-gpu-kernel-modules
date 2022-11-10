@@ -156,12 +156,56 @@ NvBool gpuIsAtsSupportedWithSmcMemPartitioning_GH100(OBJGPU *pGpu)
 }
 
 /*!
- * @brief Handle SEC_FAULT
+ * @brief Read back device ID and subsystem ID
  *
- * @param[in]       pGpu        GPU object pointer
+ * @note This function is designed to avoid OBJBIF dependence for the case that
+ *       RM need to get device id and subsystem id early in the init process,
+ *       before OBJBIF is initialized.
+ *
+ * @param[in]  pGpu   GPU object pointer
+ * @param[out] pDevId Return value of device ID
+ * @param[out] pSsId  Return value of subsystem ID
  */
-static void
-_gpuHandleSecFault_GH100(OBJGPU *pGpu)
+void
+gpuReadDeviceId_GH100
+(
+    OBJGPU *pGpu,
+    NvU32   *pDevId,
+    NvU32   *pSsId
+)
+{
+    NvU32   deviceId;
+    NvU32   ssId;
+
+    if (pDevId == NULL || pSsId == NULL) return;
+
+    if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_ID, &deviceId) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Unable to read NV_EP_PCFG_GPU_ID\n");
+        return;
+    }
+    *pDevId = deviceId;
+
+    if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_SUBSYSTEM_ID, &ssId) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Unable to read NV_EP_PCFG_GPU_SUBSYSTEM_ID\n");
+        return;
+    }
+    *pSsId = ssId;
+}
+
+/*!
+ * @brief        Handle SEC_FAULT
+ *
+ * @param[in]    pGpu   GPU object pointer
+ */
+void
+gpuHandleSecFault_GH100
+(
+    OBJGPU *pGpu
+)
 {
     NvU32   secDebug = 0;
 
@@ -245,7 +289,7 @@ gpuHandleSanityCheckRegReadError_GH100
     if ((value == NV_XAL_EP_SCPM_PRI_DUMMY_DATA_PATTERN_INIT) &&
         (osGpuReadReg032(pGpu, NV_PMC_BOOT_0) == NV_XAL_EP_SCPM_PRI_DUMMY_DATA_PATTERN_INIT))
     {
-        _gpuHandleSecFault_GH100(pGpu);
+        gpuHandleSecFault_HAL(pGpu);
     }
     else
     {
@@ -329,9 +373,9 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     { classId(KernelDisplay), 1 },
     { classId(VirtMemAllocator), 1 },
     { classId(OBJDPAUX), 1 },
-    { classId(OBJFAN), 1 },
+    { classId(Fan), 1 },
     { classId(OBJHSHUBMANAGER), 1 },
-    { classId(OBJHSHUB), 5 },
+    { classId(Hshub), 5 },
     { classId(MemorySystem), 1 },
     { classId(KernelMemorySystem), 1 },
     { classId(MemoryManager), 1 },

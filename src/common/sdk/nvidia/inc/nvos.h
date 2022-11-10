@@ -42,6 +42,10 @@ extern "C" {
 #include "rs_access.h"
 #include "nvcfg_sdk.h"
 
+
+// Temporary include. Please include this directly instead of nvos.h
+#include "alloc/alloc_channel.h"
+
 /* local defines here */
 #define FILE_DEVICE_NV      0x00008000
 #define NV_IOCTL_FCT_BASE   0x00000800
@@ -160,7 +164,7 @@ typedef struct
 } NVOS00_PARAMETERS;
 
 /* valid hClass values. */
-#define  NV01_ROOT                                                 (0x00000000)
+#define  NV01_ROOT                                                 (0x0U)
 //
 // Redefining it here to maintain consistency with current code
 // This is also defined in class cl0001.h
@@ -443,6 +447,9 @@ typedef struct
     NvV32    status;
 } NVOS21_PARAMETERS;
 
+#define NVOS64_FLAGS_NONE             (0x00000000)
+#define NVOS64_FLAGS_FINN_SERIALIZED  (0x00000001)
+
 /* New struct with rights requested */
 typedef struct
 {
@@ -452,6 +459,7 @@ typedef struct
     NvV32    hClass;                              // [in] class num of new object
     NvP64    pAllocParms NV_ALIGN_BYTES(8);       // [IN] class-specific alloc parameters
     NvP64    pRightsRequested NV_ALIGN_BYTES(8);  // [IN] RS_ACCESS_MASK to request rights, or NULL
+    NvU32    flags;                               // [IN] flags for FINN serialization
     NvV32    status;                              // [OUT] status
 } NVOS64_PARAMETERS;
 
@@ -1847,23 +1855,6 @@ typedef struct
     NvU32    flags;
 } NVOS34_PARAMETERS;
 
-/* function OS37 */
-#define NV04_UPDATE_CONTEXT_DMA                                    (0x00000025)
-
-/* parameters */
-typedef struct
-{
-    NvHandle hClient;
-    NvHandle hDevice;
-    NvHandle hDma;
-    NvHandle hDmaPteArray;          // ctx dma for pte's
-    NvV32    dmaFirstPage;          // first page in "real" context dma to update
-    NvV32    pteArrayOffset;        // first pte to use from input pte array
-    NvV32    pteCount;              // count of PTE entries to update
-    NvHandle hResourceHandle;       // bind data handle
-    NvV32    status;
-} NVOS37_PARAMETERS;
-
 /* function OS38 */
 #define NV04_ACCESS_REGISTRY                                       (0x00000026)
 
@@ -2118,9 +2109,6 @@ typedef struct
 #define NVOS46_FLAGS_DMA_UNICAST_REUSE_ALLOC                       29:29
 #define NVOS46_FLAGS_DMA_UNICAST_REUSE_ALLOC_FALSE                 (0x00000000)
 #define NVOS46_FLAGS_DMA_UNICAST_REUSE_ALLOC_TRUE                  (0x00000001)
-#define NVOS46_FLAGS_DR_SURF                                       30:30
-#define NVOS46_FLAGS_DR_SURF_FALSE                                 (0x00000000)
-#define NVOS46_FLAGS_DR_SURF_TRUE                                  (0x00000001)
 //
 // This flag must be used with caution. Improper use can leave stale entries in the TLB,
 // and allow access to memory no longer owned by the RM client or cause page faults.
@@ -2185,6 +2173,7 @@ typedef struct
 #define NVOS54_FLAGS_NONE                                          (0x00000000)
 #define NVOS54_FLAGS_IRQL_RAISED                                   (0x00000001)
 #define NVOS54_FLAGS_LOCK_BYPASS                                   (0x00000002)
+#define NVOS54_FLAGS_FINN_SERIALIZED                               (0x00000004)
 
 /* parameters */
 typedef struct
@@ -2403,7 +2392,7 @@ typedef struct {
 
 //
 // Indicates this device is being created by guest and requires a
-// HostVgpuDeviceKernel creation in client.
+// KernelHostVgpuDeviceApi creation in client.
 //
 #define NV_DEVICE_ALLOCATION_FLAGS_HOST_VGPU_DEVICE                (0x00002000)
 
@@ -2414,269 +2403,16 @@ typedef struct {
 //
 #define NV_DEVICE_ALLOCATION_FLAGS_PLUGIN_CONTEXT                  (0x00004000)
 
+//
+// For clients using unlinked SLI to catch allocations attempts on secondary GPUs
+// not accompanied by a fixed offset.
+//
+#define NV_DEVICE_ALLOCATION_FLAGS_VASPACE_REQUIRE_FIXED_OFFSET    (0x00008000)
+
 #define NV_DEVICE_ALLOCATION_VAMODE_OPTIONAL_MULTIPLE_VASPACES     (0x00000000)
 #define NV_DEVICE_ALLOCATION_VAMODE_SINGLE_VASPACE                 (0x00000001)
 #define NV_DEVICE_ALLOCATION_VAMODE_MULTIPLE_VASPACES              (0x00000002)
 
-/*
- * NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS.flags values.
- *
- * These flags may apply to all channel types: PIO, DMA, and GPFIFO.
- * They are also designed so that zero is always the correct default.
- *
- *   NVOS04_FLAGS_CHANNEL_TYPE:
- *     This flag specifies the type of channel to allocate.  Legal values
- *     for this flag include:
- *
- *       NVOS04_FLAGS_CHANNEL_TYPE_PHYSICAL:
- *         This flag specifies that a physical channel is to be allocated.
- *
- *       NVOS04_FLAGS_CHANNEL_TYPE_VIRTUAL:
- *         OBSOLETE - NOT SUPPORTED
- *
- *       NVOS04_FLAGS_CHANNEL_TYPE_PHYSICAL_FOR_VIRTUAL:
- *         OBSOLETE - NOT SUPPORTED
- */
-
-/* valid NVOS04_FLAGS_CHANNEL_TYPE values */
-#define NVOS04_FLAGS_CHANNEL_TYPE                                  1:0
-#define NVOS04_FLAGS_CHANNEL_TYPE_PHYSICAL                         0x00000000
-#define NVOS04_FLAGS_CHANNEL_TYPE_VIRTUAL                          0x00000001  // OBSOLETE
-#define NVOS04_FLAGS_CHANNEL_TYPE_PHYSICAL_FOR_VIRTUAL             0x00000002  // OBSOLETE
-
-/*
- *    NVOS04_FLAGS_VPR:
- *     This flag specifies if channel is intended for work with
- *     Video Protected Regions (VPR)
- *
- *       NVOS04_FLAGS_VPR_TRUE:
- *         The channel will only write to protected memory regions.
- *
- *       NVOS04_FLAGS_VPR_FALSE:
- *         The channel will never read from protected memory regions.
- */
-#define NVOS04_FLAGS_VPR                                           2:2
-#define NVOS04_FLAGS_VPR_FALSE                                     0x00000000
-#define NVOS04_FLAGS_VPR_TRUE                                      0x00000001
-
-/*
- *    NVOS04_FLAGS_CHANNEL_SKIP_MAP_REFCOUNTING:
- *     This flag specifies if the channel can skip refcounting of potentially
- *     accessed mappings on job kickoff.  This flag is only meaningful for
- *     kernel drivers which perform refcounting of memory mappings.
- *
- *       NVOS04_FLAGS_CHANNEL_SKIP_MAP_REFCOUNTING_FALSE:
- *         The channel cannot not skip refcounting of memory mappings
- *
- *       NVOS04_FLAGS_CHANNEL_SKIP_MAP_REFCOUNTING_TRUE:
- *         The channel can skip refcounting of memory mappings
- */
-#define NVOS04_FLAGS_CHANNEL_SKIP_MAP_REFCOUNTING                  3:3
-#define NVOS04_FLAGS_CHANNEL_SKIP_MAP_REFCOUNTING_FALSE            0x00000000
-#define NVOS04_FLAGS_CHANNEL_SKIP_MAP_REFCOUNTING_TRUE             0x00000001
-
-/*
- *     NVOS04_FLAGS_GROUP_CHANNEL_RUNQUEUE:
- *       This flag specifies which "runqueue" the allocated channel will be
- *       executed on in a TSG.  Channels on different runqueues within a TSG
- *       may be able to feed methods into the engine simultaneously.
- *       Non-default values are only supported on GP10x and later and only for
- *       channels within a TSG.
- */
-#define NVOS04_FLAGS_GROUP_CHANNEL_RUNQUEUE                       4:4
-#define NVOS04_FLAGS_GROUP_CHANNEL_RUNQUEUE_DEFAULT               0x00000000
-#define NVOS04_FLAGS_GROUP_CHANNEL_RUNQUEUE_ONE                   0x00000001
-
-/*
- *     NVOS04_FLAGS_PRIVILEGED_CHANNEL:
- *       This flag tells RM whether to give the channel admin privilege. This
- *       flag will only take effect if the client is GSP-vGPU plugin. It is
- *       needed so that guest can update page tables in physical mode and do
- *       scrubbing.
- */
-#define NVOS04_FLAGS_PRIVILEGED_CHANNEL                           5:5
-#define NVOS04_FLAGS_PRIVILEGED_CHANNEL_FALSE                     0x00000000
-#define NVOS04_FLAGS_PRIVILEGED_CHANNEL_TRUE                      0x00000001
-
-/*
- *     NVOS04_FLAGS_DELAY_CHANNEL_SCHEDULING:
- *       This flags tells RM not to schedule a newly created channel within a
- *       channel group immediately even if channel group is currently scheduled.
- *       Channel will not be scheduled until NVA06F_CTRL_GPFIFO_SCHEDULE is
- *       invoked. This is used eg. for CUDA which needs to do additional
- *       initialization before starting up a channel.
- *       Default is FALSE.
- */
-#define NVOS04_FLAGS_DELAY_CHANNEL_SCHEDULING                     6:6
-#define NVOS04_FLAGS_DELAY_CHANNEL_SCHEDULING_FALSE               0x00000000
-#define NVOS04_FLAGS_DELAY_CHANNEL_SCHEDULING_TRUE                0x00000001
-
-/*
- *     NVOS04_FLAGS_DENY_PHYSICAL_MODE_CE:
- *       This flag specifies whether or not to deny access to the physical
- *       mode of CopyEngine regardless of whether or not the client handle
- *       is admin. If set to true, this channel allocation will always result
- *       in an unprivileged channel. If set to false, the privilege of the channel
- *       will depend on the privilege level of the client handle.
- *       This is primarily meant for vGPU since all client handles
- *       granted to guests are admin.
- */
-#define NVOS04_FLAGS_CHANNEL_DENY_PHYSICAL_MODE_CE                7:7
-#define NVOS04_FLAGS_CHANNEL_DENY_PHYSICAL_MODE_CE_FALSE          0x00000000
-#define NVOS04_FLAGS_CHANNEL_DENY_PHYSICAL_MODE_CE_TRUE           0x00000001
-
-/*
- *     NVOS04_FLAGS_CHANNEL_USERD_INDEX_VALUE
- *
- *        This flag specifies the channel offset in terms of within a page of
- *        USERD. For example, value 3 means the 4th channel within a USERD page.
- *        Given the USERD size is 512B, we will have 8 channels total, so 3 bits
- *        are reserved.
- *
- *        When _USERD_INDEX_FIXED_TRUE is set but INDEX_PAGE_FIXED_FALSE is set,
- *        it will ask for a new USERD page.
- *
- */
-#define NVOS04_FLAGS_CHANNEL_USERD_INDEX_VALUE                    10:8
-
-#define NVOS04_FLAGS_CHANNEL_USERD_INDEX_FIXED                    11:11
-#define NVOS04_FLAGS_CHANNEL_USERD_INDEX_FIXED_FALSE              0x00000000
-#define NVOS04_FLAGS_CHANNEL_USERD_INDEX_FIXED_TRUE               0x00000001
-
-/*
- *     NVOS04_FLAGS_CHANNEL_USERD_INDEX_PAGE_VALUE
- *
- *        This flag specifies the channel offset in terms of USERD page. When
- *        this PAGE_FIXED_TRUE is set, the INDEX_FIXED_FALSE bit should also
- *        be set, otherwise INVALID_STATE will be returned.
- *
- *        And the field _USERD_INDEX_VALUE will be used to request the specific
- *        offset within a USERD page.
- */
-
-#define NVOS04_FLAGS_CHANNEL_USERD_INDEX_PAGE_VALUE               20:12
-
-#define NVOS04_FLAGS_CHANNEL_USERD_INDEX_PAGE_FIXED               21:21
-#define NVOS04_FLAGS_CHANNEL_USERD_INDEX_PAGE_FIXED_FALSE         0x00000000
-#define NVOS04_FLAGS_CHANNEL_USERD_INDEX_PAGE_FIXED_TRUE          0x00000001
-
-/*
- *     NVOS04_FLAGS_DENY_AUTH_LEVEL_PRIV
- *       This flag specifies whether or not to deny access to the privileged
- *       host methods TLB_INVALIDATE and ACCESS_COUNTER_CLR
- */
-#define NVOS04_FLAGS_CHANNEL_DENY_AUTH_LEVEL_PRIV                 22:22
-#define NVOS04_FLAGS_CHANNEL_DENY_AUTH_LEVEL_PRIV_FALSE           0x00000000
-#define NVOS04_FLAGS_CHANNEL_DENY_AUTH_LEVEL_PRIV_TRUE            0x00000001
-
-/*
- *    NVOS04_FLAGS_CHANNEL_SKIP_SCRUBBER
- *
- *       This flag specifies scrubbing should be skipped for any internal
- *       allocations made for this channel from PMA using ctx buf pools.
- *       Only kernel clients are allowed to use this setting.
- */
-#define NVOS04_FLAGS_CHANNEL_SKIP_SCRUBBER                        23:23
-#define NVOS04_FLAGS_CHANNEL_SKIP_SCRUBBER_FALSE                  0x00000000
-#define NVOS04_FLAGS_CHANNEL_SKIP_SCRUBBER_TRUE                   0x00000001
-
-/*
- *    NVOS04_FLAGS_CHANNEL_CLIENT_MAP_FIFO
- *
- *       This flag specifies that the client is expected to map USERD themselves
- *       and RM need not do so.
- */
-#define NVOS04_FLAGS_CHANNEL_CLIENT_MAP_FIFO                      24:24
-#define NVOS04_FLAGS_CHANNEL_CLIENT_MAP_FIFO_FALSE                0x00000000
-#define NVOS04_FLAGS_CHANNEL_CLIENT_MAP_FIFO_TRUE                 0x00000001
-
-/*
- *    NVOS04_FLAGS_SET_EVICT_LAST_CE_PREFETCH_CHANNEL
- */
-#define NVOS04_FLAGS_SET_EVICT_LAST_CE_PREFETCH_CHANNEL           25:25
-#define NVOS04_FLAGS_SET_EVICT_LAST_CE_PREFETCH_CHANNEL_FALSE     0x00000000
-#define NVOS04_FLAGS_SET_EVICT_LAST_CE_PREFETCH_CHANNEL_TRUE      0x00000001
-
-/*
- *    NVOS04_FLAGS_CHANNEL_VGPU_PLUGIN_CONTEXT
- *
- *       This flag specifies whether the channel calling context is from CPU
- *       VGPU plugin.
- */
-#define NVOS04_FLAGS_CHANNEL_VGPU_PLUGIN_CONTEXT                  26:26
-#define NVOS04_FLAGS_CHANNEL_VGPU_PLUGIN_CONTEXT_FALSE            0x00000000
-#define NVOS04_FLAGS_CHANNEL_VGPU_PLUGIN_CONTEXT_TRUE             0x00000001
-
- /*
-  *     NVOS04_FLAGS_CHANNEL_PBDMA_ACQUIRE_TIMEOUT
-  *
-  *        This flag specifies the channel PBDMA ACQUIRE timeout option.
-  *        _FALSE to disable it, _TRUE to enable it.
-  *        When this flag is enabled, if a host semaphore acquire does not
-  *        complete in about 2 sec, it will time out and trigger a RC error.
-  */
-#define NVOS04_FLAGS_CHANNEL_PBDMA_ACQUIRE_TIMEOUT                 27:27
-#define NVOS04_FLAGS_CHANNEL_PBDMA_ACQUIRE_TIMEOUT_FALSE           0x00000000
-#define NVOS04_FLAGS_CHANNEL_PBDMA_ACQUIRE_TIMEOUT_TRUE            0x00000001
-
-/*
- *     NVOS04_FLAGS_GROUP_CHANNEL_THREAD:
- *       This flags specifies the thread id in which an allocated channel
- *       will be executed in a TSG. The relationship between the thread id
- *       in A TSG and respective definitions are implementation specific.
- *       Also, not all classes will be supported at thread > 0.
- *       This field cannot be used on non-TSG channels and must be set to
- *       the default value (0) in that case. If thread > 0 on a non-TSG
- *       channel, the allocation will fail
- */
-#define NVOS04_FLAGS_GROUP_CHANNEL_THREAD                          29:28
-#define NVOS04_FLAGS_GROUP_CHANNEL_THREAD_DEFAULT                  0x00000000
-#define NVOS04_FLAGS_GROUP_CHANNEL_THREAD_ONE                      0x00000001
-#define NVOS04_FLAGS_GROUP_CHANNEL_THREAD_TWO                      0x00000002
-
-#define NVOS04_FLAGS_MAP_CHANNEL                                   30:30
-#define NVOS04_FLAGS_MAP_CHANNEL_FALSE                             0x00000000
-#define NVOS04_FLAGS_MAP_CHANNEL_TRUE                              0x00000001
-
-#define NVOS04_FLAGS_SKIP_CTXBUFFER_ALLOC                          31:31
-#define NVOS04_FLAGS_SKIP_CTXBUFFER_ALLOC_FALSE                    0x00000000
-#define NVOS04_FLAGS_SKIP_CTXBUFFER_ALLOC_TRUE                     0x00000001
-
-typedef struct
-{
-    NvU64           base NV_ALIGN_BYTES(8);
-    NvU64           size NV_ALIGN_BYTES(8);
-    NvU32           addressSpace;
-    NvU32           cacheAttrib;
-} NV_MEMORY_DESC_PARAMS;
-
-typedef struct
-{
-    NvHandle    hObjectError;                                        // error context DMA
-    NvHandle    hObjectBuffer;                                       // no longer used
-    NvU64       gpFifoOffset NV_ALIGN_BYTES(8);                      // offset to beginning of GP FIFO
-    NvU32       gpFifoEntries;                                       // number of GP FIFO entries
-    NvU32       flags;
-    NvHandle    hContextShare;                                       // context share handle
-    NvHandle    hVASpace;                                            // VASpace for the channel
-    NvHandle    hUserdMemory[NVOS_MAX_SUBDEVICES];                   // handle to UserD memory object for channel, ignored if hUserdMemory[0]=0
-    NvU64       userdOffset[NVOS_MAX_SUBDEVICES] NV_ALIGN_BYTES(8);  // offset to beginning of UserD within hUserdMemory[x]
-    NvU32       engineType;                                          // engine type(NV2080_ENGINE_TYPE_*) with which this channel is associated
-    NvU32       cid;                                                 // Channel identifier that is unique for the duration of a RM session
-    NvU32       subDeviceId;                                         // One-hot encoded bitmask to match SET_SUBDEVICE_MASK methods
-    NvHandle    hObjectEccError;                                     // ECC error context DMA
-    NV_MEMORY_DESC_PARAMS instanceMem;
-    NV_MEMORY_DESC_PARAMS userdMem;
-    NV_MEMORY_DESC_PARAMS ramfcMem;
-    NV_MEMORY_DESC_PARAMS mthdbufMem;
-
-    NvHandle              hPhysChannelGroup;    // reserved
-    NvU32                 internalFlags;        // reserved
-    NV_MEMORY_DESC_PARAMS errorNotifierMem;     // reserved
-    NV_MEMORY_DESC_PARAMS eccErrorNotifierMem;  // reserved
-    NvU32                 ProcessID;            // reserved
-    NvU32                 SubProcessID;         // reserved
-} NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS;
 
 #define NV_CHANNELGPFIFO_NOTIFICATION_TYPE_ERROR                0x00000000
 #define NV_CHANNELGPFIFO_NOTIFICATION_TYPE_WORK_SUBMIT_TOKEN    0x00000001
@@ -2685,18 +2421,6 @@ typedef struct
 #define NV_CHANNELGPFIFO_NOTIFICATION_STATUS_IN_PROGRESS        15:15
 #define NV_CHANNELGPFIFO_NOTIFICATION_STATUS_IN_PROGRESS_TRUE   0x1
 #define NV_CHANNELGPFIFO_NOTIFICATION_STATUS_IN_PROGRESS_FALSE  0x0
-
-typedef struct
-{
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS gpfifoAllocationParams;
-    NvHandle hKernelChannel;
-} NV_PHYSICALCHANNEL_ALLOC_PARAMS;
-
-typedef struct
-{
-    NvHandle hRunlistBase;                   // Handle to physmem runlist base
-    NvU32    engineID;                       // Engine associated with the runlist
-} NV_CHANNELRUNLIST_ALLOCATION_PARAMETERS;
 
 typedef struct
 {
@@ -2836,53 +2560,6 @@ typedef struct
     NvU32 size;
     NvU32 prohibitMultipleInstances;  // Prohibit multiple allocations of OFA?
 } NV_OFA_ALLOCATION_PARAMETERS;
-
-#define NV04_BIND_ARBITRARY_CONTEXT_DMA                                      (0x00000039)
-
-/* parameters */
-
-#define NV04_GET_MEMORY_INFO                                        (0x0000003A)
-
-typedef struct
-{
-    NvHandle    hClient;                // [IN] client handle
-    NvHandle    hDevice;                // [IN] device handle for mapping
-    NvHandle    hMemory;                // [IN] memory handle for mapping
-    NvU64       offset   NV_ALIGN_BYTES(8);  // [IN] offset of region
-    NvU64       physAddr NV_ALIGN_BYTES(8);  // [OUT] Physical Addr
-    NvV32       status;                 // [OUT] status
-} NVOS58_PARAMETERS;
-
-/* function OS59 */
-#define NV04_MAP_MEMORY_DMA_OFFSET                                    (0x0000003B)
-
-/* parameters */
-typedef struct
-{
-    NvHandle    hClient;                // [IN] client handle
-    NvHandle    hDevice;                // [IN] device handle for mapping
-    NvHandle    hDma;                   // [IN] dma handle for mapping
-    NvU32       dmaFirstPage;           // [IN] numPages
-    NvU32       numPages;               // [IN] numPages
-    NvV32       flags;                  // [IN] flags
-    NvU64       offset NV_ALIGN_BYTES(8);  // [IN] Dma Offset
-    NvHandle    hDmaPteArray;           // ctx dma for pte's
-    NvV32       status;                 // [OUT] status
-} NVOS59_PARAMETERS;
-
-/* function OS60 */
-#define NV04_UNMAP_MEMORY_DMA_OFFSET                                      (0x0000003C)
-/* parameters */
-typedef struct
-{
-    NvHandle    hClient;                // [IN] client handle
-    NvHandle    hDevice;                // [IN] device handle for mapping
-    NvHandle    hDma;                   // [IN] dma handle for mapping
-    NvU32       numPages;               // [IN] numPages
-    NvU64       dmaOffset NV_ALIGN_BYTES(8);  // [IN] dmaOffset
-    NvV32       status;                 // [OUT] status
-} NVOS60_PARAMETERS;
-
 
 #define NV04_ADD_VBLANK_CALLBACK                          (0x0000003D)
 
@@ -3041,6 +2718,7 @@ typedef struct
 #define NV_VASPACE_ALLOCATION_FLAGS_IS_FLA                                BIT(9)
 #define NV_VASPACE_ALLOCATION_FLAGS_SKIP_SCRUB_MEMPOOL                    BIT(10)
 #define NV_VASPACE_ALLOCATION_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE       BIT(11)
+#define NV_VASPACE_ALLOCATION_FLAGS_REQUIRE_FIXED_OFFSET                  BIT(12)
 
 #define NV_VASPACE_ALLOCATION_INDEX_GPU_NEW                                 0x00 //<! Create new VASpace, by default
 #define NV_VASPACE_ALLOCATION_INDEX_GPU_HOST                                0x01 //<! Acquire reference to BAR1 VAS.
@@ -3218,7 +2896,7 @@ typedef struct
 {
     /**
      * [IN] Whether to allocate GMMU/BAR1 mapping or BAR0 mapping.
-     */ 
+     */
     NvBool bBar1Mapping;
     /* [IN] Whether to allocate the PRIV page or regular VF page */
     NvBool bPriv;

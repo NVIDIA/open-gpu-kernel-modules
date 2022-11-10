@@ -145,8 +145,12 @@ static NV_STATUS __nvoc_thunk_RmResource_usrmodeControl_Prologue(struct UserMode
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_usrmodeIsReady(struct UserModeApi *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset));
+static NvBool __nvoc_thunk_Memory_usrmodeIsGpuMapAllowed(struct UserModeApi *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_usrmodeIsReady(struct UserModeApi *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_usrmodeCheckCopyPermissions(struct UserModeApi *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -155,6 +159,10 @@ static NV_STATUS __nvoc_thunk_Memory_usrmodeCheckCopyPermissions(struct UserMode
 
 static void __nvoc_thunk_RsResource_usrmodePreDestruct(struct UserModeApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UserModeApi_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_usrmodeIsDuplicate(struct UserModeApi *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_usrmodeUnmapFrom(struct UserModeApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -226,14 +234,11 @@ static void __nvoc_init_funcTable_UserModeApi_1(UserModeApi *pThis, RmHalspecOwn
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     // Hal function -- usrmodeConstructHal
-    if (0)
-    {
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x0070ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
         pThis->__usrmodeConstructHal__ = &usrmodeConstructHal_GV100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x08000000UL) )) /* ChipHal: GH100 */ 
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__usrmodeConstructHal__ = &usrmodeConstructHal_GH100;
     }
@@ -266,11 +271,15 @@ static void __nvoc_init_funcTable_UserModeApi_1(UserModeApi *pThis, RmHalspecOwn
 
     pThis->__usrmodeControl_Prologue__ = &__nvoc_thunk_RmResource_usrmodeControl_Prologue;
 
+    pThis->__usrmodeIsGpuMapAllowed__ = &__nvoc_thunk_Memory_usrmodeIsGpuMapAllowed;
+
     pThis->__usrmodeIsReady__ = &__nvoc_thunk_Memory_usrmodeIsReady;
 
     pThis->__usrmodeCheckCopyPermissions__ = &__nvoc_thunk_Memory_usrmodeCheckCopyPermissions;
 
     pThis->__usrmodePreDestruct__ = &__nvoc_thunk_RsResource_usrmodePreDestruct;
+
+    pThis->__usrmodeIsDuplicate__ = &__nvoc_thunk_Memory_usrmodeIsDuplicate;
 
     pThis->__usrmodeUnmapFrom__ = &__nvoc_thunk_RsResource_usrmodeUnmapFrom;
 

@@ -80,25 +80,6 @@ static NVLINK_CE_AUTO_CONFIG_TABLE nvLinkCeAutoConfigTable_GA100[] =
 };
 
 /*!
- * @brief Returns the size of the GRCE_CONFIG register array
- *
- *
- * @param[in] pGpu  OBJGPU pointer
- * @param[in] pKCe   KernelCE pointer
- *
- * @return  NV_CE_GRCE_CONFIG__SIZE_1
- *
- */
-NvU32
-kceGetGrceConfigSize1_GA100
-(
-    KernelCE *    pKCe
-)
-{
-    return NV_CE_GRCE_CONFIG__SIZE_1;
-}
-
-/*!
  * @brief Returns the size of the PCE2LCE register array
  *
  *
@@ -838,6 +819,13 @@ kceMapPceLceForNvlinkPeers_GA100
         peerAvailableLceMask &= (~(NVBIT32(lceIndex)));
 
         peerLinkMask = knvlinkGetLinkMaskToPeer(pGpu, pKernelNvlink, pRemoteGpu);
+
+        if (peerLinkMask == 0)
+        {
+            NV_PRINTF(LEVEL_INFO, "GPU%d has nvlink disabled. Skip programming\n", pRemoteGpu->gpuInstance);
+            continue;
+        }
+
         numPcePerLink = NV_CE_MIN_PCE_PER_PEER_LINK;
         prevHshubId = 0xFF;
 

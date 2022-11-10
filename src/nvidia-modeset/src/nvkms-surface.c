@@ -27,6 +27,8 @@
 #include "nvkms-utils.h"
 #include "nvkms-flip.h"
 #include "nvkms-private.h"
+#include "nvkms-headsurface.h"
+#include "nvkms-headsurface-swapgroup.h"
 #include "nvos.h"
 
 // NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_FROM_FD
@@ -84,6 +86,9 @@ static void FreeSurfaceEvoRm(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
             }
         }
 
+        nvHsUnmapSurfaceFromDevice(pDevEvo,
+                                   firstPlaneRmHandle,
+                                   pSurfaceEvo->gpuAddress);
     }
 
     FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
@@ -505,6 +510,29 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
 
     pSurfaceEvo->requireCtxDma = !pRequest->noDisplayHardwareAccess;
     pSurfaceEvo->noDisplayCaching = pRequest->noDisplayCaching;
+
+    /*
+     * Map the surface into the GPU's virtual address space, for use with
+     * headSurface.  If the surface may be used for semaphores, headSurface will
+     * need to write to it through the graphics channel.  Force a writable GPU
+     * mapping.
+     *
+     * Map the first plane of the surface only into the GPU's address space.
+     * We would have already rejected multi-planar semaphore requests earlier.
+     */
+    if (nisoMemory) {
+        hsMapPermissions = NvHsMapPermissionsReadWrite;
+    }
+
+    pSurfaceEvo->gpuAddress = nvHsMapSurfaceToDevice(
+                    pDevEvo,
+                    pSurfaceEvo->planes[0].rmHandle,
+                    pRequest->planes[0].rmObjectSizeInBytes,
+                    hsMapPermissions);
+
+    if (pSurfaceEvo->gpuAddress == NV_HS_BAD_GPU_ADDRESS) {
+        goto fail;
+    }
 
     /*
      * Map the first plane of the surface only into the CPU's address space.
@@ -1113,13 +1141,14 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     const NvKmsSurfaceHandle surfaceHandle,
-    const NVEvoChannelMask channelMask,
+    const NvBool isUsedByCursorChannel,
+    const NvBool isUsedByLayerChannel,
     const NvBool requireCtxDma)
 {
     NVSurfaceEvoPtr pSurfaceEvo =
         nvEvoGetPointerFromApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
-    nvAssert(requireCtxDma || !channelMask);
+    nvAssert(requireCtxDma || (!isUsedByCursorChannel && !isUsedByLayerChannel));
 
     if (pSurfaceEvo == NULL) {
         return NULL;
@@ -1134,8 +1163,7 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
     }
 
     /* Validate that the surface can be used as a cursor image */
-    if ((channelMask &
-         NV_EVO_CHANNEL_MASK_CURSOR_ALL) &&
+    if (isUsedByCursorChannel &&
         !pDevEvo->hal->ValidateCursorSurface(pDevEvo, pSurfaceEvo)) {
         return NULL;
     }
@@ -1149,7 +1177,7 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
      * know if nvEvoGetHeadSetStoragePitchValue() was protecting us from any
      * surface dimensions that could cause trouble for the 3d engine.
      */
-    if ((channelMask & ~NV_EVO_CHANNEL_MASK_CURSOR_ALL) || !requireCtxDma) {
+    if (isUsedByLayerChannel || !requireCtxDma) {
         NvU8 planeIndex;
 
         FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
@@ -1169,12 +1197,14 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandle(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     const NvKmsSurfaceHandle surfaceHandle,
-    const NVEvoChannelMask channelMask)
+    const NvBool isUsedByCursorChannel,
+    const NvBool isUsedByLayerChannel)
 {
     return GetSurfaceFromHandle(pDevEvo,
                                 pOpenDevSurfaceHandles,
                                 surfaceHandle,
-                                channelMask,
+                                isUsedByCursorChannel,
+                                isUsedByLayerChannel,
                                 TRUE /* requireCtxDma */);
 }
 
@@ -1185,7 +1215,9 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoCtxDmaOk(
 {
     return GetSurfaceFromHandle(pDevEvo,
                                 pOpenDevSurfaceHandles,
-                                surfaceHandle, 0x0 /* channelMask */,
+                                surfaceHandle,
+                                FALSE /* isUsedByCursorChannel */,
+                                FALSE /* isUsedByLayerChannel */,
                                 FALSE /* requireCtxDma */);
 }
 
@@ -1246,6 +1278,8 @@ void nvEvoUnregisterDeferredRequestFifo(
 {
     nvAssert(pDeferredRequestFifo->fifo != NULL);
     nvAssert(pDeferredRequestFifo->pSurfaceEvo != NULL);
+
+    nvHsLeaveSwapGroup(pDevEvo, pDeferredRequestFifo, FALSE /* teardown */);
 
     nvRmApiUnmapMemory(
                     nvEvoGlobal.clientHandle,

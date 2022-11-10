@@ -94,7 +94,7 @@ vaspaceapiConstruct_IMPL
             gpuMaskInitial = rmGpuLocksGetOwnedMask();
             NvU32 lockFlag = (gpuMaskInitial == 0)
                 ? GPUS_LOCK_FLAGS_NONE
-                : GPUS_LOCK_FLAGS_COND_ACQUIRE;
+                : GPU_LOCK_FLAGS_COND_ACQUIRE;
 
             NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
                                                          GPU_LOCK_GRP_ALL,
@@ -662,6 +662,10 @@ static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *tran
     if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE)
     {
         flags |= VASPACE_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE;
+    }
+    if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_REQUIRE_FIXED_OFFSET)
+    {
+        flags |= VASPACE_FLAGS_REQUIRE_FIXED_OFFSET;
     }
     flags |= VASPACE_FLAGS_ENABLE_VMM;
 

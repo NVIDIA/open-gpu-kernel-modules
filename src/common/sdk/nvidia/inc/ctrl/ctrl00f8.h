@@ -126,4 +126,93 @@ typedef struct NV00F8_CTRL_DESCRIBE_PARAMS {
     NvU32 numPfns;
 } NV00F8_CTRL_DESCRIBE_PARAMS;
 
+/*
+ *  hMemory [IN]
+ *    Physical memory handle to be attached.
+ *
+ *  offset [IN]
+ *    Offset into the fabric object.
+ *    Must be physical memory pagesize aligned (at least).
+ *
+ *  mapOffSet [IN]
+ *    Offset into the physical memory descriptor.
+ *    Must be physical memory pagesize aligned.
+ *
+ *  mapLength [IN]
+ *    Length of physical memory handle to be mapped.
+ *    Must be physical memory pagesize aligned and less than or equal to
+ *    fabric alloc size.
+ */
+typedef struct NV00F8_CTRL_ATTACH_MEM_INFO {
+    NvHandle hMemory;
+    NV_DECLARE_ALIGNED(NvU64 offset, 8);
+    NV_DECLARE_ALIGNED(NvU64 mapOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 mapLength, 8);
+} NV00F8_CTRL_ATTACH_MEM_INFO;
+
+/*
+ * NV00F8_CTRL_CMD_ATTACH_MEM
+ *
+ * Attaches physical memory info to the fabric object.
+ *
+ *  memInfos [IN]
+ *    Memory infos to be attached.
+ *
+ *  numMemInfos [IN]
+ *    Number of memory infos to be attached.
+ *
+ *  flags [IN]
+ *    For future use only. Must be zero for now.
+ *
+ *  numAttached [OUT]
+ *    Successful attach count (returns a valid value on error too)
+ *
+ *  Restrictions:
+ *  a. Physical memory with 2MB pagesize is allowed
+ *  b. Only vidmem physical memory handle can be attached
+ *  c. Supported only for flexible fabric objects.
+ */
+#define NV00F8_CTRL_CMD_ATTACH_MEM      (0xf80103) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_ATTACH_MEM_PARAMS_MESSAGE_ID" */
+
+#define NV00F8_MAX_ATTACHABLE_MEM_INFOS 64
+
+#define NV00F8_CTRL_ATTACH_MEM_PARAMS_MESSAGE_ID (0x3U)
+
+typedef struct NV00F8_CTRL_ATTACH_MEM_PARAMS {
+    NV_DECLARE_ALIGNED(NV00F8_CTRL_ATTACH_MEM_INFO memInfos[NV00F8_MAX_ATTACHABLE_MEM_INFOS], 8);
+    NvU16 numMemInfos;
+    NvU32 flags;
+    NvU16 numAttached;
+} NV00F8_CTRL_ATTACH_MEM_PARAMS;
+
+/*
+ * NV00F8_CTRL_CMD_DETACH_MEM
+ *
+ * Detaches physical memory handle from the fabric object.
+ *
+ *  offsets [IN]
+ *    Offsets at which memory was attached.
+ *
+ *  numOffsets [IN]
+ *    Number of offsets to be detached.
+ *
+ *  flags [IN]
+ *    For future use only. Must be zero for now.
+ *
+ *  numDetached [OUT]
+ *    Successful detach count (returns a valid value on error too)
+ */
+#define NV00F8_CTRL_CMD_DETACH_MEM    (0xf80104) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_DETACH_MEM_PARAMS_MESSAGE_ID" */
+
+#define NV00F8_MAX_DETACHABLE_OFFSETS 64
+
+#define NV00F8_CTRL_DETACH_MEM_PARAMS_MESSAGE_ID (0x4U)
+
+typedef struct NV00F8_CTRL_DETACH_MEM_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 offsets[NV00F8_MAX_DETACHABLE_OFFSETS], 8);
+    NvU16 numOffsets;
+    NvU32 flags;
+    NvU16 numDetached;
+} NV00F8_CTRL_DETACH_MEM_PARAMS;
+
 /* _ctrl00f8_h_ */

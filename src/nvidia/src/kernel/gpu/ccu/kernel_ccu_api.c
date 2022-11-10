@@ -67,8 +67,6 @@ _kccuapiMemdescGet
 {
     MIG_INSTANCE_REF ref;
     NV_STATUS status      = NV_OK;
-    NvU32 ciGpcCount      = 0;
-    NvU32 giGpcCount      = 0;
     OBJGPU    *pGpu       = GPU_RES_GET_GPU(pKernelCcuApi);
     KernelCcu *pKernelCcu = GPU_GET_KERNEL_CCU(pGpu);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
@@ -99,20 +97,14 @@ _kccuapiMemdescGet
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
-    giGpcCount = ref.pKernelMIGGpuInstance ? ref.pKernelMIGGpuInstance->resourceAllocation.gpcCount : 0;
-    ciGpcCount = ref.pMIGComputeInstance ? ref.pMIGComputeInstance->resourceAllocation.gpcCount : 0;
-
-    // Check if Gpu inst's gpc-count is valid
-    NV_ASSERT_OR_RETURN(giGpcCount != 0, NV_ERR_INVALID_DATA);
-
-    if (giGpcCount == ciGpcCount)
+    if ((ref.pKernelMIGGpuInstance == NULL) || (ref.pMIGComputeInstance == NULL))
     {
-        // Fetch the shared buffer memdesc for the swizzId
-        return kccuMemDescGetForSwizzId(pGpu, pKernelCcu, ref.pKernelMIGGpuInstance->swizzId, pMemDesc);
+        return NV_ERR_INVALID_POINTER;
     }
 
-    // Permission denied
-    return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    // Fetch the shared buffer memdesc for the computeId
+    return kccuMemDescGetForComputeInst(pGpu, pKernelCcu, ref.pKernelMIGGpuInstance->swizzId,
+                                        ref.pMIGComputeInstance->id, pMemDesc);
 }
 
 NV_STATUS
@@ -351,3 +343,49 @@ kccuapiCtrlCmdUnsubscribe_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+kccuapiCtrlCmdSetStreamState_IMPL
+(
+    KernelCcuApi *pKernelCcuApi,
+    NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams
+)
+{
+    OBJGPU    *pGpu       = GPU_RES_GET_GPU(pKernelCcuApi);
+    KernelCcu *pKernelCcu = GPU_GET_KERNEL_CCU(pGpu);
+
+    NV_PRINTF(LEVEL_INFO, "Kernel Ccu Api: CCU set stream state request\n");
+
+    if (pKernelCcu == NULL)
+    {
+        return NV_ERR_INVALID_OBJECT;
+    }
+
+    // Set counter collection unit stream state
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kccuStreamStateSet(pGpu, pKernelCcu, pParams));
+
+    return NV_OK;
+}
+
+NV_STATUS
+kccuapiCtrlCmdGetStreamState_IMPL
+(
+    KernelCcuApi *pKernelCcuApi,
+    NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams
+)
+{
+    OBJGPU    *pGpu       = GPU_RES_GET_GPU(pKernelCcuApi);
+    KernelCcu *pKernelCcu = GPU_GET_KERNEL_CCU(pGpu);
+
+    NV_PRINTF(LEVEL_INFO, "Kernel Ccu Api: CCU get stream state request\n");
+
+    if (pKernelCcu == NULL)
+    {
+        return NV_ERR_INVALID_OBJECT;
+    }
+
+    // Get counter collection unit stream state
+    pParams->bStreamState = kccuStreamStateGet(pGpu, pKernelCcu);
+
+    return NV_OK;
+}

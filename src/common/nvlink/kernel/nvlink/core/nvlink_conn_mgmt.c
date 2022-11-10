@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2019-2020 NVidia Corporation
+    Copyright (c) 2019-2022 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -41,6 +41,11 @@ nvlink_core_get_intranode_conn
 {
     nvlink_intranode_conn *tmpConn = NULL;
 
+    if ((endpoint == NULL) || (conn == NULL))
+    {
+        return;
+    }
+
     FOR_EACH_CONNECTION(tmpConn, nvlinkLibCtx.nv_intraconn_head, node)
     {
         if (tmpConn->end0 == endpoint || tmpConn->end1 == endpoint)
@@ -65,6 +70,11 @@ nvlink_core_get_internode_conn
 )
 {
     nvlink_internode_conn *tmpConn = NULL;
+
+    if ((localLink == NULL) || (conn == NULL))
+    {
+        return;
+    }
 
     FOR_EACH_CONNECTION(tmpConn, nvlinkLibCtx.nv_interconn_head, node)
     {
@@ -92,6 +102,11 @@ nvlink_core_add_intranode_conn
 )
 {
     nvlink_intranode_conn *conn = NULL;
+
+    if ((end0 == NULL) || (end1 == NULL))
+    {
+        return NVL_BAD_ARGS;
+    }
 
     // don't do anything if we have an intranode connecction
     nvlink_core_get_intranode_conn(end0, &conn);
@@ -163,6 +178,11 @@ nvlink_core_add_internode_conn
 {
     nvlink_internode_conn *conn = NULL;
 
+    if ((localLink == NULL) || (remoteEndPoint == NULL))
+    {
+        return NVL_BAD_ARGS;
+    }
+
     // Don't do anything if we have an internode connecction for local link
     nvlink_core_get_internode_conn(localLink, &conn);
     if (conn != NULL)
@@ -208,6 +228,9 @@ nvlink_core_remove_intranode_conn
     nvlink_intranode_conn *conn
 )
 {
+    if (conn == NULL)
+        return;
+
     // Remove the connection from the list of connections
     nvListDel(&conn->node);
 
@@ -245,6 +268,9 @@ nvlink_core_remove_internode_conn
 {
     nvlink_internode_conn *conn = NULL;
 
+    if (localLink == NULL)
+        return;
+
     nvlink_core_get_internode_conn(localLink, &conn);
 
     if (conn != NULL)
@@ -269,6 +295,11 @@ nvlink_core_check_intranode_conn_state
     NvU64                  linkMode
 )
 {
+    if (conn == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
+
     switch (linkMode)
     {
         case NVLINK_LINKSTATE_OFF:
@@ -485,6 +516,11 @@ nvlink_core_copy_intranode_conn_info
     nvlink_conn_info *conn_info
 )
 {
+    if ((remote_end == NULL) || (conn_info == NULL))
+    {
+        return;
+    }
+
     // copy the remote device pci information
     conn_info->domain      = remote_end->dev->pciInfo.domain;
     conn_info->bus         = remote_end->dev->pciInfo.bus;
@@ -520,6 +556,11 @@ nvlink_core_copy_internode_conn_info
     nvlink_conn_info            *conn_info
 )
 {
+    if ((remote_end == NULL) || (conn_info == NULL))
+    {
+        return;
+    }
+
     // copy the remote device pci information
     conn_info->domain      = remote_end->pciInfo.domain;
     conn_info->bus         = remote_end->pciInfo.bus;

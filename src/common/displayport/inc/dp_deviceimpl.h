@@ -439,6 +439,7 @@ namespace DisplayPort
         bool isPanelReplaySupported(void);
         void getPanelReplayCaps(void);
         bool setPanelReplayConfig(panelReplayConfig prcfg);
+        bool getPanelReplayStatus(PanelReplayStatus *pPrStatus);
 
         NvBool getDSCSupport();
         bool getFECSupport();
@@ -451,6 +452,7 @@ namespace DisplayPort
         bool parseDscCaps(const NvU8 *buffer, NvU32 bufferSize);
         bool parseBranchSpecificDscCaps(const NvU8 *buffer, NvU32 bufferSize);
         bool setDscEnable(bool enable);
+        bool setDscEnableDPToHDMIPCON(bool bDscEnable, bool bEnablePassThroughForPCON);
         bool getDscEnable(bool *pEnable);
         unsigned getDscVersionMajor();
         unsigned getDscVersionMinor();

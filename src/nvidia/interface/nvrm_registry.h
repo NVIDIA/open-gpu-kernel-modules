@@ -448,6 +448,9 @@
 // Type DWORD (Boolean)
 // Override any other settings and disable GSP-RM offload.
 
+#define NV_REG_STR_RM_GSP_STATUS_QUEUE_SIZE         "RmGspStatusQueueSize"
+// TYPE DWORD
+// Set the GSP status queue size in KB (for GSP to CPU RPC status and event communication)
 
 #define NV_REG_STR_RM_MSG                                   "RmMsg"
 // Type String: Set parameters for RM DBG_PRINTF.  Only for builds with printfs enabled.
@@ -693,14 +696,9 @@
 #define NV_REG_STR_RM_READONLY_GPU_LOCK_MODULE_WORKITEM_ENABLE     (0x00000001)
 
 
-// Enable support for CACHEABLE rmapi control flag
-// 0: never cache any controls
-// 1 (default): cache only ROUTE_TO_PHYSICAL controls, and only if GSP-RM is running
-// 2: cache all controls
+// Mode for CACHEABLE rmapi control
+// RMCTRL cache mode defined in ctrl0000system.h
 #define NV_REG_STR_RM_CACHEABLE_CONTROLS             "RmEnableCacheableControls"
-#define NV_REG_STR_RM_CACHEABLE_CONTROLS_DISABLE     0
-#define NV_REG_STR_RM_CACHEABLE_CONTROLS_GSP_ONLY    1
-#define NV_REG_STR_RM_CACHEABLE_CONTROLS_ENABLE      2
 
 // Type DWORD
 // This regkey forces for Maxwell+ that on FB Unload we wait for FB pull before issuing the
@@ -1072,6 +1070,14 @@
 // Encoding -- Boolean
 // Disable noncontig vidmem allocation
 //
+
+// Type DWORD
+// Encoding -- 0 -- Disable
+//          -- 1 -- Enable
+// Enable  MemoryMapper API (in-development). Currently disabled by default
+#define NV_REG_ENABLE_MEMORY_MAPPER_API                 "RMEnableMemoryMapperApi"
+#define NV_REG_ENABLE_MEMORY_MAPPER_API_FALSE           0
+#define NV_REG_ENABLE_MEMORY_MAPPER_API_TRUE            1
 
 #define NV_REG_STR_RM_FBSR_PAGED_DMA                         "RmFbsrPagedDMA"
 #define NV_REG_STR_RM_FBSR_PAGED_DMA_ENABLE                  1
@@ -1485,6 +1491,10 @@
 #define NV_REG_STR_RM_PCIE_LINK_SPEED_ALLOW_GEN5_DEFAULT                  (0x00000000)
 #define NV_REG_STR_RM_PCIE_LINK_SPEED_ALLOW_GEN5_ENABLE                   (0x00000001)
 #define NV_REG_STR_RM_PCIE_LINK_SPEED_ALLOW_GEN5_DISABLE                  (0x00000002)
+#define NV_REG_STR_RM_PCIE_LINK_SPEED_ALLOW_GEN6                          9:8
+#define NV_REG_STR_RM_PCIE_LINK_SPEED_ALLOW_GEN6_DEFAULT                  (0x00000000)
+#define NV_REG_STR_RM_PCIE_LINK_SPEED_ALLOW_GEN6_ENABLE                   (0x00000001)
+#define NV_REG_STR_RM_PCIE_LINK_SPEED_ALLOW_GEN6_DISABLE                  (0x00000002)
 #define NV_REG_STR_RM_PCIE_LINK_SPEED_LOCK_AT_LOAD                        31:31
 #define NV_REG_STR_RM_PCIE_LINK_SPEED_LOCK_AT_LOAD_DISABLE                (0x00000000)
 #define NV_REG_STR_RM_PCIE_LINK_SPEED_LOCK_AT_LOAD_ENABLE                 (0x00000001)
@@ -1580,6 +1590,18 @@
 // 1 - Force Enable Gen2 (to invalidate PDB_PROP_CL_PCIE_GEN1_GEN2_SWITCH_CHIPSET_DISABLED)
 //
 
+#define NV_REG_STR_RM_D3_FEATURE                                    "RMD3Feature"
+// Type DWORD
+// This regkey controls D3 related features
+#define NV_REG_STR_RM_D3_FEATURE_DRIVER_CFG_SPACE_RESTORE           1:0
+#define NV_REG_STR_RM_D3_FEATURE_DRIVER_CFG_SPACE_RESTORE_DEFAULT   (0x00000000)
+#define NV_REG_STR_RM_D3_FEATURE_DRIVER_CFG_SPACE_RESTORE_ENABLED   (0x00000001)
+#define NV_REG_STR_RM_D3_FEATURE_DRIVER_CFG_SPACE_RESTORE_DISABLED  (0x00000002)
+#define NV_REG_STR_RM_D3_FEATURE_DRIVER_CFG_SPACE_RESTORE_UNUSED    (0x00000003)
+
+#define NV_REG_STR_EMULATED_NBSI_TABLE                      "RMemNBSItable"
+// The emulated NBSI table
+
 #define NV_REG_STR_RM_DISABLE_FSP                           "RmDisableFsp"
 #define NV_REG_STR_RM_DISABLE_FSP_NO                        (0x00000000)
 #define NV_REG_STR_RM_DISABLE_FSP_YES                       (0x00000001)
@@ -1602,4 +1624,104 @@
 // Not present suggests default value. A value 0xFFFFFFFF will leave the value unmodified (ie bios value).
 // All other values must be multiples of 8
 
+#define NV_REG_STR_RM_ENABLE_ROUTE_TO_PHYSICAL_LOCK_BYPASS  "RmRouteToPhyiscalLockBypass"
+// Type Bool
+// Enable optimisation to only take API READ (not WRITE) lock when forwarding ROUTE_TO_PHYSICAL
+// control calls to GSP-enabled GPUs.
+// This will heavily improve multi-gpu-multi-process control call latency and throughput.
+// This optimisation will only work when *all* GPUs in the system are in offload mode (GSP mode).
+
+#define NV_REG_STR_RM_GPU_FABRIC_PROBE "RmGpuFabricProbe"
+#define NV_REG_STR_RM_GPU_FABRIC_PROBE_DELAY               7:0
+#define NV_REG_STR_RM_GPU_FABRIC_PROBE_SLOWDOWN_THRESHOLD 15:8
+// Type DWORD
+// Enable GPU fabric probe
+//
+// When this option is enabled, the GPU will probe its fabric state over the
+// NVLink inband channel. The fabric state includes the attributes to allow
+// the GPU to participate in P2P over the NVLink fabric.
+//
+// This option is only honored on NVSwitch based systems.
+//
+// Encoding:
+//    _DELAY              : Delay between consecutive probe retries (in sec)
+//                           before the slowdown starts. (Default: 5 sec)
+//    _SLOWDOWN_THRESHOLD : Number of probes retries before the slowdown starts
+//                          (Default: 10). The slowdown doubles the delay
+//                          between every consecutive probe retries until success.
+//
+
+// Enable plugin logs in ftrace buffer.
+// 0 - Default
+// 0 - Disabled
+// 1 - Enabled
+#define NV_REG_STR_RM_ENABLE_PLUGIN_IN_FTRACE_BUFFER                "RmEnablePluginFtrace"
+#define NV_REG_STR_RM_ENABLE_PLUGIN_IN_FTRACE_BUFFER_ENABLED        0x00000001
+#define NV_REG_STR_RM_ENABLE_PLUGIN_IN_FTRACE_BUFFER_DISABLED       0x00000000
+#define NV_REG_STR_RM_ENABLE_PLUGIN_IN_FTRACE_BUFFER_DEFAULT        0x00000000
+
+// TYPE Dword
+// Enable vGPU migration on KVM hyperivsor.
+// 1 - (Default) Enable vGPU migration on KVM
+// 0 - Disable vGPU migration on KVM hypervisor
+//
+#define NV_REG_STR_RM_ENABLE_KVM_VGPU_MIGRATION           "RmEnableKvmVgpuMigration"
+#define NV_REG_STR_RM_ENABLE_KVM_VGPU_MIGRATION_TRUE      0x00000001
+#define NV_REG_STR_RM_ENABLE_KVM_VGPU_MIGRATION_FALSE     0x00000000
+#define NV_REG_STR_RM_ENABLE_KVM_VGPU_MIGRATION_DEFAULT   0x00000001
+
+#define NV_REG_STR_RM_QSYNC_FW_REV_CHECK                    "QuadroSyncFirmwareRevisionCheckDisable"
+#define NV_REG_STR_RM_QSYNC_FW_REV_CHECK_DEFAULT            0x00000000
+#define NV_REG_STR_RM_QSYNC_FW_REV_CHECK_ENABLE             0x00000000
+#define NV_REG_STR_RM_QSYNC_FW_REV_CHECK_DISABLE            0x00000001
+
+// Type DWORD
+// Disable Quadro Sync Firmware Revision Checking, for testing new versions.
+//
+
+//
+// Type: Dword
+// Encoding:
+// 1 - SRIOV Enabled on supported GPU
+// 0 - SRIOV Disabled on specific GPU
+//
+#define NV_REG_STR_RM_SET_SRIOV_MODE                    "RMSetSriovMode"
+#define NV_REG_STR_RM_SET_SRIOV_MODE_DISABLED             0x00000000
+#define NV_REG_STR_RM_SET_SRIOV_MODE_ENABLED              0x00000001
+
+#define NV_REG_STR_RM_SET_VGPU_VERSION_MIN                       "RMSetVGPUVersionMin"
+//
+// TYPE DWORD
+// Set the minimum vGPU version enforced to support
+
+#define NV_REG_STR_RM_SET_VGPU_VERSION_MAX                       "RMSetVGPUVersionMax"
+//
+// TYPE DWORD
+// Set the maximum vGPU version enforced to support
+
+#define NV_REG_STR_TIME_SWAP_RDY_HI_MODIFY_LSR_MIN_TIME             "TSwapRdyHiLsrMinTime"
+#define NV_REG_STR_TIME_SWAP_RDY_HI_MODIFY_LSR_MIN_TIME_DEFAULT     250 // 250 micro seconds
+// Type: DWORD
+// Encoding:
+// To modify LSR_MIN_TIME parameter according to the time
+// period for which swap lock window will remain HIGH for QSYNC III
+// i.e. P2060 during swap barrier.
+
+#define NV_REG_STR_TIME_SWAP_RDY_HI_MODIFY_SWAP_LOCKOUT_START           "TSwapRdyHiSwapLockoutStart"
+#define NV_REG_STR_TIME_SWAP_RDY_HI_MODIFY_SWAP_LOCKOUT_START_DEFAULT   250 // 250 micro seconds
+// Type: DWORD
+// Encoding:
+// To modify SWAP_LOCKOUT_START parameter according to the time
+// period for which swap lock window will remain HIGH for QSYNC III.
+//
+
+#define NV_REG_STR_RM_MULTICAST_FLA                   "RMEnableMulticastFla"
+#define NV_REG_STR_RM_MULTICAST_FLA_DISABLED          0x00000000
+#define NV_REG_STR_RM_MULTICAST_FLA_ENABLED           0x00000001
+//
+// Type: Dword
+// Encoding:
+// 1 - Multicast FLA Enabled on supported GPU
+// 0 - Multicast FLA Disabled on specific GPU
+//
 #endif // NVRM_REGISTRY_H

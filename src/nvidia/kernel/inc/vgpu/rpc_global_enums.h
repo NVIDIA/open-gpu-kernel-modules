@@ -197,6 +197,14 @@ enum {
     X(RM, PMA_SCRUBBER_SHARED_BUFFER_GUEST_PAGES_OPERATION)  //188
     X(RM, CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK)    //189
     X(RM, SET_SYSMEM_DIRTY_PAGE_TRACKING_BUFFER)  //190
+    X(RM, CTRL_SUBDEVICE_GET_P2P_CAPS)          // 191
+    X(RM, CTRL_BUS_SET_P2P_MAPPING)             // 192
+    X(RM, CTRL_BUS_UNSET_P2P_MAPPING)           // 193
+    X(RM, CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK)    // 194
+    X(RM, CTRL_GPU_MIGRATABLE_OPS)              // 195
+    X(RM, CTRL_GET_TOTAL_HS_CREDITS)            // 196
+    X(RM, CTRL_GET_HS_CREDITS)                  // 197
+    X(RM, CTRL_SET_HS_CREDITS)                  // 198    
     X(RM, NUM_FUNCTIONS)                        //END
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
@@ -228,6 +236,15 @@ enum {
     E(PERF_BRIDGELESS_INFO_UPDATE)               // 0x100f
     E(VGPU_CONFIG)                               // 0x1010
     E(DISPLAY_MODESET)                           // 0x1011
+    E(EXTDEV_INTR_SERVICE)                       // 0x1012
+    E(NVLINK_INBAND_RECEIVED_DATA_256)           // 0x1013
+    E(NVLINK_INBAND_RECEIVED_DATA_512)           // 0x1014
+    E(NVLINK_INBAND_RECEIVED_DATA_1024)          // 0x1015
+    E(NVLINK_INBAND_RECEIVED_DATA_2048)          // 0x1016
+    E(NVLINK_INBAND_RECEIVED_DATA_4096)          // 0x1017
+    E(TIMED_SEMAPHORE_RELEASE)                   // 0x1018
+    E(NVLINK_IS_GPU_DEGRADED)                    // 0x1019
+    E(PFM_REQ_HNDLR_STATE_SYNC_CALLBACK)         // 0x101a
     E(NUM_EVENTS)                                // END
 #ifdef DEFINING_E_IN_RPC_GLOBAL_ENUMS_H
 };

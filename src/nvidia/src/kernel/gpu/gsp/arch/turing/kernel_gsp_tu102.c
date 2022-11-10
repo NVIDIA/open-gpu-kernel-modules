@@ -463,13 +463,15 @@ kgspGetGspRmBootUcodeStorage_TU102
  *   | GSP FW ELF               |
  *   ---------------------------- <- gspFwOffset
  *   | GSP FW (WPR) HEAP        |
- *   ---------------------------- <- gspFwHeapOffset
+ *   ---------------------------- <- gspFwHeapOffset**
  *   | Booter-placed metadata   |
  *   | (struct GspFwWprMeta)    |
  *   ---------------------------- <- gspFwWprStart (128K aligned)
  *   | GSP FW (non-WPR) HEAP    |
  *   ---------------------------- <- nonWprHeapOffset, gspFwRsvdStart
  *
+ *  gspFwHeapOffset** contains the RM/Libos Heap. First 16 Mb are for Libos heap
+ *  rest is for GSP-RM
  * @param       pGpu          GPU object pointer
  * @param       pKernelGsp    KernelGsp object pointer
  * @param       pGspFw        Pointer to GSP-RM fw image.
@@ -545,7 +547,7 @@ kgspCalculateFbLayout_TU102
     pWprMeta->bootBinOffset = NV_ALIGN_DOWN64(pWprMeta->frtsOffset - pWprMeta->sizeOfBootloader, 0x1000);
 
     // Compute GSP firmware image size
-    pWprMeta->sizeOfRadix3Elf = pGspFw->size;
+    pWprMeta->sizeOfRadix3Elf = pGspFw->imageSize;
 
     //
     // Compute the start of the ELF.  Align to 64K to avoid issues with
@@ -554,15 +556,15 @@ kgspCalculateFbLayout_TU102
     //
     pWprMeta->gspFwOffset = NV_ALIGN_DOWN64(pWprMeta->bootBinOffset - pWprMeta->sizeOfRadix3Elf, 0x10000);
 
-#define GSP_HEAP_SIZE           (64 * 1024 * 1024)
+    NvU64 wprHeapSize = kgspGetWprHeapSize(pGpu, pKernelGsp);
 
-    // Start of WPR region (128KB aligned)
+    // Start of WPR region (1Mb aligned)
     pWprMeta->gspFwWprStart =
-        NV_ALIGN_UP64(pWprMeta->gspFwOffset - GSP_HEAP_SIZE, 0x20000);
+        NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - wprHeapSize, 0x100000);
 
-    // GSP-RM heap in WPR
-    pWprMeta->gspFwHeapOffset = NV_ALIGN_UP64(pWprMeta->gspFwWprStart + sizeof *pWprMeta, 0x1000);
-    pWprMeta->gspFwHeapSize = pWprMeta->gspFwOffset - pWprMeta->gspFwHeapOffset;
+    // GSP-RM heap in WPR, align to 1Mb
+    pWprMeta->gspFwHeapOffset = NV_ALIGN_UP64(pWprMeta->gspFwWprStart + sizeof *pWprMeta, 0x100000);
+    pWprMeta->gspFwHeapSize = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - pWprMeta->gspFwHeapOffset, 0x100000);
 
     // Non WPR heap
     pWprMeta->nonWprHeapSize = kgspGetNonWprHeapSize(pGpu, pKernelGsp);
@@ -667,7 +669,7 @@ kgspExecuteSequencerCommand_TU102
                 // Wait for reload to be completed.
                 status = gpuTimeoutCondWait(pGpu, _kgspIsReloadCompleted, NULL, NULL);
 
-                // Check SEC mailbox. 
+                // Check SEC mailbox.
                 secMailbox0 = kflcnRegRead_HAL(pGpu, pKernelSec2Falcon, NV_PFALCON_FALCON_MAILBOX0);
 
                 if ((status != NV_OK) || (secMailbox0 != NV_OK))
@@ -756,6 +758,9 @@ kgspHealthCheck_TU102
 
         GPU_REG_WR32(pGpu, NV_PGSP_MAILBOX(0), 0);
 
+        NV_PRINTF(LEVEL_NOTICE,
+                  "********************************* GSP Failure **********************************\n");
+
         nvErrorLog_va((void*)pGpu, GSP_ERROR,
                       "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x (%d more errors skipped)",
                       DRF_VAL(_GSP, _ERROR, _TASK, mb0),
@@ -763,6 +768,9 @@ kgspHealthCheck_TU102
                       DRF_VAL(_GSP, _ERROR, _REASON, mb0),
                       mb1,
                       DRF_VAL(_GSP, _ERROR, _SKIPPED, mb0));
+
+        NV_PRINTF(LEVEL_NOTICE,
+                  "********************************************************************************\n");
     }
 }
 
@@ -859,7 +867,6 @@ kgspWaitForProcessorSuspend_TU102
     return gpuTimeoutCondWait(pGpu, _kgspIsProcessorSuspended, pKernelGsp, NULL);
 }
 
-
 #define FWSECLIC_PROG_START_TIMEOUT     50000    // 50ms
 #define FWSECLIC_PROG_COMPLETE_TIMEOUT  2000000  // 2s
 
@@ -870,10 +877,15 @@ kgspWaitForGfwBootOk_TU102
     KernelGsp *pKernelGsp
 )
 {
-    NvU32 elapsed = 0;
-    NvU32 timeoutMs = FWSECLIC_PROG_START_TIMEOUT + FWSECLIC_PROG_COMPLETE_TIMEOUT;
+    NvU32 timeoutUs = FWSECLIC_PROG_START_TIMEOUT + FWSECLIC_PROG_COMPLETE_TIMEOUT;
+    RMTIMEOUT timeout;
+    NV_STATUS status = NV_OK;
 
-    while (1)
+    // Use the OS timer since the GPU timer is not ready yet
+    gpuSetTimeout(pGpu, gpuScaleTimeout(pGpu, timeoutUs), &timeout,
+                  GPU_TIMEOUT_FLAGS_OSTIMER);
+
+    while (status == NV_OK)
     {
         //
         // Before reading the actual GFW_BOOT status register,
@@ -897,14 +909,14 @@ kgspWaitForGfwBootOk_TU102
                 return NV_OK;
             }
         }
-        if (elapsed < timeoutMs)
+
+        status = gpuCheckTimeout(pGpu, &timeout);
+        if (status == NV_ERR_TIMEOUT)
         {
-            osDelay(100);
-            elapsed += 100;
-        }
-        else
-        {
-            return NV_ERR_TIMEOUT;
+            NV_PRINTF(LEVEL_ERROR,
+                      "Timeout waiting for GFW_BOOT to complete\n");
         }
     }
+
+    return status;
 }

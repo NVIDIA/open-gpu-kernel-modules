@@ -34,8 +34,10 @@
 #include "resource_desc.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
+#include "gpu/mmu/kern_gmmu.h"
 
 #include "gpu/bus/third_party_p2p.h"
+#include "virtualization/hypervisor/hypervisor.h"
 
 UserInfoList g_userInfoList;
 RmClientList g_clientListBehindGpusLock; // RS-TODO remove this WAR
@@ -59,12 +61,39 @@ rmclientConstruct_IMPL
     RsClient          *pRsClient = staticCast(pClient, RsClient);
     NvBool             bReleaseLock = NV_FALSE;
     API_SECURITY_INFO *pSecInfo = pParams->pSecInfo;
+    OBJGPU            *pGpu = NULL;
+
+    if (RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        pGpu = gpumgrGetSomeGpu();
+
+        if (pGpu == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "GPU is not found\n");
+            return NV_ERR_INVALID_STATE;
+        }
+    }
 
     pClient->bIsRootNonPriv  = (pParams->externalClassId == NV01_ROOT_NON_PRIV);
-    pClient->ProcID          = osGetCurrentProcess();
     pClient->pUserInfo       = NULL;
     pClient->pSecurityToken  = NULL;
     pClient->pOSInfo         = pSecInfo->clientOSInfo;
+
+    // TODO: Revisit in M2, see GPUSWSEC-1176
+    if (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        if (pSecInfo->pProcessToken != NULL && ((NvU64) pSecInfo->pProcessToken) < VMMU_MAX_GFID)
+        {
+            // Trunc to NvU32 to fit ProcID (VMMU_MAX_GFID << MAX_INT)
+            pClient->ProcID = (NvU32)((NvU64)pSecInfo->pProcessToken);
+
+            NV_PRINTF(LEVEL_INFO, "Client allocation with GFID = %u\n", (NvU32)((NvU64)pSecInfo->pProcessToken));
+        }
+    }
+    else
+    {
+        pClient->ProcID = osGetCurrentProcess();
+    }
 
     pClient->cachedPrivilege = pSecInfo->privLevel;
 
@@ -75,6 +104,29 @@ rmclientConstruct_IMPL
     {
         pClient->CliSysEventInfo.notifyActions[i] =
             NV0000_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
+    }
+
+    //
+    // Enabling this on MODS to avoid clash of client handles. This path gets executed on both
+    // guest & host RM for MODs platform, pGPU handle isnt available here to check for IS_VIRTUAL.
+    // Later code paths will override this for guest RM.
+    // This change affects non-SRIOV case as well, there is no good way to detect SRIOV without pGPU.
+    //
+    if (hypervisorIsVgxHyper() || NV_IS_MODS)
+    {
+        //
+        // Set RM allocated resource handle range for host RM. This minimize clash of guest RM handles with host RM
+        // during VM migration.
+        //
+        status = clientSetHandleGenerator(pRsClient,
+                                          (RS_UNIQUE_HANDLE_BASE + RS_UNIQUE_HANDLE_RANGE/2),
+                                          RS_UNIQUE_HANDLE_RANGE/2);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_WARNING,
+                      "NVRM_RPC: Failed to set host client resource handle range %x\n", status);
+            return status;
+        }
     }
 
     // Prevent kernel clients from requesting handles in the FW handle generator range
@@ -107,27 +159,32 @@ rmclientConstruct_IMPL
     if (pSys->getProperty(pSys, PDB_PROP_SYS_VALIDATE_CLIENT_HANDLE) &&
        ((pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_KERNEL) || pClient->bIsRootNonPriv))
     {
-        PSECURITY_TOKEN pSecurityToken;
+        PSECURITY_TOKEN pSecurityToken = (pClient->bIsClientVirtualMode ?
+                                          pSecInfo->pProcessToken : osGetSecurityToken());
         PUID_TOKEN pUidToken = osGetCurrentUidToken();
         UserInfo *pUserInfo = NULL;
 
-        pSecurityToken  = (pClient->bIsClientVirtualMode ?
-                           pSecInfo->pProcessToken : osGetSecurityToken());
-
-        // pUserInfo takes ownership of pUidToken upon successful registration
-        status = _registerUserInfo(&pUidToken, &pUserInfo);
-
-        if (status == NV_OK)
+        if (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
         {
-            pClient->pUserInfo = pUserInfo;
             pClient->pSecurityToken = pSecurityToken;
         }
         else
         {
-            portMemFree(pUidToken);
+            // pUserInfo takes ownership of pUidToken upon successful registration
+            status = _registerUserInfo(&pUidToken, &pUserInfo);
 
-            if (pSecurityToken != NULL && !pClient->bIsClientVirtualMode)
-                portMemFree(pSecurityToken);
+            if (status == NV_OK)
+            {
+                pClient->pUserInfo = pUserInfo;
+                pClient->pSecurityToken = pSecurityToken;
+            }
+            else
+            {
+                portMemFree(pUidToken);
+
+                if (pSecurityToken != NULL && !pClient->bIsClientVirtualMode)
+                    portMemFree(pSecurityToken);
+            }
         }
     }
 
@@ -167,8 +224,6 @@ rmclientDestruct_IMPL
 
     // Free any association of the client with existing third-party p2p object
     CliUnregisterFromThirdPartyP2P(pClient);
-
-    rmapiControlCacheFreeClient(hClient);
 
     //
     // Free all of the devices of the client (do it in reverse order to

@@ -458,7 +458,7 @@ static void cpu_thrashing_stats_exit(void)
 {
     if (g_cpu_thrashing_stats.procfs_file) {
         UVM_ASSERT(uvm_procfs_is_debug_enabled());
-        uvm_procfs_destroy_entry(g_cpu_thrashing_stats.procfs_file);
+        proc_remove(g_cpu_thrashing_stats.procfs_file);
         g_cpu_thrashing_stats.procfs_file = NULL;
     }
 }
@@ -522,7 +522,7 @@ static void gpu_thrashing_stats_destroy(uvm_gpu_t *gpu)
         uvm_perf_module_type_unset_data(gpu->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
 
         if (gpu_thrashing->procfs_file)
-            uvm_procfs_destroy_entry(gpu_thrashing->procfs_file);
+            proc_remove(gpu_thrashing->procfs_file);
 
         uvm_kvfree(gpu_thrashing);
     }
@@ -652,7 +652,6 @@ done:
 
 static void thrashing_reset_pages_in_region(uvm_va_block_t *va_block, NvU64 address, NvU64 bytes);
 
-// Destroy the thrashing detection struct for the given block
 void uvm_perf_thrashing_info_destroy(uvm_va_block_t *va_block)
 {
     block_thrashing_info_t *block_thrashing = thrashing_info_get(va_block);
@@ -1066,11 +1065,11 @@ static void thrashing_reset_pages_in_region(uvm_va_block_t *va_block, NvU64 addr
 
 // Unmap remote mappings from the given processors on the pinned pages
 // described by region and block_thrashing->pinned pages.
-static NV_STATUS unmap_remote_pinned_pages_from_processors(uvm_va_block_t *va_block,
-                                                           uvm_va_block_context_t *va_block_context,
-                                                           block_thrashing_info_t *block_thrashing,
-                                                           uvm_va_block_region_t region,
-                                                           const uvm_processor_mask_t *unmap_processors)
+static NV_STATUS unmap_remote_pinned_pages(uvm_va_block_t *va_block,
+                                           uvm_va_block_context_t *va_block_context,
+                                           block_thrashing_info_t *block_thrashing,
+                                           uvm_va_block_region_t region,
+                                           const uvm_processor_mask_t *unmap_processors)
 {
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status;
@@ -1116,17 +1115,16 @@ static NV_STATUS unmap_remote_pinned_pages_from_processors(uvm_va_block_t *va_bl
     return status;
 }
 
-// Unmap remote mappings from all processors on the pinned pages
-// described by region and block_thrashing->pinned pages.
-NV_STATUS unmap_remote_pinned_pages_from_all_processors(uvm_va_block_t *va_block,
-                                                        uvm_va_block_context_t *va_block_context,
-                                                        uvm_va_block_region_t region)
+NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_block,
+                                                           uvm_va_block_context_t *va_block_context,
+                                                           uvm_va_block_region_t region)
 {
     block_thrashing_info_t *block_thrashing;
     uvm_processor_mask_t unmap_processors;
-    uvm_va_policy_t *policy;
+    uvm_va_policy_t *policy = va_block_context->policy;
 
     uvm_assert_mutex_locked(&va_block->lock);
+    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, policy, region));
 
     block_thrashing = thrashing_info_get(va_block);
     if (!block_thrashing || !block_thrashing->pages)
@@ -1137,15 +1135,9 @@ NV_STATUS unmap_remote_pinned_pages_from_all_processors(uvm_va_block_t *va_block
 
     // Unmap all mapped processors (that are not SetAccessedBy) with
     // no copy of the page
-    policy = uvm_va_policy_get(va_block, uvm_va_block_region_start(va_block, region));
-
     uvm_processor_mask_andnot(&unmap_processors, &va_block->mapped, &policy->accessed_by);
 
-    return unmap_remote_pinned_pages_from_processors(va_block,
-                                                     va_block_context,
-                                                     block_thrashing,
-                                                     region,
-                                                     &unmap_processors);
+    return unmap_remote_pinned_pages(va_block, va_block_context, block_thrashing, region, &unmap_processors);
 }
 
 // Check that we are not migrating pages away from its pinned location and
@@ -1246,7 +1238,7 @@ void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_
         if (!va_space_thrashing->params.enable)
             return;
 
-        // TODO: Bug 2046423: HMM will need to look up the policy when
+        // TODO: Bug 3660922: HMM will need to look up the policy when
         // read duplication is supported.
         read_duplication = uvm_va_block_is_hmm(va_block) ?
                            UVM_READ_DUPLICATION_UNSET :
@@ -1796,6 +1788,7 @@ static void thrashing_unpin_pages(struct work_struct *work)
     struct delayed_work *dwork = to_delayed_work(work);
     va_space_thrashing_info_t *va_space_thrashing = container_of(dwork, va_space_thrashing_info_t, pinned_pages.dwork);
     uvm_va_space_t *va_space = va_space_thrashing->va_space;
+    uvm_va_block_context_t *va_block_context = &va_space_thrashing->pinned_pages.va_block_context;
 
     UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
 
@@ -1857,12 +1850,13 @@ static void thrashing_unpin_pages(struct work_struct *work)
             UVM_ASSERT(block_thrashing);
             UVM_ASSERT(uvm_page_mask_test(&block_thrashing->pinned_pages.mask, page_index));
 
-            va_space_thrashing->pinned_pages.va_block_context.policy =
+            uvm_va_block_context_init(va_block_context, NULL);
+            va_block_context->policy =
                 uvm_va_policy_get(va_block, uvm_va_block_cpu_page_address(va_block, page_index));
 
-            unmap_remote_pinned_pages_from_all_processors(va_block,
-                                                          &va_space_thrashing->pinned_pages.va_block_context,
-                                                          uvm_va_block_region_for_page(page_index));
+            uvm_perf_thrashing_unmap_remote_pinned_pages_all(va_block,
+                                                             va_block_context,
+                                                             uvm_va_block_region_for_page(page_index));
             thrashing_reset_page(va_space_thrashing, va_block, block_thrashing, page_index);
         }
 
@@ -2105,11 +2099,10 @@ NV_STATUS uvm_test_set_page_thrashing_policy(UVM_TEST_SET_PAGE_THRASHING_POLICY_
 
                 // Unmap may split PTEs and require a retry. Needs to be called
                 // before the pinned pages information is destroyed.
-                status = UVM_VA_BLOCK_RETRY_LOCKED(va_block,
-                                                   NULL,
-                                                   unmap_remote_pinned_pages_from_all_processors(va_block,
-                                                                                                 block_context,
-                                                                                                 va_block_region));
+                status = UVM_VA_BLOCK_RETRY_LOCKED(va_block, NULL,
+                             uvm_perf_thrashing_unmap_remote_pinned_pages_all(va_block,
+                                                                              block_context,
+                                                                              va_block_region));
 
                 uvm_perf_thrashing_info_destroy(va_block);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1738,8 +1738,8 @@ typedef struct NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS {
  *     should be set to zero for default behavior.
  *   sorIndex
  *     Specifies the SOR index.
- *   bIsDp12Supported
- *     Returns NV_TRUE if DP1.2 is supported by the GPU else NV_FALSE
+ *   dpVersionsSupported
+ *     Specified the DP versions supported by the GPU
  *   bIsMultistreamSupported
  *     Returns NV_TRUE if MST is supported by the GPU else NV_FALSE
  *   bIsSCEnabled
@@ -1788,6 +1788,7 @@ typedef struct NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS {
  *      NV_ERR_NOT_SUPPORTED
  *
  */
+
 #define NV0073_CTRL_CMD_DP_GET_CAPS   (0x731369U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS_MESSAGE_ID" */
 
 #define NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS_MESSAGE_ID (0x69U)
@@ -1796,8 +1797,7 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
     NvU32  subDeviceInstance;
     NvU32  sorIndex;
     NvU32  maxLinkRate;
-    NvBool bIsDp12Supported;
-    NvBool bIsDp14Supported;
+    NvU32  dpVersionsSupported;
     NvBool bIsMultistreamSupported;
     NvBool bIsSCEnabled;
     NvBool bHasIncreasedWatermarkLimits;
@@ -1817,6 +1817,15 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
         NvU32  lineBufferBitDepth;
     } DSC;
 } NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS;
+
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_2                0:0
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_2_NO              (0x00000000U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_2_YES             (0x00000001U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_4                1:1
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_4_NO              (0x00000000U)
+#define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_4_YES             (0x00000001U)
+
+
 
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE                           2:0
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_NONE                          (0x00000000U)
@@ -2705,7 +2714,7 @@ typedef struct NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS {
 #define NV0073_CTRL_CMD_DP_AUXCH_OD_CTL_SET_ENABLE_OD  0x00000003
 
 /*
- * NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2
+ * NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES
  *
  * This command returns the following info
  *
@@ -2755,5 +2764,4 @@ typedef struct NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS {
     NvBool                               bDebugValues;
     NV0073_CTRL_DP_MSA_PROPERTIES_VALUES featureDebugValues;
 } NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS;
-
 /* _ctrl0073dp_h_ */

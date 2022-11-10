@@ -44,11 +44,11 @@ typedef enum {
 /*!
  * @brief GSP-CC Microcode Initialization Parameters
  */
-typedef struct GSP_CC_INIT_PARAMS
+typedef struct GSP_FMC_INIT_PARAMS
 {
     // CC initialization "registry keys"
     NvU32 regkeys;
-} GSP_CC_INIT_PARAMS;
+} GSP_FMC_INIT_PARAMS;
 
 /*!
  * @brief GSP-ACR BOOT_GSP_RM Command Parameters
@@ -68,6 +68,8 @@ typedef struct GSP_ACR_BOOT_GSP_RM_PARAMS
     NvU64          wprCarveoutOffset;
     // Size in bytes of the WPR containing GSP-RM
     NvU32          wprCarveoutSize;
+    // Whether to boot GSP-RM or GSP-Proxy through ACR
+    NvBool         bIsGspRmBoot;
 } GSP_ACR_BOOT_GSP_RM_PARAMS;
 
 /*!
@@ -84,11 +86,11 @@ typedef struct GSP_RM_PARAMS
 /*!
  * @brief GSP-CC Microcode Parameters for Boot Partitions
  */
-typedef struct GSP_CC_BOOT_PARAMS
+typedef struct GSP_FMC_BOOT_PARAMS
 {
-    GSP_CC_INIT_PARAMS         initParams;
-    GSP_ACR_BOOT_GSP_RM_PARAMS bootGspRmParams;
-    GSP_RM_PARAMS              gspRmParams;
-} GSP_CC_BOOT_PARAMS;
+    GSP_FMC_INIT_PARAMS         initParams;
+    GSP_ACR_BOOT_GSP_RM_PARAMS  bootGspRmParams;
+    GSP_RM_PARAMS               gspRmParams;
+} GSP_FMC_BOOT_PARAMS;
 
 #endif // GSPIFPUB_H

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -89,19 +89,6 @@ memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL
 }
 
 NV_STATUS
-memCtrlCmdGetSurfacePartitionStrideLvm_IMPL
-(
-    Memory *pMemory,
-    NV0041_CTRL_GET_SURFACE_PARTITION_STRIDE_PARAMS *pParams
-)
-{
-    // Only partitionStride == 256B is supported by RM.
-    pParams->partitionStride = 256;
-
-    return NV_OK;
-}
-
-NV_STATUS
 memCtrlCmdGetSurfaceInfoLvm_IMPL
 (
     Memory *pMemory,
@@ -132,15 +119,23 @@ memCtrlCmdGetSurfaceInfoLvm_IMPL
         {
             case NV0041_CTRL_SURFACE_INFO_INDEX_ATTRS:
             {
-                if (pMemory->pHwResource->attr & DRF_DEF(OS32, _ATTR, _COMPR, _REQUIRED))
+                if ((pMemory->pHwResource != NULL) &&
+                     pMemory->pHwResource->attr & DRF_DEF(OS32, _ATTR, _COMPR, _REQUIRED))
                     data |= NV0041_CTRL_SURFACE_INFO_ATTRS_COMPR;
-                if (pMemory->pHwResource->attr & DRF_DEF(OS32, _ATTR, _ZCULL, _REQUIRED))
+                if ((pMemory->pHwResource != NULL) &&
+                     pMemory->pHwResource->attr & DRF_DEF(OS32, _ATTR, _ZCULL, _REQUIRED))
                     data |= NV0041_CTRL_SURFACE_INFO_ATTRS_ZCULL;
                 break;
             }
             case NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE:
             {
-                if (pMemory->pHwResource->attr & DRF_DEF(OS32, _ATTR, _COMPR, _REQUIRED))
+                //
+                // adding check for pHwResource, since host managed HW resource
+                // gets allocated only when ATTR is set to COMPR_REQUIRED
+                //
+                if ((pMemory->pHwResource != NULL) &&
+                     pMemory->pHwResource->attr & 
+                    DRF_DEF(OS32, _ATTR, _COMPR, _REQUIRED))
                 {
                     zero = 0;
                     status = memmgrGetSurfacePhysAttr_HAL(pGpu, pMemoryManager,
@@ -169,7 +164,8 @@ memCtrlCmdGetSurfaceInfoLvm_IMPL
             }
             case NV0041_CTRL_SURFACE_INFO_INDEX_PHYS_ATTR:
             {
-                data = pMemory->pHwResource->attr & (DRF_SHIFTMASK(NV0041_CTRL_SURFACE_INFO_PHYS_ATTR_PAGE_SIZE) | DRF_SHIFTMASK(NV0041_CTRL_SURFACE_INFO_PHYS_ATTR_CPU_COHERENCY));
+                if (pMemory->pHwResource != NULL)
+                    data = pMemory->pHwResource->attr & (DRF_SHIFTMASK(NV0041_CTRL_SURFACE_INFO_PHYS_ATTR_PAGE_SIZE) | DRF_SHIFTMASK(NV0041_CTRL_SURFACE_INFO_PHYS_ATTR_CPU_COHERENCY));
                 break;
             }
             case NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE:

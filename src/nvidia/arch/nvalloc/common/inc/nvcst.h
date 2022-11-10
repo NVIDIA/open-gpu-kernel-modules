@@ -27,6 +27,7 @@
 #include <platform/chipset/chipset.h>
 #include <platform/chipset/chipset_info.h>
 #include <nvpcie.h>
+#include <nvdevid.h>
 
 #define CHIPSET_SETUP_FUNC(name) static NV_STATUS name(OBJCL *pCl);
 
@@ -86,7 +87,6 @@ CHIPSET_SETUP_FUNC(Huawei_Kunpeng920_setupFunc)
 CHIPSET_SETUP_FUNC(Mellanox_BlueField_setupFunc)
 CHIPSET_SETUP_FUNC(Amazon_Gravitron2_setupFunc)
 CHIPSET_SETUP_FUNC(Fujitsu_A64FX_setupFunc)
-CHIPSET_SETUP_FUNC(Phytium_FT2000_setupFunc)
 CHIPSET_SETUP_FUNC(Ampere_Altra_setupFunc)
 CHIPSET_SETUP_FUNC(Arm_NeoverseN1_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_T210_setupFunc)
@@ -154,6 +154,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0xA14A, CS_INTEL_A145,      "SkyLake C232",         Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA14D, CS_INTEL_A145,      "SkyLake-H",            Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA244, CS_INTEL_A145,      "SkyLake C620",         Intel_A145_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0xA1C8, CS_INTEL_A145,      "SkyLake C620",         Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x8D47, CS_INTEL_8D47,      "IntelX99",             Intel_8D47_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x8D44, CS_INTEL_8D47,      "IntelC612",            Intel_8D44_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA2C5, CS_INTEL_A2C5,      "IntelZ270",            Intel_A2C5_setupFunc},
@@ -239,12 +240,6 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2, "Mellanox BlueField 2 Crypto disabled",  NULL},
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2, "Amazon Gravitron2",  Amazon_Gravitron2_setupFunc},
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX,     "Fujitsu A64FX", Fujitsu_A64FX_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xDC08, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xFC01, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xFC08, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xFC16, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500,  "Phytium S2500",  NULL},
     {PCI_VENDOR_ID_CADENCE,     0xDC08, CS_PHYTIUM_S2500,  "Phytium S2500",  NULL},
     {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_S2500,  "Phytium S2500",  NULL},
@@ -335,18 +330,12 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2 Crypto disabled
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2},  // Amazon Gravitron2
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX},      // Fujitsu A64FX
-    {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xDC08, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xFC01, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xFC08, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xFC16, CS_PHYTIUM_FT2000},     // Phytium FT2000
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_CADENCE,     0xDC08, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_CADENCE,     0xFC01, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_CADENCE,     0xFC08, CS_PHYTIUM_S2500},      // Phytium S2500
-    {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_S2500},      // Phytium S2500
+    {PCI_VENDOR_ID_CADENCE,     0xFC16, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_AMPERE,      0xE000, CS_AMPERE_ALTRA},       // Ampere Altra
     {PCI_VENDOR_ID_AMPERE,      0xE00D, CS_AMPERE_ALTRA},       // Ampere Altra
     {PCI_VENDOR_ID_AMPERE,      0xE00E, CS_AMPERE_ALTRA},       // Ampere Altra

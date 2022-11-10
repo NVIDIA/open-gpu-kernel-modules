@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -108,8 +108,11 @@ void uvm_perf_thrashing_info_destroy(uvm_va_block_t *va_block);
 
 // Unmap remote mappings from all processors on the pinned pages
 // described by region and block_thrashing->pinned pages.
-NV_STATUS unmap_remote_pinned_pages_from_all_processors(uvm_va_block_t *va_block,
-                                                        uvm_va_block_context_t *va_block_context,
-                                                        uvm_va_block_region_t region);
+// va_block_context must not be NULL and va_block_context->policy must be valid.
+// See the comments for uvm_va_block_check_policy_is_valid() in uvm_va_block.h.
+// Locking: the va_block lock must be held.
+NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_block,
+                                                           uvm_va_block_context_t *va_block_context,
+                                                           uvm_va_block_region_t region);
 
 #endif

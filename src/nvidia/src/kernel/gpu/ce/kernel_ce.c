@@ -29,6 +29,7 @@
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/intr/intr_service.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "kernel/gpu/nvlink/common_nvlink.h"
 #include "nvRmReg.h"
 
 NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR engDesc)
@@ -40,6 +41,8 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
     NV_PRINTF(LEVEL_INFO, "KernelCE: thisPublicID = %d\n", thisPublicID);
 
     pKCe->publicID = thisPublicID;
+    pKCe->bShimOwner = NV_FALSE;
+
     pKCe->bIsAutoConfigEnabled = NV_TRUE;
     pKCe->bUseGen4Mapping = NV_FALSE;
 
@@ -64,16 +67,16 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
     return NV_OK;
 }
 
-NvBool kceIsPresent_IMPL(OBJGPU *pGpu, KernelCE *kce)
+NvBool kceIsPresent_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
 {
     // Use bus/fifo to detemine if LCE(i) is present.
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvBool present = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pKernelBus != NULL, NV_FALSE);
-    present = kbusCheckEngine_HAL(pGpu, pKernelBus, ENG_CE(kce->publicID));
+    present = kbusCheckEngine_HAL(pGpu, pKernelBus, ENG_CE(pKCe->publicID));
 
-    NV_PRINTF(LEVEL_INFO, "KCE %d / %d: present=%d\n", kce->publicID,
+    NV_PRINTF(LEVEL_INFO, "KCE %d / %d: present=%d\n", pKCe->publicID,
         pGpu->numCEs > 0 ? pGpu->numCEs - 1 : pGpu->numCEs, present);
 
     return present;
@@ -84,9 +87,10 @@ NvBool kceIsNewMissingEngineRemovalSequenceEnabled_IMPL(OBJGPU *pGpu, KernelCE *
     return NV_TRUE;
 }
 
-static void printCaps(KernelCE *pKCe, NvU32 engineType, const NvU8 *capsTbl)
+static void printCaps(OBJGPU *pGpu, KernelCE *pKCe, RM_ENGINE_TYPE rmEngineType, const NvU8 *capsTbl)
 {
-    NV_PRINTF(LEVEL_INFO, "LCE%d caps (engineType = %d)\n", pKCe->publicID, engineType);
+    NV_PRINTF(LEVEL_INFO, "LCE%d caps (engineType = %d (%d))\n", pKCe->publicID,
+                           gpuGetNv2080EngineType(rmEngineType), rmEngineType);
 #define PRINT_CAP(cap) NV_PRINTF(LEVEL_INFO, #cap ":%d\n", (RMCTRL_GET_CAP(capsTbl, NV2080_CTRL_CE_CAPS, cap) != 0) ? 1 : 0)
 
     PRINT_CAP(_CE_GRCE);
@@ -105,7 +109,7 @@ static void printCaps(KernelCE *pKCe, NvU32 engineType, const NvU8 *capsTbl)
 static void kceGetNvlinkCaps(OBJGPU *pGpu, KernelCE *pKCe, NvU8 *pKCeCaps)
 {
     if (kceIsCeSysmemRead_HAL(pGpu, pKCe))
-            RMCTRL_SET_CAP(pKCeCaps, NV2080_CTRL_CE_CAPS, _CE_SYSMEM_READ);
+        RMCTRL_SET_CAP(pKCeCaps, NV2080_CTRL_CE_CAPS, _CE_SYSMEM_READ);
 
     if (kceIsCeSysmemWrite_HAL(pGpu, pKCe))
         RMCTRL_SET_CAP(pKCeCaps, NV2080_CTRL_CE_CAPS, _CE_SYSMEM_WRITE);
@@ -114,7 +118,7 @@ static void kceGetNvlinkCaps(OBJGPU *pGpu, KernelCE *pKCe, NvU8 *pKCeCaps)
         RMCTRL_SET_CAP(pKCeCaps, NV2080_CTRL_CE_CAPS, _CE_NVLINK_P2P);
 }
 
-NV_STATUS kceGetDeviceCaps_IMPL(OBJGPU *pGpu, KernelCE *pKCe, NvU32 engineType, NvU8 *pKCeCaps)
+NV_STATUS kceGetDeviceCaps_IMPL(OBJGPU *pGpu, KernelCE *pKCe, RM_ENGINE_TYPE rmEngineType, NvU8 *pKCeCaps)
 {
     if (pKCe->bStubbed)
     {
@@ -158,7 +162,7 @@ NV_STATUS kceGetDeviceCaps_IMPL(OBJGPU *pGpu, KernelCE *pKCe, NvU32 engineType, 
     if (pKernelNvlink != NULL)
         kceGetNvlinkCaps(pGpu, pKCe, pKCeCaps);
 
-    printCaps(pKCe, engineType, pKCeCaps);
+    printCaps(pGpu, pKCe, rmEngineType, pKCeCaps);
 
     return NV_OK;
 }
@@ -170,9 +174,9 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
     NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *pCeCapsParams
 )
 {
-    OBJGPU      *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    KernelMIGManager *pKernelMIGManager = NULL;
-    MIG_INSTANCE_REF migRef;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    KernelCE *pKCe;
 
     ct_assert(ENG_CE__SIZE_1 <= sizeof(pCeCapsParams->capsTbl) / sizeof(pCeCapsParams->capsTbl[0]));
 
@@ -188,18 +192,7 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
         knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
     }
 
-    if (IS_MIG_IN_USE(pGpu))
-    {
-        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
-
-        NV_CHECK_OK_OR_RETURN(
-            LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                            hClient, &migRef));
-    }
-
-    portMemSet(pCeCapsParams, 0, sizeof(pCeCapsParams));
+    portMemSet(pCeCapsParams, 0, sizeof(*pCeCapsParams));
 
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
@@ -209,29 +202,17 @@ subdeviceCtrlCmdCeGetAllCaps_IMPL
                             pCeCapsParams,
                             sizeof(*pCeCapsParams)));
 
-    for (NvU32 i = 0; i < ENG_CE__SIZE_1; i++)
-    {
-        KernelCE *pKCe = GPU_GET_KCE(pGpu, i);
-        if (pKCe == NULL || pKCe->bStubbed)
-        {
-            NV_PRINTF(LEVEL_INFO, "Skipping missing or stubbed CE %d\n", i);
+    KCE_ITER_CLIENT_BEGIN(pGpu, pKCe, hClient)
+        if (pKCe->bStubbed)
             continue;
-        }
 
-        if (IS_MIG_IN_USE(pGpu) &&
-            !kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, NV2080_ENGINE_TYPE_COPY(i), migRef))
-        {
-            NV_PRINTF(LEVEL_INFO, "Skipping CE%d not that is not in the MIG instance\n", i);
-            continue;
-        }
+        pCeCapsParams->present |= BIT(kceInst);
 
-        pCeCapsParams->present |= BIT(i);
-
-        NvU8 *pKCeCaps = pCeCapsParams->capsTbl[i];
+        NvU8 *pKCeCaps = pCeCapsParams->capsTbl[kceInst];
 
         if (pKernelNvlink != NULL)
             kceGetNvlinkCaps(pGpu, pKCe, pKCeCaps);
-    }
+    KCE_ITER_END
 
     return NV_OK;
 }
@@ -265,7 +246,7 @@ kceGetCeFromNvlinkConfig_IMPL
     gpuCount = gpumgrGetSubDeviceCount(gpuMask);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, !IsGP100(pGpu) || gpuCount <= 2, NV_ERR_INVALID_STATE);
 
-    rmStatus = knvlinkCtrlCmdBusGetNvlinkCaps(pGpu, &nvlinkCapsParams);
+    rmStatus = nvlinkCtrlCmdBusGetNvlinkCaps(pGpu, &nvlinkCapsParams);
     NV_ASSERT_OK_OR_RETURN(rmStatus);
 
     nvlinkCaps = (NvU8*)&nvlinkCapsParams.capsTbl;
@@ -300,31 +281,26 @@ NV_STATUS kceUpdateClassDB_KERNEL(OBJGPU *pGpu, KernelCE *pKCe)
     NV_ASSERT_OK_OR_RETURN(status);
 
     // For each LCE, check if it is stubbed out in GSP-RM
-    for (NvU32 i = 0; i < gpuGetNumCEs(pGpu); i++)
-    {
-        KernelCE *pKCe = GPU_GET_KCE(pGpu, i);
+    KCE_ITER_ALL_BEGIN(pGpu, pKCe, 0)
+        NvBool stubbed = ((BIT(kceInst) & params.stubbedCeMask)) != 0;
 
-        if (pKCe)
+        // If this CE has no PCEs assigned, remove it from classDB
+        if (stubbed)
         {
-            NvBool stubbed = ((BIT(i) & params.stubbedCeMask)) != 0;
-            // If this CE has no PCEs assigned, remove it from classDB
-            if (stubbed)
-            {
-                NV_PRINTF(LEVEL_INFO, "Stubbing CE %d\n", i);
-                pKCe->bStubbed = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO, "Stubbing CE %d\n", kceInst);
+            pKCe->bStubbed = NV_TRUE;
 
-                status = gpuDeleteClassFromClassDBByEngTag(pGpu, ENG_CE(i));
-            }
-            else
-            {
-                // If a new CE needs to be added because of the new mappings
-                NV_PRINTF(LEVEL_INFO, "Unstubbing CE %d\n", i);
-                pKCe->bStubbed = NV_FALSE;
-
-                status = gpuAddClassToClassDBByEngTag(pGpu, ENG_CE(i));
-            }
+            status = gpuDeleteClassFromClassDBByEngTag(pGpu, ENG_CE(kceInst));
         }
-    }
+        else
+        {
+            // If a new CE needs to be added because of the new mappings
+            NV_PRINTF(LEVEL_INFO, "Unstubbing CE %d\n", kceInst);
+            pKCe->bStubbed = NV_FALSE;
+
+            status = gpuAddClassToClassDBByEngTag(pGpu, ENG_CE(kceInst));
+        }
+    KCE_ITER_END
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gpuUpdateEngineTable(pGpu));
 
@@ -375,7 +351,7 @@ kceServiceNotificationInterrupt_IMPL
     kceNonstallIntrCheckAndClear_HAL(pGpu, pKCe, pParams->pThreadState);
 
     // Wake up channels waiting on this event
-    engineNonStallIntrNotify(pGpu, NV2080_ENGINE_TYPE_COPY(pKCe->publicID));
+    engineNonStallIntrNotify(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID));
 
     return NV_OK;
 }
@@ -539,4 +515,44 @@ kceGetAvailableHubPceMask_IMPL
     pTopoParams->fbhubPceMask = params.fbhubPceMask;
 
     return NV_OK;
+}
+
+/*!
+ * @brief return first non-NULL KCE instance
+ */
+NV_STATUS
+kceFindFirstInstance_IMPL(OBJGPU *pGpu, KernelCE **ppKCe)
+{
+    KernelCE *pKCe = NULL;
+
+    KCE_ITER_ALL_BEGIN(pGpu, pKCe, 0)
+        *ppKCe = pKCe;
+        return NV_OK;
+    KCE_ITER_END
+
+    return NV_ERR_INSUFFICIENT_RESOURCES;
+}
+
+/*!
+ * @brief Find shim owner KernelCE object
+ */
+NV_STATUS
+kceFindShimOwner_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelCE  *pKCe,
+    KernelCE **ppShimKCe
+)
+{
+    KernelCE *pKCeLoop;
+
+    KCE_ITER_ALL_BEGIN(pGpu, pKCeLoop, 0)
+        if (pKCeLoop->bShimOwner)
+        {
+            *ppShimKCe = pKCeLoop;
+            return NV_OK;
+        }
+    KCE_ITER_END
+
+    return NV_ERR_INSUFFICIENT_RESOURCES;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,6 +51,26 @@ enum
      * Run DMA self-test
      */
     RM_SOE_CORE_CMD_DMA_SELFTEST,
+
+    /*!
+     * Perform I2C transaction
+     */
+    RM_SOE_CORE_CMD_I2C_ACCESS,
+
+    /*!
+     * Issue NPORT Reset
+     */
+    RM_SOE_CORE_CMD_ISSUE_NPORT_RESET,
+
+    /*!
+     * Restore NPORT state
+     */
+    RM_SOE_CORE_CMD_RESTORE_NPORT_STATE,
+
+    /*!
+     * Set NPORT TPROD state
+     */
+    RM_SOE_CORE_CMD_SET_NPORT_TPROD_STATE
 };
 
 // Timeout for SOE reset callback function
@@ -63,6 +83,10 @@ enum
 
 #define RM_SOE_DMA_READ_TEST_SUBCMD    0x00
 #define RM_SOE_DMA_WRITE_TEST_SUBCMD   0x01
+
+#define SOE_I2C_DMA_BUF_SIZE            512
+#define SOE_I2C_STATUS_INDEX            (SOE_I2C_DMA_BUF_SIZE - 1)
+
 /*!
  * CORE queue command payload
  */
@@ -83,10 +107,39 @@ typedef struct
     NvU16       xferSize;
 } RM_SOE_CORE_CMD_DMA_TEST;
 
+typedef struct
+{
+    NvU8        cmdType;
+    RM_FLCN_U64 dmaHandle;
+    NvU16       xferSize;
+} RM_SOE_CORE_CMD_I2C;
+
+typedef struct
+{
+    NvU8   cmdType;
+    NvU32  nport;
+} RM_SOE_CORE_CMD_NPORT_RESET;
+
+typedef struct
+{
+    NvU8   cmdType;
+    NvU32  nport;
+} RM_SOE_CORE_CMD_NPORT_STATE;
+
+typedef struct
+{
+    NvU8   cmdType;
+    NvU32  nport;
+} RM_SOE_CORE_CMD_NPORT_TPROD_STATE;
+
 typedef union
 {
     NvU8 cmdType;
     RM_SOE_CORE_CMD_BIOS bios;
     RM_SOE_CORE_CMD_DMA_TEST dma_test;
+    RM_SOE_CORE_CMD_I2C i2c;
+    RM_SOE_CORE_CMD_NPORT_RESET nportReset;
+    RM_SOE_CORE_CMD_NPORT_STATE nportState;
+    RM_SOE_CORE_CMD_NPORT_TPROD_STATE nportTprodState;
 } RM_SOE_CORE_CMD;
 #endif  // _SOECORE_H_

@@ -402,10 +402,11 @@ _pmaCleanupNumaReusePages
 NV_STATUS
 _pmaEvictContiguous
 (
-    PMA  *pPma,
-    void *pMap,
-    NvU64 evictStart,
-    NvU64 evictEnd
+    PMA              *pPma,
+    void             *pMap,
+    NvU64             evictStart,
+    NvU64             evictEnd,
+    MEMORY_PROTECTION prot
 )
 {
     NV_STATUS status;
@@ -429,7 +430,7 @@ _pmaEvictContiguous
         PSCRUB_NODE pPmaScrubList = NULL;
         portSyncMutexRelease(pPma->pAllocLock);
 
-        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd);
+        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd, prot);
 
         portSyncMutexAcquire(pPma->pAllocLock);
 
@@ -477,7 +478,7 @@ scrub_exit:
     }
     else
     {
-        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd);
+        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd, prot);
         NV_PRINTF(LEVEL_INFO, "evictRangeCb returned with status %llx\n", (NvU64)status);
     }
 
@@ -512,15 +513,16 @@ exit:
 NV_STATUS
 _pmaEvictPages
 (
-    PMA   *pPma,
-    void  *pMap,
-    NvU64 *evictPages,
-    NvU64  evictPageCount,
-    NvU64 *allocPages,
-    NvU64  allocPageCount,
-    NvU32  pageSize,
-    NvU64  physBegin,
-    NvU64  physEnd
+    PMA              *pPma,
+    void             *pMap,
+    NvU64            *evictPages,
+    NvU64             evictPageCount,
+    NvU64            *allocPages,
+    NvU64             allocPageCount,
+    NvU32             pageSize,
+    NvU64             physBegin,
+    NvU64             physEnd,
+    MEMORY_PROTECTION prot
 )
 {
     NvU64 i;
@@ -550,7 +552,7 @@ _pmaEvictPages
 
         portSyncMutexRelease(pPma->pAllocLock);
         status = pPma->evictPagesCb(pPma->evictCtxPtr, pageSize, evictPages,
-                            (NvU32)evictPageCount, physBegin, physEnd);
+                            (NvU32)evictPageCount, physBegin, physEnd, prot);
         portSyncMutexAcquire(pPma->pAllocLock);
 
         NV_PRINTF(LEVEL_INFO, "evictPagesCb returned with status %llx\n", (NvU64)status);
@@ -584,7 +586,7 @@ scrub_exit:
     else
     {
         status = pPma->evictPagesCb(pPma->evictCtxPtr, pageSize, evictPages,
-                                (NvU32)evictPageCount, physBegin, physEnd);
+                                (NvU32)evictPageCount, physBegin, physEnd, prot);
         NV_PRINTF(LEVEL_INFO, "evictPagesCb returned with status %llx\n", (NvU64)status);
     }
 
@@ -861,7 +863,7 @@ _pmaPredictOutOfMemory
 /*!
  * @brief Internal function to intermittently free the blacklisted pages in the
  * range of allocation request. This will enable PMA to allow OS to manage those
- * blacklisted pages after being allocated. 
+ * blacklisted pages after being allocated.
  *
  * @param[in] pPma       PMA Object
  * @param[in] regId      PMA Region ID , where the allocation falls into

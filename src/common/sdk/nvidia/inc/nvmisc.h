@@ -234,12 +234,14 @@ extern "C" {
 #define DRF_EXTENT(drf)         (drf##_HIGH_FIELD)
 #define DRF_SHIFT(drf)          ((drf##_LOW_FIELD) % 32U)
 #define DRF_SHIFT_RT(drf)       ((drf##_HIGH_FIELD) % 32U)
+#define DRF_SIZE(drf)           ((drf##_HIGH_FIELD)-(drf##_LOW_FIELD)+1U)
 #define DRF_MASK(drf)           (0xFFFFFFFFU >> (31U - ((drf##_HIGH_FIELD) % 32U) + ((drf##_LOW_FIELD) % 32U)))
 #else
 #define DRF_BASE(drf)           (NV_FALSE?drf)  // much better
 #define DRF_EXTENT(drf)         (NV_TRUE?drf)  // much better
 #define DRF_SHIFT(drf)          (((NvU32)DRF_BASE(drf)) % 32U)
 #define DRF_SHIFT_RT(drf)       (((NvU32)DRF_EXTENT(drf)) % 32U)
+#define DRF_SIZE(drf)           (DRF_EXTENT(drf)-DRF_BASE(drf)+1U)
 #define DRF_MASK(drf)           (0xFFFFFFFFU>>(31U - DRF_SHIFT_RT(drf) + DRF_SHIFT(drf)))
 #endif
 #define DRF_DEF(d,r,f,c)        (((NvU32)(NV ## d ## r ## f ## c))<<DRF_SHIFT(NV ## d ## r ## f))
@@ -249,12 +251,12 @@ extern "C" {
 #define DRF_EXTENT(drf)         (1?drf)  // much better
 #define DRF_SHIFT(drf)          ((DRF_ISBIT(0,drf)) % 32)
 #define DRF_SHIFT_RT(drf)       ((DRF_ISBIT(1,drf)) % 32)
+#define DRF_SIZE(drf)           (DRF_EXTENT(drf)-DRF_BASE(drf)+1U)
 #define DRF_MASK(drf)           (0xFFFFFFFFU>>(31-((DRF_ISBIT(1,drf)) % 32)+((DRF_ISBIT(0,drf)) % 32)))
 #define DRF_DEF(d,r,f,c)        ((NV ## d ## r ## f ## c)<<DRF_SHIFT(NV ## d ## r ## f))
 #define DRF_NUM(d,r,f,n)        (((n)&DRF_MASK(NV ## d ## r ## f))<<DRF_SHIFT(NV ## d ## r ## f))
 #endif
 #define DRF_SHIFTMASK(drf)      (DRF_MASK(drf)<<(DRF_SHIFT(drf)))
-#define DRF_SIZE(drf)           (DRF_EXTENT(drf)-DRF_BASE(drf)+1U)
 
 #define DRF_VAL(d,r,f,v)        (((v)>>DRF_SHIFT(NV ## d ## r ## f))&DRF_MASK(NV ## d ## r ## f))
 #endif
@@ -906,6 +908,16 @@ static NV_FORCEINLINE void *NV_NVUPTR_TO_PTR(NvUPtr address)
     uAddr.v = address;
     return uAddr.p;
 }
+
+// Get bit at pos (k) from x
+#define NV_BIT_GET(k, x)                       (((x) >> (k)) & 1)
+// Get bit at pos (n) from (hi) if >= 64, otherwise from (lo). This is paired with NV_BIT_SET_128 which sets the bit.
+#define NV_BIT_GET_128(n, lo, hi)              (((n) < 64) ? NV_BIT_GET((n), (lo)) : NV_BIT_GET((n) - 64, (hi)))
+//
+// Set the bit at pos (b) for U64 which is < 128. Since the (b) can be >= 64, we need 2 U64 to store this.
+// Use (lo) if (b) is less than 64, and (hi) if >= 64.
+//
+#define NV_BIT_SET_128(b, lo, hi)              { nvAssert( (b) < 128 ); if ( (b) < 64 ) (lo) |= NVBIT64(b); else (hi) |= NVBIT64( b & 0x3F ); }
 
 #ifdef __cplusplus
 }

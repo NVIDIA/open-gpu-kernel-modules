@@ -80,22 +80,44 @@ typedef struct NV2080_CTRL_FLCN_GET_DMEM_USAGE_PARAMS {
  * @defgroup NVOS_INST_EVT Instrumentation event types.
  * @{
  */
+
+//! Reserved for uStreamer internal use.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_RSVD_DO_NOT_USE    0x00U
+
+//! RTOS CTXSW includes next taskID and number of ODP for previous task.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_CTXSW_END          0x01U
+
+//! Begin of a HW IRQ.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_HW_IRQ_BEGIN       0x02U
+
+//! End of a HW IRQ, before stack pinning etc is performed.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_HW_IRQ_END         0x03U
+
+//! RTOS Timer tick slip. (Only for # tick processed > 1).
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_TIMER_TICK         0x04U
+
+//! Task start processing an event, includes taskId, eventType and unitId (optional).
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_EVENT_BEGIN   0x05U
+
+//! Task finished processing an event, incldues taskId.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_EVENT_END     0x06U
+
+//! Latency for inserting response into RM queue.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_RM_QUEUE_LATENCY   0x07U
+
+//! Special / multi-purpose event, see field definition below.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_SPECIAL_EVENT 0x08U
-#define NV2080_CTRL_FLCN_NVOS_INST_EVT_DMA_BEGIN          0x09U
+
+//! Unused, recycle
+#define NV2080_CTRL_FLCN_NVOS_INST_EVT_UNUSED_0           0x09U
+
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_DMA_END            0x0AU
 
 //! Begin/end for arbitrary block of code. The payload contains a sub-ID for each location profiled.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_GENERIC_BEGIN      0x0BU
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_GENERIC_END        0x0CU
 
+//! Queueing time for the most recent event.
 #define NV2080_CTRL_FLCN_NVOS_INST_EVT_TASK_EVENT_LATENCY 0x0DU
 /*!@}*/
 
@@ -191,6 +213,7 @@ typedef struct NV2080_CTRL_FLCN_GET_ENGINE_ARCH_PARAMS {
 #define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_BEGIN_EVENT_TYPE                   23:16
 
 #define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_TASK_ID                          7:0
+#define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_CALLBACK_ID                     15:8
 #define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_RPC_FUNC                        15:8
 #define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_RPC_FUNC_BOBJ_CMD_BASE          0xF0
 #define NV2080_CTRL_FLCN_USTREAMER_EVENT_TAIL_PAYLOADCOMPACT_TASK_EVENT_END_CLASS_ID                       23:16

@@ -31,18 +31,26 @@
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "virtualization/vgpuconfigapi.h"
 #include "kernel/gpu/disp/kern_disp.h"
+#include "gpu/external_device/external_device.h"
 
 #include "class/cl2080.h" // NV20_SUBDEVICE_0
 
-#include "logdecode.h"
+#include "liblogdecode.h"
+#include "libelf.h"
 #include "nverror.h"
+#include "nv-firmware.h"
+#include "nv-firmware-chip-family-select.h"
 #include "nvtypes.h"
+#include "nvVer.h"
 #include "objrpc.h"
 #include "objtmr.h"
 #include "os/os.h"
 #include "rmgspseq.h"
 #include "sweng/dispsw.h"
+#include "kernel/gpu/timed_sema.h"
 #include "vgpu/rpc.h"
 #include "kernel/gpu/pmu/kern_pmu.h"
 #include "gpu/perf/kern_perf.h"
@@ -61,8 +69,6 @@
 #undef RPC_MESSAGE_GENERIC_UNION
 
 #include "gpu/gsp/message_queue_priv.h"
-#include "elf.h"
-
 
 #define RPC_HDR  ((rpc_message_header_v*)(pRpc->message_buffer))
 
@@ -97,11 +103,65 @@ static void _kgspFreeBootBinaryImage(OBJGPU *pGpu, KernelGsp *pKernelGsp);
 
 static NV_STATUS _kgspPrepareGspRmBinaryImage(OBJGPU *pGpu, KernelGsp *pKernelGsp, GSP_FIRMWARE *pGspFw);
 
-static NV_STATUS _kgspGetAndClearSignatureFromBinary(OBJGPU *pGpu, KernelGsp *pKernelGsp,
-                                                     GSP_FIRMWARE *pGspFw, MEMORY_DESCRIPTOR **ppSignatureMemdesc);
-
 static NV_STATUS _kgspCreateRadix3(OBJGPU *pGpu, MEMORY_DESCRIPTOR **ppMemdescRadix3,
                                    MEMORY_DESCRIPTOR *pMemdescData, const void *pData, NvU64 size);
+
+static NV_STATUS _kgspCreateSignatureMemdesc(OBJGPU *pGpu, KernelGsp *pKernelGsp,
+                                             GSP_FIRMWARE *pGspFw);
+
+static NV_STATUS _kgspFwContainerVerifyVersion(OBJGPU *pGpu, KernelGsp *pKernelGsp,
+                                               const void *pElfData, NvU64 elfDataSize,
+                                               const char *pNameInMsg);
+
+static NV_STATUS _kgspFwContainerGetSection(OBJGPU *pGpu, KernelGsp *pKernelGsp,
+                                            const void *pElfData, NvU64 elfDataSize,
+                                            const char *pSectionName,
+                                            const void **ppSectionData, NvU64 *pSectionSize);
+
+static NV_STATUS _kgspGetSectionNameForPrefix(OBJGPU *pGpu, KernelGsp *pKernelGsp,
+                                              char *pSectionNameBuf, NvLength sectionNameBufSize,
+                                              const char *pSectionPrefix);
+
+static void
+_kgspGetActiveRpcDebugData
+(
+    OBJRPC *pRpc,
+    NvU32 function,
+    NvU32 *data0,
+    NvU32 *data1
+)
+{
+    switch (function)
+    {
+        case NV_VGPU_MSG_FUNCTION_GSP_RM_CONTROL:
+        {
+            rpc_gsp_rm_control_v03_00 *rpc_params = &rpc_message->gsp_rm_control_v03_00;
+            *data0 = rpc_params->cmd;
+            *data1 = rpc_params->paramsSize;
+            break;
+        }
+        case NV_VGPU_MSG_FUNCTION_GSP_RM_ALLOC:
+        {
+            rpc_gsp_rm_alloc_v03_00 *rpc_params = &rpc_message->gsp_rm_alloc_v03_00;
+            *data0 = rpc_params->hClass;
+            *data1 = rpc_params->paramsSize;
+            break;
+        }
+        case NV_VGPU_MSG_FUNCTION_FREE:
+        {
+            rpc_free_v03_00 *rpc_params = &rpc_message->free_v03_00;
+            *data0 = rpc_params->params.hObjectOld;
+            *data1 = rpc_params->params.hObjectParent;
+            break;
+        }
+        default:
+        {
+            *data0 = 0;
+            *data1 = 0;
+            break;
+        }
+    }
+}
 
 /*!
  * GSP client RM RPC send routine
@@ -117,8 +177,10 @@ _kgspRpcSendMessage
     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
-    nvStatus = GspMsgQueueSendCommand(pRpc->pMessageQueueInfo, pGpu);
 
+    NV_ASSERT_OR_RETURN(!osIsGpuShutdown(pGpu), NV_ERR_GPU_IS_LOST);
+
+    nvStatus = GspMsgQueueSendCommand(pRpc->pMessageQueueInfo, pGpu);
     if (nvStatus != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "GspMsgQueueSendCommand failed: 0x%x\n", nvStatus);
@@ -127,6 +189,21 @@ _kgspRpcSendMessage
 
     // GSPRM TODO: Use this call to pass the actual index.
     kgspSetCmdQueueHead_HAL(pGpu, pKernelGsp, 0, 0);
+
+    // Add RPC history entry
+    {
+        NvU32 func = vgpu_rpc_message_header_v->function;
+        NvU32 entry;
+
+        entry = pRpc->rpcHistoryCurrent = (pRpc->rpcHistoryCurrent + 1) % RPC_HISTORY_DEPTH;
+
+        portMemSet(&pRpc->rpcHistory[entry], 0, sizeof(pRpc->rpcHistory[0]));
+        pRpc->rpcHistory[entry].function = func;
+
+        _kgspGetActiveRpcDebugData(pRpc, func,
+                                   &pRpc->rpcHistory[entry].data[0],
+                                   &pRpc->rpcHistory[entry].data[1]);
+    }
 
     return NV_OK;
 }
@@ -257,13 +334,14 @@ _kgspRpcRCTriggered
     KernelFifo    *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
     CHID_MGR      *pChidMgr;
     NvU32          status = NV_OK;
+    RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(rpc_params->nv2080EngineType);
 
     // check if there's a PCI-E error pending either in device status or in AER
     krcCheckBusError_HAL(pGpu, pKernelRc);
 
     status = kfifoGetChidMgrFromType(pGpu, pKernelFifo,
-                                     ENGINE_INFO_TYPE_NV2080,
-                                     rpc_params->nv2080EngineType,
+                                     ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                     (NvU32)rmEngineType,
                                      &pChidMgr);
     if (status != NV_OK)
         return status;
@@ -277,7 +355,7 @@ _kgspRpcRCTriggered
 
     return krcErrorSendEventNotifications_HAL(pGpu, pKernelRc,
         pKernelChannel,
-        rpc_params->nv2080EngineType, // unused on kernel side
+        rmEngineType,           // unused on kernel side
         rpc_params->exceptType,
         rpc_params->scope,
         rpc_params->partitionAttributionId);
@@ -340,8 +418,18 @@ _kgspRpcGpuacctPerfmonUtilSamples
     NvU32 i;
 
     dest = pGpuInstanceInfo->pSamplesParams;
-    portMemSet(dest, 0, sizeof(*dest));
+    if (dest == NULL)
+    {
+        // This RPC event can be received even when the RM hasn't fully started.
+        // For instance, CPU RM can take longer than usual to initialize,
+        // but the GSP RM sampling timer (a 1 sec interval) is about to tick.
+        // In that case, pSamplesParams can not even be allocated by that time.
+        // Ignore this RPC event if pSamplesParams has not been allocated yet.
+        // See GPUSWSEC-1543 for more info.
+        return;
+    }
 
+    portMemSet(dest, 0, sizeof(*dest));
     dest->type    = src->type;
     dest->bufSize = src->bufSize;
     dest->count   = src->count;
@@ -416,6 +504,93 @@ _kgspRpcPerfBridgelessInfoUpdate
     RPC_PARAMS(perf_bridgeless_info_update, _v17_00);
 
     kPerfGpuBoostSyncBridgelessUpdateInfo(pGpu, rpc_params->bBridgeless);
+}
+
+static void
+_kgspRpcNvlinkInbandReceivedData256Callback
+(
+    OBJGPU  *pGpu,
+    OBJRPC  *pRpc
+)
+{
+    RPC_PARAMS(nvlink_inband_received_data_256, _v17_00);
+
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_256_PARAMS_v17_00 *dest = &rpc_params->params;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV_ASSERT(NV_OK == knvlinkInbandMsgCallbackDispatcher(pGpu, pKernelNvlink, dest->dataSize, dest->data));
+}
+
+static void
+_kgspRpcNvlinkInbandReceivedData512Callback
+(
+    OBJGPU  *pGpu,
+    OBJRPC  *pRpc
+)
+{
+    RPC_PARAMS(nvlink_inband_received_data_512, _v17_00);
+
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_512_PARAMS_v17_00 *dest = &rpc_params->params;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV_ASSERT(NV_OK == knvlinkInbandMsgCallbackDispatcher(pGpu, pKernelNvlink, dest->dataSize, dest->data));
+}
+
+static void
+_kgspRpcNvlinkInbandReceivedData1024Callback
+(
+    OBJGPU  *pGpu,
+    OBJRPC  *pRpc
+)
+{
+    RPC_PARAMS(nvlink_inband_received_data_1024, _v17_00);
+
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_1024_PARAMS_v17_00 *dest = &rpc_params->params;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV_ASSERT(NV_OK == knvlinkInbandMsgCallbackDispatcher(pGpu, pKernelNvlink, dest->dataSize, dest->data));
+}
+
+static void
+_kgspRpcNvlinkInbandReceivedData2048Callback
+(
+    OBJGPU  *pGpu,
+    OBJRPC  *pRpc
+)
+{
+    RPC_PARAMS(nvlink_inband_received_data_2048, _v17_00);
+
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_2048_PARAMS_v17_00 *dest = &rpc_params->params;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV_ASSERT(NV_OK == knvlinkInbandMsgCallbackDispatcher(pGpu, pKernelNvlink, dest->dataSize, dest->data));
+}
+
+static void
+_kgspRpcNvlinkInbandReceivedData4096Callback
+(
+    OBJGPU  *pGpu,
+    OBJRPC  *pRpc
+)
+{
+    RPC_PARAMS(nvlink_inband_received_data_4096, _v17_00);
+
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_4096_PARAMS_v17_00 *dest = &rpc_params->params;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    NV_ASSERT(NV_OK == knvlinkInbandMsgCallbackDispatcher(pGpu, pKernelNvlink, dest->dataSize, dest->data));
+}
+
+/*!
+ * CPU-RM: Receive GPU Degraded status from GSP
+ */
+static void
+_kgspRpcEventIsGpuDegradedCallback
+(
+    OBJGPU  *pGpu,
+    OBJRPC  *pRpc
+)
+{
 }
 
 /*!
@@ -511,6 +686,24 @@ _kgspRpcSemaphoreScheduleCallback(
 }
 
 static NV_STATUS
+_kgspRpcTimedSemaphoreRelease(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc
+)
+{
+    RPC_PARAMS(timed_semaphore_release, _v01_00);
+
+    return tsemaRelease_HAL(pGpu,
+                            rpc_params->semaphoreVA,
+                            rpc_params->notifierVA,
+                            rpc_params->hVASpace,
+                            rpc_params->releaseValue,
+                            rpc_params->completionStatus,
+                            rpc_params->hClient);
+}
+
+
+static NV_STATUS
 _kgspRpcUcodeLibosPrint
 (
     OBJGPU *pGpu,
@@ -539,13 +732,50 @@ _kgspRpcUcodeLibosPrint
 }
 
 static NV_STATUS
+_kgspRpcVgpuGspPluginTriggered
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc
+)
+{
+    RPC_PARAMS(vgpu_gsp_plugin_triggered, _v17_00);
+
+    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+        return NV_ERR_NOT_SUPPORTED;
+
+    gpuGspPluginTriggeredEvent(pGpu, rpc_params->gfid, rpc_params->notifyIndex);
+    return NV_OK;
+}
+
+static NV_STATUS
 _kgspRpcGspVgpuConfig
 (
     OBJGPU *pGpu,
     OBJRPC *pRpc
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    RPC_PARAMS(vgpu_config_event, _v17_00);
+
+    NV_ASSERT_OR_RETURN(rpc_params->notifyIndex < NVA081_NOTIFIERS_MAXCOUNT,
+                        NV_ERR_INVALID_ARGUMENT);
+
+    CliNotifyVgpuConfigEvent(pGpu, rpc_params->notifyIndex);
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_kgspRpcGspExtdevIntrService
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc
+)
+{
+    RPC_PARAMS(extdev_intr_service, _v17_00);
+
+    extdevGsyncService(pGpu, rpc_params->lossRegStatus, rpc_params->gainRegStatus, rpc_params->miscRegStatus, rpc_params->rmStatus);
+
+    return NV_OK;
 }
 
 static NV_STATUS
@@ -565,6 +795,45 @@ _kgspRpcRgLineIntr
     return NV_OK;
 }
 
+static NV_STATUS
+_kgspRpcEventPlatformRequestHandlerStateSyncCallback
+(
+    OBJGPU* pGpu,
+    OBJRPC* pRpc
+)
+{
+    return NV_OK;
+}
+
+static
+const char *_getRpcName
+(
+    NvU32 id
+)
+{
+    static const char *rpcName[] =
+        {
+            #define X(UNIT, a) #a,
+            #define E(a) #a,
+            #undef _RPC_GLOBAL_ENUMS_H_
+            #include "vgpu/rpc_global_enums.h"
+            #undef X
+            #undef E
+        };
+
+    if (id < NV_VGPU_MSG_FUNCTION_NUM_FUNCTIONS)
+    {
+        return rpcName[id];
+    }
+    else if ((id > NV_VGPU_MSG_EVENT_FIRST_EVENT) && (id < NV_VGPU_MSG_EVENT_NUM_EVENTS))
+    {
+        NvU32 index = id - (NV_VGPU_MSG_EVENT_FIRST_EVENT - NV_VGPU_MSG_FUNCTION_NUM_FUNCTIONS) + 1;
+        return rpcName[index];
+    }
+
+    return "Unknown";
+}
+
 /*!
  * GSP client process RPC events
  */
@@ -578,8 +847,8 @@ _kgspProcessRpcEvent
     rpc_message_header_v *pMsgHdr = RPC_HDR;
     NV_STATUS nvStatus = NV_OK;
 
-    NV_PRINTF(LEVEL_INFO, "received event %d: status: %d  size: %d\n",
-            pMsgHdr->function, pMsgHdr->rpc_result, pMsgHdr->length);
+    NV_PRINTF(LEVEL_INFO, "received event: 0x%x (%s) status: 0x%x size: %d\n",
+              pMsgHdr->function, _getRpcName(pMsgHdr->function), pMsgHdr->rpc_result, pMsgHdr->length);
 
     switch(pMsgHdr->function)
     {
@@ -627,6 +896,34 @@ _kgspProcessRpcEvent
             _kgspRpcSemaphoreScheduleCallback(pGpu, pRpc);
             break;
 
+        case NV_VGPU_MSG_EVENT_TIMED_SEMAPHORE_RELEASE:
+            _kgspRpcTimedSemaphoreRelease(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_NVLINK_INBAND_RECEIVED_DATA_256:
+            _kgspRpcNvlinkInbandReceivedData256Callback(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_NVLINK_INBAND_RECEIVED_DATA_512:
+            _kgspRpcNvlinkInbandReceivedData512Callback(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_NVLINK_INBAND_RECEIVED_DATA_1024:
+            _kgspRpcNvlinkInbandReceivedData1024Callback(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_NVLINK_INBAND_RECEIVED_DATA_2048:
+            _kgspRpcNvlinkInbandReceivedData2048Callback(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_NVLINK_INBAND_RECEIVED_DATA_4096:
+            _kgspRpcNvlinkInbandReceivedData4096Callback(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_NVLINK_IS_GPU_DEGRADED :
+            _kgspRpcEventIsGpuDegradedCallback(pGpu, pRpc);
+            break;
+
         case NV_VGPU_MSG_EVENT_RG_LINE_INTR:
             _kgspRpcRgLineIntr(pGpu, pRpc);
             break;
@@ -635,8 +932,20 @@ _kgspProcessRpcEvent
             nvStatus = _kgspRpcUcodeLibosPrint(pGpu, pRpc);
             break;
 
+        case NV_VGPU_MSG_EVENT_VGPU_GSP_PLUGIN_TRIGGERED:
+            nvStatus = _kgspRpcVgpuGspPluginTriggered(pGpu, pRpc);
+            break;
+
         case NV_VGPU_MSG_EVENT_VGPU_CONFIG:
             nvStatus = _kgspRpcGspVgpuConfig(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_EXTDEV_INTR_SERVICE:
+            nvStatus = _kgspRpcGspExtdevIntrService(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_PFM_REQ_HNDLR_STATE_SYNC_CALLBACK:
+            nvStatus = _kgspRpcEventPlatformRequestHandlerStateSyncCallback(pGpu, pRpc);
             break;
 
         case NV_VGPU_MSG_EVENT_GSP_INIT_DONE:   // Handled by _kgspRpcRecvPoll.
@@ -647,7 +956,8 @@ _kgspProcessRpcEvent
             // for the timeout has already happened, and returning an error here
             // causes subsequent messages to fail.  So return NV_OK.
             //
-            NV_PRINTF(LEVEL_ERROR, "Unexpected RPC function 0x%x\n", pMsgHdr->function);
+            NV_PRINTF(LEVEL_ERROR, "Unexpected RPC event 0x%x (%s)\n",
+                      pMsgHdr->function, _getRpcName(pMsgHdr->function));
             break;
     }
 
@@ -691,8 +1001,8 @@ _kgspRpcDrainOneEvent
         if (nvStatus != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                        "Failed to process received event %d: status=0x%x\n",
-                        pMsgHdr->function, nvStatus);
+                      "Failed to process received event 0x%x (%s): status=0x%x\n",
+                      pMsgHdr->function, _getRpcName(pMsgHdr->function), nvStatus);
         }
     }
 
@@ -743,27 +1053,6 @@ _kgspRpcDrainEvents
     return nvStatus;
 }
 
-static
-const char *_getRpcName
-(
-    NvU32 func
-)
-{
-    static const char *rpcName[] =
-        {
-            #define X(UNIT, a) #a,
-            #define E(a) #a,
-            #undef _RPC_GLOBAL_ENUMS_H_
-            #include "vgpu/rpc_global_enums.h"
-            #undef X
-            #undef E
-        };
-
-    NV_ASSERT_OR_RETURN(func < NV_VGPU_MSG_FUNCTION_NUM_FUNCTIONS, "");
-
-    return rpcName[func];
-}
-
 /*!
  * Log Xid 119 - GSP RPC Timeout
  */
@@ -775,32 +1064,67 @@ _kgspLogXid119
     NvU32 expectedFunc
 )
 {
-    NvU32 data[2] = {0};
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+    NvU32 historyEntry = pRpc->rpcHistoryCurrent;
+    NvU32 activeData[2];
 
-    NV_ASSERT(expectedFunc == vgpu_rpc_message_header_v->function);
+    if (!pKernelGsp->bXid119Printed)
+    {
+        NV_PRINTF(LEVEL_NOTICE,
+                  "********************************* GSP Failure **********************************\n");
+    }
 
-    if (expectedFunc == NV_VGPU_MSG_FUNCTION_GSP_RM_CONTROL)
-    {
-        rpc_gsp_rm_control_v03_00 *rpc_params = &rpc_message->gsp_rm_control_v03_00;
-        data[0] = rpc_params->cmd;
-        data[1] = rpc_params->paramsSize;
-    }
-    else
-    if (expectedFunc == NV_VGPU_MSG_FUNCTION_GSP_RM_ALLOC)
-    {
-        rpc_gsp_rm_alloc_v03_00 *rpc_params = &rpc_message->gsp_rm_alloc_v03_00;
-        data[0] = rpc_params->hClass;
-        data[1] = rpc_params->paramsSize;
-    }
+    NV_ASSERT(expectedFunc == pRpc->rpcHistory[historyEntry].function);
+
+    _kgspGetActiveRpcDebugData(pRpc, expectedFunc,
+                               &activeData[0], &activeData[1]);
 
     nvErrorLog_va((void*)pGpu, GSP_RPC_TIMEOUT,
-                  "Timeout waiting for RPC from GSP! Expected function %s (0x%x 0x%x).",
+                  "Timeout waiting for RPC from GSP! Expected function %d (%s) (0x%x 0x%x).",
+                  expectedFunc,
                   _getRpcName(expectedFunc),
-                  data[0], data[1]);
-#if defined(DEVELOP) || defined(DEBUG)
-    // dump the stack
-    osAssertFailed();
-#endif
+                  pRpc->rpcHistory[historyEntry].data[0],
+                  pRpc->rpcHistory[historyEntry].data[1]);
+
+    if (!pKernelGsp->bXid119Printed)
+    {
+        NvU32 historyIndex;
+
+        if ((expectedFunc != vgpu_rpc_message_header_v->function)     ||
+            (pRpc->rpcHistory[historyEntry].data[0] != activeData[0]) ||
+            (pRpc->rpcHistory[historyEntry].data[1] != activeData[1]))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Current RPC function %d (%s) or data (0x%x 0x%x) does not match expected function %d (%s) or data (0x%x 0x%x).\n",
+                      vgpu_rpc_message_header_v->function, _getRpcName(vgpu_rpc_message_header_v->function),
+                      activeData[0], activeData[1],
+                      expectedFunc, _getRpcName(expectedFunc),
+                      pRpc->rpcHistory[historyEntry].data[0],
+                      pRpc->rpcHistory[historyEntry].data[1]);
+        }
+
+        NV_PRINTF(LEVEL_ERROR, "RPC history (CPU -> GSP):\n");
+        NV_PRINTF(LEVEL_ERROR, "\tentry\tfunc\t\t\t\tdata\n");
+        for (historyIndex = 0; historyIndex < RPC_HISTORY_DEPTH; historyIndex++)
+        {
+            historyEntry = (pRpc->rpcHistoryCurrent + RPC_HISTORY_DEPTH - historyIndex) % RPC_HISTORY_DEPTH;
+            NV_PRINTF(LEVEL_ERROR, "\t%c%-2d\t%2d %-22s\t0x%08x 0x%08x\n",
+                      ((historyIndex == 0) ? ' ' : '-'),
+                      historyIndex,
+                      pRpc->rpcHistory[historyEntry].function,
+                      _getRpcName(pRpc->rpcHistory[historyEntry].function),
+                      pRpc->rpcHistory[historyEntry].data[0],
+                      pRpc->rpcHistory[historyEntry].data[1]);
+        }
+
+        NV_PRINTF(LEVEL_ERROR, "Dumping stack:\n");
+        osAssertFailed();
+
+        NV_PRINTF(LEVEL_NOTICE,
+                  "********************************************************************************\n");
+    }
+
+    pKernelGsp->bXid119Printed = NV_TRUE;
 }
 
 /*!
@@ -821,6 +1145,19 @@ _kgspRpcRecvPoll
     NvBool     bSlowGspRpc = IS_EMULATION(pGpu) || IS_SIMULATION(pGpu);
 
     //
+    // We do not allow recursive polling. This can happen if e.g.
+    //    1. CPU-RM issues RPC-A to GSP and polls waiting for it to finish
+    //    2. While servicing RPC-A, GSP emits an async event back to CPU-RM
+    //    3. CPU-RM services the async event and sends another synchronous RPC-B
+    //    4. RPC-A response will come first, but CPU-RM is now waiting on RPC-B
+    //
+    // We don't have a good way to handle this and should just be deferring the
+    // second RPC until the first one is done, via e.g. osQueueWorkItem().
+    // This assert is meant to catch and loudly fail such cases.
+    //
+    NV_ASSERT_OR_RETURN(!pKernelGsp->bPollingForRpcResponse, NV_ERR_INVALID_STATE);
+    pKernelGsp->bPollingForRpcResponse = NV_TRUE;
+
     // GSP-RM init in emulation/simulation environment is extremely slow,
     // so need to increment timeout.
     // Apply the timeout extension to other RPCs as well, mostly so that
@@ -854,12 +1191,13 @@ _kgspRpcRecvPoll
 
         switch (nvStatus) {
             case NV_WARN_MORE_PROCESSING_REQUIRED:
-                return NV_OK;
+                nvStatus = NV_OK;
+                goto done;
             case NV_OK:
                 // Check timeout and continue outer loop.
                 break;
             default:
-                return nvStatus;
+                goto done;
         }
 
         osSpinLoop();
@@ -868,9 +1206,18 @@ _kgspRpcRecvPoll
         if (nvStatus == NV_ERR_TIMEOUT)
         {
             _kgspLogXid119(pGpu, pRpc, expectedFunc);
-            return nvStatus;
+            goto done;
+        }
+
+        if (osIsGpuShutdown(pGpu))
+        {
+            nvStatus = NV_ERR_GPU_IS_LOST;
+            goto done;
         }
     }
+
+done:
+    pKernelGsp->bPollingForRpcResponse = NV_FALSE;
 
     if (bSlowGspRpc)
     {
@@ -901,6 +1248,9 @@ _kgspInitRpcInfrastructure
     }
 
     OBJRPC *pRpc = pKernelGsp->pRpc;
+
+    portMemSet(&pRpc->rpcHistory, 0, sizeof(pRpc->rpcHistory));
+    pRpc->rpcHistoryCurrent   = RPC_HISTORY_DEPTH - 1;
 
     pRpc->pMessageQueueInfo   = NULL;
 
@@ -1031,13 +1381,16 @@ _kgspInitLibosLoggingStructures
         const char *szMemoryId;
         const char *szPrefix;
         NvU32       size;
+        const char *elfSectionName;
     } logInitValues[] =
     {
-        {"LOGINIT", "INIT", 0x10000},    // 64KB for stack traces
+        {"LOGINIT", "INIT", 0x10000, ".fwlogging_init"},    // 64KB for stack traces
 #if defined(DEVELOP) || defined(DEBUG)
-        {"LOGRM",   "RM",   0x40000}     // 256KB RM debug log on develop/debug builds
+        {"LOGVGPU", "VGPU", 0x40000, ".fwlogging_vgpu"},    // 256KB VGPU debug log on develop/debug builds
+        {"LOGRM",   "RM",   0x40000, ".fwlogging_rm"}       // 256KB RM debug log on develop/debug builds
 #else
-        {"LOGRM",   "RM",   0x10000}     // 64KB RM debug log on release builds
+        {"LOGVGPU", "VGPU", 0x10000, ".fwlogging_vgpu"},    // 64KB VGPU debug log on release builds
+        {"LOGRM",   "RM",   0x10000, ".fwlogging_rm"}       // 64KB RM debug log on release builds
 #endif
     };
     ct_assert(NV_ARRAY_ELEMENTS(logInitValues) <= LIBOS_LOG_MAX_LOGS);
@@ -1092,27 +1445,53 @@ _kgspInitLibosLoggingStructures
 
         pLog->id8 = _kgspGenerateInitArgId(logInitValues[idx].szMemoryId);
 
-        libosLogAddLog(&pKernelGsp->logDecode,
+        libosLogAddLogEx(&pKernelGsp->logDecode,
             pLog->pTaskLogBuffer,
             memdescGetSize(pLog->pTaskLogDescriptor),
             pGpu->gpuInstance,
-            logInitValues[idx].szPrefix);
+            (gpuGetChipArch(pGpu) >> GPU_ARCH_SHIFT),
+            gpuGetChipImpl(pGpu),
+            logInitValues[idx].szPrefix,
+            logInitValues[idx].elfSectionName);
     }
 
     // Setup symbol decoder
     if (pGspFw->pLogElf)
     {
-        pKernelGsp->pLogElf = portMemAllocNonPaged(pGspFw->logElfSize);
+        const void *pLogData = NULL;
+        NvU64 logSize = 0;
+
+        NV_ASSERT_OK_OR_GOTO(
+            nvStatus,
+            _kgspFwContainerVerifyVersion(pGpu, pKernelGsp,
+                pGspFw->pLogElf,
+                pGspFw->logElfSize,
+                "GSP firmware log"),
+            error_cleanup);
+
+        NV_ASSERT_OK_OR_GOTO(
+            nvStatus,
+            _kgspFwContainerGetSection(pGpu, pKernelGsp,
+                pGspFw->pLogElf,
+                pGspFw->logElfSize,
+                GSP_LOGGING_SECTION_NAME,
+                &pLogData,
+                &logSize),
+            error_cleanup);
+
+        pKernelGsp->pLogElf = portMemAllocNonPaged(logSize);
         if (pKernelGsp->pLogElf == NULL)
         {
             NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory for log elf");
             nvStatus = NV_ERR_NO_MEMORY;
             goto error_cleanup;
         }
-        portMemCopy(pKernelGsp->pLogElf, pGspFw->logElfSize, pGspFw->pLogElf, pGspFw->logElfSize);
+        portMemCopy(pKernelGsp->pLogElf, logSize, pLogData, logSize);
 
         if (pKernelGsp->pLogElf)
-            libosLogInit(&pKernelGsp->logDecode, pKernelGsp->pLogElf);
+        {
+            libosLogInit(&pKernelGsp->logDecode, pKernelGsp->pLogElf, logSize);
+        }
     }
 
 error_cleanup:
@@ -1434,6 +1813,7 @@ done:
     {
         rmGpuGroupLockRelease(gpusLockedMask, GPUS_LOCK_FLAGS_NONE);
     }
+
     return status;
 }
 
@@ -1567,8 +1947,16 @@ kgspDumpGspLogs_IMPL
     NvBool bSyncNvLog
 )
 {
+    if (!IS_GSP_CLIENT(pGpu))
+    {
+        return;
+    }
+
     if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog)
+    {
         libosExtractLogs(&pKernelGsp->logDecode, bSyncNvLog);
+    }
+
 }
 
 /*!
@@ -1605,6 +1993,8 @@ kgspPopulateGspRmInitArgs_IMPL
         pSrInitArgs->oldLevel            = pGspInitArgs->oldLevel;
         pSrInitArgs->flags               = pGspInitArgs->flags;
     }
+
+    pGspArgs->gpuInstance = pGpu->gpuInstance;
 }
 
 /*!
@@ -1722,7 +2112,7 @@ _kgspFreeBootBinaryImage
 }
 
 static NV_STATUS
-_kgspPrepareGspRmBinaryImage
+_kgspCreateSignatureMemdesc
 (
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
@@ -1730,20 +2120,190 @@ _kgspPrepareGspRmBinaryImage
 )
 {
     NV_STATUS status = NV_OK;
+    NvU8 *pSignatureVa = NULL;
 
-    // Get signature from gsp.bin and zero out the signature sections
-    status =
-        _kgspGetAndClearSignatureFromBinary(pGpu, pKernelGsp,
-            pGspFw, &pKernelGsp->pSignatureMemdesc);
+    // NOTE: align to 256 because that's the alignment needed for Booter DMA
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        memdescCreate(&pKernelGsp->pSignatureMemdesc, pGpu,
+            NV_ALIGN_UP(pGspFw->signatureSize, 256), 256,
+            NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_NONE));
 
-    if ((status != NV_OK) && (status != NV_ERR_NOT_SUPPORTED))
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        memdescAlloc(pKernelGsp->pSignatureMemdesc), fail_create);
+
+    pSignatureVa = memdescMapInternal(pGpu, pKernelGsp->pSignatureMemdesc, TRANSFER_FLAGS_NONE);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        (pSignatureVa != NULL) ? NV_OK : NV_ERR_INSUFFICIENT_RESOURCES,
+        fail_alloc);
+
+    portMemCopy(pSignatureVa, memdescGetSize(pKernelGsp->pSignatureMemdesc),
+        pGspFw->pSignatureData, pGspFw->signatureSize);
+
+    memdescUnmapInternal(pGpu, pKernelGsp->pSignatureMemdesc, 0);
+    pSignatureVa = NULL;
+
+    return status;
+
+fail_alloc:
+    memdescFree(pKernelGsp->pSignatureMemdesc);
+
+fail_create:
+    memdescDestroy(pKernelGsp->pSignatureMemdesc);
+    pKernelGsp->pSignatureMemdesc = NULL;
+
+    return status;
+}
+
+/*!
+ * Verify that the version embedded in the .fwversion section of the ELF given
+ * by pElfData and elfDataSize matches our NV_VERSION_STRING.
+ */
+static NV_STATUS
+_kgspFwContainerVerifyVersion
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    const void *pElfData,
+    NvU64 elfDataSize,
+    const char *pNameInMsg
+)
+{
+    const char *pFwversion;
+    NvU64 fwversionSize;
+    NvU64 expectedVersionLength = portStringLength(NV_VERSION_STRING);
+
     {
-        return status;
+        const void *pFwversionRaw;
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            _kgspFwContainerGetSection(pGpu, pKernelGsp,
+                pElfData,
+                elfDataSize,
+                GSP_VERSION_SECTION_NAME,
+                &pFwversionRaw,
+                &fwversionSize));
+
+        pFwversion = (const char *) pFwversionRaw;
     }
 
-    NV_ASSERT_OK_OR_RETURN(
+    // Check that text in .fwversion section of ELF matches our NV_VERSION_STRING
+    if ((fwversionSize != expectedVersionLength + 1) ||
+        (portStringCompare(pFwversion, NV_VERSION_STRING, expectedVersionLength) != 0))
+    {
+        // Sanity check .fwversion before attempting to print it in the error message
+        if ((fwversionSize > 0) &&
+            (fwversionSize < 64) &&
+            (pFwversion[fwversionSize - 1] == '\0'))
+        {
+            NV_PRINTF(LEVEL_ERROR, "%s version mismatch: got version %s, expected version %s\n",
+                      pNameInMsg, pFwversion, NV_VERSION_STRING);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "%s version unknown or malformed, expected version %s\n",
+                      pNameInMsg, NV_VERSION_STRING);
+        }
+        return NV_ERR_INVALID_DATA;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * Get the name of the section corresponding to the given section name
+ * prefix and the current chip.
+ */
+static NV_STATUS
+_kgspGetSectionNameForPrefix
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    char *pSectionNameBuf,  // out
+    NvLength sectionNameBufSize,
+    const char *pSectionPrefix
+)
+{
+    NvLength sectionPrefixLength;
+
+    nv_firmware_chip_family_t chipFamily;
+    const char *pChipFamilyName;
+    NvLength chipFamilyNameLength;
+
+    NvLength totalSize;
+
+    NV_ASSERT_OR_RETURN(pSectionNameBuf != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(sectionNameBufSize > 0, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pSectionPrefix != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    chipFamily = nv_firmware_get_chip_family(gpuGetChipArch(pGpu),
+                                             gpuGetChipImpl(pGpu));
+    NV_ASSERT_OR_RETURN(chipFamily != NV_FIRMWARE_CHIP_FAMILY_NULL,
+                        NV_ERR_INVALID_STATE);
+
+    pChipFamilyName = nv_firmware_chip_family_to_string(chipFamily);
+    NV_ASSERT_OR_RETURN(pChipFamilyName != NULL, NV_ERR_INVALID_STATE);
+
+    sectionPrefixLength = portStringLength(pSectionPrefix);
+    chipFamilyNameLength = portStringLength(pChipFamilyName);
+
+    totalSize = sectionPrefixLength + chipFamilyNameLength + 1;
+    NV_ASSERT_OR_RETURN(sectionNameBufSize >= sectionPrefixLength + 1,
+                        NV_ERR_BUFFER_TOO_SMALL);
+    NV_ASSERT_OR_RETURN(sectionNameBufSize >= totalSize,
+                        NV_ERR_BUFFER_TOO_SMALL);
+
+    portStringCopy(pSectionNameBuf, sectionNameBufSize,
+                   pSectionPrefix, sectionPrefixLength + 1);
+    portStringCat(pSectionNameBuf, sectionNameBufSize,
+                  pChipFamilyName, chipFamilyNameLength + 1);
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_kgspPrepareGspRmBinaryImage
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    GSP_FIRMWARE *pGspFw
+)
+{
+    char signatureSectionName[32];
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        _kgspFwContainerVerifyVersion(pGpu, pKernelGsp,
+            pGspFw->pBuf,
+            pGspFw->size,
+            "GSP firmware image"));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        _kgspFwContainerGetSection(pGpu, pKernelGsp,
+            pGspFw->pBuf,
+            pGspFw->size,
+            GSP_IMAGE_SECTION_NAME,
+            &pGspFw->pImageData,
+            &pGspFw->imageSize));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        _kgspGetSectionNameForPrefix(pGpu, pKernelGsp,
+            signatureSectionName, sizeof(signatureSectionName),
+            kgspGetSignatureSectionNamePrefix_HAL(pGpu, pKernelGsp)));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        _kgspFwContainerGetSection(pGpu, pKernelGsp,
+            pGspFw->pBuf,
+            pGspFw->size,
+            signatureSectionName,
+            &pGspFw->pSignatureData,
+            &pGspFw->signatureSize));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        _kgspCreateSignatureMemdesc(pGpu, pKernelGsp,
+            pGspFw));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         _kgspCreateRadix3(pGpu, &pKernelGsp->pGspUCodeRadix3Descriptor,
-             NULL, pGspFw->pBuf, pGspFw->size));
+            NULL, pGspFw->pImageData, pGspFw->imageSize));
 
     return NV_OK;
 }
@@ -1898,60 +2458,44 @@ error_ret:
     return status;
 }
 
-/*!
- * Process gsp.bin elf buffer and extract the corresponding signature.
- *
- * All signatures will also be cleared (set to 0) because the binary was signed
- * before the signatures were inserted.
- *
- * @param[in]      pGpu                 GPU object pointer
- * @param[in]      pKernelGsp           KernelGsp object pointer
- * @param[inout]   pGspFw               GSP firmware structure pointer, sections
- *                                      whose names start with the signature
- *                                      section name prefix will be cleared
- * @param[out]     ppSignatureMemdesc   Memdesc to store the signature. If
- *                                      return code is NV_OK, the memdesc must
- *                                      be freed by caller
- */
 static NV_STATUS
-_kgspGetAndClearSignatureFromBinary
+_kgspFwContainerGetSection
 (
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
-    GSP_FIRMWARE *pGspFw,
-    MEMORY_DESCRIPTOR **ppSignatureMemdesc
+    const void *pElfData,
+    NvU64 elfDataSize,
+    const char *pSectionName,
+    const void **ppSectionData,
+    NvU64 *pSectionSize
 )
 {
-    NV_STATUS status = NV_OK;
-    NvU8 *pGspBuf = (NvU8*) pGspFw->pBuf;
-    const elf64_header *pElfHeader;
-    const elf64_shdr *pElfSectionHeader;
+    const NvU8 *pGspBuf = pElfData;
+    const LibosElf64Header *pElfHeader;
+    const LibosElf64SectionHeader *pElfSectionHeader;
     NvU64 elfSectionHeaderTableLength;
     NvU64 elfSectionHeaderMaxIdx;
     NvU64 elfSectionNamesTableOffset;
     NvU64 elfSectionNamesTableSize;
     NvU64 elfSectionNamesTableMaxIdx;
-    NvU64 elfSectionMaxIdx;
     static const NvU32 elfMagicNumber = 0x464C457F;
     static const NvU8 elfClass64 = 0x2;
     static const NvU8 elfLittleEndian = 0x1;
-    const char *pSignatureSectionName = kgspGetSignatureSectionName_HAL(pGpu, pKernelGsp);
-    NvLength signatureSectionNameLength;
-    NvLength signaturePrefixLength;
-    NvU8 *pSignatureVa = NULL;
+    const char *pCurrentSectionName;
+    NvLength sectionNameLength;
     NvS16 idx;
-    NvBool signatureSectionFound = NV_FALSE;
 
-    NV_ASSERT_OR_RETURN(ppSignatureMemdesc != NULL, NV_ERR_INVALID_PARAMETER);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pSignatureSectionName != NULL, NV_ERR_NOT_SUPPORTED);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGspFw->size >= sizeof(elf64_header), NV_ERR_INVALID_DATA);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pElfData != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, elfDataSize > 0, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pSectionName != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, ppSectionData != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pSectionSize != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    signatureSectionNameLength = portStringLength(pSignatureSectionName);
-    signaturePrefixLength = portStringLength(SIGNATURE_SECTION_NAME_PREFIX);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, elfDataSize >= sizeof(LibosElf64Header), NV_ERR_INVALID_DATA);
 
-    *ppSignatureMemdesc = NULL;
+    sectionNameLength = portStringLength(pSectionName);
 
-    pElfHeader = (const elf64_header*) pGspBuf;
+    pElfHeader = (const LibosElf64Header*) pGspBuf;
 
     // Check for the elf identifier at the beginning of the file
     NV_CHECK_OR_RETURN(LEVEL_ERROR, *(NvU32*)&pElfHeader->ident == elfMagicNumber, NV_ERR_INVALID_DATA);
@@ -1961,83 +2505,55 @@ _kgspGetAndClearSignatureFromBinary
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pElfHeader->ident[4] == elfClass64, NV_ERR_INVALID_DATA);
 
     // Make sure that the elf section header table is valid
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pElfHeader->shentsize == sizeof(elf64_shdr), NV_ERR_INVALID_DATA);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pElfHeader->shentsize == sizeof(LibosElf64SectionHeader), NV_ERR_INVALID_DATA);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeMulU64(pElfHeader->shentsize, pElfHeader->shnum, &elfSectionHeaderTableLength), NV_ERR_INVALID_DATA);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(pElfHeader->shoff, elfSectionHeaderTableLength - 1, &elfSectionHeaderMaxIdx), NV_ERR_INVALID_DATA);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGspFw->size >= elfSectionHeaderMaxIdx, NV_ERR_INVALID_DATA);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, elfDataSize >= elfSectionHeaderMaxIdx, NV_ERR_INVALID_DATA);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pElfHeader->shstrndx <= pElfHeader->shnum, NV_ERR_INVALID_DATA);
 
     // Get the offset and size of the table that holds the section names and make sure they are valid
-    pElfSectionHeader = (const elf64_shdr*) &pGspBuf[pElfHeader->shoff + (pElfHeader->shstrndx * pElfHeader->shentsize)];
+    pElfSectionHeader = (const LibosElf64SectionHeader*) &pGspBuf[pElfHeader->shoff + (pElfHeader->shstrndx * pElfHeader->shentsize)];
     elfSectionNamesTableOffset = pElfSectionHeader->offset;
     elfSectionNamesTableSize = pElfSectionHeader->size;
     NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(elfSectionNamesTableOffset, elfSectionNamesTableSize - 1, &elfSectionNamesTableMaxIdx), NV_ERR_INVALID_DATA);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGspFw->size >= elfSectionNamesTableMaxIdx, NV_ERR_INVALID_DATA);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, elfDataSize >= elfSectionNamesTableMaxIdx, NV_ERR_INVALID_DATA);
 
     // Iterate through all of the section headers to find the signatures
-    pElfSectionHeader = (const elf64_shdr*) &pGspBuf[elfSectionHeaderMaxIdx + 1 - sizeof(*pElfSectionHeader)];
+    pElfSectionHeader = (const LibosElf64SectionHeader*) &pGspBuf[elfSectionHeaderMaxIdx + 1 - sizeof(*pElfSectionHeader)];
     for (idx = pElfHeader->shnum - 1; idx >= 0; idx--, pElfSectionHeader--)
     {
+        NvU64 currentSectionNameMaxLength;
+        NvU64 elfSectionMaxIdx;
+
         // Make sure the header name index fits within the section names table
-        NV_CHECK_OR_GOTO(LEVEL_ERROR, elfSectionNamesTableSize - 1 >= pElfSectionHeader->name, fail_invalid_data);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, elfSectionNamesTableSize - 1 >= pElfSectionHeader->name, NV_ERR_INVALID_DATA);
+        currentSectionNameMaxLength = elfSectionNamesTableSize - pElfSectionHeader->name - 1;
+        pCurrentSectionName = (const char *) &pGspBuf[elfSectionNamesTableOffset + pElfSectionHeader->name];
 
-        // Check whether the section name matches the signature prefix. All signature binaries need to be
-        // cleared from the elf because the gsp binary was signed with them empty
-        if (portStringCompare((const char *)&pGspBuf[elfSectionNamesTableOffset + pElfSectionHeader->name],
-                SIGNATURE_SECTION_NAME_PREFIX,
-                signaturePrefixLength) == 0)
+        // Make sure the elf section size and offset are valid
+        if (pElfSectionHeader->size > 0)
         {
-            signatureSectionFound = NV_TRUE;
-
-            // Make sure the elf section size and offset are valid
-            NV_CHECK_OR_GOTO(LEVEL_ERROR, portSafeAddU64(pElfSectionHeader->offset, pElfSectionHeader->size - 1, &elfSectionMaxIdx), fail_invalid_data);
-            NV_CHECK_OR_GOTO(LEVEL_ERROR, pGspFw->size >= elfSectionMaxIdx, fail_invalid_data);
-
-            // Check whether the section name matches the current chip signature
-            if (portStringCompare((const char *)&pGspBuf[elfSectionNamesTableOffset + pElfSectionHeader->name + signaturePrefixLength],
-                    pSignatureSectionName + signaturePrefixLength,
-                    signatureSectionNameLength - signaturePrefixLength + 1) == 0)
-            {
-                // NOTE: align to 256 because that's the alignment needed for Booter DMA
-                NV_ASSERT_OK_OR_GOTO(status,
-                    memdescCreate(ppSignatureMemdesc, pGpu,
-                        NV_ALIGN_UP(pElfSectionHeader->size, 256), 256,
-                        NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_NONE),
-                    fail);
-                NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(*ppSignatureMemdesc), fail);
-                pSignatureVa = memdescMapInternal(pGpu, *ppSignatureMemdesc, TRANSFER_FLAGS_NONE);
-                if (pSignatureVa == NULL)
-                {
-                    status = NV_ERR_INSUFFICIENT_RESOURCES;
-                    goto fail;
-                }
-                portMemCopy(pSignatureVa, memdescGetSize(*ppSignatureMemdesc),
-                    &pGspBuf[pElfSectionHeader->offset], pElfSectionHeader->size);
-                memdescUnmapInternal(pGpu, *ppSignatureMemdesc, 0);
-                pSignatureVa = NULL;
-            }
-
-            // Clear the signature binary
-            portMemSet(&pGspBuf[pElfSectionHeader->offset], 0, pElfSectionHeader->size);
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(pElfSectionHeader->offset, pElfSectionHeader->size - 1, &elfSectionMaxIdx), NV_ERR_INVALID_DATA);
         }
-        // We assume that all signature sections are grouped together sequentially
-        else if (signatureSectionFound == NV_TRUE)
+        else
         {
-            break;
+            elfSectionMaxIdx = pElfSectionHeader->offset;
+        }
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, elfDataSize >= elfSectionMaxIdx, NV_ERR_INVALID_DATA);
+
+        // Check whether the section name matches the expected section name
+        if ((sectionNameLength <= currentSectionNameMaxLength) &&
+            (portStringCompare(pCurrentSectionName, pSectionName, sectionNameLength) == 0) &&
+            (pCurrentSectionName[sectionNameLength] == '\0'))
+        {
+            *ppSectionData = &pGspBuf[pElfSectionHeader->offset];
+            *pSectionSize = pElfSectionHeader->size;
+
+            return NV_OK;
         }
     }
 
-    return status;
-
-fail_invalid_data:
-    status = NV_ERR_INVALID_DATA;
-fail:
-    if (pSignatureVa != NULL)
-        memdescUnmapInternal(pGpu, *ppSignatureMemdesc, 0);
-    memdescFree(*ppSignatureMemdesc);
-    memdescDestroy(*ppSignatureMemdesc);
-    *ppSignatureMemdesc = NULL;
-    return status;
+    return NV_ERR_OBJECT_NOT_FOUND;
 }
 
 /*!

@@ -22,6 +22,7 @@
  */
 
 #include "core/core.h"
+#include "core/locks.h"
 #include "gpu/gpu.h"
 #include "gpu/bus/third_party_p2p.h"
 #include "platform/p2p/p2p_caps.h"
@@ -937,13 +938,14 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
                                                0,
                                                pExtentInfo->fbApertureOffset, status);
                     }
-                    else
+                    else if ((status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
                     {
                         status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
                                                          pExtentInfo->pMemDesc,
                                                          pExtentInfo->fbApertureOffset,
                                                          pExtentInfo->length,
                                                          BUS_MAP_FB_FLAGS_MAP_UNICAST);
+                        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
                     }
                     NV_ASSERT(status == NV_OK);
 

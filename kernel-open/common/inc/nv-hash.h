@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-22 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -91,6 +91,6 @@ static inline void _nv_hash_init(struct hlist_head *ht, unsigned int sz)
  * @key: the key of the objects to iterate over
  */
 #define nv_hash_for_each_possible(name, obj, member, key) \
-    nv_hlist_for_each_entry(obj, &name[NV_HASH_MIN(key, NV_HASH_BITS(name))], member)
+    hlist_for_each_entry(obj, &name[NV_HASH_MIN(key, NV_HASH_BITS(name))], member)
 
 #endif // __NV_HASH_H__

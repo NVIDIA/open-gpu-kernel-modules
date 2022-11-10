@@ -20,19 +20,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _clc770_h_
-#define _clc770_h_
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <nvtypes.h>
 
-#include "nvtypes.h"
+//
+// This file was generated with FINN, an NVIDIA coding tool.
+// Source file: class/clc770.finn
+//
 
-#define  NVC770_DISPLAY                                             (0x0000C770)
+#define NVC770_DISPLAY (0xc770U) /* finn: Evaluated from "NVC770_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
-#ifdef __cplusplus
-};     /* extern "C" */
-#endif
 
-#endif /* _clc770_h_ */
+

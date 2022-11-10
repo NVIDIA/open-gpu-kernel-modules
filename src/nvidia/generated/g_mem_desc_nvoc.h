@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -88,8 +88,8 @@ typedef NvU32      NV_ADDRESS_SPACE;
 #define ADDR_FBMEM      2         // Frame buffer memory space
 #define ADDR_REGMEM     3         // NV register memory space
 #define ADDR_VIRTUAL    4         // Virtual address space only
-#define ADDR_FABRIC     5         // Fabric address space for the GPA based addressing.
 #define ADDR_FABRIC_V2  6         // Fabric address space for the FLA based addressing. Will replace ADDR_FABRIC.
+#define ADDR_FABRIC_MC  8         // Multicast fabric address space (MCFLA)
 
 //
 // Address translation identifiers:
@@ -161,6 +161,18 @@ typedef NvU32      NV_ADDRESS_SPACE;
 typedef struct ADDRESS_TRANSLATION_ *ADDRESS_TRANSLATION;
 #define AT_VARIANT(x)  ((struct ADDRESS_TRANSLATION_ *)x)
 #define AT_VALUE(x)    ((NvU64)(NvUPtr)(x))
+
+//
+// RM defined Memdesc surface names. The names are sent to Mods to enable feature verification.
+//
+#define NV_RM_SURF_NAME_INSTANCE_BLOCK                      "rm_instance_block_surface"
+#define NV_RM_SURF_NAME_PAGE_TABLE                          "rm_page_table_surface"
+#define NV_RM_SURF_NAME_NONREPLAYABLE_FAULT_BUFFER          "rm_non_replayable_fault_buffer_surface"
+#define NV_RM_SURF_NAME_REPLAYABLE_FAULT_BUFFER             "rm_replayable_fault_buffer_surface"
+#define NV_RM_SURF_NAME_CE_FAULT_METHOD_BUFFER              "rm_ce_fault_method_buffer_surface"
+#define NV_RM_SURF_NAME_ACCESS_COUNTER_BUFFER               "rm_access_counter_buffer_surface"
+#define NV_RM_SURF_NAME_VAB                                 "rm_vab_surface"
+#define NV_RM_SURF_NAME_GR_CIRCULAR_BUFFER                  "rm_gr_ctx_circular_buffer_surface"
 
 //
 // Overrides address translation in SR-IOV enabled usecases
@@ -366,6 +378,13 @@ typedef struct MEMORY_DESCRIPTOR
 
     // We verified that memdesc is safe to be mapped as large pages
     NvBool bForceHugePages;
+
+    // Memory handle that libos 3+ returns for dynamically mapped sysmem
+    NvU32 libosRegionHandle;
+    NvU64 baseVirtualAddress;
+
+    // Indicates granularity of mapping. Will be used to implement dynamic page sizes.
+    NvU32 pageArrayGranularity;
 
     //
     // If PhysicallyContiguous is NV_TRUE, this array consists of one element.
@@ -893,6 +912,25 @@ NV_STATUS memdescRegisterToGSP(OBJGPU *pGpu, NvHandle hClient, NvHandle hParent,
 
 NV_STATUS memdescDeregisterFromGSP(OBJGPU *pGpu, NvHandle hClient, NvHandle hParent, NvHandle hMemory);
 
+/*!
+* @brief Send memory descriptor from CPU-RM to GSP
+*
+* This function will create a MemoryList object with the MEMORY_DESCRIPTOR information on CPU-RM
+* It will then use memdescRegisterToGSP API to create a corresponding MemoryList object on GSP-RM
+* with the same Handle as that on CPU-RM
+*
+* This MemoryList object has the same MEMORY_DESCRIPTOR info as the input pMemDesc
+* The CPU-RM handle can be sent to GSP-RM and then used on GSP end to retrieve the MemoryList object
+* and then the corresponding MEMORY_DESCRIPTOR
+*
+* @param[in]  pGpu          OBJGPU pointer
+* @param[in]  pMemDesc      MemDesc pointer
+* @param[out] pHandle       Pointer to handle of MemoryList object
+*
+* @returns NV_STATUS
+*/
+NV_STATUS memdescSendMemDescToGSP(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvHandle *pHandle);
+
 // cache maintenance functions
 void memdescFlushGpuCaches(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc);
 void memdescFlushCpuCaches(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc);
@@ -900,6 +938,15 @@ void memdescFlushCpuCaches(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc);
 // Map memory descriptor for RM internal access
 void* memdescMapInternal(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags);
 void memdescUnmapInternal(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags);
+
+/*!
+ * @brief Set the name of the surface.
+ * 
+ * @param[in] pGpu     OBJGPU pointer.
+ * @param[in] pMemDesc MEMORY_DESCRIPTOR pointer that the name is to be set for.
+ * @param[in] name     const char pointer to the name to be set.
+ */
+void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, const char *suffix);
 
 //
 // External flags:
@@ -1077,6 +1124,20 @@ void memdescUnmapInternal(OBJGPU *pGpu, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags
 // currently for this, so a WAR is required for r515. The intent
 // is to remove this by r525.
 //
+#define MEMDESC_FLAGS_WSL_SHARED_MEMORY             NVBIT64(46)
+
+//
+// Skip IOMMU mapping creation during alloc for sysmem.
+// A mapping might be requested later with custom parameters.
+//
+#define MEMDESC_FLAGS_SKIP_IOMMU_MAPPING            NVBIT64(47)
+
+//
+// Specical case to allocate the runlists for Guests from its GPA
+// In MODS, VM's GPA allocated from subheap so using this define to
+// Forcing memdesc to allocated from subheap 
+//
+#define MEMDESC_FLAGS_FORCE_ALLOC_FROM_SUBHEAP      NVBIT64(48)
 
 #endif // _MEMDESC_H_
 

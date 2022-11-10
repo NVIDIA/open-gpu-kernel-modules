@@ -32,6 +32,7 @@
 #include "core/system.h"
 #include "os/os.h"
 #include "nvpcie.h"
+#include "nvdevid.h"
 
 #include "nvcst.h"
 
@@ -1252,18 +1253,6 @@ Amazon_Gravitron2_setupFunc
 // Fujitsu A64FX Setup Function
 static NV_STATUS
 Fujitsu_A64FX_setupFunc
-(
-    OBJCL *pCl
-)
-{
-    // TODO Need to check if any more PDB properties should be set
-    pCl->setProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT, NV_TRUE);
-    return NV_OK;
-}
-
-// Phytium FT2000 Setup Function
-static NV_STATUS
-Phytium_FT2000_setupFunc
 (
     OBJCL *pCl
 )

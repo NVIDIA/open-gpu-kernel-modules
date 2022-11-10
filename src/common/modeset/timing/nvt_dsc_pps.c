@@ -2171,7 +2171,13 @@ DSC_GeneratePPS
     if (*pBitsPerPixelX16 != 0)
     {
         *pBitsPerPixelX16 = DSC_AlignDownForBppPrecision(*pBitsPerPixelX16, pDscInfo->sinkCaps.bitsPerPixelPrecision);
-        if (*pBitsPerPixelX16 > in->bits_per_pixel)
+
+        // The calculation of in->bits_per_pixel here in PPSlib, which is the maximum bpp that is allowed by available bandwidth, 
+        // which is applicable to DP alone and not to HDMI FRL. 
+        // Before calling PPS lib to generate PPS data, HDMI library has done calculation according to HDMI2.1 spec 
+        // to determine if FRL rate is sufficient for the requested bpp. So restricting the condition to DP alone.
+        if ((pWARData && (pWARData->connectorType == DSC_DP)) &&
+            (*pBitsPerPixelX16 > in->bits_per_pixel))
         {
             DSC_Print("ERROR - Invalid bits per pixel value specified.");
             ret = NVT_STATUS_INVALID_PARAMETER;

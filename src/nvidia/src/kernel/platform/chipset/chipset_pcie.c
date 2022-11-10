@@ -47,6 +47,7 @@
 #include "core/thread_state.h"
 #include "nveGPUConfig.h"
 #include "Nvcm.h"
+#include "nvdevid.h"
 
 #include "published/maxwell/gm107/dev_nv_xve.h" // NV_XVE_VCCAP_CTRL0*
 #include "published/pcie_switch/pcie_switch_ref.h"
@@ -854,7 +855,7 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
         // A dagwood board would not have bIsGemini flag set but would have
         // bIsMultiGpu flag set.
         //
-        bIsMultiGpu = gpuIsMultiGpuBoard(pGpu, NULL, &bIsGemini);
+        bIsMultiGpu = gpuIsMultiGpuBoard(pGpu, &bIsGemini);
         if (bIsGemini)
         {
             pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_GEMINI, NV_TRUE);
@@ -1916,7 +1917,7 @@ clCountBR_IMPL
 //
 // clSearchBR04() returns the bus, revision of the BR04s in the system,
 // and their count.
-// It ignores the BR04s located in GX2 boards.
+// It ignores the BR04s located in Gemini boards.
 // It includes BR04s located on the motherboard, or on a riser board.
 //
 void
@@ -1954,7 +1955,7 @@ clSearchBR04_IMPL
 
         //
         // Look at the devices connected to this BR04.
-        // If it is a GX2 GPU, then skip.
+        // If it is a Gemini GPU, then skip.
         // BR04 has one upstream port and 2 to 4 downstream ports.
         // We look at the downstream ports of BR04.
         // We explicitely look for at least 2 BR04 downstream ports.
@@ -1968,7 +1969,7 @@ clSearchBR04_IMPL
             {
                 //
                 // We have one potential downstream port
-                // Look to if a GX2 GPU is connected to this BR04
+                // Look to if a Gemini GPU is connected to this BR04
                 //
                 pBusTopologyInfoBR04GPU = pCl->pBusTopologyInfo;
                 while (pBusTopologyInfoBR04GPU)
@@ -2262,7 +2263,6 @@ clFindBR_IMPL
     NvU32 regValue = 0;
     NvU32 gpuBrNot3rdPartyCount = 0, gpuBrCount = 0;
     NvBool bGpuIsMultiGpuBoard = NV_FALSE;
-    NvBool bIsGX2                = NV_FALSE;
     NvBool bIsGemini             = NV_FALSE;
     NvU32  gpuBR04Count          = 0;
     NvU8 BR03Bus = 0xFF;
@@ -2280,7 +2280,7 @@ clFindBR_IMPL
                                       &vendorIDUp, &deviceIDUp,
                                       &downstreamPortBus1);
 
-    bGpuIsMultiGpuBoard = gpuIsMultiGpuBoard(pGpu, &bIsGX2, &bIsGemini);
+    bGpuIsMultiGpuBoard = gpuIsMultiGpuBoard(pGpu, &bIsGemini);
 
     // Traverse the pci tree
     while (handleUp)
@@ -2334,9 +2334,9 @@ clFindBR_IMPL
                                  &funcUp, &vendorIDUp, &deviceIDUp);
     }
 
-    if ((bIsGX2 || bIsGemini) && gpuBR04Count)
+    if (bIsGemini && gpuBR04Count)
     {
-        // Ignore one BR04 in case of GX2 or Gemini
+        // Ignore one BR04 in case of Gemini
         gpuBR04Count--;
     }
     if (gpuBR04Count)
@@ -3341,6 +3341,7 @@ NV_STATUS AMD_RP1630_setupFunc(OBJGPU *pGpu, OBJCL *pCl)
     return NV_OK;
 }
 
+
 static NV_STATUS
 objClGpuIs3DController(OBJGPU *pGpu)
 {
@@ -3461,9 +3462,6 @@ clAreGpusBehindSameBridge_IMPL
  * Pulls the devid info out of the pGpu to pass to gpuDevIdIsMultiGpuBoard().
  *
  * @param[in]  pGpu       OBJGPU pointer
- * @param[out] pbIsGX2    NvBool pointer in which to store whether GPU an an SLI
- *                        mutliboard config.  May be NULL if caller does not
- *                        care to receive this information.
  * @parma[out] pbIsGemini NvBool pointer in which to store whether GPU is a
  *                        Gemini multiboard config. May be NULL if caller does
  *                        not care to receive this information.
@@ -3474,13 +3472,10 @@ NvBool
 gpuIsMultiGpuBoard
 (
     OBJGPU *pGpu,
-    NvBool *pbIsGX2,
     NvBool *pbIsGemini
 )
 {
 
-    if (pbIsGX2 != NULL)
-        *pbIsGX2 = NV_FALSE;
     if (pbIsGemini != NULL)
         *pbIsGemini = NV_FALSE;
 
@@ -4415,6 +4410,7 @@ clChipsetAspmPublicControl_IMPL
     NvU32 linkControlRegOffset = PCIECapPtr + 0x10;
     NvU32 regVal;
 
+    // sanity check
     if (aspmState > CL_PCIE_LINK_CTRL_STATUS_ASPM_MASK)
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid ASPM state passed.\n");
@@ -4525,4 +4521,775 @@ NvBool clRootportNeedsNosnoopWAR_FWCLIENT(OBJGPU *pGpu, OBJCL *pCl)
     NV_ASSERT_OR_RETURN(pSCI != NULL, NV_FALSE);
 
     return pSCI->bClRootportNeedsNosnoopWAR;
+}
+
+/*!
+ * @brief   determine the size of the specified PCI capability on the specified device.
+ *
+ * @param[in]   deviceHandle    handle to the device whose capability we are getting the size for
+ * @param[in]   capId           the ID of the capacity we want to get the size for
+ * @param[in]   capOffset       the offset in the PCIE configuration space where the capacity is located
+ *
+ * @return  NvU16 size of the requested capacity.
+ *
+ */
+static NvU16 _clPcieGetPcieCapSize(void *deviceHandle, NvU16 capType, NvU16 capId, NvU16 capOffset)
+{
+    NvU16 capSize = 0;
+    NvU32 tempDword;
+    NvU16 count;
+    NvU16 idx;
+
+    if (deviceHandle == NULL)
+    {
+        return 0;
+    }
+    switch (capType)
+    {
+    case RM_PCIE_DC_CAP_TYPE_PCI:
+        switch (capId)
+        {
+        case CAP_ID_NULL:
+            capSize = CAP_NULL_SIZE;
+            break;
+
+        case CAP_ID_PMI:
+            capSize = CAP_PMI_SIZE;
+            break;
+
+        case CAP_ID_VPD:
+            capSize = CAP_VPD_SIZE;
+            break;
+
+        case CAP_ID_MSI:
+            capSize = PCI_MSI_BASE_SIZE;
+            tempDword = osPciReadWord(deviceHandle, capOffset + PCI_MSI_CONTROL);
+
+            if (FLD_TEST_REF(PCI_MSI_CONTROL_64BIT_CAPABLE, _TRUE, tempDword))
+            {
+                capSize += PCI_MSI_64BIT_ADDR_CAPABLE_ADJ_SIZE;
+            }
+            if (FLD_TEST_REF(PCI_MSI_CONTROL_PVM_CAPABLE, _TRUE, tempDword))
+            {
+                capSize += PCI_MSI_PVM_CAPABLE_ADJ_SIZE;
+            }
+            break;
+
+        case CAP_ID_PCI_EXPRESS:
+            capSize = CAP_PCI_EXPRESS_SIZE;
+            break;
+
+        case CAP_ID_MSI_X:
+            capSize = PCI_MSI_X_BASE_SIZE;
+            // todo: add table collection
+            break;
+
+        case CAP_ID_ENHANCED_ALLOCATION:
+            tempDword = osPciReadByte(deviceHandle, PCI_HEADER_TYPE0_HEADER_TYPE);
+            switch (tempDword)
+            {
+            case PCI_HEADER_TYPE0_HEADER_TYPE_0:
+                capSize = PCI_ENHANCED_ALLOCATION_TYPE_0_BASE_SIZE;
+                break;
+
+            case PCI_HEADER_TYPE0_HEADER_TYPE_1:
+                capSize = PCI_ENHANCED_ALLOCATION_TYPE_0_BASE_SIZE;
+                break;
+
+            default:
+                break;
+            }
+            // get the entry count.
+            if (capSize != 0)
+            {
+                tempDword = osPciReadDword(deviceHandle, capOffset + PCI_ENHANCED_ALLOCATION_FIRST_DW);
+                count = REF_VAL(PCI_ENHANCED_ALLOCATION_FIRST_DW_NUM_ENTRIES, tempDword);
+                for (idx = 0; idx < count; ++idx)
+                {
+                    tempDword = osPciReadDword(deviceHandle, capOffset + capSize + PCI_ENHANCED_ALLOCATION_ENTRY_HEADER);
+                    tempDword = REF_VAL(PCI_ENHANCED_ALLOCATION_ENTRY_HEADER_ENTRY_SIZE, tempDword);
+                    capSize += (NvU16)((tempDword + 1) * NV_SIZEOF32(NvU32));
+                }
+            }
+            break;
+
+        case CAP_ID_FPB:
+            capSize = CAP_FPB_SIZE;
+            break;
+
+        case CAP_ID_AF:
+            capSize = CAP_AF_SIZE;
+            break;
+
+        case CAP_ID_SUBSYSTEM_ID:
+            capSize = CAP_SUBSYSTEM_ID_SIZE;
+            break;
+
+        case CAP_ID_AGP:
+        case CAP_ID_SLOT_ID:
+        case CAP_ID_HOT_SWAP:
+        case CAP_ID_PCI_X:
+        case CAP_ID_HYPER_TRANSPORT:
+        case CAP_ID_DEBUG_PORT:
+        case CAP_ID_CRC:
+        case CAP_ID_HOT_PLUG:
+        case CAP_ID_AGP8X:
+        case CAP_ID_SECURE:
+            // don't know the sizes of these capabilities right now so just grab 32 bytes;
+            capSize = 32;
+            break;
+
+        default:
+            // this is an unrecognized capability.
+            // Assume it is a Vendor Specific capability
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCI_VENDOR_SPECIFIC_CAP_HEADER);
+            capSize = REF_VAL(PCI_VENDOR_SPECIFIC_CAP_HEADER_LENGTH, tempDword);
+            break;
+        }
+        break;
+
+    case RM_PCIE_DC_CAP_TYPE_PCIE:
+        switch (capId)
+        {
+        case PCIE_CAP_ID_SECONDARY_PCIE_CAPABILITY:
+            capSize = PCIE_CAP_SECONDARY_PCIE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DATA_LINK:
+            capSize = PCIE_CAP_DATA_LINK_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PHYSLAYER_16_GT:
+            capSize = PCIE_CAP_PHYSLAYER_16_GT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PHYSLAYER_32_GT:
+            capSize = PCIE_CAP_PHYSLAYER_32_GT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PHYSLAYER_64_GT:
+            capSize = PCIE_CAP_PHYSLAYER_64_GT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_FLT_LOGGING:
+            capSize = PCIE_CAP_FLT_LOGGING_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DEVICE_3:
+            capSize = PCIE_CAP_DEVICE_3_SIZE;
+            break;
+
+        case PCIE_CAP_ID_LANE_MARGINING_AT_RECEVER:
+            capSize = PCIE_CAP_LANE_MARGINING_AT_RECEVER_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ACS:
+            capSize = PCIE_CAP_ACS_SIZE;
+            break;
+
+        case PCIE_CAP_ID_POWER:
+            capSize = PCIE_CAP_POWER_SIZE;
+            break;
+
+        case PCIE_CAP_ID_LATENCY_TOLERANCE:
+            capSize = PCIE_CAP_LATENCY_TOLERANCE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_L1_PM_SUBSTATES:
+            capSize = PCIE_CAP_L1_PM_SUBSTATE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ERROR:
+            capSize = PCIE_CAP_ERROR_SIZE;
+            break;
+
+        case PCIE_CAP_ID_RESIZABLE_BAR:
+            capSize = PCIE_CAP_RESIZABLE_BAR_SIZE;
+            break;
+
+        case PCIE_CAP_ID_VF_RESIZABLE_BAR:
+            capSize = PCIE_CAP_VF_RESIZABLE_BAR_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ARI:
+            capSize = PCIE_CAP_ARI_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PASID:
+            capSize = PCIE_CAP_PASID_SIZE;
+            break;
+
+        case PCIE_CAP_ID_FRS_QUEUING:
+            capSize = PCIE_CAP_FRS_QUEUING_SIZE;
+            break;
+
+        case PCIE_CAP_ID_FLIT_PERF_MEASURMENT:
+            capSize = PCIE_CAP_FLIT_PERF_MEASURMENT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_FLIT_ERROR_INJECTION:
+            capSize = PCIE_CAP_FLIT_ERROR_INJECTION_SIZE;
+            break;
+
+        case PCIE_CAP_ID_VC:
+            capSize = PCIE_VIRTUAL_CHANNELS_BASE_SIZE;
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_VC_REGISTER_1);
+            count = REF_VAL(PCIE_VC_REGISTER_1_EXTENDED_VC_COUNT, tempDword);
+            capSize += count * PCIE_VIRTUAL_CHANNELS_EXTENDED_VC_ENTRY_SIZE;
+            // to do: add arbitration tables.
+            break;
+
+        case PCIE_CAP_ID_PCIE_CAP_ID_MFVC:
+            capSize = PCIE_PCIE_CAP_ID_MFVC_BASE_SIZE;
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_MFVC_REGISTER_1);
+            count = REF_VAL(PCIE_MFVC_REGISTER_1_EXTENDED_VC_COUNT, tempDword);
+            capSize += count * PCIE_PCIE_CAP_ID_MFVC_EXTENDED_VC_ENTRY_SIZE;
+            // to do: add arbitration tables.
+            break;
+
+        case PCIE_CAP_ID_SERIAL:
+            capSize = PCIE_CAP_DEV_SERIAL_SIZE;
+            break;
+
+        case PCIE_CAP_ID_VENDOR_SPECIFIC:
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_VENDOR_SPECIFIC_HEADER_1);
+            capSize = REF_VAL(PCIE_VENDOR_SPECIFIC_HEADER_1_LENGTH, tempDword);
+            break;
+
+        case PCIE_CAP_ID_RCRB:
+            capSize = PCIE_CAP_RCRB_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ROOT_COMPLEX:
+            capSize = PCIE_ROOT_COMPLEX_BASE_SIZE;
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_ROOT_COMPLEX_SELF_DESC_REGISTER);
+            count = REF_VAL(PCIE_ROOT_COMPLEX_SELF_DESC_REGISTER_NUM_LINK_ENTRIES, tempDword);
+            capSize += count * PCIE_ROOT_COMPLEX_LINK_ENTRY_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ROOT_COMPLEX_INTERNAL_LINK_CTRL:
+            capSize = PCIE_CAP_ROOT_COMPLEX_INTERNAL_LINK_CTRL_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ROOT_COMPLEX_EVENT_COLLECTOR_ENDPOINT:
+            capSize = PCIE_CAP_ROOT_COMPLEX_EVENT_COLLECTOR_ENDPOINT_SIZE;
+            break;
+
+        case PCIE_CAP_ID_MULTICAST:
+            capSize = PCIE_CAP_MULTICAST_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DYNAMIC_POWER_ALLOCATION:
+            capSize = PCIE_CAP_DYNAMIC_POWER_ALLOCATION_SIZE;
+            break;
+
+        case PCIE_CAP_ID_TPH:
+            capSize = PCIE_TPH_BASE_SIZE;
+            tempDword = osPciReadDword(deviceHandle, capOffset + PCIE_TPH_REQUESTOR_REGISTER);
+            count = REF_VAL(PCIE_TPH_REQUESTOR_REGISTER_ST_TABLE_SIZE, tempDword);
+            capSize += count * PCIE_TPH_ST_ENTRY_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DPC:
+            capSize = PCIE_CAP_DPC_SIZE;
+            break;
+
+        case PCIE_CAP_ID_PTM:
+            capSize = PCIE_CAP_PTM_SIZE;
+            break;
+
+        case PCIE_CAP_ID_READINESS_TIME_REPORTING:
+            capSize = PCIE_CAP_READINESS_TIME_REPORTING_SIZE;
+            break;
+
+        case PCIE_CAP_ID_HIERARCHY_ID:
+            capSize = PCIE_CAP_HIERARCHY_ID_SIZE;
+            break;
+
+        case PCIE_CAP_ID_NPEM:
+            capSize = PCIE_CAP_NPEM_SIZE;
+            break;
+
+        case PCIE_CAP_ID_ALTERNATE_PROTOCOL:
+            capSize = PCIE_CAP_ALTERNATE_PROTOCOL_SIZE;
+            break;
+
+        case PCIE_CAP_ID_SFI:
+            capSize = PCIE_CAP_SFI_SIZE;
+            break;
+
+        case PCIE_CAP_ID_DATA_OBJECT_EXCHANGE:
+            capSize = PCIE_CAP_DATA_OBJECT_EXCHANGE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_SHADOW_FUNCTIONS:
+            capSize = PCIE_CAP_SHADOW_FUNCTIONS_SIZE;
+            break;
+
+        case PCIE_CAP_ID_IDE:
+            capSize = PCIE_CAP_IDE_SIZE;
+            break;
+
+        case PCIE_CAP_ID_NULL:
+            capSize = PCIE_CAP_NULL_SIZE;
+            break;
+
+        default:
+            // this is an unrecognized capability.
+            // so just grab the header so we can try to figure out what it is
+            // (unlike PCI Capabilities PCIE has a specific ID for vendor specific capabilities,
+            // so any unrecognized capability is something we do not support)
+            capSize = PCIE_CAP_HEADER_SIZE;
+            break;
+        }
+        break;
+    }
+    return capSize;
+}
+
+/*!
+ * @brief   create a map of the locations of the capabilities of the specified type of the specified type.
+ *
+ * @param[in]   deviceHandle    handle to the device whose capability we are getting the size for
+ * @param[in]   type            the type of capabilities we are mapping (PCI vs PCIE)
+ * @param[out]  capMap          a map of the capabilities found in the configuration space
+ *
+ * @return  NvU16 size of the requested capacity.
+ */
+static NvU16 _clPciePopulateCapMap(void * pDeviceHandle, NvU16 type, CL_PCIE_DC_CAPABILITY_MAP * pCapMap)
+{
+    NvU32 tempDword;
+    NvU16 blkOffset = 0;
+
+    if (pCapMap == NULL)
+    {
+        return 0;
+    }
+    // clear the capability map.
+    portMemSet(pCapMap, 0, NV_SIZEOF32(*pCapMap));
+
+    // if there is not a valid device handle, we are done.
+    if (pDeviceHandle == NULL)
+    {
+        return 0;
+    }
+
+    // get the offset to the first block depending on type
+    switch (type)
+    {
+    case RM_PCIE_DC_CAP_TYPE_PCI:
+        blkOffset = osPciReadByte(pDeviceHandle, PCI_HEADER_TYPE0_CAP_PTR);
+        break;
+    case RM_PCIE_DC_CAP_TYPE_PCIE:
+        blkOffset = PCIE_CAPABILITY_BASE;
+        break;
+    default:
+        return 0;
+        break;
+    }
+    // run thru the capabilities until we run out of capabilities,
+    //   or run out of space
+    while (blkOffset != 0)
+    {
+        // save the offset of the capability
+        pCapMap->entries[pCapMap->count].blkOffset = blkOffset;
+
+        // get the capability id & location of next capability
+        switch (type)
+        {
+        case RM_PCIE_DC_CAP_TYPE_PCI:
+            // read the capability header
+            tempDword = osPciReadWord(pDeviceHandle, blkOffset);
+
+            // extract the capability id
+            pCapMap->entries[pCapMap->count].id = REF_VAL(PCI_CAP_HEADER_ID, tempDword);
+
+            // extract the offset for the next capability
+            blkOffset = REF_VAL(PCI_CAP_HEADER_NEXT, tempDword);
+            break;
+
+        case RM_PCIE_DC_CAP_TYPE_PCIE:
+            // read the capability header
+            tempDword = osPciReadDword(pDeviceHandle, blkOffset);
+
+            // extract the capability id
+            pCapMap->entries[pCapMap->count].id = REF_VAL(PCIE_CAP_HEADER_ID, tempDword);
+
+            // extract the offset for the next capability
+            blkOffset = REF_VAL(PCIE_CAP_HEADER_NEXT, tempDword);
+            break;
+        }
+        // move on to the next entry.
+        pCapMap->count++;
+
+        if (pCapMap->count >= NV_ARRAY_ELEMENTS(pCapMap->entries))
+        {
+            // we've run out of space
+            break;
+        }
+    }
+    return pCapMap->count;
+}
+
+/*!
+ * @brief   copy a block of data from the PCI config space to a buffer.
+ *
+ * @param[out]  pBuffer         a pointer to the buffer that the collected data will be copied to
+ * @param[out]  bufferSz        the size of the buffer the data will be stored in
+ * @param[in]   deviceHandle    handle to the device whose data is being collected
+ * @param[in]   base            the offset of the data to be collected in config space
+ * @param[out]  blockSz         size of the data to be collected.
+ *
+ * @return  NvU16 size of the collected.
+ */
+static NvU16 _clPcieCopyConfigSpaceDiagData(NvU8* pBuffer, NvU32 bufferSz, void *pDeviceHandle, NvU32 base, NvU32 blockSz)
+{
+    NvU32   offset = base;
+    NvU16   dataSz = 0;
+
+    if ((pBuffer == NULL) || (bufferSz == 0) || (pDeviceHandle == NULL) || blockSz > (bufferSz))
+    {
+        return 0;
+    }
+
+    // switch on the boundary we are at so we can do whatever we need to reach a dword boundary.
+    switch (offset & 0x03)
+    {
+    case 0:             // we are at a dword boundary. move on to the DWORD copies
+        break;
+
+    case 1:             // we are on a byte boundary, read a byte to get us to a word boundary
+    case 3:
+        *pBuffer = osPciReadByte(pDeviceHandle, offset);
+        pBuffer += 1;
+        offset += 1;
+        dataSz += 1;
+
+        // did we reach a dword boundary?
+        if ((offset & 0x03) == 0)
+        {
+            break;
+        }
+        // fall thru to read next word & bring us to a DWORD boundary;
+
+    case 2:             // we are on a word boundary,
+        // if we need at least a word of data,
+        // read another word to get us to a dword boundary
+        // if we need less than a word, we will pick it up below.
+        if ((blockSz - dataSz) > 1)
+        {
+            *((NvU16*)pBuffer) = osPciReadWord(pDeviceHandle, offset);
+            pBuffer += 2;
+            offset += 2;
+            dataSz += 2;
+        }
+        break;
+    }
+
+    // do all the full dword reads
+    for (; (blockSz - dataSz) >= sizeof(NvU32); dataSz += NV_SIZEOF32(NvU32))
+    {
+        // read a dword of data
+        *((NvU32*)pBuffer) = osPciReadDword(pDeviceHandle, offset);
+
+        // update the references to the next data to be read/written.
+        pBuffer += NV_SIZEOF32(NvU32);
+        offset += NV_SIZEOF32(NvU32);
+    }
+
+    // we are at the nearest dword boundary to the end of the block.
+    // read any remaining data.
+    switch (blockSz - dataSz)
+    {
+    default:    // something is wrong, we shouldn't have more than 3 bytes to get.
+        break;
+
+    case 0:     // we have everything we want.
+        break;
+
+    case 2:     // we have at least a word left, read the word.
+    case 3:
+        *((NvU16*)pBuffer) = osPciReadWord(pDeviceHandle, offset);
+        pBuffer += 2;
+        offset += 2;
+        dataSz += 2;
+        // did we get everything?
+        if ((blockSz - dataSz) == 0)
+        {
+            break;
+        }
+        // fall thru to grab the last byte.
+
+    case 1:     // we have 1 byte left, read it as a byte.
+        *pBuffer = osPciReadByte(pDeviceHandle, offset);
+        dataSz += 1;
+        break;
+    }
+    return dataSz;
+}
+
+/*!
+ * @brief   Save the header & data for a diagnostic block
+ *
+ * @param[in]   pDeviceHandle   handle of device we are collecting data from
+ *                              if NULL data will not be collected from config space
+ * @param[in]   pScriptEntry    pointer to collection script entry we are collecting data for
+ *                              may be NULL in which case only the data is transferred
+ * @param[in]   blkOffset       offset in PCIE config space we are collecting
+ * @param[in]   blkSize         size of the block in config space we are collecting
+ * @param[out]  pBuffer         pointer to diagnostic output buffer
+ * @param[in]   bufferSize      size of diagnostic output buffer
+ *
+ * @return  NvU16 size of diagnostic data collected.
+ */
+NvU16 _clPcieSavePcieDiagnosticBlock(void *pDeviceHandle, CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY *pScriptEntry, NvU16 blkOffset, NvU16 blkSize, void * pBuffer, NvU32 size)
+{
+    CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY *pBlkHeader;
+    NvU16 collectedDataSize = 0;
+
+    // do some parameter checks
+    if ((pBuffer == NULL)
+        || ((blkOffset + NV_SIZEOF32(*pBlkHeader) + blkSize) > PCI_EXTENDED_CONFIG_SPACE_LENGTH)
+        || ((NV_SIZEOF32(*pBlkHeader) + blkSize) > size))
+    {
+        return 0;
+    }
+    if (pScriptEntry != NULL)
+    {
+        // copy the block header & update the size
+        pBlkHeader = (CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY*)pBuffer;
+        *pBlkHeader = *pScriptEntry;
+        collectedDataSize += NV_SIZEOF32(*pBlkHeader);
+    }
+    if((pDeviceHandle != NULL)
+        && (0 < blkSize)
+        && (pBuffer != NULL))
+    {
+        // get the data block
+        collectedDataSize += _clPcieCopyConfigSpaceDiagData(&(((NvU8*)pBuffer)[collectedDataSize]), size - collectedDataSize,
+            pDeviceHandle,
+            blkOffset, blkSize);
+    }
+    return collectedDataSize;
+}
+
+/*!
+ * @brief   Retrieve diagnostic information to be used to identify the cause of errors based on a provided script
+ *
+ * @param[in]   pGpu        GPU object pointer
+ * @param[in]   pScript     pointer to collection script
+ * @param[in]   count       number of entries in the collection script
+ * @param[out]  pBuffer     pointer to diagnostic output buffer
+ * @param[in]   bufferSize  size of diagnostic output buffer
+ *
+ * @return  NvU16 size of diagnostic data collected.
+ */
+NvU16 _clPcieGetDiagnosticData(OBJGPU *pGpu, CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY *pScript, NvU16 count, NvU8 * pBuffer, NvU32 size)
+{
+    static volatile NvS32   capMapWriteLock = 0;
+    static volatile NvBool  capMapInitialized = NV_FALSE;
+    static CL_PCIE_DC_CAPABILITY_MAP
+                            capMap[RM_PCIE_DEVICE_COUNT][RM_PCIE_DC_CAP_TYPE_COUNT];
+    NBADDR                  *pUpstreamPort = NULL;
+    NvU32                   domain = 0;
+    NvU8                    bus = 0;
+    NvU8                    device = 0;
+    NvU16                   vendorId, deviceId;
+    void                    *pPCIeHandles[RM_PCIE_DEVICE_COUNT];
+    NvU16                   collectedDataSize = 0;
+    NvU16                   idx;
+    NvU16                   idx2;
+    CL_PCIE_DC_CAPABILITY_MAP
+                            *pActiveMap = NULL;
+    CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY
+                            blkHeader;
+    NvU16                   capType;
+    NvBool                  bCollectAll;
+
+    if ((pGpu == NULL) || (pBuffer == NULL) || (size == 0) || IS_RTLSIM(pGpu))
+    {
+        return 0;
+    }
+    portMemSet(pPCIeHandles, 0, NV_SIZEOF32(pPCIeHandles));
+
+    // get PCIE Handles.
+    pUpstreamPort = &pGpu->gpuClData.upstreamPort.addr;
+    pPCIeHandles[RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE] = osPciInitHandle(pUpstreamPort->domain,
+        pUpstreamPort->bus,
+        pUpstreamPort->device,
+        0,
+        &vendorId,
+        &deviceId);
+    if (osGpuReadReg032(pGpu, PCI_HEADER_TYPE0_VENDOR_ID) == pGpu->chipId0)
+    {
+        domain = gpuGetDomain(pGpu);
+        bus = gpuGetBus(pGpu);
+        device = gpuGetDevice(pGpu);
+        pPCIeHandles[RM_PCIE_DEVICE_TYPE_GPU] = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
+    }
+
+    // run thru the collection script entries.
+    for (idx = 0; idx < count; idx++)
+    {
+        blkHeader = pScript[idx];
+        // verify there is space, & we can access the device.
+        if ((size - collectedDataSize) < (NV_SIZEOF32(blkHeader) + blkHeader.length))
+        {
+            // if this block doesn't fit, skip it but continue because another block might.
+            continue;
+        }
+        if (pPCIeHandles[blkHeader.deviceType] == NULL)
+        {
+            continue;
+        }
+        switch (blkHeader.action)
+        {
+        case RM_PCIE_ACTION_NOP:
+            break;
+
+        case RM_PCIE_ACTION_COLLECT_CONFIG_SPACE:
+            collectedDataSize += _clPcieSavePcieDiagnosticBlock(pPCIeHandles[blkHeader.deviceType],
+                &blkHeader,
+                blkHeader.locator, blkHeader.length,
+                &pBuffer[collectedDataSize], size - collectedDataSize);
+            break;
+
+        case RM_PCIE_ACTION_COLLECT_PCI_CAP_STRUCT:
+        case RM_PCIE_ACTION_COLLECT_PCIE_CAP_STRUCT:
+        case RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS:
+        case RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS:
+
+            if (portAtomicIncrementS32(&capMapWriteLock) == 1)
+            {
+                if (!capMapInitialized)
+                {
+                    // map out all the capabilities
+                    for (idx = 0; idx < NV_ARRAY_ELEMENTS(capMap); idx++)
+                    {
+                        for (idx2 = 0; idx2 < NV_ARRAY_ELEMENTS(capMap[0]); idx2++)
+                        {
+                            _clPciePopulateCapMap(pPCIeHandles[idx], idx2, &capMap[idx][idx2]);
+                        }
+                    }
+                    capMapInitialized = NV_TRUE;
+                }
+            }
+            portAtomicDecrementS32(&capMapWriteLock);
+
+            if (!capMapInitialized)
+            {
+                break;
+            }
+            // figure out which map to use.
+            switch (blkHeader.action)
+            {
+            case RM_PCIE_ACTION_COLLECT_PCI_CAP_STRUCT:
+            case RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS:
+                capType = RM_PCIE_DC_CAP_TYPE_PCI;
+                break;
+
+            case RM_PCIE_ACTION_COLLECT_PCIE_CAP_STRUCT:
+            case RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS:
+                capType = RM_PCIE_DC_CAP_TYPE_PCIE;
+                break;
+            default:
+                // will never happen, but having this default handling
+                // deals with Linux compiler capType may not be initialized before use warning.
+                capType = RM_PCIE_DC_CAP_TYPE_NONE;
+                break;
+            }
+
+            // even if I don't think it can happen, need to check for it.
+            if (capType == RM_PCIE_DC_CAP_TYPE_NONE)
+            {
+                break;
+            }
+            pActiveMap = &capMap[blkHeader.deviceType][capType];
+
+            // collect the data using the map determined above
+            switch (blkHeader.action)
+            {
+            default:    // default needed to satisfy Linux compiler.
+            case RM_PCIE_ACTION_COLLECT_PCI_CAP_STRUCT:
+            case RM_PCIE_ACTION_COLLECT_PCIE_CAP_STRUCT:
+                bCollectAll = NV_FALSE;
+                break;
+
+            case RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS:
+            case RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS:
+                bCollectAll = NV_TRUE;
+                break;
+            }
+            // find the requested capability within the specified type
+            for (idx2 = 0; idx2 < pActiveMap->count; idx2++)
+            {
+                if (bCollectAll || (pActiveMap->entries[idx2].id == blkHeader.locator))
+                {
+                    blkHeader.locator = pActiveMap->entries[idx2].id;
+
+                    // determine the size of the capability
+                    blkHeader.length =
+                        _clPcieGetPcieCapSize(pPCIeHandles[blkHeader.deviceType],
+                            capType, blkHeader.locator, pActiveMap->entries[idx2].blkOffset);
+                    collectedDataSize += _clPcieSavePcieDiagnosticBlock(pPCIeHandles[blkHeader.deviceType],
+                        &blkHeader,
+                        pActiveMap->entries[idx2].blkOffset, blkHeader.length,
+                        &pBuffer[collectedDataSize], size - collectedDataSize);
+                }
+            }
+            break;
+
+        case RM_PCIE_ACTION_REPORT_PCI_CAPS_COUNT:
+            blkHeader.length = capMap[blkHeader.deviceType][RM_PCIE_DC_CAP_TYPE_PCI].count;
+            collectedDataSize += _clPcieSavePcieDiagnosticBlock(NULL,
+                &blkHeader,
+                0, 0,
+                &pBuffer[collectedDataSize], size - collectedDataSize);
+            break;
+
+        case RM_PCIE_ACTION_REPORT_PCIE_CAPS_COUNT:
+            blkHeader.length = capMap[blkHeader.deviceType][RM_PCIE_DC_CAP_TYPE_PCIE].count;
+            collectedDataSize += _clPcieSavePcieDiagnosticBlock(NULL,
+                &blkHeader,
+                0, 0,
+                &pBuffer[collectedDataSize], size - collectedDataSize);
+            break;
+
+        case RM_PCIE_ACTION_EOS:
+            idx = count;
+            break;
+
+        default:
+            break;
+        }
+    }
+    return collectedDataSize;
+}
+
+/*!
+ * @brief   Retrieve diagnostic information to be used to identify the cause of GPU Lost
+ *
+ * @param[in]   pGpu        GPU object pointer
+ * @param[in]   pBif        BIF object pointer
+ * @param[out]  pBuffer     pointer to diagnostic output buffer
+ * @param[in]   bufferSize  size of diagnostic output buffer
+ *
+ * @return  NvU32 size of diagnostic data collected.
+ */
+NvU16 clPcieGetGpuLostDiagnosticData_IMPL(OBJGPU *pGpu, OBJCL *pCl, NvU8 * pBuffer, NvU32 size)
+{
+    static CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY gpuLostCollectionScript[] =
+    {
+        { RM_PCIE_ACTION_COLLECT_CONFIG_SPACE,     RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE, 0x000,                        0x40 },
+        { RM_PCIE_ACTION_COLLECT_CONFIG_SPACE,     RM_PCIE_DEVICE_TYPE_GPU,             0x000,                        0x40 },
+        { RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS,     RM_PCIE_DEVICE_TYPE_GPU,             0,                            0    },
+        { RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS,    RM_PCIE_DEVICE_TYPE_GPU,             0,                            0    },
+        { RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS,     RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE, 0,                            0    },
+        { RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS,    RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE, 0,                            0    },
+        { RM_PCIE_ACTION_EOS,                      RM_PCIE_DEVICE_TYPE_NONE,            0,                            0    }
+    };
+
+    return _clPcieGetDiagnosticData(pGpu,
+        gpuLostCollectionScript, NV_ARRAY_ELEMENTS32(gpuLostCollectionScript),
+        pBuffer, size);
 }

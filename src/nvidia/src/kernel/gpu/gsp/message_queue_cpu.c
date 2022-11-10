@@ -50,6 +50,7 @@
 #include "gpu/gsp/message_queue_priv.h"
 #include "msgq/msgq_priv.h"
 #include "gpu/gsp/kernel_gsp.h"
+#include "nvrm_registry.h"
 
 ct_assert(GSP_MSG_QUEUE_HEADER_SIZE > sizeof(msgqTxHeader) + sizeof(msgqRxHeader));
 
@@ -64,11 +65,11 @@ _getMsgQueueParams
     NvU32 numPtes;
     const NvLength defaultCommandQueueSize = 0x40000; // 256 KB
     const NvLength defaultStatusQueueSize  = 0x40000; // 256 KB
+    NvU32 regStatusQueueSize;
 
     if (IS_SILICON(pGpu))
     {
         pMQI->commandQueueSize = defaultCommandQueueSize;
-        pMQI->statusQueueSize = defaultStatusQueueSize;
     }
     else
     {
@@ -77,6 +78,18 @@ _getMsgQueueParams
         // the VBIOS image via RPC.
         //
         pMQI->commandQueueSize = defaultCommandQueueSize * 6;
+    }
+
+    // Check for status queue size overried
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GSP_STATUS_QUEUE_SIZE, &regStatusQueueSize) == NV_OK)
+    {
+        regStatusQueueSize *= 1024; // to bytes
+        regStatusQueueSize = NV_MAX(GSP_MSG_QUEUE_ELEMENT_SIZE_MAX, regStatusQueueSize);
+        regStatusQueueSize = NV_ALIGN_UP(regStatusQueueSize, 1 << GSP_MSG_QUEUE_ALIGN);
+        pMQI->statusQueueSize = regStatusQueueSize;
+    }
+    else
+    {
         pMQI->statusQueueSize = defaultStatusQueueSize;
     }
 

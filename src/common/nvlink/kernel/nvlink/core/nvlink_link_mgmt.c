@@ -45,6 +45,11 @@ nvlink_core_check_link_state
     NvU64     crntTlLinkMode = NVLINK_LINKSTATE_OFF;
     NvlStatus status         = NVL_SUCCESS;
 
+    if (link == NULL)
+    {
+        return NV_FALSE;
+    }
+
     switch (linkState)
     {
         case NVLINK_LINKSTATE_OFF:
@@ -129,6 +134,11 @@ nvlink_core_check_tx_sublink_state
     NvU64 crntTxSublinkMode    = NVLINK_SUBLINK_STATE_TX_OFF;
     NvU32 crntTxSublinkSubMode = NVLINK_SUBLINK_SUBSTATE_TX_STABLE;
 
+    if (link == NULL)
+    {
+        return NV_FALSE;
+    }
+
     status = link->link_handlers->get_tx_mode(link,
                                               &crntTxSublinkMode,
                                               &crntTxSublinkSubMode);
@@ -194,6 +204,11 @@ nvlink_core_check_rx_sublink_state
     NvU64 crntRxSublinkMode    = NVLINK_SUBLINK_STATE_RX_OFF;
     NvU32 crntRxSublinkSubMode = NVLINK_SUBLINK_SUBSTATE_RX_STABLE;
 
+    if (link == NULL)
+    {
+        return NV_FALSE;
+    }
+
     status = link->link_handlers->get_rx_mode(link,
                                               &crntRxSublinkMode,
                                               &crntRxSublinkSubMode);
@@ -258,6 +273,11 @@ nvlink_core_poll_link_state
 {
     NvU64 currentLinkState = ~0;
 
+    if (link == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
+
     link->link_handlers->get_dl_link_mode(link, &currentLinkState);
 
     while (currentLinkState != linkState)
@@ -316,6 +336,11 @@ nvlink_core_poll_sublink_state
 {
     NvlStatus status = NVL_SUCCESS;
 
+    if ((localTxSubLink == NULL) || (remoteRxSubLink == NULL))
+    {
+        return NVL_BAD_ARGS;
+    }
+
     // check for tx sublink if a valid link is specified
     if (localTxSubLink)
     {
@@ -368,6 +393,11 @@ nvlink_core_poll_tx_sublink_state
 {
     NvU64 currentTxSublinkState    = ~0;
     NvU32 currentTxSublinkSubState = ~0;
+
+    if (link == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
 
     link->link_handlers->get_tx_mode(link,
                                      &currentTxSublinkState,
@@ -426,6 +456,11 @@ nvlink_core_poll_rx_sublink_state
 {
     NvU64 currentRxSublinkState    = ~0;
     NvU32 currentRxSublinkSubState = ~0;
+
+    if (link == NULL)
+    {
+        return NVL_BAD_ARGS;
+    }
 
     link->link_handlers->get_rx_mode(link,
                                      &currentRxSublinkState,

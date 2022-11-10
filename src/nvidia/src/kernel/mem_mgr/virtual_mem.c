@@ -36,6 +36,7 @@
 #include "gpu/mem_mgr/mem_utils.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
+#include "mem_mgr/gpu_vaspace.h"
 
 #include "class/cl0070.h" // NV01_MEMORY_VIRTUAL
 #include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
@@ -333,7 +334,7 @@ virtmemConstruct_IMPL
             gpuMaskInitial = rmGpuLocksGetOwnedMask();
             NvU32 lockFlag = (gpuMaskInitial == 0)
                 ? GPUS_LOCK_FLAGS_NONE
-                : GPUS_LOCK_FLAGS_COND_ACQUIRE;
+                : GPU_LOCK_FLAGS_COND_ACQUIRE;
 
             NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
                                                          GPU_LOCK_GRP_ALL,
@@ -813,6 +814,7 @@ virtmemAllocResources
         gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
     {
         OBJVASPACE     *pVAS  = NULL;
+        OBJGVASPACE    *pGVAS = NULL;
         NvU64           align = pFbAllocInfo->align + 1;
         VAS_ALLOC_FLAGS flags = {0};
         NvU64           pageSizeLockMask = 0;
@@ -823,6 +825,23 @@ virtmemAllocResources
             status = vaspaceGetByHandleOrDeviceDefault(pRsClient, pFbAllocInfo->hDevice, hVASpace, &pVAS);
         if (NV_OK != status)
             goto failed;
+
+        //
+        // Feature requested for RM unlinked SLI:
+        // Clients can pass an allocation flag to the device or VA space constructor
+        // so that mappings and allocations will fail without an explicit address.
+        //
+        pGVAS = dynamicCast(pVAS, OBJGVASPACE);
+        if (pGVAS != NULL)
+        {
+            if ((pGVAS->flags & VASPACE_FLAGS_REQUIRE_FIXED_OFFSET) &&
+                !(pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE))
+            {
+                status = NV_ERR_INVALID_ARGUMENT;
+                NV_PRINTF(LEVEL_ERROR, "The VA space requires all allocations to specify a fixed address\n");
+                goto failed;
+            }
+        }
 
         status = vaspaceFillAllocParams(pVAS, pFbAllocInfo,
                                         &pFbAllocInfo->size, &align,
@@ -1208,7 +1227,6 @@ virtmemMapTo_IMPL
     MEMORY_DESCRIPTOR    *pSrcMemDesc           = pParams->pSrcMemDesc;
     NvU64                *pDmaOffset            = pParams->pDmaOffset;  // return VirtualMemory offset
     CLI_DMA_MAPPING_INFO *pDmaMappingInfo       = NULL;
-    CLI_DMA_MAPPING_INFO *pDmaMappingInfo_old   = NULL;
     OBJVASPACE           *pVas                  = NULL;
     Memory               *pSrcMemory            = dynamicCast(pMemoryRef->pResource, Memory);
 
@@ -1295,7 +1313,9 @@ virtmemMapTo_IMPL
         bDmaMapNeeded = NV_FALSE;
     }
 
-    if (tgtAddressSpace == ADDR_FABRIC || tgtAddressSpace == ADDR_FABRIC_V2)
+    if (
+        (tgtAddressSpace == ADDR_FABRIC_MC) ||
+        (tgtAddressSpace == ADDR_FABRIC_V2))
     {
         // IOMMU mapping not needed for GPU P2P accesses on FB pages.
         bDmaMapNeeded = NV_FALSE;
@@ -1304,7 +1324,9 @@ virtmemMapTo_IMPL
     // Different cases for vidmem & system memory/fabric memory.
     bIsSysmem = (tgtAddressSpace == ADDR_SYSMEM);
 
-    if (bIsSysmem || (tgtAddressSpace == ADDR_FABRIC) || (tgtAddressSpace == ADDR_FABRIC_V2))
+    if (bIsSysmem ||
+        (tgtAddressSpace == ADDR_FABRIC_MC) ||
+        (tgtAddressSpace == ADDR_FABRIC_V2))
     {
         // offset needs to be 0 when reusing a mapping.
         if ((DRF_VAL(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, flags) == NVOS46_FLAGS_DMA_UNICAST_REUSE_ALLOC_TRUE) &&
@@ -1494,9 +1516,6 @@ virtmemMapTo_IMPL
         !bFlaMapping &&
         (bBar1P2P || DRF_VAL(OS46, _FLAGS, _P2P_ENABLE, pDmaMappingInfo->Flags) == NVOS46_FLAGS_P2P_ENABLE_NOSLI))
     {
-        NvU32 subDevIdSrc;
-        NvU32 subDevIdTgt;
-
         //
         // if we are on SLI and trying to map peer memory between two GPUs
         // on the same device, we don't rely on dynamic p2p mailbox setup.
@@ -1508,26 +1527,7 @@ virtmemMapTo_IMPL
             goto vgpu_send_rpc;
         }
 
-        subDevIdSrc = DRF_VAL(OS46, _FLAGS, _P2P_SUBDEV_ID_SRC, pDmaMappingInfo->Flags);
-        subDevIdTgt = DRF_VAL(OS46, _FLAGS, _P2P_SUBDEV_ID_TGT, pDmaMappingInfo->Flags);
-
-        status = CliAddP2PDmaMappingInfo(hClient,
-                                         hBroadcastDevice, subDevIdTgt,
-                                         hMemoryDevice, subDevIdSrc,
-                                         pDmaMappingInfo);
-        if (NV_OK != status)
-        {
-            dmaFreeMap(pGpu, pDma, pVas,
-                       pVirtualMemory, pDmaMappingInfo,
-                       DRF_DEF(OS47, _FLAGS, _DEFER_TLB_INVALIDATION, _FALSE));
-
-            intermapDelDmaMapping(pClient, hBroadcastDevice, hVirtualMem, *pDmaOffset, gpuMask, NULL);
-            pDmaMappingInfo = NULL;
-            return status;
-        }
-
-        // cache the pointer
-        pDmaMappingInfo_old = pDmaMappingInfo;
+        pDmaMappingInfo->bP2P = NV_TRUE;
     }
 
 vgpu_send_rpc:
@@ -1550,14 +1550,6 @@ vgpu_send_rpc:
             // be revisited if vGPU ever supports SLI.
             //
             NV_ASSERT(!IsSLIEnabled(pGpu));
-
-            // delete the old copy
-            if (RMCFG_CLASS_NV50_P2P &&
-                (pDmaMappingInfo_old != NULL))
-            {
-                status = CliUpdateP2PDmaMappingInList(hClient, pDmaMappingInfo, *pDmaOffset);
-                NV_ASSERT(status == NV_OK);
-            }
 
             pDmaMappingInfo->DmaOffset = *pDmaOffset;
 
@@ -1732,10 +1724,8 @@ virtmemUnmapFrom_IMPL
     }
 
     // if this was peer mapped context dma, remove it from P2P object
-    if (RMCFG_CLASS_NV50_P2P && (pDmaMappingInfo->pP2PInfo != NULL))
+    if (RMCFG_CLASS_NV50_P2P && pDmaMappingInfo->bP2P)
     {
-        CliDelP2PDmaMappingInfo(hClient, pDmaMappingInfo);
-
         dmaFreeBar1P2PMapping_HAL(GPU_GET_DMA(pGpu), pDmaMappingInfo);
     }
 

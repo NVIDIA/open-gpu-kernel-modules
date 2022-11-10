@@ -206,6 +206,19 @@ typedef enum
     UVM_PAGING_CHANNEL_VASPACE_FREE,
 } UVM_PAGING_CHANNEL_VASPACE_OPERATION;
 
+typedef struct VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS 
+{
+    NvU32 headIndex;
+    NvU32 maxHResolution;
+    NvU32 maxVResolution;
+} VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS;
+
+typedef struct VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS 
+{
+    NvU32 numHeads;
+    NvU32 maxNumHeads;
+} VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS;
+
 
 /*
  * Maximum guest pages that can be mapped for UVM method stream
@@ -213,5 +226,11 @@ typedef enum
 #define UVM_METHOD_STREAM_MAX_GUEST_PAGES_v1C_05   500
 
 #define PMA_SCRUBBER_SHARED_BUFFER_MAX_GUEST_PAGES_v1F_0C 500
+
+/*
+ *  Maximum number of SMs that can be read in one RPC call to get error states
+ */
+
+#define VGPU_RPC_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PER_RPC_v21_06 80
 
 #endif // __vgpu_rpc_nv_headers_h__

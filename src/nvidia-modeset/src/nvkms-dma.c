@@ -157,6 +157,26 @@ static NvU32 EvoReadGetOffset(NVDmaBufferEvoPtr push_buffer, NvBool minimum)
     return bestGet;
 }
 
+NvBool nvEvoPollForEmptyChannel(NVEvoChannelPtr pChannel, NvU32 sd,
+                                NvU64 *pStartTime, const NvU32 timeout)
+{
+    NVDmaBufferEvoPtr push_buffer = &pChannel->pb;
+
+    do {
+        if (EvoCoreReadGet(push_buffer, sd) == push_buffer->put_offset) {
+            break;
+        }
+
+        if (nvExceedsTimeoutUSec(pStartTime, timeout)) {
+            return FALSE;
+        }
+
+        nvkms_yield();
+   } while (TRUE);
+
+    return TRUE;
+}
+
 void nvEvoMakeRoom(NVEvoChannelPtr pChannel, NvU32 count)
 {
     NVDmaBufferEvoPtr push_buffer = &pChannel->pb;

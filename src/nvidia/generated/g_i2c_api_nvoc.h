@@ -78,6 +78,7 @@ struct I2cApi {
     NV_STATUS (*__i2capiInternalControlForward__)(struct I2cApi *, NvU32, void *, NvU32);
     void (*__i2capiPreDestruct__)(struct I2cApi *);
     NV_STATUS (*__i2capiUnmapFrom__)(struct I2cApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__i2capiIsDuplicate__)(struct I2cApi *, NvHandle, NvBool *);
     void (*__i2capiControl_Epilogue__)(struct I2cApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__i2capiControlLookup__)(struct I2cApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__i2capiMap__)(struct I2cApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -135,6 +136,7 @@ NV_STATUS __nvoc_objCreate_I2cApi(I2cApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define i2capiInternalControlForward(pGpuResource, command, pParams, size) i2capiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define i2capiPreDestruct(pResource) i2capiPreDestruct_DISPATCH(pResource)
 #define i2capiUnmapFrom(pResource, pParams) i2capiUnmapFrom_DISPATCH(pResource, pParams)
+#define i2capiIsDuplicate(pResource, hMemory, pDuplicate) i2capiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define i2capiControl_Epilogue(pResource, pCallContext, pParams) i2capiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define i2capiControlLookup(pResource, pParams, ppEntry) i2capiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define i2capiMap(pGpuResource, pCallContext, pParams, pCpuMapping) i2capiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -241,6 +243,10 @@ static inline NV_STATUS i2capiUnmapFrom_DISPATCH(struct I2cApi *pResource, RS_RE
     return pResource->__i2capiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS i2capiIsDuplicate_DISPATCH(struct I2cApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__i2capiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void i2capiControl_Epilogue_DISPATCH(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__i2capiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -258,8 +264,10 @@ static inline NvBool i2capiAccessCallback_DISPATCH(struct I2cApi *pResource, str
 }
 
 NV_STATUS i2capiConstruct_IMPL(struct I2cApi *arg_pI2cApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_i2capiConstruct(arg_pI2cApi, arg_pCallContext, arg_pParams) i2capiConstruct_IMPL(arg_pI2cApi, arg_pCallContext, arg_pParams)
 void i2capiDestruct_IMPL(struct I2cApi *pI2cApi);
+
 #define __nvoc_i2capiDestruct(pI2cApi) i2capiDestruct_IMPL(pI2cApi)
 #undef PRIVATE_FIELD
 

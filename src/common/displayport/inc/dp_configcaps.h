@@ -217,7 +217,7 @@ namespace DisplayPort
                                            NvU8 activeLaneCount) = 0;
 
         virtual AuxRetry::status setIgnoreMSATimingParamters(bool msaTimingParamIgnoreEn) = 0;
-        virtual AuxRetry::status       setLinkQualLaneSet(unsigned lane, LinkQualityPatternType linkQualPattern) = 0;
+        virtual AuxRetry::status setLinkQualLaneSet(unsigned lane, LinkQualityPatternType linkQualPattern) = 0;
         virtual AuxRetry::status setLinkQualPatternSet(LinkQualityPatternType linkQualPattern, unsigned laneCount = 0) = 0;
     };
 
@@ -486,7 +486,7 @@ namespace DisplayPort
         virtual bool getDpcdMultiStreamCap(void) = 0;
 
         // Set GPU DP support capability
-        virtual void setGpuDPSupportedVersions(bool supportDp1_2, bool supportDp1_4) = 0;
+        virtual void setGpuDPSupportedVersions(NvU32 gpuDPSupportedVersions) = 0;
 
         // Set GPU FEC support capability
         virtual void setGpuFECSupported(bool bSupportFEC) = 0;

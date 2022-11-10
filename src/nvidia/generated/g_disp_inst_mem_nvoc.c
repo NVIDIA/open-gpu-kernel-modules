@@ -107,10 +107,7 @@ static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory 
     PORT_UNREFERENCED_VARIABLE(dispIpHal_HalVarIdx);
 
     // Hal function -- instmemGetSize
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
     {
         pThis->__instmemGetSize__ = &instmemGetSize_v03_00;
     }
@@ -120,10 +117,7 @@ static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory 
     }
 
     // Hal function -- instmemGetHashTableBaseAddr
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
     {
         pThis->__instmemGetHashTableBaseAddr__ = &instmemGetHashTableBaseAddr_v03_00;
     }
@@ -133,10 +127,7 @@ static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory 
     }
 
     // Hal function -- instmemIsValid
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
     {
         pThis->__instmemIsValid__ = &instmemIsValid_v03_00;
     }
@@ -146,10 +137,7 @@ static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory 
     }
 
     // Hal function -- instmemGenerateHashTableData
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
     {
         pThis->__instmemGenerateHashTableData__ = &instmemGenerateHashTableData_v03_00;
     }
@@ -159,10 +147,7 @@ static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory 
     }
 
     // Hal function -- instmemHashFunc
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
     {
         pThis->__instmemHashFunc__ = &instmemHashFunc_v03_00;
     }
@@ -172,10 +157,7 @@ static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory 
     }
 
     // Hal function -- instmemCommitContextDma
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
     {
         pThis->__instmemCommitContextDma__ = &instmemCommitContextDma_v03_00;
     }
@@ -185,10 +167,7 @@ static void __nvoc_init_funcTable_DisplayInstanceMemory_1(DisplayInstanceMemory 
     }
 
     // Hal function -- instmemUpdateContextDma
-    if (0)
-    {
-    }
-    else if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00004c00UL) )) /* DispIpHal: DISPv0400 | DISPv0401 | DISPv0404 */ 
     {
         pThis->__instmemUpdateContextDma__ = &instmemUpdateContextDma_v03_00;
     }

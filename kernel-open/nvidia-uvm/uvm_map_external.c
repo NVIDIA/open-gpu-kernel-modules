@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -605,7 +605,7 @@ static NV_STATUS uvm_create_external_range(uvm_va_space_t *va_space, UVM_CREATE_
         return NV_ERR_INVALID_ADDRESS;
 
     // The mm needs to be locked in order to remove stale HMM va_blocks.
-    mm = uvm_va_space_mm_retain_lock(va_space);
+    mm = uvm_va_space_mm_or_current_retain_lock(va_space);
     uvm_va_space_down_write(va_space);
 
     // Create the new external VA range.
@@ -619,7 +619,7 @@ static NV_STATUS uvm_create_external_range(uvm_va_space_t *va_space, UVM_CREATE_
     }
 
     uvm_va_space_up_write(va_space);
-    uvm_va_space_mm_release_unlock(va_space, mm);
+    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
     return status;
 }
 
@@ -636,6 +636,11 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
 {
     uvm_gpu_t *owning_gpu;
 
+    if (!mem_info->deviceDescendant && !mem_info->sysmem) {
+        ext_gpu_map->owning_gpu = NULL;
+        ext_gpu_map->is_sysmem = false;
+        return NV_OK;
+    }
     // This is a local or peer allocation, so the owning GPU must have been
     // registered.
     owning_gpu = uvm_va_space_get_gpu_by_uuid(va_space, &mem_info->uuid);

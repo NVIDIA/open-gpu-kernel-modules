@@ -29,7 +29,7 @@
 // Source file: class/cl9770.finn
 //
 
-#define NV9770_DISPLAY (0x00009770)
+#define NV9770_DISPLAY (0x9770U) /* finn: Evaluated from "NV9770_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 #define NV9770_ALLOCATION_PARAMETERS_MESSAGE_ID (0x9770U)
 

@@ -381,65 +381,6 @@ kmemsysProgramSysmemFlushBuffer_GH100
     GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _FBHUB_PCIE_FLUSH_SYSMEM_ADDR_LO, _ADR, alignedSysmemFlushBufferAddr);
 }
 
-/*
- * @brief Initialize the sysmem flush buffer
- *
- * Setting up the sysmem flush buffer needs to be done very early in some cases
- * as it's required for the GPU to perform a system flush. One such case is
- * resetting GPU FALCONs and in particular resetting the PMU as part of VBIOS
- * init.
- *
- * @returns NV_OK if all is okay.  Otherwise an error-specific value.
- */
-NV_STATUS
-kmemsysInitFlushSysmemBuffer_GH100
-(
-    OBJGPU             *pGpu,
-    KernelMemorySystem *pKernelMemorySystem
-)
-{
-    NV_STATUS              status;
-
-    //
-    // In case of suspend/resume, the buffer might be already allocated, but
-    // the HW still needs to be programmed below.
-    //
-    if (pKernelMemorySystem->pSysmemFlushBufferMemDesc == NULL)
-    {
-        //
-        // Sysmem flush buffer
-        // The sysmembar flush does a zero byte read of sysmem if there was a
-        // sysmem write since the last flush. The actual memory does have
-        // to be valid and allocated at all times because an actual read may
-        // be issued (observed on e.g. GF108).
-        //
-        status = memdescCreate(&pKernelMemorySystem->pSysmemFlushBufferMemDesc,
-                               pGpu, RM_PAGE_SIZE,
-                               (1 << NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT),
-                               NV_TRUE,
-                               ADDR_SYSMEM,
-                               NV_MEMORY_UNCACHED,
-                               MEMDESC_FLAGS_NONE);
-        if (status != NV_OK)
-            return status;
-
-        status = memdescAlloc(pKernelMemorySystem->pSysmemFlushBufferMemDesc);
-
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Could not allocate sysmem flush buffer: %x\n", status);
-            DBG_BREAKPOINT();
-            return status;
-        }
-
-        pKernelMemorySystem->sysmemFlushBuffer = memdescGetPhysAddr(pKernelMemorySystem->pSysmemFlushBufferMemDesc, AT_GPU, 0);
-    }
-
-    kmemsysProgramSysmemFlushBuffer_HAL(pGpu, pKernelMemorySystem);
-    return NV_OK;
-}
-
 /*!
  * @brief Validate the sysmemFlushBuffer val and assert
  *

@@ -31,7 +31,7 @@
 // Source file: class/cl503b.finn
 //
 
-#define NV50_P2P                  (0x0000503b)
+#define NV50_P2P                  (0x503bU) /* finn: Evaluated from "NV503B_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 #define NV503B_FLAGS_P2P_TYPE            0:0
 #define NV503B_FLAGS_P2P_TYPE_GPA 0

@@ -146,16 +146,20 @@ static NV_STATUS __nvoc_thunk_RsResource_sysmemMapTo(struct SystemMemory *pResou
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SystemMemory_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_sysmemControl_Prologue(struct SystemMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SystemMemory_RmResource.offset), pCallContext, pParams);
-}
-
 static NvBool __nvoc_thunk_StandardMemory_sysmemCanCopy(struct SystemMemory *pStandardMemory) {
     return stdmemCanCopy((struct StandardMemory *)(((unsigned char *)pStandardMemory) + __nvoc_rtti_SystemMemory_StandardMemory.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_sysmemIsReady(struct SystemMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_SystemMemory_Memory.offset));
+static NvBool __nvoc_thunk_Memory_sysmemIsGpuMapAllowed(struct SystemMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_SystemMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_sysmemControl_Prologue(struct SystemMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SystemMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_sysmemIsReady(struct SystemMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_SystemMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_sysmemCheckCopyPermissions(struct SystemMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -164,6 +168,10 @@ static NV_STATUS __nvoc_thunk_Memory_sysmemCheckCopyPermissions(struct SystemMem
 
 static void __nvoc_thunk_RsResource_sysmemPreDestruct(struct SystemMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SystemMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_sysmemIsDuplicate(struct SystemMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_SystemMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_sysmemUnmapFrom(struct SystemMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -293,15 +301,19 @@ static void __nvoc_init_funcTable_SystemMemory_1(SystemMemory *pThis) {
 
     pThis->__sysmemMapTo__ = &__nvoc_thunk_RsResource_sysmemMapTo;
 
-    pThis->__sysmemControl_Prologue__ = &__nvoc_thunk_RmResource_sysmemControl_Prologue;
-
     pThis->__sysmemCanCopy__ = &__nvoc_thunk_StandardMemory_sysmemCanCopy;
+
+    pThis->__sysmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_sysmemIsGpuMapAllowed;
+
+    pThis->__sysmemControl_Prologue__ = &__nvoc_thunk_RmResource_sysmemControl_Prologue;
 
     pThis->__sysmemIsReady__ = &__nvoc_thunk_Memory_sysmemIsReady;
 
     pThis->__sysmemCheckCopyPermissions__ = &__nvoc_thunk_Memory_sysmemCheckCopyPermissions;
 
     pThis->__sysmemPreDestruct__ = &__nvoc_thunk_RsResource_sysmemPreDestruct;
+
+    pThis->__sysmemIsDuplicate__ = &__nvoc_thunk_Memory_sysmemIsDuplicate;
 
     pThis->__sysmemUnmapFrom__ = &__nvoc_thunk_RsResource_sysmemUnmapFrom;
 

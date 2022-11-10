@@ -102,6 +102,8 @@ usrmodeConstructHal_GH100
     status = memCreateMemDesc(pGpu, &pMemDesc, bBar1Mapping ? ADDR_SYSMEM : ADDR_REGMEM,
                               offset, size, attr, attr2);
 
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+
     if (bBar1Mapping)
     {
         memdescSetPteKind(pMemDesc, memmgrGetMessageKind_HAL(pGpu, pMemoryManager));

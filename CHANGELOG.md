@@ -1,5 +1,22 @@
 # Changelog
 
+## Release 525 Entries
+
+### [525.53] 2022-11-10
+
+#### Changed
+
+- GSP firmware is now distributed as multiple firmware files: this release has `gsp_tu10x.bin` and `gsp_ad10x.bin` replacing `gsp.bin` from previous releases.
+    - Each file is named after a GPU architecture and supports GPUs from one or more architectures. This allows GSP firmware to better leverage each architecture's capabilities.
+    - The .run installer will continue to install firmware to `/lib/firmware/nvidia/<version>` and the `nvidia.ko` kernel module will load the appropriate firmware for each GPU at runtime.
+
+#### Fixed
+
+- Add support for IBT (indirect branch tracking) on supported platforms, [#256](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/256) by @rnd-ash
+- Return EINVAL when [failing to] allocating memory, [#280](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/280) by @YusufKhan-gamedev
+- Fix various typos in nvidia/src/kernel, [#16](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/16) by @alexisgeoffrey
+- Added support for rotation in X11, Quadro Sync, Stereo, and YUV 4:2:0 on Turing.
+
 ## Release 520 Entries
 
 ### [520.56.06] 2022-10-12
@@ -28,6 +45,8 @@
 
 - Improved compatibility with new Linux kernel releases
 - Fixed possible excessive GPU power draw on an idle X11 or Wayland desktop when driving high resolutions or refresh rates
+
+### [515.65.07] 2022-10-19
 
 ### [515.65.01] 2022-08-02
 

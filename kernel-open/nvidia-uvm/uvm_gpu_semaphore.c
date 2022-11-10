@@ -118,6 +118,13 @@ static bool is_canary(NvU32 val)
     return (val & ~UVM_SEMAPHORE_CANARY_MASK) == UVM_SEMAPHORE_CANARY_BASE;
 }
 
+// Can the GPU access the semaphore, i.e., can Host/Esched address the semaphore
+// pool?
+static bool gpu_can_access_semaphore_pool(uvm_gpu_t *gpu, uvm_rm_mem_t *rm_mem)
+{
+    return ((uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu) + rm_mem->size - 1) < gpu->parent->max_host_va);
+}
+
 static NV_STATUS pool_alloc_page(uvm_gpu_semaphore_pool_t *pool)
 {
     NV_STATUS status;
@@ -141,6 +148,9 @@ static NV_STATUS pool_alloc_page(uvm_gpu_semaphore_pool_t *pool)
                                           &pool_page->memory);
     if (status != NV_OK)
         goto error;
+
+    // Verify the GPU can access the semaphore pool.
+    UVM_ASSERT(gpu_can_access_semaphore_pool(pool->gpu, pool_page->memory));
 
     // All semaphores are initially free
     bitmap_fill(pool_page->free_semaphores, UVM_SEMAPHORE_COUNT_PER_PAGE);

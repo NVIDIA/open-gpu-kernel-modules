@@ -88,7 +88,7 @@
 
 #include "nv-kthread-q.h"
 
-    #if NV_KTHREAD_Q_SUPPORTS_AFFINITY() == 1 && defined(NV_CPUMASK_OF_NODE_PRESENT)
+    #if defined(NV_CPUMASK_OF_NODE_PRESENT)
         #define UVM_THREAD_AFFINITY_SUPPORTED() 1
     #else
         #define UVM_THREAD_AFFINITY_SUPPORTED() 0
@@ -136,8 +136,8 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
     #endif
 
 // See bug 1707453 for further details about setting the minimum kernel version.
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
-#  error This driver does not support kernels older than 2.6.32!
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+#  error This driver does not support kernels older than 3.10!
 #endif
 
 #if !defined(VM_RESERVED)
@@ -216,10 +216,6 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #endif
 
 #define NV_UVM_GFP_FLAGS (GFP_KERNEL)
-
-#if !defined(NV_ADDRESS_SPACE_INIT_ONCE_PRESENT)
-    void address_space_init_once(struct address_space *mapping);
-#endif
 
 // Develop builds define DEBUG but enable optimization
 #if defined(DEBUG) && !defined(NVIDIA_UVM_DEVELOP)
@@ -352,23 +348,6 @@ static inline NvU64 NV_GETTIME(void)
              (bit) = find_next_zero_bit((addr), (size), (bit) + 1))
 #endif
 
-// bitmap_clear was added in 2.6.33 via commit c1a2a962a2ad103846e7950b4591471fabecece7
-#if !defined(NV_BITMAP_CLEAR_PRESENT)
-    static inline void bitmap_clear(unsigned long *map, unsigned int start, int len)
-    {
-        unsigned int index = start;
-        for_each_set_bit_from(index, map, start + len)
-            __clear_bit(index, map);
-    }
-
-    static inline void bitmap_set(unsigned long *map, unsigned int start, int len)
-    {
-        unsigned int index = start;
-        for_each_clear_bit_from(index, map, start + len)
-            __set_bit(index, map);
-    }
-#endif
-
 // Added in 2.6.24
 #ifndef ACCESS_ONCE
   #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
@@ -439,17 +418,6 @@ static inline NvU64 NV_GETTIME(void)
     #define PAGE_ALIGNED(addr) (((addr) & (PAGE_SIZE - 1)) == 0)
 #endif
 
-// Added in 2.6.37 via commit e1ca7788dec6773b1a2bce51b7141948f2b8bccf
-#if !defined(NV_VZALLOC_PRESENT)
-    static inline void *vzalloc(unsigned long size)
-    {
-        void *p = vmalloc(size);
-        if (p)
-            memset(p, 0, size);
-        return p;
-    }
-#endif
-
 // Changed in 3.17 via commit 743162013d40ca612b4cb53d3a200dff2d9ab26e
 #if (NV_WAIT_ON_BIT_LOCK_ARGUMENT_COUNT == 3)
     #define UVM_WAIT_ON_BIT_LOCK(word, bit, mode) \
@@ -503,21 +471,6 @@ static bool radix_tree_empty(struct radix_tree_root *tree)
 #else
 #error "Unknown number of arguments"
 #endif
-#endif
-
-#if !defined(NV_USLEEP_RANGE_PRESENT)
-static void __sched usleep_range(unsigned long min, unsigned long max)
-{
-    unsigned min_msec = min / 1000;
-    unsigned max_msec = max / 1000;
-
-    if (min_msec != 0)
-        msleep(min_msec);
-    else if (max_msec != 0)
-        msleep(max_msec);
-    else
-        msleep(1);
-}
 #endif
 
 typedef struct

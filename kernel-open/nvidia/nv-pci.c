@@ -172,6 +172,8 @@ nv_pci_probe
     NvBool prev_nv_ats_supported = nv_ats_supported;
     NV_STATUS status;
     NvBool last_bar_64bit = NV_FALSE;
+    NvU8 regs_bar_index = nv_bar_index_to_os_bar_index(pci_dev,
+                                                       NV_GPU_BAR_INDEX_REGS);
 
     nv_printf(NV_DBG_SETUP, "NVRM: probing 0x%x 0x%x, class 0x%x\n",
         pci_dev->vendor, pci_dev->device, pci_dev->class);
@@ -350,27 +352,25 @@ next_bar:
         goto failed;
     }
 
-    if (!request_mem_region(NV_PCI_RESOURCE_START(pci_dev, NV_GPU_BAR_INDEX_REGS),
-                            NV_PCI_RESOURCE_SIZE(pci_dev, NV_GPU_BAR_INDEX_REGS),
+    if (!request_mem_region(NV_PCI_RESOURCE_START(pci_dev, regs_bar_index),
+                            NV_PCI_RESOURCE_SIZE(pci_dev, regs_bar_index),
                             nv_device_name))
     {
         nv_printf(NV_DBG_ERRORS,
             "NVRM: request_mem_region failed for %dM @ 0x%llx. This can\n"
             "NVRM: occur when a driver such as rivatv is loaded and claims\n"
             "NVRM: ownership of the device's registers.\n",
-            (NV_PCI_RESOURCE_SIZE(pci_dev, NV_GPU_BAR_INDEX_REGS) >> 20),
-            (NvU64)NV_PCI_RESOURCE_START(pci_dev, NV_GPU_BAR_INDEX_REGS));
+            (NV_PCI_RESOURCE_SIZE(pci_dev, regs_bar_index) >> 20),
+            (NvU64)NV_PCI_RESOURCE_START(pci_dev, regs_bar_index));
         goto failed;
     }
 
-    NV_KMALLOC(nvl, sizeof(nv_linux_state_t));
+    NV_KZALLOC(nvl, sizeof(nv_linux_state_t));
     if (nvl == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate memory\n");
         goto err_not_supported;
     }
-
-    os_mem_set(nvl, 0, sizeof(nv_linux_state_t));
 
     nv  = NV_STATE_PTR(nvl);
 
@@ -498,9 +498,7 @@ next_bar:
     if (nvidia_frontend_add_device((void *)&nv_fops, nvl) != 0)
         goto err_remove_device;
 
-#if defined(NV_PM_VT_SWITCH_REQUIRED_PRESENT)
     pm_vt_switch_required(nvl->dev, NV_TRUE);
-#endif
 
     nv_init_dynamic_power_management(sp, pci_dev);
 
@@ -544,9 +542,7 @@ err_vgpu_kvm:
 #endif
     nv_procfs_remove_gpu(nvl);
     rm_cleanup_dynamic_power_management(sp, nv);
-#if defined(NV_PM_VT_SWITCH_REQUIRED_PRESENT)
     pm_vt_switch_unregister(nvl->dev);
-#endif
 err_remove_device:
     LOCK_NV_LINUX_DEVICES();
     nv_linux_remove_device_locked(nvl);
@@ -561,8 +557,8 @@ err_not_supported:
     {
         NV_KFREE(nvl, sizeof(nv_linux_state_t));
     }
-    release_mem_region(NV_PCI_RESOURCE_START(pci_dev, NV_GPU_BAR_INDEX_REGS),
-                       NV_PCI_RESOURCE_SIZE(pci_dev, NV_GPU_BAR_INDEX_REGS));
+    release_mem_region(NV_PCI_RESOURCE_START(pci_dev, regs_bar_index),
+                       NV_PCI_RESOURCE_SIZE(pci_dev, regs_bar_index));
     NV_PCI_DISABLE_DEVICE(pci_dev);
     pci_set_drvdata(pci_dev, NULL);
 failed:
@@ -576,6 +572,8 @@ nv_pci_remove(struct pci_dev *pci_dev)
     nv_linux_state_t *nvl = NULL;
     nv_state_t *nv;
     nvidia_stack_t *sp = NULL;
+    NvU8 regs_bar_index = nv_bar_index_to_os_bar_index(pci_dev,
+                                                       NV_GPU_BAR_INDEX_REGS);
 
     nv_printf(NV_DBG_SETUP, "NVRM: removing GPU %04x:%02x:%02x.%x\n",
               NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
@@ -671,9 +669,7 @@ nv_pci_remove(struct pci_dev *pci_dev)
 
     UNLOCK_NV_LINUX_DEVICES();
 
-#if defined(NV_PM_VT_SWITCH_REQUIRED_PRESENT)
     pm_vt_switch_unregister(&pci_dev->dev);
-#endif
 
 #if defined(NV_VGPU_KVM_BUILD)
     /* Arg 2 == NV_TRUE means that the PCI device should be removed */
@@ -717,8 +713,8 @@ nv_pci_remove(struct pci_dev *pci_dev)
 
     rm_i2c_remove_adapters(sp, nv);
     rm_free_private_state(sp, nv);
-    release_mem_region(NV_PCI_RESOURCE_START(pci_dev, NV_GPU_BAR_INDEX_REGS),
-                       NV_PCI_RESOURCE_SIZE(pci_dev, NV_GPU_BAR_INDEX_REGS));
+    release_mem_region(NV_PCI_RESOURCE_START(pci_dev, regs_bar_index),
+                       NV_PCI_RESOURCE_SIZE(pci_dev, regs_bar_index));
 
     num_nv_devices--;
 
@@ -749,6 +745,11 @@ nv_pci_shutdown(struct pci_dev *pci_dev)
     {
         nvl->is_forced_shutdown = NV_FALSE;
         return;
+    }
+
+    if (nvl != NULL)
+    {
+        nvl->nv_state.is_shutdown = NV_TRUE;
     }
 
     /* pci_clear_master is not defined for !CONFIG_PCI */
@@ -1000,6 +1001,10 @@ struct pci_driver nv_pci_driver = {
     .probe     = nv_pci_probe,
     .remove    = nv_pci_remove,
     .shutdown  = nv_pci_shutdown,
+#if defined(NV_USE_VFIO_PCI_CORE) && \
+  defined(NV_PCI_DRIVER_HAS_DRIVER_MANAGED_DMA)
+    .driver_managed_dma = NV_TRUE,
+#endif
 #if defined(CONFIG_PM)
     .driver.pm = &nv_pm_ops,
 #endif

@@ -174,6 +174,10 @@ static NvBool __nvoc_thunk_OBJGVASPACE_vaspaceIsInternalVaRestricted(struct OBJV
     return gvaspaceIsInternalVaRestricted((struct OBJGVASPACE *)(((unsigned char *)pGVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset));
 }
 
+static NV_STATUS __nvoc_thunk_OBJGVASPACE_vaspaceFreeV2(struct OBJVASPACE *pGVAS, NvU64 vAddr, NvU64 *pSize) {
+    return gvaspaceFreeV2((struct OBJGVASPACE *)(((unsigned char *)pGVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset), vAddr, pSize);
+}
+
 static NvU64 __nvoc_thunk_OBJVASPACE_gvaspaceGetVaLimit(struct OBJGVASPACE *pVAS) {
     return vaspaceGetVaLimit((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset));
 }
@@ -270,6 +274,8 @@ static void __nvoc_init_funcTable_OBJGVASPACE_1(OBJGVASPACE *pThis) {
 
     pThis->__gvaspaceIsInternalVaRestricted__ = &gvaspaceIsInternalVaRestricted_IMPL;
 
+    pThis->__gvaspaceFreeV2__ = &gvaspaceFreeV2_IMPL;
+
     pThis->__nvoc_base_OBJVASPACE.__vaspaceConstruct___ = &__nvoc_thunk_OBJGVASPACE_vaspaceConstruct_;
 
     pThis->__nvoc_base_OBJVASPACE.__vaspaceReserveMempool__ = &__nvoc_thunk_OBJGVASPACE_vaspaceReserveMempool;
@@ -323,6 +329,8 @@ static void __nvoc_init_funcTable_OBJGVASPACE_1(OBJGVASPACE *pThis) {
     pThis->__nvoc_base_OBJVASPACE.__vaspaceSetPteInfo__ = &__nvoc_thunk_OBJGVASPACE_vaspaceSetPteInfo;
 
     pThis->__nvoc_base_OBJVASPACE.__vaspaceIsInternalVaRestricted__ = &__nvoc_thunk_OBJGVASPACE_vaspaceIsInternalVaRestricted;
+
+    pThis->__nvoc_base_OBJVASPACE.__vaspaceFreeV2__ = &__nvoc_thunk_OBJGVASPACE_vaspaceFreeV2;
 
     pThis->__gvaspaceGetVaLimit__ = &__nvoc_thunk_OBJVASPACE_gvaspaceGetVaLimit;
 

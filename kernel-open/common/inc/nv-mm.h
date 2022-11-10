@@ -29,6 +29,25 @@
 typedef int vm_fault_t;
 #endif
 
+/* pin_user_pages
+ * Presence of pin_user_pages() also implies the presence of unpin-user_page().
+ * Both were added in the v5.6-rc1
+ *
+ * pin_user_pages() was added by commit eddb1c228f7951d399240
+ * ("mm/gup: introduce pin_user_pages*() and FOLL_PIN") in v5.6-rc1 (2020-01-30)
+ *
+ */
+
+#include <linux/mm.h>
+#include <linux/sched.h>
+#if defined(NV_PIN_USER_PAGES_PRESENT)
+    #define NV_PIN_USER_PAGES pin_user_pages
+    #define NV_UNPIN_USER_PAGE unpin_user_page
+#else
+    #define NV_PIN_USER_PAGES NV_GET_USER_PAGES
+    #define NV_UNPIN_USER_PAGE put_page
+#endif // NV_PIN_USER_PAGES_PRESENT
+
 /* get_user_pages
  *
  * The 8-argument version of get_user_pages was deprecated by commit
@@ -47,50 +66,56 @@ typedef int vm_fault_t;
  *
  */
 
-#if defined(NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE)
+#if defined(NV_GET_USER_PAGES_HAS_ARGS_FLAGS)
     #define NV_GET_USER_PAGES get_user_pages
-#elif defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE)
-    #define NV_GET_USER_PAGES(start, nr_pages, write, force, pages, vmas) \
-        get_user_pages(current, current->mm, start, nr_pages, write, force, pages, vmas)
+#elif defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_FLAGS)
+    #define NV_GET_USER_PAGES(start, nr_pages, flags, pages, vmas) \
+        get_user_pages(current, current->mm, start, nr_pages, flags, pages, vmas)
 #else
-    #include <linux/mm.h>
-    #include <linux/sched.h>
-
     static inline long NV_GET_USER_PAGES(unsigned long start,
                                          unsigned long nr_pages,
-                                         int write,
-                                         int force,
+                                         unsigned int flags,
                                          struct page **pages,
                                          struct vm_area_struct **vmas)
     {
-        unsigned int flags = 0;
+        int write = flags & FOLL_WRITE;
+        int force = flags & FOLL_FORCE;
 
-        if (write)
-            flags |= FOLL_WRITE;
-        if (force)
-            flags |= FOLL_FORCE;
-
-    #if defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_FLAGS)
-        return get_user_pages(current, current->mm, start, nr_pages, flags,
-                              pages, vmas);
+    #if defined(NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE)
+        return get_user_pages(start, nr_pages, write, force, pages, vmas);
     #else
-        // remaining defination(NV_GET_USER_PAGES_HAS_ARGS_FLAGS)
-        return get_user_pages(start, nr_pages, flags, pages, vmas);
-    #endif
+        // NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE
+        return get_user_pages(current, current->mm, start, nr_pages, write,
+                              force, pages, vmas);
+    #endif // NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE
     }
-#endif
+#endif // NV_GET_USER_PAGES_HAS_ARGS_FLAGS
+
+/* pin_user_pages_remote
+ *
+ * pin_user_pages_remote() was added by commit eddb1c228f7951d399240
+ * ("mm/gup: introduce pin_user_pages*() and FOLL_PIN") in v5.6 (2020-01-30)
+ *
+ * pin_user_pages_remote() removed 'tsk' parameter by commit
+ * 64019a2e467a ("mm/gup: remove task_struct pointer for  all gup code")
+ * in v5.9-rc1 (2020-08-11). *
+ *
+ */
+
+#if defined(NV_PIN_USER_PAGES_REMOTE_PRESENT)
+    #if defined (NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK)
+        #define NV_PIN_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
+            pin_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas, locked)
+    #else
+        #define NV_PIN_USER_PAGES_REMOTE pin_user_pages_remote
+    #endif // NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK
+#else
+    #define NV_PIN_USER_PAGES_REMOTE NV_GET_USER_PAGES_REMOTE
+#endif // NV_PIN_USER_PAGES_REMOTE_PRESENT
 
 /*
  * get_user_pages_remote() was added by commit 1e9877902dc7
  * ("mm/gup: Introduce get_user_pages_remote()") in v4.6 (2016-02-12).
- *
- * The very next commit cde70140fed8 ("mm/gup: Overload get_user_pages()
- * functions") deprecated the 8-argument version of get_user_pages for the
- * non-remote case (calling get_user_pages with current and current->mm).
- *
- * The guidelines are: call NV_GET_USER_PAGES_REMOTE if you need the 8-argument
- * version that uses something other than current and current->mm. Use
- * NV_GET_USER_PAGES if you are refering to current and current->mm.
  *
  * Note that get_user_pages_remote() requires the caller to hold a reference on
  * the task_struct (if non-NULL and if this API has tsk argument) and the mm_struct.
@@ -113,66 +138,55 @@ typedef int vm_fault_t;
  */
 
 #if defined(NV_GET_USER_PAGES_REMOTE_PRESENT)
-    #if defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_WRITE_FORCE)
-        #define NV_GET_USER_PAGES_REMOTE    get_user_pages_remote
+    #if defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED)
+        #define NV_GET_USER_PAGES_REMOTE get_user_pages_remote
+
+    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS_LOCKED)
+        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
+            get_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas, locked)
+
+    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS)
+        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
+            get_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas)
+
     #else
-        static inline long NV_GET_USER_PAGES_REMOTE(struct task_struct *tsk,
-                                                    struct mm_struct *mm,
+        // NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_WRITE_FORCE
+        static inline long NV_GET_USER_PAGES_REMOTE(struct mm_struct *mm,
                                                     unsigned long start,
                                                     unsigned long nr_pages,
-                                                    int write,
-                                                    int force,
+                                                    unsigned int flags,
                                                     struct page **pages,
-                                                    struct vm_area_struct **vmas)
+                                                    struct vm_area_struct **vmas,
+                                                    int *locked)
         {
-            unsigned int flags = 0;
+            int write = flags & FOLL_WRITE;
+            int force = flags & FOLL_FORCE;
 
-            if (write)
-                flags |= FOLL_WRITE;
-            if (force)
-                flags |= FOLL_FORCE;
-
-        #if defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS)
-            return get_user_pages_remote(tsk, mm, start, nr_pages, flags,
+            return get_user_pages_remote(NULL, mm, start, nr_pages, write, force,
                                          pages, vmas);
-        #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS_LOCKED)
-            return get_user_pages_remote(tsk, mm, start, nr_pages, flags,
-                                         pages, vmas, NULL);
-        #else
-            // remaining defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED)
-            return get_user_pages_remote(mm, start, nr_pages, flags,
-                                         pages, vmas, NULL);
-        #endif
         }
-    #endif
+    #endif // NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED
 #else
     #if defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE)
-        #define NV_GET_USER_PAGES_REMOTE    get_user_pages
-    #else
-        #include <linux/mm.h>
-        #include <linux/sched.h>
-
-        static inline long NV_GET_USER_PAGES_REMOTE(struct task_struct *tsk,
-                                                    struct mm_struct *mm,
+        static inline long NV_GET_USER_PAGES_REMOTE(struct mm_struct *mm,
                                                     unsigned long start,
                                                     unsigned long nr_pages,
-                                                    int write,
-                                                    int force,
+                                                    unsigned int flags,
                                                     struct page **pages,
-                                                    struct vm_area_struct **vmas)
+                                                    struct vm_area_struct **vmas,
+                                                    int *locked)
         {
-            unsigned int flags = 0;
+            int write = flags & FOLL_WRITE;
+            int force = flags & FOLL_FORCE;
 
-            if (write)
-                flags |= FOLL_WRITE;
-            if (force)
-                flags |= FOLL_FORCE;
-
-            return get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas);
+            return get_user_pages(NULL, mm, start, nr_pages, write, force, pages, vmas);
         }
-    #endif
-#endif
 
+    #else
+        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
+            get_user_pages(NULL, mm, start, nr_pages, flags, pages, vmas)
+    #endif // NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE
+#endif // NV_GET_USER_PAGES_REMOTE_PRESENT
 
 /*
  * The .virtual_address field was effectively renamed to .address, by these

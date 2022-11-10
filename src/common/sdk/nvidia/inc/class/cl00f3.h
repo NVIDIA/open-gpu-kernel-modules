@@ -40,7 +40,7 @@
  * other parameters are passed as Nv01MemoryFla structure.
  */
 
-#define NV01_MEMORY_FLA (0x000000f3)
+#define NV01_MEMORY_FLA (0xf3U) /* finn: Evaluated from "NV_FLA_MEMORY_ALLOCATION_PARAMS_MESSAGE_ID" */
 
 /*
  * Structure of NV_FLA_MEMORY_ALLOCATION_PARAMS

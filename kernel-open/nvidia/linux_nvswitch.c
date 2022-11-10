@@ -239,9 +239,6 @@ static long nvswitch_ctl_unlocked_ioctl(struct file *file,
 struct file_operations device_fops =
 {
     .owner = THIS_MODULE,
-#if defined(NV_FILE_OPERATIONS_HAS_IOCTL)
-    .ioctl = nvswitch_device_ioctl,
-#endif
     .unlocked_ioctl = nvswitch_device_unlocked_ioctl,
     .open    = nvswitch_device_open,
     .release = nvswitch_device_release,
@@ -251,9 +248,6 @@ struct file_operations device_fops =
 struct file_operations ctl_fops =
 {
     .owner = THIS_MODULE,
-#if defined(NV_FILE_OPERATIONS_HAS_IOCTL)
-    .ioctl = nvswitch_ctl_ioctl,
-#endif
     .unlocked_ioctl = nvswitch_ctl_unlocked_ioctl,
 };
 
@@ -574,6 +568,8 @@ nvswitch_deinit_device
     NVSWITCH_DEV *nvswitch_dev
 )
 {
+    nvswitch_deinit_i2c_adapters(nvswitch_dev);
+
     nvswitch_lib_disable_interrupts(nvswitch_dev->lib_device);
 
     nvswitch_shutdown_device_interrupt(nvswitch_dev);
@@ -1452,15 +1448,11 @@ nvswitch_remove
 
     list_del(&nvswitch_dev->list_node);
 
-    nvswitch_deinit_i2c_adapters(nvswitch_dev);
-
-    WARN_ON(!list_empty(&nvswitch_dev->i2c_adapter_list));
-
-    pci_set_drvdata(pci_dev, NULL);
-
     nvswitch_deinit_background_tasks(nvswitch_dev);
 
     nvswitch_deinit_device(nvswitch_dev);
+
+    pci_set_drvdata(pci_dev, NULL);
 
     pci_iounmap(pci_dev, nvswitch_dev->bar0);
 
@@ -1822,8 +1814,7 @@ nvswitch_exit
 
 //
 // Get current time in seconds.nanoseconds
-// In this implementation, the time is from epoch time
-// (midnight UTC of January 1, 1970)
+// In this implementation, the time is monotonic time
 //
 NvU64
 nvswitch_os_get_platform_time
@@ -1834,6 +1825,28 @@ nvswitch_os_get_platform_time
     struct timespec64 ts;
 
     ktime_get_raw_ts64(&ts);
+    return (NvU64) timespec64_to_ns(&ts);
+}
+
+//
+// Get current time in seconds.nanoseconds
+// In this implementation, the time is from epoch time
+// (midnight UTC of January 1, 1970).
+// This implementation cannot be used for polling loops
+// due to clock skew during system startup (bug 3302382,
+// 3297170, 3273847, 3277478, 200693329).
+// Instead, nvswitch_os_get_platform_time() is used
+// for polling loops
+//
+NvU64
+nvswitch_os_get_platform_time_epoch
+(
+    void
+)
+{
+    struct timespec64 ts;
+
+    ktime_get_real_ts64(&ts);
     return (NvU64) timespec64_to_ns(&ts);
 }
 

@@ -35,15 +35,12 @@
 //
 //******************************************************************************
 
-#if !defined(XAPIGEN)        /* avoid duplicate xapi fns generated */
 #include "nvgputypes.h"
 #include "nvcd.h"
-#endif
 
 #define NV_RMCD_VERSION  (20)
 
 // Define RC Reset Callback function type
-#if !defined(XAPIGEN)        /* xapigen doesn't do fn ptrs */
 #define RM_RC_CALLBACK_HANDLE_UPDATE 1
 #if RM_RC_CALLBACK_HANDLE_UPDATE
 typedef NvU32 RC_RESET_CALLBACK(NvHandle hClient, NvHandle hDevice, NvHandle hFifo, NvHandle hChannel,
@@ -51,9 +48,7 @@ typedef NvU32 RC_RESET_CALLBACK(NvHandle hClient, NvHandle hDevice, NvHandle hFi
 #else
 typedef NvU32 RC_RESET_CALLBACK(NvHandle hClient, NvHandle hDevice, NvHandle hChannel, void *pContext, NvBool clearRc);
 #endif
-#endif
 
-#if !defined(XAPIGEN)        /* not needed for xapigen */
 typedef struct _rc_error_context {
     struct OBJGPU   *pGpu;          // GPU device
     NvU32           ChId;           // Channel ID of channel in RC recovery
@@ -73,8 +68,6 @@ typedef struct _rc_error_context {
     const char      *faultStr;      // MMU fault string
 
 } RC_ERROR_CONTEXT, *PRC_ERROR_CONTEXT;
-
-#endif
 
 #define MAX_FBBAS               0x2
 #define FBBA_MUX_SEL_MAX        0xF
@@ -345,23 +338,12 @@ typedef struct
 *      rcPBDMAErrFlag
 */
 
-// XAPIGEN: hack around union with no discriminant.
-#if defined XAPIGEN
-typedef struct
-{
-    rcExtraMMUInfo      rcMMUData;
-    rcExtraGRInfo       rcGRData;
-    rcExtraPBDMAInfo    rcPBDMAData;
-} rcExtraInfo;
-#else
 typedef union
 {
     rcExtraMMUInfo      rcMMUData;
     rcExtraGRInfo       rcGRData;
     rcExtraPBDMAInfo    rcPBDMAData;
 } rcExtraInfo;
-#endif
-
 
 typedef struct
 {

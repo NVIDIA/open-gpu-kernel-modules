@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2021 NVIDIA Corporation
+    Copyright (c) 2017-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -40,6 +40,10 @@
 #define UVM_PERF_ACCESS_COUNTER_THRESHOLD_MIN       1
 #define UVM_PERF_ACCESS_COUNTER_THRESHOLD_MAX       ((1 << 16) - 1)
 #define UVM_PERF_ACCESS_COUNTER_THRESHOLD_DEFAULT   256
+
+#define UVM_ACCESS_COUNTER_ACTION_NOTIFY 0x1
+#define UVM_ACCESS_COUNTER_ACTION_CLEAR  0x2
+#define UVM_ACCESS_COUNTER_ON_MANAGED    0x4
 
 // Each page in a tracked physical range may belong to a different VA Block. We
 // preallocate an array of reverse map translations. However, access counter
@@ -934,25 +938,6 @@ static void preprocess_virt_notifications(uvm_gpu_t *gpu,
     translate_virt_notifications_instance_ptrs(gpu, batch_context);
 }
 
-static NV_STATUS service_virt_notifications(uvm_gpu_t *gpu,
-                                            uvm_access_counter_service_batch_context_t *batch_context)
-{
-    // TODO: Bug 1990466: Service virtual notifications. Entries with NULL
-    // va_space are simply dropped.
-    if (uvm_enable_builtin_tests) {
-        NvU32 i;
-
-        preprocess_virt_notifications(gpu, batch_context);
-
-        for (i = 0; i < batch_context->virt.num_notifications; ++i) {
-            const bool on_managed = false;
-            uvm_tools_broadcast_access_counter(gpu, batch_context->virt.notifications[i], on_managed);
-        }
-    }
-
-    return NV_OK;
-}
-
 // GPA notifications provide a physical address and an aperture. Sort
 // accesses by aperture to try to coalesce operations on the same target
 // processor.
@@ -1046,9 +1031,19 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
             uvm_page_mask_set(&service_context->thrashing_pin_mask, page_index);
         }
 
+        // If the underlying VMA is gone, skip HMM migrations.
+        if (uvm_va_block_is_hmm(va_block)) {
+            status = uvm_hmm_find_vma(&service_context->block_context, address);
+            if (status == NV_ERR_INVALID_ADDRESS)
+                continue;
+
+            UVM_ASSERT(status == NV_OK);
+        }
+
         service_context->block_context.policy = uvm_va_policy_get(va_block, address);
 
         new_residency = uvm_va_block_select_residency(va_block,
+                                                      &service_context->block_context,
                                                       page_index,
                                                       processor,
                                                       uvm_fault_access_type_mask_bit(UVM_FAULT_ACCESS_TYPE_PREFETCH),
@@ -1158,7 +1153,7 @@ static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
                                               const uvm_access_counter_buffer_entry_t *current_entry,
                                               const uvm_reverse_map_t *reverse_mappings,
                                               size_t num_reverse_mappings,
-                                              bool *clear_counter)
+                                              unsigned *out_flags)
 {
     size_t index;
     uvm_va_block_t *va_block = reverse_mappings[0].va_block;
@@ -1168,7 +1163,7 @@ static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
     const uvm_processor_id_t processor = current_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MIMC?
                                              gpu->id: UVM_ID_CPU;
 
-    *clear_counter = false;
+    *out_flags &= ~UVM_ACCESS_COUNTER_ACTION_CLEAR;
 
     UVM_ASSERT(num_reverse_mappings > 0);
 
@@ -1217,7 +1212,7 @@ static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
         uvm_mutex_unlock(&va_block->lock);
 
         if (status == NV_OK)
-            *clear_counter = true;
+            *out_flags |= UVM_ACCESS_COUNTER_ACTION_CLEAR;
     }
 
 done:
@@ -1238,25 +1233,26 @@ static NV_STATUS service_phys_va_blocks(uvm_gpu_t *gpu,
                                         const uvm_access_counter_buffer_entry_t *current_entry,
                                         const uvm_reverse_map_t *reverse_mappings,
                                         size_t num_reverse_mappings,
-                                        bool *clear_counter)
+                                        unsigned *out_flags)
 {
     NV_STATUS status = NV_OK;
     size_t index;
 
-    *clear_counter = false;
+    *out_flags &= ~UVM_ACCESS_COUNTER_ACTION_CLEAR;
 
     for (index = 0; index < num_reverse_mappings; ++index) {
-        bool clear_counter_local = false;
+        unsigned out_flags_local = 0;
         status = service_phys_single_va_block(gpu,
                                               batch_context,
                                               current_entry,
                                               reverse_mappings + index,
                                               1,
-                                              &clear_counter_local);
+                                              &out_flags_local);
         if (status != NV_OK)
             break;
 
-        *clear_counter = *clear_counter || clear_counter_local;
+        UVM_ASSERT((out_flags_local & ~UVM_ACCESS_COUNTER_ACTION_CLEAR) == 0);
+        *out_flags |= out_flags_local;
     }
 
     // In the case of failure, drop the refcounts for the remaining reverse mappings
@@ -1267,18 +1263,13 @@ static NV_STATUS service_phys_va_blocks(uvm_gpu_t *gpu,
 }
 
 // Iterate over all regions set in the given sub_granularity mask
-#define for_each_sub_granularity_region(region_start, region_end, sub_granularity, config)                       \
-    for ((region_start) = find_first_bit(&(sub_granularity), (config)->sub_granularity_regions_per_translation), \
-         (region_end) = find_next_zero_bit(&(sub_granularity),                                                   \
-                                           (config)->sub_granularity_regions_per_translation,                    \
-                                           (region_start) + 1);                                                  \
-         (region_start) < config->sub_granularity_regions_per_translation;                                       \
-         (region_start) = find_next_bit(&(sub_granularity),                                                      \
-                                        (config)->sub_granularity_regions_per_translation,                       \
-                                        (region_end) + 1),                                                       \
-         (region_end) = find_next_zero_bit(&(sub_granularity),                                                   \
-                                           (config)->sub_granularity_regions_per_translation,                    \
-                                           (region_start) + 1))
+#define for_each_sub_granularity_region(region_start, region_end, sub_granularity, num_regions)      \
+    for ((region_start) = find_first_bit(&(sub_granularity), (num_regions)),                         \
+         (region_end) = find_next_zero_bit(&(sub_granularity), (num_regions), (region_start) + 1);   \
+         (region_start) < (num_regions);                                                             \
+         (region_start) = find_next_bit(&(sub_granularity), (num_regions), (region_end) + 1),        \
+         (region_end) = find_next_zero_bit(&(sub_granularity), (num_regions), (region_start) + 1))
+
 
 static bool are_reverse_mappings_on_single_block(const uvm_reverse_map_t *reverse_mappings, size_t num_reverse_mappings)
 {
@@ -1309,7 +1300,7 @@ static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
                                                        NvU64 address,
                                                        unsigned long sub_granularity,
                                                        size_t *num_reverse_mappings,
-                                                       bool *clear_counter)
+                                                       unsigned *out_flags)
 {
     NV_STATUS status;
     NvU32 region_start, region_end;
@@ -1318,7 +1309,7 @@ static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
 
     // Get the reverse_map translations for all the regions set in the
     // sub_granularity field of the counter.
-    for_each_sub_granularity_region(region_start, region_end, sub_granularity, config) {
+    for_each_sub_granularity_region(region_start, region_end, sub_granularity, config->sub_granularity_regions_per_translation) {
         NvU64 local_address = address + region_start * config->sub_granularity_region_size;
         NvU32 local_translation_size = (region_end - region_start) * config->sub_granularity_region_size;
         uvm_reverse_map_t *local_reverse_mappings = batch_context->phys.translations + *num_reverse_mappings;
@@ -1350,7 +1341,7 @@ static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
                                               current_entry,
                                               batch_context->phys.translations,
                                               *num_reverse_mappings,
-                                              clear_counter);
+                                              out_flags);
     }
     else {
         status = service_phys_va_blocks(gpu,
@@ -1358,7 +1349,7 @@ static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
                                         current_entry,
                                         batch_context->phys.translations,
                                         *num_reverse_mappings,
-                                        clear_counter);
+                                        out_flags);
     }
 
     return status;
@@ -1366,7 +1357,8 @@ static NV_STATUS service_phys_notification_translation(uvm_gpu_t *gpu,
 
 static NV_STATUS service_phys_notification(uvm_gpu_t *gpu,
                                            uvm_access_counter_service_batch_context_t *batch_context,
-                                           const uvm_access_counter_buffer_entry_t *current_entry)
+                                           const uvm_access_counter_buffer_entry_t *current_entry,
+                                           unsigned *out_flags)
 {
     NvU64 address;
     NvU64 translation_index;
@@ -1377,7 +1369,7 @@ static NV_STATUS service_phys_notification(uvm_gpu_t *gpu,
     size_t total_reverse_mappings = 0;
     uvm_gpu_t *resident_gpu = NULL;
     NV_STATUS status = NV_OK;
-    bool clear_counter = false;
+    unsigned flags = 0;
 
     address = current_entry->address.address;
     UVM_ASSERT(address % config->translation_size == 0);
@@ -1405,7 +1397,7 @@ static NV_STATUS service_phys_notification(uvm_gpu_t *gpu,
 
     for (translation_index = 0; translation_index < config->translations_per_counter; ++translation_index) {
         size_t num_reverse_mappings;
-        bool clear_counter_local = false;
+        unsigned out_flags_local = 0;
         status = service_phys_notification_translation(gpu,
                                                        resident_gpu,
                                                        batch_context,
@@ -1414,9 +1406,11 @@ static NV_STATUS service_phys_notification(uvm_gpu_t *gpu,
                                                        address,
                                                        sub_granularity,
                                                        &num_reverse_mappings,
-                                                       &clear_counter_local);
+                                                       &out_flags_local);
         total_reverse_mappings += num_reverse_mappings;
-        clear_counter = clear_counter || clear_counter_local;
+
+        UVM_ASSERT((out_flags_local & ~UVM_ACCESS_COUNTER_ACTION_CLEAR) == 0);
+        flags |= out_flags_local;
 
         if (status != NV_OK)
             break;
@@ -1425,17 +1419,14 @@ static NV_STATUS service_phys_notification(uvm_gpu_t *gpu,
         sub_granularity = sub_granularity >> config->sub_granularity_regions_per_translation;
     }
 
-    // TODO: Bug 1990466: Here we already have virtual addresses and
-    // address spaces. Merge virtual and physical notification handling
-
     // Currently we only report events for our tests, not for tools
     if (uvm_enable_builtin_tests) {
-        const bool on_managed = total_reverse_mappings != 0;
-        uvm_tools_broadcast_access_counter(gpu, current_entry, on_managed);
+        *out_flags |= UVM_ACCESS_COUNTER_ACTION_NOTIFY;
+        *out_flags |= ((total_reverse_mappings != 0) ? UVM_ACCESS_COUNTER_ON_MANAGED : 0);
     }
 
-    if (status == NV_OK && clear_counter)
-        status = access_counter_clear_targeted(gpu, current_entry);
+    if (status == NV_OK && (flags & UVM_ACCESS_COUNTER_ACTION_CLEAR))
+        *out_flags |= UVM_ACCESS_COUNTER_ACTION_CLEAR;
 
     return status;
 }
@@ -1450,17 +1441,209 @@ static NV_STATUS service_phys_notifications(uvm_gpu_t *gpu,
     for (i = 0; i < batch_context->phys.num_notifications; ++i) {
         NV_STATUS status;
         uvm_access_counter_buffer_entry_t *current_entry = batch_context->phys.notifications[i];
+        unsigned flags = 0;
 
         if (!UVM_ID_IS_VALID(current_entry->physical_info.resident_id))
             continue;
 
-        status = service_phys_notification(gpu, batch_context, current_entry);
+        status = service_phys_notification(gpu, batch_context, current_entry, &flags);
+        if (flags & UVM_ACCESS_COUNTER_ACTION_NOTIFY)
+            uvm_tools_broadcast_access_counter(gpu, current_entry, flags & UVM_ACCESS_COUNTER_ON_MANAGED);
+
+        if (status == NV_OK && (flags & UVM_ACCESS_COUNTER_ACTION_CLEAR))
+            status = access_counter_clear_targeted(gpu, current_entry);
+
         if (status != NV_OK)
             return status;
     }
 
     return NV_OK;
 }
+
+static int cmp_sort_gpu_phys_addr(const void *_a, const void *_b)
+{
+    return uvm_gpu_phys_addr_cmp(*(uvm_gpu_phys_address_t*)_a,
+                                 *(uvm_gpu_phys_address_t*)_b);
+}
+
+static bool gpu_phys_same_region(uvm_gpu_phys_address_t a, uvm_gpu_phys_address_t b, NvU64 granularity)
+{
+    if (a.aperture != b.aperture)
+        return false;
+
+    UVM_ASSERT(is_power_of_2(granularity));
+
+    return UVM_ALIGN_DOWN(a.address, granularity) == UVM_ALIGN_DOWN(b.address, granularity);
+}
+
+static bool phys_address_in_accessed_sub_region(uvm_gpu_phys_address_t address,
+                                                NvU64 region_size,
+                                                NvU64 sub_region_size,
+                                                NvU32 accessed_mask)
+{
+    const unsigned accessed_index = (address.address % region_size) / sub_region_size;
+
+    // accessed_mask is only filled for tracking granularities larger than 64K
+    if (region_size == UVM_PAGE_SIZE_64K)
+        return true;
+
+    UVM_ASSERT(accessed_index < 32);
+    return ((1 << accessed_index) & accessed_mask) != 0;
+}
+
+static NV_STATUS service_virt_notification(uvm_gpu_t *gpu,
+                                           uvm_access_counter_service_batch_context_t *batch_context,
+                                           const uvm_access_counter_buffer_entry_t *current_entry,
+                                           unsigned *out_flags)
+{
+    NV_STATUS status = NV_OK;
+    NvU64 notification_size;
+    NvU64 address;
+    uvm_processor_id_t *resident_processors = batch_context->virt.scratch.resident_processors;
+    uvm_gpu_phys_address_t *phys_addresses = batch_context->virt.scratch.phys_addresses;
+    int num_addresses = 0;
+    int i;
+
+    // Virtual address notifications are always 64K aligned
+    NvU64 region_start = current_entry->address.address;
+    NvU64 region_end = current_entry->address.address + UVM_PAGE_SIZE_64K;
+    
+
+    uvm_access_counter_buffer_info_t *access_counters = &gpu->parent->access_counter_buffer_info;
+    uvm_access_counter_type_t counter_type = current_entry->counter_type;
+
+    const uvm_gpu_access_counter_type_config_t *config = get_config_for_type(access_counters, counter_type);
+
+    uvm_va_space_t *va_space = current_entry->virtual_info.va_space;
+
+    UVM_ASSERT(counter_type == UVM_ACCESS_COUNTER_TYPE_MIMC);
+
+    // Entries with NULL va_space are simply dropped.
+    if (!va_space)
+        return NV_OK;
+
+    status = config_granularity_to_bytes(config->rm.granularity, &notification_size);
+    if (status != NV_OK)
+        return status;
+
+    // Collect physical locations that could have been touched
+    // in the reported 64K VA region. The notification mask can
+    // correspond to any of them.
+    uvm_va_space_down_read(va_space);
+    for (address = region_start; address < region_end;) {
+        uvm_va_block_t *va_block;
+
+        NV_STATUS local_status = uvm_va_block_find(va_space, address, &va_block);
+        if (local_status == NV_ERR_INVALID_ADDRESS || local_status == NV_ERR_OBJECT_NOT_FOUND) {
+            address += PAGE_SIZE;
+            continue;
+        }
+
+        uvm_mutex_lock(&va_block->lock);
+        while (address < va_block->end && address < region_end) {
+            const unsigned page_index = uvm_va_block_cpu_page_index(va_block, address);
+
+            // UVM va_block always maps the closest resident location to processor
+            const uvm_processor_id_t res_id = uvm_va_block_page_get_closest_resident(va_block, page_index, gpu->id);
+
+            // Add physical location if it's valid and not local vidmem
+            if (UVM_ID_IS_VALID(res_id) && !uvm_id_equal(res_id, gpu->id)) {
+                uvm_gpu_phys_address_t phys_address = uvm_va_block_res_phys_page_address(va_block, page_index, res_id, gpu);
+                if (phys_address_in_accessed_sub_region(phys_address,
+                                                        notification_size,
+                                                        config->sub_granularity_region_size,
+                                                        current_entry->sub_granularity)) {
+                    resident_processors[num_addresses] = res_id;
+                    phys_addresses[num_addresses] = phys_address;
+                    ++num_addresses;
+                }
+                else {
+                    UVM_DBG_PRINT_RL("Skipping phys address %llx:%s, because it couldn't have been accessed in mask %x",
+                                     phys_address.address,
+                                     uvm_aperture_string(phys_address.aperture),
+                                     current_entry->sub_granularity);
+                }
+            }
+
+            address += PAGE_SIZE;
+        }
+        uvm_mutex_unlock(&va_block->lock);
+    }
+    uvm_va_space_up_read(va_space);
+
+    // The addresses need to be sorted to aid coalescing.
+    sort(phys_addresses,
+         num_addresses,
+         sizeof(*phys_addresses),
+         cmp_sort_gpu_phys_addr,
+         NULL);
+
+    for (i = 0; i < num_addresses; ++i) {
+        uvm_access_counter_buffer_entry_t *fake_entry = &batch_context->virt.scratch.phys_entry;
+
+        // Skip the current pointer if the physical region was already handled
+        if (i > 0 && gpu_phys_same_region(phys_addresses[i - 1], phys_addresses[i], notification_size)) {
+            UVM_ASSERT(uvm_id_equal(resident_processors[i - 1], resident_processors[i]));
+            continue;
+        }
+        UVM_DBG_PRINT_RL("Faking MIMC address[%i/%i]: %llx (granularity mask: %llx) in aperture %s on device %s\n",
+                         i,
+                         num_addresses,
+                         phys_addresses[i].address,
+                         notification_size - 1,
+                         uvm_aperture_string(phys_addresses[i].aperture),
+                         uvm_gpu_name(gpu));
+
+        // Construct a fake phys addr AC entry
+        fake_entry->counter_type = current_entry->counter_type;
+        fake_entry->address.address = UVM_ALIGN_DOWN(phys_addresses[i].address, notification_size);
+        fake_entry->address.aperture = phys_addresses[i].aperture;
+        fake_entry->address.is_virtual = false;
+        fake_entry->physical_info.resident_id = resident_processors[i];
+        fake_entry->counter_value = current_entry->counter_value;
+        fake_entry->sub_granularity = current_entry->sub_granularity;
+
+        status = service_phys_notification(gpu, batch_context, fake_entry, out_flags);
+        if (status != NV_OK)
+            break;
+    }
+
+    return status;
+}
+
+static NV_STATUS service_virt_notifications(uvm_gpu_t *gpu,
+                                            uvm_access_counter_service_batch_context_t *batch_context)
+{
+    NvU32 i;
+    NV_STATUS status = NV_OK;
+    preprocess_virt_notifications(gpu, batch_context);
+
+    for (i = 0; i < batch_context->virt.num_notifications; ++i) {
+        unsigned flags = 0;
+        uvm_access_counter_buffer_entry_t *current_entry = batch_context->virt.notifications[i];
+
+        status = service_virt_notification(gpu, batch_context, current_entry, &flags);
+
+        UVM_DBG_PRINT_RL("Processed virt access counter (%d/%d): %sMANAGED (status: %d) clear: %s\n",
+                         i + 1,
+                         batch_context->virt.num_notifications,
+                         (flags & UVM_ACCESS_COUNTER_ON_MANAGED) ? "" : "NOT ",
+                         status,
+                         (flags & UVM_ACCESS_COUNTER_ACTION_CLEAR) ? "YES" : "NO");
+
+        if (uvm_enable_builtin_tests)
+            uvm_tools_broadcast_access_counter(gpu, current_entry, flags & UVM_ACCESS_COUNTER_ON_MANAGED);
+
+        if (status == NV_OK && (flags & UVM_ACCESS_COUNTER_ACTION_CLEAR))
+            status = access_counter_clear_targeted(gpu, current_entry);
+
+        if (status != NV_OK)
+            break;
+    }
+
+    return status;
+}
+
 
 void uvm_gpu_service_access_counters(uvm_gpu_t *gpu)
 {

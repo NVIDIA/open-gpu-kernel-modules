@@ -156,6 +156,7 @@
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 #define NV_PCI_DEVID_DEVICE_PG171_SKU200_PG179_SKU220 0x25B6 /* NVIDIA A16 / NVIDIA A2 */
+#define NV_PCI_DEVID_DEVICE_PG189_SKU600              0x1EBA
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -633,7 +634,6 @@ enum {
 ,     CS_MELLANOX_BLUEFIELD
 ,     CS_AMAZON_GRAVITRON2
 ,     CS_FUJITSU_A64FX
-,     CS_PHYTIUM_FT2000
 ,     CS_AMPERE_ALTRA
 ,     CS_ARM_NEOVERSEN1
 ,     CS_MARVELL_OCTEON_CN96XX

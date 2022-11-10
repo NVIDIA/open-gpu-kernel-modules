@@ -71,6 +71,7 @@ static void CalculateVideoInfoFrameColorFormat(
     // sets video infoframe colorspace (RGB/YUV).
     switch (pAttributesSet->colorSpace) {
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
+    case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_BT2020RGB:
         pCtrl->color_space = NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_RGB;
         break;
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
@@ -91,6 +92,9 @@ static void CalculateVideoInfoFrameColorFormat(
     switch (pAttributesSet->colorSpace) {
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
         pCtrl->colorimetry = NVT_COLORIMETRY_RGB;
+        break;
+    case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_BT2020RGB:
+        pCtrl->colorimetry = NVT_COLORIMETRY_BT2020RGB;
         break;
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
     case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
@@ -123,9 +127,13 @@ static void CalculateVideoInfoFrameColorFormat(
         break;
     }
 
-    // Only limited color range is allowed with YUV444 or YUV422 color spaces
+    /*
+     * Only limited color range is allowed with YUV444, YUV422 color spaces, or
+     * BT2020 colorimetry.
+     */
     nvAssert(!(((pCtrl->color_space == NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_YCbCr422) ||
-                (pCtrl->color_space == NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_YCbCr444)) &&
+                (pCtrl->color_space == NVT_VIDEO_INFOFRAME_BYTE1_Y1Y0_YCbCr444) ||
+                (pCtrl->colorimetry == NVT_COLORIMETRY_BT2020RGB)) &&
                (pCtrl->rgb_quantization_range !=
                     NVT_VIDEO_INFOFRAME_BYTE3_Q1Q0_LIMITED_RANGE)));
 }
@@ -434,11 +442,11 @@ static void SendInfoFrame(const NVDispEvoRec *pDispEvo,
 static void SendVideoInfoFrame(const NVDispEvoRec *pDispEvo,
                                const NvU32 head,
                                const NVAttributesSetEvoRec *pAttributesSet,
-                               const NvBool hdTimings,
-                               const NVT_VIDEO_INFOFRAME_CTRL *pCtrl,
+                               const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                                NVT_EDID_INFO *pEdidInfo)
 {
-    NVT_VIDEO_INFOFRAME_CTRL videoCtrl = *pCtrl;
+    NvBool hdTimings = pInfoFrameState->hdTimings;
+    NVT_VIDEO_INFOFRAME_CTRL videoCtrl = pInfoFrameState->ctrl;
     NVT_VIDEO_INFOFRAME VideoInfoFrame;
     NVT_STATUS status;
 
@@ -519,8 +527,7 @@ SendHDMI3DVendorSpecificInfoFrame(const NVDispEvoRec *pDispEvo,
 void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
                             const NvU32 head,
                             const NVAttributesSetEvoRec *pAttributesSet,
-                            const NvBool hdTimings,
-                            const NVT_VIDEO_INFOFRAME_CTRL *pCtrl,
+                            const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                             NVDpyEvoRec *pDpyEvo)
 {
     if (!nvDpyIsHdmiEvo(pDpyEvo)) {
@@ -537,8 +544,7 @@ void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
     SendVideoInfoFrame(pDispEvo,
                        head,
                        pAttributesSet,
-                       hdTimings,
-                       pCtrl,
+                       pInfoFrameState,
                        &pDpyEvo->parsedEdid.info);
 
     SendHDMI3DVendorSpecificInfoFrame(pDispEvo,

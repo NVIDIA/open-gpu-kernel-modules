@@ -66,20 +66,24 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelPerf =
     /*pExportInfo=*/        &__nvoc_export_info_KernelPerf
 };
 
-static NV_STATUS __nvoc_thunk_KernelPerf_engstateConstructEngine(OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, ENGDESCRIPTOR engDesc) {
+static NV_STATUS __nvoc_thunk_KernelPerf_engstateConstructEngine(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, ENGDESCRIPTOR engDesc) {
     return kperfConstructEngine(pGpu, (struct KernelPerf *)(((unsigned char *)pKernelPerf) - __nvoc_rtti_KernelPerf_OBJENGSTATE.offset), engDesc);
 }
 
-static NV_STATUS __nvoc_thunk_KernelPerf_engstateStateInitLocked(OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf) {
+static NV_STATUS __nvoc_thunk_KernelPerf_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf) {
     return kperfStateInitLocked(pGpu, (struct KernelPerf *)(((unsigned char *)pKernelPerf) - __nvoc_rtti_KernelPerf_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_KernelPerf_engstateStateLoad(OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, NvU32 flags) {
+static NV_STATUS __nvoc_thunk_KernelPerf_engstateStateLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, NvU32 flags) {
     return kperfStateLoad(pGpu, (struct KernelPerf *)(((unsigned char *)pKernelPerf) - __nvoc_rtti_KernelPerf_OBJENGSTATE.offset), flags);
 }
 
-static NV_STATUS __nvoc_thunk_KernelPerf_engstateStateUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, NvU32 flags) {
+static NV_STATUS __nvoc_thunk_KernelPerf_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf, NvU32 flags) {
     return kperfStateUnload(pGpu, (struct KernelPerf *)(((unsigned char *)pKernelPerf) - __nvoc_rtti_KernelPerf_OBJENGSTATE.offset), flags);
+}
+
+static void __nvoc_thunk_KernelPerf_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPerf) {
+    kperfStateDestroy(pGpu, (struct KernelPerf *)(((unsigned char *)pKernelPerf) - __nvoc_rtti_KernelPerf_OBJENGSTATE.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kperfReconcileTunableState(POBJGPU pGpu, struct KernelPerf *pEngstate, void *pTunableState) {
@@ -92,10 +96,6 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_kperfStatePreLoad(POBJGPU pGpu, struct
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kperfStatePostUnload(POBJGPU pGpu, struct KernelPerf *pEngstate, NvU32 arg0) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelPerf_OBJENGSTATE.offset), arg0);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_kperfStateDestroy(POBJGPU pGpu, struct KernelPerf *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelPerf_OBJENGSTATE.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kperfStatePreUnload(POBJGPU pGpu, struct KernelPerf *pEngstate, NvU32 arg0) {
@@ -197,6 +197,8 @@ static void __nvoc_init_funcTable_KernelPerf_1(KernelPerf *pThis, RmHalspecOwner
 
     pThis->__kperfStateUnload__ = &kperfStateUnload_IMPL;
 
+    pThis->__kperfStateDestroy__ = &kperfStateDestroy_IMPL;
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelPerf_engstateConstructEngine;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelPerf_engstateStateInitLocked;
@@ -205,13 +207,13 @@ static void __nvoc_init_funcTable_KernelPerf_1(KernelPerf *pThis, RmHalspecOwner
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_thunk_KernelPerf_engstateStateUnload;
 
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_thunk_KernelPerf_engstateStateDestroy;
+
     pThis->__kperfReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_kperfReconcileTunableState;
 
     pThis->__kperfStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kperfStatePreLoad;
 
     pThis->__kperfStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kperfStatePostUnload;
-
-    pThis->__kperfStateDestroy__ = &__nvoc_thunk_OBJENGSTATE_kperfStateDestroy;
 
     pThis->__kperfStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_kperfStatePreUnload;
 

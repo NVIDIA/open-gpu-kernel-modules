@@ -47,7 +47,6 @@
 #include "objflcnable.h"
 #endif
 
-
 /*!
  * @brief Update command queue head and tail pointers
  *
@@ -638,7 +637,7 @@ kfspWaitForSecureBoot_GH100
 
 /*!
  * @brief Check if GSP-FMC Inst_in_sys ucode needs to be booted.
- * 
+ *
  * @param[in]  pGpu          OBJGPU pointer
  * @param[in]  pKernelFsp    KernelFsp pointer
  *
@@ -667,29 +666,32 @@ kfspGetGspUcodeArchive
     if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
     {
         NV_PRINTF(LEVEL_ERROR, "Loading GSP-RM image using FSP.\n");
+
         if (kgspIsDebugModeEnabled_HAL(pGpu, pKernelGsp))
         {
-            return kgspGetBinArchiveGspRmCcGfwDebugSigned_HAL(pKernelGsp);
+            {
+                return kgspGetBinArchiveGspRmFmcGfwDebugSigned_HAL(pKernelGsp);
+            }
         }
         else
         {
-            return kgspGetBinArchiveGspRmCcGfwProdSigned_HAL(pKernelGsp);
-        }      
+            return kgspGetBinArchiveGspRmFmcGfwProdSigned_HAL(pKernelGsp);
+        }
     }
 #if RMCFG_MODULE_ENABLED (GSP)
     else
     {
         Gsp *pGsp = GPU_GET_GSP(pGpu);
 
-        NV_PRINTF(LEVEL_INFO, "Loading GSP image for monolithic RM using FSP.\n");
+        // Intentional error print so that we know which mode RM is loaded with
+        NV_PRINTF(LEVEL_ERROR, "Loading GSP image for monolithic RM using FSP.\n");
         if (gspIsDebugModeEnabled_HAL(pGpu, pGsp))
         {
             if (kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp))
             {
-                return gspGetBinArchiveGspCcInstInSysGfwDebugSigned_HAL(pGsp);
+                return gspGetBinArchiveGspFmcInstInSysGfwDebugSigned_HAL(pGsp);
             }
-
-            if (pGsp->getProperty(pGsp, PDB_PROP_GSP_DISABLE_RESIDENT_IMAGE))
+            else
             {
                 //
                 // Non Resident (GspCcGfw)Image will have just the FMC in it.
@@ -698,29 +700,24 @@ kfspGetGspUcodeArchive
                 // into to the FMC. FMC will then boot the RM Proxy.
                 //
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
-                return gspGetBinArchiveGspCcGfwDebugSigned_HAL(pGsp);
-            }
-            else
-            {
-                return gspGetBinArchiveGspCcResidentGfwDebugSigned_HAL(pGsp);
+
+                {
+                    return gspGetBinArchiveGspFmcGfwDebugSigned_HAL(pGsp);
+                }
             }
         }
         else
         {
             if (kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp))
             {
-                return gspGetBinArchiveGspCcInstInSysGfwProdSigned_HAL(pGsp);
-            }
-
-            if (!pGsp->getProperty(pGsp, PDB_PROP_GSP_DISABLE_RESIDENT_IMAGE))
-            {
-                    return gspGetBinArchiveGspCcResidentGfwProdSigned_HAL(pGsp);
+                return gspGetBinArchiveGspFmcInstInSysGfwProdSigned_HAL(pGsp);
             }
             else
             {
-                // There is no production signed non-resident image yet
-                NV_PRINTF(LEVEL_ERROR, "Cannot load GSP non-resident prod image on monolithic RM.\n");
-                return NULL;
+                NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
+                {
+                    return gspGetBinArchiveGspFmcGfwProdSigned_HAL(pGsp);
+                }
             }
         }
     }
@@ -789,6 +786,7 @@ kfspSetupGspImages
     pBinArchive = kfspGetGspUcodeArchive(pGpu, pKernelFsp);
     if (pBinArchive == NULL)
     {
+        NV_PRINTF(LEVEL_ERROR, "Cannot find correct ucode archive for booting!\n");
         status = NV_ERR_OBJECT_NOT_FOUND;
         goto failed;
     }
@@ -847,11 +845,8 @@ kfspSetupGspImages
     return NV_OK;
 
 failed:
-    if (pKernelFsp->pGspFmcMemdesc != NULL)
-    {
-        memdescDestroy(pKernelFsp->pGspFmcMemdesc);
-        pKernelFsp->pGspFmcMemdesc = NULL;
-    }
+    memdescDestroy(pKernelFsp->pGspFmcMemdesc);
+    pKernelFsp->pGspFmcMemdesc = NULL;
 
     return status;
 }
@@ -874,7 +869,7 @@ _kfspCheckGspBootStatus
     // In Inst_in_sys mode GSP-FMC will write status to NV_PGSP_MAILBOX(0).
     if (kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp))
     {
-        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
         while(FLD_TEST_DRF_NUM(_PGSP, _MAILBOX, _DATA, GSP_INST_IN_SYS_COMPLETION_STATUS_IN_PROGRESS , GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0))))
         {
             status = gpuCheckTimeout(pGpu, &timeout);
@@ -896,7 +891,7 @@ _kfspCheckGspBootStatus
      }
 
     // Ensure priv lockdown is released before polling interrupts
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
     do
     {
         if (flcnIsRiscvLockdownReleased_HAL(pGpu, pFlcn))
@@ -1002,11 +997,11 @@ kfspSendBootCommands_GH100
 )
 {
     NV_STATUS status = NV_OK;
+    NV_STATUS statusBoot = NV_OK;
     NvU32 frtsSize = 0;
     NVDM_PAYLOAD_COT *pCotPayload = NULL;
     NvP64 pVaKernel = NULL;
     NvP64 pPrivKernel = NULL;
-
 
     if (!IS_EMULATION(pGpu) && !IS_SILICON(pGpu))
     {
@@ -1036,11 +1031,12 @@ kfspSendBootCommands_GH100
     }
 
     // Confirm FSP secure boot partition is done
-    status = kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp);
-    if (status != NV_OK)
+    statusBoot = kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp);
+
+    if (statusBoot != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "FSP secure boot partition timed out.\n");
-        return status;
+        return statusBoot;
     }
 
     // Enforce GSP-FMC can only be booted by FSP on silicon.
@@ -1123,6 +1119,7 @@ kfspSendBootCommands_GH100
         status = kfspSetupGspImages(pGpu, pKernelFsp, pCotPayload);
         if (status!= NV_OK)
         {
+            NV_PRINTF(LEVEL_ERROR, "Ucode image preparation failed!\n");
             goto failed;
         }
 
@@ -1141,7 +1138,6 @@ kfspSendBootCommands_GH100
             pCotPayload->frtsVidmemOffset, pCotPayload->frtsVidmemSize);
         NV_PRINTF(LEVEL_ERROR, "gspBootArgsSysmemOffset=0x%llx\n",
             pCotPayload->gspBootArgsSysmemOffset);
-
         goto failed;
     }
 
@@ -1166,11 +1162,8 @@ failed:
     NV_PRINTF(LEVEL_ERROR, "FSP boot cmds failed. RM cannot boot.\n");
     kfspDumpDebugState_HAL(pGpu, pKernelFsp);
 
-    if (pKernelFsp->pSysmemFrtsMemdesc != NULL)
-    {
-        memdescDestroy(pKernelFsp->pSysmemFrtsMemdesc);
-        pKernelFsp->pSysmemFrtsMemdesc = NULL;
-    }
+    memdescDestroy(pKernelFsp->pSysmemFrtsMemdesc);
+    pKernelFsp->pSysmemFrtsMemdesc = NULL;
 
     portMemFree(pCotPayload);
 
@@ -1200,4 +1193,18 @@ kfspErrorCode2NvStatusMap_GH100
         default:
         return NV_ERR_GENERIC;
     }
+}
+
+/*!
+ * Size of extra memory required to be reserved after FRTS region
+ */
+NvU64
+kfspGetExtraReservedMemorySize_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    // Bug: 3763996
+    return 4 * 1024;
 }

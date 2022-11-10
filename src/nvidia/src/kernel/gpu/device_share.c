@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -243,6 +243,17 @@ deviceInitClientShare
         {
             flags |= VASPACE_FLAGS_PTETABLE_PMA_MANAGED;
         }
+
+        //
+        // For RM unlinked SLI: the fixed offset requirement is enforced at the OBJGVASPACE
+        // level during allocations and mappings, so the Device flag must be converted
+        // into the internal VASPACE flag.
+        //
+        if (deviceAllocFlags & NV_DEVICE_ALLOCATION_FLAGS_VASPACE_REQUIRE_FIXED_OFFSET)
+        {
+            flags |= VASPACE_FLAGS_REQUIRE_FIXED_OFFSET;
+        }
+
         status = vmmCreateVaspace(pVmm, vaspaceClass, 0, gpuMask, 0,
                                         vaLimit, pDevice->vaStartInternal,
                                         pDevice->vaLimitInternal, NULL, flags, &pVAS);

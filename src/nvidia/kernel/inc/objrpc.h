@@ -45,6 +45,13 @@ typedef struct _object_vgpu OBJVGPU, *POBJVGPU;
 #include "g_rpc_hal.h" // For RPC_HAL_IFACES
 #include "g_rpc_odb.h" // For RPC_HAL_IFACES
 
+#define RPC_HISTORY_DEPTH 8
+typedef struct RpcHistoryEntry
+{
+    NvU32 function;
+    NvU32 data[3];
+} RpcHistoryEntry;
+
 struct OBJRPC{
     OBJECT_BASE_DEFINITION(RPC);
 
@@ -70,6 +77,9 @@ struct OBJRPC{
     /* Message Queue */
     struct _message_queue_info *pMessageQueueInfo;
     RmPhysAddr                  messageQueuePhysMem;
+
+    RpcHistoryEntry rpcHistory[RPC_HISTORY_DEPTH];
+    NvU32 rpcHistoryCurrent;
 
 };
 

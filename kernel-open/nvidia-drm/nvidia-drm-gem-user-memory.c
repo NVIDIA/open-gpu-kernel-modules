@@ -113,7 +113,6 @@ static vm_fault_t __nv_drm_gem_user_memory_handle_vma_fault(
     page_offset = vmf->pgoff - drm_vma_node_start(&gem->vma_node);
 
     BUG_ON(page_offset > nv_user_memory->pages_count);
-
     ret = vm_insert_page(vma, address, nv_user_memory->pages[page_offset]);
     switch (ret) {
         case 0:

@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_dispcapUnmapFrom(struct DispCapabilitie
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_dispcapIsDuplicate(struct DispCapabilities *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_dispcapControl_Epilogue(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), pCallContext, pParams);
 }
@@ -256,6 +260,8 @@ static void __nvoc_init_funcTable_DispCapabilities_1(DispCapabilities *pThis) {
     pThis->__dispcapPreDestruct__ = &__nvoc_thunk_RsResource_dispcapPreDestruct;
 
     pThis->__dispcapUnmapFrom__ = &__nvoc_thunk_RsResource_dispcapUnmapFrom;
+
+    pThis->__dispcapIsDuplicate__ = &__nvoc_thunk_RsResource_dispcapIsDuplicate;
 
     pThis->__dispcapControl_Epilogue__ = &__nvoc_thunk_RmResource_dispcapControl_Epilogue;
 

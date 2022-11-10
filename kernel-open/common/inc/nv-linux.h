@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -191,13 +191,6 @@
  */
 #define NV_CURRENT_EUID() (__kuid_val(current->cred->euid))
 
-#if !defined(NV_KUID_T_PRESENT)
-static inline uid_t __kuid_val(uid_t uid)
-{
-    return uid;
-}
-#endif
-
 #if defined(CONFIG_VGA_ARB)
 #include <linux/vgaarb.h>
 #endif
@@ -232,18 +225,6 @@ static inline uid_t __kuid_val(uid_t uid)
 #if !defined(CONFIG_PCI)
 #warning "Attempting to build driver for a platform with no PCI support!"
 #include <asm-generic/pci-dma-compat.h>
-#endif
-
-#if defined(NV_EFI_ENABLED_PRESENT) && defined(NV_EFI_ENABLED_ARGUMENT_COUNT)
-#if (NV_EFI_ENABLED_ARGUMENT_COUNT == 1)
-#define NV_EFI_ENABLED() efi_enabled(EFI_BOOT)
-#else
-#error "NV_EFI_ENABLED_ARGUMENT_COUNT value unrecognized!"
-#endif
-#elif (defined(NV_EFI_ENABLED_PRESENT) || defined(efi_enabled))
-#define NV_EFI_ENABLED() efi_enabled
-#else
-#define NV_EFI_ENABLED() 0
 #endif
 
 #if defined(CONFIG_CRAY_XT)
@@ -521,7 +502,7 @@ static inline void *nv_vmalloc(unsigned long size)
     return ptr;
 }
 
-static inline void nv_vfree(void *ptr, NvU32 size)
+static inline void nv_vfree(void *ptr, NvU64 size)
 {
     NV_MEMDBG_REMOVE(ptr, size);
     vfree(ptr);
@@ -592,16 +573,19 @@ static NvBool nv_numa_node_has_memory(int node_id)
 {
     if (node_id < 0 || node_id >= MAX_NUMNODES)
         return NV_FALSE;
-#if defined(NV_NODE_STATES_N_MEMORY_PRESENT)
     return node_state(node_id, N_MEMORY) ? NV_TRUE : NV_FALSE;
-#else
-    return node_state(node_id, N_HIGH_MEMORY) ? NV_TRUE : NV_FALSE;
-#endif
 }
 
 #define NV_KMALLOC(ptr, size) \
     { \
         (ptr) = kmalloc(size, NV_GFP_KERNEL); \
+        if (ptr) \
+            NV_MEMDBG_ADD(ptr, size); \
+    }
+
+#define NV_KZALLOC(ptr, size) \
+    { \
+        (ptr) = kzalloc(size, NV_GFP_KERNEL); \
         if (ptr) \
             NV_MEMDBG_ADD(ptr, size); \
     }
@@ -838,10 +822,8 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
     })
 #endif
 
-#if defined(NV_PCI_STOP_AND_REMOVE_BUS_DEVICE_PRESENT)  // introduced in 3.4.9
+#if defined(NV_PCI_STOP_AND_REMOVE_BUS_DEVICE_PRESENT)  // introduced in 3.18-rc1 for aarch64
 #define NV_PCI_STOP_AND_REMOVE_BUS_DEVICE(pci_dev) pci_stop_and_remove_bus_device(pci_dev)
-#elif defined(NV_PCI_REMOVE_BUS_DEVICE_PRESENT) // introduced in 2.6
-#define NV_PCI_STOP_AND_REMOVE_BUS_DEVICE(pci_dev) pci_remove_bus_device(pci_dev)
 #endif
 
 #define NV_PRINT_AT(nv_debug_level,at)                                           \
@@ -1139,11 +1121,14 @@ static inline int nv_kmem_cache_alloc_stack(nvidia_stack_t **stack)
 {
     nvidia_stack_t *sp = NULL;
 #if defined(NVCPU_X86_64)
-    sp = NV_KMEM_CACHE_ALLOC(nvidia_stack_t_cache);
-    if (sp == NULL)
-        return -ENOMEM;
-    sp->size = sizeof(sp->stack);
-    sp->top = sp->stack + sp->size;
+    if (rm_is_altstack_in_use())
+    {
+        sp = NV_KMEM_CACHE_ALLOC(nvidia_stack_t_cache);
+        if (sp == NULL)
+            return -ENOMEM;
+        sp->size = sizeof(sp->stack);
+        sp->top = sp->stack + sp->size;
+    }
 #endif
     *stack = sp;
     return 0;
@@ -1152,7 +1137,7 @@ static inline int nv_kmem_cache_alloc_stack(nvidia_stack_t **stack)
 static inline void nv_kmem_cache_free_stack(nvidia_stack_t *stack)
 {
 #if defined(NVCPU_X86_64)
-    if (stack != NULL)
+    if (stack != NULL && rm_is_altstack_in_use())
     {
         NV_KMEM_CACHE_FREE(stack, nvidia_stack_t_cache);
     }
@@ -1386,8 +1371,7 @@ typedef struct nv_dma_map_s {
  * xen_swiotlb_map_sg_attrs may try to route to the SWIOTLB. We must only use
  * single-page sg elements on Xen Server.
  */
-#if defined(NV_SG_ALLOC_TABLE_FROM_PAGES_PRESENT) && \
-    !defined(NV_DOM0_KERNEL_PRESENT)
+#if !defined(NV_DOM0_KERNEL_PRESENT)
     #define NV_ALLOC_DMA_SUBMAP_SCATTERLIST(dm, sm, i)                        \
         ((sg_alloc_table_from_pages(&sm->sgt,                                 \
             &dm->pages[NV_DMA_SUBMAP_IDX_TO_PAGE_IDX(i)],                     \
@@ -1667,6 +1651,27 @@ static inline nv_linux_file_private_t *nv_get_nvlfp_from_nvfp(nv_file_private_t 
 
 #define NV_STATE_PTR(nvl)   &(((nv_linux_state_t *)(nvl))->nv_state)
 
+static inline nvidia_stack_t *nv_nvlfp_get_sp(nv_linux_file_private_t *nvlfp, nvidia_entry_point_index_t which)
+{
+#if defined(NVCPU_X86_64)
+    if (rm_is_altstack_in_use())
+    {
+        down(&nvlfp->fops_sp_lock[which]);
+        return nvlfp->fops_sp[which];
+    }
+#endif
+    return NULL;
+}
+
+static inline void nv_nvlfp_put_sp(nv_linux_file_private_t *nvlfp, nvidia_entry_point_index_t which)
+{
+#if defined(NVCPU_X86_64)
+    if (rm_is_altstack_in_use())
+    {
+        up(&nvlfp->fops_sp_lock[which]);
+    }
+#endif
+}
 
 #define NV_ATOMIC_READ(data)            atomic_read(&(data))
 #define NV_ATOMIC_SET(data,val)         atomic_set(&(data), (val))
@@ -1895,20 +1900,12 @@ static inline NvU32 nv_default_irq_flags(nv_state_t *nv)
     #define NV_GET_UNUSED_FD_FLAGS(flags)  (-1)
 #endif
 
-#if defined(NV_SET_CLOSE_ON_EXEC_PRESENT)
-    #define NV_SET_CLOSE_ON_EXEC(fd, fdt) __set_close_on_exec(fd, fdt)
-#elif defined(NV_LINUX_TIME_H_PRESENT) && defined(FD_SET)
-    #define NV_SET_CLOSE_ON_EXEC(fd, fdt) FD_SET(fd, fdt->close_on_exec)
-#else
-    #define NV_SET_CLOSE_ON_EXEC(fd, fdt) __set_bit(fd, fdt->close_on_exec)
-#endif
-
 #define MODULE_BASE_NAME "nvidia"
 #define MODULE_INSTANCE_NUMBER 0
 #define MODULE_INSTANCE_STRING ""
 #define MODULE_NAME MODULE_BASE_NAME MODULE_INSTANCE_STRING
 
-NvS32 nv_request_soc_irq(nv_linux_state_t *, NvU32, nv_soc_irq_type_t, NvU32, NvU32);
+NvS32 nv_request_soc_irq(nv_linux_state_t *, NvU32, nv_soc_irq_type_t, NvU32, NvU32, const char*);
 
 static inline void nv_mutex_destroy(struct mutex *lock)
 {

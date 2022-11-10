@@ -63,6 +63,8 @@ struct KernelCcuApi {
     NV_STATUS (*__kccuapiGetMemoryMappingDescriptor__)(struct KernelCcuApi *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__kccuapiCtrlCmdSubscribe__)(struct KernelCcuApi *, NV_COUNTER_COLLECTION_UNIT_SUBSCRIBE_PARAMS *);
     NV_STATUS (*__kccuapiCtrlCmdUnsubscribe__)(struct KernelCcuApi *);
+    NV_STATUS (*__kccuapiCtrlCmdSetStreamState__)(struct KernelCcuApi *, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *);
+    NV_STATUS (*__kccuapiCtrlCmdGetStreamState__)(struct KernelCcuApi *, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *);
     NvBool (*__kccuapiShareCallback__)(struct KernelCcuApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__kccuapiControl__)(struct KernelCcuApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kccuapiGetMemInterMapParams__)(struct KernelCcuApi *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -78,6 +80,7 @@ struct KernelCcuApi {
     NV_STATUS (*__kccuapiInternalControlForward__)(struct KernelCcuApi *, NvU32, void *, NvU32);
     void (*__kccuapiPreDestruct__)(struct KernelCcuApi *);
     NV_STATUS (*__kccuapiUnmapFrom__)(struct KernelCcuApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__kccuapiIsDuplicate__)(struct KernelCcuApi *, NvHandle, NvBool *);
     void (*__kccuapiControl_Epilogue__)(struct KernelCcuApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kccuapiControlLookup__)(struct KernelCcuApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvBool (*__kccuapiAccessCallback__)(struct KernelCcuApi *, struct RsClient *, void *, RsAccessRight);
@@ -117,6 +120,8 @@ NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, struct 
 #define kccuapiGetMemoryMappingDescriptor(pKernelCcuApi, ppMemDesc) kccuapiGetMemoryMappingDescriptor_DISPATCH(pKernelCcuApi, ppMemDesc)
 #define kccuapiCtrlCmdSubscribe(pKernelCcuApi, pParams) kccuapiCtrlCmdSubscribe_DISPATCH(pKernelCcuApi, pParams)
 #define kccuapiCtrlCmdUnsubscribe(pKernelCcuApi) kccuapiCtrlCmdUnsubscribe_DISPATCH(pKernelCcuApi)
+#define kccuapiCtrlCmdSetStreamState(pKernelCcuApi, pParams) kccuapiCtrlCmdSetStreamState_DISPATCH(pKernelCcuApi, pParams)
+#define kccuapiCtrlCmdGetStreamState(pKernelCcuApi, pParams) kccuapiCtrlCmdGetStreamState_DISPATCH(pKernelCcuApi, pParams)
 #define kccuapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kccuapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define kccuapiControl(pGpuResource, pCallContext, pParams) kccuapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define kccuapiGetMemInterMapParams(pRmResource, pParams) kccuapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -132,6 +137,7 @@ NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, struct 
 #define kccuapiInternalControlForward(pGpuResource, command, pParams, size) kccuapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define kccuapiPreDestruct(pResource) kccuapiPreDestruct_DISPATCH(pResource)
 #define kccuapiUnmapFrom(pResource, pParams) kccuapiUnmapFrom_DISPATCH(pResource, pParams)
+#define kccuapiIsDuplicate(pResource, hMemory, pDuplicate) kccuapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kccuapiControl_Epilogue(pResource, pCallContext, pParams) kccuapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kccuapiControlLookup(pResource, pParams, ppEntry) kccuapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define kccuapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kccuapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
@@ -169,6 +175,18 @@ NV_STATUS kccuapiCtrlCmdUnsubscribe_IMPL(struct KernelCcuApi *pKernelCcuApi);
 
 static inline NV_STATUS kccuapiCtrlCmdUnsubscribe_DISPATCH(struct KernelCcuApi *pKernelCcuApi) {
     return pKernelCcuApi->__kccuapiCtrlCmdUnsubscribe__(pKernelCcuApi);
+}
+
+NV_STATUS kccuapiCtrlCmdSetStreamState_IMPL(struct KernelCcuApi *pKernelCcuApi, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams);
+
+static inline NV_STATUS kccuapiCtrlCmdSetStreamState_DISPATCH(struct KernelCcuApi *pKernelCcuApi, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams) {
+    return pKernelCcuApi->__kccuapiCtrlCmdSetStreamState__(pKernelCcuApi, pParams);
+}
+
+NV_STATUS kccuapiCtrlCmdGetStreamState_IMPL(struct KernelCcuApi *pKernelCcuApi, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams);
+
+static inline NV_STATUS kccuapiCtrlCmdGetStreamState_DISPATCH(struct KernelCcuApi *pKernelCcuApi, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams) {
+    return pKernelCcuApi->__kccuapiCtrlCmdGetStreamState__(pKernelCcuApi, pParams);
 }
 
 static inline NvBool kccuapiShareCallback_DISPATCH(struct KernelCcuApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -231,6 +249,10 @@ static inline NV_STATUS kccuapiUnmapFrom_DISPATCH(struct KernelCcuApi *pResource
     return pResource->__kccuapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS kccuapiIsDuplicate_DISPATCH(struct KernelCcuApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__kccuapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void kccuapiControl_Epilogue_DISPATCH(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__kccuapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -244,8 +266,10 @@ static inline NvBool kccuapiAccessCallback_DISPATCH(struct KernelCcuApi *pResour
 }
 
 NV_STATUS kccuapiConstruct_IMPL(struct KernelCcuApi *arg_pKernelCcuApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_kccuapiConstruct(arg_pKernelCcuApi, arg_pCallContext, arg_pParams) kccuapiConstruct_IMPL(arg_pKernelCcuApi, arg_pCallContext, arg_pParams)
 void kccuapiDestruct_IMPL(struct KernelCcuApi *pKernelCcuApi);
+
 #define __nvoc_kccuapiDestruct(pKernelCcuApi) kccuapiDestruct_IMPL(pKernelCcuApi)
 #undef PRIVATE_FIELD
 

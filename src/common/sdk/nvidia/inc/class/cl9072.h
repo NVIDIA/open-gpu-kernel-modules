@@ -32,7 +32,7 @@
 
 #include "cl9072_notification.h"
 
-#define GF100_DISP_SW 0x00009072
+#define GF100_DISP_SW (0x9072U) /* finn: Evaluated from "NV9072_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 #define NV9072_ALLOCATION_PARAMETERS_MESSAGE_ID (0x9072U)
 

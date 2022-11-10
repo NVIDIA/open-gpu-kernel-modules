@@ -244,6 +244,7 @@ struct RsResource {
     struct Object *__nvoc_pbase_Object;
     struct RsResource *__nvoc_pbase_RsResource;
     NvBool (*__resCanCopy__)(struct RsResource *);
+    NV_STATUS (*__resIsDuplicate__)(struct RsResource *, NvHandle, NvBool *);
     void (*__resPreDestruct__)(struct RsResource *);
     NV_STATUS (*__resControlLookup__)(struct RsResource *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__resControl__)(struct RsResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -292,6 +293,7 @@ NV_STATUS __nvoc_objCreate_RsResource(RsResource**, Dynamic*, NvU32, struct CALL
     __nvoc_objCreate_RsResource((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 #define resCanCopy(pResource) resCanCopy_DISPATCH(pResource)
+#define resIsDuplicate(pResource, hMemory, pDuplicate) resIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define resPreDestruct(pResource) resPreDestruct_DISPATCH(pResource)
 #define resControlLookup(pResource, pParams, ppEntry) resControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define resControl(pResource, pCallContext, pParams) resControl_DISPATCH(pResource, pCallContext, pParams)
@@ -310,6 +312,12 @@ NvBool resCanCopy_IMPL(struct RsResource *pResource);
 
 static inline NvBool resCanCopy_DISPATCH(struct RsResource *pResource) {
     return pResource->__resCanCopy__(pResource);
+}
+
+NV_STATUS resIsDuplicate_IMPL(struct RsResource *pResource, NvHandle hMemory, NvBool *pDuplicate);
+
+static inline NV_STATUS resIsDuplicate_DISPATCH(struct RsResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__resIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 void resPreDestruct_IMPL(struct RsResource *pResource);
@@ -397,10 +405,13 @@ static inline void resAddAdditionalDependants_DISPATCH(struct RsClient *pClient,
 }
 
 NV_STATUS resConstruct_IMPL(struct RsResource *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_resConstruct(arg_pResource, arg_pCallContext, arg_pParams) resConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 void resDestruct_IMPL(struct RsResource *pResource);
+
 #define __nvoc_resDestruct(pResource) resDestruct_IMPL(pResource)
 NV_STATUS resSetFreeParams_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_FREE_PARAMS_INTERNAL *pParams);
+
 #ifdef __nvoc_rs_resource_h_disabled
 static inline NV_STATUS resSetFreeParams(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_FREE_PARAMS_INTERNAL *pParams) {
     NV_ASSERT_FAILED_PRECOMP("RsResource was disabled!");
@@ -411,6 +422,7 @@ static inline NV_STATUS resSetFreeParams(struct RsResource *pResource, struct CA
 #endif //__nvoc_rs_resource_h_disabled
 
 NV_STATUS resGetFreeParams_IMPL(struct RsResource *pResource, struct CALL_CONTEXT **ppCallContext, struct RS_RES_FREE_PARAMS_INTERNAL **ppParams);
+
 #ifdef __nvoc_rs_resource_h_disabled
 static inline NV_STATUS resGetFreeParams(struct RsResource *pResource, struct CALL_CONTEXT **ppCallContext, struct RS_RES_FREE_PARAMS_INTERNAL **ppParams) {
     NV_ASSERT_FAILED_PRECOMP("RsResource was disabled!");

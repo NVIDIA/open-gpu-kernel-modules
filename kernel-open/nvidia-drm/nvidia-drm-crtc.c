@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -46,6 +46,35 @@
 #include <linux/nvhost.h>
 #endif
 
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+static int
+nv_drm_atomic_replace_property_blob_from_id(struct drm_device *dev,
+                                            struct drm_property_blob **blob,
+                                            uint64_t blob_id,
+                                            ssize_t expected_size)
+{
+    struct drm_property_blob *new_blob = NULL;
+
+    if (blob_id != 0) {
+        new_blob = drm_property_lookup_blob(dev, blob_id);
+        if (new_blob == NULL) {
+            return -EINVAL;
+        }
+
+        if ((expected_size > 0) &&
+            (new_blob->length != expected_size)) {
+            drm_property_blob_put(new_blob);
+            return -EINVAL;
+        }
+    }
+
+    drm_property_replace_blob(blob, new_blob);
+    drm_property_blob_put(new_blob);
+
+    return 0;
+}
+#endif
+
 static void nv_drm_plane_destroy(struct drm_plane *plane)
 {
     struct nv_drm_plane *nv_plane = to_nv_plane(plane);
@@ -84,9 +113,6 @@ cursor_plane_req_config_update(struct drm_plane *plane,
 {
     struct nv_drm_plane *nv_plane = to_nv_plane(plane);
     struct NvKmsKapiCursorRequestedConfig old_config = *req_config;
-    struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
-    struct nv_drm_plane_state *nv_drm_plane_state =
-        to_nv_drm_plane_state(plane_state);
 
     if (plane_state->fb == NULL) {
         cursor_req_config_disable(req_config);
@@ -186,7 +212,6 @@ plane_req_config_update(struct drm_plane *plane,
     struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
     struct nv_drm_plane_state *nv_drm_plane_state =
         to_nv_drm_plane_state(plane_state);
-    int ret = 0;
 
     if (plane_state->fb == NULL) {
         plane_req_config_disable(req_config);
@@ -309,6 +334,9 @@ plane_req_config_update(struct drm_plane *plane,
         nv_plane->defaultCompositionMode;
 #endif
 
+    req_config->config.inputColorSpace =
+        nv_drm_plane_state->input_colorspace;
+
     req_config->config.syncptParams.preSyncptSpecified = false;
     req_config->config.syncptParams.postSyncptRequested = false;
 
@@ -320,10 +348,10 @@ plane_req_config_update(struct drm_plane *plane,
 #if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
 #if defined(NV_NVHOST_DMA_FENCE_UNPACK_PRESENT)
         if (plane_state->fence != NULL) {
-            ret = nvhost_dma_fence_unpack(
-                      plane_state->fence,
-                      &req_config->config.syncptParams.preSyncptId,
-                      &req_config->config.syncptParams.preSyncptValue);
+            int ret = nvhost_dma_fence_unpack(
+                          plane_state->fence,
+                          &req_config->config.syncptParams.preSyncptId,
+                          &req_config->config.syncptParams.preSyncptValue);
             if (ret != 0) {
                 return ret;
             }
@@ -338,6 +366,60 @@ plane_req_config_update(struct drm_plane *plane,
         return -1;
 #endif
     }
+
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    if (nv_drm_plane_state->hdr_output_metadata != NULL) {
+        struct hdr_output_metadata *hdr_metadata =
+            nv_drm_plane_state->hdr_output_metadata->data;
+        struct hdr_metadata_infoframe *info_frame =
+            &hdr_metadata->hdmi_metadata_type1;
+        struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
+        uint32_t i;
+
+        if (hdr_metadata->metadata_type != HDMI_STATIC_METADATA_TYPE1) {
+            NV_DRM_DEV_LOG_ERR(nv_dev, "Unsupported Metadata Type");
+            return -1;
+        }
+
+        for (i = 0; i < ARRAY_SIZE(info_frame->display_primaries); i ++) {
+            req_config->config.hdrMetadata.displayPrimaries[i].x =
+                info_frame->display_primaries[i].x;
+            req_config->config.hdrMetadata.displayPrimaries[i].y =
+                info_frame->display_primaries[i].y;
+        }
+
+        req_config->config.hdrMetadata.whitePoint.x =
+            info_frame->white_point.x;
+        req_config->config.hdrMetadata.whitePoint.y =
+            info_frame->white_point.y;
+        req_config->config.hdrMetadata.maxDisplayMasteringLuminance =
+            info_frame->max_display_mastering_luminance;
+        req_config->config.hdrMetadata.minDisplayMasteringLuminance =
+            info_frame->min_display_mastering_luminance;
+        req_config->config.hdrMetadata.maxCLL =
+            info_frame->max_cll;
+        req_config->config.hdrMetadata.maxFALL =
+            info_frame->max_fall;
+
+        req_config->config.hdrMetadataSpecified = true;
+
+        switch (info_frame->eotf) {
+            case HDMI_EOTF_SMPTE_ST2084:
+                req_config->config.tf = NVKMS_OUTPUT_TF_PQ;
+                break;
+            case HDMI_EOTF_TRADITIONAL_GAMMA_SDR:
+                req_config->config.tf =
+                    NVKMS_OUTPUT_TF_TRADITIONAL_GAMMA_SDR;
+                break;
+            default:
+                NV_DRM_DEV_LOG_ERR(nv_dev, "Unsupported EOTF");
+                return -1;
+        }
+    } else {
+        req_config->config.hdrMetadataSpecified = false;
+        req_config->config.tf = NVKMS_OUTPUT_TF_NONE;
+    }
+#endif
 
     /*
      * Unconditionally mark the surface as changed, even if nothing changed,
@@ -509,9 +591,21 @@ static int nv_drm_plane_atomic_set_property(
         nv_drm_plane_state->fd_user_ptr = u64_to_user_ptr(val);
 #endif
         return 0;
-    } else {
-        return -EINVAL;
+    } else if (property == nv_dev->nv_input_colorspace_property) {
+        nv_drm_plane_state->input_colorspace = val;
+        return 0;
     }
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    else if (property == nv_dev->nv_hdr_output_metadata_property) {
+        return nv_drm_atomic_replace_property_blob_from_id(
+                nv_dev->dev,
+                &nv_drm_plane_state->hdr_output_metadata,
+                val,
+                sizeof(struct hdr_output_metadata));
+    }
+#endif
+
+    return -EINVAL;
 }
 
 static int nv_drm_plane_atomic_get_property(
@@ -521,12 +615,26 @@ static int nv_drm_plane_atomic_get_property(
     uint64_t *val)
 {
     struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
+    const struct nv_drm_plane_state *nv_drm_plane_state =
+        to_nv_drm_plane_state_const(state);
 
     if (property == nv_dev->nv_out_fence_property) {
         return 0;
-    } else {
-        return -EINVAL;
+    } else if (property == nv_dev->nv_input_colorspace_property) {
+        *val = nv_drm_plane_state->input_colorspace;
+        return 0;
     }
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    else if (property ==  nv_dev->nv_hdr_output_metadata_property) {
+        const struct nv_drm_plane_state *nv_drm_plane_state =
+            to_nv_drm_plane_state_const(state);
+        *val = nv_drm_plane_state->hdr_output_metadata ?
+            nv_drm_plane_state->hdr_output_metadata->base.id : 0;
+        return 0;
+    }
+#endif
+
+    return -EINVAL;
 }
 
 static struct drm_plane_state *
@@ -544,6 +652,14 @@ nv_drm_plane_atomic_duplicate_state(struct drm_plane *plane)
     __drm_atomic_helper_plane_duplicate_state(plane, &nv_plane_state->base);
 
     nv_plane_state->fd_user_ptr = nv_old_plane_state->fd_user_ptr;
+    nv_plane_state->input_colorspace = nv_old_plane_state->input_colorspace;
+
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    nv_plane_state->hdr_output_metadata = nv_old_plane_state->hdr_output_metadata;
+    if (nv_plane_state->hdr_output_metadata) {
+        drm_property_blob_get(nv_plane_state->hdr_output_metadata);
+    }
+#endif
 
     return &nv_plane_state->base;
 }
@@ -556,6 +672,12 @@ static inline void __nv_drm_plane_atomic_destroy_state(
     __drm_atomic_helper_plane_destroy_state(plane, state);
 #else
     __drm_atomic_helper_plane_destroy_state(state);
+#endif
+
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    struct nv_drm_plane_state *nv_drm_plane_state =
+        to_nv_drm_plane_state(state);
+    drm_property_blob_put(nv_drm_plane_state->hdr_output_metadata);
 #endif
 }
 
@@ -803,7 +925,8 @@ static const struct drm_crtc_helper_funcs nv_crtc_helper_funcs = {
 };
 
 static void nv_drm_plane_install_properties(
-    struct drm_plane *plane)
+    struct drm_plane *plane,
+    NvBool supportsHDR)
 {
     struct nv_drm_device *nv_dev = to_nv_device(plane->dev);
 
@@ -811,6 +934,19 @@ static void nv_drm_plane_install_properties(
         drm_object_attach_property(
             &plane->base, nv_dev->nv_out_fence_property, 0);
     }
+
+    if (nv_dev->nv_input_colorspace_property) {
+        drm_object_attach_property(
+            &plane->base, nv_dev->nv_input_colorspace_property,
+            NVKMS_INPUT_COLORSPACE_NONE);
+    }
+
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    if (supportsHDR && nv_dev->nv_hdr_output_metadata_property) {
+        drm_object_attach_property(
+            &plane->base, nv_dev->nv_hdr_output_metadata_property, 0);
+    }
+#endif
 }
 
 static void
@@ -990,7 +1126,9 @@ nv_drm_plane_create(struct drm_device *dev,
     drm_plane_helper_add(plane, &nv_plane_helper_funcs);
 
     if (plane_type != DRM_PLANE_TYPE_CURSOR) {
-        nv_drm_plane_install_properties(plane);
+        nv_drm_plane_install_properties(
+                plane,
+                pResInfo->supportsHDR[layer_idx]);
     }
 
     __nv_drm_plane_create_alpha_blending_properties(
@@ -1141,11 +1279,13 @@ void nv_drm_enumerate_crtcs_and_planes(
         }
 
         for (layer = 0; layer < pResInfo->numLayers[i]; layer++) {
+            struct drm_plane *overlay_plane = NULL;
+
             if (layer == NVKMS_KAPI_LAYER_PRIMARY_IDX) {
                 continue;
             }
 
-            struct drm_plane *overlay_plane =
+            overlay_plane =
                 nv_drm_plane_create(nv_dev->dev,
                                     DRM_PLANE_TYPE_OVERLAY,
                                     layer,

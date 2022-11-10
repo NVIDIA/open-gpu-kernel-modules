@@ -62,6 +62,10 @@ static nv_cap_table_entry_t g_nv_cap_mig_table[] =
     {"/driver/nvidia/capabilities/mig/monitor"}
 };
 
+static nv_cap_table_entry_t g_nv_cap_sys_table[] =
+{
+};
+
 #define NV_CAP_MIG_CI_ENTRIES(_gi)  \
     {_gi "/ci0/access"},            \
     {_gi "/ci1/access"},            \
@@ -173,8 +177,6 @@ struct
 #define NV_CAP_NAME_BUF_SIZE 128
 
 static struct proc_dir_entry *nv_cap_procfs_dir;
-static struct proc_dir_entry *nv_cap_procfs_nvlink_minors;
-static struct proc_dir_entry *nv_cap_procfs_mig_minors;
 
 static int nv_procfs_read_nvlink_minors(struct seq_file *s, void *v)
 {
@@ -189,6 +191,25 @@ static int nv_procfs_read_nvlink_minors(struct seq_file *s, void *v)
         {
             name[sizeof(name) - 1] = '\0';
             seq_printf(s, "%s %d\n", name, g_nv_cap_nvlink_table[i].minor);
+        }
+    }
+
+    return 0;
+}
+
+static int nv_procfs_read_sys_minors(struct seq_file *s, void *v)
+{
+    int i, count;
+    char name[NV_CAP_NAME_BUF_SIZE];
+
+    count = NV_CAP_NUM_ENTRIES(g_nv_cap_sys_table);
+    for (i = 0; i < count; i++)
+    {
+        if (sscanf(g_nv_cap_sys_table[i].name,
+                   "/driver/nvidia/capabilities/%s", name) == 1)
+        {
+            name[sizeof(name) - 1] = '\0';
+            seq_printf(s, "%s %d\n", name, g_nv_cap_sys_table[i].minor);
         }
     }
 
@@ -230,6 +251,8 @@ NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(nvlink_minors, nv_system_pm_lock);
 
 NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(mig_minors, nv_system_pm_lock);
 
+NV_DEFINE_SINGLE_PROCFS_FILE_READ_ONLY(sys_minors, nv_system_pm_lock);
+
 static void nv_cap_procfs_exit(void)
 {
     if (!nv_cap_procfs_dir)
@@ -237,32 +260,39 @@ static void nv_cap_procfs_exit(void)
         return;
     }
 
-    nv_procfs_unregister_all(nv_cap_procfs_dir, nv_cap_procfs_dir);
+#if defined(CONFIG_PROC_FS)
+    proc_remove(nv_cap_procfs_dir);
+#endif
     nv_cap_procfs_dir = NULL;
 }
 
 int nv_cap_procfs_init(void)
 {
+    static struct proc_dir_entry *file_entry;
+
     nv_cap_procfs_dir = NV_CREATE_PROC_DIR(NV_CAP_PROCFS_DIR, NULL);
     if (nv_cap_procfs_dir == NULL)
     {
         return -EACCES;
     }
 
-    nv_cap_procfs_mig_minors = NV_CREATE_PROC_FILE("mig-minors",
-                                                   nv_cap_procfs_dir,
-                                                   mig_minors,
-                                                   NULL);
-    if (nv_cap_procfs_mig_minors == NULL)
+    file_entry = NV_CREATE_PROC_FILE("mig-minors", nv_cap_procfs_dir,
+                                     mig_minors, NULL);
+    if (file_entry == NULL)
     {
         goto cleanup;
     }
 
-    nv_cap_procfs_nvlink_minors = NV_CREATE_PROC_FILE("nvlink-minors",
-                                                      nv_cap_procfs_dir,
-                                                      nvlink_minors,
-                                                      NULL);
-    if (nv_cap_procfs_nvlink_minors == NULL)
+    file_entry = NV_CREATE_PROC_FILE("nvlink-minors", nv_cap_procfs_dir,
+                                     nvlink_minors, NULL);
+    if (file_entry == NULL)
+    {
+        goto cleanup;
+    }
+
+    file_entry = NV_CREATE_PROC_FILE("sys-minors", nv_cap_procfs_dir,
+                                     sys_minors, NULL);
+    if (file_entry == NULL)
     {
         goto cleanup;
     }
@@ -320,6 +350,7 @@ static void nv_cap_tables_init(void)
     nv_cap_table_init(g_nv_cap_nvlink_table);
     nv_cap_table_init(g_nv_cap_mig_table);
     nv_cap_table_init(g_nv_cap_mig_gpu_table);
+    nv_cap_table_init(g_nv_cap_sys_table);
 }
 
 static ssize_t nv_cap_procfs_write(struct file *file,
@@ -517,7 +548,7 @@ int NV_API_CALL nv_cap_validate_and_dup_fd(const nv_cap_t *cap, int fd)
 
         spin_lock(&files->file_lock);
         fdt = files_fdtable(files);
-        NV_SET_CLOSE_ON_EXEC(dup_fd, fdt);
+        __set_bit(dup_fd, fdt->close_on_exec);
         spin_unlock(&files->file_lock);
     }
 

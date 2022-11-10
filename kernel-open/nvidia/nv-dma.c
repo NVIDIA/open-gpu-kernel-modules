@@ -197,8 +197,7 @@ NV_STATUS nv_create_dma_map_scatterlist(nv_dma_map_t *dma_map)
             break;
         }
 
-#if !defined(NV_SG_ALLOC_TABLE_FROM_PAGES_PRESENT) || \
-    defined(NV_DOM0_KERNEL_PRESENT)
+#if defined(NV_DOM0_KERNEL_PRESENT)
         {
             NvU64 page_idx = NV_DMA_SUBMAP_IDX_TO_PAGE_IDX(i);
             nv_fill_scatterlist(submap->sgt.sgl,
@@ -774,14 +773,16 @@ static NvBool nv_dma_use_map_resource
     nv_dma_device_t *dma_dev
 )
 {
+#if defined(NV_DMA_MAP_RESOURCE_PRESENT)
+    const struct dma_map_ops *ops = get_dma_ops(dma_dev->dev);
+#endif
+
     if (nv_dma_remap_peer_mmio == NV_DMA_REMAP_PEER_MMIO_DISABLE)
     {
         return NV_FALSE;
     }
 
 #if defined(NV_DMA_MAP_RESOURCE_PRESENT)
-    const struct dma_map_ops *ops = get_dma_ops(dma_dev->dev);
-
     if (ops == NULL)
     {
         /* On pre-5.0 kernels, if dma_map_resource() is present, then we

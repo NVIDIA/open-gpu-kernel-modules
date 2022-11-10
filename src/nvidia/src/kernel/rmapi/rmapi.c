@@ -76,7 +76,14 @@ rmapiInitialize
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "*** Cannot allocate rmapi locks\n");
-        return status;
+        goto failed;
+    }
+
+    status = rmapiControlCacheInit();
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "*** Cannot initialize rmapi cache\n");
+        goto failed_free_lock;
     }
 
     RsResInfoInitialize();
@@ -85,11 +92,10 @@ rmapiInitialize
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "*** Cannot initialize resource server\n");
-        _rmapiLockFree();
-        return status;
+        goto failed_free_cache;
     }
 
-    rmapiControlCacheInit();
+    serverSetClientHandleBase(&g_resServ, RS_CLIENT_HANDLE_BASE);
 
     listInit(&g_clientListBehindGpusLock, g_resServ.pAllocator);
     listInit(&g_userInfoList, g_resServ.pAllocator);
@@ -107,6 +113,13 @@ rmapiInitialize
 
     g_bResServInit = NV_TRUE;
 
+    return NV_OK;
+
+failed_free_cache:
+        rmapiControlCacheFree();
+failed_free_lock:
+        _rmapiLockFree();
+failed:
     return status;
 }
 

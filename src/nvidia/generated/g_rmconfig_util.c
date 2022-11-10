@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_rmconfig_util.c
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 //
 
 #include "gpu/gpu.h"
@@ -186,9 +186,29 @@ NvBool rmcfg_IsAD104orBetter(POBJGPU pGpu)
     return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD104, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
 }
 
+NvBool rmcfg_IsAD106(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD106, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD106orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD106, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD107(POBJGPU pGpu)
+{
+    return gpuIsImplementation(pGpu, HAL_IMPL_AD107, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
+NvBool rmcfg_IsAD107orBetter(POBJGPU pGpu)
+{
+    return gpuIsImplementationOrBetter(pGpu, HAL_IMPL_AD107, GPU_NO_MASK_REVISION, GPU_NO_REVISION);
+}
+
 NvBool rmcfg_IsAD10X(POBJGPU pGpu)
 {
-    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu);
+    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu) || IsAD106(pGpu) || IsAD107(pGpu);
 }
 
 NvBool rmcfg_IsAD10XorBetter(POBJGPU pGpu)
@@ -253,7 +273,7 @@ NvBool rmcfg_IsAMPERE_CLASSIC_GPUSorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsdADA(POBJGPU pGpu)
 {
-    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu);
+    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu) || IsAD106(pGpu) || IsAD107(pGpu);
 }
 
 NvBool rmcfg_IsdADAorBetter(POBJGPU pGpu)
@@ -263,7 +283,7 @@ NvBool rmcfg_IsdADAorBetter(POBJGPU pGpu)
 
 NvBool rmcfg_IsADA_CLASSIC_GPUS(POBJGPU pGpu)
 {
-    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu);
+    return IsAD102(pGpu) || IsAD103(pGpu) || IsAD104(pGpu) || IsAD106(pGpu) || IsAD107(pGpu);
 }
 
 NvBool rmcfg_IsADA_CLASSIC_GPUSorBetter(POBJGPU pGpu)
@@ -296,7 +316,6 @@ NvBool rmcfg_IsHOPPER_CLASSIC_GPUSorBetter(POBJGPU pGpu)
 // NVOC class ID uniqueness checks
 #ifdef DEBUG
 char __nvoc_class_id_uniqueness_check_0x0x05c7b5 = 1;      /* OBJGPIO */
-char __nvoc_class_id_uniqueness_check_0x0xaa1d70 = 1;      /* OBJOS */
 char __nvoc_class_id_uniqueness_check_0x0x1ab16a = 1;      /* OBJRPC */
 char __nvoc_class_id_uniqueness_check_0x0xd4dff8 = 1;      /* OBJRPCSTRUCTURECOPY */
 

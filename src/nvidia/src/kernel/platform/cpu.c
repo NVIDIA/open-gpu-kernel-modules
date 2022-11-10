@@ -159,9 +159,6 @@ void RmInitCpuInfo(void)
         case AARCH64_VENDOR_PART(NVIDIA, DENVER_2):
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_NV_DENVER_2_0;
             break;
-        case AARCH64_VENDOR_PART(NVIDIA, ESTES_1):
-            pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
-            break;
 
         case AARCH64_VENDOR_PART(NVIDIA, CARMEL):
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;

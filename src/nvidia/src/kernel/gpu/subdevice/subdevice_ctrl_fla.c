@@ -182,7 +182,7 @@ subdeviceCtrlCmdFlaRange_IMPL
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (!rmclientIsCapableOrAdminByHandle(hClient,
                                           NV_RM_CAP_EXT_FABRIC_MGMT,
@@ -244,17 +244,6 @@ subdeviceCtrlCmdFlaRange_IMPL
 
 // Control call to manage FLA range in RM
 NV_STATUS
-subdeviceCtrlCmdFlaSetupInstanceMemBlock_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS *pParams
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-// Control call to manage FLA range in RM
-NV_STATUS
 subdeviceCtrlCmdFlaGetRange_IMPL
 (
     Subdevice *pSubdevice,
@@ -275,7 +264,7 @@ subdeviceCtrlCmdFlaGetFabricMemStats_IMPL
     FABRIC_VASPACE *pFabricVAS = NULL;
     NV_STATUS       status = NV_OK;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (pGpu->pFabricVAS == NULL)
     {
@@ -299,8 +288,8 @@ subdeviceCtrlCmdFlaGetFabricMemStats_IMPL
         return status;
     }
 
-    pParams->totalSize = fabricvaspaceGetVaLimit(pFabricVAS) -
-                         fabricvaspaceGetVaStart(pFabricVAS) + 1;
+    pParams->totalSize = fabricvaspaceGetUCFlaLimit(pFabricVAS) -
+                         fabricvaspaceGetUCFlaStart(pFabricVAS) + 1;
 
     return fabricvaspaceGetFreeHeap(pFabricVAS, &pParams->freeSize);
 }

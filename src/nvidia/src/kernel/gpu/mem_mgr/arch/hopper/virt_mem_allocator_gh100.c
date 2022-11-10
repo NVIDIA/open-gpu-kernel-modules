@@ -79,9 +79,6 @@ dmaAllocBar1P2PMapping_GH100
 
     bar1ApertureLen = params->length;
 
-    // Setup special PTE type for this memory
-    memdescSetPteKind(pBar1P2PPhysMemDesc, NV_MMU_PTE_KIND_GENERIC_MEMORY);
-
     //
     // Step 2:
     // Create BAR1 mapping with MAP_BAR1_P2P flag on the target GPU.
@@ -121,8 +118,8 @@ dmaAllocBar1P2PMapping_GH100
     memdescSetPageSize(pBar1P2PVirtMemDesc, VAS_ADDRESS_TRANSLATION(params->pVas),
                        memdescGetPageSize(pBar1P2PPhysMemDesc, VAS_ADDRESS_TRANSLATION(params->pVas)));
 
-    // Set the PTE kind to be the peer mem PTE kind
-    memdescSetPteKind(pBar1P2PVirtMemDesc, memdescGetPteKind(pBar1P2PPhysMemDesc));
+    // Setup GMK PTE type for this memory
+    memdescSetPteKind(pBar1P2PVirtMemDesc, NV_MMU_PTE_KIND_GENERIC_MEMORY);
 
     // Set the memory address and memory type as a SYSMEM
     memdescDescribe(pBar1P2PVirtMemDesc, ADDR_SYSMEM, (RmPhysAddr)bar1PhyAddr, bar1ApertureLen);
@@ -158,15 +155,9 @@ cleanup:
                                 BUS_MAP_FB_FLAGS_MAP_UNICAST);
     }
 
-    if (pBar1P2PPhysMemDesc)
-    {
-        memdescDestroy(pBar1P2PPhysMemDesc);
-    }
+    memdescDestroy(pBar1P2PPhysMemDesc);
 
-    if (pBar1P2PVirtMemDesc)
-    {
-        memdescDestroy(pBar1P2PVirtMemDesc);
-    }
+    memdescDestroy(pBar1P2PVirtMemDesc);
 
     NV_PRINTF(LEVEL_ERROR, "Failed to create bar1p2p mapping\n");
 

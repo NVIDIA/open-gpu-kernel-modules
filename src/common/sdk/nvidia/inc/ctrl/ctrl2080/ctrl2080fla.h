@@ -34,8 +34,6 @@
 
 /* NV20_SUBDEVICE_XX FLA control commands and parameters */
 
-#include "ctrl2080common.h"
-
 /*
  * NV2080_CTRL_CMD_FLA_RANGE
  *

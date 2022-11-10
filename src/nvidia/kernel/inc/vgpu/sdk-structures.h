@@ -26,7 +26,6 @@
 #define _RPC_SDK_STRUCTURES_H_
 
 #include <ctrl/ctrl83de.h>
-#include <ctrl/ctrla083.h>
 #include <ctrl/ctrlc36f.h>
 #include <ctrl/ctrlc637.h>
 #include <ctrl/ctrl0000/ctrl0000system.h>
@@ -63,6 +62,7 @@
 #include <class/clc67e.h>
 #include "rpc_headers.h"
 #include "nvctassert.h"
+#include "nv_vgpu_types.h"
 
 
 
@@ -110,6 +110,9 @@ typedef struct vmiopd_SM_info {
 #define NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v15_02   8
 #define NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v1F_0D   9
 
+#define NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS_v21_02    32
+#define VM_UUID_SIZE_v21_02                            16
+
 #define NV2080_CTRL_FB_FS_INFO_MAX_QUERIES_v1A_1D       96
 #define NV2080_CTRL_FB_FS_INFO_MAX_QUERY_SIZE_v1A_1D    24
 #define NV2080_CTRL_GRMGR_GR_FS_INFO_MAX_QUERIES_v1A_1D 96
@@ -118,6 +121,7 @@ typedef struct vmiopd_SM_info {
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_1B_04                                      (0x0000002C)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_1C_01                                      (0x00000030)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_1E_02                                      (0x00000032)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE_21_01                                      (0x00000033)
 #define NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04                               8
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1B_05                                   256
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1E_03                                   240
@@ -126,8 +130,13 @@ typedef struct vmiopd_SM_info {
 #define NV2080_CTRL_INTERNAL_MAX_TPC_PER_GPC_COUNT_v1C_03                       10
 #define NV2080_CTRL_INTERNAL_GR_MAX_GPC_v1C_03                                  12
 #define NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_MAX_v1E_09                         32
-#define NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL_v1F_0E                100
+#define NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL_v1F_0E                72
 #define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE_v20_04                6
+#define NV2080_CTRL_MIGRATABLE_OPS_ARRAY_MAX_v21_07                             50
+#define NVB0CC_MAX_CREDIT_INFO_ENTRIES_v21_08                                   63
+#define NV2080_CTRL_MAX_PCES_v21_0A                                             32
+#define NV2080_CTRL_CE_CAPS_TBL_SIZE_v21_0A                                     2
+#define NV2080_ENGINE_TYPE_COPY_SIZE_v21_0A                                     10
 
 // Defined this intermediate RM-RPC structure for making RPC call from Guest as
 // we have the restriction of passing max 4kb of data to plugin and the

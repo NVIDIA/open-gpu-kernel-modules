@@ -44,6 +44,8 @@ typedef struct {
     NvU32 vrrOverrideMinRefreshRate;
     NVDPLibModesetStatePtr pDpLibModesetState;
     NVDispHeadAudioStateEvoRec audio;
+    NVDispHeadInfoFrameStateEvoRec infoFrame;
+    enum NvKmsOutputTf tf;
 } NVProposedModeSetHwStateOneHead;
 
 typedef struct {

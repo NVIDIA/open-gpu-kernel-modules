@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2021 NVIDIA Corporation
+    Copyright (c) 2017-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -338,7 +338,6 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
     uvm_processor_id_t new_residency;
     bool read_duplicate;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
-    uvm_va_range_t *va_range = va_block->va_range;
     uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &gpu->parent->fault_buffer_info.non_replayable;
 
     UVM_ASSERT(!fault_entry->is_fatal);
@@ -365,8 +364,11 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
     }
 
     // Check logical permissions
-    status = uvm_va_range_check_logical_permissions(va_range,
+    status = uvm_va_block_check_logical_permissions(va_block,
+                                                    &service_context->block_context,
                                                     gpu->id,
+                                                    uvm_va_block_cpu_page_index(va_block,
+                                                                                fault_entry->fault_address),
                                                     fault_entry->fault_access_type,
                                                     uvm_range_group_address_migratable(va_space,
                                                                                        fault_entry->fault_address));
@@ -386,6 +388,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
 
     // Compute new residency and update the masks
     new_residency = uvm_va_block_select_residency(va_block,
+                                                  &service_context->block_context,
                                                   page_index,
                                                   gpu->id,
                                                   fault_entry->access_type_mask,
@@ -422,7 +425,6 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
 }
 
 static NV_STATUS service_managed_fault_in_block(uvm_gpu_t *gpu,
-                                                struct mm_struct *mm,
                                                 uvm_va_block_t *va_block,
                                                 uvm_fault_buffer_entry_t *fault_entry)
 {
@@ -432,7 +434,6 @@ static NV_STATUS service_managed_fault_in_block(uvm_gpu_t *gpu,
 
     service_context->operation = UVM_SERVICE_OPERATION_NON_REPLAYABLE_FAULTS;
     service_context->num_retries = 0;
-    service_context->block_context.mm = mm;
 
     uvm_mutex_lock(&va_block->lock);
 
@@ -598,6 +599,7 @@ static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_e
     // to remain valid until we release. If no mm is registered, we
     // can only service managed faults, not ATS/HMM faults.
     mm = uvm_va_space_mm_retain_lock(va_space);
+    va_block_context->mm = mm;
 
     uvm_va_space_down_read(va_space);
 
@@ -622,12 +624,11 @@ static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_e
 
     if (!fault_entry->is_fatal) {
         status = uvm_va_block_find_create(fault_entry->va_space,
-                                          mm,
                                           fault_entry->fault_address,
                                           va_block_context,
                                           &va_block);
         if (status == NV_OK)
-            status = service_managed_fault_in_block(gpu_va_space->gpu, mm, va_block, fault_entry);
+            status = service_managed_fault_in_block(gpu_va_space->gpu, va_block, fault_entry);
         else
             status = service_non_managed_fault(gpu_va_space, mm, fault_entry, status);
 

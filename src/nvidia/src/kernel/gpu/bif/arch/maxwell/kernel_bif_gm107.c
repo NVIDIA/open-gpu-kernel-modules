@@ -26,6 +26,7 @@
 #include "gpu/gpu.h"
 #include "gpu/bif/kernel_bif.h"
 #include "platform/chipset/chipset.h"
+#include "nvdevid.h"
 
 #include "published/maxwell/gm107/dev_nv_xve.h"
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -152,6 +152,17 @@ static NV_INLINE void nvswitch_clear_flags(NvU32 *val, NvU32 flags)
         nvswitch_inforom_bbx_add_sxid(_d, _sxid, 0, 0, 0);                                \
     } while(0)
 
+#define NVSWITCH_PRINT_SXID_NO_BBX(_d, _sxid, _fmt, ...)                                  \
+    do                                                                                    \
+    {                                                                                     \
+        NVSWITCH_ASSERT(nvswitch_translate_hw_error(_sxid) != NVSWITCH_NVLINK_HW_GENERIC); \
+        nvswitch_os_print(NVSWITCH_DBG_LEVEL_ERROR,                                       \
+            "nvidia-%s: SXid (PCI:" NVLINK_PCI_DEV_FMT "): %05d, " _fmt,                  \
+            (_d)->name, NVLINK_PCI_DEV_FMT_ARGS(&(_d)->nvlink_device->pciInfo), _sxid,    \
+            ##__VA_ARGS__);                                                               \
+        nvswitch_lib_smbpbi_log_sxid(_d, _sxid, _fmt, ##__VA_ARGS__);                     \
+    } while(0)
+
 #define NVSWITCH_DEV_CMD_DISPATCH_WITH_PRIVATE_DATA(cmd, function, type, private)\
     case cmd:                                                               \
     {                                                                       \
@@ -189,17 +200,8 @@ static NV_INLINE void nvswitch_clear_flags(NvU32 *val, NvU32 flags)
 
 #define NVSWITCH_MODS_CMDS_SUPPORTED NV_FALSE
 
-#if defined(DEBUG) || defined(DEVELOP) || defined(NV_MODS)
-#define NVSWITCH_TEST_CMDS_SUPPORTED NV_TRUE
-#else
-#define NVSWITCH_TEST_CMDS_SUPPORTED NV_FALSE
-#endif
-
 #define NVSWITCH_DEV_CMD_DISPATCH_MODS(cmd, function, type)   \
     NVSWITCH_DEV_CMD_DISPATCH_HELPER(cmd, NVSWITCH_MODS_CMDS_SUPPORTED, function, type)
-
-#define NVSWITCH_DEV_CMD_DISPATCH_TEST(cmd, function, type)   \
-    NVSWITCH_DEV_CMD_DISPATCH_HELPER(cmd, NVSWITCH_TEST_CMDS_SUPPORTED, function, type)
 
 #define NVSWITCH_MAX_NUM_LINKS 100
 #if NVSWITCH_MAX_NUM_LINKS <= 100
@@ -251,9 +253,13 @@ typedef struct
     NvU32 select_uphy_tables;
     NvU32 link_training_mode;
     NvU32 i2c_access_control;
+    NvU32 force_kernel_i2c;
     NvU32 link_recal_settings;
     NvU32 crc_bit_error_rate_short;
     NvU32 crc_bit_error_rate_long;
+    NvU32 lp_threshold;
+    NvU32 minion_intr;
+    NvU32 surpress_link_errors_for_gpu_reset;
 } NVSWITCH_REGKEY_TYPE;
 
 //
@@ -261,14 +267,28 @@ typedef struct
 //
 typedef struct NVSWITCH_TASK
 {
+    struct NVSWITCH_TASK *prev;
     struct NVSWITCH_TASK *next;
-    void (*task_fn)(nvswitch_device *);
+    void (*task_fn_vdptr)(nvswitch_device *, void *);
+    void (*task_fn_devptr)(nvswitch_device *);
+    void *task_args;
     NvU64 period_nsec;
     NvU64 last_run_nsec;
     NvU32 flags;
 } NVSWITCH_TASK_TYPE;
 
-#define NVSWITCH_TASK_TYPE_FLAGS_ALWAYS_RUN  0x1    // Run even the if not initialized
+#define NVSWITCH_TASK_TYPE_FLAGS_RUN_EVEN_IF_DEVICE_NOT_INITIALIZED     0x1    // Run even the if not initialized
+#define NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE                               0x2    // Only run the task once. Memory for task struct and args will be freed by dispatcher after running.
+#define NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS                          0x4    // Function accepts args as void * args. 
+
+//
+// Wrapper struct for deffered SXID errors
+//
+typedef struct
+{
+    NvU32 nvlipt_instance;
+    NvU32 link;
+} NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS;
 
 //
 // PLL
@@ -487,6 +507,7 @@ typedef struct NVSWITCH_TIMEOUT
 #define NVSWITCH_INTERVAL_50USEC_IN_NS    50000LL
 #define NVSWITCH_INTERVAL_1MSEC_IN_NS     1000000LL
 #define NVSWITCH_INTERVAL_5MSEC_IN_NS     5000000LL
+#define NVSWITCH_INTERVAL_750MSEC_IN_NS   750000000LL
 #define NVSWITCH_INTERVAL_1SEC_IN_NS      1000000000LL
 #define NVSWITCH_INTERVAL_4SEC_IN_NS      4000000000LL
 
@@ -516,8 +537,12 @@ void nvswitch_reg_write_32(nvswitch_device *device, NvU32 offset, NvU32 data);
 NvU64 nvswitch_read_64bit_counter(nvswitch_device *device, NvU32 lo_offset, NvU32 hi_offset);
 void nvswitch_timeout_create(NvU64 timeout_ns, NVSWITCH_TIMEOUT *time);
 NvBool nvswitch_timeout_check(NVSWITCH_TIMEOUT *time);
-void nvswitch_task_create(nvswitch_device *device,
-void (*task_fn)(nvswitch_device *device), NvU64 period_nsec, NvU32 flags);
+NvlStatus nvswitch_task_create(nvswitch_device *device,
+                               void (*task_fn)(nvswitch_device *device), 
+                               NvU64 period_nsec, NvU32 flags);
+NvlStatus nvswitch_task_create_args(nvswitch_device* device, void *fn_args,
+                               void (*task_fn)(nvswitch_device* device, void *fn_args), 
+                               NvU64 period_nsec, NvU32 flags);
 void nvswitch_tasks_destroy(nvswitch_device *device);
 
 void nvswitch_free_chipdevice(nvswitch_device *device);
@@ -535,6 +560,7 @@ void      nvswitch_reset_persistent_link_hw_state(nvswitch_device *device, NvU32
 void      nvswitch_store_topology_information(nvswitch_device *device, nvlink_link *link);
 
 NvlStatus nvswitch_launch_ALI(nvswitch_device *device);
+NvlStatus nvswitch_launch_ALI_link_training(nvswitch_device *device, nvlink_link *link, NvBool bSync);
 NvlStatus nvswitch_inband_read_data(nvswitch_device *device, NvU8 *dest, NvU32 linkId, NvU32 *dataSize);
 void      nvswitch_filter_messages(nvswitch_device *device, NvU32 linkId);
 NvlStatus nvswitch_set_training_mode(nvswitch_device *device);

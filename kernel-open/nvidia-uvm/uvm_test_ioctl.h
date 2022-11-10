@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVidia Corporation
+    Copyright (c) 2015-2022 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -23,9 +23,7 @@
 #ifndef __UVM_TEST_IOCTL_H__
 #define __UVM_TEST_IOCTL_H__
 
-#ifndef __KERNEL__
 
-#endif
 #include "uvm_types.h"
 #include "uvm_ioctl.h"
 #include "nv_uvm_types.h"
@@ -151,6 +149,14 @@ typedef enum
     UVM_TEST_VA_RANGE_TYPE_MAX
 } UVM_TEST_VA_RANGE_TYPE;
 
+typedef enum
+{
+    UVM_TEST_RANGE_SUBTYPE_INVALID = 0,
+    UVM_TEST_RANGE_SUBTYPE_UVM,
+    UVM_TEST_RANGE_SUBTYPE_HMM,
+    UVM_TEST_RANGE_SUBTYPE_MAX
+} UVM_TEST_RANGE_SUBTYPE;
+
 // Keep this in sync with uvm_read_duplication_t in uvm_va_range.h
 typedef enum
 {
@@ -169,6 +175,7 @@ typedef struct
     NvBool is_zombie;                   // Out
     // Note: if this is a zombie, this field is meaningless.
     NvBool owned_by_calling_process;    // Out
+    NvU32  subtype;                     // Out (UVM_TEST_RANGE_SUBTYPE)
 } UVM_TEST_VA_RANGE_INFO_MANAGED;
 
 #define UVM_TEST_VA_RANGE_INFO                           UVM_TEST_IOCTL_BASE(4)
@@ -176,6 +183,10 @@ typedef struct
 {
     NvU64                           lookup_address                   NV_ALIGN_BYTES(8); // In
 
+    // For HMM ranges va_range_start/end will contain the lookup address but not
+    // neccessarily the maximal range over which the returned policy applies.
+    // For example there could be adjacent ranges with the same policy, implying
+    // the returned range could be as small as a page in the worst case for HMM.
     NvU64                           va_range_start                   NV_ALIGN_BYTES(8); // Out
     NvU64                           va_range_end                     NV_ALIGN_BYTES(8); // Out, inclusive
     NvU32                           read_duplication;                                   // Out (UVM_TEST_READ_DUPLICATION_POLICY)
@@ -536,11 +547,13 @@ typedef struct
 // If user_pages_allocation_retry_force_count is non-0 then the next count user
 // memory allocations under the VA block will be forced to do allocation-retry.
 //
+// If cpu_pages_allocation_error_count is not zero, the subsequent operations
+// that need to allocate CPU pages will fail with NV_ERR_NO_MEMORY for
+// cpu_pages_allocation_error_count times. If cpu_pages_allocation_error_count
+// is equal to ~0U, the count is infinite.
+//
 // If eviction_failure is NV_TRUE, the next eviction attempt from the VA block
 // will fail with NV_ERR_NO_MEMORY.
-//
-// If cpu_pages_allocation_error is NV_TRUE, the subsequent operations that
-// need to allocate CPU pages will fail with NV_ERR_NO_MEMORY.
 //
 // If populate_failure is NV_TRUE, a retry error will be injected after the next
 // successful user memory allocation under the VA block but before that
@@ -558,8 +571,8 @@ typedef struct
     NvU32     page_table_allocation_retry_force_count;  // In
     NvU32     user_pages_allocation_retry_force_count;  // In
     NvU32     cpu_chunk_allocation_size_mask;           // In
+    NvU32     cpu_pages_allocation_error_count;         // In
     NvBool    eviction_error;                           // In
-    NvBool    cpu_pages_allocation_error;               // In
     NvBool    populate_error;                           // In
     NV_STATUS rmStatus;                                 // Out
 } UVM_TEST_VA_BLOCK_INJECT_ERROR_PARAMS;
@@ -1111,10 +1124,14 @@ typedef struct
 //
 // If migrate_vma_allocation_fail_nth is greater than 0, the nth page
 // allocation within migrate_vma will fail.
+//
+// If va_block_allocation_fail_nth is greater than 0, the nth call to
+// uvm_va_block_find_create() will fail with NV_ERR_NO_MEMORY.
 #define UVM_TEST_VA_SPACE_INJECT_ERROR                   UVM_TEST_IOCTL_BASE(72)
 typedef struct
 {
     NvU32                           migrate_vma_allocation_fail_nth;                    // In
+    NvU32                           va_block_allocation_fail_nth;                       // In
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_VA_SPACE_INJECT_ERROR_PARAMS;
@@ -1341,6 +1358,28 @@ typedef struct
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_HOST_SANITY_PARAMS;
 
+// Calls uvm_va_space_mm_or_current_retain() on a VA space,
+// then releases the va_space_mm and returns.
+#define UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN           UVM_TEST_IOCTL_BASE(89)
+typedef struct
+{
+    // User address of a flag to act as a semaphore. If non-NULL, the address
+    // is set to 1 after successful retain but before the sleep.
+    NvU64 retain_done_ptr                                            NV_ALIGN_BYTES(8); // In
+
+    // Approximate duration for which to sleep with the va_space_mm retained.
+    NvU64 sleep_us                                                   NV_ALIGN_BYTES(8); // In
+
+    // On success, this contains the value of mm->mm_users before mmput() is
+    // called.
+    NvU64 mm_users                                                   NV_ALIGN_BYTES(8); // Out
+
+    // NV_ERR_PAGE_TABLE_NOT_AVAIL  Could not retain va_space_mm
+    //                              (uvm_va_space_mm_or_current_retain returned
+    //                              NULL)
+    NV_STATUS rmStatus;                                                                 // Out
+} UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN_PARAMS;
+
 #define UVM_TEST_GET_USER_SPACE_END_ADDRESS              UVM_TEST_IOCTL_BASE(90)
 typedef struct
 {
@@ -1395,6 +1434,19 @@ typedef struct
 {
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED_PARAMS;
+
+#define UVM_TEST_HMM_INIT                                UVM_TEST_IOCTL_BASE(97)
+typedef struct
+{
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_HMM_INIT_PARAMS;
+
+#define UVM_TEST_SPLIT_INVALIDATE_DELAY                  UVM_TEST_IOCTL_BASE(98)
+typedef struct
+{
+    NvU64 delay_us;                                      // In
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS;
 
 #ifdef __cplusplus
 }

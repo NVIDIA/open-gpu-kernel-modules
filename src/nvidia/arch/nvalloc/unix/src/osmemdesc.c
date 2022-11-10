@@ -526,7 +526,9 @@ osCreateOsDescriptorFromPhysAddr
     NvU64  base = 0;
     NvU32  cache_type = NV_MEMORY_CACHED;
     NvU64  memdescFlags = MEMDESC_FLAGS_NONE;
-
+    NvU64 *pPhys_addrs;
+    NvU64  num_os_pages;
+    NvU32  idx;
     // Currently only work with contiguous sysmem allocations
     if (!FLD_TEST_DRF(OS02, _FLAGS, _PHYSICALITY, _CONTIGUOUS, flags))
     {
@@ -565,21 +567,34 @@ osCreateOsDescriptorFromPhysAddr
     pPteArray = memdescGetPteArray(pMemDesc, AT_CPU);
     pPteArray[0] = base;
 
+    num_os_pages = NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount);
+    pPhys_addrs  = portMemAllocNonPaged(sizeof(NvU64) * num_os_pages);
+    if (pPhys_addrs == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    for (idx = 0; idx < num_os_pages; idx++) 
+    {
+        pPhys_addrs[idx] =  base + (idx * os_page_size); 
+    }
+
     *ppPrivate = NULL;
-    rmStatus = nv_register_phys_pages(NV_GET_NV_STATE(pGpu), pPteArray,
-                                      NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount),
+    rmStatus = nv_register_phys_pages(NV_GET_NV_STATE(pGpu), pPhys_addrs,
+                                      num_os_pages,
                                       memdescGetCpuCacheAttrib(pMemDesc),
                                       ppPrivate);
     if (rmStatus != NV_OK)
     {
         memdescDestroy(pMemDesc);
-        return rmStatus;
+        goto cleanup;
     }
 
     memdescSetMemData(pMemDesc, *ppPrivate,
         osDestroyOsDescriptorFromPhysAddr);
 
-    return NV_OK;
+cleanup:
+    portMemFree(pPhys_addrs);
+
+    return rmStatus;
 }
 
 static NV_STATUS

@@ -509,6 +509,11 @@ struct MMU_MAP_TARGET
      * Callback to map the batch of entries.
      */
     MmuWalkCBMapNextEntries *MapNextEntries;
+    
+    /*!
+     * Page array granularity of the physical target memory
+     */
+    NvU32 pageArrayGranularity;
 };
 
 /*----------------------------Public Interface--------------------------------*/

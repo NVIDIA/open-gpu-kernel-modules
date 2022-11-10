@@ -33,8 +33,7 @@ extern "C" {
 void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
                             const NvU32 head,
                             const NVAttributesSetEvoRec *pAttributesSet,
-                            const NvBool hdTimings,
-                            const NVT_VIDEO_INFOFRAME_CTRL *pCtrl,
+                            const NVDispHeadInfoFrameStateEvoRec *pInfoFrameState,
                             NVDpyEvoRec *pDpyEvo);
 
 void nvDpyUpdateHdmiPreModesetEvo(NVDpyEvoPtr pDpyEvo);

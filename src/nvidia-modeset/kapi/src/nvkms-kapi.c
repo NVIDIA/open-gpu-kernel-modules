@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 
 #include "nvkms-api.h"
 #include "nvkms-rmapi.h"
+#include "nvkms-vrr.h"
 
 #include "nvkms-kapi.h"
 #include "nvkms-kapi-private.h"
@@ -352,6 +353,7 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     device->caps.maxHeightInPixels     = paramsAlloc->reply.maxHeightInPixels;
     device->caps.maxCursorSizeInPixels = paramsAlloc->reply.maxCursorSize;
     device->caps.genericPageKind       = paramsAlloc->reply.genericPageKind;
+    device->caps.requiresVrrSemaphores = paramsAlloc->reply.requiresVrrSemaphores;
 
     /* XXX Add LUT support */
 
@@ -367,6 +369,7 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     for (layer = 0; layer < NVKMS_KAPI_LAYER_MAX; layer++) {
         device->supportedSurfaceMemoryFormats[layer] =
             paramsAlloc->reply.layerCaps[layer].supportedSurfaceMemoryFormats;
+        device->supportsHDR[layer] = paramsAlloc->reply.layerCaps[layer].supportsHDR;
     }
 
     if (paramsAlloc->reply.validNIsoFormatMask &
@@ -815,6 +818,59 @@ static void ReleaseOwnership(struct NvKmsKapiDevice *device)
                           &paramsRelease, sizeof(paramsRelease));
 }
 
+static NvBool GrantPermissions
+(
+    NvS32 fd, 
+    struct NvKmsKapiDevice *device,
+    NvU32 head,
+    NvKmsKapiDisplay display
+)
+{
+    struct NvKmsGrantPermissionsParams paramsGrant = { };
+    struct NvKmsPermissions *perm = &paramsGrant.request.permissions;
+    NvU32 dispIdx = device->dispIdx;
+
+    if (dispIdx >= ARRAY_LEN(perm->modeset.disp) ||
+        head >= ARRAY_LEN(perm->modeset.disp[0].head) || device == NULL) {
+        return NV_FALSE;
+    }
+
+    if (device->hKmsDevice == 0x0) {
+        return NV_TRUE;
+    }
+
+    perm->type = NV_KMS_PERMISSIONS_TYPE_MODESET;
+    perm->modeset.disp[dispIdx].head[head].dpyIdList =
+        nvAddDpyIdToEmptyDpyIdList(nvNvU32ToDpyId(display));
+
+    paramsGrant.request.fd = fd;
+    paramsGrant.request.deviceHandle = device->hKmsDevice;
+
+    return nvkms_ioctl_from_kapi(device->pKmsOpen,
+                                 NVKMS_IOCTL_GRANT_PERMISSIONS, &paramsGrant,
+                                 sizeof(paramsGrant));
+}
+
+static NvBool RevokePermissions(struct NvKmsKapiDevice *device)
+{
+    struct NvKmsRevokePermissionsParams paramsRevoke = { };
+
+    if (device == NULL) {
+        return NV_FALSE;
+    }
+
+    if (device->hKmsDevice == 0x0) {
+        return NV_TRUE;
+    }
+
+    paramsRevoke.request.deviceHandle = device->hKmsDevice;
+    paramsRevoke.request.permissionsTypeBitmask = NVBIT(NV_KMS_PERMISSIONS_TYPE_MODESET);
+
+    return nvkms_ioctl_from_kapi(device->pKmsOpen,
+                                 NVKMS_IOCTL_REVOKE_PERMISSIONS, &paramsRevoke,
+                                 sizeof(paramsRevoke));
+}
+
 static NvBool DeclareEventInterest
 (
     const struct NvKmsKapiDevice *device,
@@ -931,6 +987,13 @@ static NvBool GetDeviceResourcesInfo
     nvkms_memcpy(info->supportedSurfaceMemoryFormats,
                  device->supportedSurfaceMemoryFormats,
                  sizeof(device->supportedSurfaceMemoryFormats));
+
+    ct_assert(sizeof(info->supportsHDR) ==
+              sizeof(device->supportsHDR));
+
+    nvkms_memcpy(info->supportsHDR,
+                 device->supportsHDR,
+                 sizeof(device->supportsHDR));
 done:
 
     return status;
@@ -1145,6 +1208,8 @@ static NvBool GetDynamicDisplayInfo(
     params->connected = pParamsDpyDynamic->reply.connected;
 
     if (pParamsDpyDynamic->reply.connected && !params->overrideEdid) {
+        NvBool vrrSupported =
+            (pParamsDpyDynamic->reply.vrrType != NVKMS_DPY_VRR_TYPE_NONE) ? NV_TRUE : NV_FALSE;
 
         nvkms_memcpy(
             params->edid.buffer,
@@ -1152,6 +1217,7 @@ static NvBool GetDynamicDisplayInfo(
             sizeof(params->edid.buffer));
 
         params->edid.bufferSize = pParamsDpyDynamic->reply.edid.bufferSize;
+        params->vrrSupported = (vrrSupported && !device->caps.requiresVrrSemaphores) ? NV_TRUE : NV_FALSE;
     }
 
 done:
@@ -2277,6 +2343,21 @@ static NvBool AssignSyncObjectConfig(
     return NV_TRUE;
 }
 
+static void AssignHDRMetadataConfig(
+    const struct NvKmsKapiLayerConfig *layerConfig,
+    const NvU32 layer,
+    struct NvKmsFlipCommonParams *params)
+{
+    if (layerConfig->hdrMetadataSpecified) {
+        params->layer[layer].hdr.enabled = TRUE;
+        params->layer[layer].hdr.specified = TRUE;
+        params->layer[layer].hdr.staticMetadata = layerConfig->hdrMetadata;
+    } else {
+        params->layer[layer].hdr.enabled = FALSE;
+        params->layer[layer].hdr.specified = TRUE;
+    }
+}
+
 static void NvKmsKapiCursorConfigToKms(
     const struct NvKmsKapiCursorRequestedConfig *requestedConfig,
     struct NvKmsFlipCommonParams *params,
@@ -2357,6 +2438,11 @@ static NvBool NvKmsKapiOverlayLayerConfigToKms(
 
         params->layer[layer].outputPosition.specified = NV_TRUE;
     }
+
+    params->layer[layer].colorspace.val = layerConfig->inputColorSpace;
+    params->layer[layer].colorspace.specified = TRUE;
+
+    AssignHDRMetadataConfig(layerConfig, layer, params);
 
     if (commit) {
         NvU32 nextIndex = NVKMS_KAPI_INC_NOTIFIER_INDEX(
@@ -2454,6 +2540,11 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
         changed = TRUE;
     }
 
+    params->layer[NVKMS_MAIN_LAYER].colorspace.val = layerConfig->inputColorSpace;
+    params->layer[NVKMS_MAIN_LAYER].colorspace.specified = TRUE;
+
+    AssignHDRMetadataConfig(layerConfig, NVKMS_MAIN_LAYER, params);
+
     if (commit && changed) {
         NvU32 nextIndex = NVKMS_KAPI_INC_NOTIFIER_INDEX(
             device->layerState[head][NVKMS_MAIN_LAYER].
@@ -2527,6 +2618,38 @@ static NvBool NvKmsKapiLayerConfigToKms(
                                             bFromKmsSetMode);
 }
 
+static NvBool GetOutputTransferFunction(
+    const struct NvKmsKapiHeadRequestedConfig *headRequestedConfig,
+    enum NvKmsOutputTf *tf)
+{
+    NvBool found = NV_FALSE;
+    NvU32 layer;
+
+    *tf = NVKMS_OUTPUT_TF_NONE;
+
+    for (layer = 0;
+         layer < ARRAY_LEN(headRequestedConfig->layerRequestedConfig);
+         layer++) {
+        const struct NvKmsKapiLayerRequestedConfig *layerRequestedConfig =
+            &headRequestedConfig->layerRequestedConfig[layer];
+        const struct NvKmsKapiLayerConfig *layerConfig =
+            &layerRequestedConfig->config;
+
+        if (layerConfig->hdrMetadataSpecified) {
+            if (!found) {
+                *tf = layerConfig->tf;
+                found = NV_TRUE;
+            } else if (*tf != layerConfig->tf) {
+                nvKmsKapiLogDebug(
+                    "Output transfer function should be the same for all layers on a head");
+                return NV_FALSE;
+            }
+        }
+    }
+
+    return NV_TRUE;
+}
+
 /*
  * Helper function to convert NvKmsKapiRequestedModeSetConfig
  * to NvKmsSetModeParams.
@@ -2554,6 +2677,7 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
         const struct NvKmsKapiHeadModeSetConfig *headModeSetConfig =
             &headRequestedConfig->modeSetConfig;
         struct NvKmsSetModeOneHeadRequest *paramsHead;
+        enum NvKmsOutputTf tf;
         NvU32 layer;
         NvU32 i;
 
@@ -2605,10 +2729,25 @@ static NvBool NvKmsKapiRequestedModeSetConfigToKms(
             }
         }
 
+        if (!GetOutputTransferFunction(headRequestedConfig, &tf)) {
+            return NV_FALSE;
+        }
+
+        paramsHead->flip.tf.val = tf;
+        paramsHead->flip.tf.specified = NV_TRUE;
+
         paramsHead->viewPortSizeIn.width =
             headModeSetConfig->mode.timings.hVisible;
         paramsHead->viewPortSizeIn.height =
             headModeSetConfig->mode.timings.vVisible;
+
+        if (device->caps.requiresVrrSemaphores) {
+            paramsHead->allowGsync = NV_FALSE;
+            paramsHead->allowAdaptiveSync = NVKMS_ALLOW_ADAPTIVE_SYNC_DISABLED;
+        } else {
+            paramsHead->allowGsync = NV_TRUE;
+            paramsHead->allowAdaptiveSync = NVKMS_ALLOW_ADAPTIVE_SYNC_ALL;
+        }
     }
 
     return NV_TRUE;
@@ -2722,6 +2861,7 @@ static NvBool KmsFlip(
 
     params->request.deviceHandle = device->hKmsDevice;
     params->request.commit = commit;
+    params->request.allowVrr = NV_FALSE;
 
     for (i = 0; i < ARRAY_LEN(params->request.sd); i++) {
         struct NvKmsFlipRequestOneSubDevice *sdParams = &params->request.sd[i];
@@ -2738,6 +2878,7 @@ static NvBool KmsFlip(
                 &requestedConfig->headRequestedConfig[head];
             const struct NvKmsKapiHeadModeSetConfig *headModeSetConfig =
                 &headRequestedConfig->modeSetConfig;
+            enum NvKmsOutputTf tf;
 
             struct NvKmsFlipCommonParams *flipParams = &sdParams->head[head];
 
@@ -2774,6 +2915,18 @@ static NvBool KmsFlip(
                 }
 
                 bChanged = NV_TRUE;
+            }
+
+            status = GetOutputTransferFunction(headRequestedConfig, &tf);
+            if (status != NV_TRUE) {
+                goto done;
+            }
+
+            flipParams->tf.val = tf;
+            flipParams->tf.specified = NV_TRUE;
+
+            if (headModeSetConfig->vrrEnabled) {
+                params->request.allowVrr = NV_TRUE;
             }
         }
     }
@@ -3063,6 +3216,9 @@ NvBool nvKmsKapiGetFunctionsTableInternal
 
     funcsTable->grabOwnership    = GrabOwnership;
     funcsTable->releaseOwnership = ReleaseOwnership;
+
+    funcsTable->grantPermissions     = GrantPermissions;
+    funcsTable->revokePermissions    = RevokePermissions;
 
     funcsTable->declareEventInterest = DeclareEventInterest;
 

@@ -92,8 +92,10 @@ NV_STATUS __nvoc_objCreate_UserInfo(UserInfo**, Dynamic*, NvU32);
     __nvoc_objCreate_UserInfo((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS userinfoConstruct_IMPL(struct UserInfo *arg_pUserInfo);
+
 #define __nvoc_userinfoConstruct(arg_pUserInfo) userinfoConstruct_IMPL(arg_pUserInfo)
 void userinfoDestruct_IMPL(struct UserInfo *pUserInfo);
+
 #define __nvoc_userinfoDestruct(pUserInfo) userinfoDestruct_IMPL(pUserInfo)
 #undef PRIVATE_FIELD
 
@@ -123,6 +125,8 @@ struct RmClient {
     NV_STATUS (*__rmclientInterMap__)(struct RmClient *, struct RsResourceRef *, struct RsResourceRef *, struct RS_INTER_MAP_PARAMS *);
     void (*__rmclientInterUnmap__)(struct RmClient *, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);
     NV_STATUS (*__rmclientPostProcessPendingFreeList__)(struct RmClient *, struct RsResourceRef **);
+    RS_PRIV_LEVEL (*__rmclientGetCachedPrivilege__)(struct RmClient *);
+    NvBool (*__rmclientIsAdmin__)(struct RmClient *, RS_PRIV_LEVEL);
     NV_STATUS (*__rmclientDestructResourceRef__)(struct RmClient *, RsServer *, struct RsResourceRef *);
     NV_STATUS (*__rmclientValidateNewResourceHandle__)(struct RmClient *, NvHandle, NvBool);
     NV_STATUS (*__rmclientShareResource__)(struct RmClient *, struct RsResourceRef *, RS_SHARE_POLICY *, struct CALL_CONTEXT *);
@@ -177,6 +181,8 @@ NV_STATUS __nvoc_objCreate_RmClient(RmClient**, Dynamic*, NvU32, struct PORT_MEM
 #define rmclientInterMap(pClient, pMapperRef, pMappableRef, pParams) rmclientInterMap_DISPATCH(pClient, pMapperRef, pMappableRef, pParams)
 #define rmclientInterUnmap(pClient, pMapperRef, pParams) rmclientInterUnmap_DISPATCH(pClient, pMapperRef, pParams)
 #define rmclientPostProcessPendingFreeList(pClient, ppFirstLowPriRef) rmclientPostProcessPendingFreeList_DISPATCH(pClient, ppFirstLowPriRef)
+#define rmclientGetCachedPrivilege(pClient) rmclientGetCachedPrivilege_DISPATCH(pClient)
+#define rmclientIsAdmin(pClient, privLevel) rmclientIsAdmin_DISPATCH(pClient, privLevel)
 #define rmclientDestructResourceRef(pClient, pServer, pResourceRef) rmclientDestructResourceRef_DISPATCH(pClient, pServer, pResourceRef)
 #define rmclientValidateNewResourceHandle(pClient, hResource, bRestrict) rmclientValidateNewResourceHandle_DISPATCH(pClient, hResource, bRestrict)
 #define rmclientShareResource(pClient, pResourceRef, pSharePolicy, pCallContext) rmclientShareResource_DISPATCH(pClient, pResourceRef, pSharePolicy, pCallContext)
@@ -211,6 +217,18 @@ static inline NV_STATUS rmclientPostProcessPendingFreeList_DISPATCH(struct RmCli
     return pClient->__rmclientPostProcessPendingFreeList__(pClient, ppFirstLowPriRef);
 }
 
+RS_PRIV_LEVEL rmclientGetCachedPrivilege_IMPL(struct RmClient *pClient);
+
+static inline RS_PRIV_LEVEL rmclientGetCachedPrivilege_DISPATCH(struct RmClient *pClient) {
+    return pClient->__rmclientGetCachedPrivilege__(pClient);
+}
+
+NvBool rmclientIsAdmin_IMPL(struct RmClient *pClient, RS_PRIV_LEVEL privLevel);
+
+static inline NvBool rmclientIsAdmin_DISPATCH(struct RmClient *pClient, RS_PRIV_LEVEL privLevel) {
+    return pClient->__rmclientIsAdmin__(pClient, privLevel);
+}
+
 static inline NV_STATUS rmclientDestructResourceRef_DISPATCH(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef) {
     return pClient->__rmclientDestructResourceRef__(pClient, pServer, pResourceRef);
 }
@@ -228,32 +246,13 @@ static inline NV_STATUS rmclientUnmapMemory_DISPATCH(struct RmClient *pClient, s
 }
 
 NV_STATUS rmclientConstruct_IMPL(struct RmClient *arg_pClient, struct PORT_MEM_ALLOCATOR *arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_rmclientConstruct(arg_pClient, arg_pAllocator, arg_pParams) rmclientConstruct_IMPL(arg_pClient, arg_pAllocator, arg_pParams)
 void rmclientDestruct_IMPL(struct RmClient *pClient);
+
 #define __nvoc_rmclientDestruct(pClient) rmclientDestruct_IMPL(pClient)
-RS_PRIV_LEVEL rmclientGetCachedPrivilege_IMPL(struct RmClient *pClient);
-#ifdef __nvoc_client_h_disabled
-static inline RS_PRIV_LEVEL rmclientGetCachedPrivilege(struct RmClient *pClient) {
-    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
-    RS_PRIV_LEVEL ret;
-    portMemSet(&ret, 0, sizeof(RS_PRIV_LEVEL));
-    return ret;
-}
-#else //__nvoc_client_h_disabled
-#define rmclientGetCachedPrivilege(pClient) rmclientGetCachedPrivilege_IMPL(pClient)
-#endif //__nvoc_client_h_disabled
-
-NvBool rmclientIsAdmin_IMPL(struct RmClient *pClient, RS_PRIV_LEVEL privLevel);
-#ifdef __nvoc_client_h_disabled
-static inline NvBool rmclientIsAdmin(struct RmClient *pClient, RS_PRIV_LEVEL privLevel) {
-    NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_client_h_disabled
-#define rmclientIsAdmin(pClient, privLevel) rmclientIsAdmin_IMPL(pClient, privLevel)
-#endif //__nvoc_client_h_disabled
-
 void rmclientSetClientFlags_IMPL(struct RmClient *pClient, NvU32 clientFlags);
+
 #ifdef __nvoc_client_h_disabled
 static inline void rmclientSetClientFlags(struct RmClient *pClient, NvU32 clientFlags) {
     NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
@@ -263,6 +262,7 @@ static inline void rmclientSetClientFlags(struct RmClient *pClient, NvU32 client
 #endif //__nvoc_client_h_disabled
 
 void *rmclientGetSecurityToken_IMPL(struct RmClient *pClient);
+
 #ifdef __nvoc_client_h_disabled
 static inline void *rmclientGetSecurityToken(struct RmClient *pClient) {
     NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
@@ -273,6 +273,7 @@ static inline void *rmclientGetSecurityToken(struct RmClient *pClient) {
 #endif //__nvoc_client_h_disabled
 
 NvBool rmclientIsCapableOrAdmin_IMPL(struct RmClient *pClient, NvU32 capability, RS_PRIV_LEVEL privLevel);
+
 #ifdef __nvoc_client_h_disabled
 static inline NvBool rmclientIsCapableOrAdmin(struct RmClient *pClient, NvU32 capability, RS_PRIV_LEVEL privLevel) {
     NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");
@@ -283,6 +284,7 @@ static inline NvBool rmclientIsCapableOrAdmin(struct RmClient *pClient, NvU32 ca
 #endif //__nvoc_client_h_disabled
 
 NvBool rmclientIsCapable_IMPL(struct RmClient *pClient, NvU32 capability);
+
 #ifdef __nvoc_client_h_disabled
 static inline NvBool rmclientIsCapable(struct RmClient *pClient, NvU32 capability) {
     NV_ASSERT_FAILED_PRECOMP("RmClient was disabled!");

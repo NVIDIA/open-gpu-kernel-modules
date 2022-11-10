@@ -76,8 +76,7 @@
 
 #include "ctrl2080/ctrl2080grmgr.h"
 #include "ctrl2080/ctrl2080ucodefuzzer.h"
-
-
+#include "ctrl2080/ctrl2080vgpumgrinternal.h"
 #include "ctrl2080/ctrl2080hshub.h"
 /* include appropriate os-specific command header */
 

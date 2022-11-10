@@ -101,6 +101,7 @@ struct KernelGraphicsObject {
     NV_STATUS (*__kgrobjUnregisterEvent__)(struct KernelGraphicsObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__kgrobjCanCopy__)(struct KernelGraphicsObject *);
     void (*__kgrobjPreDestruct__)(struct KernelGraphicsObject *);
+    NV_STATUS (*__kgrobjIsDuplicate__)(struct KernelGraphicsObject *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__kgrobjGetNotificationListPtr__)(struct KernelGraphicsObject *);
     struct NotifShare *(*__kgrobjGetNotificationShare__)(struct KernelGraphicsObject *);
     NV_STATUS (*__kgrobjMap__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -163,11 +164,13 @@ NV_STATUS __nvoc_objCreate_KernelGraphicsObject(KernelGraphicsObject**, Dynamic*
 #define kgrobjUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) kgrobjUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define kgrobjCanCopy(pResource) kgrobjCanCopy_DISPATCH(pResource)
 #define kgrobjPreDestruct(pResource) kgrobjPreDestruct_DISPATCH(pResource)
+#define kgrobjIsDuplicate(pResource, hMemory, pDuplicate) kgrobjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kgrobjGetNotificationListPtr(pNotifier) kgrobjGetNotificationListPtr_DISPATCH(pNotifier)
 #define kgrobjGetNotificationShare(pNotifier) kgrobjGetNotificationShare_DISPATCH(pNotifier)
 #define kgrobjMap(pGpuResource, pCallContext, pParams, pCpuMapping) kgrobjMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define kgrobjGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) kgrobjGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 void kgrobjGetPromoteIds_FWCLIENT(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1, NvU32 maxPromoteIds, NvU32 *pPromoteIds, NvU32 *pNumEntries, NvBool *pbPromote);
+
 
 #ifdef __nvoc_kernel_graphics_object_h_disabled
 static inline void kgrobjGetPromoteIds(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1, NvU32 maxPromoteIds, NvU32 *pPromoteIds, NvU32 *pNumEntries, NvBool *pbPromote) {
@@ -180,6 +183,7 @@ static inline void kgrobjGetPromoteIds(struct OBJGPU *arg0, struct KernelGraphic
 #define kgrobjGetPromoteIds_HAL(arg0, arg1, maxPromoteIds, pPromoteIds, pNumEntries, pbPromote) kgrobjGetPromoteIds(arg0, arg1, maxPromoteIds, pPromoteIds, pNumEntries, pbPromote)
 
 NvBool kgrobjShouldCleanup_KERNEL(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1);
+
 
 #ifdef __nvoc_kernel_graphics_object_h_disabled
 static inline NvBool kgrobjShouldCleanup(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1) {
@@ -194,6 +198,7 @@ static inline NvBool kgrobjShouldCleanup(struct OBJGPU *arg0, struct KernelGraph
 
 NV_STATUS kgrobjSetComputeMmio_IMPL(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1);
 
+
 #ifdef __nvoc_kernel_graphics_object_h_disabled
 static inline NV_STATUS kgrobjSetComputeMmio(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsObject was disabled!");
@@ -206,6 +211,7 @@ static inline NV_STATUS kgrobjSetComputeMmio(struct OBJGPU *arg0, struct KernelG
 #define kgrobjSetComputeMmio_HAL(arg0, arg1) kgrobjSetComputeMmio(arg0, arg1)
 
 void kgrobjFreeComputeMmio_IMPL(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1);
+
 
 #ifdef __nvoc_kernel_graphics_object_h_disabled
 static inline void kgrobjFreeComputeMmio(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1) {
@@ -319,6 +325,10 @@ static inline void kgrobjPreDestruct_DISPATCH(struct KernelGraphicsObject *pReso
     pResource->__kgrobjPreDestruct__(pResource);
 }
 
+static inline NV_STATUS kgrobjIsDuplicate_DISPATCH(struct KernelGraphicsObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__kgrobjIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *kgrobjGetNotificationListPtr_DISPATCH(struct KernelGraphicsObject *pNotifier) {
     return pNotifier->__kgrobjGetNotificationListPtr__(pNotifier);
 }
@@ -336,10 +346,13 @@ static inline NV_STATUS kgrobjGetOrAllocNotifShare_DISPATCH(struct KernelGraphic
 }
 
 NV_STATUS kgrobjConstruct_IMPL(struct KernelGraphicsObject *arg_pKernelGraphicsObject, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_kgrobjConstruct(arg_pKernelGraphicsObject, arg_pCallContext, arg_pParams) kgrobjConstruct_IMPL(arg_pKernelGraphicsObject, arg_pCallContext, arg_pParams)
 void kgrobjDestruct_IMPL(struct KernelGraphicsObject *pKernelGraphicsObject);
+
 #define __nvoc_kgrobjDestruct(pKernelGraphicsObject) kgrobjDestruct_IMPL(pKernelGraphicsObject)
 NV_STATUS kgrobjPromoteContext_IMPL(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1, struct KernelGraphics *arg2);
+
 #ifdef __nvoc_kernel_graphics_object_h_disabled
 static inline NV_STATUS kgrobjPromoteContext(struct OBJGPU *arg0, struct KernelGraphicsObject *arg1, struct KernelGraphics *arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphicsObject was disabled!");

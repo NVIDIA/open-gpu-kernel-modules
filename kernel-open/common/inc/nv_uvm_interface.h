@@ -331,10 +331,14 @@ typedef NV_STATUS (*uvmPmaEvictPagesCallback)(void *callbackData,
                                               NvU64 *pPages,
                                               NvU32 count,
                                               NvU64 physBegin,
-                                              NvU64 physEnd);
+                                              NvU64 physEnd,
+                                              UVM_PMA_GPU_MEMORY_TYPE mem_type);
 
 // Mirrors pmaEvictRangeCb_t, see its documentation in pma.h.
-typedef NV_STATUS (*uvmPmaEvictRangeCallback)(void *callbackData, NvU64 physBegin, NvU64 physEnd);
+typedef NV_STATUS (*uvmPmaEvictRangeCallback)(void *callbackData,
+                                              NvU64 physBegin,
+                                              NvU64 physEnd,
+                                              UVM_PMA_GPU_MEMORY_TYPE mem_type);
 
 /*******************************************************************************
     nvUvmInterfacePmaRegisterEvictionCallbacks

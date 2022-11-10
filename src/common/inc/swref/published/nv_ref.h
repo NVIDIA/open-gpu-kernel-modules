@@ -149,6 +149,13 @@
 #define NV_PMC_BOOT_42_ARCHITECTURE                           28:24 /*       */
 #define NV_PMC_BOOT_42_CHIP_ID                                28:20 /* R-XVF */
 
+#define NV_PMC_BOOT_42_ARCHITECTURE_TU100                0x00000016 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GA100                0x00000017 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_GH100                0x00000018 /*       */
+#define NV_PMC_BOOT_42_ARCHITECTURE_AD100                0x00000019 /*       */
+
+#define NV_PMC_BOOT_42_CHIP_ID_GA100                     0x00000170 /*       */
+
 /* dev_arapb_misc.h */
 #define NV_PAPB_MISC_GP_HIDREV_CHIPID                    15:8 /* ----F */
 #define NV_PAPB_MISC_GP_HIDREV_MAJORREV                   7:4 /* ----F */

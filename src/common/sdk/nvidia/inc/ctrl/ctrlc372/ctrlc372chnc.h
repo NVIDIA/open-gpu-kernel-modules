@@ -149,6 +149,10 @@
  *     This parameter specifies if the head operates in 2Head1Or mode.
  *     Refer to NVD_2_Heads_Driving_1_OR_Functional_Description.docx for more details.
  * 
+ *   head.bGetOSLDOutput
+ *     This parameter specifies if the client requires output for the OSLD 
+ *     (One Shot Mode with Stall Lock Disabled) mode along with legacy outputs.
+ * 
  *   head.bDisableMidFrameAndDWCFWatermark
  *     WAR for bug 200508242. 
  *     In linux it is possible that there will be no fullscreen window visible 
@@ -269,8 +273,17 @@
  *
  * Outputs:
  *   bIsPossible
- *     This output tells if the specified mode can be supported.
+ *     This output tells if the specified mode can be supported.  To know if 
+ *     the mode is possible with OSLD, the bIsOSLDPossible result must 
+ *     be checked.
  *
+ *   bIsOSLDPossible
+ *     This output is returned for each head and suggests to the clients
+ *     if the mode will be possible or not on that head when OSLD is enabled. 
+ *     The output is only valid if bGetOSLDOutput is set in the head input.
+ *     Note that with OSLD output, RM will also return the legacy output
+ *     values.
+ *    
  *   minImpVPState
  *     minImpVPState returns the minimum v-pstate at which the mode is possible
  *     (assuming bIsPossible is TRUE).  This output is valid only on dGPU, and
@@ -317,6 +330,25 @@
  *     support the mode.  This output is valid only on Tegra, and only if 
  *     NVC372_CTRL_IS_MODE_POSSIBLE_OPTIONS_NEED_MIN_VPSTATE was set in the
  *     "options" field.
+ *
+ *   vblankIncreaseInLinesForOSLDMode
+ *     vblankIncreaseInLinesForOSLDMode returns the amount, in lines, by 
+ *     which vblank needs to be extended to achieve optimized MSCG when OSLD 
+ *     Mode is enabled (assuming bIsPossible is TRUE). Features like Panel
+ *     Replay and Panel Self Refresh enable OSLD mode. This value is 0 if 
+ *     the vblank is large enough to accommodate spool up and MSCG latencies.
+ *     This output is valid only if 
+ *     NVC372_CTRL_IS_MODE_POSSIBLE_OPTIONS_NEED_MIN_VPSTATE was set in the
+ *     "options" field and bGetOSLDOutput was specified in the head input.
+ *
+ *   wakeUpRgLineForOSLDMode
+ *     wakeUpRgLineForOSLDMode returns the rg line in the vblank region at which 
+ *     the clients will be required to send a timestamped update to achieve
+ *     optimized MSCG when OSLD Mode is enabled (assuming bIsPossible is 
+ *     is TRUE).  Features like Panel Replay and Panel Self Refresh enable 
+ *     OSLD mode. This output is valid only if 
+ *     NVC372_CTRL_IS_MODE_POSSIBLE_OPTIONS_NEED_MIN_VPSTATE was set in the
+ *     "options" field and bGetOSLDOutput was specified in the head input.
  * 
  *   worstCaseMargin
  *     worstCaseMargin returns the ratio of available bandwidth to required
@@ -410,6 +442,8 @@ typedef struct NVC372_CTRL_IMP_HEAD {
 
     NvBool bIs2Head1Or;
 
+    NvBool bGetOSLDOutput;
+
     NvBool bDisableMidFrameAndDWCFWatermark;
 } NVC372_CTRL_IMP_HEAD;
 typedef struct NVC372_CTRL_IMP_HEAD *PNVC372_CTRL_IMP_HEAD;
@@ -452,6 +486,8 @@ typedef struct NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS {
 
     NvBool                      bIsPossible;
 
+    NvBool                      bIsOSLDPossible[NVC372_CTRL_MAX_POSSIBLE_HEADS];
+
     NvU32                       minImpVPState;
 
     NvU32                       minPState;
@@ -461,6 +497,10 @@ typedef struct NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS {
     NvU32                       floorBandwidthKBPS;
 
     NvU32                       minRequiredHubclkKHz;
+
+    NvU32                       vblankIncreaseInLinesForOSLDMode[NVC372_CTRL_MAX_POSSIBLE_HEADS];
+
+    NvU32                       wakeUpRgLineForOSLDMode[NVC372_CTRL_MAX_POSSIBLE_HEADS];
 
     NvU32                       worstCaseMargin;
 
@@ -500,10 +540,11 @@ typedef struct NVC372_CTRL_IS_MODE_POSSIBLE_PARAMS *PNVC372_CTRL_IS_MODE_POSSIBL
 #define NVC372_CTRL_IMP_INSUFFICIENT_BANDWIDTH                        5
 #define NVC372_CTRL_IMP_DISPCLK_TOO_LOW                               6
 #define NVC372_CTRL_IMP_ELV_START_TOO_HIGH                            7
-#define NVC372_CTRL_IMP_INSUFFICIENT_THREAD_GROUPS                    8
-#define NVC372_CTRL_IMP_INVALID_PARAMETER                             9
-#define NVC372_CTRL_IMP_UNRECOGNIZED_FORMAT                           10
-#define NVC372_CTRL_IMP_UNSPECIFIED                                   11
+#define NVC372_CTRL_IMP_OSLD_ELV_START_TOO_HIGH                       8
+#define NVC372_CTRL_IMP_INSUFFICIENT_THREAD_GROUPS                    9
+#define NVC372_CTRL_IMP_INVALID_PARAMETER                             10
+#define NVC372_CTRL_IMP_UNRECOGNIZED_FORMAT                           11
+#define NVC372_CTRL_IMP_UNSPECIFIED                                   12
 
 /*
  * The calculated margin is multiplied by a constant, so that it can be

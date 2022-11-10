@@ -94,7 +94,7 @@
     GPU_CHILD_SINGLE_INST( OBJHSHUBMANAGER,      GPU_GET_HSHUBMANAGER,                 1,               NV_FALSE,        NV_FALSE,      pHshMgr          )
 #endif
 #if GPU_CHILD_MODULE(HSHUB)
-    GPU_CHILD_MULTI_INST ( OBJHSHUB,             GPU_GET_HSHUB,                       GPU_MAX_HSHUBS,   NV_FALSE,        NV_FALSE,      pHshub           )
+    GPU_CHILD_MULTI_INST ( Hshub,                GPU_GET_HSHUB,                       GPU_MAX_HSHUBS,   NV_FALSE,        NV_FALSE,      pHshub           )
 #endif
 #if GPU_CHILD_MODULE(SEQ)
     GPU_CHILD_SINGLE_INST( OBJSEQ,               GPU_GET_SEQ,                         1,                NV_FALSE,        NV_TRUE,       pSeq             )
@@ -157,7 +157,7 @@
     GPU_CHILD_SINGLE_INST( ClockManager,         GPU_GET_CLK_MGR,                     1,                NV_FALSE,        NV_FALSE,      pClk             )
 #endif
 #if GPU_CHILD_MODULE(FAN)
-    GPU_CHILD_SINGLE_INST( OBJFAN,               GPU_GET_FAN,                         1,                NV_FALSE,        NV_FALSE,      pFan             )
+    GPU_CHILD_SINGLE_INST( Fan,                  GPU_GET_FAN,                         1,                NV_FALSE,        NV_FALSE,      pFan             )
 #endif
 #if GPU_CHILD_MODULE(PERF)
     GPU_CHILD_SINGLE_INST( Perf,                 GPU_GET_PERF,                        1,                NV_FALSE,        NV_FALSE,      pPerf            )
@@ -187,7 +187,7 @@
     GPU_CHILD_SINGLE_INST( OBJVOLT,              GPU_GET_VOLT,                        1,                NV_FALSE,        NV_FALSE,      pVolt            )
 #endif
 #if GPU_CHILD_MODULE(I2C)
-    GPU_CHILD_SINGLE_INST( OBJI2C,               GPU_GET_I2C,                         1,                NV_FALSE,        NV_TRUE,       pI2c             )
+    GPU_CHILD_SINGLE_INST( I2c,                  GPU_GET_I2C,                         1,                NV_FALSE,        NV_TRUE,       pI2c             )
 #endif
 #if GPU_CHILD_MODULE(SPI)
     GPU_CHILD_SINGLE_INST( Spi,               GPU_GET_SPI,                            1,                NV_FALSE,        NV_TRUE,       pSpi             )

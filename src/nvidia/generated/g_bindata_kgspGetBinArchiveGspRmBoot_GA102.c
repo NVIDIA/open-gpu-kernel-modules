@@ -1107,6 +1107,14 @@ const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmBoot_GA102(struct KernelGsp *pKerne
 #endif // defined(BINDATA_INCLUDE_FUNCTION)
 
 
+#if defined(BINDATA_INCLUDE_FUNCTION_STUB)
+const BINDATA_ARCHIVE *kgspGetBinArchiveGspRmBoot_GA102(struct KernelGsp *pKernelGsp)
+{
+    return NULL;
+}
+#endif // defined(BINDATA_INCLUDE_FUNCTION_STUB)
+
+
 
 
 

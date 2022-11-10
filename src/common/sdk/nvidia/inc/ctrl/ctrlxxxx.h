@@ -34,11 +34,11 @@
 
 /* definitions shared by all CTRL interfaces */
 
-/* Basic command format: 
-*   cmd_class       [31:16], 
+/* Basic command format:
+*   cmd_class       [31:16],
 *   cmd_reserved    [15:15],
 *   cmd_reserved    [14:14],
-*   cmd_category    [13:8], 
+*   cmd_category    [13:8],
 *   cmd_index       [7:0]
 */
 

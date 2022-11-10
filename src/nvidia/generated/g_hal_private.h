@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_private.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, GH10X
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 //
 
 //
@@ -55,6 +55,8 @@
 #  define RMCFG_HAL_SETUP_AD102          1
 #  define RMCFG_HAL_SETUP_AD103          1
 #  define RMCFG_HAL_SETUP_AD104          1
+#  define RMCFG_HAL_SETUP_AD106          1
+#  define RMCFG_HAL_SETUP_AD107          1
 #endif // AD10X
 
 #if defined(RMCFG_HAL_SETUP_GH10X)
@@ -64,7 +66,6 @@
 #endif  // RMCFG_ENGINE_SETUP
 
 // pull in private headers for each engine
-#include "g_os_private.h"
 #include "g_rpc_private.h"
 
 
@@ -284,6 +285,36 @@ NV_STATUS registerHalModule_AD104(void)
 }
 
 #endif  // AD10X or AD104
+
+#if defined(RMCFG_HAL_SETUP_AD106)
+
+static const HAL_IFACE_SETUP halIface_AD106 = {
+
+    rpcHalIfacesSetup_AD106,
+
+};
+
+NV_STATUS registerHalModule_AD106(void)
+{
+    return registerHalModule(HAL_IMPL_AD106, &halIface_AD106);
+}
+
+#endif  // AD10X or AD106
+
+#if defined(RMCFG_HAL_SETUP_AD107)
+
+static const HAL_IFACE_SETUP halIface_AD107 = {
+
+    rpcHalIfacesSetup_AD107,
+
+};
+
+NV_STATUS registerHalModule_AD107(void)
+{
+    return registerHalModule(HAL_IMPL_AD107, &halIface_AD107);
+}
+
+#endif  // AD10X or AD107
 
 #if defined(RMCFG_HAL_SETUP_GH100)
 

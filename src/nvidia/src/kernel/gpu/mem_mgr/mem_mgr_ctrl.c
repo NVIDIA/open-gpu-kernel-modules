@@ -203,7 +203,7 @@ deviceCtrlCmdFbGetCaps_IMPL
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pDevice);
     NvU8     *pFbCaps = NvP64_VALUE(pFbCapsParams->capsTbl);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     // sanity check array size
     if (pFbCapsParams->capsTblSize != NV0080_CTRL_FB_CAPS_TBL_SIZE)
@@ -234,7 +234,7 @@ deviceCtrlCmdFbGetCapsV2_IMPL
     NvU8     *pFbCaps  = pFbCapsParams->capsTbl;
     NV_STATUS rmStatus;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     // now accumulate caps for entire device
     rmStatus = memmgrGetFbCaps(pGpu, pFbCaps);
@@ -262,7 +262,7 @@ subdeviceCtrlCmdFbGetBar1Offset_IMPL
     RsCpuMapping *pCpuMapping = NULL;
     NV_STATUS     status;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     // Get the device handle
     status = deviceGetByInstance(RES_GET_CLIENT(pSubdevice),
@@ -299,7 +299,7 @@ subdeviceCtrlCmdFbIsKind_IMPL
     NV_STATUS      status         = NV_OK;
     NvBool         rmResult;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     // perform appropriate RM operation based on the supported sdk operations
     switch (pIsKindParams->operation)
@@ -644,7 +644,7 @@ subdeviceCtrlCmdFbGetFBRegionInfo_IMPL
     ct_assert(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MEM_TYPES >= NVOS32_NUM_MEM_TYPES);
     ct_assert(NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_MAX_ENTRIES >= MAX_FB_REGIONS);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     memmgrCalcReservedFbSpace(pGpu, pMemoryManager);
 
@@ -724,6 +724,21 @@ subdeviceCtrlCmdFbGetFBRegionInfo_IMPL
     }
 
     return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdInternalMemmgrGetVgpuHostRmReservedFb_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_MEMMGR_GET_VGPU_CONFIG_HOST_RESERVED_FB_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+    pParams->hostReservedFb = memmgrGetVgpuHostRmReservedFb_HAL(pGpu, pMemoryManager, pParams->vgpuTypeId);
+
+    return NV_OK;
 }
 
 /*!

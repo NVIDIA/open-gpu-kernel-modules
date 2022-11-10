@@ -295,8 +295,18 @@ static NV_STATUS nv_alloc_coherent_pages(
     unsigned int gfp_mask;
     unsigned long virt_addr = 0;
     dma_addr_t bus_addr;
-    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
-    struct device *dev = nvl->dev;
+    nv_linux_state_t *nvl;
+    struct device *dev;
+
+    if (!nv)
+    {
+        nv_printf(NV_DBG_MEMINFO,
+            "NVRM: VM: %s: coherent page alloc on nvidiactl not supported\n", __FUNCTION__);
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    dev = nvl->dev;
 
     gfp_mask = nv_compute_gfp_mask(nv, at);
 
@@ -691,29 +701,3 @@ void nv_vm_unmap_pages(
     nv_vunmap(virt_addr, count);
 }
 
-void nv_address_space_init_once(struct address_space *mapping)
-{
-#if defined(NV_ADDRESS_SPACE_INIT_ONCE_PRESENT)
-    address_space_init_once(mapping);
-#else
-    memset(mapping, 0, sizeof(*mapping));
-    INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
-
-#if defined(NV_ADDRESS_SPACE_HAS_RWLOCK_TREE_LOCK)
-    //
-    // The .tree_lock member variable was changed from type rwlock_t, to
-    // spinlock_t, on 25 July 2008, by mainline commit
-    // 19fd6231279be3c3bdd02ed99f9b0eb195978064.
-    //
-    rwlock_init(&mapping->tree_lock);
-#else
-    spin_lock_init(&mapping->tree_lock);
-#endif
-
-    spin_lock_init(&mapping->i_mmap_lock);
-    INIT_LIST_HEAD(&mapping->private_list);
-    spin_lock_init(&mapping->private_lock);
-    INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
-    INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
-#endif /* !NV_ADDRESS_SPACE_INIT_ONCE_PRESENT */
-}

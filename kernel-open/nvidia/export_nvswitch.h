@@ -642,6 +642,12 @@ nvswitch_os_get_platform_time
     void
 );
 
+NvU64
+nvswitch_os_get_platform_time_epoch
+(
+    void
+);
+
 #if (defined(_WIN32) || defined(_WIN64))
 #define NVSWITCH_PRINT_ATTRIB(str, arg1)
 #else

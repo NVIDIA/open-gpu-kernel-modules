@@ -35,11 +35,12 @@
 #include "ctrl/ctrl2080/ctrl2080bios.h"
 #include "ctrl/ctrl2080/ctrl2080fb.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
-#include "ctrl/ctrla083.h"
 
 #include "gpu/gpu.h" // COMPUTE_BRANDING_TYPE
+#include "gpu/gpu_acpi_data.h" // ACPI_METHOD_DATA
 #include "vgpu/rpc_headers.h" // MAX_GPC_COUNT
 #include "platform/chipset/chipset.h" // BUSINFO
+#include "gpu/nvbitmask.h" // NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX
 
 typedef struct GspSMInfo_t
 {
@@ -69,7 +70,7 @@ typedef struct GspStaticConfigInfo_t
     NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS sriovCaps;
     NvU32 sriovMaxGfid;
 
-    NvU64 engineCaps;
+    NvU32 engineCaps[NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX];
 
     GspSMInfo SM_info;
 
@@ -96,6 +97,7 @@ typedef struct GspStaticConfigInfo_t
     NvBool bGeforceSmb;
     NvBool bIsTitan;
     NvBool bIsTesla;
+    NvBool bIsMobile;
 
     NvU64 bar1PdeBase;
     NvU64 bar2PdeBase;
@@ -110,8 +112,8 @@ typedef struct GspStaticConfigInfo_t
 
     NvBool bClRootportNeedsNosnoopWAR;
 
-    NVA083_CTRL_VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS displaylessMaxHeads;
-    NVA083_CTRL_VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS displaylessMaxResolution;
+    VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS displaylessMaxHeads;
+    VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS displaylessMaxResolution;
     NvU64 displaylessMaxPixels;
 
     // Client handle for internal RMAPI control.
@@ -142,7 +144,15 @@ typedef struct GspSystemInfo
     NvU8 oorArch;
     NvU64 clPdbProperties;
     NvU32 Chipset;
+    NvBool bGpuBehindBridge;
+    NvBool bUpstreamL0sUnsupported;
+    NvBool bUpstreamL1Unsupported;
+    NvBool bUpstreamL1PorSupported;
+    NvBool bUpstreamL1PorMobileOnly;
+    NvU8   upstreamAddressValid;
     BUSINFO FHBBusInfo;
+    BUSINFO chipsetIDInfo;
+    ACPI_METHOD_DATA acpiMethodData;
 } GspSystemInfo;
 
 

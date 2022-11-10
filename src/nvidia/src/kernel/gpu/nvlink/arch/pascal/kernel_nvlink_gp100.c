@@ -203,28 +203,17 @@ knvlinkGetP2POptimalCEs_GP100
     NvU32        *p2pOptimalWriteCEs
 )
 {
-    KernelCE *kce             = NULL;
-    NvU32     maxCes          = 0;
+    KernelCE *pKCe            = NULL;
     NvU32     sysmemReadCE    = 0;
     NvU32     sysmemWriteCE   = 0;
     NvU32     nvlinkP2PCeMask = 0;
-    NvU32     i;
 
-    maxCes = gpuGetNumCEs(pGpu);
-
-    for (i = 0; i < maxCes; i++)
-    {
-        kce = GPU_GET_KCE(pGpu, i);
-        if (kce)
-        {
-            kceGetCeFromNvlinkConfig(pGpu, kce,
-                                     gpuMask,
-                                     &sysmemReadCE,
-                                     &sysmemWriteCE,
-                                     &nvlinkP2PCeMask);
-            break;
-        }
-    }
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kceFindFirstInstance(pGpu, &pKCe));
+    kceGetCeFromNvlinkConfig(pGpu, pKCe,
+                             gpuMask,
+                             &sysmemReadCE,
+                             &sysmemWriteCE,
+                             &nvlinkP2PCeMask);
 
     if (sysmemOptimalReadCEs != NULL)
     {

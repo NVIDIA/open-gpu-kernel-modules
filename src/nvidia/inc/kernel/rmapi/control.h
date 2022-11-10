@@ -34,6 +34,18 @@
 struct NVOC_EXPORTED_METHOD_DEF;
 typedef RS_RES_CONTROL_PARAMS_INTERNAL RmCtrlParams;
 
+// RMCTRL_API_COPPY_FLAGS is used to specify control api copy behavior.
+#define RMCTRL_API_COPY_FLAGS_NONE                              0x00000000
+
+// skip memory copy in api copy in
+#define RMCTRL_API_COPY_FLAGS_SKIP_COPYIN                       NVBIT(0)
+
+// set control cache on api copy out
+#define RMCTRL_API_COPY_FLAGS_SET_CONTROL_CACHE                 NVBIT(1)
+
+// skip copy out even for controls with RMCTRL_FLAGS_COPYOUT_ON_ERROR
+#define RMCTRL_API_COPY_FLAGS_FORCE_SKIP_COPYOUT_ON_ERROR       NVBIT(2)
+
 //
 // RmCtrlExecuteCookie
 //
@@ -48,6 +60,9 @@ struct RS_CONTROL_COOKIE
 
     // Rmctrl Flags
     NvU32        ctrlFlags;
+
+    // API Copy Flags
+    NvU32        apiCopyFlags;
 
     // Required Access Rights for this command
     const RS_ACCESS_MASK rightsRequired;
@@ -248,6 +263,33 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 // ??
 #define RMCTRL_FLAGS_ALLOW_WITHOUT_SYSMEM_ACCESS              0x000010000
 
+//
+// This flag specifies that the control can be run by an admin privileged
+// client running in a full SRIOV, vGPU-GSP-ENABLED hypervisor environment.
+// Overrides regular privilege level flags.
+//
+#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_VGPU_GSP                  0x000020000
+
+//
+// This flag specifies that the control can be run by an admin privileged
+// client running in a full SRIOV, vGPU-GSP-DISABLED hypervisor environment.
+// Overrides regular privilege level flags.
+//
+#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_SRIOV                     0x000040000
+
+//
+// This flag specifies that the control can be run by an admin privileged
+// client running in a non-SRIOV or SRIOV-Heavy hypervisor environment.
+// Overrides regular privilege level flags.
+//
+#define RMCTRL_FLAGS_CPU_PLUGIN_FOR_LEGACY                    0x000080000
+
+//
+// This flag specifies that the control can be run by an unprivileged
+// client running in GSP-RM when SRIOV and vGPU-GSP are ENABLED.
+// Overrides regular privilege level flags.
+//
+#define RMCTRL_FLAGS_GSP_PLUGIN_FOR_VGPU_GSP                  0x000100000
 
 //
 //  'ACCESS_RIGHTS' Attribute

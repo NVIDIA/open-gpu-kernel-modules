@@ -34,6 +34,7 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/subdevice/subdevice.h"
 #include "vgpu/vgpu_events.h"
+#include "nvdevid.h"
 
 #include "published/ampere/ga100/dev_mmu.h"
 #include "published/ampere/ga100/dev_fb.h"

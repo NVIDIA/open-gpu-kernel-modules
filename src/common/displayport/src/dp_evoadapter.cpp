@@ -93,9 +93,7 @@ const struct
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_MST,          &dpRegkeyDatabase.bOptLinkKeptAliveMst,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,          &dpRegkeyDatabase.bOptLinkKeptAliveSst,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
-    {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_NO_REPLY_TIMER_FOR_BUSY_WAITING,  &dpRegkeyDatabase.bNoReplyTimerForBusyWaiting,     DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DPCD_PROBING_FOR_BUSY_WAITING,    &dpRegkeyDatabase.bDpcdProbingForBusyWaiting,      DP_REG_VAL_BOOL}
+    {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -279,8 +277,9 @@ void EvoMainLink::queryGPUCapability()
         // MST feature on particular sku, whenever requested through INF.
         //
         _hasMultistream         = (params.bIsMultistreamSupported == NV_TRUE) && !_isMstDisabledByRegkey;
-        _isDP1_2Supported       = (params.bIsDp12Supported == NV_TRUE) ? true : false;
-        _isDP1_4Supported       = (params.bIsDp14Supported == NV_TRUE) ? true : false;
+
+        _gpuSupportedDpVersions = params.dpVersionsSupported;
+
         _isStreamCloningEnabled = (params.bIsSCEnabled == NV_TRUE) ? true : false;
         _hasIncreasedWatermarkLimits     = (params.bHasIncreasedWatermarkLimits == NV_TRUE) ? true : false;
 

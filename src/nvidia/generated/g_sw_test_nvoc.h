@@ -82,6 +82,7 @@ struct SoftwareMethodTest {
     NV_STATUS (*__swtestUnregisterEvent__)(struct SoftwareMethodTest *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__swtestCanCopy__)(struct SoftwareMethodTest *);
     void (*__swtestPreDestruct__)(struct SoftwareMethodTest *);
+    NV_STATUS (*__swtestIsDuplicate__)(struct SoftwareMethodTest *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__swtestGetNotificationListPtr__)(struct SoftwareMethodTest *);
     struct NotifShare *(*__swtestGetNotificationShare__)(struct SoftwareMethodTest *);
     NV_STATUS (*__swtestMap__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -141,6 +142,7 @@ NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest**, Dynamic*, Nv
 #define swtestUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) swtestUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define swtestCanCopy(pResource) swtestCanCopy_DISPATCH(pResource)
 #define swtestPreDestruct(pResource) swtestPreDestruct_DISPATCH(pResource)
+#define swtestIsDuplicate(pResource, hMemory, pDuplicate) swtestIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define swtestGetNotificationListPtr(pNotifier) swtestGetNotificationListPtr_DISPATCH(pNotifier)
 #define swtestGetNotificationShare(pNotifier) swtestGetNotificationShare_DISPATCH(pNotifier)
 #define swtestMap(pGpuResource, pCallContext, pParams, pCpuMapping) swtestMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -247,6 +249,10 @@ static inline void swtestPreDestruct_DISPATCH(struct SoftwareMethodTest *pResour
     pResource->__swtestPreDestruct__(pResource);
 }
 
+static inline NV_STATUS swtestIsDuplicate_DISPATCH(struct SoftwareMethodTest *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__swtestIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *swtestGetNotificationListPtr_DISPATCH(struct SoftwareMethodTest *pNotifier) {
     return pNotifier->__swtestGetNotificationListPtr__(pNotifier);
 }
@@ -264,8 +270,10 @@ static inline NV_STATUS swtestGetOrAllocNotifShare_DISPATCH(struct SoftwareMetho
 }
 
 NV_STATUS swtestConstruct_IMPL(struct SoftwareMethodTest *arg_pSwTest, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_swtestConstruct(arg_pSwTest, arg_pCallContext, arg_pParams) swtestConstruct_IMPL(arg_pSwTest, arg_pCallContext, arg_pParams)
 void swtestDestruct_IMPL(struct SoftwareMethodTest *pSwTest);
+
 #define __nvoc_swtestDestruct(pSwTest) swtestDestruct_IMPL(pSwTest)
 #undef PRIVATE_FIELD
 

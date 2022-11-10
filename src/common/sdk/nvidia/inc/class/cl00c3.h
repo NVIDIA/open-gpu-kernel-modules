@@ -29,7 +29,7 @@
 // Source file: class/cl00c3.finn
 //
 
-#define NV01_MEMORY_SYNCPOINT 0x00C3
+#define NV01_MEMORY_SYNCPOINT (0xc3U) /* finn: Evaluated from "NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS_MESSAGE_ID" */
 
 /*
  * NV_MEMORY_SYNCPOINT_ALLOCATION_PARAMS - Allocation params to create syncpoint

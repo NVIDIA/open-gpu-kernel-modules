@@ -22,30 +22,70 @@
  */
 
 #include "kernel/gpu/deferred_api.h"
-#include "mem_mgr/vaspace.h"
-#include "class/cl5080.h"
-#include "ctrl/ctrl2080.h"
-#include "vgpu/rpc.h"
-#include "rmapi/control.h"
-#include "core/locks.h"
-#include "virtualization/hypervisor/hypervisor.h"
-#include "gpu/device/device.h"
-#include "gpu/subdevice/subdevice.h"
-#include "rmapi/rs_utils.h"
-#include "resserv/rs_server.h"
 
-// Support Routines
-static NV_STATUS Class5080AddDeferredApi(
-    PDEFERRED_API_OBJECT pDeferredApiObject,
-    NvHandle hClient,
-    NvHandle hDeferredApi,
+#include "kernel/core/locks.h"
+#include "kernel/gpu/device/device.h"
+#include "kernel/gpu/subdevice/subdevice.h"
+#include "kernel/mem_mgr/vaspace.h"
+#include "kernel/rmapi/control.h"
+#include "kernel/rmapi/rs_utils.h"
+#include "kernel/virtualization/hypervisor/hypervisor.h"
+#include "kernel/gpu/fifo/kernel_channel.h"
+
+#include "class/cl5080.h"
+
+#include "ctrl/ctrl2080.h"
+
+#include "libraries/resserv/rs_server.h"
+#include "vgpu/rpc.h"
+
+
+static NV_STATUS _Class5080DelDeferredApi(DeferredApiObject *pDeferredApiObject,
+                                          NvHandle           hDeferredApi);
+
+static NV_STATUS _class5080DeferredApiV2(OBJGPU            *pGpu,
+                                         ChannelDescendant *Object,
+                                         METHOD            *pMethod,
+                                         NvU32              Offset,
+                                         NvU32              Data);
+
+static NV_STATUS
+_Class5080UpdateTLBFlushState(DeferredApiObject *pDeferredApiObject);
+
+static NV_STATUS
+_Class5080GetDeferredApiInfo(DeferredApiObject  *pDeferredApiObject,
+                             NvHandle            hDeferredApi,
+                             DEFERRED_API_INFO **ppCliDeferredApi);
+
+static NV_STATUS
+_Class5080AddDeferredApi(DeferredApiObject               *pDeferredApiObject,
+                         NvHandle                         hClient,
+                         NvHandle                         hDeferredApi,
+                         NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi,
+                         NvU32                            size,
+                         NvBool                           bUserModeArgs);
+
+static NV_STATUS
+_Class5080AddDeferredApiV2(DeferredApiObject *pDeferredApiObject,
+                           NvHandle           hClient,
+                           NvHandle           hDeferredApi,
+                           NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi,
+                           NvU32                               size);
+
+
+static NV_STATUS
+_Class5080AddDeferredApi
+(
+    DeferredApiObject               *pDeferredApiObject,
+    NvHandle                         hClient,
+    NvHandle                         hDeferredApi,
     NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi,
-    NvU32 size,
-    NvBool bUserModeArgs
+    NvU32                            size,
+    NvBool                           bUserModeArgs
 )
 {
     NV_STATUS          rmStatus = NV_OK;
-    PDEFERRED_API_INFO pCliDeferredApi;
+    DEFERRED_API_INFO *pCliDeferredApi;
     CALL_CONTEXT      *pCallContext = resservGetTlsCallContext();
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
@@ -86,19 +126,21 @@ static NV_STATUS Class5080AddDeferredApi(
         return NV_ERR_NO_MEMORY;
 
     return rmStatus;
+}
 
-} // end of Class5080AddDeferredApi()
 
-static NV_STATUS Class5080AddDeferredApiV2(
-    PDEFERRED_API_OBJECT pDeferredApiObject,
-    NvHandle hClient,
-    NvHandle hDeferredApi,
+static NV_STATUS
+_Class5080AddDeferredApiV2
+(
+    DeferredApiObject                  *pDeferredApiObject,
+    NvHandle                            hClient,
+    NvHandle                            hDeferredApi,
     NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi,
-    NvU32 size
+    NvU32                               size
 )
 {
     NV_STATUS          rmStatus = NV_OK;
-    PDEFERRED_API_INFO pCliDeferredApi;
+    DEFERRED_API_INFO *pCliDeferredApi;
     CALL_CONTEXT      *pCallContext = resservGetTlsCallContext();
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
@@ -112,7 +154,7 @@ static NV_STATUS Class5080AddDeferredApiV2(
         return NV_ERR_INVALID_OBJECT_HANDLE;
     }
 
-    rmStatus = Class5080GetDeferredApiInfo(pDeferredApiObject, hDeferredApi, &pCliDeferredApi);
+    rmStatus = _Class5080GetDeferredApiInfo(pDeferredApiObject, hDeferredApi, &pCliDeferredApi);
 
     // Object already exists
     if (NV_OK == rmStatus)
@@ -148,16 +190,18 @@ static NV_STATUS Class5080AddDeferredApiV2(
         return NV_ERR_NO_MEMORY;
 
     return rmStatus;
+}
 
-} // end of Class5080AddDeferredApiV2()
 
-NV_STATUS Class5080GetDeferredApiInfo(
-    PDEFERRED_API_OBJECT pDeferredApiObject,
-    NvHandle hDeferredApi,
-    PDEFERRED_API_INFO * ppCliDeferredApi
+static NV_STATUS
+_Class5080GetDeferredApiInfo
+(
+    DeferredApiObject  *pDeferredApiObject,
+    NvHandle            hDeferredApi,
+    DEFERRED_API_INFO **ppCliDeferredApi
 )
 {
-    PNODE pNode;
+    NODE *pNode;
 
     if (btreeSearch(hDeferredApi, &pNode, pDeferredApiObject->DeferredApiList) == NV_OK)
     {
@@ -167,20 +211,22 @@ NV_STATUS Class5080GetDeferredApiInfo(
 
     return NV_ERR_INVALID_DATA;
 
-} // end of Class5080GetDeferredApiInfo()
+}
 
-static NV_STATUS Class5080DelDeferredApi(
-    PDEFERRED_API_OBJECT pDeferredApiObject,
-    NvHandle hDeferredApi
+
+static NV_STATUS _Class5080DelDeferredApi
+(
+    DeferredApiObject *pDeferredApiObject,
+    NvHandle           hDeferredApi
 )
 {
-    PDEFERRED_API_INFO  pDeferredApi = NULL;
-    NV_STATUS           status;
-    PNODE               pNode;
+    DEFERRED_API_INFO *pDeferredApi = NULL;
+    NV_STATUS          status;
+    NODE              *pNode;
 
     // remove the event from the client database
-    if (NV_OK == Class5080GetDeferredApiInfo(pDeferredApiObject,
-                                             hDeferredApi, &pDeferredApi))
+    if (NV_OK == _Class5080GetDeferredApiInfo(pDeferredApiObject,
+                                              hDeferredApi, &pDeferredApi))
     {
         status = btreeSearch(hDeferredApi, &pNode, pDeferredApiObject->DeferredApiList);
         if (status != NV_OK)
@@ -215,15 +261,16 @@ static NV_STATUS Class5080DelDeferredApi(
     }
 
     return NV_ERR_GENERIC;
+}
 
-} // end of Class5080DelDeferredApi()
 
-static NV_STATUS _Class5080UpdateTLBFlushState(
-    PDEFERRED_API_OBJECT pDeferredApiObject
+static NV_STATUS _Class5080UpdateTLBFlushState
+(
+    DeferredApiObject *pDeferredApiObject
 )
 {
-    PNODE pNode;
-    PDEFERRED_API_INFO pCliDeferredApi;
+    NODE                            *pNode;
+    DEFERRED_API_INFO               *pCliDeferredApi;
     NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi;
 
     btreeEnumStart(0, &pNode, pDeferredApiObject->DeferredApiList);
@@ -250,7 +297,7 @@ static NV_STATUS _Class5080UpdateTLBFlushState(
                 if (DRF_VAL(5080_CTRL, _CMD_DEFERRED_API, _FLAGS_DELETE, pDeferredApi->flags) ==
                     NV5080_CTRL_CMD_DEFERRED_API_FLAGS_DELETE_IMPLICIT)
                 {
-                    Class5080DelDeferredApi(pDeferredApiObject, pCliDeferredApi->Handle);
+                    _Class5080DelDeferredApi(pDeferredApiObject, pCliDeferredApi->Handle);
                 }
                 continue;
             }
@@ -259,8 +306,8 @@ static NV_STATUS _Class5080UpdateTLBFlushState(
     }
 
     return NV_OK;
+}
 
-} // end of Class5080UpdateTLBFlushState()
 
 //---------------------------------------------------------------------------
 //
@@ -296,8 +343,8 @@ defapiDestruct_IMPL
 )
 {
     ChannelDescendant *pChannelDescendant = staticCast(pDeferredApi, ChannelDescendant);
-    PNODE              pNode;
-    PDEFERRED_API_INFO pCliDeferredApi;
+    NODE              *pNode;
+    DEFERRED_API_INFO *pCliDeferredApi;
 
     chandesIsolateOnDestruct(pChannelDescendant);
 
@@ -308,7 +355,7 @@ defapiDestruct_IMPL
         pCliDeferredApi = pNode->Data;
 
         btreeEnumNext(&pNode, pDeferredApi->DeferredApiList);
-        Class5080DelDeferredApi(pDeferredApi, pCliDeferredApi->Handle);
+        _Class5080DelDeferredApi(pDeferredApi, pCliDeferredApi->Handle);
     }
 }
 
@@ -342,12 +389,12 @@ defapiCtrlCmdDeferredApi_IMPL
         return status;
     }
 
-    return Class5080AddDeferredApi(pDeferredApiObj,
-                                   RES_GET_CLIENT_HANDLE(pDeferredApiObj),
-                                   pDeferredApi->hApiHandle,
-                                   pDeferredApi,
-                                   sizeof(NV5080_CTRL_DEFERRED_API_PARAMS),
-                                   (pCallContext->secInfo.paramLocation != PARAM_LOCATION_KERNEL));
+    return _Class5080AddDeferredApi(pDeferredApiObj,
+                                    RES_GET_CLIENT_HANDLE(pDeferredApiObj),
+                                    pDeferredApi->hApiHandle,
+                                    pDeferredApi,
+                                    sizeof(NV5080_CTRL_DEFERRED_API_PARAMS),
+                                    (pCallContext->secInfo.paramLocation != PARAM_LOCATION_KERNEL));
 }
 
 NV_STATUS
@@ -379,11 +426,11 @@ defapiCtrlCmdDeferredApiV2_IMPL
         return status;
     }
 
-    return Class5080AddDeferredApiV2(pDeferredApiObj,
-                                     RES_GET_CLIENT_HANDLE(pDeferredApiObj),
-                                     pDeferredApi->hApiHandle,
-                                     pDeferredApi,
-                                     sizeof(NV5080_CTRL_DEFERRED_API_V2_PARAMS));
+    return _Class5080AddDeferredApiV2(pDeferredApiObj,
+                                      RES_GET_CLIENT_HANDLE(pDeferredApiObj),
+                                      pDeferredApi->hApiHandle,
+                                      pDeferredApi,
+                                      sizeof(NV5080_CTRL_DEFERRED_API_V2_PARAMS));
 }
 
 NV_STATUS
@@ -413,8 +460,8 @@ defapiCtrlCmdRemoveApi_IMPL
         return status;
     }
 
-    return Class5080DelDeferredApi(pDeferredApiObj,
-                                   pRemoveApi->hApiHandle);
+    return _Class5080DelDeferredApi(pDeferredApiObj,
+                                    pRemoveApi->hApiHandle);
 }
 
 static NV_STATUS
@@ -422,21 +469,21 @@ _class5080DeferredApiV2
 (
     OBJGPU *pGpu,
     ChannelDescendant *Object,
-    PMETHOD Method,
+    METHOD *pMethod,
     NvU32 Offset,
     NvU32 Data
 )
 {
-    PDEFERRED_API_OBJECT pDeferredApiObject = dynamicCast(Object, DeferredApiObject);
-    PDEFERRED_API_INFO   pCliDeferredApi    = NULL;
+    DeferredApiObject   *pDeferredApiObject = dynamicCast(Object, DeferredApiObject);
+    DEFERRED_API_INFO   *pCliDeferredApi    = NULL;
     NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi;
     NV_STATUS            rmStatus           = NV_OK;
     NvU32                paramSize          = 0;
     NvHandle             hDevice;
     NvBool               bIsCtrlCall        = NV_TRUE;
 
-    rmStatus = Class5080GetDeferredApiInfo(pDeferredApiObject,
-                                           Data, &pCliDeferredApi);
+    rmStatus = _Class5080GetDeferredApiInfo(pDeferredApiObject,
+                                            Data, &pCliDeferredApi);
     if (rmStatus == NV_OK)
     {
         pDeferredApi = pCliDeferredApi->pDeferredApiInfo;
@@ -540,6 +587,8 @@ _class5080DeferredApiV2
             const struct NVOC_EXPORTED_METHOD_DEF *pEntry;
             LOCK_ACCESS_TYPE access;
             NvU32 releaseFlags = 0;
+            CALL_CONTEXT  callContext;
+            CALL_CONTEXT *pOldContext = NULL;
 
             portMemSet(&rmCtrlParams, 0, sizeof(RmCtrlParams));
             rmCtrlParams.hClient    = pCliDeferredApi->Client;
@@ -590,22 +639,28 @@ _class5080DeferredApiV2
             // Initialize the execution cookie
             serverControl_InitCookie(pEntry, &rmCtrlExecuteCookie);
 
+            // Set the call context as we use that to validate call permissions
+            // in some cases
+            portMemSet(&callContext, 0, sizeof(callContext));
+            callContext.pResourceRef   = RES_GET_REF(pSubdevice);
+            callContext.pClient        = pRsClient;
+            callContext.secInfo        = rmCtrlParams.secInfo;
+            callContext.pServer        = &g_resServ;
+            callContext.pControlParams = &rmCtrlParams;
+            callContext.pLockInfo      = rmCtrlParams.pLockInfo;
+
+            if (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+            {
+                NvU32 gfid = kchannelGetGfid(Object->pKernelChannel);
+                callContext.secInfo.pProcessToken = (void *)(NvU64) gfid;
+            }
+
+            resservSwapTlsCallContext(&pOldContext, &callContext);
+
             rmStatus = serverControl_Prologue(&g_resServ, &rmCtrlParams, &access, &releaseFlags);
 
             if (rmStatus == NV_OK)
             {
-                CALL_CONTEXT  callContext;
-                CALL_CONTEXT *pOldContext = NULL;
-
-                portMemSet(&callContext, 0, sizeof(callContext));
-                callContext.pResourceRef   = RES_GET_REF(pSubdevice);
-                callContext.pClient        = pRsClient;
-                callContext.secInfo        = rmCtrlParams.secInfo;
-                callContext.pServer        = &g_resServ;
-                callContext.pControlParams = &rmCtrlParams;
-                callContext.pLockInfo      = rmCtrlParams.pLockInfo;
-                resservSwapTlsCallContext(&pOldContext, &callContext);
-
                 if (pEntry->paramSize == 0)
                 {
                     typedef NV_STATUS (*CONTROL_EXPORT_FNPTR_NO_PARAMS)(void*);
@@ -618,10 +673,9 @@ _class5080DeferredApiV2
                     CONTROL_EXPORT_FNPTR pFunc = ((CONTROL_EXPORT_FNPTR) pEntry->pFunc);
                     rmStatus = pFunc((void*)pSubdevice, rmCtrlParams.pParams);
                 }
-
-                resservRestoreTlsCallContext(pOldContext);
             }
 
+            resservRestoreTlsCallContext(pOldContext);
             rmStatus = serverControl_Epilogue(&g_resServ, &rmCtrlParams, access, &releaseFlags, rmStatus);
         }
 
@@ -640,7 +694,7 @@ cleanup:
             }
             else
             {
-                Class5080DelDeferredApi(pDeferredApiObject, Data);
+                _Class5080DelDeferredApi(pDeferredApiObject, Data);
             }
         }
     }
@@ -656,9 +710,9 @@ static METHOD Nv50DeferredApi[] =
 
 NV_STATUS defapiGetSwMethods_IMPL
 (
-    DeferredApiObject *pDeferredApi,
-    METHOD           **ppMethods,
-    NvU32             *pNumMethods
+    DeferredApiObject  *pDeferredApi,
+    METHOD            **ppMethods,
+    NvU32              *pNumMethods
 )
 {
     *ppMethods = Nv50DeferredApi;
@@ -672,11 +726,12 @@ NvBool defapiIsSwMethodStalling_IMPL
     NvU32              hDeferredApi
 )
 {
-    PDEFERRED_API_INFO   pCliDeferredApi = NULL;
-    NV5080_CTRL_DEFERRED_API_PARAMS * pDeferredApiParams;
+    DEFERRED_API_INFO               *pCliDeferredApi = NULL;
+    NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApiParams;
 
-    NV_STATUS rmStatus = Class5080GetDeferredApiInfo(pDeferredApi,
-                                                     hDeferredApi, &pCliDeferredApi);
+    NV_STATUS rmStatus = _Class5080GetDeferredApiInfo(pDeferredApi,
+                                                      hDeferredApi,
+                                                      &pCliDeferredApi);
     if (rmStatus == NV_OK)
     {
         pDeferredApiParams = pCliDeferredApi->pDeferredApiInfo;

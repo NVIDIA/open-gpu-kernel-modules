@@ -98,6 +98,8 @@ static void __nvoc_init_funcTable_RsResource_1(RsResource *pThis) {
 
     pThis->__resCanCopy__ = &resCanCopy_IMPL;
 
+    pThis->__resIsDuplicate__ = &resIsDuplicate_IMPL;
+
     pThis->__resPreDestruct__ = &resPreDestruct_IMPL;
 
     pThis->__resControlLookup__ = &resControlLookup_IMPL;

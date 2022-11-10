@@ -71,6 +71,8 @@ struct MemoryFabric {
     NV_STATUS (*__memoryfabricControl__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memoryfabricCtrlGetInfo__)(struct MemoryFabric *, NV00F8_CTRL_GET_INFO_PARAMS *);
     NV_STATUS (*__memoryfabricCtrlCmdDescribe__)(struct MemoryFabric *, NV00F8_CTRL_DESCRIBE_PARAMS *);
+    NV_STATUS (*__memoryfabricCtrlAttachMem__)(struct MemoryFabric *, NV00F8_CTRL_ATTACH_MEM_PARAMS *);
+    NV_STATUS (*__memoryfabricCtrlDetachMem__)(struct MemoryFabric *, NV00F8_CTRL_DETACH_MEM_PARAMS *);
     NV_STATUS (*__memoryfabricCheckMemInterUnmap__)(struct MemoryFabric *, NvBool);
     NV_STATUS (*__memoryfabricUnmap__)(struct MemoryFabric *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__memoryfabricGetMemInterMapParams__)(struct MemoryFabric *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -82,9 +84,11 @@ struct MemoryFabric {
     NvU32 (*__memoryfabricGetRefCount__)(struct MemoryFabric *);
     NV_STATUS (*__memoryfabricMapTo__)(struct MemoryFabric *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__memoryfabricControl_Prologue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__memoryfabricIsReady__)(struct MemoryFabric *);
+    NvBool (*__memoryfabricIsGpuMapAllowed__)(struct MemoryFabric *, struct OBJGPU *);
+    NV_STATUS (*__memoryfabricIsReady__)(struct MemoryFabric *, NvBool);
     NV_STATUS (*__memoryfabricCheckCopyPermissions__)(struct MemoryFabric *, struct OBJGPU *, NvHandle);
     void (*__memoryfabricPreDestruct__)(struct MemoryFabric *);
+    NV_STATUS (*__memoryfabricIsDuplicate__)(struct MemoryFabric *, NvHandle, NvBool *);
     NV_STATUS (*__memoryfabricUnmapFrom__)(struct MemoryFabric *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__memoryfabricControl_Epilogue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memoryfabricControlLookup__)(struct MemoryFabric *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -125,6 +129,8 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricControl(pMemoryFabric, pCallContext, pParams) memoryfabricControl_DISPATCH(pMemoryFabric, pCallContext, pParams)
 #define memoryfabricCtrlGetInfo(pMemoryFabric, pParams) memoryfabricCtrlGetInfo_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCtrlCmdDescribe(pMemoryFabric, pParams) memoryfabricCtrlCmdDescribe_DISPATCH(pMemoryFabric, pParams)
+#define memoryfabricCtrlAttachMem(pMemoryFabric, pParams) memoryfabricCtrlAttachMem_DISPATCH(pMemoryFabric, pParams)
+#define memoryfabricCtrlDetachMem(pMemoryFabric, pParams) memoryfabricCtrlDetachMem_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) memoryfabricCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define memoryfabricUnmap(pMemory, pCallContext, pCpuMapping) memoryfabricUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define memoryfabricGetMemInterMapParams(pMemory, pParams) memoryfabricGetMemInterMapParams_DISPATCH(pMemory, pParams)
@@ -136,9 +142,11 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricGetRefCount(pResource) memoryfabricGetRefCount_DISPATCH(pResource)
 #define memoryfabricMapTo(pResource, pParams) memoryfabricMapTo_DISPATCH(pResource, pParams)
 #define memoryfabricControl_Prologue(pResource, pCallContext, pParams) memoryfabricControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memoryfabricIsReady(pMemory) memoryfabricIsReady_DISPATCH(pMemory)
+#define memoryfabricIsGpuMapAllowed(pMemory, pGpu) memoryfabricIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define memoryfabricIsReady(pMemory, bCopyConstructorContext) memoryfabricIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define memoryfabricCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) memoryfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define memoryfabricPreDestruct(pResource) memoryfabricPreDestruct_DISPATCH(pResource)
+#define memoryfabricIsDuplicate(pMemory, hMemory, pDuplicate) memoryfabricIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define memoryfabricUnmapFrom(pResource, pParams) memoryfabricUnmapFrom_DISPATCH(pResource, pParams)
 #define memoryfabricControl_Epilogue(pResource, pCallContext, pParams) memoryfabricControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define memoryfabricControlLookup(pResource, pParams, ppEntry) memoryfabricControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -172,6 +180,18 @@ NV_STATUS memoryfabricCtrlCmdDescribe_IMPL(struct MemoryFabric *pMemoryFabric, N
 
 static inline NV_STATUS memoryfabricCtrlCmdDescribe_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_DESCRIBE_PARAMS *pParams) {
     return pMemoryFabric->__memoryfabricCtrlCmdDescribe__(pMemoryFabric, pParams);
+}
+
+NV_STATUS memoryfabricCtrlAttachMem_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_ATTACH_MEM_PARAMS *pParams);
+
+static inline NV_STATUS memoryfabricCtrlAttachMem_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_ATTACH_MEM_PARAMS *pParams) {
+    return pMemoryFabric->__memoryfabricCtrlAttachMem__(pMemoryFabric, pParams);
+}
+
+NV_STATUS memoryfabricCtrlDetachMem_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_DETACH_MEM_PARAMS *pParams);
+
+static inline NV_STATUS memoryfabricCtrlDetachMem_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_DETACH_MEM_PARAMS *pParams) {
+    return pMemoryFabric->__memoryfabricCtrlDetachMem__(pMemoryFabric, pParams);
 }
 
 static inline NV_STATUS memoryfabricCheckMemInterUnmap_DISPATCH(struct MemoryFabric *pMemory, NvBool bSubdeviceHandleProvided) {
@@ -218,8 +238,12 @@ static inline NV_STATUS memoryfabricControl_Prologue_DISPATCH(struct MemoryFabri
     return pResource->__memoryfabricControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS memoryfabricIsReady_DISPATCH(struct MemoryFabric *pMemory) {
-    return pMemory->__memoryfabricIsReady__(pMemory);
+static inline NvBool memoryfabricIsGpuMapAllowed_DISPATCH(struct MemoryFabric *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__memoryfabricIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS memoryfabricIsReady_DISPATCH(struct MemoryFabric *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__memoryfabricIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS memoryfabricCheckCopyPermissions_DISPATCH(struct MemoryFabric *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -228,6 +252,10 @@ static inline NV_STATUS memoryfabricCheckCopyPermissions_DISPATCH(struct MemoryF
 
 static inline void memoryfabricPreDestruct_DISPATCH(struct MemoryFabric *pResource) {
     pResource->__memoryfabricPreDestruct__(pResource);
+}
+
+static inline NV_STATUS memoryfabricIsDuplicate_DISPATCH(struct MemoryFabric *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__memoryfabricIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS memoryfabricUnmapFrom_DISPATCH(struct MemoryFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -251,31 +279,28 @@ static inline NvBool memoryfabricAccessCallback_DISPATCH(struct MemoryFabric *pR
 }
 
 NV_STATUS memoryfabricConstruct_IMPL(struct MemoryFabric *arg_pMemoryFabric, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_memoryfabricConstruct(arg_pMemoryFabric, arg_pCallContext, arg_pParams) memoryfabricConstruct_IMPL(arg_pMemoryFabric, arg_pCallContext, arg_pParams)
 void memoryfabricDestruct_IMPL(struct MemoryFabric *pMemoryFabric);
-#define __nvoc_memoryfabricDestruct(pMemoryFabric) memoryfabricDestruct_IMPL(pMemoryFabric)
-NvBool memoryfabricCanExport_IMPL(struct MemoryFabric *pMemoryFabric);
-#ifdef __nvoc_mem_fabric_h_disabled
-static inline NvBool memoryfabricCanExport(struct MemoryFabric *pMemoryFabric) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryFabric was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_mem_fabric_h_disabled
-#define memoryfabricCanExport(pMemoryFabric) memoryfabricCanExport_IMPL(pMemoryFabric)
-#endif //__nvoc_mem_fabric_h_disabled
 
+#define __nvoc_memoryfabricDestruct(pMemoryFabric) memoryfabricDestruct_IMPL(pMemoryFabric)
 #undef PRIVATE_FIELD
 
 
 typedef struct
 {
-    //
-    // TODO: Only sticky non-partial mappings are supported currently, so all
-    // the fabric addrs are mapped to the single vidmem memory object. However,
-    // when partial mappings are supported, we will need a per-fabric memdesc
-    // tree to track the mappings for multiple vidmem memory objects.
-    //
-    NvHandle hDupedVidmem;
+    MEMORY_DESCRIPTOR *pPhysMemDesc;
+    NvU64    physMapLength;
+    NvHandle hDupedPhysMem;
+    NODE     node;
+} FABRIC_ATTCH_MEM_INFO_NODE;
+
+typedef struct
+{
+    // Tracks memory attached using NV00F8_CTRL_CMD_ATTACH_MEM
+    PNODE pAttachMemInfoTree;
+
+    NvHandle hDupedPhysMem;
 
     NV_PHYSICAL_MEMORY_ATTRS physAttrs;
 

@@ -375,3 +375,20 @@ soeWaitForInitAck_HAL
 
     return pSoe->base.pHal->waitForInitAck(device, pSoe);
 }
+
+NvlStatus
+soeI2CAccess_HAL
+(
+    nvswitch_device *device,
+    NVSWITCH_CTRL_I2C_INDEXED_PARAMS *pParams
+)
+{
+    PSOE pSoe = (PSOE)device->pSoe;
+    if (pSoe->base.pHal->i2cAccess == NULL)
+    {
+        NVSWITCH_ASSERT(0);
+        return 0;
+    }
+
+    return pSoe->base.pHal->i2cAccess(device, pParams);
+}

@@ -110,6 +110,7 @@ NV_STATUS __nvoc_objCreate_Object(Object**, Dynamic*, NvU32);
     __nvoc_objCreate_Object((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 void objAddChild_IMPL(struct Object *pObj, struct Object *pChild);
+
 #ifdef __nvoc_object_h_disabled
 static inline void objAddChild(struct Object *pObj, struct Object *pChild) {
     NV_ASSERT_FAILED_PRECOMP("Object was disabled!");
@@ -119,6 +120,7 @@ static inline void objAddChild(struct Object *pObj, struct Object *pChild) {
 #endif //__nvoc_object_h_disabled
 
 void objRemoveChild_IMPL(struct Object *pObj, struct Object *pChild);
+
 #ifdef __nvoc_object_h_disabled
 static inline void objRemoveChild(struct Object *pObj, struct Object *pChild) {
     NV_ASSERT_FAILED_PRECOMP("Object was disabled!");
@@ -128,6 +130,7 @@ static inline void objRemoveChild(struct Object *pObj, struct Object *pChild) {
 #endif //__nvoc_object_h_disabled
 
 struct Object *objGetChild_IMPL(struct Object *pObj);
+
 #ifdef __nvoc_object_h_disabled
 static inline struct Object *objGetChild(struct Object *pObj) {
     NV_ASSERT_FAILED_PRECOMP("Object was disabled!");
@@ -138,6 +141,7 @@ static inline struct Object *objGetChild(struct Object *pObj) {
 #endif //__nvoc_object_h_disabled
 
 struct Object *objGetSibling_IMPL(struct Object *pObj);
+
 #ifdef __nvoc_object_h_disabled
 static inline struct Object *objGetSibling(struct Object *pObj) {
     NV_ASSERT_FAILED_PRECOMP("Object was disabled!");
@@ -148,6 +152,7 @@ static inline struct Object *objGetSibling(struct Object *pObj) {
 #endif //__nvoc_object_h_disabled
 
 struct Object *objGetDirectParent_IMPL(struct Object *pObj);
+
 #ifdef __nvoc_object_h_disabled
 static inline struct Object *objGetDirectParent(struct Object *pObj) {
     NV_ASSERT_FAILED_PRECOMP("Object was disabled!");

@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_binapiUnmapFrom(struct BinaryApi *pReso
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_BinaryApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_binapiIsDuplicate(struct BinaryApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_BinaryApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_binapiControl_Epilogue(struct BinaryApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_BinaryApi_RmResource.offset), pCallContext, pParams);
 }
@@ -256,6 +260,8 @@ static void __nvoc_init_funcTable_BinaryApi_1(BinaryApi *pThis) {
     pThis->__binapiPreDestruct__ = &__nvoc_thunk_RsResource_binapiPreDestruct;
 
     pThis->__binapiUnmapFrom__ = &__nvoc_thunk_RsResource_binapiUnmapFrom;
+
+    pThis->__binapiIsDuplicate__ = &__nvoc_thunk_RsResource_binapiIsDuplicate;
 
     pThis->__binapiControl_Epilogue__ = &__nvoc_thunk_RmResource_binapiControl_Epilogue;
 
@@ -494,6 +500,10 @@ static NV_STATUS __nvoc_thunk_RsResource_binapiprivUnmapFrom(struct BinaryApiPri
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_BinaryApiPrivileged_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_binapiprivIsDuplicate(struct BinaryApiPrivileged *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_BinaryApiPrivileged_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_binapiprivControl_Epilogue(struct BinaryApiPrivileged *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_BinaryApiPrivileged_RmResource.offset), pCallContext, pParams);
 }
@@ -585,6 +595,8 @@ static void __nvoc_init_funcTable_BinaryApiPrivileged_1(BinaryApiPrivileged *pTh
     pThis->__binapiprivPreDestruct__ = &__nvoc_thunk_RsResource_binapiprivPreDestruct;
 
     pThis->__binapiprivUnmapFrom__ = &__nvoc_thunk_RsResource_binapiprivUnmapFrom;
+
+    pThis->__binapiprivIsDuplicate__ = &__nvoc_thunk_RsResource_binapiprivIsDuplicate;
 
     pThis->__binapiprivControl_Epilogue__ = &__nvoc_thunk_RmResource_binapiprivControl_Epilogue;
 

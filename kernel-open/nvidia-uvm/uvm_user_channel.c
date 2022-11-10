@@ -618,7 +618,7 @@ static NV_STATUS uvm_register_channel(uvm_va_space_t *va_space,
     uvm_va_space_up_read_rm(va_space);
 
     // The mm needs to be locked in order to remove stale HMM va_blocks.
-    mm = uvm_va_space_mm_retain_lock(va_space);
+    mm = uvm_va_space_mm_or_current_retain_lock(va_space);
 
     // We have the RM objects now so we know what the VA range layout should be.
     // Re-take the VA space lock in write mode to create and insert them.
@@ -653,10 +653,8 @@ static NV_STATUS uvm_register_channel(uvm_va_space_t *va_space,
     if (status != NV_OK)
         goto error_under_write;
 
-    if (mm) {
+    if (mm)
         uvm_up_read_mmap_lock_out_of_order(mm);
-        uvm_va_space_mm_release(va_space);
-    }
 
     // The subsequent mappings will need to call into RM, which means we must
     // downgrade the VA space lock to read mode. Although we're in read mode no
@@ -681,6 +679,7 @@ static NV_STATUS uvm_register_channel(uvm_va_space_t *va_space,
         goto error_under_read;
 
     uvm_va_space_up_read_rm(va_space);
+    uvm_va_space_mm_or_current_release(va_space, mm);
     uvm_gpu_release(gpu);
     return NV_OK;
 
@@ -688,7 +687,7 @@ error_under_write:
     if (user_channel->gpu_va_space)
         uvm_user_channel_detach(user_channel, &deferred_free_list);
     uvm_va_space_up_write(va_space);
-    uvm_va_space_mm_release_unlock(va_space, mm);
+    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
     uvm_deferred_free_object_list(&deferred_free_list);
     uvm_gpu_release(gpu);
     return status;
@@ -714,10 +713,12 @@ error_under_read:
     if (user_channel->gpu_va_space) {
         uvm_user_channel_detach(user_channel, &deferred_free_list);
         uvm_va_space_up_write(va_space);
+        uvm_va_space_mm_or_current_release(va_space, mm);
         uvm_deferred_free_object_list(&deferred_free_list);
     }
     else {
         uvm_va_space_up_write(va_space);
+        uvm_va_space_mm_or_current_release(va_space, mm);
     }
 
     uvm_user_channel_release(user_channel);

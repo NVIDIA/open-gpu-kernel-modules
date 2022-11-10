@@ -254,6 +254,7 @@ typedef struct _tagNVHDMIPKT_CALLBACK
                         NvBool             expression);
 } NVHDMIPKT_CALLBACK;
 
+
 /*********************** HDMI Library interface to write hdmi ctrl/packet ***********************/
 typedef void* NvHdmiPkt_Handle;
 #define NVHDMIPKT_INVALID_HANDLE ((NvHdmiPkt_Handle)0)
@@ -299,6 +300,7 @@ NvHdmiPkt_PacketWrite(NvHdmiPkt_Handle   libHandle,
                       NVHDMIPKT_TC       transmitControl,
                       NvU32              packetLen,
                       NvU8 const *const  pPacket);
+
 
 /***************************** Interface to initialize HDMI Library *****************************/
 

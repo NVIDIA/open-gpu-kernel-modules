@@ -1517,6 +1517,47 @@ bool DeviceImpl::setPanelReplayConfig(panelReplayConfig prcfg)
     return false;
 }
 
+bool DeviceImpl::getPanelReplayStatus(PanelReplayStatus *pPrStatus)
+{
+    NvU8 state = 0;
+    unsigned size = 0;
+    unsigned nakReason = NakUndefined;
+
+    if (pPrStatus == NULL)
+    {
+        DP_ASSERT(0);
+        return false;
+    }
+
+    if(AuxBus::success == this->getDpcdData(NV_DPCD20_PANEL_REPLAY_AND_FRAME_LOCK_STATUS,
+        &state, sizeof(state), &size, &nakReason))
+    {
+        switch (DRF_VAL(_DPCD20, _PANEL_REPLAY_AND_FRAME_LOCK_STATUS, _PR_STATUS, state))
+        {
+            case NV_DPCD20_PANEL_REPLAY_AND_FRAME_LOCK_STATUS_PR_STATUS_STATE_0:
+            pPrStatus->prState = PanelReplay_Inactive;
+            break;
+
+            case NV_DPCD20_PANEL_REPLAY_AND_FRAME_LOCK_STATUS_PR_STATUS_STATE_1:
+            pPrStatus->prState = PanelReplay_CaptureAndDisplay;
+            break;
+
+            case NV_DPCD20_PANEL_REPLAY_AND_FRAME_LOCK_STATUS_PR_STATUS_STATE_2:
+            pPrStatus->prState = PanelReplay_DisplayFromRfb;
+            break;
+
+            default:
+            pPrStatus->prState = PanelReplay_Undefined;
+            break;
+        }
+        return true;
+    }
+    else
+    {    
+        return false;
+    }
+}
+
 bool DeviceImpl::getFECSupport()
 {
     NvU8 byte          = 0;
@@ -2041,6 +2082,54 @@ bool DeviceImpl::setDscEnable(bool enable)
     {
         return true;
     }
+}
+
+
+
+bool DeviceImpl::setDscEnableDPToHDMIPCON(bool bDscEnable, bool bEnablePassThroughForPCON)
+{
+    NvU8 dscEnableByte              = 0; 
+    unsigned size                   = 0;
+    unsigned nakReason              = NakUndefined;
+    AuxBus::status dscEnableStatus  = AuxBus::success;
+    Address::StringBuffer buffer;
+    DP_USED(buffer);
+
+    if (!this->isDSCPossible())
+    {
+        DP_LOG(("DP-DEV> DSC is not supported on DP to HDMI PCON - %s"));
+        return false;
+    }
+
+    if (bDscEnable)
+    {
+        if(bEnablePassThroughForPCON)
+        {
+            dscEnableByte = FLD_SET_DRF(_DPCD20, _DSC_PASS_THROUGH, _ENABLE, _YES, dscEnableByte);
+            DP_LOG(("DP-DEV> Enabling DSC Pass through on DP to HDMI PCON device - %s",
+                    this->getTopologyAddress().toString(buffer)));
+        }
+        else
+        {
+            dscEnableByte = FLD_SET_DRF(_DPCD14, _DSC_ENABLE, _SINK, _YES, dscEnableByte);
+            DP_LOG(("DP-DEV> Enabling DSC decompression on DP to HDMI PCON device - %s",
+                    this->getTopologyAddress().toString(buffer)));
+        }
+
+    }
+
+    dscEnableStatus = this->setDpcdData(NV_DPCD14_DSC_ENABLE,
+                              &dscEnableByte, sizeof dscEnableByte, &size, &nakReason);
+
+    if (dscEnableStatus != AuxBus::success)
+    {
+        DP_LOG(("DP-DEV> Setting DSC Enable on DP to HDMI PCON %s failed", 
+                this->getTopologyAddress().toString(buffer)));
+        return false;
+ 
+    }
+
+    return true;
 }
 
 unsigned DeviceImpl::getDscVersionMajor()

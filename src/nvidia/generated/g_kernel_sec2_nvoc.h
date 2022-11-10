@@ -152,10 +152,6 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 #define ksec2IsPresent(pGpu, pEngstate) ksec2IsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS ksec2ConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0);
 
-static inline NV_STATUS ksec2ConstructEngine_395e98(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 static inline NV_STATUS ksec2ConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0) {
     return pKernelSec2->__ksec2ConstructEngine__(pGpu, pKernelSec2, arg0);
 }
@@ -199,10 +195,6 @@ static inline NvU32 ksec2ReadUcodeFuseVersion_b2b553(struct OBJGPU *pGpu, struct
 }
 
 NvU32 ksec2ReadUcodeFuseVersion_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId);
-
-static inline NvU32 ksec2ReadUcodeFuseVersion_474d46(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
 
 static inline NvU32 ksec2ReadUcodeFuseVersion_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
     return pKernelSec2->__ksec2ReadUcodeFuseVersion__(pGpu, pKernelSec2, ucodeId);
@@ -305,6 +297,7 @@ static inline NvBool ksec2IsPresent_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pE
 }
 
 void ksec2Destruct_IMPL(struct KernelSec2 *pKernelSec2);
+
 #define __nvoc_ksec2Destruct(pKernelSec2) ksec2Destruct_IMPL(pKernelSec2)
 #undef PRIVATE_FIELD
 

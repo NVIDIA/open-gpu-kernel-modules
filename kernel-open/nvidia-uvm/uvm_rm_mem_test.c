@@ -60,10 +60,22 @@ static NV_STATUS map_cpu(uvm_rm_mem_t *rm_mem)
     return NV_OK;
 }
 
+static NV_STATUS check_alignment(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, NvU64 alignment)
+{
+    // Alignment requirements only apply to mappings in the UVM-owned VA space
+    if (alignment != 0) {
+        bool is_proxy_va_space = false;
+        NvU64 gpu_va = uvm_rm_mem_get_gpu_va(rm_mem, gpu, is_proxy_va_space);
+
+        TEST_CHECK_RET(IS_ALIGNED(gpu_va, alignment));
+    }
+
+    return NV_OK;
+}
+
 static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem, NvU64 alignment)
 {
     uvm_gpu_t *gpu = rm_mem->gpu_owner;
-    NvU64 gpu_va;
 
     // The memory should have been automatically mapped in the GPU owner
     TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu(rm_mem, gpu));
@@ -73,9 +85,7 @@ static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem, NvU64 alignment)
     // located in vidmem.
     TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) == uvm_gpu_uses_proxy_channel_pool(gpu));
 
-    gpu_va = uvm_rm_mem_get_gpu_va(rm_mem, gpu, uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
-    if (alignment)
-        TEST_CHECK_RET(IS_ALIGNED(gpu_va, alignment));
+    TEST_NV_CHECK_RET(check_alignment(rm_mem, gpu, alignment));
 
     // Explicitly mapping or unmapping to the GPU that owns the allocation is
     // not allowed, so the testing related to GPU owners is simpler than that of
@@ -87,7 +97,6 @@ static NV_STATUS map_other_gpus(uvm_rm_mem_t *rm_mem, uvm_va_space_t *va_space, 
 {
     uvm_gpu_t *gpu_owner = rm_mem->gpu_owner;
     uvm_gpu_t *gpu;
-    NvU64 gpu_va;
 
     for_each_va_space_gpu(gpu, va_space) {
         if (gpu == gpu_owner)
@@ -119,9 +128,7 @@ static NV_STATUS map_other_gpus(uvm_rm_mem_t *rm_mem, uvm_va_space_t *va_space, 
 
         TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) == uvm_gpu_uses_proxy_channel_pool(gpu));
 
-        gpu_va = uvm_rm_mem_get_gpu_va(rm_mem, gpu, uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
-        if (alignment)
-            TEST_CHECK_RET(IS_ALIGNED(gpu_va, alignment));
+        TEST_NV_CHECK_RET(check_alignment(rm_mem, gpu, alignment));
     }
 
     return NV_OK;

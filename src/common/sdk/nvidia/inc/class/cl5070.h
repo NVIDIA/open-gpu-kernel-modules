@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 1993-2022, NVIDIA CORPORATION. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -31,7 +32,7 @@
 
 #include "cl5070_notification.h"
 
-#define NV50_DISPLAY (0x00005070)
+#define NV50_DISPLAY (0x5070U) /* finn: Evaluated from "NV5070_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 #define NV5070_ALLOCATION_PARAMETERS_MESSAGE_ID (0x5070U)
 

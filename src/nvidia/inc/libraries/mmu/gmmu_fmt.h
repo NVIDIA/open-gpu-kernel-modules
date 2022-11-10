@@ -23,6 +23,8 @@
 #ifndef _NV_GMMU_FMT_H_
 #define _NV_GMMU_FMT_H_
 
+#include <ctrl/ctrl90f1.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -172,11 +174,6 @@ typedef struct GMMU_COMPR_INFO      GMMU_COMPR_INFO;
  * the supported formats.
  */
 #define GMMU_FMT_MAX_ENTRY_SIZE 16
-
-/*!
- * Maximum number of page levels across the supported formats.
- */
-#define GMMU_FMT_MAX_LEVELS 6
 
 /*!
  * Default version specifier for API args to indicate no preference.

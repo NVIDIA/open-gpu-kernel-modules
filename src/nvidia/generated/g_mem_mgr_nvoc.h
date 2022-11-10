@@ -43,6 +43,8 @@ extern "C" {
 
 #include "mem_mgr/mem.h"
 
+#include "mem_mgr/mem_list.h"
+
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
 #include "containers/map.h"
 #include "gpu/mem_mgr/heap_base.h"
@@ -327,9 +329,13 @@ typedef struct _def_fb_mem_node
 } FB_MEM_NODE, *PFB_MEM_NODE;
 
 // defines for MemoryManager::fbsrReservedRanges
-#define MAX_FBSR_RESERVED_REGIONS                   2           // Max. Memory descriptors for RM Instance memory
+#define MAX_FBSR_RESERVED_REGIONS                   6           // Max. Memory descriptors for RM Instance memory
 #define FBSR_RESERVED_INST_MEMORY_BEFORE_BAR2PTE    0
 #define FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE     1
+#define FBSR_RESERVED_INST_MEMORY_GSP_HEAP          2
+#define FBSR_RESERVED_INST_MEMORY_GSP_NON_WPR       3
+#define FBSR_RESERVED_INST_MEMORY_GSP_WPR           4
+#define FBSR_RESERVED_INST_MEMORY_VGA_WORKSPACE     5
 
 /*!
  * MemoryManager provides the root memory management of GPU video memory.
@@ -448,10 +454,10 @@ struct MemoryManager {
     NvBool bSysmemCompressionSupportDef;
     NvBool bBug1698088IncreaseRmReserveMemoryWar;
     NvBool bBug2301372IncreaseRmReserveMemoryWar;
-    NvBool bBug3620359IncreaseRmReserveMemoryWar;
     NvBool bEnableFbsrFileMode;
     NvBool bEnableDynamicPageOfflining;
     NvBool bVgpuPmaSupport;
+    NvBool bEnableDynamicGranularityPageArrays;
     NvBool bAllowNoncontiguousAllocation;
     NvBool bEccInterleavedVidmemScrub;
     NvBool bScrubberInitialized;
@@ -477,11 +483,11 @@ struct MemoryManager {
     NvU64 overrideHeapMax;
     NvU64 fbOverrideStartKb;
     NvU64 rsvdMemorySizeIncrement;
-    struct OBJFBSR *pFbsr[7];
+    struct OBJFBSR *pFbsr[8];
     struct OBJFBSR *pActiveFbsr;
     NvU32 fbsrStartMode;
     NvU32 fixedFbsrModesMask;
-    MEMORY_DESCRIPTOR *fbsrReservedRanges[2];
+    MEMORY_DESCRIPTOR *fbsrReservedRanges[6];
     PFB_MEM_NODE pMemHeadNode;
     PFB_MEM_NODE pMemTailNode;
     struct RM_POOL_ALLOC_MEM_RESERVE_INFO *pPageLevelReserve;
@@ -574,7 +580,36 @@ NV_STATUS __nvoc_objCreate_MemoryManager(MemoryManager**, Dynamic*, NvU32);
 #define memmgrAllocTunableState(pGpu, pEngstate, ppTunableState) memmgrAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
 #define memmgrSetTunableState(pGpu, pEngstate, pTunableState) memmgrSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define memmgrIsPresent(pGpu, pEngstate) memmgrIsPresent_DISPATCH(pGpu, pEngstate)
+NV_STATUS memmgrSavePowerMgmtState_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline NV_STATUS memmgrSavePowerMgmtState(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrSavePowerMgmtState(pGpu, pMemoryManager) memmgrSavePowerMgmtState_KERNEL(pGpu, pMemoryManager)
+#endif //__nvoc_mem_mgr_h_disabled
+
+#define memmgrSavePowerMgmtState_HAL(pGpu, pMemoryManager) memmgrSavePowerMgmtState(pGpu, pMemoryManager)
+
+NV_STATUS memmgrRestorePowerMgmtState_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline NV_STATUS memmgrRestorePowerMgmtState(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrRestorePowerMgmtState(pGpu, pMemoryManager) memmgrRestorePowerMgmtState_KERNEL(pGpu, pMemoryManager)
+#endif //__nvoc_mem_mgr_h_disabled
+
+#define memmgrRestorePowerMgmtState_HAL(pGpu, pMemoryManager) memmgrRestorePowerMgmtState(pGpu, pMemoryManager)
+
 NvU32 memmgrDeterminePageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrDeterminePageSize(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2) {
@@ -591,6 +626,7 @@ static inline NV_STATUS memmgrReserveConsoleRegion_56cd7a(OBJGPU *pGpu, struct M
     return NV_OK;
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrReserveConsoleRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_REGION_DESCRIPTOR *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -603,6 +639,7 @@ static inline NV_STATUS memmgrReserveConsoleRegion(OBJGPU *pGpu, struct MemoryMa
 #define memmgrReserveConsoleRegion_HAL(pGpu, pMemoryManager, arg0) memmgrReserveConsoleRegion(pGpu, pMemoryManager, arg0)
 
 NV_STATUS memmgrAllocateConsoleRegion_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_REGION_DESCRIPTOR *arg0);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrAllocateConsoleRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_REGION_DESCRIPTOR *arg0) {
@@ -617,6 +654,7 @@ static inline NV_STATUS memmgrAllocateConsoleRegion(OBJGPU *pGpu, struct MemoryM
 
 NV_STATUS memmgrGetKindComprForGpu_KERNEL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0, OBJGPU *pGpu, NvU64 offset, NvU32 *kind, COMPR_INFO *pComprInfo);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetKindComprForGpu(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0, OBJGPU *pGpu, NvU64 offset, NvU32 *kind, COMPR_INFO *pComprInfo) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -630,6 +668,7 @@ static inline NV_STATUS memmgrGetKindComprForGpu(struct MemoryManager *pMemoryMa
 
 NV_STATUS memmgrScrubInit_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrScrubInit(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -642,6 +681,7 @@ static inline NV_STATUS memmgrScrubInit(OBJGPU *pGpu, struct MemoryManager *pMem
 #define memmgrScrubInit_HAL(pGpu, pMemoryManager) memmgrScrubInit(pGpu, pMemoryManager)
 
 NV_STATUS memmgrScrubHandlePostSchedulingEnable_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrScrubHandlePostSchedulingEnable(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -658,6 +698,7 @@ static inline void memmgrGetScrubState_f2d351(OBJGPU *pGpu, struct MemoryManager
     NV_ASSERT_PRECOMP(0);
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrGetScrubState(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0, NvU64 *arg1, NvBool *arg2) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -672,6 +713,7 @@ static inline void memmgrScrubInternalRegions_b3696a(OBJGPU *pGpu, struct Memory
     return;
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrScrubInternalRegions(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -685,6 +727,9 @@ static inline void memmgrScrubInternalRegions(OBJGPU *pGpu, struct MemoryManager
 static inline NvBool memmgrEccScrubInProgress_491d52(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     return ((NvBool)(0 != 0));
 }
+
+NvBool memmgrEccScrubInProgress_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrEccScrubInProgress(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -701,6 +746,7 @@ static inline void memmgrAsyncScrubRegion_f2d351(OBJGPU *pGpu, struct MemoryMana
     NV_ASSERT_PRECOMP(0);
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrAsyncScrubRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg0, NvU64 arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -712,6 +758,7 @@ static inline void memmgrAsyncScrubRegion(OBJGPU *pGpu, struct MemoryManager *pM
 #define memmgrAsyncScrubRegion_HAL(pGpu, pMemoryManager, arg0, arg1) memmgrAsyncScrubRegion(pGpu, pMemoryManager, arg0, arg1)
 
 NV_STATUS memmgrScrubHandlePreSchedulingDisable_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrScrubHandlePreSchedulingDisable(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -725,6 +772,7 @@ static inline NV_STATUS memmgrScrubHandlePreSchedulingDisable(OBJGPU *pGpu, stru
 #define memmgrScrubHandlePreSchedulingDisable_HAL(pGpu, pMemoryManager) memmgrScrubHandlePreSchedulingDisable(pGpu, pMemoryManager)
 
 void memmgrScrubDestroy_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrScrubDestroy(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -740,6 +788,9 @@ static inline void memmgrScrubMemory_b3696a(OBJGPU *pGpu, struct MemoryManager *
     return;
 }
 
+void memmgrScrubMemory_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg0, NvU64 arg1);
+
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrScrubMemory(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg0, NvU64 arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -751,6 +802,7 @@ static inline void memmgrScrubMemory(OBJGPU *pGpu, struct MemoryManager *pMemory
 #define memmgrScrubMemory_HAL(pGpu, pMemoryManager, arg0, arg1) memmgrScrubMemory(pGpu, pMemoryManager, arg0, arg1)
 
 NV_STATUS memmgrMemUtilsMemSetBlocking_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, RmPhysAddr arg1, NvU64 arg2);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsMemSetBlocking(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, RmPhysAddr arg1, NvU64 arg2) {
@@ -765,6 +817,7 @@ static inline NV_STATUS memmgrMemUtilsMemSetBlocking(OBJGPU *pGpu, struct Memory
 
 NV_STATUS memmgrMemUtilsMemSet_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, RmPhysAddr arg1, NvU64 arg2, NvU32 arg3, NvU32 *arg4);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsMemSet(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, RmPhysAddr arg1, NvU64 arg2, NvU32 arg3, NvU32 *arg4) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -777,6 +830,7 @@ static inline NV_STATUS memmgrMemUtilsMemSet(OBJGPU *pGpu, struct MemoryManager 
 #define memmgrMemUtilsMemSet_HAL(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4) memmgrMemUtilsMemSet(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4)
 
 NV_STATUS memmgrMemUtilsMemSetBatched_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, RmPhysAddr arg1, NvU64 arg2);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsMemSetBatched(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, RmPhysAddr arg1, NvU64 arg2) {
@@ -791,6 +845,7 @@ static inline NV_STATUS memmgrMemUtilsMemSetBatched(OBJGPU *pGpu, struct MemoryM
 
 NV_STATUS memmgrMemUtilsMemCopyBatched_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, RmPhysAddr arg1, NV_ADDRESS_SPACE arg2, NvU32 arg3, RmPhysAddr arg4, NV_ADDRESS_SPACE arg5, NvU32 arg6, NvU64 arg7);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsMemCopyBatched(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, RmPhysAddr arg1, NV_ADDRESS_SPACE arg2, NvU32 arg3, RmPhysAddr arg4, NV_ADDRESS_SPACE arg5, NvU32 arg6, NvU64 arg7) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -803,6 +858,7 @@ static inline NV_STATUS memmgrMemUtilsMemCopyBatched(OBJGPU *pGpu, struct Memory
 #define memmgrMemUtilsMemCopyBatched_HAL(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) memmgrMemUtilsMemCopyBatched(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
 
 NV_STATUS memmgrMemUtilsAllocateEccScrubber_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsAllocateEccScrubber(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
@@ -817,6 +873,7 @@ static inline NV_STATUS memmgrMemUtilsAllocateEccScrubber(OBJGPU *pGpu, struct M
 
 NV_STATUS memmgrMemUtilsAllocateEccAllocScrubber_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsAllocateEccAllocScrubber(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -829,6 +886,7 @@ static inline NV_STATUS memmgrMemUtilsAllocateEccAllocScrubber(OBJGPU *pGpu, str
 #define memmgrMemUtilsAllocateEccAllocScrubber_HAL(pGpu, pMemoryManager, arg0) memmgrMemUtilsAllocateEccAllocScrubber(pGpu, pMemoryManager, arg0)
 
 NV_STATUS memmgrMemUtilsChannelInitialize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsChannelInitialize(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
@@ -843,6 +901,7 @@ static inline NV_STATUS memmgrMemUtilsChannelInitialize(OBJGPU *pGpu, struct Mem
 
 NV_STATUS memmgrMemUtilsCopyEngineInitialize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsCopyEngineInitialize(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -855,6 +914,7 @@ static inline NV_STATUS memmgrMemUtilsCopyEngineInitialize(OBJGPU *pGpu, struct 
 #define memmgrMemUtilsCopyEngineInitialize_HAL(pGpu, pMemoryManager, arg0) memmgrMemUtilsCopyEngineInitialize(pGpu, pMemoryManager, arg0)
 
 NV_STATUS memmgrMemUtilsGetCopyEngineClass_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pClass);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsGetCopyEngineClass(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pClass) {
@@ -869,6 +929,7 @@ static inline NV_STATUS memmgrMemUtilsGetCopyEngineClass(OBJGPU *pGpu, struct Me
 
 NV_STATUS memmgrMemUtilsCreateMemoryAlias_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemUtilsCreateMemoryAlias(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -882,6 +943,7 @@ static inline NV_STATUS memmgrMemUtilsCreateMemoryAlias(OBJGPU *pGpu, struct Mem
 
 NV_STATUS memmgrAllocHal_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrAllocHal(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -894,6 +956,7 @@ static inline NV_STATUS memmgrAllocHal(OBJGPU *pGpu, struct MemoryManager *pMemo
 #define memmgrAllocHal_HAL(pGpu, pMemoryManager, pFbAllocInfo) memmgrAllocHal(pGpu, pMemoryManager, pFbAllocInfo)
 
 NV_STATUS memmgrFreeHal_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo, PRMTIMEOUT pTimeout);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrFreeHal(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo, PRMTIMEOUT pTimeout) {
@@ -910,6 +973,7 @@ static inline NV_STATUS memmgrUpdateSurfaceCompression_5baef9(OBJGPU *pGpu, stru
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrUpdateSurfaceCompression(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, Memory *arg0, NvBool arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -922,6 +986,7 @@ static inline NV_STATUS memmgrUpdateSurfaceCompression(OBJGPU *pGpu, struct Memo
 #define memmgrUpdateSurfaceCompression_HAL(pGpu, pMemoryManager, arg0, arg1) memmgrUpdateSurfaceCompression(pGpu, pMemoryManager, arg0, arg1)
 
 NV_STATUS memmgrGetBankPlacementData_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pBankPlacementLowData);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetBankPlacementData(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 *pBankPlacementLowData) {
@@ -936,6 +1001,7 @@ static inline NV_STATUS memmgrGetBankPlacementData(OBJGPU *pGpu, struct MemoryMa
 
 void memmgrDirtyForPmTest_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool partialDirty);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrDirtyForPmTest(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool partialDirty) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -948,6 +1014,7 @@ static inline void memmgrDirtyForPmTest(OBJGPU *pGpu, struct MemoryManager *pMem
 
 NvU32 memmgrGetReservedHeapSizeMb_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetReservedHeapSizeMb(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -959,9 +1026,12 @@ static inline NvU32 memmgrGetReservedHeapSizeMb(OBJGPU *pGpu, struct MemoryManag
 
 #define memmgrGetReservedHeapSizeMb_HAL(pGpu, pMemoryManager) memmgrGetReservedHeapSizeMb(pGpu, pMemoryManager)
 
+NV_STATUS memmgrInitFbRegionsHal_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 static inline NV_STATUS memmgrInitFbRegionsHal_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     return NV_OK;
 }
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrInitFbRegionsHal(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -976,6 +1046,7 @@ static inline NV_STATUS memmgrInitFbRegionsHal(OBJGPU *pGpu, struct MemoryManage
 
 void memmgrHandleSizeOverrides_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrHandleSizeOverrides(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -987,6 +1058,7 @@ static inline void memmgrHandleSizeOverrides(OBJGPU *pGpu, struct MemoryManager 
 #define memmgrHandleSizeOverrides_HAL(pGpu, pMemoryManager) memmgrHandleSizeOverrides(pGpu, pMemoryManager)
 
 NV_STATUS memmgrFinishHandleSizeOverrides_GP100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrFinishHandleSizeOverrides(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -1000,6 +1072,7 @@ static inline NV_STATUS memmgrFinishHandleSizeOverrides(OBJGPU *pGpu, struct Mem
 #define memmgrFinishHandleSizeOverrides_HAL(pGpu, pMemoryManager) memmgrFinishHandleSizeOverrides(pGpu, pMemoryManager)
 
 NV_STATUS memmgrGetBAR1InfoForClient_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvHandle arg0, PGETBAR1INFO bar1Info);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetBAR1InfoForClient(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvHandle arg0, PGETBAR1INFO bar1Info) {
@@ -1016,6 +1089,7 @@ static inline NvU64 memmgrGetFbTaxSize_4a4dee(OBJGPU *pGpu, struct MemoryManager
     return 0;
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU64 memmgrGetFbTaxSize(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1027,9 +1101,12 @@ static inline NvU64 memmgrGetFbTaxSize(OBJGPU *pGpu, struct MemoryManager *pMemo
 
 #define memmgrGetFbTaxSize_HAL(pGpu, pMemoryManager) memmgrGetFbTaxSize(pGpu, pMemoryManager)
 
-static inline NvU64 memmgrGetVgpuHostRmReservedFb_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId) {
-    return 0;
-}
+NvU64 memmgrGetVgpuHostRmReservedFb_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
+
+NvU64 memmgrGetVgpuHostRmReservedFb_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
+
+NvU64 memmgrGetVgpuHostRmReservedFb_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU64 memmgrGetVgpuHostRmReservedFb(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 vgpuTypeId) {
@@ -1037,12 +1114,13 @@ static inline NvU64 memmgrGetVgpuHostRmReservedFb(OBJGPU *pGpu, struct MemoryMan
     return 0;
 }
 #else //__nvoc_mem_mgr_h_disabled
-#define memmgrGetVgpuHostRmReservedFb(pGpu, pMemoryManager, vgpuTypeId) memmgrGetVgpuHostRmReservedFb_4a4dee(pGpu, pMemoryManager, vgpuTypeId)
+#define memmgrGetVgpuHostRmReservedFb(pGpu, pMemoryManager, vgpuTypeId) memmgrGetVgpuHostRmReservedFb_KERNEL(pGpu, pMemoryManager, vgpuTypeId)
 #endif //__nvoc_mem_mgr_h_disabled
 
 #define memmgrGetVgpuHostRmReservedFb_HAL(pGpu, pMemoryManager, vgpuTypeId) memmgrGetVgpuHostRmReservedFb(pGpu, pMemoryManager, vgpuTypeId)
 
 NvU64 memmgrGetRsvdSizeForSr_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU64 memmgrGetRsvdSizeForSr(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -1059,6 +1137,7 @@ static inline NvBool memmgrVerifyDepthSurfaceAttrs_cbe027(struct MemoryManager *
     return ((NvBool)(0 == 0));
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrVerifyDepthSurfaceAttrs(struct MemoryManager *pMemoryManager, NvU32 arg0, NvU32 arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1070,9 +1149,16 @@ static inline NvBool memmgrVerifyDepthSurfaceAttrs(struct MemoryManager *pMemory
 
 #define memmgrVerifyDepthSurfaceAttrs_HAL(pMemoryManager, arg0, arg1) memmgrVerifyDepthSurfaceAttrs(pMemoryManager, arg0, arg1)
 
+NV_STATUS memmgrAllocMemToSaveVgaWorkspace_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg0, MEMORY_DESCRIPTOR **arg1);
+
+static inline NV_STATUS memmgrAllocMemToSaveVgaWorkspace_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg0, MEMORY_DESCRIPTOR **arg1) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 static inline NV_STATUS memmgrAllocMemToSaveVgaWorkspace_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg0, MEMORY_DESCRIPTOR **arg1) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrAllocMemToSaveVgaWorkspace(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR **arg0, MEMORY_DESCRIPTOR **arg1) {
@@ -1087,6 +1173,7 @@ static inline NV_STATUS memmgrAllocMemToSaveVgaWorkspace(OBJGPU *pGpu, struct Me
 
 NvBool memmgrComparePhysicalAddresses_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvU64 arg1, NvU32 arg2, NvU64 arg3);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrComparePhysicalAddresses(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvU64 arg1, NvU32 arg2, NvU64 arg3) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1099,6 +1186,7 @@ static inline NvBool memmgrComparePhysicalAddresses(OBJGPU *pGpu, struct MemoryM
 #define memmgrComparePhysicalAddresses_HAL(pGpu, pMemoryManager, arg0, arg1, arg2, arg3) memmgrComparePhysicalAddresses(pGpu, pMemoryManager, arg0, arg1, arg2, arg3)
 
 RmPhysAddr memmgrGetInvalidOffset_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline RmPhysAddr memmgrGetInvalidOffset(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -1115,6 +1203,7 @@ static inline RmPhysAddr memmgrGetInvalidOffset(OBJGPU *pGpu, struct MemoryManag
 
 NvU32 memmgrGetAddrSpaceSizeMB_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetAddrSpaceSizeMB(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1128,6 +1217,7 @@ static inline NvU32 memmgrGetAddrSpaceSizeMB(OBJGPU *pGpu, struct MemoryManager 
 
 NvU32 memmgrGetUsableMemSizeMB_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetUsableMemSizeMB(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1140,6 +1230,7 @@ static inline NvU32 memmgrGetUsableMemSizeMB(OBJGPU *pGpu, struct MemoryManager 
 #define memmgrGetUsableMemSizeMB_HAL(pGpu, pMemoryManager) memmgrGetUsableMemSizeMB(pGpu, pMemoryManager)
 
 NV_STATUS memmgrGetSurfacePhysAttr_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, Memory *pMemory, NvU64 *pOffset, NvU32 *pMemAperture, NvU32 *pMemKind, NvU32 *pComprOffset, NvU32 *pComprKind, NvU32 *pLineMin, NvU32 *pLineMax, NvU32 *pZCullId, NvU32 *pGpuCacheAttr, NvU32 *pGpuP2PCacheAttr, NvU64 *contigSegmentSize);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetSurfacePhysAttr(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, Memory *pMemory, NvU64 *pOffset, NvU32 *pMemAperture, NvU32 *pMemKind, NvU32 *pComprOffset, NvU32 *pComprKind, NvU32 *pLineMin, NvU32 *pLineMax, NvU32 *pZCullId, NvU32 *pGpuCacheAttr, NvU32 *pGpuP2PCacheAttr, NvU64 *contigSegmentSize) {
@@ -1156,6 +1247,7 @@ static inline NvBool memmgrVerifyComprAttrs_cbe027(struct MemoryManager *pMemory
     return ((NvBool)(0 == 0));
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrVerifyComprAttrs(struct MemoryManager *pMemoryManager, NvU32 arg0, NvU32 arg1, NvU32 arg2) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1168,6 +1260,7 @@ static inline NvBool memmgrVerifyComprAttrs(struct MemoryManager *pMemoryManager
 #define memmgrVerifyComprAttrs_HAL(pMemoryManager, arg0, arg1, arg2) memmgrVerifyComprAttrs(pMemoryManager, arg0, arg1, arg2)
 
 NvBool memmgrIsKindCompressible_TU102(struct MemoryManager *pMemoryManager, NvU32 arg0);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrIsKindCompressible(struct MemoryManager *pMemoryManager, NvU32 arg0) {
@@ -1184,6 +1277,7 @@ static inline NvBool memmgrIsKindBlocklinear_491d52(struct MemoryManager *pMemor
     return ((NvBool)(0 != 0));
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrIsKindBlocklinear(struct MemoryManager *pMemoryManager, NvU32 arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1197,6 +1291,7 @@ static inline NvBool memmgrIsKindBlocklinear(struct MemoryManager *pMemoryManage
 
 NvU32 memmgrChooseKindZ_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrChooseKindZ(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1209,6 +1304,7 @@ static inline NvU32 memmgrChooseKindZ(OBJGPU *pGpu, struct MemoryManager *pMemor
 #define memmgrChooseKindZ_HAL(pGpu, pMemoryManager, arg0) memmgrChooseKindZ(pGpu, pMemoryManager, arg0)
 
 NvU32 memmgrChooseKindCompressZ_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrChooseKindCompressZ(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0) {
@@ -1225,6 +1321,7 @@ static inline NvU32 memmgrChooseKindCompressCForMS2_4a4dee(OBJGPU *pGpu, struct 
     return 0;
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrChooseKindCompressCForMS2(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1237,6 +1334,7 @@ static inline NvU32 memmgrChooseKindCompressCForMS2(OBJGPU *pGpu, struct MemoryM
 #define memmgrChooseKindCompressCForMS2_HAL(pGpu, pMemoryManager, arg0) memmgrChooseKindCompressCForMS2(pGpu, pMemoryManager, arg0)
 
 NvU32 memmgrGetUncompressedKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetUncompressedKind(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 kind, NvBool releaseReacquire) {
@@ -1253,6 +1351,7 @@ static inline NV_STATUS memmgrGetUncompressedKindForMS2_5baef9(OBJGPU *pGpu, str
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetUncompressedKindForMS2(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvU32 *arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1265,6 +1364,7 @@ static inline NV_STATUS memmgrGetUncompressedKindForMS2(OBJGPU *pGpu, struct Mem
 #define memmgrGetUncompressedKindForMS2_HAL(pGpu, pMemoryManager, arg0, arg1) memmgrGetUncompressedKindForMS2(pGpu, pMemoryManager, arg0, arg1)
 
 NV_STATUS memmgrChooseKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0, NvU32 arg1, NvU32 *arg2);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrChooseKind(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_PAGE_FORMAT *arg0, NvU32 arg1, NvU32 *arg2) {
@@ -1279,6 +1379,7 @@ static inline NV_STATUS memmgrChooseKind(OBJGPU *pGpu, struct MemoryManager *pMe
 
 NvBool memmgrIsKind_TU102(struct MemoryManager *pMemoryManager, FB_IS_KIND_OP arg0, NvU32 arg1);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrIsKind(struct MemoryManager *pMemoryManager, FB_IS_KIND_OP arg0, NvU32 arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1291,6 +1392,7 @@ static inline NvBool memmgrIsKind(struct MemoryManager *pMemoryManager, FB_IS_KI
 #define memmgrIsKind_HAL(pMemoryManager, arg0, arg1) memmgrIsKind(pMemoryManager, arg0, arg1)
 
 NvU32 memmgrGetMessageKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetMessageKind(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -1305,6 +1407,7 @@ static inline NvU32 memmgrGetMessageKind(OBJGPU *pGpu, struct MemoryManager *pMe
 
 NvU32 memmgrGetDefaultPteKindForNoHandle_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetDefaultPteKindForNoHandle(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1317,6 +1420,7 @@ static inline NvU32 memmgrGetDefaultPteKindForNoHandle(OBJGPU *pGpu, struct Memo
 #define memmgrGetDefaultPteKindForNoHandle_HAL(pGpu, pMemoryManager) memmgrGetDefaultPteKindForNoHandle(pGpu, pMemoryManager)
 
 NvBool memmgrIsSurfaceBlockLinear_TU102(struct MemoryManager *pMemoryManager, Memory *arg0, NvU32 arg1, NvU32 arg2);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrIsSurfaceBlockLinear(struct MemoryManager *pMemoryManager, Memory *arg0, NvU32 arg1, NvU32 arg2) {
@@ -1331,6 +1435,7 @@ static inline NvBool memmgrIsSurfaceBlockLinear(struct MemoryManager *pMemoryMan
 
 NvU32 memmgrGetHwPteKindFromSwPteKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetHwPteKindFromSwPteKind(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1343,6 +1448,7 @@ static inline NvU32 memmgrGetHwPteKindFromSwPteKind(OBJGPU *pGpu, struct MemoryM
 #define memmgrGetHwPteKindFromSwPteKind_HAL(pGpu, pMemoryManager, pteKind) memmgrGetHwPteKindFromSwPteKind(pGpu, pMemoryManager, pteKind)
 
 NvU32 memmgrGetSwPteKindFromHwPteKind_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetSwPteKindFromHwPteKind(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 pteKind) {
@@ -1357,6 +1463,7 @@ static inline NvU32 memmgrGetSwPteKindFromHwPteKind(OBJGPU *pGpu, struct MemoryM
 
 void memmgrGetPteKindForScrubber_TU102(struct MemoryManager *pMemoryManager, NvU32 *arg0);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrGetPteKindForScrubber(struct MemoryManager *pMemoryManager, NvU32 *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1368,6 +1475,7 @@ static inline void memmgrGetPteKindForScrubber(struct MemoryManager *pMemoryMana
 #define memmgrGetPteKindForScrubber_HAL(pMemoryManager, arg0) memmgrGetPteKindForScrubber(pMemoryManager, arg0)
 
 NvU32 memmgrGetCtagOffsetFromParams_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg0);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetCtagOffsetFromParams(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg0) {
@@ -1382,6 +1490,7 @@ static inline NvU32 memmgrGetCtagOffsetFromParams(OBJGPU *pGpu, struct MemoryMan
 
 void memmgrSetCtagOffsetInParams_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg0, NvU32 arg1);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrSetCtagOffsetInParams(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg0, NvU32 arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1393,6 +1502,7 @@ static inline void memmgrSetCtagOffsetInParams(OBJGPU *pGpu, struct MemoryManage
 #define memmgrSetCtagOffsetInParams_HAL(pGpu, pMemoryManager, arg0, arg1) memmgrSetCtagOffsetInParams(pGpu, pMemoryManager, arg0, arg1)
 
 void memmgrChannelPushSemaphoreMethodsBlock_GP100(struct MemoryManager *pMemoryManager, NvU32 arg0, NvU64 arg1, NvU32 arg2, NvU32 **arg3);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrChannelPushSemaphoreMethodsBlock(struct MemoryManager *pMemoryManager, NvU32 arg0, NvU64 arg1, NvU32 arg2, NvU32 **arg3) {
@@ -1406,6 +1516,7 @@ static inline void memmgrChannelPushSemaphoreMethodsBlock(struct MemoryManager *
 
 void memmgrChannelPushAddressMethodsBlock_GP100(struct MemoryManager *pMemoryManager, NvBool arg0, NvU32 arg1, RmPhysAddr arg2, NvU32 **arg3);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrChannelPushAddressMethodsBlock(struct MemoryManager *pMemoryManager, NvBool arg0, NvU32 arg1, RmPhysAddr arg2, NvU32 **arg3) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1417,6 +1528,7 @@ static inline void memmgrChannelPushAddressMethodsBlock(struct MemoryManager *pM
 #define memmgrChannelPushAddressMethodsBlock_HAL(pMemoryManager, arg0, arg1, arg2, arg3) memmgrChannelPushAddressMethodsBlock(pMemoryManager, arg0, arg1, arg2, arg3)
 
 NV_STATUS memmgrScrubMapDoorbellRegion_GV100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrScrubMapDoorbellRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
@@ -1431,6 +1543,7 @@ static inline NV_STATUS memmgrScrubMapDoorbellRegion(OBJGPU *pGpu, struct Memory
 
 NV_STATUS memmgrSetAllocParameters_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrSetAllocParameters(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *pFbAllocInfo) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1444,6 +1557,7 @@ static inline NV_STATUS memmgrSetAllocParameters(OBJGPU *pGpu, struct MemoryMana
 
 void memmgrCalcReservedFbSpaceForUVM_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrCalcReservedFbSpaceForUVM(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1455,6 +1569,9 @@ static inline void memmgrCalcReservedFbSpaceForUVM(OBJGPU *pGpu, struct MemoryMa
 #define memmgrCalcReservedFbSpaceForUVM_HAL(pGpu, pMemoryManager, arg0) memmgrCalcReservedFbSpaceForUVM(pGpu, pMemoryManager, arg0)
 
 void memmgrCalcReservedFbSpaceHal_FWCLIENT(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0, NvU64 *arg1, NvU64 *arg2);
+
+void memmgrCalcReservedFbSpaceHal_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0, NvU64 *arg1, NvU64 *arg2);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrCalcReservedFbSpaceHal(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0, NvU64 *arg1, NvU64 *arg2) {
@@ -1470,6 +1587,9 @@ static inline NvU32 memmgrGetGrHeapReservationSize_4a4dee(OBJGPU *pGpu, struct M
     return 0;
 }
 
+NvU32 memmgrGetGrHeapReservationSize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetGrHeapReservationSize(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1482,6 +1602,7 @@ static inline NvU32 memmgrGetGrHeapReservationSize(OBJGPU *pGpu, struct MemoryMa
 #define memmgrGetGrHeapReservationSize_HAL(pGpu, pMemoryManager) memmgrGetGrHeapReservationSize(pGpu, pMemoryManager)
 
 NvU32 memmgrGetRunlistEntriesReservedFbSpace_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetRunlistEntriesReservedFbSpace(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -1496,6 +1617,7 @@ static inline NvU32 memmgrGetRunlistEntriesReservedFbSpace(OBJGPU *pGpu, struct 
 
 NvU32 memmgrGetUserdReservedFbSpace_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetUserdReservedFbSpace(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1508,6 +1630,7 @@ static inline NvU32 memmgrGetUserdReservedFbSpace(OBJGPU *pGpu, struct MemoryMan
 #define memmgrGetUserdReservedFbSpace_HAL(pGpu, pMemoryManager) memmgrGetUserdReservedFbSpace(pGpu, pMemoryManager)
 
 NV_STATUS memmgrInitReservedMemory_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg0);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrInitReservedMemory(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg0) {
@@ -1522,6 +1645,9 @@ static inline NV_STATUS memmgrInitReservedMemory(OBJGPU *pGpu, struct MemoryMana
 
 NV_STATUS memmgrPreInitReservedMemory_FWCLIENT(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
+NV_STATUS memmgrPreInitReservedMemory_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrPreInitReservedMemory(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1534,6 +1660,9 @@ static inline NV_STATUS memmgrPreInitReservedMemory(OBJGPU *pGpu, struct MemoryM
 #define memmgrPreInitReservedMemory_HAL(pGpu, pMemoryManager) memmgrPreInitReservedMemory(pGpu, pMemoryManager)
 
 NV_STATUS memmgrInitBaseFbRegions_FWCLIENT(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+NV_STATUS memmgrInitBaseFbRegions_GP102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrInitBaseFbRegions(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -1548,6 +1677,7 @@ static inline NV_STATUS memmgrInitBaseFbRegions(OBJGPU *pGpu, struct MemoryManag
 
 NV_STATUS memmgrSetMemDescPageSize_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg0, ADDRESS_TRANSLATION arg1, RM_ATTR_PAGE_SIZE arg2);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrSetMemDescPageSize(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg0, ADDRESS_TRANSLATION arg1, RM_ATTR_PAGE_SIZE arg2) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1560,6 +1690,7 @@ static inline NV_STATUS memmgrSetMemDescPageSize(OBJGPU *pGpu, struct MemoryMana
 #define memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, arg0, arg1, arg2) memmgrSetMemDescPageSize(pGpu, pMemoryManager, arg0, arg1, arg2)
 
 NV_STATUS memmgrSetPartitionableMem_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrSetPartitionableMem(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
@@ -1574,6 +1705,7 @@ static inline NV_STATUS memmgrSetPartitionableMem(OBJGPU *pGpu, struct MemoryMan
 
 NV_STATUS memmgrAllocMIGGPUInstanceMemory_PF(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 swizzId, NvHandle *phMemory, struct NV_RANGE *pAddrRange, struct Heap **ppMemoryPartitionHeap);
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrAllocMIGGPUInstanceMemory(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 swizzId, NvHandle *phMemory, struct NV_RANGE *pAddrRange, struct Heap **ppMemoryPartitionHeap) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1586,6 +1718,7 @@ static inline NV_STATUS memmgrAllocMIGGPUInstanceMemory(OBJGPU *pGpu, struct Mem
 #define memmgrAllocMIGGPUInstanceMemory_HAL(pGpu, pMemoryManager, swizzId, phMemory, pAddrRange, ppMemoryPartitionHeap) memmgrAllocMIGGPUInstanceMemory(pGpu, pMemoryManager, swizzId, phMemory, pAddrRange, ppMemoryPartitionHeap)
 
 NV_STATUS memmgrGetBlackListPagesForHeap_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *pHeap);
+
 
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetBlackListPagesForHeap(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *pHeap) {
@@ -1602,6 +1735,7 @@ static inline NV_STATUS memmgrDiscoverMIGPartitionableMemoryRange_46f6a7(OBJGPU 
     return NV_ERR_NOT_SUPPORTED;
 }
 
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrDiscoverMIGPartitionableMemoryRange(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct NV_RANGE *pMemoryRange) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1612,6 +1746,37 @@ static inline NV_STATUS memmgrDiscoverMIGPartitionableMemoryRange(OBJGPU *pGpu, 
 #endif //__nvoc_mem_mgr_h_disabled
 
 #define memmgrDiscoverMIGPartitionableMemoryRange_HAL(pGpu, pMemoryManager, pMemoryRange) memmgrDiscoverMIGPartitionableMemoryRange(pGpu, pMemoryManager, pMemoryRange)
+
+void memmgrFreeFbsrMemory_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline void memmgrFreeFbsrMemory(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrFreeFbsrMemory(pGpu, pMemoryManager) memmgrFreeFbsrMemory_KERNEL(pGpu, pMemoryManager)
+#endif //__nvoc_mem_mgr_h_disabled
+
+#define memmgrFreeFbsrMemory_HAL(pGpu, pMemoryManager) memmgrFreeFbsrMemory(pGpu, pMemoryManager)
+
+static inline NV_STATUS memmgrCreateVgaWorkspaceMemDesc_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS memmgrCreateVgaWorkspaceMemDesc_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline NV_STATUS memmgrCreateVgaWorkspaceMemDesc(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrCreateVgaWorkspaceMemDesc(pGpu, pMemoryManager) memmgrCreateVgaWorkspaceMemDesc_46f6a7(pGpu, pMemoryManager)
+#endif //__nvoc_mem_mgr_h_disabled
+
+#define memmgrCreateVgaWorkspaceMemDesc_HAL(pGpu, pMemoryManager) memmgrCreateVgaWorkspaceMemDesc(pGpu, pMemoryManager)
 
 NV_STATUS memmgrConstructEngine_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, ENGDESCRIPTOR arg0);
 
@@ -1669,14 +1834,6 @@ NV_STATUS memmgrAllocDetermineAlignment_GM107(OBJGPU *pGpu, struct MemoryManager
 
 NV_STATUS memmgrAllocDetermineAlignment_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment);
 
-static inline NV_STATUS memmgrAllocDetermineAlignment_5baef9(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
-static inline NV_STATUS memmgrAllocDetermineAlignment_56cd7a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment) {
-    return NV_OK;
-}
-
 static inline NV_STATUS memmgrAllocDetermineAlignment_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pMemSize, NvU64 *pAlign, NvU64 alignPad, NvU32 allocFlags, NvU32 retAttr, NvU32 retAttr2, NvU64 hwAlignment) {
     return pMemoryManager->__memmgrAllocDetermineAlignment__(pGpu, pMemoryManager, pMemSize, pAlign, alignPad, allocFlags, retAttr, retAttr2, hwAlignment);
 }
@@ -1687,10 +1844,6 @@ NvU64 memmgrGetMaxContextSize_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryM
 
 NvU64 memmgrGetMaxContextSize_AD102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
-static inline NvU64 memmgrGetMaxContextSize_4a4dee(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return 0;
-}
-
 static inline NvU64 memmgrGetMaxContextSize_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     return pMemoryManager->__memmgrGetMaxContextSize__(pGpu, pMemoryManager);
 }
@@ -1698,10 +1851,6 @@ static inline NvU64 memmgrGetMaxContextSize_DISPATCH(OBJGPU *pGpu, struct Memory
 void memmgrScrubRegistryOverrides_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 void memmgrScrubRegistryOverrides_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-
-static inline void memmgrScrubRegistryOverrides_b3696a(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    return;
-}
 
 static inline void memmgrScrubRegistryOverrides_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     pMemoryManager->__memmgrScrubRegistryOverrides__(pGpu, pMemoryManager);
@@ -1824,10 +1973,6 @@ static inline void memmgrEnableDynamicPageOfflining_DISPATCH(OBJGPU *pGpu, struc
 NV_STATUS memmgrGetBlackListPages_GM107(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, BLACKLIST_ADDRESS *pBlAddrs, NvU32 *pCount);
 
 NV_STATUS memmgrGetBlackListPages_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, BLACKLIST_ADDRESS *pBlAddrs, NvU32 *pCount);
-
-static inline NV_STATUS memmgrGetBlackListPages_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, BLACKLIST_ADDRESS *pBlAddrs, NvU32 *pCount) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 static inline NV_STATUS memmgrGetBlackListPages_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, BLACKLIST_ADDRESS *pBlAddrs, NvU32 *pCount) {
     return pMemoryManager->__memmgrGetBlackListPages__(pGpu, pMemoryManager, pBlAddrs, pCount);
@@ -1954,28 +2099,10 @@ static inline NvU32 memmgrGetRsvdMemorySize(struct MemoryManager *pMemoryManager
 }
 
 void memmgrDestruct_IMPL(struct MemoryManager *pMemoryManager);
+
 #define __nvoc_memmgrDestruct(pMemoryManager) memmgrDestruct_IMPL(pMemoryManager)
-NV_STATUS memmgrSavePowerMgmtState_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-#ifdef __nvoc_mem_mgr_h_disabled
-static inline NV_STATUS memmgrSavePowerMgmtState(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_mem_mgr_h_disabled
-#define memmgrSavePowerMgmtState(pGpu, pMemoryManager) memmgrSavePowerMgmtState_IMPL(pGpu, pMemoryManager)
-#endif //__nvoc_mem_mgr_h_disabled
-
-NV_STATUS memmgrRestorePowerMgmtState_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
-#ifdef __nvoc_mem_mgr_h_disabled
-static inline NV_STATUS memmgrRestorePowerMgmtState(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_mem_mgr_h_disabled
-#define memmgrRestorePowerMgmtState(pGpu, pMemoryManager) memmgrRestorePowerMgmtState_IMPL(pGpu, pMemoryManager)
-#endif //__nvoc_mem_mgr_h_disabled
-
 NV_STATUS memmgrAllocResources_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_ALLOCATION_REQUEST *pAllocRequest, FB_ALLOC_INFO *pFbAllocInfo);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrAllocResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_ALLOCATION_REQUEST *pAllocRequest, FB_ALLOC_INFO *pFbAllocInfo) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1986,6 +2113,7 @@ static inline NV_STATUS memmgrAllocResources(OBJGPU *pGpu, struct MemoryManager 
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrFree_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *arg0, NvHandle arg1, NvHandle arg2, NvHandle arg3, NvU32 arg4, MEMORY_DESCRIPTOR *arg5);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrFree(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *arg0, NvHandle arg1, NvHandle arg2, NvHandle arg3, NvU32 arg4, MEMORY_DESCRIPTOR *arg5) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -1995,7 +2123,40 @@ static inline NV_STATUS memmgrFree(OBJGPU *pGpu, struct MemoryManager *pMemoryMa
 #define memmgrFree(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4, arg5) memmgrFree_IMPL(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4, arg5)
 #endif //__nvoc_mem_mgr_h_disabled
 
+NV_STATUS memmgrAddMemNode_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *pMemDesc, NvBool bFreeDescriptor);
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline NV_STATUS memmgrAddMemNode(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *pMemDesc, NvBool bFreeDescriptor) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrAddMemNode(pGpu, pMemoryManager, pMemDesc, bFreeDescriptor) memmgrAddMemNode_IMPL(pGpu, pMemoryManager, pMemDesc, bFreeDescriptor)
+#endif //__nvoc_mem_mgr_h_disabled
+
+NV_STATUS memmgrAddMemNodes_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool bSaveAllRmAllocations);
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline NV_STATUS memmgrAddMemNodes(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvBool bSaveAllRmAllocations) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrAddMemNodes(pGpu, pMemoryManager, bSaveAllRmAllocations) memmgrAddMemNodes_IMPL(pGpu, pMemoryManager, bSaveAllRmAllocations)
+#endif //__nvoc_mem_mgr_h_disabled
+
+void memmgrRemoveMemNodes_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline void memmgrRemoveMemNodes(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrRemoveMemNodes(pGpu, pMemoryManager) memmgrRemoveMemNodes_IMPL(pGpu, pMemoryManager)
+#endif //__nvoc_mem_mgr_h_disabled
+
 struct Heap *memmgrGetDeviceSuballocator_IMPL(struct MemoryManager *pMemoryManager, NvBool bForceSubheap);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline struct Heap *memmgrGetDeviceSuballocator(struct MemoryManager *pMemoryManager, NvBool bForceSubheap) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2006,6 +2167,7 @@ static inline struct Heap *memmgrGetDeviceSuballocator(struct MemoryManager *pMe
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrMemCopy_IMPL(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pDst, TRANSFER_SURFACE *pSrc, NvU32 size, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemCopy(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pDst, TRANSFER_SURFACE *pSrc, NvU32 size, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2016,6 +2178,7 @@ static inline NV_STATUS memmgrMemCopy(struct MemoryManager *pMemoryManager, TRAN
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrMemSet_IMPL(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pDst, NvU32 value, NvU32 size, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemSet(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pDst, NvU32 value, NvU32 size, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2026,6 +2189,7 @@ static inline NV_STATUS memmgrMemSet(struct MemoryManager *pMemoryManager, TRANS
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrMemWrite_IMPL(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pDst, void *pBuf, NvU64 size, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemWrite(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pDst, void *pBuf, NvU64 size, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2036,6 +2200,7 @@ static inline NV_STATUS memmgrMemWrite(struct MemoryManager *pMemoryManager, TRA
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrMemRead_IMPL(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pSrc, void *pBuf, NvU64 size, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemRead(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pSrc, void *pBuf, NvU64 size, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2046,6 +2211,7 @@ static inline NV_STATUS memmgrMemRead(struct MemoryManager *pMemoryManager, TRAN
 #endif //__nvoc_mem_mgr_h_disabled
 
 NvU8 *memmgrMemBeginTransfer_IMPL(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pTransferInfo, NvU64 shadowBufSize, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU8 *memmgrMemBeginTransfer(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pTransferInfo, NvU64 shadowBufSize, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2056,6 +2222,7 @@ static inline NvU8 *memmgrMemBeginTransfer(struct MemoryManager *pMemoryManager,
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrMemEndTransfer_IMPL(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pTransferInfo, NvU64 shadowBufSize, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrMemEndTransfer(struct MemoryManager *pMemoryManager, TRANSFER_SURFACE *pTransferInfo, NvU64 shadowBufSize, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2065,6 +2232,7 @@ static inline void memmgrMemEndTransfer(struct MemoryManager *pMemoryManager, TR
 #endif //__nvoc_mem_mgr_h_disabled
 
 NvU8 *memmgrMemDescBeginTransfer_IMPL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU8 *memmgrMemDescBeginTransfer(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2075,6 +2243,7 @@ static inline NvU8 *memmgrMemDescBeginTransfer(struct MemoryManager *pMemoryMana
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrMemDescEndTransfer_IMPL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrMemDescEndTransfer(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *pMemDesc, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2084,6 +2253,7 @@ static inline void memmgrMemDescEndTransfer(struct MemoryManager *pMemoryManager
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrMemDescMemSet_IMPL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *pMemDesc, NvU32 value, NvU32 flags);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrMemDescMemSet(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *pMemDesc, NvU32 value, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2094,6 +2264,7 @@ static inline NV_STATUS memmgrMemDescMemSet(struct MemoryManager *pMemoryManager
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_ADDRESS_SPACE memmgrAllocGetAddrSpace_IMPL(struct MemoryManager *pMemoryManager, NvU32 flags, NvU32 attr);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_ADDRESS_SPACE memmgrAllocGetAddrSpace(struct MemoryManager *pMemoryManager, NvU32 flags, NvU32 attr) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2106,6 +2277,7 @@ static inline NV_ADDRESS_SPACE memmgrAllocGetAddrSpace(struct MemoryManager *pMe
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrCreateHeap_IMPL(struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrCreateHeap(struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2116,6 +2288,7 @@ static inline NV_STATUS memmgrCreateHeap(struct MemoryManager *pMemoryManager) {
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrGetUsedRamSize_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetUsedRamSize(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2126,6 +2299,7 @@ static inline NV_STATUS memmgrGetUsedRamSize(OBJGPU *pGpu, struct MemoryManager 
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrAllocHwResources_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg0);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrAllocHwResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2136,6 +2310,7 @@ static inline NV_STATUS memmgrAllocHwResources(OBJGPU *pGpu, struct MemoryManage
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrFreeHwResources_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg0);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrFreeHwResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, FB_ALLOC_INFO *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2146,6 +2321,7 @@ static inline NV_STATUS memmgrFreeHwResources(OBJGPU *pGpu, struct MemoryManager
 #endif //__nvoc_mem_mgr_h_disabled
 
 NvBool memmgrLargePageSupported_IMPL(struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg0);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrLargePageSupported(struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2156,6 +2332,7 @@ static inline NvBool memmgrLargePageSupported(struct MemoryManager *pMemoryManag
 #endif //__nvoc_mem_mgr_h_disabled
 
 NvBool memmgrComprSupported_IMPL(struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg0);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrComprSupported(struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2166,6 +2343,7 @@ static inline NvBool memmgrComprSupported(struct MemoryManager *pMemoryManager, 
 #endif //__nvoc_mem_mgr_h_disabled
 
 NvU32 memmgrGetMappableRamSizeMb_IMPL(struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrGetMappableRamSizeMb(struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2176,6 +2354,7 @@ static inline NvU32 memmgrGetMappableRamSizeMb(struct MemoryManager *pMemoryMana
 #endif //__nvoc_mem_mgr_h_disabled
 
 PFB_REGION_DESCRIPTOR memmgrLookupFbRegionByOffset_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr fbOffset, RmPhysAddr fbLimit);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline PFB_REGION_DESCRIPTOR memmgrLookupFbRegionByOffset(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr fbOffset, RmPhysAddr fbLimit) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2186,6 +2365,7 @@ static inline PFB_REGION_DESCRIPTOR memmgrLookupFbRegionByOffset(OBJGPU *pGpu, s
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrFillMemdescForPhysAttr_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg0, ADDRESS_TRANSLATION arg1, NvU64 *arg2, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6, NvU32 *arg7, NvU64 *arg8);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrFillMemdescForPhysAttr(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMEMORY_DESCRIPTOR arg0, ADDRESS_TRANSLATION arg1, NvU64 *arg2, NvU32 *arg3, NvU32 *arg4, NvU32 *arg5, NvU32 *arg6, NvU32 *arg7, NvU64 *arg8) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2196,6 +2376,7 @@ static inline NV_STATUS memmgrFillMemdescForPhysAttr(OBJGPU *pGpu, struct Memory
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrSetPlatformPmaSupport_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrSetPlatformPmaSupport(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2206,6 +2387,7 @@ static inline NV_STATUS memmgrSetPlatformPmaSupport(OBJGPU *pGpu, struct MemoryM
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrRegionSetupForPma_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrRegionSetupForPma(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2215,6 +2397,7 @@ static inline void memmgrRegionSetupForPma(OBJGPU *pGpu, struct MemoryManager *p
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrInitFbRegions_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrInitFbRegions(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2225,6 +2408,7 @@ static inline NV_STATUS memmgrInitFbRegions(OBJGPU *pGpu, struct MemoryManager *
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrRegionSetupCommon_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrRegionSetupCommon(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2234,6 +2418,7 @@ static inline void memmgrRegionSetupCommon(OBJGPU *pGpu, struct MemoryManager *p
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrRegenerateFbRegionPriority_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrRegenerateFbRegionPriority(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2243,6 +2428,7 @@ static inline void memmgrRegenerateFbRegionPriority(OBJGPU *pGpu, struct MemoryM
 #endif //__nvoc_mem_mgr_h_disabled
 
 NvU32 memmgrInsertFbRegion_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PFB_REGION_DESCRIPTOR arg0);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvU32 memmgrInsertFbRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PFB_REGION_DESCRIPTOR arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2253,6 +2439,7 @@ static inline NvU32 memmgrInsertFbRegion(OBJGPU *pGpu, struct MemoryManager *pMe
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrDumpFbRegions_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrDumpFbRegions(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2262,6 +2449,7 @@ static inline void memmgrDumpFbRegions(OBJGPU *pGpu, struct MemoryManager *pMemo
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrClearFbRegions_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrClearFbRegions(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2271,6 +2459,7 @@ static inline void memmgrClearFbRegions(OBJGPU *pGpu, struct MemoryManager *pMem
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrReleaseConsoleRegion_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrReleaseConsoleRegion(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2280,6 +2469,7 @@ static inline void memmgrReleaseConsoleRegion(OBJGPU *pGpu, struct MemoryManager
 #endif //__nvoc_mem_mgr_h_disabled
 
 PMEMORY_DESCRIPTOR memmgrGetReservedConsoleMemDesc_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline PMEMORY_DESCRIPTOR memmgrGetReservedConsoleMemDesc(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2290,6 +2480,7 @@ static inline PMEMORY_DESCRIPTOR memmgrGetReservedConsoleMemDesc(OBJGPU *pGpu, s
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrReserveBar2BackingStore_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrReserveBar2BackingStore(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2299,6 +2490,7 @@ static inline void memmgrReserveBar2BackingStore(OBJGPU *pGpu, struct MemoryMana
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrCalcReservedFbSpace_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrCalcReservedFbSpace(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2308,6 +2500,7 @@ static inline void memmgrCalcReservedFbSpace(OBJGPU *pGpu, struct MemoryManager 
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrMemUtilsSetupChannelBufferSizes_IMPL(struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, NvU32 arg1);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrMemUtilsSetupChannelBufferSizes(struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0, NvU32 arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2317,6 +2510,7 @@ static inline void memmgrMemUtilsSetupChannelBufferSizes(struct MemoryManager *p
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrGetKindComprFromMemDesc_IMPL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0, NvU64 offset, NvU32 *kind, COMPR_INFO *pComprInfo);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrGetKindComprFromMemDesc(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0, NvU64 offset, NvU32 *kind, COMPR_INFO *pComprInfo) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2327,6 +2521,7 @@ static inline NV_STATUS memmgrGetKindComprFromMemDesc(struct MemoryManager *pMem
 #endif //__nvoc_mem_mgr_h_disabled
 
 NvBool memmgrIsCompressible_IMPL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NvBool memmgrIsCompressible(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2337,6 +2532,7 @@ static inline NvBool memmgrIsCompressible(struct MemoryManager *pMemoryManager, 
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrFillComprInfo_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvU32 arg1, NvU32 arg2, NvU64 arg3, NvU32 arg4, COMPR_INFO *arg5);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrFillComprInfo(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvU32 arg1, NvU32 arg2, NvU64 arg3, NvU32 arg4, COMPR_INFO *arg5) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2347,6 +2543,7 @@ static inline NV_STATUS memmgrFillComprInfo(OBJGPU *pGpu, struct MemoryManager *
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrComprInfoDisableCompression_IMPL(struct MemoryManager *pMemoryManager, COMPR_INFO *pComprInfo);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrComprInfoDisableCompression(struct MemoryManager *pMemoryManager, COMPR_INFO *pComprInfo) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2356,6 +2553,7 @@ static inline void memmgrComprInfoDisableCompression(struct MemoryManager *pMemo
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrFillComprInfoUncompressed_IMPL(struct MemoryManager *pMemoryManager, NvU32 kind, COMPR_INFO *pComprInfo);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrFillComprInfoUncompressed(struct MemoryManager *pMemoryManager, NvU32 kind, COMPR_INFO *pComprInfo) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2365,6 +2563,7 @@ static inline void memmgrFillComprInfoUncompressed(struct MemoryManager *pMemory
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrPmaInitialize_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMA *pPma);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrPmaInitialize(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, PMA *pPma) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2375,6 +2574,7 @@ static inline NV_STATUS memmgrPmaInitialize(OBJGPU *pGpu, struct MemoryManager *
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrPmaRegisterRegions_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *pHeap, PMA *pPma);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrPmaRegisterRegions(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, struct Heap *pHeap, PMA *pPma) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2385,6 +2585,7 @@ static inline NV_STATUS memmgrPmaRegisterRegions(OBJGPU *pGpu, struct MemoryMana
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrSetMIGPartitionableBAR1Range_IMPL(OBJGPU *arg0, struct MemoryManager *arg1);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrSetMIGPartitionableBAR1Range(OBJGPU *arg0, struct MemoryManager *arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2395,6 +2596,7 @@ static inline NV_STATUS memmgrSetMIGPartitionableBAR1Range(OBJGPU *arg0, struct 
 #endif //__nvoc_mem_mgr_h_disabled
 
 struct NV_RANGE memmgrGetMIGPartitionableBAR1Range_IMPL(OBJGPU *arg0, struct MemoryManager *arg1);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline struct NV_RANGE memmgrGetMIGPartitionableBAR1Range(OBJGPU *arg0, struct MemoryManager *arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2407,6 +2609,7 @@ static inline struct NV_RANGE memmgrGetMIGPartitionableBAR1Range(OBJGPU *arg0, s
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrSetMIGPartitionableMemoryRange_IMPL(OBJGPU *arg0, struct MemoryManager *arg1, struct NV_RANGE arg2);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrSetMIGPartitionableMemoryRange(OBJGPU *arg0, struct MemoryManager *arg1, struct NV_RANGE arg2) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2416,6 +2619,7 @@ static inline void memmgrSetMIGPartitionableMemoryRange(OBJGPU *arg0, struct Mem
 #endif //__nvoc_mem_mgr_h_disabled
 
 struct NV_RANGE memmgrGetMIGPartitionableMemoryRange_IMPL(OBJGPU *arg0, struct MemoryManager *arg1);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline struct NV_RANGE memmgrGetMIGPartitionableMemoryRange(OBJGPU *arg0, struct MemoryManager *arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2428,6 +2632,7 @@ static inline struct NV_RANGE memmgrGetMIGPartitionableMemoryRange(OBJGPU *arg0,
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrFreeMIGGPUInstanceMemory_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 swizzId, NvHandle hMemory, struct Heap **ppMemoryPartitionHeap);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrFreeMIGGPUInstanceMemory(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 swizzId, NvHandle hMemory, struct Heap **ppMemoryPartitionHeap) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2438,6 +2643,7 @@ static inline NV_STATUS memmgrFreeMIGGPUInstanceMemory(OBJGPU *pGpu, struct Memo
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrPageLevelPoolsCreate_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrPageLevelPoolsCreate(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2448,6 +2654,7 @@ static inline NV_STATUS memmgrPageLevelPoolsCreate(OBJGPU *pGpu, struct MemoryMa
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrPageLevelPoolsDestroy_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrPageLevelPoolsDestroy(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2457,6 +2664,7 @@ static inline void memmgrPageLevelPoolsDestroy(OBJGPU *pGpu, struct MemoryManage
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrPageLevelPoolsGetInfo_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvHandle arg0, struct RM_POOL_ALLOC_MEM_RESERVE_INFO **arg1);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrPageLevelPoolsGetInfo(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvHandle arg0, struct RM_POOL_ALLOC_MEM_RESERVE_INFO **arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2467,6 +2675,7 @@ static inline NV_STATUS memmgrPageLevelPoolsGetInfo(OBJGPU *pGpu, struct MemoryM
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrAllocMIGMemoryAllocationInternalHandles_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrAllocMIGMemoryAllocationInternalHandles(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2477,6 +2686,7 @@ static inline NV_STATUS memmgrAllocMIGMemoryAllocationInternalHandles(OBJGPU *pG
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrFreeMIGMemoryAllocationInternalHandles_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrFreeMIGMemoryAllocationInternalHandles(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2486,6 +2696,7 @@ static inline void memmgrFreeMIGMemoryAllocationInternalHandles(OBJGPU *pGpu, st
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrGetFreeMemoryForAllMIGGPUInstances_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pBytes);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrGetFreeMemoryForAllMIGGPUInstances(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 *pBytes) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2495,6 +2706,7 @@ static inline void memmgrGetFreeMemoryForAllMIGGPUInstances(OBJGPU *pGpu, struct
 #endif //__nvoc_mem_mgr_h_disabled
 
 void memmgrGetTopLevelScrubberStatus_IMPL(OBJGPU *arg0, struct MemoryManager *arg1, NvBool *pbTopLevelScrubberEnabled, NvBool *pbTopLevelScrubberConstructed);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline void memmgrGetTopLevelScrubberStatus(OBJGPU *arg0, struct MemoryManager *arg1, NvBool *pbTopLevelScrubberEnabled, NvBool *pbTopLevelScrubberConstructed) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2504,6 +2716,7 @@ static inline void memmgrGetTopLevelScrubberStatus(OBJGPU *arg0, struct MemoryMa
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrSaveAndDestroyTopLevelScrubber_IMPL(OBJGPU *arg0, struct MemoryManager *arg1);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrSaveAndDestroyTopLevelScrubber(OBJGPU *arg0, struct MemoryManager *arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2514,6 +2727,7 @@ static inline NV_STATUS memmgrSaveAndDestroyTopLevelScrubber(OBJGPU *arg0, struc
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrInitSavedTopLevelScrubber_IMPL(OBJGPU *arg0, struct MemoryManager *arg1);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrInitSavedTopLevelScrubber(OBJGPU *arg0, struct MemoryManager *arg1) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
@@ -2524,6 +2738,7 @@ static inline NV_STATUS memmgrInitSavedTopLevelScrubber(OBJGPU *arg0, struct Mem
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrReserveMemoryForFsp_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+
 #ifdef __nvoc_mem_mgr_h_disabled
 static inline NV_STATUS memmgrReserveMemoryForFsp(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");

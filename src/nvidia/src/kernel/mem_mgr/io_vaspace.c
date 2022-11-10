@@ -22,7 +22,7 @@
  */
 
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                           *
 *         IOMMU Virtual Address Space Function Definitions.                 *
 *                                                                           *
@@ -208,7 +208,7 @@ iovaspaceGetVaLimit_IMPL(OBJIOVASPACE *pIOVAS)
     return NVBIT64(32) - 1;
 }
 
-#if (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS) && !NVCPU_IS_ARM
+#if (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_MODS_FEATURES) && !NVCPU_IS_ARM
 static PIOVAMAPPING
 _iovaspaceCreateMappingDataFromMemDesc
 (
@@ -601,4 +601,4 @@ void iovaMappingDestroy(PIOVAMAPPING pIovaMapping)
     iovaspaceDestroyMapping(pIOVAS, pIovaMapping);
 }
 
-#endif // (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS) && !NVCPU_IS_ARM
+#endif // (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_MODS_FEATURES) && !NVCPU_IS_ARM

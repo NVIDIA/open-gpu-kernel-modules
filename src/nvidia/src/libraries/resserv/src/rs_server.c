@@ -198,15 +198,14 @@ NV_STATUS serverFreeResourceRpcUnderLock(RsServer *pServer, RS_RES_FREE_PARAMS *
 //
 //  Client handle format:
 //
-//  fn  [ C 1 D/E ] [  *INDEX*  ]
-//  bit 31       20 19          0
+//  fn  [ C[1..3][0..F]] [  *INDEX*  ]
+//  bit 31            20 19          0
 //
 
-#define RS_CLIENT_HANDLE_DECODE_MASK 0xFFFFF
+#define RS_CLIENT_HANDLE_DECODE_MASK (RS_CLIENT_HANDLE_MAX - 1)
 #define CLIENT_DECODEHANDLE(handle)                 (handle & RS_CLIENT_HANDLE_DECODE_MASK)
 
-#define CLIENT_ENCODEHANDLE(index)                  (RS_CLIENT_HANDLE_BASE | index)
-#define CLIENT_ENCODEHANDLE_INTERNAL(internalBase, index)   (internalBase | index)
+#define CLIENT_ENCODEHANDLE(handleBase, index)        (handleBase | index)
 
 NV_STATUS
 serverConstruct
@@ -225,6 +224,7 @@ serverConstruct
     pServer->bDebugFreeList     = NV_FALSE;
     pServer->bRsAccessEnabled   = NV_TRUE;
     pServer->internalHandleBase = RS_CLIENT_INTERNAL_HANDLE_BASE;
+    pServer->clientHandleBase   = RS_CLIENT_HANDLE_BASE;
     pServer->activeClientCount  = 0;
     pServer->activeResourceCount= 0;
     pServer->roTopLockApiMask   = 0;
@@ -352,6 +352,35 @@ serverDestruct
     portMemAllocatorRelease(pServer->pAllocator);
 
     pServer->bConstructed = NV_FALSE;
+
+    return NV_OK;
+}
+
+NV_STATUS
+serverSetClientHandleBase
+(
+    RsServer *pServer,
+    NvU32 clientHandleBase
+)
+{
+    NvU32 releaseFlags = 0;
+    RS_LOCK_INFO lockInfo;
+    portMemSet(&lockInfo, 0, sizeof(lockInfo));
+
+    // Grab top level lock before updating the internal state
+    NV_ASSERT_OK_OR_RETURN(serverTopLock_Prologue(pServer, LOCK_ACCESS_WRITE, &lockInfo, &releaseFlags));
+
+    // Do not allow fixedClientHandle base to be same as internalHandleBase
+    if (clientHandleBase != pServer->internalHandleBase)
+    {
+        pServer->clientHandleBase = clientHandleBase;
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Error setting fixed Client handle base\n");
+    }
+
+    serverTopLock_Epilogue(pServer, LOCK_ACCESS_WRITE, &lockInfo, &releaseFlags);
 
     return NV_OK;
 }
@@ -532,10 +561,7 @@ done:
             PORT_FREE(pServer->pAllocator, pClientEntry);
         }
 
-        if (pClient != NULL)
-        {
-            objDelete(pClient);
-        }
+        objDelete(pClient);
     }
 
     return status;
@@ -2103,6 +2129,8 @@ _serverCreateEntryAndLockForNewClient
     NvHandle       hClient = *phClient;
     CLIENT_ENTRY **ppClientNext = 0;
     PORT_RWLOCK    *pLock=NULL;
+    NvU32 handleBase = bInternalHandle ? pServer->internalHandleBase :
+                                         pServer->clientHandleBase;
 
     if (hClient == 0)
     {
@@ -2110,10 +2138,7 @@ _serverCreateEntryAndLockForNewClient
         NvU16 clientHandleBucketInit = clientHandleIndex & RS_CLIENT_HANDLE_BUCKET_MASK;
         do
         {
-            hClient = bInternalHandle
-                ? CLIENT_ENCODEHANDLE_INTERNAL(pServer->internalHandleBase, clientHandleIndex)
-                : CLIENT_ENCODEHANDLE(clientHandleIndex);
-
+            hClient = CLIENT_ENCODEHANDLE(handleBase, clientHandleIndex);
             clientHandleIndex++;
             if (clientHandleIndex > RS_CLIENT_HANDLE_DECODE_MASK)
             {
@@ -2138,9 +2163,7 @@ _serverCreateEntryAndLockForNewClient
 #if !(RS_COMPATABILITY_MODE)
         // Re-encode handle so it matches expected format
         NvU32 clientIndex = CLIENT_DECODEHANDLE(hClient);
-        hClient = bInternalHandle
-            ? CLIENT_ENCODEHANDLE_INTERNAL(clientIndex)
-            : CLIENT_ENCODEHANDLE(clientIndex);
+        hClient = CLIENT_ENCODEHANDLE(handleBase, clientIndex);
 #endif
 
         if (_serverFindClientEntry(pServer, hClient, NV_FALSE, NULL) == NV_OK)
@@ -2869,10 +2892,7 @@ serverAllocShareWithHalspecParent
     return NV_OK;
 
 fail:
-    if (pShare != NULL)
-    {
-        objDelete(pShare);
-    }
+    objDelete(pShare);
 
     return status;
 }

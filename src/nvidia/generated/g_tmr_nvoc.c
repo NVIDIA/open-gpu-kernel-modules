@@ -203,6 +203,10 @@ static void __nvoc_thunk_RsResource_tmrapiPreDestruct(struct TimerApi *pResource
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_tmrapiIsDuplicate(struct TimerApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_tmrapiGetNotificationListPtr(struct TimerApi *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset));
 }
@@ -340,6 +344,8 @@ static void __nvoc_init_funcTable_TimerApi_1(TimerApi *pThis) {
     pThis->__tmrapiCanCopy__ = &__nvoc_thunk_RsResource_tmrapiCanCopy;
 
     pThis->__tmrapiPreDestruct__ = &__nvoc_thunk_RsResource_tmrapiPreDestruct;
+
+    pThis->__tmrapiIsDuplicate__ = &__nvoc_thunk_RsResource_tmrapiIsDuplicate;
 
     pThis->__tmrapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_tmrapiGetNotificationListPtr;
 

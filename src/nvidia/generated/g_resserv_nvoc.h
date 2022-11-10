@@ -177,13 +177,8 @@ typedef void *PUID_TOKEN;
 /// Client handles must start at this base value
 #define RS_CLIENT_HANDLE_BASE           0xC1D00000
 
-///
-/// Internal Client handles must start at this base value
-/// at either of these two bases
-///
+/// Internal Client handles start at this base value
 #define RS_CLIENT_INTERNAL_HANDLE_BASE  0xC1E00000
-
-#define RS_CLIENT_INTERNAL_HANDLE_BASE_EX  0xC1F00000
 
 //
 // Print a warning if any client's resource count exceeds this
@@ -191,8 +186,7 @@ typedef void *PUID_TOKEN;
 //
 #define RS_CLIENT_RESOURCE_WARNING_THRESHOLD 100000
 
-
-/// 0xFFFF max client handles.
+#define RS_CLIENT_HANDLE_MAX            0x100000 // Must be power of two
 #define RS_CLIENT_HANDLE_BUCKET_COUNT   0x400  // 1024
 #define RS_CLIENT_HANDLE_BUCKET_MASK    0x3FF
 

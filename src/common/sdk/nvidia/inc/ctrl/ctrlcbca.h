@@ -82,7 +82,39 @@ typedef struct NV_COUNTER_COLLECTION_UNIT_SUBSCRIBE_PARAMS {
  *   NV_ERR_INVALID_ARGUMENT
  */
 
-#define NV_COUNTER_COLLECTION_UNIT_CTRL_CMD_UNSUBSCRIBE (0xcbca0102) /* finn: Evaluated from "(FINN_NV_COUNTER_COLLECTION_UNIT_CCU_INTERFACE_ID << 8) | 0x2" */
+#define NV_COUNTER_COLLECTION_UNIT_CTRL_CMD_UNSUBSCRIBE      (0xcbca0102) /* finn: Evaluated from "(FINN_NV_COUNTER_COLLECTION_UNIT_CCU_INTERFACE_ID << 8) | 0x2" */
+
+/*
+ * NV_COUNTER_COLLECTION_UNIT_CTRL_CMD_SET_STREAM_STATE
+ *
+ * This command is used to set the counter collection unit stream state
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV_COUNTER_COLLECTION_UNIT_CTRL_CMD_SET_STREAM_STATE (0xcbca0103) /* finn: Evaluated from "(FINN_NV_COUNTER_COLLECTION_UNIT_CCU_INTERFACE_ID << 8) | NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS_MESSAGE_ID" */
+
+#define NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS_MESSAGE_ID (0x3U)
+
+typedef struct NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS {
+    NvBool bStreamState;
+} NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS;
+
+/*
+ * NV_COUNTER_COLLECTION_UNIT_CTRL_CMD_GET_STREAM_STATE
+ *
+ * This command is used to get the counter collection unit stream state
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV_COUNTER_COLLECTION_UNIT_CTRL_CMD_GET_STREAM_STATE (0xcbca0104) /* finn: Evaluated from "(FINN_NV_COUNTER_COLLECTION_UNIT_CCU_INTERFACE_ID << 8) | 0x4" */
 
 /* _ctrlcbca_h_ */
 

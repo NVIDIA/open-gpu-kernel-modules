@@ -37,6 +37,17 @@
 
 #define RISCV_BR_ADDR_ALIGNMENT                 (8)
 
+const char*
+kgspGetSignatureSectionNamePrefix_GH100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    return GSP_SIGNATURE_SECTION_NAME_PREFIX;
+}
+
+
 /*!
  * Helper Function for kgspResetHw_GH100
  *
@@ -135,7 +146,7 @@ kgspAllocBootArgs_GH100
     // Allocate GSP-FMC arguments
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                           memdescCreate(&pKernelGsp->pGspFmcArgumentsDescriptor,
-                                        pGpu, sizeof(GSP_CC_BOOT_PARAMS), 0x1000,
+                                        pGpu, sizeof(GSP_FMC_BOOT_PARAMS), 0x1000,
                                         NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
                                         MEMDESC_FLAGS_NONE),
                           _kgspAllocBootArgs_exit_cleanup);
@@ -151,7 +162,7 @@ kgspAllocBootArgs_GH100
                                      &pVa, &pPriv),
                           _kgspAllocBootArgs_exit_cleanup);
 
-    pKernelGsp->pGspFmcArgumentsCached = (GSP_CC_BOOT_PARAMS *)NvP64_VALUE(pVa);
+    pKernelGsp->pGspFmcArgumentsCached = (GSP_FMC_BOOT_PARAMS *)NvP64_VALUE(pVa);
     pKernelGsp->pGspFmcArgumentsMappingPriv = pPriv;
 
     return kgspAllocBootArgs_TU102(pGpu, pKernelGsp);
@@ -267,7 +278,7 @@ kgspCalculateFbLayout_GH100
         memdescGetPhysAddr(pKernelGsp->pGspRmBootUcodeMemdesc, AT_GPU, 0);
 
     // Physical address and size of GSP-RM firmware in system memory
-    pWprMeta->sizeOfRadix3Elf = pGspFw->size;
+    pWprMeta->sizeOfRadix3Elf = pGspFw->imageSize;
     pWprMeta->sysmemAddrOfRadix3Elf =
         memdescGetPhysAddr(pKernelGsp->pGspUCodeRadix3Descriptor, AT_GPU, 0);
 
@@ -289,7 +300,7 @@ kgspCalculateFbLayout_GH100
     // The WPR heap size (gspFwHeapSize) is variable to also get any padding needed
     // in the carveout to align the WPR start. We specify a minimum size here.
     //
-    pWprMeta->gspFwHeapSize = 64 * 1024 * 1024;
+    pWprMeta->gspFwHeapSize = kgspGetWprHeapSize(pGpu, pKernelGsp);
 
     // Fill in the meta-metadata
     pWprMeta->revision = GSP_FW_WPR_META_REVISION;
@@ -329,14 +340,15 @@ kgspSetupGspFmcArgs_GH100
     NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(pGpu), NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN(pKernelGsp->pGspFmcArgumentsCached != NULL, NV_ERR_INVALID_STATE);
 
-    GSP_CC_BOOT_PARAMS *pGspCcBootParams = pKernelGsp->pGspFmcArgumentsCached;
+    GSP_FMC_BOOT_PARAMS *pGspFmcBootParams = pKernelGsp->pGspFmcArgumentsCached;
 
-    pGspCcBootParams->bootGspRmParams.gspRmDescOffset = memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0);
-    pGspCcBootParams->bootGspRmParams.gspRmDescSize = sizeof(*pKernelGsp->pWprMeta);
-    pGspCcBootParams->bootGspRmParams.target = _kgspMemdescToDmaTarget(pKernelGsp->pWprMetaDescriptor);
+    pGspFmcBootParams->bootGspRmParams.gspRmDescOffset = memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0);
+    pGspFmcBootParams->bootGspRmParams.gspRmDescSize = sizeof(*pKernelGsp->pWprMeta);
+    pGspFmcBootParams->bootGspRmParams.target = _kgspMemdescToDmaTarget(pKernelGsp->pWprMetaDescriptor);
+    pGspFmcBootParams->bootGspRmParams.bIsGspRmBoot = NV_TRUE;
 
-    pGspCcBootParams->gspRmParams.bootArgsOffset = memdescGetPhysAddr(pKernelGsp->pLibosInitArgumentsDescriptor, AT_GPU, 0);
-    pGspCcBootParams->gspRmParams.target = _kgspMemdescToDmaTarget(pKernelGsp->pLibosInitArgumentsDescriptor);
+    pGspFmcBootParams->gspRmParams.bootArgsOffset = memdescGetPhysAddr(pKernelGsp->pLibosInitArgumentsDescriptor, AT_GPU, 0);
+    pGspFmcBootParams->gspRmParams.target = _kgspMemdescToDmaTarget(pKernelGsp->pLibosInitArgumentsDescriptor);
 
     return NV_OK;
 }
@@ -361,10 +373,14 @@ _kgspIsLockdownReleased
 }
 
 /*!
- * Determine if PRIV target mask is unlocked for GSP.
- * This is temporary WAR for bug 3640831 until we have notification protocol in
- * place (there is no HW mechanism for CPU to check if GSP is open other than
+ * Determine if PRIV target mask is unlocked for GSP and BAR0 Decoupler allows GSP access.
+ *
+ * This is temporary WAR for the PRIV target mask bug 3640831 until we have notification
+ * protocol in place (there is no HW mechanism for CPU to check if GSP is open other than
  * reading 0xBADF41YY code).
+ *
+ * Until the programmed BAR0 decoupler settings are cleared, GSP access is blocked from
+ * the CPU so all reads will return 0.
  */
 static NvBool
 _kgspIsTargetMaskReleased
@@ -386,8 +402,9 @@ _kgspIsTargetMaskReleased
     reg = osDevReadReg032(pGpu, gpuGetDeviceMapping(pGpu, DEVICE_INDEX_GPU, 0),
                           pKernelFalcon->registerBase + NV_PFALCON_FALCON_HWCFG2);
 
-    return (reg & privErrTargetLockedMask) != privErrTargetLocked;
+    return ((reg != 0) && ((reg & privErrTargetLockedMask) != privErrTargetLocked));
 }
+
 
 static void
 _kgspBootstrapGspFmc_GH100
@@ -554,9 +571,11 @@ kgspBootstrapRiscvOSEarly_GH100
                   kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0));
         NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX1 = 0x%x\n",
                   kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1));
-
         return status;
     }
+
+    // Start polling for libos logs now that lockdown is released
+    pKernelGsp->bLibosLogsPollingEnabled = NV_TRUE;
 
     // Program FALCON_OS
     RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
@@ -589,4 +608,16 @@ exit:
     NV_ASSERT(status == NV_OK);
 
     return status;
+}
+
+void
+kgspGetGspRmBootUcodeStorage_GH100
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    BINDATA_STORAGE **ppBinStorageImage,
+    BINDATA_STORAGE **ppBinStorageDesc
+)
+{
+    kgspGetGspRmBootUcodeStorage_GA102(pGpu, pKernelGsp, ppBinStorageImage, ppBinStorageDesc);
 }

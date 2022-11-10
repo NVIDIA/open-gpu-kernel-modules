@@ -323,6 +323,8 @@
 #define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_40G                0x0F
 #define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_50G                0x10
 #define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_53_12500G          0x11
+#define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_100_00000G         0x12
+#define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_106_25000G         0x13
 
 /*
  * Enable/Disable periodic flush to inforom. Default is disabled.
@@ -517,12 +519,22 @@
 #define NV_SWITCH_REGKEY_I2C_ACCESS_CONTROL_DISABLE        0x0
 
 /*
+ * NV_SWITCH_REGKEY_FORCE_KERNEL_I2C - Used to force Kernel I2C path
+ *
+ * Private: Debug use only
+ */
+#define NV_SWITCH_REGKEY_FORCE_KERNEL_I2C                "ForceKernelI2c"
+#define NV_SWITCH_REGKEY_FORCE_KERNEL_I2C_DEFAULT        0x0
+#define NV_SWITCH_REGKEY_FORCE_KERNEL_I2C_ENABLE         0x1
+#define NV_SWITCH_REGKEY_FORCE_KERNEL_I2C_DISABLE        0x0
+
+/*
  * NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT - Configure the CRC bit error rate for the short interrupt
  * 
  * Public: Available in release drivers
  */
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT                  "CRCBitErrorRateShort"
-#define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_OFF              0x0
+#define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_DEFAULT          0x0
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_MAN    2:0
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_EXP    3:3
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_MAN    6:4
@@ -534,7 +546,7 @@
  * Public: Available in release drivers
  */
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG                       "CRCBitErrorRateLong"
-#define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_OFF                   0x000
+#define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_DEFAULT               0x000
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_BUG_3365481_CASE_1    0x803
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_BUG_3365481_CASE_2    0x703
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_BUG_3365481_CASE_5    0x34D
@@ -543,5 +555,38 @@
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_THRESHOLD_EXP         3:3
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_TIMESCALE_MAN         6:4
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_TIMESCALE_EXP         12:8
+
+/*
+ * NV_SWITCH_REGKEY_SET_LP_THRESHOLD - Sets the LP Threshold Value
+ *
+ * Private: Debug use only
+ */
+#define NV_SWITCH_REGKEY_SET_LP_THRESHOLD                "LPThreshold"
+#define NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT        0x0
+
+/*
+ * NV_SWITCH_REGKEY_MINION_INTERRUPTS - Enable/disable MINION interrupts
+ * 
+ * Used for bug #3572329.  To be removed once fmodel conflict is resolved.
+ *
+ * Public: Available in release drivers
+ */
+#define NV_SWITCH_REGKEY_MINION_INTERRUPTS               "MINIONIntr"
+#define NV_SWITCH_REGKEY_MINION_INTERRUPTS_DEFAULT       0x0
+#define NV_SWITCH_REGKEY_MINION_INTERRUPTS_ENABLE        0x1
+#define NV_SWITCH_REGKEY_MINION_INTERRUPTS_DISABLE       0x2
+
+/*
+ * NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET - surpresses error prints/notifs
+ *
+ * When set, Heartbeat timeout, Short Error Rate and Fault Up interrupts won't be
+ * logged
+ *
+ * Public: Available in release drivers
+ */
+
+#define NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET    "SurpressLinkErrorsForGpuReset"
+#define NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET_DISABLE   0x0
+#define NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET_ENABLE    0x1
 
 #endif //_REGKEY_NVSWITCH_H_

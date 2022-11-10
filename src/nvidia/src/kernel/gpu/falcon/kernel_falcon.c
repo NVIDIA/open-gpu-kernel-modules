@@ -184,7 +184,7 @@ static NV_STATUS _kflcnPromoteContext
     RsClient              *pClient = RES_GET_CLIENT(pKernelChannel);
     Subdevice             *pSubdevice;
     NvU64                  addr;
-    NvU32                  engineType;
+    RM_ENGINE_TYPE         rmEngineType;
     ENGINE_CTX_DESCRIPTOR *pEngCtx;
     NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS rmCtrlParams = {0};
 
@@ -197,14 +197,14 @@ static NV_STATUS _kflcnPromoteContext
 
     NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
                             ENGINE_INFO_TYPE_ENG_DESC, pKernelFalcon->physEngDesc,
-                            ENGINE_INFO_TYPE_NV2080, &engineType));
+                            ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType));
 
     rmCtrlParams.hClient     = pClient->hClient;
     rmCtrlParams.hObject     = RES_GET_HANDLE(pKernelChannel);
     rmCtrlParams.hChanClient = pClient->hClient;
     rmCtrlParams.virtAddress = addr;
     rmCtrlParams.size        = pKernelFalcon->ctxBufferSize;
-    rmCtrlParams.engineType  = engineType;
+    rmCtrlParams.engineType  = gpuGetNv2080EngineType(rmEngineType);
     rmCtrlParams.ChID        = pKernelChannel->ChID;
 
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pClient->hClient, RES_GET_HANDLE(pSubdevice),
@@ -332,33 +332,37 @@ void gkflcnRegisterIntrService_IMPL(OBJGPU *pGpu, GenericKernelFalcon *pGenericK
 NV_STATUS gkflcnServiceNotificationInterrupt_IMPL(OBJGPU *pGpu, GenericKernelFalcon *pGenericKernelFalcon, IntrServiceServiceNotificationInterruptArguments *pParams)
 {
     NvU32 idxMc = pParams->engineIdx;
-    NvU32 idx2080 = NV2080_ENGINE_TYPE_NULL;
+    RM_ENGINE_TYPE rmEngineType = RM_ENGINE_TYPE_NULL;
 
     NV_PRINTF(LEVEL_INFO, "nonstall intr for MC 0x%x\n", idxMc);
 
     if (MC_ENGINE_IDX_NVDECn(0) <= idxMc &&
-        idxMc < MC_ENGINE_IDX_NVDECn(NV2080_ENGINE_TYPE_NVDEC_SIZE))
+        idxMc < MC_ENGINE_IDX_NVDECn(RM_ENGINE_TYPE_NVDEC_SIZE))
     {
         NvU32 nvdecIdx = idxMc - MC_ENGINE_IDX_NVDECn(0);
-        idx2080 = NV2080_ENGINE_TYPE_NVDEC(nvdecIdx);
-    } else if (idxMc == MC_ENGINE_IDX_OFA0)
-        idx2080 = NV2080_ENGINE_TYPE_OFA;
+        rmEngineType = RM_ENGINE_TYPE_NVDEC(nvdecIdx);
+    }
+    else if (idxMc == MC_ENGINE_IDX_OFA0)
+    {
+        rmEngineType = RM_ENGINE_TYPE_OFA;
+    }
     else if (MC_ENGINE_IDX_NVJPEGn(0) <= idxMc &&
-        idxMc < MC_ENGINE_IDX_NVJPEGn(NV2080_ENGINE_TYPE_NVJPEG_SIZE))
+             idxMc < MC_ENGINE_IDX_NVJPEGn(RM_ENGINE_TYPE_NVJPEG_SIZE))
     {
         NvU32 nvjpgIdx = idxMc - MC_ENGINE_IDX_NVJPEGn(0);
-        idx2080 = NV2080_ENGINE_TYPE_NVJPEG(nvjpgIdx);
-    } else if (MC_ENGINE_IDX_MSENCn(0) <= idxMc &&
-        idxMc < MC_ENGINE_IDX_MSENCn(NV2080_ENGINE_TYPE_NVENC_SIZE))
+        rmEngineType = RM_ENGINE_TYPE_NVJPEG(nvjpgIdx);
+    }
+    else if (MC_ENGINE_IDX_MSENCn(0) <= idxMc &&
+             idxMc < MC_ENGINE_IDX_MSENCn(RM_ENGINE_TYPE_NVENC_SIZE))
     {
         NvU32 msencIdx = idxMc - MC_ENGINE_IDX_MSENCn(0);
-        idx2080 = NV2080_ENGINE_TYPE_NVENC(msencIdx);
+        rmEngineType = RM_ENGINE_TYPE_NVENC(msencIdx);
     }
 
-    NV_ASSERT_OR_RETURN(idx2080 != NV2080_ENGINE_TYPE_NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(rmEngineType != RM_ENGINE_TYPE_NULL, NV_ERR_INVALID_STATE);
 
     // Wake up channels waiting on this event
-    engineNonStallIntrNotify(pGpu, idx2080);
+    engineNonStallIntrNotify(pGpu, rmEngineType);
 
     return NV_OK;
 }

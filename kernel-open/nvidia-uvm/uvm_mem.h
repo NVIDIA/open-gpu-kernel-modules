@@ -179,6 +179,8 @@ struct uvm_mem_struct
             //
             // There is no equivalent mask for vidmem, because only the backing
             // GPU can physical access the memory
+            //
+            // TODO: Bug 3723779: Share DMA mappings within a single parent GPU
             uvm_global_processor_mask_t mapped_on_phys;
 
             struct page **pages;

@@ -33,28 +33,6 @@
 #include "nvRmReg.h"
 #include "gpu/gsp/gsp_static_config.h"
 
-NV_STATUS
-kmemsysConstructEngine_IMPL
-(
-    OBJGPU             *pGpu,
-    KernelMemorySystem *pKernelMemorySystem,
-    ENGDESCRIPTOR       engDesc
-)
-{
-    pKernelMemorySystem->memPartitionNumaInfo = NULL;
-
-    if (IS_GSP_CLIENT(pGpu))
-    {
-        // Setting up the sysmem flush buffer needs to be done very early in some cases
-        // as it's required for the GPU to perform a system flush. One such case is
-        // resetting GPU FALCONs and in particular resetting the PMU as part of VBIOS
-        // init.
-        NV_ASSERT_OK_OR_RETURN(kmemsysInitFlushSysmemBuffer_HAL(pGpu, pKernelMemorySystem));
-    }
-
-    return NV_OK;
-}
-
 static void
 kmemsysInitRegistryOverrides
 (
@@ -72,6 +50,30 @@ kmemsysInitRegistryOverrides
         if (data32 == NV_REG_STR_RM_L2_CLEAN_FB_PULL_DISABLED)
             pKernelMemorySystem->bL2CleanFbPull = NV_FALSE;
     }
+}
+
+NV_STATUS
+kmemsysConstructEngine_IMPL
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    ENGDESCRIPTOR       engDesc
+)
+{
+    pKernelMemorySystem->memPartitionNumaInfo = NULL;
+
+    kmemsysInitRegistryOverrides(pGpu, pKernelMemorySystem);
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        // Setting up the sysmem flush buffer needs to be done very early in some cases
+        // as it's required for the GPU to perform a system flush. One such case is
+        // resetting GPU FALCONs and in particular resetting the PMU as part of VBIOS
+        // init.
+        NV_ASSERT_OK_OR_RETURN(kmemsysInitFlushSysmemBuffer_HAL(pGpu, pKernelMemorySystem));
+    }
+
+    return NV_OK;
 }
 
 /*
@@ -95,15 +97,13 @@ NV_STATUS kmemsysStateInitLocked_IMPL
 
     pStaticConfig = portMemAllocNonPaged(sizeof(*pStaticConfig));
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticConfig != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-    portMemSet(pStaticConfig, 0, sizeof(pStaticConfig));
+    portMemSet(pStaticConfig, 0, sizeof(*pStaticConfig));
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
         kmemsysInitStaticConfig_HAL(pGpu, pKernelMemorySystem, pStaticConfig),
         fail);
 
     pKernelMemorySystem->pStaticConfig = pStaticConfig;
-
-    kmemsysInitRegistryOverrides(pGpu, pKernelMemorySystem);
 
 fail:
     if (status != NV_OK)
@@ -209,6 +209,8 @@ kmemsysAllocComprResources_KERNEL
     {
         if (!(IS_SIMULATION(pGpu) || IsDFPGA(pGpu) || (IS_EMULATION(pGpu) && RMCFG_FEATURE_PLATFORM_MODS)
             ||(RMCFG_FEATURE_PLATFORM_WINDOWS && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
+            ||hypervisorIsVgxHyper()
+            ||IS_GFID_VF(gfid)
             ||(IsSLIEnabled(pGpu) && !(RMCFG_FEATURE_PLATFORM_WINDOWS &&
                                      !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))))
            )
@@ -581,7 +583,7 @@ kmemsysSetupCoherentCpuLink_IMPL
     NvU64          numaOnlineBase = 0;
     NvU64          numaOnlineSize = 0;
     NvU32          data32;
-    NvBool         bCpuMapping;
+    NvBool         bCpuMapping    = NV_TRUE; // Default enable
 
     {
         NV_ASSERT_OK_OR_RETURN(kmemsysGetFbNumaInfo_HAL(pGpu, pKernelMemorySystem,
@@ -603,7 +605,6 @@ kmemsysSetupCoherentCpuLink_IMPL
         }
     }
 
-    // ATS mappings are currently not supported in mods
     if ((osReadRegistryDword(pGpu,
                              NV_REG_STR_OVERRIDE_GPU_NUMA_NODE_ID, &data32)) == NV_OK)
     {
@@ -611,9 +612,6 @@ kmemsysSetupCoherentCpuLink_IMPL
         NV_PRINTF(LEVEL_ERROR, "Override GPU NUMA node ID %d!\n",
                   pGpu->numaNodeId);
     }
-
-    // Default enable
-    bCpuMapping = NV_TRUE;
 
     // Parse regkey here
     if ((osReadRegistryDword(pGpu,
@@ -630,6 +628,7 @@ kmemsysSetupCoherentCpuLink_IMPL
     {
         return NV_OK;
     }
+
     NV_ASSERT_OK_OR_RETURN(kbusCreateCoherentCpuMapping_HAL(pGpu, pKernelBus, bFlush));
 
     // Switch the toggle for coherent link mapping only if migration is successful

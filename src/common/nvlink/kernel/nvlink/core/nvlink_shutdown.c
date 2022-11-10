@@ -61,6 +61,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
         return NVL_ERR_GENERIC;
     }
 
+    if (conns[0] == NULL)
+        return NVL_ERR_GENERIC;
+
     // Set the version. Currently, only one version is supported on a chip
     version = conns[0]->end0->version;
 
@@ -71,6 +74,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = nvlink_core_check_intranode_conn_state(conns[i], NVLINK_LINKSTATE_HS);
             if ((status == NVL_SUCCESS) || (status == NVL_ERR_INVALID_STATE))
             {
@@ -98,6 +104,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 0: Disable HeartBeat on the endpoints of all connections
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_HEARTBEAT,
                                                         flags);
@@ -114,6 +123,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 1: Disable PM on the endpoints of all connections
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_PM,
                                                         flags);
@@ -132,6 +144,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -155,6 +170,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // Check for each connection, if both the ends and their sublinks are in HS mode
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = nvlink_core_check_intranode_conn_state(conns[i], NVLINK_LINKSTATE_HS);
         if (status == NVL_ERR_INVALID_STATE)
         {
@@ -186,6 +204,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     //
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for the end0 to go to SWCFG
         status = nvlink_core_poll_link_state(conns[i]->end0,
                                              NVLINK_LINKSTATE_SAFE,
@@ -212,6 +233,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 3: Change sub-link state to SAFE on all endpoints
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
                                                    NVLINK_SUBLINK_STATE_TX_SAFE,
                                                    flags);
@@ -228,6 +252,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // Poll for all endpoints sub-link state to reach SAFE
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for sublinks to go to SAFE
         status = nvlink_core_poll_sublink_state(conns[i]->end0,
                                                 NVLINK_SUBLINK_STATE_TX_SAFE,
@@ -261,6 +288,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 4: Save link state on all the endpoints
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         if (!conns[i]->end0->bStateSaved)
         {
             conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
@@ -281,6 +311,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -304,6 +337,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 5: Trigger the sleep request on all the endpoints
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         //
         // Send SLEEP request on one end of connection if not in loopback.
         // Don' poll, since transition will happen when both ends get the request
@@ -327,6 +363,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // Finally check the connection states
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = nvlink_core_check_intranode_conn_state(conns[i], NVLINK_LINKSTATE_SLEEP);
         if (status != NVL_SUCCESS)
         {
@@ -392,6 +431,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Disable Power Management before moving link out of Active
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_PM,
@@ -418,6 +460,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
     // Poll for links to reach SWCFG & initiate sublinks to SAFE state
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for the end0 to go to SWCFG
         status = nvlink_core_poll_link_state(conns[i]->end0,
                                              NVLINK_LINKSTATE_SAFE,
@@ -430,7 +475,7 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
                 
             // to track Failure
             conns[i]->end0->inSWCFG = NV_FALSE;        
-	}
+	    }
         else
         {
             conns[i]->end0->inSWCFG = NV_TRUE;
@@ -448,14 +493,14 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
 
             // to track Failure
             conns[i]->end1->inSWCFG = NV_FALSE; 
-	}
+	    }
         else
         {
             conns[i]->end1->inSWCFG = NV_TRUE;
         }
 
         // Change each sublink state to SAFE
-	if(conns[i]->end0->inSWCFG == NV_TRUE)
+	    if(conns[i]->end0->inSWCFG == NV_TRUE)
         {
             conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
                                                        NVLINK_SUBLINK_STATE_TX_SAFE,
@@ -473,6 +518,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
     // Poll for sublinks to reach SAFE state
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for sublinks to go to SAFE
         if(conns[i]->end0->inSWCFG == NV_TRUE)
         {
@@ -623,6 +671,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Disable Power Management before moving link out of Active
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_PM,
@@ -651,6 +702,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
     //
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for the end0 to go to SWCFG
         status = nvlink_core_poll_link_state(conns[i]->end0,
                                              NVLINK_LINKSTATE_SAFE,
@@ -694,6 +748,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
     // Wait for sublinks to go to SAFE
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = nvlink_core_poll_sublink_state(conns[i]->end0,
                                                 NVLINK_SUBLINK_STATE_TX_SAFE,
                                                 NVLINK_SUBLINK_SUBSTATE_TX_STABLE,
@@ -736,6 +793,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
     // Update tracking info
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
             "%s: Connection is in SAFE mode. ",
             __FUNCTION__));
@@ -779,6 +839,9 @@ nvlink_core_reset_intranode_conns
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         //
         // Reset both ends of this connection.
         // This path should enable/init those link endpoints as well.
@@ -825,6 +888,9 @@ _nvlink_core_clear_link_state
     nvlink_link *link
 )
 {
+    if (link == NULL)
+        return;
+
     // Receiver Detect needs to happen again
     link->bRxDetected = NV_FALSE;
 
@@ -874,8 +940,8 @@ nvlink_core_powerdown_floorswept_conns_to_off
 )
 {
     NvU32 i,j;
-    nvlink_intranode_conn **connsToShutdown;
-    nvlink_intranode_conn **visitedConns;
+    nvlink_intranode_conn **connsToShutdown = NULL;
+    nvlink_intranode_conn **visitedConns    = NULL;
     nvlink_intranode_conn *conn;
     NvU32 connCount;
     NvU32 numConnsToShutdown;
@@ -926,10 +992,15 @@ nvlink_core_powerdown_floorswept_conns_to_off
             if (links[j]->linkNumber >= numLinksPerIoctrl*i &&
                 links[j]->linkNumber < numLinksPerIoctrl*(i+1))
             {
+                conn = NULL;
                 nvlink_core_get_intranode_conn(links[j], &(conn));
                 if (conn == NULL ||
-                    _nvlink_core_check_if_conn_in_array(visitedConns, connCount, conn))
+                    _nvlink_core_check_if_conn_in_array(visitedConns, connCount, conn) || 
+                    (conn->end0 == NULL || conn->end1 == NULL))
                 {
+                    NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                        "%s: AC debug -- conn gotten: 0x%x\n",
+                        __FUNCTION__, conn));
                     continue;
                 }
                 else if(nvlink_core_check_intranode_conn_state(conn, NVLINK_LINKSTATE_OFF) ==

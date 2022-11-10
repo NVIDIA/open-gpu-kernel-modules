@@ -356,7 +356,7 @@ typedef enum NVT_TV_FORMAT
 #define NVT_STATUS_NTSC_TV                   NVT_DEF_TIMING_STATUS(NVT_TYPE_NTSC_TV, 0)    // TVN
 #define NVT_STATUS_PAL_TV                    NVT_DEF_TIMING_STATUS(NVT_TYPE_PAL_TV,  0)    // TVP
 #define NVT_STATUS_CVT                       NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT, 0)        // CVT timing with regular blanking
-#define NVT_STATUS_CVT_RB                    NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT_RB,  0)    // CVT_RB timing
+#define NVT_STATUS_CVT_RB                    NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT_RB,  0)    // CVT_RB timing V1
 #define NVT_STATUS_CVT_RB_2                  NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT_RB_2,  0)  // CVT_RB timing V2
 #define NVT_STATUS_CVT_RB_3                  NVT_DEF_TIMING_STATUS(NVT_TYPE_CVT_RB_3,  0)  // CVT_RB timing V3
 #define NVT_STATUS_CUST                      NVT_DEF_TIMING_STATUS(NVT_TYPE_CUST,    0)    // Customized timing
@@ -814,6 +814,7 @@ typedef struct VSDB_DATA
 // vendor specific video data
 //*******************************
 #define NVT_CEA861_DV_IEEE_ID                       0x00D046
+#define NVT_CEA861_HDR10PLUS_IEEE_ID                0x90848B
 #define NVT_CEA861_VSVDB_PAYLOAD_MAX_LENGTH         25          // max allowed vendor specific video data block payload (in byte)
 #define NVT_CEA861_VSVDB_VERSION_MASK               0xE0        // vsdb version mask
 #define NVT_CEA861_VSVDB_VERSION_MASK_SHIFT         5           // vsdb version shift mask
@@ -941,13 +942,13 @@ typedef struct tagNVT_DV_STATIC_METADATA_TYPE2
     NvU8 VSVDB_version               : 3;
 
     // second byte
-    NvU8 backlt_min_luma             : 2;
+    NvU8 reserved                    : 2;
     NvU8 supports_global_dimming     : 1;
     NvU8 target_min_luminance        : 5;
 
     // third byte
     NvU8 interface_supported_by_sink : 2;
-    NvU8 reserved                    : 1;
+    NvU8 parity                      : 1;
     NvU8 target_max_luminance        : 5;
 
     //fourth byte
@@ -967,6 +968,14 @@ typedef struct tagNVT_DV_STATIC_METADATA_TYPE2
     NvU8 unique_Ry                   : 5;
 
 } NVT_DV_STATIC_METADATA_TYPE2;
+
+typedef struct tagNVT_HDR10PLUS_INFO
+{
+    // first byte
+    NvU8 application_version                : 2;
+    NvU8 full_frame_peak_luminance_index    : 2;
+    NvU8 peak_luminance_index               : 4;
+} NVT_HDR10PLUS_INFO;
 #pragma pack()
 
 //***************************
@@ -1111,6 +1120,7 @@ typedef struct tagNVT_VALID_EXTENDED_BLOCKS
     NvU32   y420cmdb            :  1;
     NvU32   hdr_static_metadata :  1;
     NvU32   dv_static_metadata  :  1;
+    NvU32   hdr10Plus           :  1;
     NvU32   SCDB                :  1;
     NvU32   HF_EEODB            :  1;
 } NVT_VALID_EXTENDED_BLOCKS;
@@ -1799,7 +1809,7 @@ typedef struct tagNVT_EDID_DD_DUMMY_DESCRIPTOR
 //
 //
 //
-//*** (Tag = 0x0F) ***/
+//*** (Tag = 0x00 to 0x0F) ***/
 // Manufacturer Special Data
 typedef struct tagNVT_EDID_DD_MANUF_DATA
 {
@@ -2169,6 +2179,7 @@ typedef struct tagNVT_DV_STATIC_METADATA
     NvU32 backlt_min_luma             : 2;
     NvU32 interface_supported_by_sink : 2;
     NvU32 supports_10b_12b_444        : 2;
+    NvU32 parity                      : 1;
 }NVT_DV_STATIC_METADATA;
 
 //***********************************
@@ -2182,7 +2193,6 @@ typedef struct tagNVT_DV_STATIC_METADATA
 #define NVT_DISPLAY_2_0_CAP_YCbCr_422             0x10 // DTV monitor supports YCbCr4:2:2
 
 // vendor specific 
-
 #define NVT_VESA_VENDOR_SPECIFIC_IEEE_ID                 0x3A0292
 #define NVT_VESA_VENDOR_SPECIFIC_LENGTH                  7
 
@@ -2194,6 +2204,9 @@ typedef struct tagNVT_DV_STATIC_METADATA
 #define NVT_VESA_ORG_VSDB_MULTI_SST_MODE_SHIFT           5
 #define NVT_VESA_ORG_VSDB_PASS_THROUGH_INTEGER_MASK      0x3F
 #define NVT_VESA_ORG_VSDB_PASS_THROUGH_FRACTIOINAL_MASK  0x0F
+
+// adaptive-sync
+#define NVT_ADAPTIVE_SYNC_DESCRIPTOR_MAX_COUNT           0x04
 
 typedef enum _tagNVT_DISPLAYID_PRODUCT_PRIMARY_USE_CASE
 {
@@ -2383,6 +2396,28 @@ typedef struct _tagNVT_DISPLAYID_DISPLAY_PARAMETERS
     NvBool                          audio_speakers_integrated;
 } NVT_DISPLAYID_DISPLAY_PARAMETERS;
 
+typedef struct _tagNVT_DISPLAYID_ADAPTIVE_SYNC
+{
+    union
+    {
+        NvU8 operation_range_info;
+        struct
+        {
+            NvU8  adaptive_sync_range       : 1;
+            NvU8  duration_inc_flicker_perf : 1; 
+            NvU8  modes                     : 2;
+            NvU8  seamless_not_support      : 1;
+            NvU8  duration_dec_flicker_perf : 1;
+            NvU8  reserved                  : 2;            
+        } information;
+    } u;
+
+    NvU8  max_duration_inc;
+    NvU8  min_rr;
+    NvU16 max_rr;
+    NvU8  max_duration_dec;
+} NVT_DISPLAYID_ADAPTIVE_SYNC;
+
 typedef struct _tagVESA_VSDB_PARSED_INFO
 {
     struct 
@@ -2411,7 +2446,6 @@ typedef struct _tagVESA_VSDB_PARSED_INFO
         NvU8 pass_through_fraction_dsc : 4;
         NvU8 reserved                  : 4;
     } pass_through_fractional;
-
 } VESA_VSDB_PARSED_INFO;
 
 typedef struct _tagNVT_DISPLAYID_VENDOR_SPECIFIC
@@ -2427,7 +2461,8 @@ typedef struct _tagNVT_DISPLAYID_CTA
 {
     NVT_EDID_CEA861_INFO           cta861_info;
     NVT_HDR_STATIC_METADATA        hdrInfo;
-    NVT_DV_STATIC_METADATA         dvInfo; 
+    NVT_DV_STATIC_METADATA         dvInfo;
+    NVT_HDR10PLUS_INFO             hdr10PlusInfo;
 } NVT_DISPLAYID_CTA;
 
 typedef struct _tagNVT_VALID_DATA_BLOCKS
@@ -2442,6 +2477,10 @@ typedef struct _tagNVT_VALID_DATA_BLOCKS
     NvBool stereo_interface_present;
     NvBool tiled_display_present;
     NvBool container_id_present;
+    NvBool type10Timing_present;
+    NvBool adaptive_sync_present;
+    NvBool arvr_hmd_present;
+    NvBool arvr_layer_present;
     NvBool vendor_specific_present;
     NvBool cta_data_present;
 } NVT_VALID_DATA_BLOCKS;
@@ -2493,6 +2532,10 @@ typedef struct _tagNVT_DISPLAYID_2_0_INFO
 
     // ContainerID Data Block (Mandatory for Multi-function Device)
     NVT_DISPLAYID_CONTAINERID               container_id;
+
+    // Adaptive-Sync Data Block (Mandatory for display device supports Adaptive-Sync)
+    NvU32                                   total_adaptive_sync_descriptor;
+    NVT_DISPLAYID_ADAPTIVE_SYNC             adaptive_sync_descriptor[NVT_ADAPTIVE_SYNC_DESCRIPTOR_MAX_COUNT];
 
     // Vendor-specific Data Block (Not Mandatory)
     NVT_DISPLAYID_VENDOR_SPECIFIC           vendor_specific;
@@ -2631,6 +2674,9 @@ typedef struct tagNVT_EDID_INFO
 
     // DV capability information from the DV Metadata Data Block
     NVT_DV_STATIC_METADATA dv_static_metadata_info;
+
+    // HDR10+ capability information from the HDR10+ LLC VSVDB
+    NVT_HDR10PLUS_INFO hdr10PlusInfo;
 
     // HDMI LLC info
     NVT_HDMI_LLC_INFO       hdmiLlcInfo;
@@ -5182,28 +5228,60 @@ typedef enum
 
 typedef enum
 {
-    // errors returned as a bitmask by NvTiming_EDIDValidationMask()
+    // errors returned as a bitmask by NvTiming_EDIDValidationMask()    
     NVT_EDID_VALIDATION_ERR_EXT = 0,
     NVT_EDID_VALIDATION_ERR_VERSION,
     NVT_EDID_VALIDATION_ERR_SIZE,
     NVT_EDID_VALIDATION_ERR_CHECKSUM,
     NVT_EDID_VALIDATION_ERR_RANGE_LIMIT,
     NVT_EDID_VALIDATION_ERR_DTD,
+    NVT_EDID_VALIDATION_ERR_HEADER,
     NVT_EDID_VALIDATION_ERR_EXT_DTD,
+    NVT_EDID_VALIDATION_ERR_EXTENSION_TAG,
+    NVT_EDID_VALIDATION_ERR_EXTENSION_COUNT,    
+    NVT_EDID_VALIDATION_ERR_DESCRIPTOR,
+    NVT_EDID_VALIDATION_ERR_EXT_CTA_BASIC,
+    NVT_EDID_VALIDATION_ERR_EXT_CTA_DTD,
+    NVT_EDID_VALIDATION_ERR_EXT_CTA_TAG,
+    NVT_EDID_VALIDATION_ERR_EXT_CTA_SVD,
+    NVT_EDID_VALIDATION_ERR_EXT_CTA_INVALID_DATA_BLOCK,
+    NVT_EDID_VALIDATION_ERR_EXT_CTA_CHECKSUM,
+    NVT_EDID_VALIDATION_ERR_EXT_DID_VERSION,
+    NVT_EDID_VALIDATION_ERR_EXT_DID_EXTCOUNT,
+    NVT_EDID_VALIDATION_ERR_EXT_DID_CHECKSUM,
+    NVT_EDID_VALIDATION_ERR_EXT_DID_SEC_SIZE,    
+    NVT_EDID_VALIDATION_ERR_EXT_DID13_TAG,
+    NVT_EDID_VALIDATION_ERR_EXT_DID13_TYPE1,
+    NVT_EDID_VALIDATION_ERR_EXT_DID2_TAG,
+    NVT_EDID_VALIDATION_ERR_EXT_DID2_USE_CASE,
+    NVT_EDID_VALIDATION_ERR_EXT_DID2_MANDATORY_BLOCKS,
+    NVT_EDID_VALIDATION_ERR_EXT_DID2_TYPE7,
+    NVT_EDID_VALIDATION_ERR_EXT_DID2_TYPE10,
+    NVT_EDID_VALIDATION_ERR_EXT_RANGE_LIMIT,
+    NVT_EDID_VALIDATION_ERR_EXT_DID2_ADAPTIVE_SYNC,
 } NVT_EDID_VALIDATION_ERR_STATUS;
 #define NVT_EDID_VALIDATION_ERR_MASK(x) NVBIT32(x)
 
+//*************************************
+// The DisplayID2 validation Mask
+//*************************************
 typedef enum
 {
     // errors returned as a bitmask by NvTiming_DisplayID2ValidationMask()
-    NVT_DID2_VALIDATION_ERR_EXT = 0,
-    NVT_DID2_VALIDATION_ERR_VERSION,
+    NVT_DID2_VALIDATION_ERR_VERSION = 0,
     NVT_DID2_VALIDATION_ERR_SIZE,
-    NVT_DID2_VALIDATION_ERR_CHECKSUM,
-    NVT_DID2_VALIDATION_ERR_PRODUCT_ID,
+    NVT_DID2_VALIDATION_ERR_CHECKSUM,    
     NVT_DID2_VALIDATION_ERR_NO_DATA_BLOCK,
+    NVT_EDID_VALIDATION_ERR_TAG,
     NVT_DID2_VALIDATION_ERR_RANGE_LIMIT,
     NVT_DID2_VALIDATION_ERR_NATIVE_DTD,
+    NVT_DID2_VALIDATION_ERR_MANDATORY_BLOCKS,
+    NVT_DID2_VALIDATION_ERR_PRODUCT_IDENTIFY,
+    NVT_DID2_VALIDATION_ERR_PARAMETER,
+    NVT_DID2_VALIDATION_ERR_INTERFACE,
+    NVT_DID2_VALIDATION_ERR_TYPE7,
+    NVT_DID2_VALIDATION_ERR_TYPE10,
+    NVT_DID2_VALIDATION_ERR_ADAPTIVE_SYNC,
 } NVT_DID2_VALIDATION_ERR_STATUS;
 #define NVT_DID2_VALIDATION_ERR_MASK(x) NVBIT32(x)
 
@@ -5229,9 +5307,9 @@ typedef enum
 #define NVT_FLAG_DTD1_PREFERRED_TIMING           0x00080000
 #define NVT_FLAG_DISPLAYID_DTD_PREFERRED_TIMING  0x00100000
 #define NVT_FLAG_CEA_PREFERRED_TIMING            0x00200000
-#define NVT_FLAG_DISPLAYID_7_DSC_PASSTHRU        0x00400000
+#define NVT_FLAG_DISPLAYID_T7_DSC_PASSTHRU       0x00400000
 #define NVT_FLAG_DISPLAYID_2_0_TIMING            0x00800000  // this one for the CTA861 embedded in DID20
-#define NVT_FLAG_DISPLAYID_2_0_EXPLICT_YUV420    0x01000000  // DID2 E7 spec. supported yuv420 indicated
+#define NVT_FLAG_DISPLAYID_T7_T8_EXPLICT_YUV420  0x01000000  // DID2 E7 spec. supported yuv420 indicated
 
 #define NVT_FLAG_INTERLACED_MASK                 (NVT_FLAG_INTERLACED_TIMING | NVT_FLAG_INTERLACED_TIMING2)
 
@@ -5299,6 +5377,7 @@ NvU32 NvTiming_GetVESADisplayDescriptorVersion(NvU8 *rawData, NvU32 *pVer);
 // EDID entry parse
 NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID_INFO *pEdidInfo);
 NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongValidation);
+NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length);
 NVT_STATUS NvTiming_EDIDValidation(NvU8 *pEdid, NvU32 length, NvBool bIsStrongValidation);
 
 // DisplayID20 standalone entry parse

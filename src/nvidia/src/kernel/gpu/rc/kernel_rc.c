@@ -282,6 +282,7 @@ krcReportXid_IMPL
         NvU16          gpuPartitionId;
         NvU16          computeInstanceId;
         KernelChannel *pKernelChannel = krcGetChannelInError(pKernelRc);
+        char          *current_procname = NULL;
 
         // Channels are populated with osGetCurrentProcessName() and pid of
         // their process at creation-time. If no channel was found, mark unknown
@@ -289,8 +290,8 @@ krcReportXid_IMPL
         char pid_string[12] = "'<unknown>'";
 
         //
-        // Get PID of channel creator if available, otherwise default to
-        // whatever the kernel can tell us at the moment (likely pid 0)
+        // Get PID of channel creator if available, or get the current PID for
+        // exception types that never have an associated channel
         //
         if (pKernelChannel != NULL)
         {
@@ -298,6 +299,19 @@ krcReportXid_IMPL
             RmClient *pRmClient = dynamicCast(pClient, RmClient);
             procname = pRmClient->name;
             nvDbgSnprintf(pid_string, sizeof(pid_string), "%u", pKernelChannel->ProcessID);
+        }
+        else if (exceptType == GSP_RPC_TIMEOUT)
+        {
+            NvU32 current_pid = osGetCurrentProcess();
+
+            nvDbgSnprintf(pid_string, sizeof(pid_string), "%u", current_pid);
+
+            current_procname = portMemAllocNonPaged(NV_PROC_NAME_MAX_LENGTH);
+            if (current_procname != NULL)
+            {
+                osGetCurrentProcessName(current_procname, NV_PROC_NAME_MAX_LENGTH);
+                procname = current_procname;
+            }
         }
 
         _krcLogUuidOnce(pGpu, pKernelRc);
@@ -342,6 +356,8 @@ krcReportXid_IMPL
                 procname,
                 pMsg != NULL ? pMsg : "");
         }
+
+        portMemFree(current_procname);
     }
 }
 

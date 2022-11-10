@@ -163,7 +163,11 @@ typedef struct
     uvm_channel_pool_type_t pool_type;
 
     // Lock protecting the state of channels in the pool
-    uvm_spinlock_t lock;
+    union {
+        uvm_spinlock_t spinlock;
+        uvm_mutex_t mutex;
+    };
+
 } uvm_channel_pool_t;
 
 struct uvm_channel_struct
@@ -309,10 +313,20 @@ struct uvm_channel_manager_struct
 // Create a channel manager for the GPU
 NV_STATUS uvm_channel_manager_create(uvm_gpu_t *gpu, uvm_channel_manager_t **manager_out);
 
+void uvm_channel_pool_lock(uvm_channel_pool_t *pool);
+void uvm_channel_pool_unlock(uvm_channel_pool_t *pool);
+void uvm_channel_pool_assert_locked(uvm_channel_pool_t *pool);
+
+static bool uvm_channel_pool_is_proxy(uvm_channel_pool_t *pool)
+{
+    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+
+    return pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE_PROXY;
+}
+
 static bool uvm_channel_is_proxy(uvm_channel_t *channel)
 {
-    UVM_ASSERT(channel->pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
-    return channel->pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE_PROXY;
+    return uvm_channel_pool_is_proxy(channel->pool);
 }
 
 static bool uvm_channel_is_ce(uvm_channel_t *channel)

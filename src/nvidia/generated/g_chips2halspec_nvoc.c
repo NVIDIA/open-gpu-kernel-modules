@@ -79,10 +79,20 @@ void __nvoc_init_halspec_ChipHal(ChipHal *pChipHal, NvU32 arch, NvU32 impl, NvU3
     {
         pChipHal->__nvoc_HalVarIdx = 54;
     }
+    // AD106
+    else if(arch == 0x19 && impl == 0x6)
+    {
+        pChipHal->__nvoc_HalVarIdx = 55;
+    }
+    // AD107
+    else if(arch == 0x19 && impl == 0x7)
+    {
+        pChipHal->__nvoc_HalVarIdx = 56;
+    }
     // GH100
     else if(arch == 0x18 && impl == 0x0)
     {
-        pChipHal->__nvoc_HalVarIdx = 59;
+        pChipHal->__nvoc_HalVarIdx = 60;
     }
 }
 

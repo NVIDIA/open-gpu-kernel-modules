@@ -46,6 +46,7 @@ MODULE_PARM_DESC(uvm_disable_hmm,
 #include "uvm_lock.h"
 #include "uvm_api.h"
 #include "uvm_va_policy.h"
+#include "uvm_tools.h"
 
 bool uvm_hmm_is_enabled_system_wide(void)
 {
@@ -95,6 +96,9 @@ NV_STATUS uvm_hmm_va_space_initialize_test(uvm_va_space_t *va_space)
 
     if (!uvm_hmm_is_enabled_system_wide() || !mm)
         return NV_WARN_NOTHING_TO_DO;
+
+    if (va_space->initialization_flags & UVM_INIT_FLAGS_DISABLE_HMM)
+        return NV_ERR_INVALID_STATE;
 
     uvm_assert_mmap_lock_locked_write(mm);
     uvm_assert_rwsem_locked_write(&va_space->lock);
@@ -179,12 +183,19 @@ static bool hmm_invalidate(uvm_va_block_t *va_block,
     mmu_interval_set_seq(mni, cur_seq);
 
     // Note: unmap_vmas() does MMU_NOTIFY_UNMAP [0, 0xffffffffffffffff]
+    // Also note that hmm_invalidate() can be called when a new va_block is not
+    // yet inserted into the va_space->hmm.blocks table while the original
+    // va_block is being split. The original va_block may have its end address
+    // updated before the mmu interval notifier is updated so this invalidate
+    // may be for a range past the va_block end address.
     start = range->start;
     end = (range->end == ULONG_MAX) ? range->end : range->end - 1;
     if (start < va_block->start)
         start = va_block->start;
     if (end > va_block->end)
         end = va_block->end;
+    if (start > end)
+        goto unlock;
 
     if (range->event == MMU_NOTIFY_UNMAP)
         uvm_va_policy_clear(va_block, start, end);
@@ -266,6 +277,7 @@ static NV_STATUS hmm_va_block_find_create(uvm_va_space_t *va_space,
 
     UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
     UVM_ASSERT(mm);
+    UVM_ASSERT(!va_block_context || va_block_context->mm == mm);
     uvm_assert_mmap_lock_locked(mm);
     uvm_assert_rwsem_locked(&va_space->lock);
     UVM_ASSERT(PAGE_ALIGNED(addr));
@@ -294,11 +306,13 @@ static NV_STATUS hmm_va_block_find_create(uvm_va_space_t *va_space,
     // a maximum interval that doesn't overlap any existing UVM va_ranges.
     // We know that 'addr' is not within a va_range or
     // hmm_va_block_find_create() wouldn't be called.
-    uvm_range_tree_adjust_interval(&va_space->va_range_tree, addr, &start, &end);
+    status = uvm_range_tree_find_hole_in(&va_space->va_range_tree, addr, &start, &end);
+    UVM_ASSERT(status == NV_OK);
 
     // Search for existing HMM va_blocks in the start/end interval and create
     // a maximum interval that doesn't overlap any existing HMM va_blocks.
-    uvm_range_tree_adjust_interval(&va_space->hmm.blocks, addr, &start, &end);
+    status = uvm_range_tree_find_hole_in(&va_space->hmm.blocks, addr, &start, &end);
+    UVM_ASSERT(status == NV_OK);
 
     // Create a HMM va_block with a NULL va_range pointer.
     status = uvm_va_block_create(NULL, start, end, &va_block);
@@ -321,10 +335,7 @@ static NV_STATUS hmm_va_block_find_create(uvm_va_space_t *va_space,
     }
 
     status = uvm_range_tree_add(&va_space->hmm.blocks, &va_block->hmm.node);
-    if (status != NV_OK) {
-        UVM_ASSERT(status != NV_ERR_UVM_ADDRESS_IN_USE);
-        goto err_unreg;
-    }
+    UVM_ASSERT(status == NV_OK);
 
 done:
     uvm_mutex_unlock(&va_space->hmm.blocks_lock);
@@ -332,9 +343,6 @@ done:
         va_block_context->hmm.vma = vma;
     *va_block_ptr = va_block;
     return NV_OK;
-
-err_unreg:
-    mmu_interval_notifier_remove(&va_block->hmm.notifier);
 
 err_release:
     uvm_va_block_release(va_block);
@@ -352,10 +360,67 @@ NV_STATUS uvm_hmm_va_block_find_create(uvm_va_space_t *va_space,
     return hmm_va_block_find_create(va_space, addr, false, va_block_context, va_block_ptr);
 }
 
+NV_STATUS uvm_hmm_find_vma(uvm_va_block_context_t *va_block_context, NvU64 addr)
+{
+    struct mm_struct *mm = va_block_context->mm;
+    struct vm_area_struct *vma;
+
+    if (!mm)
+        return NV_ERR_INVALID_ADDRESS;
+
+    uvm_assert_mmap_lock_locked(mm);
+
+    vma = find_vma(mm, addr);
+    if (!uvm_hmm_vma_is_valid(vma, addr, false))
+        return NV_ERR_INVALID_ADDRESS;
+
+    va_block_context->hmm.vma = vma;
+
+    return NV_OK;
+}
+
+bool uvm_hmm_va_block_context_vma_is_valid(uvm_va_block_t *va_block,
+                                           uvm_va_block_context_t *va_block_context,
+                                           uvm_va_block_region_t region)
+{
+    uvm_assert_mutex_locked(&va_block->lock);
+
+    if (uvm_va_block_is_hmm(va_block)) {
+        struct vm_area_struct *vma = va_block_context->hmm.vma;
+
+        UVM_ASSERT(vma);
+        UVM_ASSERT(va_block_context->mm == vma->vm_mm);
+        uvm_assert_mmap_lock_locked(va_block_context->mm);
+        UVM_ASSERT(vma->vm_start <= uvm_va_block_region_start(va_block, region));
+        UVM_ASSERT(vma->vm_end > uvm_va_block_region_end(va_block, region));
+    }
+
+    return true;
+}
+
+NV_STATUS uvm_hmm_test_va_block_inject_split_error(uvm_va_space_t *va_space, NvU64 addr)
+{
+    uvm_va_block_test_t *block_test;
+    uvm_va_block_t *va_block;
+    NV_STATUS status;
+
+    if (!uvm_hmm_is_enabled(va_space))
+        return NV_ERR_INVALID_ADDRESS;
+
+    status = hmm_va_block_find_create(va_space, addr, false, NULL, &va_block);
+    if (status != NV_OK)
+        return status;
+
+    block_test = uvm_va_block_get_test(va_block);
+    if (block_test)
+        block_test->inject_split_error = true;
+
+    return NV_OK;
+}
+
 typedef struct {
     struct mmu_interval_notifier notifier;
     uvm_va_block_t *existing_block;
-    uvm_va_block_t *new_block;
 } hmm_split_invalidate_data_t;
 
 static bool hmm_split_invalidate(struct mmu_interval_notifier *mni,
@@ -363,14 +428,9 @@ static bool hmm_split_invalidate(struct mmu_interval_notifier *mni,
                                  unsigned long cur_seq)
 {
     hmm_split_invalidate_data_t *split_data = container_of(mni, hmm_split_invalidate_data_t, notifier);
-    uvm_va_block_t *existing_block = split_data->existing_block;
-    uvm_va_block_t *new_block = split_data->new_block;
 
-    if (uvm_ranges_overlap(existing_block->start, existing_block->end, range->start, range->end - 1))
-        hmm_invalidate(existing_block, range, cur_seq);
-
-    if (uvm_ranges_overlap(new_block->start, new_block->end, range->start, range->end - 1))
-        hmm_invalidate(new_block, range, cur_seq);
+    uvm_tools_test_hmm_split_invalidate(split_data->existing_block->hmm.va_space);
+    hmm_invalidate(split_data->existing_block, range, cur_seq);
 
     return true;
 }
@@ -404,6 +464,7 @@ static NV_STATUS hmm_split_block(uvm_va_block_t *va_block,
     uvm_va_space_t *va_space = va_block->hmm.va_space;
     struct mm_struct *mm = va_space->va_space_mm.mm;
     hmm_split_invalidate_data_t split_data;
+    NvU64 delay_us;
     uvm_va_block_t *new_va_block;
     NV_STATUS status;
     int ret;
@@ -419,22 +480,23 @@ static NV_STATUS hmm_split_block(uvm_va_block_t *va_block,
         return status;
 
     // Initialize the newly created HMM va_block.
+    new_va_block->hmm.node.start = new_va_block->start;
+    new_va_block->hmm.node.end = new_va_block->end;
     new_va_block->hmm.va_space = va_space;
     uvm_range_tree_init(&new_va_block->hmm.va_policy_tree);
 
-    // The MMU interval notifier has to be removed in order to resize it.
-    // That means there would be a window of time where invalidation callbacks
-    // could be missed. To handle this case, we register a temporary notifier
-    // to cover the same address range while resizing the old notifier (it is
-    // OK to have multiple notifiers for the same range, we may simply try to
-    // invalidate twice).
-    split_data.existing_block = va_block;
-    split_data.new_block = new_va_block;
-    ret = mmu_interval_notifier_insert(&split_data.notifier,
+    ret = mmu_interval_notifier_insert(&new_va_block->hmm.notifier,
                                        mm,
-                                       va_block->start,
-                                       new_va_block->end - va_block->start + 1,
-                                       &hmm_notifier_split_ops);
+                                       new_va_block->start,
+                                       uvm_va_block_size(new_va_block),
+                                       &uvm_hmm_notifier_ops);
+
+    // Since __mmu_notifier_register() was called when the va_space was
+    // initially created, we know that mm->notifier_subscriptions is valid
+    // and mmu_interval_notifier_insert() can't return ENOMEM.
+    // The only error return is for start + length overflowing but we already
+    // registered the same address range before so there should be no error.
+    UVM_ASSERT(!ret);
 
     uvm_mutex_lock(&va_block->lock);
 
@@ -444,39 +506,37 @@ static NV_STATUS hmm_split_block(uvm_va_block_t *va_block,
 
     uvm_mutex_unlock(&va_block->lock);
 
-    // Since __mmu_notifier_register() was called when the va_space was
-    // initially created, we know that mm->notifier_subscriptions is valid
-    // and mmu_interval_notifier_insert() can't return ENOMEM.
-    // The only error return is for start + length overflowing but we already
-    // registered the same address range before so there should be no error.
+    // The MMU interval notifier has to be removed in order to resize it.
+    // That means there would be a window of time when invalidation callbacks
+    // could be missed. To handle this case, we register a temporary notifier
+    // to cover the address range while resizing the old notifier (it is
+    // OK to have multiple notifiers for the same range, we may simply try to
+    // invalidate twice).
+    split_data.existing_block = va_block;
+    ret = mmu_interval_notifier_insert(&split_data.notifier,
+                                       mm,
+                                       va_block->start,
+                                       new_end - va_block->start + 1,
+                                       &hmm_notifier_split_ops);
     UVM_ASSERT(!ret);
 
-    mmu_interval_notifier_remove(&va_block->hmm.notifier);
+    // Delay to allow hmm_sanity test to trigger an mmu_notifier during the
+    // critical window where the split invalidate callback is active.
+    delay_us = atomic64_read(&va_space->test.split_invalidate_delay_us);
+    if (delay_us)
+        udelay(delay_us);
 
-    uvm_range_tree_shrink_node(&va_space->hmm.blocks, &va_block->hmm.node, va_block->start, va_block->end);
+    mmu_interval_notifier_remove(&va_block->hmm.notifier);
 
     // Enable notifications on the old block with the smaller size.
     ret = mmu_interval_notifier_insert(&va_block->hmm.notifier,
                                        mm,
                                        va_block->start,
-                                       va_block->end - va_block->start + 1,
-                                       &uvm_hmm_notifier_ops);
-    UVM_ASSERT(!ret);
-
-    new_va_block->hmm.node.start = new_va_block->start;
-    new_va_block->hmm.node.end = new_va_block->end;
-
-    ret = mmu_interval_notifier_insert(&new_va_block->hmm.notifier,
-                                       mm,
-                                       new_va_block->start,
-                                       new_va_block->end - new_va_block->start + 1,
+                                       uvm_va_block_size(va_block),
                                        &uvm_hmm_notifier_ops);
     UVM_ASSERT(!ret);
 
     mmu_interval_notifier_remove(&split_data.notifier);
-
-    status = uvm_range_tree_add(&va_space->hmm.blocks, &new_va_block->hmm.node);
-    UVM_ASSERT(status == NV_OK);
 
     if (new_block_ptr)
         *new_block_ptr = new_va_block;
@@ -485,7 +545,7 @@ static NV_STATUS hmm_split_block(uvm_va_block_t *va_block,
 
 err:
     uvm_mutex_unlock(&va_block->lock);
-    mmu_interval_notifier_remove(&split_data.notifier);
+    mmu_interval_notifier_remove(&new_va_block->hmm.notifier);
     uvm_va_block_release(new_va_block);
     return status;
 }
@@ -536,9 +596,9 @@ static NV_STATUS split_block_if_needed(uvm_va_block_t *va_block,
 // page tables. However, it doesn't destroy the va_block because that would
 // require calling mmu_interval_notifier_remove() which can't be called from
 // the invalidate callback due to Linux locking constraints. If a process
-// calls mmap()/munmap() for SAM and then creates a UVM managed allocation,
+// calls mmap()/munmap() for SAM and then creates a managed allocation,
 // the same VMA range can be picked and there would be a UVM/HMM va_block
-// conflict. Creating a UVM managed allocation (or other va_range) calls this
+// conflict. Creating a managed allocation (or other va_range) calls this
 // function to remove stale HMM va_blocks or split the HMM va_block so there
 // is no overlap.
 NV_STATUS uvm_hmm_va_block_reclaim(uvm_va_space_t *va_space,
@@ -583,6 +643,18 @@ NV_STATUS uvm_hmm_va_block_reclaim(uvm_va_space_t *va_space,
     UVM_ASSERT(!uvm_range_tree_iter_first(&va_space->hmm.blocks, start, end));
 
     return NV_OK;
+}
+
+void uvm_hmm_va_block_split_tree(uvm_va_block_t *existing_va_block, uvm_va_block_t *new_block)
+{
+    uvm_va_space_t *va_space = existing_va_block->hmm.va_space;
+
+    UVM_ASSERT(uvm_va_block_is_hmm(existing_va_block));
+    uvm_assert_rwsem_locked_write(&va_space->lock);
+
+    uvm_range_tree_split(&existing_va_block->hmm.va_space->hmm.blocks,
+                         &existing_va_block->hmm.node,
+                         &new_block->hmm.node);
 }
 
 NV_STATUS uvm_hmm_split_as_needed(uvm_va_space_t *va_space,
@@ -733,7 +805,7 @@ void uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
 {
     struct vm_area_struct *vma = va_block_context->hmm.vma;
     uvm_va_policy_node_t *node;
-    NvU64 end = *endp;
+    NvU64 end = va_block->end;
 
     uvm_assert_mmap_lock_locked(vma->vm_mm);
     uvm_assert_mutex_locked(&va_block->lock);
@@ -747,8 +819,9 @@ void uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
         if (end > node->node.end)
             end = node->node.end;
     }
-    else
+    else {
         va_block_context->policy = &uvm_va_policy_default;
+    }
 
     *endp = end;
 }
@@ -760,7 +833,7 @@ NV_STATUS uvm_hmm_find_policy_vma_and_outer(uvm_va_block_t *va_block,
 {
     struct vm_area_struct *vma;
     unsigned long addr;
-    NvU64 end = va_block->end;
+    NvU64 end;
     uvm_page_index_t outer;
 
     UVM_ASSERT(uvm_va_block_is_hmm(va_block));
@@ -801,9 +874,9 @@ static NV_STATUS hmm_clear_thrashing_policy(uvm_va_block_t *va_block,
         // before the pinned pages information is destroyed.
         status = UVM_VA_BLOCK_RETRY_LOCKED(va_block,
                                            NULL,
-                                           unmap_remote_pinned_pages_from_all_processors(va_block,
-                                                                                         block_context,
-                                                                                         region));
+                                           uvm_perf_thrashing_unmap_remote_pinned_pages_all(va_block,
+                                                                                            block_context,
+                                                                                            region));
 
         uvm_perf_thrashing_info_destroy(va_block);
 
@@ -837,6 +910,187 @@ NV_STATUS uvm_hmm_clear_thrashing_policy(uvm_va_space_t *va_space)
     }
 
     return status;
+}
+
+uvm_va_block_region_t uvm_hmm_get_prefetch_region(uvm_va_block_t *va_block,
+                                                  uvm_va_block_context_t *va_block_context,
+                                                  NvU64 address)
+{
+    struct vm_area_struct *vma = va_block_context->hmm.vma;
+    uvm_va_policy_t *policy = va_block_context->policy;
+    NvU64 start, end;
+
+    UVM_ASSERT(uvm_va_block_is_hmm(va_block));
+
+    // We need to limit the prefetch region to the VMA.
+    start = max(va_block->start, (NvU64)vma->vm_start);
+    end = min(va_block->end, (NvU64)vma->vm_end - 1);
+
+    // Also, we need to limit the prefetch region to the policy range.
+    if (policy == &uvm_va_policy_default) {
+        NV_STATUS status = uvm_range_tree_find_hole_in(&va_block->hmm.va_policy_tree,
+                                                       address,
+                                                       &start,
+                                                       &end);
+        // We already know the hole exists and covers the fault region.
+        UVM_ASSERT(status == NV_OK);
+    }
+    else {
+        uvm_va_policy_node_t *node = uvm_va_policy_node_from_policy(policy);
+
+        start = max(start, node->node.start);
+        end = min(end, node->node.end);
+    }
+
+    return uvm_va_block_region_from_start_end(va_block, start, end);
+}
+
+uvm_prot_t uvm_hmm_compute_logical_prot(uvm_va_block_t *va_block,
+                                        uvm_va_block_context_t *va_block_context,
+                                        NvU64 addr)
+{
+    struct vm_area_struct *vma = va_block_context->hmm.vma;
+
+    UVM_ASSERT(uvm_va_block_is_hmm(va_block));
+    uvm_assert_mmap_lock_locked(va_block_context->mm);
+    UVM_ASSERT(vma && addr >= vma->vm_start && addr < vma->vm_end);
+
+    if (!(vma->vm_flags & VM_READ))
+        return UVM_PROT_NONE;
+    else if (!(vma->vm_flags & VM_WRITE))
+        return UVM_PROT_READ_ONLY;
+    else
+        return UVM_PROT_READ_WRITE_ATOMIC;
+}
+
+NV_STATUS uvm_test_split_invalidate_delay(UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+
+    atomic64_set(&va_space->test.split_invalidate_delay_us, params->delay_us);
+
+    return NV_OK;
+}
+
+NV_STATUS uvm_test_hmm_init(UVM_TEST_HMM_INIT_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+    struct mm_struct *mm;
+    NV_STATUS status;
+
+    mm = uvm_va_space_mm_or_current_retain(va_space);
+    if (!mm)
+        return NV_WARN_NOTHING_TO_DO;
+
+    uvm_down_write_mmap_lock(mm);
+    uvm_va_space_down_write(va_space);
+    if (va_space->hmm.disable)
+        status = uvm_hmm_va_space_initialize_test(va_space);
+    else
+        status = NV_OK;
+    uvm_va_space_up_write(va_space);
+    uvm_up_write_mmap_lock(mm);
+    uvm_va_space_mm_or_current_release(va_space, mm);
+
+    return status;
+}
+
+NV_STATUS uvm_hmm_va_range_info(uvm_va_space_t *va_space,
+                                struct mm_struct *mm,
+                                UVM_TEST_VA_RANGE_INFO_PARAMS *params)
+{
+    uvm_range_tree_node_t *tree_node;
+    uvm_va_policy_node_t *node;
+    struct vm_area_struct *vma;
+    uvm_va_block_t *va_block;
+
+    if (!mm || !uvm_hmm_is_enabled(va_space))
+        return NV_ERR_INVALID_ADDRESS;
+
+    uvm_assert_mmap_lock_locked(mm);
+    uvm_assert_rwsem_locked(&va_space->lock);
+
+    params->type = UVM_TEST_VA_RANGE_TYPE_MANAGED;
+    params->managed.subtype = UVM_TEST_RANGE_SUBTYPE_HMM;
+    params->va_range_start = 0;
+    params->va_range_end = ULONG_MAX;
+    params->read_duplication = UVM_TEST_READ_DUPLICATION_UNSET;
+    memset(&params->preferred_location, 0, sizeof(params->preferred_location));
+    params->accessed_by_count = 0;
+    params->managed.vma_start = 0;
+    params->managed.vma_end = 0;
+    params->managed.is_zombie = NV_FALSE;
+    params->managed.owned_by_calling_process = (mm == current->mm ? NV_TRUE : NV_FALSE);
+
+    vma = find_vma(mm, params->lookup_address);
+    if (!uvm_hmm_vma_is_valid(vma, params->lookup_address, false))
+        return NV_ERR_INVALID_ADDRESS;
+
+    params->va_range_start = vma->vm_start;
+    params->va_range_end   = vma->vm_end - 1;
+    params->managed.vma_start = vma->vm_start;
+    params->managed.vma_end   = vma->vm_end - 1;
+
+    uvm_mutex_lock(&va_space->hmm.blocks_lock);
+    tree_node = uvm_range_tree_find(&va_space->hmm.blocks, params->lookup_address);
+    if (!tree_node) {
+        UVM_ASSERT(uvm_range_tree_find_hole_in(&va_space->hmm.blocks, params->lookup_address,
+                                               &params->va_range_start, &params->va_range_end) == NV_OK);
+        uvm_mutex_unlock(&va_space->hmm.blocks_lock);
+        return NV_OK;
+    }
+
+    uvm_mutex_unlock(&va_space->hmm.blocks_lock);
+    va_block = hmm_va_block_from_node(tree_node);
+    uvm_mutex_lock(&va_block->lock);
+
+    params->va_range_start = va_block->start;
+    params->va_range_end   = va_block->end;
+
+    node = uvm_va_policy_node_find(va_block, params->lookup_address);
+    if (node) {
+        uvm_processor_id_t processor_id;
+
+        if (params->va_range_start < node->node.start)
+            params->va_range_start = node->node.start;
+        if (params->va_range_end > node->node.end)
+            params->va_range_end = node->node.end;
+
+        params->read_duplication = node->policy.read_duplication;
+
+        if (!UVM_ID_IS_INVALID(node->policy.preferred_location))
+            uvm_va_space_processor_uuid(va_space, &params->preferred_location, node->policy.preferred_location);
+
+        for_each_id_in_mask(processor_id, &node->policy.accessed_by)
+            uvm_va_space_processor_uuid(va_space, &params->accessed_by[params->accessed_by_count++], processor_id);
+    }
+    else {
+        uvm_range_tree_find_hole_in(&va_block->hmm.va_policy_tree, params->lookup_address,
+                                    &params->va_range_start, &params->va_range_end);
+    }
+
+    uvm_mutex_unlock(&va_block->lock);
+
+    return NV_OK;
+}
+
+// TODO: Bug 3660968: Remove this hack as soon as HMM migration is implemented
+// for VMAs other than anonymous private memory.
+bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
+                             uvm_va_block_context_t *va_block_context)
+{
+    struct vm_area_struct *vma = va_block_context->hmm.vma;
+
+    uvm_assert_mutex_locked(&va_block->lock);
+
+    if (!uvm_va_block_is_hmm(va_block))
+        return false;
+
+    UVM_ASSERT(vma);
+    UVM_ASSERT(va_block_context->mm == vma->vm_mm);
+    uvm_assert_mmap_lock_locked(va_block_context->mm);
+
+    return !vma_is_anonymous(vma);
 }
 
 #endif // UVM_IS_CONFIG_HMM()

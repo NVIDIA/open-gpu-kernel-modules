@@ -385,7 +385,7 @@ NvBool kgraphicsIsPresent_IMPL
         return NV_TRUE;
 
     return kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                    ENGINE_INFO_TYPE_NV2080, NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance),
+                                    ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32)RM_ENGINE_TYPE_GR(pKernelGraphics->instance),
                                     ENGINE_INFO_TYPE_INVALID, &unused) == NV_OK;
 }
 
@@ -404,7 +404,7 @@ kgraphicsStatePostLoad_IMPL
     if ((!IS_VIRTUAL(pGpu)) &&
         (pKernelGraphicsStaticInfo != NULL) &&
         (pKernelGraphicsStaticInfo->pContextBuffersInfo != NULL) &&
-        (!pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[GPU_GFID_PF].bFecsBufferAllocated))
+        (kgraphicsGetGlobalCtxBuffers(pGpu, pKernelGraphics, GPU_GFID_PF)->memDesc[GR_GLOBALCTX_BUFFER_FECS_EVENT] == NULL))
     {
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kgraphicsAllocGlobalCtxBuffers_HAL(pGpu, pKernelGraphics, GPU_GFID_PF));
@@ -592,6 +592,14 @@ kgraphicsInitializeDeferredStaticData_IMPL
         gfid = GPU_GFID_PF;
     }
 
+    //
+    // Most of GR is stub'd so context related things are not needed in AMODEL.
+    // But this function can be called in some MODS test, so return OK directly
+    // to avoid failing the test.
+    //
+    if (IS_MODS_AMODEL(pGpu))
+        return NV_OK;
+
     // Not ready
     if (!pPrivate->bInitialized)
         return NV_OK;
@@ -615,7 +623,7 @@ kgraphicsInitializeDeferredStaticData_IMPL
 
             NV_ASSERT_OK_OR_RETURN(
                 kmigmgrGetMIGReferenceFromEngineType(pGpu, pKernelMIGManager,
-                                                     NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance), &ref));
+                                                     RM_ENGINE_TYPE_GR(pKernelGraphics->instance), &ref));
 
             swizzId = ref.pKernelMIGGpuInstance->swizzId;
         }
@@ -636,7 +644,7 @@ kgraphicsInitializeDeferredStaticData_IMPL
     if (IS_MIG_IN_USE(pGpu))
     {
         MIG_INSTANCE_REF ref;
-        NvU32 localEngineType;
+        RM_ENGINE_TYPE localRmEngineType;
 
         // Physical RM will fill with local indices, so localize the index
         NV_CHECK_OK_OR_GOTO(
@@ -648,10 +656,10 @@ kgraphicsInitializeDeferredStaticData_IMPL
             status,
             LEVEL_ERROR,
             kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref,
-                                              NV2080_ENGINE_TYPE_GR(grIdx),
-                                              &localEngineType),
+                                              RM_ENGINE_TYPE_GR(grIdx),
+                                              &localRmEngineType),
             cleanup);
-        grIdx = NV2080_ENGINE_TYPE_GR_IDX(localEngineType);
+        grIdx = RM_ENGINE_TYPE_GR_IDX(localRmEngineType);
     }
 
     pParams = portMemAllocNonPaged(sizeof(*pParams));
@@ -776,7 +784,7 @@ kgraphicsLoadStaticInfo_KERNEL
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
-        NvU32 localEngineType;
+        RM_ENGINE_TYPE localRmEngineType;
 
         // Physical RM will fill with local indices, so localize the index
         NV_CHECK_OK_OR_GOTO(
@@ -788,10 +796,10 @@ kgraphicsLoadStaticInfo_KERNEL
             status,
             LEVEL_ERROR,
             kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref,
-                                              NV2080_ENGINE_TYPE_GR(grIdx),
-                                              &localEngineType),
+                                              RM_ENGINE_TYPE_GR(grIdx),
+                                              &localRmEngineType),
             cleanup);
-        grIdx = NV2080_ENGINE_TYPE_GR_IDX(localEngineType);
+        grIdx = RM_ENGINE_TYPE_GR_IDX(localRmEngineType);
     }
 
     // GR Caps
@@ -1310,7 +1318,7 @@ kgraphicsAllocKgraphicsBuffers_KERNEL
     // Allocate global context buffers for this gfid, if they haven't been
     // already
     //
-    if (!pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid].bFecsBufferAllocated)
+    if (kgraphicsGetGlobalCtxBuffers(pGpu, pKernelGraphics, gfid)->memDesc[GR_GLOBALCTX_BUFFER_FECS_EVENT] == NULL)
     {
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kgraphicsAllocGlobalCtxBuffers_HAL(pGpu, pKernelGraphics, gfid));
@@ -1318,7 +1326,7 @@ kgraphicsAllocKgraphicsBuffers_KERNEL
 
     if (kgraphicsIsCtxswLoggingSupported(pGpu, pKernelGraphics) &&
         !pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid].bFecsTraceUnsupportedInGuest &&
-        pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid].bFecsBufferAllocated)
+        (kgraphicsGetGlobalCtxBuffers(pGpu, pKernelGraphics, gfid)->memDesc[GR_GLOBALCTX_BUFFER_FECS_EVENT] != NULL))
     {
         if (!gvaspaceIsExternallyOwned(pGVAS) && !IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
         {
@@ -1461,11 +1469,7 @@ kgraphicsMapCtxBuffer_IMPL
             // If subcontext is supported, create an identity mapping to the existing one.
             //
 
-            // Get the first node after the dummy node
-            VA_INFO *pVaInfo = mapFind(pVaList, 0);
-            NV_ASSERT_OR_RETURN(pVaInfo != NULL, NV_ERR_INVALID_STATE);
-            pVaInfo = mapNext(pVaList, pVaInfo);
-            if (pVaInfo == NULL)
+            if (vaListMapCount(pVaList) == 0)
             {
                 status = dmaMapBuffer_HAL(pGpu, GPU_GET_DMA(pGpu), pVAS,
                                           pMemDesc,
@@ -1475,7 +1479,16 @@ kgraphicsMapCtxBuffer_IMPL
             }
             else
             {
+                OBJVASPACE *pVas;
                 NvU32 mapFlags = 0x0;
+                NvU64 vaddrCached;
+
+                FOR_EACH_IN_VADDR_LIST(pVaList, pVas, vaddr)
+                {
+                    // Find the first virtual address in any VAS
+                    break;
+                }
+                FOR_EACH_IN_VADDR_LIST_END(pVaList, pVas, vaddr);
 
                 if (bIsReadOnly)
                 {
@@ -1486,7 +1499,7 @@ kgraphicsMapCtxBuffer_IMPL
                 mapFlags = FLD_SET_DRF(OS46, _FLAGS, _DMA_OFFSET_FIXED, _TRUE, mapFlags);
 
                 NV_ASSERT(!bAlignSize); // TODO: Add support for size align
-                vaddr = pVaInfo->vAddr;
+                vaddrCached = vaddr;
                 NV_ASSERT_OK_OR_ELSE(status,
                     dmaAllocMapping_HAL(pGpu, GPU_GET_DMA(pGpu), pVAS, pMemDesc,
                                         &vaddr,
@@ -1494,7 +1507,7 @@ kgraphicsMapCtxBuffer_IMPL
                                         NULL,
                                         KMIGMGR_SWIZZID_INVALID),
                     /* do nothing on error, but make sure we overwrite status */;);
-                NV_ASSERT(vaddr == pVaInfo->vAddr);
+                NV_ASSERT(vaddr == vaddrCached);
             }
         }
 
@@ -1657,7 +1670,7 @@ kgraphicsCreateGoldenImageChannel_IMPL
     NvU32                                  sliLoopReentrancy;
     NV_VASPACE_ALLOCATION_PARAMETERS       vaParams;
     NV_MEMORY_ALLOCATION_PARAMS            memAllocParams;
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS channelGPFIFOAllocParams;
+    NV_CHANNEL_ALLOC_PARAMS channelGPFIFOAllocParams;
     NvU32                                  classNum;
 
     // XXX This should be removed when braodcast SLI support is deprecated
@@ -1714,7 +1727,7 @@ kgraphicsCreateGoldenImageChannel_IMPL
         // Get swizzId for this GR
         NV_ASSERT_OK_OR_GOTO(status,
             kmigmgrGetMIGReferenceFromEngineType(pGpu, pKernelMIGManager,
-                                                 NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance), &ref),
+                                                 RM_ENGINE_TYPE_GR(pKernelGraphics->instance), &ref),
             cleanup);
 
         portMemSet(&nvC637AllocParams, 0, sizeof(NVC637_ALLOCATION_PARAMETERS));
@@ -1845,7 +1858,7 @@ kgraphicsCreateGoldenImageChannel_IMPL
     NV_ASSERT_OR_GOTO(classNum != 0, cleanup);
 
     // Allocate a bare channel
-    portMemSet(&channelGPFIFOAllocParams, 0, sizeof(NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS));
+    portMemSet(&channelGPFIFOAllocParams, 0, sizeof(NV_CHANNEL_ALLOC_PARAMS));
     channelGPFIFOAllocParams.hVASpace      = hVASpace;
     channelGPFIFOAllocParams.hObjectBuffer = hPBVirtMemId;
     channelGPFIFOAllocParams.gpFifoEntries = gpFifoEntries;
@@ -1863,21 +1876,21 @@ kgraphicsCreateGoldenImageChannel_IMPL
     if (bNeedMIGWar)
     {
         MIG_INSTANCE_REF ref;
-        NvU32 localEngineType;
+        RM_ENGINE_TYPE localRmEngineType;
 
         NV_ASSERT_OK_OR_GOTO(status,
             kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClientId, &ref),
             cleanup);
 
         NV_ASSERT_OK_OR_GOTO(status,
-            kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref, NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance), &localEngineType),
+            kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref, RM_ENGINE_TYPE_GR(pKernelGraphics->instance), &localRmEngineType),
             cleanup);
 
-        channelGPFIFOAllocParams.engineType = localEngineType;
+        channelGPFIFOAllocParams.engineType = gpuGetNv2080EngineType(localRmEngineType);
     }
     else
     {
-        channelGPFIFOAllocParams.engineType = NV2080_ENGINE_TYPE_GR0;
+        channelGPFIFOAllocParams.engineType = gpuGetNv2080EngineType(RM_ENGINE_TYPE_GR0);
     }
 
     NV_ASSERT_OK_OR_GOTO(status,
@@ -1981,6 +1994,7 @@ void kgraphicsFreeGlobalCtxBuffers_IMPL
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     GR_GLOBALCTX_BUFFERS *pCtxBuffers;
     GR_GLOBALCTX_BUFFER buff;
+    NvBool bEvict = NV_FALSE;
 
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
 
@@ -1989,12 +2003,11 @@ void kgraphicsFreeGlobalCtxBuffers_IMPL
 
     pCtxBuffers = &pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid];
 
-    // no ctx buffers allocated, so get out early
-    if (!pCtxBuffers->bAllocated && !pCtxBuffers->bFecsBufferAllocated)
-        return;
-
     FOR_EACH_IN_ENUM(GR_GLOBALCTX_BUFFER, buff)
     {
+        if (pCtxBuffers->memDesc[buff] != NULL)
+            bEvict = NV_TRUE;
+
         memdescFree(pCtxBuffers->memDesc[buff]);
         memdescDestroy(pCtxBuffers->memDesc[buff]);
         pCtxBuffers->memDesc[buff] = NULL;
@@ -2003,10 +2016,10 @@ void kgraphicsFreeGlobalCtxBuffers_IMPL
     FOR_EACH_IN_ENUM_END;
 
     pCtxBuffers->bAllocated = NV_FALSE;
-    pCtxBuffers->bFecsBufferAllocated = NV_FALSE;
 
     // make sure all L2 cache lines using CB buffers are clear after we free them
-    NV_ASSERT_OK(kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, NULL, FB_CACHE_VIDEO_MEMORY, FB_CACHE_EVICT));
+    if (bEvict)
+        NV_ASSERT_OK(kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, NULL, FB_CACHE_VIDEO_MEMORY, FB_CACHE_EVICT));
 }
 
 NV_STATUS
@@ -2085,7 +2098,7 @@ kgraphicsServiceNotificationInterrupt_IMPL
     MODS_ARCH_REPORT(NV_ARCH_EVENT_NONSTALL_GR, "%s", "processing GR nonstall interrupt\n");
 
     kgraphicsNonstallIntrCheckAndClear_HAL(pGpu, pKernelGraphics, pParams->pThreadState);
-    engineNonStallIntrNotify(pGpu, NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance));
+    engineNonStallIntrNotify(pGpu, RM_ENGINE_TYPE_GR(pKernelGraphics->instance));
     return NV_OK;
 }
 
@@ -2111,7 +2124,7 @@ deviceCtrlCmdKGrGetCaps_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
     NvBool  bCapsPopulated = NV_FALSE;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     if (IsDFPGA(pGpu))
     {
@@ -2160,7 +2173,7 @@ deviceCtrlCmdKGrGetCapsV2_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     if (IsDFPGA(pGpu))
     {
@@ -2275,7 +2288,7 @@ deviceCtrlCmdKGrGetInfo_IMPL
     NvU32 grInfoListSize = NV_MIN(pParams->grInfoListSize,
                                   NV0080_CTRL_GR_INFO_MAX_SIZE);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pGrInfos != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -2308,7 +2321,7 @@ deviceCtrlCmdKGrGetInfoV2_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         _kgraphicsCtrlCmdGrGetInfoV2(pGpu, hClient, pParams));
@@ -2342,7 +2355,7 @@ subdeviceCtrlCmdKGrGetCapsV2_IMPL
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, RES_GET_CLIENT_HANDLE(pSubdevice), &grRouteInfo, &pKernelGraphics));
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
     if (pKernelGraphicsStaticInfo == NULL)
@@ -2390,7 +2403,7 @@ subdeviceCtrlCmdKGrGetInfo_IMPL
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelGraphicsManager != NULL, NV_ERR_NOT_SUPPORTED);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pGrInfos != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -2424,7 +2437,7 @@ subdeviceCtrlCmdKGrGetInfoV2_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         _kgraphicsCtrlCmdGrGetInfoV2(pGpu, hClient, pParams));
@@ -2453,7 +2466,7 @@ subdeviceCtrlCmdKGrGetSmToGpcTpcMappings_IMPL
     const KGRAPHICS_STATIC_INFO *pStaticInfo;
     NvU32 i;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
     {
@@ -2464,6 +2477,7 @@ subdeviceCtrlCmdKGrGetSmToGpcTpcMappings_IMPL
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &pParams->grRouteInfo, &pKernelGraphics));
     }
+
     // Verify static info is available
     pStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
     NV_ASSERT_OR_RETURN(pStaticInfo != NULL, NV_ERR_INVALID_STATE);
@@ -2499,7 +2513,7 @@ subdeviceCtrlCmdKGrGetGlobalSmOrder_IMPL
     const KGRAPHICS_STATIC_INFO *pStaticInfo;
     NvU32 i;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     if (kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
     {
@@ -2555,7 +2569,7 @@ subdeviceCtrlCmdKGrGetSmIssueRateModifier_IMPL
     const KGRAPHICS_STATIC_INFO *pStaticInfo;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
     {
@@ -2614,7 +2628,7 @@ subdeviceCtrlCmdKGrGetGpcMask_IMPL
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     if (!IS_MIG_IN_USE(pGpu) ||
         kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
@@ -2661,7 +2675,7 @@ subdeviceCtrlCmdKGrGetTpcMask_IMPL
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvU32 gpcCount;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     if (!IS_MIG_IN_USE(pGpu) ||
         kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
@@ -2743,7 +2757,7 @@ subdeviceCtrlCmdKGrGetPpcMask_IMPL
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     if (kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
     {
@@ -2793,7 +2807,7 @@ subdeviceCtrlCmdKGrFecsBindEvtbufForUid_IMPL
     NvHandle hNotifier = RES_GET_HANDLE(pSubdevice);
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     NV_ASSERT_OK_OR_RETURN(
         serverutilGetResourceRefWithType(hClient, pParams->hEventBuffer, classId(EventBuffer), &pEventBufferRef));
@@ -2837,7 +2851,7 @@ subdeviceCtrlCmdKGrFecsBindEvtbufForUidV2_IMPL
     NvHandle hNotifier = RES_GET_HANDLE(pSubdevice);
     pParams->reasonCode = NV2080_CTRL_GR_FECS_BIND_REASON_CODE_NONE;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     NV_ASSERT_OK_OR_RETURN(
         serverutilGetResourceRefWithType(hClient, pParams->hEventBuffer, classId(EventBuffer), &pEventBufferRef));
@@ -2876,7 +2890,7 @@ subdeviceCtrlCmdKGrGetPhysGpcMask_IMPL
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvU32 grIdx = 0;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     if (!IS_MIG_ENABLED(pGpu))
     {
@@ -2897,7 +2911,7 @@ subdeviceCtrlCmdKGrGetPhysGpcMask_IMPL
     else
     {
         MIG_INSTANCE_REF ref;
-        NvU32 localEngineType;
+        RM_ENGINE_TYPE localRmEngineType;
 
         //
         // Get the relevant subscription and see if provided physicalId is
@@ -2910,8 +2924,8 @@ subdeviceCtrlCmdKGrGetPhysGpcMask_IMPL
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                               kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref,
-                                                                NV2080_ENGINE_TYPE_GR(pParams->physSyspipeId),
-                                                                &localEngineType));
+                                                                RM_ENGINE_TYPE_GR(pParams->physSyspipeId),
+                                                                &localRmEngineType));
         // Not failing above means physSyspipeId is valid in GPU instance
         grIdx = pParams->physSyspipeId;
     }
@@ -2947,7 +2961,7 @@ subdeviceCtrlCmdKGrGetZcullMask_IMPL
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     if (kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
     {
@@ -3002,7 +3016,7 @@ subdeviceCtrlCmdKGrGetZcullInfo_IMPL
     KernelGraphics *pKernelGraphics;
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     if (pKernelGraphicsManager == NULL)
     {
@@ -3044,7 +3058,7 @@ subdeviceCtrlCmdKGrCtxswPmMode_IMPL
         KernelGraphicsContext *pKernelGraphicsContext;
         RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
         if (pParams->pmMode != NV2080_CTRL_CTXSW_PM_MODE_NO_CTXSW)
         {
@@ -3100,7 +3114,7 @@ subdeviceCtrlCmdKGrGetROPInfo_IMPL
     KernelGraphics *pKernelGraphics;
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     portMemSet(&grRouteInfo, 0, sizeof(grRouteInfo));
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
@@ -3141,7 +3155,7 @@ subdeviceCtrlCmdKGrGetAttributeBufferSize_IMPL
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvU32 engineId;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     portMemSet(&grRouteInfo, 0, sizeof(grRouteInfo));
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
@@ -3187,7 +3201,7 @@ subdeviceCtrlCmdKGrGetEngineContextProperties_IMPL
     NvU32 alignment = RM_PAGE_SIZE;
     NvU32 engineId;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     engineId = DRF_VAL(0080_CTRL_FIFO, _GET_ENGINE_CONTEXT_PROPERTIES, _ENGINE_ID, pParams->engineId);
 
@@ -3259,7 +3273,7 @@ subdeviceCtrlCmdKGrGetCtxBufferSize_IMPL
     NvU64 prevAlignment;
     NvU32 i;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     //
     // vGPU:
@@ -3364,7 +3378,7 @@ subdeviceCtrlCmdKGrGetCtxBufferInfo_IMPL
     KernelChannel *pKernelChannel;
     KernelGraphicsContext *pKernelGraphicsContext;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     //
     // vGPU:
@@ -3434,7 +3448,7 @@ subdeviceCtrlCmdKGrGetCtxBufferPtes_IMPL
     KernelChannel *pKernelChannel;
     KernelGraphicsContext *pKernelGraphicsContext;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     //
     // Currently, ROUTE_TO_VGPU_HOST instructs resource server to call the RPC
@@ -3512,7 +3526,7 @@ subdeviceCtrlCmdKGrGetGfxGpcAndTpcInfo_IMPL
     const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &pParams->grRouteInfo, &pKernelGraphics));

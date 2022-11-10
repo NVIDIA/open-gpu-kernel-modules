@@ -156,28 +156,6 @@ typedef struct NV0041_CTRL_GET_SURFACE_ZCULL_ID_PARAMS {
     NvU32 zcullId;
 } NV0041_CTRL_GET_SURFACE_ZCULL_ID_PARAMS;
 
-/*
- * NV0041_CTRL_CMD_GET_SURFACE_PARTITION_STRIDE
- *
- * This command returns the partition stride (in bytes) for real memory 
- * associated with the memory object.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NVOS_STATUS_BAD_OBJECT_HANDLE
- *   NVOS_STATUS_BAD_OBJECT_PARENT
- *   NVOS_STATUS_NOT_SUPPORTED
- *
- */
-#define NV0041_CTRL_CMD_GET_SURFACE_PARTITION_STRIDE (0x410105) /* finn: Evaluated from "(FINN_NV01_ROOT_USER_MEMORY_INTERFACE_ID << 8) | NV0041_CTRL_GET_SURFACE_PARTITION_STRIDE_PARAMS_MESSAGE_ID" */
-
-#define NV0041_CTRL_GET_SURFACE_PARTITION_STRIDE_PARAMS_MESSAGE_ID (0x5U)
-
-typedef struct NV0041_CTRL_GET_SURFACE_PARTITION_STRIDE_PARAMS {
-    NvU32 partitionStride;
-} NV0041_CTRL_GET_SURFACE_PARTITION_STRIDE_PARAMS;
-
-
 
 // return values for 'tilingFormat'
 // XXX - the names for these are misleading

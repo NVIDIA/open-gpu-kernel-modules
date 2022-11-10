@@ -207,6 +207,8 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
 
     uvm_assert_mutex_locked(&va_block->lock);
 
+    va_block_context->policy = uvm_va_range_get_policy(va_block->va_range);
+
     if (uvm_va_policy_is_read_duplicate(va_block_context->policy, va_space)) {
         status = uvm_va_block_make_resident_read_duplicate(va_block,
                                                            va_block_retry,
@@ -465,6 +467,8 @@ static NV_STATUS uvm_va_range_migrate(uvm_va_range_t *va_range,
                                       uvm_tracker_t *out_tracker)
 {
     NvU64 preunmap_range_start = start;
+
+    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_range));
 
     should_do_cpu_preunmap = should_do_cpu_preunmap && va_range_should_do_cpu_preunmap(va_block_context->policy,
                                                                                        va_range->va_space);
@@ -942,10 +946,8 @@ done:
     //       benchmarks to see if a two-pass approach would be faster (first
     //       pass pushes all GPU work asynchronously, second pass updates CPU
     //       mappings synchronously).
-    if (mm) {
+    if (mm)
         uvm_up_read_mmap_lock_out_of_order(mm);
-        uvm_va_space_mm_or_current_release(va_space, mm);
-    }
 
     if (tracker_ptr) {
         // If requested, release semaphore
@@ -973,6 +975,7 @@ done:
     }
 
     uvm_va_space_up_read(va_space);
+    uvm_va_space_mm_or_current_release(va_space, mm);
 
     // If the migration is known to be complete, eagerly dispatch the migration
     // events, instead of processing them on a later event flush. Note that an
@@ -1043,13 +1046,12 @@ done:
     //       benchmarks to see if a two-pass approach would be faster (first
     //       pass pushes all GPU work asynchronously, second pass updates CPU
     //       mappings synchronously).
-    if (mm) {
+    if (mm)
         uvm_up_read_mmap_lock_out_of_order(mm);
-        uvm_va_space_mm_or_current_release(va_space, mm);
-    }
 
     tracker_status = uvm_tracker_wait_deinit(&local_tracker);
     uvm_va_space_up_read(va_space);
+    uvm_va_space_mm_or_current_release(va_space, mm);
 
     // This API is synchronous, so wait for migrations to finish
     uvm_tools_flush_events();

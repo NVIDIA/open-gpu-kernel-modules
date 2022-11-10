@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,7 @@
  */
 
 #if !defined(SRT_BUILD)
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 #include "gpu/mmu/kern_gmmu.h"
 #endif
 #include "mmu/gmmu_fmt.h"
@@ -55,45 +56,52 @@ void kgmmuFmtInitLevels_GP10X(KernelGmmu    *pKernelGmmu,
     NV_ASSERT_OR_RETURN_VOID(bigPageShift == 16 || bigPageShift == 17);
 
     // Page directory 3 (root).
-    pLevels[0].virtAddrBitHi = 48;
-    pLevels[0].virtAddrBitLo = 47;
-    pLevels[0].entrySize     = NV_MMU_VER2_PDE__SIZE;
-    pLevels[0].numSubLevels  = 1;
-    pLevels[0].subLevels     = pLevels + 1;
+    pLevels[0].virtAddrBitHi  = 48;
+    pLevels[0].virtAddrBitLo  = 47;
+    pLevels[0].entrySize      = NV_MMU_VER2_PDE__SIZE;
+    pLevels[0].numSubLevels   = 1;
+    pLevels[0].subLevels      = pLevels + 1;
+    pLevels[0].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD0;
 
     // Page directory 2.
-    pLevels[1].virtAddrBitHi = 46;
-    pLevels[1].virtAddrBitLo = 38;
-    pLevels[1].entrySize     = NV_MMU_VER2_PDE__SIZE;
-    pLevels[1].numSubLevels  = 1;
-    pLevels[1].subLevels     = pLevels + 2;
+    pLevels[1].virtAddrBitHi  = 46;
+    pLevels[1].virtAddrBitLo  = 38;
+    pLevels[1].entrySize      = NV_MMU_VER2_PDE__SIZE;
+    pLevels[1].numSubLevels   = 1;
+    pLevels[1].subLevels      = pLevels + 2;
+    pLevels[1].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD1;
 
     // Page directory 1.
-    pLevels[2].virtAddrBitHi = 37;
-    pLevels[2].virtAddrBitLo = 29;
-    pLevels[2].entrySize     = NV_MMU_VER2_PDE__SIZE;
-    pLevels[2].numSubLevels  = 1;
-    pLevels[2].subLevels     = pLevels + 3;
+    pLevels[2].virtAddrBitHi  = 37;
+    pLevels[2].virtAddrBitLo  = 29;
+    pLevels[2].entrySize      = NV_MMU_VER2_PDE__SIZE;
+    pLevels[2].numSubLevels   = 1;
+    pLevels[2].subLevels      = pLevels + 3;
+    pLevels[2].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD2;
 
     // Page directory 0.
-    pLevels[3].virtAddrBitHi = 28;
-    pLevels[3].virtAddrBitLo = 21;
-    pLevels[3].entrySize     = NV_MMU_VER2_DUAL_PDE__SIZE;
-    pLevels[3].numSubLevels  = 2;
-    pLevels[3].bPageTable    = NV_TRUE;
-    pLevels[3].subLevels     = pLevels + 4;
+    pLevels[3].virtAddrBitHi  = 28;
+    pLevels[3].virtAddrBitLo  = 21;
+    pLevels[3].entrySize      = NV_MMU_VER2_DUAL_PDE__SIZE;
+    pLevels[3].numSubLevels   = 2;
+    pLevels[3].bPageTable     = NV_TRUE;
+    pLevels[3].subLevels      = pLevels + 4;
+    pLevels[3].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD3;
+
 
     // Big page table.
-    pLevels[4].virtAddrBitHi = 20;
-    pLevels[4].virtAddrBitLo = (NvU8)bigPageShift;
-    pLevels[4].entrySize     = NV_MMU_VER2_PTE__SIZE;
-    pLevels[4].bPageTable    = NV_TRUE;
+    pLevels[4].virtAddrBitHi  = 20;
+    pLevels[4].virtAddrBitLo  = (NvU8)bigPageShift;
+    pLevels[4].entrySize      = NV_MMU_VER2_PTE__SIZE;
+    pLevels[4].bPageTable     = NV_TRUE;
+    pLevels[4].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_BIG;
 
     // Small page table.
-    pLevels[5].virtAddrBitHi = 20;
-    pLevels[5].virtAddrBitLo = 12;
-    pLevels[5].entrySize     = NV_MMU_VER2_PTE__SIZE;
-    pLevels[5].bPageTable    = NV_TRUE;
+    pLevels[5].virtAddrBitHi  = 20;
+    pLevels[5].virtAddrBitLo  = 12;
+    pLevels[5].entrySize      = NV_MMU_VER2_PTE__SIZE;
+    pLevels[5].bPageTable     = NV_TRUE;
+    pLevels[5].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_4K;
 }
 
 void kgmmuFmtInitPdeMulti_GP10X(KernelGmmu                *pKernelGmmu,

@@ -54,6 +54,7 @@ typedef struct OBJPFM OBJPFM;
 #include "core/core.h"
 
 #include "nvCpuUuid.h"
+#include "platform/nbsi/nbsi_table.h"
 
 /*!
  * Data structure representing single BlobData entry.
@@ -100,9 +101,7 @@ struct OBJPFM {
     NvBool PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER;
     NvBool PDB_PROP_PFM_POSSIBLE_HIGHRES_BOOT;
     NvBool PDB_PROP_PFM_APPLE_EDP_SUPPORTED;
-    NvBool PDB_PROP_PFM_BLOB_DATA_INIT_ATTEMPTED;
-    NvBool PDB_PROP_PFM_BLOB_DATA_INIT_SUCCEEDED;
-    PFM_BLOB_DATA blobData;
+    NBSI_OBJ nbsi;
     ACPI_ID_MAPPING acpiIdMapping[32][16];
 };
 
@@ -135,12 +134,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJPFM;
 #define PDB_PROP_PFM_IS_MOBILE_BASE_NAME PDB_PROP_PFM_IS_MOBILE
 #define PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER_BASE_CAST
 #define PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER_BASE_NAME PDB_PROP_PFM_MODS_USE_TWO_STAGE_RC_RECOVER
-#define PDB_PROP_PFM_BLOB_DATA_INIT_ATTEMPTED_BASE_CAST
-#define PDB_PROP_PFM_BLOB_DATA_INIT_ATTEMPTED_BASE_NAME PDB_PROP_PFM_BLOB_DATA_INIT_ATTEMPTED
 #define PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM_BASE_CAST
 #define PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM_BASE_NAME PDB_PROP_PFM_ENABLE_PERF_WITHOUT_MXM
-#define PDB_PROP_PFM_BLOB_DATA_INIT_SUCCEEDED_BASE_CAST
-#define PDB_PROP_PFM_BLOB_DATA_INIT_SUCCEEDED_BASE_NAME PDB_PROP_PFM_BLOB_DATA_INIT_SUCCEEDED
 #define PDB_PROP_PFM_SUPPORTS_ACPI_BASE_CAST
 #define PDB_PROP_PFM_SUPPORTS_ACPI_BASE_NAME PDB_PROP_PFM_SUPPORTS_ACPI
 #define PDB_PROP_PFM_IS_TOSHIBA_MOBILE_BASE_CAST
@@ -157,10 +152,10 @@ NV_STATUS __nvoc_objCreate_OBJPFM(OBJPFM**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJPFM((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS pfmConstruct_IMPL(struct OBJPFM *arg_pPfm);
+
 #define __nvoc_pfmConstruct(arg_pPfm) pfmConstruct_IMPL(arg_pPfm)
-void pfmBlobDataDestroy_IMPL(struct OBJPFM *pPfm);
-#define pfmBlobDataDestroy(pPfm) pfmBlobDataDestroy_IMPL(pPfm)
 void pfmUpdateAcpiIdMapping_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU32 arg5);
+
 #ifdef __nvoc_platform_h_disabled
 static inline void pfmUpdateAcpiIdMapping(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2, NvU32 arg3, NvU32 arg4, NvU32 arg5) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
@@ -170,6 +165,7 @@ static inline void pfmUpdateAcpiIdMapping(struct OBJPFM *arg0, OBJGPU *arg1, NvU
 #endif //__nvoc_platform_h_disabled
 
 NvU32 pfmFindAcpiId_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2);
+
 #ifdef __nvoc_platform_h_disabled
 static inline NvU32 pfmFindAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
@@ -180,6 +176,7 @@ static inline NvU32 pfmFindAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2)
 #endif //__nvoc_platform_h_disabled
 
 NvU32 pfmFindDodIndex_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2);
+
 #ifdef __nvoc_platform_h_disabled
 static inline NvU32 pfmFindDodIndex(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
@@ -190,6 +187,7 @@ static inline NvU32 pfmFindDodIndex(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg
 #endif //__nvoc_platform_h_disabled
 
 NvU32 pfmFindDevMaskFromDodIndex_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2);
+
 #ifdef __nvoc_platform_h_disabled
 static inline NvU32 pfmFindDevMaskFromDodIndex(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
@@ -200,6 +198,7 @@ static inline NvU32 pfmFindDevMaskFromDodIndex(struct OBJPFM *arg0, OBJGPU *arg1
 #endif //__nvoc_platform_h_disabled
 
 NvU32 pfmFindDevMaskFromAcpiId_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2);
+
 #ifdef __nvoc_platform_h_disabled
 static inline NvU32 pfmFindDevMaskFromAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");
@@ -210,6 +209,7 @@ static inline NvU32 pfmFindDevMaskFromAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, 
 #endif //__nvoc_platform_h_disabled
 
 void pfmUpdateDeviceAcpiId_IMPL(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2, NvU32 arg3);
+
 #ifdef __nvoc_platform_h_disabled
 static inline void pfmUpdateDeviceAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU32 arg2, NvU32 arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJPFM was disabled!");

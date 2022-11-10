@@ -32,9 +32,10 @@
 
 
 
-/* NV20_SUBDEVICE_XX ce control commands and parameters */
+#include "nvcfg_sdk.h"
 
-#include "ctrl2080common.h"
+
+/* NV20_SUBDEVICE_XX ce control commands and parameters */
 
 /*
  * NV2080_CTRL_CMD_CE_GET_CAPS
@@ -139,7 +140,7 @@ typedef struct NV2080_CTRL_CE_GET_CAPS_V2_PARAMS {
 /*
  * NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK
  *
- * This command returns the mapping of PCE's for the given LCE
+ * This command returns the mapping of PCE's for the given LCE.
  *
  *   ceEngineType
  *     This parameter specifies the copy engine type
@@ -152,6 +153,8 @@ typedef struct NV2080_CTRL_CE_GET_CAPS_V2_PARAMS {
  *   NV_ERR_INVALID_PARAM_STRUCT
  *   NV_ERR_INVALID_ARGUMENT
  */
+
+
 
 #define NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK (0x20802a02) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_CE_INTERFACE_ID << 8) | NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS_MESSAGE_ID" */
 
@@ -198,13 +201,13 @@ typedef struct NV2080_CTRL_CE_SET_PCE_LCE_CONFIG_PARAMS {
  *
  * This command updates the PCE-LCE mappings
  *
- *   pPceLceMap [IN]
+ *   pceLceMap [IN]
  *     This parameter contains the array of PCE to LCE mappings.
  *     The array is indexed by the PCE index, and contains the
  *     LCE index that the PCE is assigned to.  A unused PCE is
  *     tagged with NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE.
  *
- *   pGrceConfig [IN]
+ *   grceConfig [IN]
  *     This parameter contains the array of GRCE configs.
  *     0xF -> GRCE does not share with any LCE
  *     0-MAX_LCE -> GRCE shares with the given LCE
@@ -237,6 +240,18 @@ typedef struct NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS {
 } NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS;
 
 #define NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_INVALID_LCE      0xf
+
+/*
+ * NV2080_CTRL_CMD_CE_UPDATE_CLASS_DB
+ *
+ * This function triggers an update of the exported CE classes.  CEs with
+ * no physical resources will not be exported.  A record of these
+ * will be return in in the stubbedCeMask.
+ *
+ * An example if NV2080_ENGINE_TYPE_COPY4 is stubbed (1<<4) will be
+ * set in stubbedCeMask.
+ */
+
 
 #define NV2080_CTRL_CMD_CE_UPDATE_CLASS_DB (0x20802a06) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_CE_INTERFACE_ID << 8) | NV2080_CTRL_CE_UPDATE_CLASS_DB_PARAMS_MESSAGE_ID" */
 

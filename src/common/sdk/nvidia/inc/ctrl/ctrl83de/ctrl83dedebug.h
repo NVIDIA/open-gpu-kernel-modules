@@ -1068,5 +1068,39 @@ typedef struct NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS {
     NV_DECLARE_ALIGNED(NV83DE_CTRL_DEBUG_ACCESS_MEMORY_ENTRY entries[MAX_ACCESS_MEMORY_OPS], 8);
 } NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS;
 
+/*
+ * NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_ENTRY
+ *
+ *   faultAddress (OUT)
+ *     Faulting address
+ *   faultType (OUT)
+ *     Type of MMU fault
+ *   accessType (OUT)
+ *     Type of access that caused this fault
+ */
+#define NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_MAX_ENTRIES 4
+typedef struct NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_ENTRY {
+    NV_DECLARE_ALIGNED(NvU64 faultAddress, 8);
+    NvU32 faultType;
+    NvU32 accessType;
+} NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_ENTRY;
+
+/*
+ * NV83DE_CTRL_CMD_DEBUG_READ_MMU_FAULT_INFO
+ *
+ *   mmuFaultInfoList (OUT)
+ *     Entries of MMU faults recorded for the attached context. The cached data is only cleared via LRU policy when new MMU faults arrive so repeat data may be returned by this command.
+ *   count (OUT)
+ *     Number of MMU fault entries contain valid data.
+ */
+#define NV83DE_CTRL_CMD_DEBUG_READ_MMU_FAULT_INFO (0x83de0328) /* finn: Evaluated from "(FINN_GT200_DEBUGGER_DEBUG_INTERFACE_ID << 8) | NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS_MESSAGE_ID (0x28U)
+
+typedef struct NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS {
+    NV_DECLARE_ALIGNED(NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_ENTRY mmuFaultInfoList[NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_MAX_ENTRIES], 8);
+    NvU32 count;
+} NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS;
+
 /* _ctrl83dedebug_h_ */
 

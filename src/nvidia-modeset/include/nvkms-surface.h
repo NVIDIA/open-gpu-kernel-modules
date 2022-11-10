@@ -55,7 +55,8 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandle(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     const NvKmsSurfaceHandle surfaceHandle,
-    const NVEvoChannelMask channelMask);
+    const NvBool isUsedByCursorChannel,
+    const NvBool isUsedByLayerChannel);
 
 NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoCtxDmaOk(
     const NVDevEvoRec *pDevEvo,

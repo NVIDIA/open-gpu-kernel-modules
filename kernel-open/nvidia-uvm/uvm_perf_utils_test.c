@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -23,6 +23,7 @@
 
 #include "uvm_perf_utils.h"
 #include "uvm_va_block.h"
+#include "uvm_perf_prefetch.h"
 #include "uvm_test.h"
 
 static NV_STATUS test_saturating_counter_basic(void)
@@ -681,10 +682,12 @@ fail:
 static NV_STATUS test_bitmap_tree_traversal(void)
 {
     int value;
-    uvm_va_block_bitmap_tree_t tree;
-    uvm_va_block_bitmap_tree_iter_t iter;
+    uvm_perf_prefetch_bitmap_tree_t tree;
+    uvm_perf_prefetch_bitmap_tree_iter_t iter;
 
-    uvm_va_block_bitmap_tree_init_from_page_count(&tree, 9);
+    tree.leaf_count = 9;
+    tree.level_count = ilog2(roundup_pow_of_two(tree.leaf_count)) + 1;
+    uvm_page_mask_zero(&tree.pages);
 
     TEST_CHECK_RET(tree.level_count == 5);
     TEST_CHECK_RET(tree.leaf_count == 9);
@@ -695,7 +698,7 @@ static NV_STATUS test_bitmap_tree_traversal(void)
     uvm_page_mask_set(&tree.pages, 7);
     uvm_page_mask_set(&tree.pages, 8);
 
-    uvm_va_block_bitmap_tree_traverse_counters(value, &tree, 6, &iter) {
+    uvm_perf_prefetch_bitmap_tree_traverse_counters(value, &tree, 6, &iter) {
         if (iter.level_idx == 4)
             TEST_CHECK_RET(value == 0);
         else if (iter.level_idx == 3)

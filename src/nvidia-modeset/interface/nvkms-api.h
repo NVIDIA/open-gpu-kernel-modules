@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,12 +54,8 @@
  *   device: multiple devices may have disps with the same dispHandle
  *   value.
  *
- *   A disp contains one or more subdevices, as reported by
- *   NvKmsQueryDispReply::subDeviceMask.  A disp will only have
- *   multiple subdevices in cases where the device only has a single
- *   disp.  Any subdevice specified in
- *   NvKmsQueryDispReply::subDeviceMask will also be in
- *   NvKmsAllocDeviceReply::subDeviceMask.
+ *   A disp represents one subdevice; disp index N corresponds to subdevice
+ *   index N.
  *
  * - A connector, which represents an electrical connection to the
  *   GPU.  E.g., a physical DVI-I connector has two NVKMS connector
@@ -270,12 +266,12 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_EXPORT_VRR_SEMAPHORE_SURFACE,
     NVKMS_IOCTL_ENABLE_VBLANK_SYNC_OBJECT,
     NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT,
+    NVKMS_IOCTL_NOTIFY_VBLANK,
 };
 
 
 #define NVKMS_NVIDIA_DRIVER_VERSION_STRING_LENGTH                     32
 #define NVKMS_MAX_CONNECTORS_PER_DISP                                 16
-#define NVKMS_MAX_HEADS_PER_DISP                                      4
 #define NVKMS_MAX_GPUS_PER_FRAMELOCK                                  4
 #define NVKMS_MAX_DEVICE_REGISTRY_KEYS                                16
 #define NVKMS_MAX_DEVICE_REGISTRY_KEYNAME_LEN                         32
@@ -700,73 +696,6 @@ struct NvKmsChannelSyncObjects {
     } u;
 };
 
-enum NvKmsOutputTf {
-    /*
-     * NVKMS itself won't apply any OETF (clients are still
-     * free to provide a custom OLUT)
-     */
-    NVKMS_OUTPUT_TF_NONE = 0,
-    NVKMS_OUTPUT_TF_PQ = 1,
-};
-
-/*!
- * HDR Static Metadata Type1 Descriptor as per CEA-861.3 spec.
- * This is expected to match exactly with the spec.
- */
-struct NvKmsHDRStaticMetadata {
-    /*!
-     * Color primaries of the data.
-     * These are coded as unsigned 16-bit values in units of 0.00002,
-     * where 0x0000 represents zero and 0xC350 represents 1.0000.
-     */
-    struct {
-        NvU16 x, y;
-    } displayPrimaries[3];
-
-    /*!
-     * White point of colorspace data.
-     * These are coded as unsigned  16-bit values in units of 0.00002,
-     * where 0x0000 represents zero and 0xC350 represents 1.0000.
-     */
-    struct {
-        NvU16 x, y;
-    } whitePoint;
-
-    /**
-     * Maximum mastering display luminance.
-     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
-     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
-     */
-    NvU16 maxDisplayMasteringLuminance;
-
-    /*!
-     * Minimum mastering display luminance.
-     * This value is coded as an unsigned 16-bit value in units of
-     * 0.0001 cd/m2, where 0x0001 represents 0.0001 cd/m2 and 0xFFFF
-     * represents 6.5535 cd/m2.
-     */
-    NvU16 minDisplayMasteringLuminance;
-
-    /*!
-     * Maximum content light level.
-     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
-     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
-     */
-    NvU16 maxCLL;
-
-    /*!
-     * Maximum frame-average light level.
-     * This value is coded as an unsigned 16-bit value in units of 1 cd/m2,
-     * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
-     */
-    NvU16 maxFALL;
-};
-
-enum NvKmsInputColorSpace {
-    /* Unknown colorspace; no de-gamma will be applied */
-    NVKMS_SURFACE_COLORSPACE_NONE       = 0,
-};
-
 /*!
  * Description of how to flip on a single head.
  *
@@ -980,6 +909,7 @@ struct NvKmsFlipCommonParams {
             struct NvKmsHDRStaticMetadata staticMetadata;
         } hdr;
 
+        /* This field has no effect right now. */
         struct {
             enum NvKmsInputColorSpace val;
             NvBool specified;
@@ -1117,7 +1047,6 @@ struct NvKmsAllocDeviceReply {
      * IMPLEMENTATION NOTE: this is the portion of DispHalRec::caps
      * that can vary between EVO classes.
      */
-    NvBool supportsInbandStereoSignaling;
     NvBool requiresVrrSemaphores;
     NvBool inputLutAppliesToBase;
 
@@ -1128,8 +1057,7 @@ struct NvKmsAllocDeviceReply {
     NvBool supportsSwapGroups;
 
     /*!
-     * Whether the NVKMS SwapGroup implementation supports Warp and Blend on
-     * this device.
+     * Whether NVKMS supports Warp and Blend on this device.
      */
     NvBool supportsWarpAndBlend;
 
@@ -1165,15 +1093,6 @@ struct NvKmsAllocDeviceReply {
      * then (1 << value) will be set in validNIsoFormatMask.
      */
     NvU8 validNIsoFormatMask;
-
-    /*!
-     * Which NvKmsResamplingMethod enum values are supported by the NVKMS
-     * device.
-     *
-     * Iff a particular enum NvKmsResamplingMethod 'value' is supported, then (1
-     * << value) will be set in validResamplingMethodMask.
-     */
-    NvU32 validResamplingMethodMask;
 
     NvU32 surfaceAlignment;
     NvU32 maxWidthInBytes;
@@ -1215,6 +1134,12 @@ struct NvKmsAllocDeviceReply {
      */
     NvKmsDispIOCoherencyModes isoIOCoherencyModes;
     NvKmsDispIOCoherencyModes nisoIOCoherencyModes;
+
+    /*!
+     * 'displayIsGpuL2Coherent' indicates whether display is coherent with
+     * GPU's L2 cache.
+     */
+    NvBool displayIsGpuL2Coherent;
 
     /*!
      * 'supportsSyncpts' indicates whether NVKMS supports the use of syncpts
@@ -1290,15 +1215,6 @@ struct NvKmsQueryDispRequest {
 };
 
 struct NvKmsQueryDispReply {
-    /*!
-     * The instance of the subdevice that owns this disp.
-     * NVBIT(displayOwner) will be present in subDeviceMask.
-     */
-    NvU32 displayOwner;
-
-    /*! A bitmask of the device's subdevices used by this disp. */
-    NvU32 subDeviceMask;
-
     /*! The possible dpys for this disp, excluding any dynamic dpys. */
     NVDpyIdList validDpys;
 
@@ -2000,7 +1916,6 @@ enum NvKmsSetModeOneHeadStatus {
     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_PERMISSIONS = 7,
     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_HEAD_SURFACE = 8,
     NVKMS_SET_MODE_ONE_HEAD_STATUS_UNSUPPORTED_HEAD_SURFACE_COMBO = 9,
-    NVKMS_SET_MODE_ONE_HEAD_STATUS_UNSUPPORTED_HEAD_SURFACE_FEATURE = 10,
 };
 
 struct NvKmsSetModeOneHeadReply {
@@ -2220,8 +2135,7 @@ struct NvKmsFlipRequest {
     NvKmsDeviceHandle deviceHandle;
 
     /*
-     * sd[n] corresponds to bit N in NvKmsQueryDispReply::subDeviceMask and
-     * NvKmsAllocDeviceReply::subDeviceMask.
+     * sd[n] corresponds to bit N in NvKmsAllocDeviceReply::subDeviceMask.
      */
     struct NvKmsFlipRequestOneSubDevice sd[NVKMS_MAX_SUBDEVICES];
 
@@ -2275,8 +2189,7 @@ struct NvKmsFlipReply {
     enum NvKmsVrrFlipType vrrFlipType;
 
     /*!
-     * sd[n] corresponds to bit N in NvKmsQueryDispReply::subDeviceMask and
-     * NvKmsAllocDeviceReply::subDeviceMask.
+     * sd[n] corresponds to bit N in NvKmsAllocDeviceReply::subDeviceMask.
      */
     struct NvKmsFlipReplyOneSubDevice sd[NVKMS_MAX_SUBDEVICES];
 };
@@ -2690,6 +2603,7 @@ enum NvKmsDpyAttributeCurrentColorSpaceValue {
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422 = 1,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444 = 2,
     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420 = 3,
+    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_BT2020RGB = 4,
 };
 
 /*! Values for the NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL attribute. */
@@ -4067,6 +3981,34 @@ struct NvKmsDisableVblankSyncObjectReply {
 struct NvKmsDisableVblankSyncObjectParams {
     struct NvKmsDisableVblankSyncObjectRequest request; /*! in */
     struct NvKmsDisableVblankSyncObjectReply reply;     /*! out */
+};
+
+/*!
+ * NVKMS_IOCTL_NOTIFY_VBLANK:
+ *
+ * Register a unicast event fd to be notified when the next vblank event occurs
+ * on the specified head. This is a one-shot notification, and in order to be
+ * notified of subsequent vblank events the caller must clear and re-register
+ * the unicast event fd.
+ */
+
+struct NvKmsNotifyVblankRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvU32 head;
+
+    struct {
+        int fd;
+    } unicastEvent;
+};
+
+struct NvKmsNotifyVblankReply {
+    NvU32 padding;
+};
+
+struct NvKmsNotifyVblankParams {
+    struct NvKmsNotifyVblankRequest request; /*! in */
+    struct NvKmsNotifyVblankReply reply;     /*! out */
 };
 
 #endif /* NVKMS_API_H */

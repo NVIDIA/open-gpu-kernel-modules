@@ -73,6 +73,7 @@ struct PerfBuffer {
     NV_STATUS (*__perfbufferInternalControlForward__)(struct PerfBuffer *, NvU32, void *, NvU32);
     void (*__perfbufferPreDestruct__)(struct PerfBuffer *);
     NV_STATUS (*__perfbufferUnmapFrom__)(struct PerfBuffer *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__perfbufferIsDuplicate__)(struct PerfBuffer *, NvHandle, NvBool *);
     void (*__perfbufferControl_Epilogue__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__perfbufferControlLookup__)(struct PerfBuffer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__perfbufferMap__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -126,11 +127,13 @@ NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer**, Dynamic*, NvU32, struct CALL
 #define perfbufferInternalControlForward(pGpuResource, command, pParams, size) perfbufferInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define perfbufferPreDestruct(pResource) perfbufferPreDestruct_DISPATCH(pResource)
 #define perfbufferUnmapFrom(pResource, pParams) perfbufferUnmapFrom_DISPATCH(pResource, pParams)
+#define perfbufferIsDuplicate(pResource, hMemory, pDuplicate) perfbufferIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define perfbufferControl_Epilogue(pResource, pCallContext, pParams) perfbufferControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define perfbufferControlLookup(pResource, pParams, ppEntry) perfbufferControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define perfbufferMap(pGpuResource, pCallContext, pParams, pCpuMapping) perfbufferMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define perfbufferAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) perfbufferAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NV_STATUS perfbufferConstructHal_KERNEL(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 
 #ifdef __nvoc_kern_perfbuffer_h_disabled
 static inline NV_STATUS perfbufferConstructHal(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -146,6 +149,7 @@ static inline NV_STATUS perfbufferConstructHal(struct PerfBuffer *pResource, str
 static inline void perfbufferDestruct_b3696a(struct PerfBuffer *pResource) {
     return;
 }
+
 
 #define __nvoc_perfbufferDestruct(pResource) perfbufferDestruct_b3696a(pResource)
 static inline NvBool perfbufferShareCallback_DISPATCH(struct PerfBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -220,6 +224,10 @@ static inline NV_STATUS perfbufferUnmapFrom_DISPATCH(struct PerfBuffer *pResourc
     return pResource->__perfbufferUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS perfbufferIsDuplicate_DISPATCH(struct PerfBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__perfbufferIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void perfbufferControl_Epilogue_DISPATCH(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__perfbufferControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -241,6 +249,7 @@ static inline NV_STATUS __nvoc_perfbufferConstruct(struct PerfBuffer *arg_pResou
 }
 
 NV_STATUS perfbufferPrivilegeCheck_IMPL(struct PerfBuffer *pPerfBuffer);
+
 #ifdef __nvoc_kern_perfbuffer_h_disabled
 static inline NV_STATUS perfbufferPrivilegeCheck(struct PerfBuffer *pPerfBuffer) {
     NV_ASSERT_FAILED_PRECOMP("PerfBuffer was disabled!");

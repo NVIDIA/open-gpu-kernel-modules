@@ -93,8 +93,6 @@ int nv_drm_lock_user_pages(unsigned long address,
 {
     struct mm_struct *mm = current->mm;
     struct page **user_pages;
-    const int write = 1;
-    const int force = 0;
     int pages_pinned;
 
     user_pages = nv_drm_calloc(pages_count, sizeof(*user_pages));
@@ -105,7 +103,7 @@ int nv_drm_lock_user_pages(unsigned long address,
 
     nv_mmap_read_lock(mm);
 
-    pages_pinned = NV_GET_USER_PAGES(address, pages_count, write, force,
+    pages_pinned = NV_PIN_USER_PAGES(address, pages_count, FOLL_WRITE,
                                      user_pages, NULL);
     nv_mmap_read_unlock(mm);
 
@@ -123,7 +121,7 @@ failed:
         int i;
 
         for (i = 0; i < pages_pinned; i++) {
-            put_page(user_pages[i]);
+           NV_UNPIN_USER_PAGE(user_pages[i]);
         }
     }
 
@@ -138,8 +136,7 @@ void nv_drm_unlock_user_pages(unsigned long  pages_count, struct page **pages)
 
     for (i = 0; i < pages_count; i++) {
         set_page_dirty_lock(pages[i]);
-
-        put_page(pages[i]);
+        NV_UNPIN_USER_PAGE(pages[i]);
     }
 
     nv_drm_free(pages);
@@ -174,12 +171,7 @@ static void __exit nv_linux_drm_exit(void)
 module_init(nv_linux_drm_init);
 module_exit(nv_linux_drm_exit);
 
-#if defined(MODULE_LICENSE)
   MODULE_LICENSE("Dual MIT/GPL");
-#endif
-#if defined(MODULE_INFO)
-  MODULE_INFO(supported, "external");
-#endif
-#if defined(MODULE_VERSION)
-  MODULE_VERSION(NV_VERSION_STRING);
-#endif
+
+MODULE_INFO(supported, "external");
+MODULE_VERSION(NV_VERSION_STRING);

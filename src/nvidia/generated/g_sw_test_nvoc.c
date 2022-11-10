@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_swtestPreDestruct(struct SoftwareMethodTest 
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_swtestIsDuplicate(struct SoftwareMethodTest *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_swtestGetNotificationListPtr(struct SoftwareMethodTest *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_SoftwareMethodTest_Notifier.offset));
 }
@@ -326,6 +330,8 @@ static void __nvoc_init_funcTable_SoftwareMethodTest_1(SoftwareMethodTest *pThis
     pThis->__swtestCanCopy__ = &__nvoc_thunk_RsResource_swtestCanCopy;
 
     pThis->__swtestPreDestruct__ = &__nvoc_thunk_RsResource_swtestPreDestruct;
+
+    pThis->__swtestIsDuplicate__ = &__nvoc_thunk_RsResource_swtestIsDuplicate;
 
     pThis->__swtestGetNotificationListPtr__ = &__nvoc_thunk_Notifier_swtestGetNotificationListPtr;
 

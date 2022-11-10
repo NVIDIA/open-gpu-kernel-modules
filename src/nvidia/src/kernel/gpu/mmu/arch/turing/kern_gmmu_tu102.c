@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,8 @@
  * @file  kern_gmmu_tu102.c
  * @brief TURING specific HAL MMU routines reside in this file
  */
+
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/gpu.h"
@@ -373,14 +375,16 @@ kgmmuReadFaultBufferPutPtr_TU102
     OBJGPU               *pGpu,
     KernelGmmu           *pKernelGmmu,
     NvU32                 index,
-    NvU32                *pPutOffset
+    NvU32                *pPutOffset,
+    THREAD_STATE_NODE    *pThreadState
 )
 {
     NvU32 val;
     NV_ASSERT_OR_RETURN((index < NUM_FAULT_BUFFERS), NV_ERR_INVALID_ARGUMENT);
 
-    val = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_PUT(index));
+    val = GPU_VREG_RD32_EX(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_PUT(index), pThreadState);
     *pPutOffset = DRF_VAL(_VIRTUAL_FUNCTION_PRIV, _MMU_FAULT_BUFFER_PUT, _PTR, val);
+
     return NV_OK;
 }
 
@@ -403,4 +407,23 @@ kgmmuIsNonReplayableFaultPending_TU102
     NvU32 bit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(NV_PFB_PRI_MMU_INT_VECTOR_FAULT_NOTIFY_NON_REPLAYABLE);
     NvU32 pending = GPU_VREG_RD32_EX(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(reg), NULL /* threadstate */);
     return pending & NVBIT(bit);
+}
+
+/*!
+ * @brief Clear non replayable fault interrupt.
+ *
+ * @param[in] pGpu              OBJGPU pointer
+ * @param[in] pKernelGmmu       KernelGmmu pointer
+ * @param[in] pThreadState      THREAD_STATE_NODE pointer
+ */
+void
+kgmmuClearNonReplayableFaultIntr_TU102
+(
+    POBJGPU            pGpu,
+    KernelGmmu        *pKernelGmmu,
+    THREAD_STATE_NODE *pThreadState
+)
+{
+    Intr *pIntr = GPU_GET_INTR(pGpu);
+    intrClearLeafVector_HAL(pGpu, pIntr, NV_PFB_PRI_MMU_INT_VECTOR_FAULT_NOTIFY_NON_REPLAYABLE, pThreadState);
 }

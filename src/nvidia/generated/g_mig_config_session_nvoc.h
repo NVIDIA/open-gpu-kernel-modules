@@ -79,6 +79,7 @@ struct MIGConfigSession {
     NV_STATUS (*__migconfigsessionMapTo__)(struct MIGConfigSession *, RS_RES_MAP_TO_PARAMS *);
     void (*__migconfigsessionPreDestruct__)(struct MIGConfigSession *);
     NV_STATUS (*__migconfigsessionUnmapFrom__)(struct MIGConfigSession *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__migconfigsessionIsDuplicate__)(struct MIGConfigSession *, NvHandle, NvBool *);
     void (*__migconfigsessionControl_Epilogue__)(struct MIGConfigSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__migconfigsessionControlLookup__)(struct MIGConfigSession *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__migconfigsessionMap__)(struct MIGConfigSession *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -128,6 +129,7 @@ NV_STATUS __nvoc_objCreate_MIGConfigSession(MIGConfigSession**, Dynamic*, NvU32,
 #define migconfigsessionMapTo(pResource, pParams) migconfigsessionMapTo_DISPATCH(pResource, pParams)
 #define migconfigsessionPreDestruct(pResource) migconfigsessionPreDestruct_DISPATCH(pResource)
 #define migconfigsessionUnmapFrom(pResource, pParams) migconfigsessionUnmapFrom_DISPATCH(pResource, pParams)
+#define migconfigsessionIsDuplicate(pResource, hMemory, pDuplicate) migconfigsessionIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define migconfigsessionControl_Epilogue(pResource, pCallContext, pParams) migconfigsessionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define migconfigsessionControlLookup(pResource, pParams, ppEntry) migconfigsessionControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define migconfigsessionMap(pResource, pCallContext, pParams, pCpuMapping) migconfigsessionMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -188,6 +190,10 @@ static inline NV_STATUS migconfigsessionUnmapFrom_DISPATCH(struct MIGConfigSessi
     return pResource->__migconfigsessionUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS migconfigsessionIsDuplicate_DISPATCH(struct MIGConfigSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__migconfigsessionIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void migconfigsessionControl_Epilogue_DISPATCH(struct MIGConfigSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__migconfigsessionControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -205,8 +211,10 @@ static inline NvBool migconfigsessionAccessCallback_DISPATCH(struct MIGConfigSes
 }
 
 NV_STATUS migconfigsessionConstruct_IMPL(struct MIGConfigSession *arg_pMIGConfigSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_migconfigsessionConstruct(arg_pMIGConfigSession, arg_pCallContext, arg_pParams) migconfigsessionConstruct_IMPL(arg_pMIGConfigSession, arg_pCallContext, arg_pParams)
 void migconfigsessionDestruct_IMPL(struct MIGConfigSession *pMIGConfigSession);
+
 #define __nvoc_migconfigsessionDestruct(pMIGConfigSession) migconfigsessionDestruct_IMPL(pMIGConfigSession)
 #undef PRIVATE_FIELD
 

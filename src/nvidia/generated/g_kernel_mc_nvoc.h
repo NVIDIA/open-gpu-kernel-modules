@@ -143,6 +143,7 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc**, Dynamic*, NvU32);
 #define kmcIsPresent(pGpu, pEngstate) kmcIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kmcPrepareForXVEReset_GK104(struct OBJGPU *pGpu, struct KernelMc *pKernelMc);
 
+
 #ifdef __nvoc_kernel_mc_h_disabled
 static inline NV_STATUS kmcPrepareForXVEReset(struct OBJGPU *pGpu, struct KernelMc *pKernelMc) {
     NV_ASSERT_FAILED_PRECOMP("KernelMc was disabled!");
@@ -155,6 +156,7 @@ static inline NV_STATUS kmcPrepareForXVEReset(struct OBJGPU *pGpu, struct Kernel
 #define kmcPrepareForXVEReset_HAL(pGpu, pKernelMc) kmcPrepareForXVEReset(pGpu, pKernelMc)
 
 NV_STATUS kmcGetMcBar0MapInfo_GK104(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg0, NvU32 *arg1);
+
 
 #ifdef __nvoc_kernel_mc_h_disabled
 static inline NV_STATUS kmcGetMcBar0MapInfo(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU64 *arg0, NvU32 *arg1) {
@@ -183,10 +185,6 @@ NV_STATUS kmcWritePmcEnableReg_GK104(struct OBJGPU *pGpu, struct KernelMc *pKern
 
 NV_STATUS kmcWritePmcEnableReg_GA100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0, NvBool arg1, NvBool arg2);
 
-static inline NV_STATUS kmcWritePmcEnableReg_46f6a7(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0, NvBool arg1, NvBool arg2) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 static inline NV_STATUS kmcWritePmcEnableReg_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0, NvBool arg1, NvBool arg2) {
     return pKernelMc->__kmcWritePmcEnableReg__(pGpu, pKernelMc, arg0, arg1, arg2);
 }
@@ -194,10 +192,6 @@ static inline NV_STATUS kmcWritePmcEnableReg_DISPATCH(struct OBJGPU *pGpu, struc
 NvU32 kmcReadPmcEnableReg_GK104(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvBool arg0);
 
 NvU32 kmcReadPmcEnableReg_GA100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvBool arg0);
-
-static inline NvU32 kmcReadPmcEnableReg_4a4dee(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvBool arg0) {
-    return 0;
-}
 
 static inline NvU32 kmcReadPmcEnableReg_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvBool arg0) {
     return pKernelMc->__kmcReadPmcEnableReg__(pGpu, pKernelMc, arg0);

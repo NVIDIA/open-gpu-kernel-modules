@@ -74,21 +74,8 @@ typedef struct file_operations nv_proc_ops_t;
         __entry;                                                         \
     })
 
-/*
- * proc_mkdir_mode exists in Linux 2.6.9, but isn't exported until Linux 3.0.
- * Use the older interface instead unless the newer interface is necessary.
- */
-#if defined(NV_PROC_REMOVE_PRESENT)
 # define NV_PROC_MKDIR_MODE(name, mode, parent)                \
     proc_mkdir_mode(name, mode, parent)
-#else
-# define NV_PROC_MKDIR_MODE(name, mode, parent)                \
-   ({                                                          \
-        struct proc_dir_entry *__entry;                        \
-        __entry = create_proc_entry(name, mode, parent);       \
-        __entry;                                               \
-    })
-#endif
 
 #define NV_CREATE_PROC_DIR(name,parent)                        \
    ({                                                          \
@@ -104,16 +91,6 @@ typedef struct file_operations nv_proc_ops_t;
 #define NV_PDE_DATA(inode) PDE_DATA(inode)
 #endif
 
-#if defined(NV_PROC_REMOVE_PRESENT)
-# define NV_REMOVE_PROC_ENTRY(entry)                           \
-    proc_remove(entry);
-#else
-# define NV_REMOVE_PROC_ENTRY(entry)                           \
-    remove_proc_entry(entry->name, entry->parent);
-#endif
-
-void nv_procfs_unregister_all(struct proc_dir_entry *entry,
-                              struct proc_dir_entry *delimiter);
 #define NV_DEFINE_SINGLE_PROCFS_FILE_HELPER(name, lock)                     \
     static int nv_procfs_open_##name(                                       \
         struct inode *inode,                                                \

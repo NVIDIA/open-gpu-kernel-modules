@@ -36,7 +36,7 @@
  * Class definition for allocating a contiguous or discontiguous FLA.
  */
 
-#define NV_MEMORY_FABRIC                (0x000000f8)
+#define NV_MEMORY_FABRIC                (0xf8U) /* finn: Evaluated from "NV00F8_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 /*
  *  alignment [IN]
@@ -77,11 +77,13 @@
  *    Must be physical memory page size aligned.
  *
  *  map.hVidMem [IN]
- *    Handle to the physical video memory. Must be passed when the sticky flag is set so that the
- *    FLA -> PA mapping can happen during object creation.
- *    Phys memory with 2MB pages is supported.
- *    Phys memory handle can be NV01_NULL_OBJECT if FLEXIBLE_FLA flag is passed.
- *    hVidMem should belong the same device and client which is allocating FLA.
+ *    - Handle to the physical memory.
+ *    - Must be passed so that the FLA -> GPA mapping can happen during object creation.
+ *    - For sticky allocations, physical memory being mapped should be large enough
+ *      (accounting map.offset) to cover the whole fabric object allocation size.
+ *    - For flexible allocations, physical memory handle should be zero.
+ *    - Phys memory with 2MB and 512MB pages is supported.
+ *    - hVidMem should belong the same device and client which is allocating FLA.
  *
  *  map.flags [IN]
  *    Reserved for future use.

@@ -72,7 +72,6 @@
  *   NV_ERR_INVALID_ARGUMENT
  */
 
-
 #define NV2080_CTRL_PERF_BOOST_FLAGS_CMD                1:0
 #define NV2080_CTRL_PERF_BOOST_FLAGS_CMD_CLEAR        (0x00000000)
 #define NV2080_CTRL_PERF_BOOST_FLAGS_CMD_BOOST_1LEVEL (0x00000001)
@@ -85,6 +84,10 @@
 #define NV2080_CTRL_PERF_BOOST_FLAGS_ASYNC              5:5
 #define NV2080_CTRL_PERF_BOOST_FLAGS_ASYNC_NO         (0x00000000)
 #define NV2080_CTRL_PERF_BOOST_FLAGS_ASYNC_YES        (0x00000001)
+
+#define NV2080_CTRL_PERF_BOOST_FLAGS_CUDA_PRIORITY          6:6
+#define NV2080_CTRL_PERF_BOOST_FLAGS_CUDA_PRIORITY_DEFAULT  (0x00000000)
+#define NV2080_CTRL_PERF_BOOST_FLAGS_CUDA_PRIORITY_HIGH     (0x00000001)
 
 #define NV2080_CTRL_PERF_BOOST_DURATION_MAX           3600 //The duration can be specified up to 1 hour
 #define NV2080_CTRL_PERF_BOOST_DURATION_INFINITE      0xffffffff // If set this way, the boost will last until cleared.
@@ -123,6 +126,76 @@ typedef struct NV2080_CTRL_PERF_BOOST_PARAMS {
 typedef struct NV2080_CTRL_PERF_RESERVE_PERFMON_HW_PARAMS {
     NvBool bAcquire;
 } NV2080_CTRL_PERF_RESERVE_PERFMON_HW_PARAMS;
+
+/*
+ * NV2080_CTRL_PERF_POWERSTATE
+ *
+ * This structure describes power state information.
+ *
+ *    powerState
+ *       This parameter specifies the type of power source.
+ *       Legal values for this parameter include:
+ *          NV2080_CTRL_PERF_POWER_SOURCE_AC
+ *             This values indicates that the power state is AC.
+ *          NV2080_CTRL_PERF_POWER_SOURCE_BATTERY
+ *             This values indicates that the power state is battery.
+ */
+#define NV2080_CTRL_PERF_POWER_SOURCE_AC      (0x00000000)
+#define NV2080_CTRL_PERF_POWER_SOURCE_BATTERY (0x00000001)
+
+typedef struct NV2080_CTRL_PERF_POWERSTATE_PARAMS {
+    NvU32 powerState;
+} NV2080_CTRL_PERF_POWERSTATE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_PERF_SET_POWERSTATE
+ *
+ * This command can be used to set the perf power state as AC or battery.
+ *
+ *    powerStateInfo
+ *       This parameter specifies the power source type to set.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV2080_CTRL_CMD_PERF_SET_POWERSTATE (0x2080205b) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_PERF_INTERFACE_ID << 8) | NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS_MESSAGE_ID (0x5BU)
+
+typedef struct NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS {
+    NV2080_CTRL_PERF_POWERSTATE_PARAMS powerStateInfo;
+} NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_PERF_SET_AUX_POWER_STATE
+ *
+ * This command allows the forcing of a performance level based on auxiliary
+ * power-states.
+ *
+ *   powerState
+ *     This parameter specifies the target auxiliary Power state. Legal aux
+ *     power-states for this parameter are defined by the
+ *     NV2080_CTRL_PERF_AUX_POWER_STATE_P* definitions that follow.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_PERF_SET_AUX_POWER_STATE (0x20802092) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_PERF_INTERFACE_ID << 8) | NV2080_CTRL_PERF_SET_AUX_POWER_STATE_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_PERF_SET_AUX_POWER_STATE_PARAMS_MESSAGE_ID (0x92U)
+
+typedef struct NV2080_CTRL_PERF_SET_AUX_POWER_STATE_PARAMS {
+    NvU32 powerState;
+} NV2080_CTRL_PERF_SET_AUX_POWER_STATE_PARAMS;
+
+#define NV2080_CTRL_PERF_AUX_POWER_STATE_P0    (0x00000000)
+#define NV2080_CTRL_PERF_AUX_POWER_STATE_P1    (0x00000001)
+#define NV2080_CTRL_PERF_AUX_POWER_STATE_P2    (0x00000002)
+#define NV2080_CTRL_PERF_AUX_POWER_STATE_P3    (0x00000003)
+#define NV2080_CTRL_PERF_AUX_POWER_STATE_P4    (0x00000004)
+#define NV2080_CTRL_PERF_AUX_POWER_STATE_COUNT (0x00000005)
 
 /*!
  * Enumeration of the RATED_TDP arbitration clients which make requests to force
@@ -376,7 +449,7 @@ typedef NV2080_CTRL_GPUMON_SAMPLES NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMP
 /*!
  * Number of GPU monitoring sample in their respective buffers.
  */
-#define NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL       100
+#define NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL       72
 
 #define NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_BUFFER_SIZE           \
     NV_SIZEOF32(NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE) *     \

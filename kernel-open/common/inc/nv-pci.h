@@ -27,17 +27,6 @@
 #include <linux/pci.h>
 #include "nv-linux.h"
 
-#if defined(NV_DEV_IS_PCI_PRESENT)
-#define nv_dev_is_pci(dev) dev_is_pci(dev)
-#else
-/*
- * Non-PCI devices are only supported on kernels which expose the
- * dev_is_pci() function. For older kernels, we only support PCI
- * devices, hence returning true to take all the PCI code paths.
- */
-#define nv_dev_is_pci(dev) (true)
-#endif
-
 int nv_pci_register_driver(void);
 void nv_pci_unregister_driver(void);
 int nv_pci_count_devices(void);

@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_gisubscriptionUnmapFrom(struct GPUInsta
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GPUInstanceSubscription_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_gisubscriptionIsDuplicate(struct GPUInstanceSubscription *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GPUInstanceSubscription_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_gisubscriptionControl_Epilogue(struct GPUInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GPUInstanceSubscription_RmResource.offset), pCallContext, pParams);
 }
@@ -277,12 +281,27 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GPUInsta
         /*func=*/       "gisubscriptionCtrlCmdExecPartitionsImport"
 #endif
     },
+    {               /*  [6] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xc63701a9u,
+        /*paramSize=*/  sizeof(NVC637_CTRL_EXEC_PARTITIONS_GET_PROFILE_CAPACITY_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_GPUInstanceSubscription.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_GPUInstanceSubscription = 
 {
-    /*numEntries=*/     6,
+    /*numEntries=*/     7,
     /*pExportEntries=*/ __nvoc_exported_method_def_GPUInstanceSubscription
 };
 
@@ -334,6 +353,10 @@ static void __nvoc_init_funcTable_GPUInstanceSubscription_1(GPUInstanceSubscript
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    pThis->__gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity__ = &gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__gisubscriptionCtrlCmdExecPartitionsGetActiveIds__ = &gisubscriptionCtrlCmdExecPartitionsGetActiveIds_IMPL;
 #endif
 
@@ -380,6 +403,8 @@ static void __nvoc_init_funcTable_GPUInstanceSubscription_1(GPUInstanceSubscript
     pThis->__gisubscriptionPreDestruct__ = &__nvoc_thunk_RsResource_gisubscriptionPreDestruct;
 
     pThis->__gisubscriptionUnmapFrom__ = &__nvoc_thunk_RsResource_gisubscriptionUnmapFrom;
+
+    pThis->__gisubscriptionIsDuplicate__ = &__nvoc_thunk_RsResource_gisubscriptionIsDuplicate;
 
     pThis->__gisubscriptionControl_Epilogue__ = &__nvoc_thunk_RmResource_gisubscriptionControl_Epilogue;
 

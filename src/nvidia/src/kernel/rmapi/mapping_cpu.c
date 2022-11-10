@@ -189,6 +189,8 @@ memMap_IMPL
     NvBool bBroadcast;
     NvU64 mapLimit;
     NvBool bIsSysmem = NV_FALSE;
+    NvBool bSkipSizeCheck = (DRF_VAL(OS33, _FLAGS, _SKIP_SIZE_CHECK, pMapParams->flags) ==
+                             NVOS33_FLAGS_SKIP_SIZE_CHECK_ENABLE);
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
@@ -255,9 +257,8 @@ memMap_IMPL
     // actual allocation size (to PAGE_SIZE+1) because of a buggy ms function so
     // skip the allocation size sanity check so the map operation still succeeds.
     //
-    if ((DRF_VAL(OS33, _FLAGS, _SKIP_SIZE_CHECK, pMapParams->flags) == NVOS33_FLAGS_SKIP_SIZE_CHECK_DISABLE) &&
-        (!portSafeAddU64(pMapParams->offset, pMapParams->length, &mapLimit) ||
-         (mapLimit > pMemoryInfo->Length)))
+    if (!bSkipSizeCheck && (!portSafeAddU64(pMapParams->offset, pMapParams->length, &mapLimit) ||
+                            (mapLimit > pMemoryInfo->Length)))
     {
         return NV_ERR_INVALID_LIMIT;
     }
@@ -437,6 +438,7 @@ memMap_IMPL
                 {
                     busMapFbFlags |= BUS_MAP_FB_FLAGS_DISABLE_ENCRYPTION;
                 }
+
                 switch (pMapParams->protect)
                 {
                     case NV_PROTECT_READABLE:
@@ -448,6 +450,13 @@ memMap_IMPL
                 }
 
                 pMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
+
+                // WAR for Bug 3564398, need to allocate doorbell for windows differently
+                if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM &&
+                    memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1)) 
+                {
+                    busMapFbFlags |= BUS_MAP_FB_FLAGS_MAP_DOWNWARDS;
+                }
 
                 rmStatus = kbusMapFbAperture_HAL(pGpu, pKernelBus,
                                                  pMemDesc, pMapParams->offset,

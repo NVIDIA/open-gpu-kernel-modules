@@ -30,7 +30,7 @@
 // Source file: class/cl83de.finn
 //
 
-#define GT200_DEBUGGER (0x000083de)
+#define GT200_DEBUGGER (0x83deU) /* finn: Evaluated from "NV83DE_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 /*
  * Creating the GT200_DEBUGGER object:
@@ -53,3 +53,4 @@ typedef struct NV83DE_ALLOC_PARAMETERS {
     NvHandle hAppClient;
     NvHandle hClass3dObject;
 } NV83DE_ALLOC_PARAMETERS;
+

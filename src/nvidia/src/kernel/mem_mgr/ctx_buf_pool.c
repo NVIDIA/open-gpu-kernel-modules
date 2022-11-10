@@ -57,6 +57,8 @@ ctxBufPoolIsSupported
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvBool bCallingContextPlugin;
+    NvU32 gfid = GPU_GFID_PF;
+
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_MOVE_CTX_BUFFERS_TO_PMA))
     {
         NV_PRINTF(LEVEL_INFO, "Ctx buffers not supported in PMA\n");
@@ -76,12 +78,12 @@ ctxBufPoolIsSupported
     }
 
     //
-    // In virtualized env, host RM we will continue to use subheap for all allocations it makes on behalf
-    // of guest RM. Ctx buffer allocations made by host RM for plugins(plugin channel inst block, runlists etc)
-    // will come from host RM's PMA(partition PMA)
+    // In virtualized env, host RM should use CtxBuffer for all allocations made
+    // on behalf of plugin or for PF usages
     //
     NV_ASSERT_OR_RETURN(vgpuIsCallingContextPlugin(pGpu, &bCallingContextPlugin) == NV_OK, NV_FALSE);
-    if (hypervisorIsVgxHyper() && !bCallingContextPlugin)
+    NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK, NV_FALSE);
+    if (hypervisorIsVgxHyper() && !bCallingContextPlugin && IS_GFID_VF(gfid))
     {
         NV_PRINTF(LEVEL_INFO, "ctx buffers in PMA not supported for allocations host RM makes on behalf of guest\n");
         return NV_FALSE;
@@ -494,7 +496,7 @@ ctxBufPoolFree
         }
         else
         {
-            portMemSet(pMem, 0, pMemDesc->ActualSize);
+            portMemSet(pMem, 0, (pMemDesc->PageCount * RM_PAGE_SIZE));
             kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pMem, NV_TRUE);
         }
     }
@@ -509,7 +511,7 @@ ctxBufPoolFree
  *
  * @param[in]  pGpu          OBJGPU pointer
  * @param[in]  bufId         Id to identify the buffer
- * @param[in]  engineType    NV2080 engine type
+ * @param[in]  rmEngineType  RM Engine Type
  * @param[out] ppCtxBufPool  Pointer to context buffer pool
  *
  * @return NV_STATUS
@@ -519,7 +521,7 @@ ctxBufPoolGetGlobalPool
 (
     OBJGPU *pGpu,
     CTX_BUF_ID bufId,
-    NvU32 engineType,
+    RM_ENGINE_TYPE rmEngineType,
     CTX_BUF_POOL_INFO **ppCtxBufPool
 )
 {
@@ -527,17 +529,17 @@ ctxBufPoolGetGlobalPool
     CTX_BUF_POOL_INFO *pCtxBufPool = NULL;
 
     NV_ASSERT_OR_RETURN(ppCtxBufPool != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(NV2080_ENGINE_TYPE_IS_VALID(engineType), NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(RM_ENGINE_TYPE_IS_VALID(rmEngineType), NV_ERR_INVALID_ARGUMENT);
 
     switch (bufId)
     {
         case CTX_BUF_ID_RUNLIST:
-            pCtxBufPool = kfifoGetRunlistBufPool(pGpu, pKernelFifo, engineType);
+            pCtxBufPool = kfifoGetRunlistBufPool(pGpu, pKernelFifo, rmEngineType);
             break;
         case CTX_BUF_ID_GR_GLOBAL:
         {
-            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, NV2080_ENGINE_TYPE_GR_IDX(engineType));
-            NV_ASSERT_OR_RETURN(NV2080_ENGINE_TYPE_IS_GR(engineType), NV_ERR_INVALID_ARGUMENT);
+            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, RM_ENGINE_TYPE_GR_IDX(rmEngineType));
+            NV_ASSERT_OR_RETURN(RM_ENGINE_TYPE_IS_GR(rmEngineType), NV_ERR_INVALID_ARGUMENT);
             pCtxBufPool = kgraphicsGetCtxBufPool(pGpu, pKernelGraphics);
             break;
         }
@@ -600,11 +602,11 @@ ctxBufPoolGetSizeAndPageSize
             break;
         case RM_ATTR_PAGE_SIZE_HUGE:
             retAttr = FLD_SET_DRF(OS32, _ATTR, _PAGE_SIZE, _HUGE, retAttr);
-            retAttr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _2MB, retAttr);
+            retAttr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _2MB, retAttr2);
             break;
         case RM_ATTR_PAGE_SIZE_512MB:
             retAttr = FLD_SET_DRF(OS32, _ATTR, _PAGE_SIZE, _HUGE, retAttr);
-            retAttr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _512MB, retAttr);
+            retAttr2 = FLD_SET_DRF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _512MB, retAttr2);
             break;
         default:
             NV_PRINTF(LEVEL_ERROR, "unsupported page size attr\n");

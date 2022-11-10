@@ -158,6 +158,7 @@ static inline void instmemDecommitContextDma_b3696a(OBJGPU *pGpu, struct Display
     return;
 }
 
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline void instmemDecommitContextDma(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct ContextDma *pContextDma) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -239,10 +240,13 @@ static inline NV_STATUS instmemUpdateContextDma_DISPATCH(OBJGPU *pGpu, struct Di
 }
 
 NV_STATUS instmemConstruct_IMPL(struct DisplayInstanceMemory *arg_pInstMem);
+
 #define __nvoc_instmemConstruct(arg_pInstMem) instmemConstruct_IMPL(arg_pInstMem)
 void instmemDestruct_IMPL(struct DisplayInstanceMemory *pInstMem);
+
 #define __nvoc_instmemDestruct(pInstMem) instmemDestruct_IMPL(pInstMem)
 NV_STATUS instmemStateInitLocked_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline NV_STATUS instmemStateInitLocked(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -253,6 +257,7 @@ static inline NV_STATUS instmemStateInitLocked(OBJGPU *pGpu, struct DisplayInsta
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 void instmemStateDestroy_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline void instmemStateDestroy(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -262,6 +267,7 @@ static inline void instmemStateDestroy(OBJGPU *pGpu, struct DisplayInstanceMemor
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 NV_STATUS instmemStateLoad_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 flags);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline NV_STATUS instmemStateLoad(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -272,6 +278,7 @@ static inline NV_STATUS instmemStateLoad(OBJGPU *pGpu, struct DisplayInstanceMem
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 NV_STATUS instmemStateUnload_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 flags);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline NV_STATUS instmemStateUnload(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -282,6 +289,7 @@ static inline NV_STATUS instmemStateUnload(OBJGPU *pGpu, struct DisplayInstanceM
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 void instmemSetMemory_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NV_ADDRESS_SPACE dispInstMemAddrSpace, NvU32 dispInstMemAttr, NvU64 dispInstMemBase, NvU32 dispInstMemSize);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline void instmemSetMemory(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NV_ADDRESS_SPACE dispInstMemAddrSpace, NvU32 dispInstMemAttr, NvU64 dispInstMemBase, NvU32 dispInstMemSize) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -291,6 +299,7 @@ static inline void instmemSetMemory(OBJGPU *pGpu, struct DisplayInstanceMemory *
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 NV_STATUS instmemBindContextDma_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct ContextDma *pContextDma, struct DispChannel *pDispChannel);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline NV_STATUS instmemBindContextDma(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct ContextDma *pContextDma, struct DispChannel *pDispChannel) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -301,6 +310,7 @@ static inline NV_STATUS instmemBindContextDma(OBJGPU *pGpu, struct DisplayInstan
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 NV_STATUS instmemUnbindContextDma_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct ContextDma *pContextDma, struct DispChannel *pDispChannel);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline NV_STATUS instmemUnbindContextDma(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct ContextDma *pContextDma, struct DispChannel *pDispChannel) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -311,6 +321,7 @@ static inline NV_STATUS instmemUnbindContextDma(OBJGPU *pGpu, struct DisplayInst
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 void instmemUnbindContextDmaFromAllChannels_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct ContextDma *pContextDma);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline void instmemUnbindContextDmaFromAllChannels(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct ContextDma *pContextDma) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -320,6 +331,7 @@ static inline void instmemUnbindContextDmaFromAllChannels(OBJGPU *pGpu, struct D
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 void instmemUnbindDispChannelContextDmas_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct DispChannel *pDispChannel);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline void instmemUnbindDispChannelContextDmas(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, struct DispChannel *pDispChannel) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -329,6 +341,7 @@ static inline void instmemUnbindDispChannelContextDmas(OBJGPU *pGpu, struct Disp
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 NV_STATUS instmemReserveContextDma_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 *offset);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline NV_STATUS instmemReserveContextDma(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 *offset) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");
@@ -339,6 +352,7 @@ static inline NV_STATUS instmemReserveContextDma(OBJGPU *pGpu, struct DisplayIns
 #endif //__nvoc_disp_inst_mem_h_disabled
 
 NV_STATUS instmemFreeContextDma_IMPL(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 offset);
+
 #ifdef __nvoc_disp_inst_mem_h_disabled
 static inline NV_STATUS instmemFreeContextDma(OBJGPU *pGpu, struct DisplayInstanceMemory *pInstMem, NvU32 offset) {
     NV_ASSERT_FAILED_PRECOMP("DisplayInstanceMemory was disabled!");

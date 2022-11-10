@@ -129,7 +129,7 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
         pCtxAttr = pKernelGraphics->globalCtxBuffersInfo.globalCtxAttr;
         NV_ASSERT_OK_OR_RETURN(
             ctxBufPoolGetGlobalPool(pGpu, CTX_BUF_ID_GR_GLOBAL,
-                                    NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance),
+                                    RM_ENGINE_TYPE_GR(pKernelGraphics->instance),
                                     &pCtxBufPool));
     }
 
@@ -142,7 +142,8 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
         flags |= MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
     }
 
-    if (pCtxBufPool != NULL)
+    // Don't use context buffer pool for VF allocations managed by host RM.
+    if (ctxBufPoolIsSupported(pGpu) && (pCtxBufPool != NULL))
     {
         cbAllocFlags |= MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL;
         flags |= MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL;
@@ -206,6 +207,7 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
         memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_ATTRIBUTE_CB].pAllocList));
+        memdescSetName(pGpu, *ppMemDesc, NV_RM_SURF_NAME_GR_CIRCULAR_BUFFER, NULL);
     }
 
     // we do not want/need a priv access map allocated per-channel, so skip allocating

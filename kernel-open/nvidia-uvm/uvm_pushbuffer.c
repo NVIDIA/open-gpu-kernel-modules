@@ -121,7 +121,7 @@ NV_STATUS uvm_pushbuffer_create(uvm_channel_manager_t *channel_manager, uvm_push
         goto error;
 
     // Verify the GPU can access the pushbuffer.
-    UVM_ASSERT(uvm_pushbuffer_get_gpu_va_base(pushbuffer) + UVM_PUSHBUFFER_SIZE < gpu->parent->max_host_va);
+    UVM_ASSERT((uvm_pushbuffer_get_gpu_va_base(pushbuffer) + UVM_PUSHBUFFER_SIZE - 1) < gpu->parent->max_host_va);
 
     bitmap_fill(pushbuffer->idle_chunks, UVM_PUSHBUFFER_CHUNKS);
     bitmap_fill(pushbuffer->available_chunks, UVM_PUSHBUFFER_CHUNKS);
@@ -372,7 +372,7 @@ void uvm_pushbuffer_destroy(uvm_pushbuffer_t *pushbuffer)
     if (pushbuffer == NULL)
         return;
 
-    uvm_procfs_destroy_entry(pushbuffer->procfs.info_file);
+    proc_remove(pushbuffer->procfs.info_file);
 
     uvm_rm_mem_free(pushbuffer->memory);
     uvm_kvfree(pushbuffer);
@@ -448,7 +448,7 @@ void uvm_pushbuffer_end_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push, uvm
 {
     uvm_pushbuffer_chunk_t *chunk = gpfifo_to_chunk(pushbuffer, gpfifo);
 
-    uvm_assert_spinlock_locked(&push->channel->pool->lock);
+    uvm_channel_pool_assert_locked(push->channel->pool);
 
     uvm_spin_lock(&pushbuffer->lock);
 

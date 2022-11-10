@@ -44,6 +44,8 @@
 #include "gpu_mgr/gpu_mgr.h"
 #include "objtmr.h"
 #include "core/locks.h"
+#include "ctrl/ctrl402c.h"
+#include "platform/acpi_common.h"
 
 #include "kernel/gpu/intr/engine_idx.h"
 
@@ -73,6 +75,7 @@
 #include "class/clc67b.h"
 #include "class/clc67d.h"
 #include "class/clc67e.h"
+#include "class/clc77f.h" //NVC77F_ANY_CHANNEL_DMA
 
 #include "class/clc77d.h"
 
@@ -159,11 +162,8 @@ kdispDestructInstMem_IMPL
     KernelDisplay *pKernelDisplay
 )
 {
-    if (pKernelDisplay->pInst != NULL)
-    {
-        objDelete(pKernelDisplay->pInst);
-        pKernelDisplay->pInst = NULL;
-    }
+    objDelete(pKernelDisplay->pInst);
+    pKernelDisplay->pInst = NULL;
 }
 
 /*! Constructor for Kernel head */
@@ -202,11 +202,8 @@ kdispDestructKhead_IMPL
 
     for (headIdx = 0; headIdx < OBJ_MAX_HEADS; headIdx++)
     {
-        if (pKernelDisplay->pKernelHead[headIdx] != NULL)
-        {
-            objDelete(pKernelDisplay->pKernelHead[headIdx]);
-            pKernelDisplay->pKernelHead[headIdx] = NULL;
-        }
+        objDelete(pKernelDisplay->pKernelHead[headIdx]);
+        pKernelDisplay->pKernelHead[headIdx] = NULL;
     }
 }
 
@@ -241,6 +238,42 @@ kdispStatePreInitLocked_IMPL(OBJGPU        *pGpu,
 }
 
 NV_STATUS
+kdispInitBrightcStateLoad_IMPL(OBJGPU *pGpu,
+                               KernelDisplay *pKernelDisplay)
+{
+    NV2080_CTRL_INTERNAL_INIT_BRIGHTC_STATE_LOAD_PARAMS *pBrightcInfo = NULL;
+    NvU32 status = NV_ERR_NOT_SUPPORTED;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    pBrightcInfo = portMemAllocNonPaged(sizeof(NV2080_CTRL_INTERNAL_INIT_BRIGHTC_STATE_LOAD_PARAMS));
+    if (pBrightcInfo == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Could not allocate memory for pBrightcInfo\n");
+        return NV_ERR_NO_MEMORY;
+    }
+    portMemSet(pBrightcInfo, 0, sizeof(*pBrightcInfo));
+
+    pBrightcInfo->status = status;
+    if ((pKernelDisplay != NULL) && (pKernelDisplay->pStaticInfo->internalDispActiveMask != 0))
+    {
+        // Fill in the Backlight Method Data.
+        pBrightcInfo->backLightDataSize = sizeof(pBrightcInfo->backLightData);
+        status = pGpu->pOS->osCallACPI_DSM(pGpu, ACPI_DSM_FUNCTION_CURRENT, NV_ACPI_GENERIC_FUNC_GETBACKLIGHT,
+                                           (NvU32 *)(pBrightcInfo->backLightData),
+                                           &pBrightcInfo->backLightDataSize);
+        pBrightcInfo->status = status;
+    }
+
+    status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                    NV2080_CTRL_CMD_INTERNAL_INIT_BRIGHTC_STATE_LOAD,
+                    pBrightcInfo, sizeof(*pBrightcInfo));
+
+    portMemFree(pBrightcInfo);
+
+    return status;
+}
+
+NV_STATUS
 kdispStateInitLocked_IMPL(OBJGPU        *pGpu,
                           KernelDisplay *pKernelDisplay)
 {
@@ -264,12 +297,40 @@ kdispStateInitLocked_IMPL(OBJGPU        *pGpu,
         exit);
 
     pKernelDisplay->pStaticInfo = pStaticInfo;
+    pKernelDisplay->numHeads = pStaticInfo->numHeads;
     pStaticInfo = NULL;
+
+    // Initiate Brightc module state load
+    status = kdispInitBrightcStateLoad_HAL(pGpu, pKernelDisplay);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "rmapi control call for brightc state load failed\n");
+        goto exit;
+    }
 
     if (pKernelDisplay->pInst != NULL)
     {
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
                 instmemStateInitLocked(pGpu, pKernelDisplay->pInst), exit);
+    }
+
+    // Initialize any external daughterboards that
+    // might be out there.
+
+    pGpu->i2cPortForExtdev = NV402C_CTRL_NUM_I2C_PORTS;
+
+    if (pKernelDisplay->pStaticInfo->i2cPort == NV402C_CTRL_NUM_I2C_PORTS)
+    {
+        NV_PRINTF(LEVEL_INFO, "Error in getting valid I2Cport for Extdevice or extdevice doesn't exist\n");
+    }
+    else
+    {
+        pGpu->i2cPortForExtdev = pKernelDisplay->pStaticInfo->i2cPort;
+
+        if (NV_OK != gpuExtdevConstruct_HAL(pGpu))
+        {
+            NV_PRINTF(LEVEL_INFO, "gpuExtdevConstruct() failed or not supported\n");
+        }
     }
 
     if (pKernelDisplay->getProperty(pKernelDisplay, PDB_PROP_KDISP_IMP_ENABLE))
@@ -420,6 +481,12 @@ kdispGetIntChnClsForHwCls_IMPL
         case NVC57E_WINDOW_CHANNEL_DMA:
         case NVC67E_WINDOW_CHANNEL_DMA:
             *pDispChnClass = dispChnClass_Win;
+            break;
+
+        case NVC77F_ANY_CHANNEL_DMA:
+            // Assert incase of physical RM, Any channel is kernel only channel.
+            NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_INVALID_CHANNEL);
+            *pDispChnClass = dispChnClass_Any;
             break;
 
         default:
@@ -875,11 +942,6 @@ kdispServiceVblank_KERNEL
         // DPC/BottomHalf/whatever to service the rest of the
         // vblank callback queues
         //
-        for(i=0; i< OBJ_MAX_HEADS; i++)
-        {
-            pKernelHead = KDISP_GET_HEAD(pKernelDisplay, i);
-            kheadResetPendingVblankForKernel_HAL(pGpu, pKernelHead, pThreadState);
-        }
     }
     else
     {

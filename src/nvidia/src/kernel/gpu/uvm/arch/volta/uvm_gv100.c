@@ -33,6 +33,7 @@
 #include "gpu/uvm/uvm.h"
 #include "os/os.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/bus/kern_bus.h"
 #include "rmapi/event.h"
 
@@ -48,8 +49,6 @@ uvmSetupAccessCntrBuffer_GV100
 )
 {
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-    NvU32 accessCntrBufferHi = 0;
-    NvU32 accessCntrBufferLo = 0;
     NvU64 vaddr;
     NV_STATUS status = NV_OK;
 
@@ -73,11 +72,8 @@ uvmSetupAccessCntrBuffer_GV100
     }
     pUvm->accessCntrBuffer.bar2UvmAccessCntrBufferAddr = vaddr;
 
-    accessCntrBufferHi = NvU64_HI32(pUvm->accessCntrBuffer.bar2UvmAccessCntrBufferAddr);
-    accessCntrBufferLo = NvU64_LO32(pUvm->accessCntrBuffer.bar2UvmAccessCntrBufferAddr);
-
-    uvmWriteAccessCntrBufferHiReg_HAL(pGpu, pUvm, accessCntrBufferHi);
-    uvmWriteAccessCntrBufferLoReg_HAL(pGpu, pUvm, accessCntrBufferLo);
+    uvmProgramWriteAccessCntrBufferAddress_HAL(pGpu, pUvm, vaddr);
+    uvmProgramAccessCntrBufferEnabled_HAL(pGpu, pUvm, NV_FALSE);
 
     return NV_OK;
 }
@@ -107,9 +103,7 @@ uvmDisableAccessCntr_GV100
         bIsErrorRecovery = NV_TRUE;
     }
 
-    uvmWriteAccessCntrBufferLoReg_HAL(pGpu, pUvm,
-        FLD_SET_DRF( _PFB_NISO, _ACCESS_COUNTER_NOTIFY_BUFFER_LO, _EN, _FALSE,
-                  uvmReadAccessCntrBufferLoReg_HAL(pGpu, pUvm)));
+    uvmProgramAccessCntrBufferEnabled_HAL(pGpu, pUvm, NV_FALSE);
 
     //
     // Check for any pending notifications which might be pending in pipe to ensure
@@ -119,11 +113,9 @@ uvmDisableAccessCntr_GV100
     // bit to show up for all packets and then reset the buffer
     //
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    if (FLD_TEST_DRF(_PFB_NISO, _ACCESS_COUNTER_NOTIFY_BUFFER_LO, _EN, _FALSE,
-                      uvmReadAccessCntrBufferLoReg_HAL(pGpu, pUvm)))
+    if (!uvmIsAccessCntrBufferEnabled_HAL(pGpu, pUvm))
     {
-        while (FLD_TEST_DRF(_PFB_NISO, _ACCESS_COUNTER_NOTIFY_BUFFER_INFO, _PUSHED, _FALSE,
-                            uvmReadAccessCntrBufferInfoReg_HAL(pGpu, pUvm)))
+        while (!uvmIsAccessCntrBufferPushed_HAL(pGpu, pUvm))
         {
             if (gpuCheckTimeout(pGpu, &timeout) == NV_ERR_TIMEOUT)
             {
@@ -319,6 +311,7 @@ uvmInitAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
         return status;
     }
 
+    memdescSetName(pGpu, pUvmAccessCntrBufferDesc, NV_RM_SURF_NAME_ACCESS_COUNTER_BUFFER, NULL);
     memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pUvmAccessCntrBufferDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
 
     status = memdescMap(pUvmAccessCntrBufferDesc, 0,

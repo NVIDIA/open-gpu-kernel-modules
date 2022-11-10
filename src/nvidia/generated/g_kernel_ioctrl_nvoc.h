@@ -259,6 +259,7 @@ static inline NvBool kioctrlIsPresent_DISPATCH(POBJGPU pGpu, struct KernelIoctrl
 }
 
 void kioctrlDestructEngine_IMPL(struct KernelIoctrl *arg0);
+
 #ifdef __nvoc_kernel_ioctrl_h_disabled
 static inline void kioctrlDestructEngine(struct KernelIoctrl *arg0) {
     NV_ASSERT_FAILED_PRECOMP("KernelIoctrl was disabled!");

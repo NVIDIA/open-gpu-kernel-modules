@@ -46,7 +46,11 @@ nvlink_core_init_links_from_off_to_swcfg
     NvU32      i;
 
     // Sanity check the links array
-    nvlink_assert(pLinks != NULL);
+    if (pLinks == NULL)
+    {
+        nvlink_assert(0);
+        return;
+    }
 
     // Return early if there are no links to initialize
     if (numLinks == 0)
@@ -65,6 +69,9 @@ nvlink_core_init_links_from_off_to_swcfg
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             status = pLinks[i]->link_handlers->get_dl_link_mode(pLinks[i], &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -84,6 +91,9 @@ nvlink_core_init_links_from_off_to_swcfg
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             // If receiver detect has passed for the link, move to next link
             if (pLinks[i]->bRxDetected)
                 continue;
@@ -107,6 +117,9 @@ nvlink_core_init_links_from_off_to_swcfg
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             // In NVLink3.0 and 3.1, RXDET must be called serially - done above (Bug 2546220)
             if (!((pLinks[i]->version == NVLINK_DEVICE_VERSION_30) ||
                   (pLinks[i]->version == NVLINK_DEVICE_VERSION_31)))
@@ -143,6 +156,9 @@ nvlink_core_init_links_from_off_to_swcfg
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             // If receiver detect failed for the link, move to next link
             if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail)
                 continue;
@@ -172,6 +188,9 @@ nvlink_core_init_links_from_off_to_swcfg
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             // If receiver detect failed for the link, move to next link
             if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail)
                 continue;
@@ -190,6 +209,9 @@ nvlink_core_init_links_from_off_to_swcfg
     // Put the links in SAFE mode
     for (i = 0; i < numLinks; i++)
     {
+        if (pLinks[i] == NULL)
+            continue;
+
         // If receiver detect failed for the link, move to next link
         if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail)
             continue;
@@ -243,6 +265,9 @@ nvlink_core_init_links_from_off_to_swcfg
     // Poll for links to enter SAFE mode
     for (i = 0; i < numLinks; i++)
     {
+        if (pLinks[i] == NULL)
+            continue;
+
         status = nvlink_core_wait_for_link_init(pLinks[i]);
         if (status == NVL_SUCCESS)
         {
@@ -275,7 +300,11 @@ nvlink_core_init_links_from_off_to_swcfg_non_ALI
     NvU32      i;
 
     // Sanity check the links array
-    nvlink_assert(pLinks != NULL);
+    if (pLinks == NULL)
+    {
+        nvlink_assert(0);
+        return;
+    }
 
     // Return early if there are no links to initialize
     if (numLinks == 0)
@@ -294,6 +323,9 @@ nvlink_core_init_links_from_off_to_swcfg_non_ALI
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             status = pLinks[i]->link_handlers->get_dl_link_mode(pLinks[i], &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -313,6 +345,9 @@ nvlink_core_init_links_from_off_to_swcfg_non_ALI
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             // In NVLink3.0 and 3.1, RXDET must be called serially - done above (Bug 2546220)
             if (!((pLinks[i]->version == NVLINK_DEVICE_VERSION_30) ||
                   (pLinks[i]->version == NVLINK_DEVICE_VERSION_31)))
@@ -348,6 +383,9 @@ nvlink_core_init_links_from_off_to_swcfg_non_ALI
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             // If receiver detect failed for the link, move to next link
             if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail)
                 continue;
@@ -371,6 +409,9 @@ nvlink_core_init_links_from_off_to_swcfg_non_ALI
     {
         for (i = 0; i < numLinks; i++)
         {
+            if (pLinks[i] == NULL)
+                continue;
+
             // If receiver detect failed for the link, move to next link
             if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail || pLinks[i]->bInitphase5Fails)
                 continue;
@@ -389,6 +430,9 @@ nvlink_core_init_links_from_off_to_swcfg_non_ALI
     // Step 5: Put the links in SAFE mode
     for (i = 0; i < numLinks; i++)
     {
+        if (pLinks[i] == NULL)
+            continue;
+
         // If receiver detect failed for the link, move to next link
         if (!pLinks[i]->bRxDetected || pLinks[i]->bTxCommonModeFail || pLinks[i]->bInitphase5Fails)
             continue;
@@ -442,6 +486,9 @@ nvlink_core_init_links_from_off_to_swcfg_non_ALI
     // Poll for links to enter SAFE mode
     for (i = 0; i < numLinks; i++)
     {
+        if (pLinks[i] == NULL)
+            continue;
+
         status = nvlink_core_wait_for_link_init(pLinks[i]);
         if (status == NVL_SUCCESS)
         {
@@ -473,7 +520,11 @@ nvlink_core_initphase5
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -488,6 +539,9 @@ nvlink_core_initphase5
     {
         NvlStatus status     = NVL_SUCCESS;
         NvU64     dlLinkMode = 0;
+
+        if (links[i] == NULL)
+            continue;
 
         // INITPHASE5 is supported only for NVLINK version >= 4.0
         if (links[i]->version < NVLINK_DEVICE_VERSION_40)
@@ -562,7 +616,11 @@ nvlink_core_initphase1
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -583,6 +641,9 @@ nvlink_core_initphase1
         NvU64     rxMode     = 0;
         NvU32     rxSubMode  = 0;
         NvBool    bPhyUnlocked  = NV_FALSE;
+
+        if (links[i] == NULL)
+            continue;
 
         // INITPHASE1 is supported only for NVLINK version >= 3.0
         if (links[i]->version < NVLINK_DEVICE_VERSION_30)
@@ -690,7 +751,11 @@ nvlink_core_rx_init_term
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -704,6 +769,9 @@ nvlink_core_rx_init_term
     for (i = 0; i < numLinks; i++)
     {
         NvU64 linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         if (links[i]->version < NVLINK_DEVICE_VERSION_22)
             continue;
@@ -797,7 +865,11 @@ nvlink_core_set_rx_detect
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -812,6 +884,9 @@ nvlink_core_set_rx_detect
     {
         NvlStatus status   = NVL_SUCCESS;
         NvU64     linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         if (links[i]->version < NVLINK_DEVICE_VERSION_22)
             continue;
@@ -933,7 +1008,11 @@ nvlink_core_get_rx_detect
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -947,6 +1026,9 @@ nvlink_core_get_rx_detect
     for (i = 0; i < numLinks; i++)
     {
         NvU64 linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         // If receiver detect has passed for the link, move to next link
         if (links[i]->bRxDetected)
@@ -1048,7 +1130,11 @@ nvlink_core_enable_common_mode
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -1062,6 +1148,9 @@ nvlink_core_enable_common_mode
     for (i = 0; i < numLinks; i++)
     {
         NvU64 linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         if (!links[i]->bRxDetected)
         {
@@ -1157,7 +1246,11 @@ nvlink_core_calibrate_links
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -1172,6 +1265,9 @@ nvlink_core_calibrate_links
     {
         NvlStatus status   = NVL_SUCCESS;
         NvU64     linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         // If receiver detect failed for the link, move to next link
         if (!links[i]->bRxDetected || links[i]->bTxCommonModeFail)
@@ -1260,7 +1356,11 @@ nvlink_core_disable_common_mode
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -1275,6 +1375,9 @@ nvlink_core_disable_common_mode
     {
         NvlStatus status   = NVL_SUCCESS;
         NvU64     linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         if (!links[i]->bRxDetected || links[i]->bTxCommonModeFail)
         {
@@ -1368,7 +1471,11 @@ nvlink_core_enable_data
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -1383,6 +1490,9 @@ nvlink_core_enable_data
     {
         NvlStatus status   = NVL_SUCCESS;
         NvU64     linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         // If receiver detect failed for the link, move to next link
         if (!links[i]->bRxDetected || links[i]->bTxCommonModeFail)
@@ -1473,7 +1583,11 @@ nvlink_core_initnegotiate
     NvU32 i;
 
     // Sanity check the links array
-    nvlink_assert(links != NULL);
+    if (links == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     // Return early if link array is empty
     if (numLinks == 0)
@@ -1488,6 +1602,9 @@ nvlink_core_initnegotiate
     {
         NvlStatus status   = NVL_SUCCESS;
         NvU64     linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         // If receiver detect failed for the link, move to next link
         if (!links[i]->bRxDetected || links[i]->bTxCommonModeFail ||
@@ -1542,6 +1659,9 @@ nvlink_core_initnegotiate
     {
         NvlStatus status   = NVL_SUCCESS;
         NvU64     linkMode = NVLINK_LINKSTATE_OFF;
+
+        if (links[i] == NULL)
+            continue;
 
         // If receiver detect failed for the link, move to next link
         if (!links[i]->bRxDetected || links[i]->bTxCommonModeFail ||
@@ -1605,6 +1725,12 @@ nvlink_core_wait_for_link_init
 {
     NvlStatus status   = NVL_SUCCESS;
     NvU64     linkMode = NVLINK_LINKSTATE_OFF;
+
+    if (link == NULL)
+    {
+        nvlink_assert(0);
+        return NVL_BAD_ARGS;
+    }
 
     //
     // Check for SW fail flags to exit early

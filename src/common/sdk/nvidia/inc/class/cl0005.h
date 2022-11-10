@@ -32,7 +32,7 @@
 
 #include "cl0005_notification.h"
 
-#define NV01_EVENT (0x00000005)
+#define NV01_EVENT (0x5U) /* finn: Evaluated from "NV0005_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 /* NvRmAlloc() parameters */
 #define NV0005_ALLOC_PARAMETERS_MESSAGE_ID (0x0005U)

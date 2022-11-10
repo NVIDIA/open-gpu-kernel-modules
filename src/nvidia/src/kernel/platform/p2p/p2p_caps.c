@@ -28,10 +28,15 @@
 #include "kernel/gpu/bif/kernel_bif.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/gpu.h"
+#include "vgpu/rpc.h"
+#include "vgpu/vgpu_events.h"
 #include "platform/chipset/chipset.h"
 #include "platform/p2p/p2p_caps.h"
 #include "nvRmReg.h"
 #include "nvlimits.h"
+#include "nvdevid.h"
+
+ct_assert(NV2080_GET_P2P_CAPS_UUID_LEN == NV_GPU_UUID_LEN);
 
 /**
  * @brief Determines if the GPUs are P2P compatible
@@ -305,12 +310,24 @@ _kp2pCapsCheckStatusOverridesForPcie
     return NV_FALSE;
 }
 
+/**
+ * @brief Check GPU Pcie mailbox P2P capability
+ *
+ * @param[in]  pGpu                         OBJGPU pointer
+ * @param[out] pP2PWriteCapStatus           Pointer to get the P2P write capability
+ * @param[out] pP2PReadCapStatus            Pointer to get the P2P read capability
+ * @param[out] pbCommonPciSwitch            To return if GPUs are on a common PCIE switch
+ *
+ * @returns NV_OK, if successfully
+ *          The write and read capability status are in the pP2PWriteCapStatus and pP2PReadCapStatus
+ */
 static NV_STATUS
 _kp2pCapsGetStatusOverPcie
 (
     NvU32   gpuMask,
     NvU8   *pP2PWriteCapStatus,
-    NvU8   *pP2PReadCapStatus
+    NvU8   *pP2PReadCapStatus,
+    NvBool *pbCommonPciSwitch
 )
 {
     OBJGPU *pGpu      = NULL;
@@ -418,7 +435,7 @@ _kp2pCapsGetStatusOverPcie
         }
     }
 
-    // Check if GPUs have the HW P2P implementation 
+    // Check if GPUs have the HW P2P implementation
 
     // Only lock for GSP_CLIENT. Get one GPU.
     if (pFirstGpu == NULL)
@@ -477,7 +494,7 @@ _kp2pCapsGetStatusOverPcie
         //
         if (*pP2PReadCapStatus == NV0000_P2P_CAPS_STATUS_OK)
             *pP2PReadCapStatus = (p2pCapsParams.p2pReadCapsStatus == NV0000_P2P_CAPS_STATUS_OK ? gpuP2PReadCapsStatus : p2pCapsParams.p2pReadCapsStatus);
-         if (*pP2PWriteCapStatus == NV0000_P2P_CAPS_STATUS_OK)
+        if (*pP2PWriteCapStatus == NV0000_P2P_CAPS_STATUS_OK)
             *pP2PWriteCapStatus =  (p2pCapsParams.p2pWriteCapsStatus == NV0000_P2P_CAPS_STATUS_OK ? gpuP2PWriteCapsStatus : p2pCapsParams.p2pWriteCapsStatus);
 
         // No need to continue if P2P is not supported
@@ -506,6 +523,11 @@ done:
         }
     }
 
+    if (pbCommonPciSwitch != NULL)
+    {
+        *pbCommonPciSwitch = bCommonPciSwitchFound;
+    }
+
     //
     // Not fatal if failing, effect would be perf degradation as we would not hit the cache.
     // So just assert.
@@ -519,17 +541,93 @@ done:
     return status;
 }
 
+/**
+ * @brief Check the host system BAR1 P2P capability
+ *
+ * @param[in]  pGpu                         OBJGPU pointer
+ * @param[out] pP2PWriteCapStatus           Pointer to get the P2P write capability
+ * @param[out] pP2PReadCapStatus            Pointer to get the P2P read capability
+ * @param[out] bCommonPciSwitchFound        To indicate if GPUs are on a common PCIE switch
+ *
+ * @returns NV_OK
+ */
+static NV_STATUS
+_p2pCapsGetHostSystemStatusOverPcieBar1
+(
+    OBJGPU  *pGpu,
+    NvU8    *pP2PWriteCapStatus,
+    NvU8    *pP2PReadCapStatus,
+    NvBool   bCommonPciSwitchFound
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    NvU32 cpuFamily = DRF_VAL(0000_CTRL, _SYSTEM, _CPU_FAMILY, pSys->cpuInfo.family);
+
+    if (bCommonPciSwitchFound)
+    {
+        // Both of GPUs are on the same PCIE switch
+        *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+        *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+
+        NV_PRINTF(LEVEL_INFO, "A common switch detected\n");
+    }
+    else if (cpuFamily == NV0000_CTRL_SYSTEM_CPU_ID_AMD_FAMILY)
+    {
+        *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+
+        if (pSys->cpuInfo.type == NV0000_CTRL_SYSTEM_CPU_TYPE_RYZEN)
+            *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+        else
+            *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+
+        NV_PRINTF(LEVEL_INFO, "AMD CPU detected\n");
+    }
+    else if (cpuFamily == NV0000_CTRL_SYSTEM_CPU_ID_INTEL_FAMILY)
+    {
+        *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+        *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+
+        NV_PRINTF(LEVEL_INFO, "Intel CPU detected\n");
+    }
+    else
+    {
+        *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+        *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+
+        NV_PRINTF(LEVEL_INFO, "Unsupported HW config\n");
+    }
+
+    NV_PRINTF(LEVEL_INFO, "WriteCap 0x%x ReadCap 0x%x\n", *pP2PWriteCapStatus, *pP2PReadCapStatus);
+
+    return NV_OK;
+}
+
+/**
+ * @brief Check GPU Pcie BAR1 P2P capability
+ *
+ * @param[in]  pGpu                         OBJGPU pointer
+ * @param[out] pP2PWriteCapStatus           Pointer to get the P2P write capability
+ * @param[out] pP2PReadCapStatus            Pointer to get the P2P read capability
+ * @param[out] bCommonPciSwitchFound        To indicate if GPUs are on a common PCIE switch
+ *
+ * @returns NV_OK, if GPUs at least support read or write
+ *          NV_ERR_NOT_SUPPORTED, if GPUs does not support read and write
+ */
 static NV_STATUS
 _kp2pCapsGetStatusOverPcieBar1
 (
-    NvU32   gpuMask
+    NvU32   gpuMask,
+    NvU8   *pP2PWriteCapStatus,
+    NvU8   *pP2PReadCapStatus,
+    NvBool  bCommonPciSwitchFound
 )
 {
     OBJGPU    *pGpuPeer    = NULL;
     NvU32      gpuInstance = 0;
     OBJGPU    *pFirstGpu   = gpumgrGetNextGpu(gpuMask, &gpuInstance);
     KernelBif *pKernelBif  = GPU_GET_KERNEL_BIF(pFirstGpu);
-    NV_STATUS status       = NV_OK;
+    NvU8 writeCapStatus = *pP2PWriteCapStatus;
+    NvU8 readCapStatus = *pP2PReadCapStatus;
 
     if ((pKernelBif->forceP2PType != NV_REG_STR_RM_FORCE_P2P_TYPE_BAR1P2P))
     {
@@ -547,12 +645,27 @@ _kp2pCapsGetStatusOverPcieBar1
         if (!kbusIsPcieBar1P2PMappingSupported_HAL(pFirstGpu, GPU_GET_KERNEL_BUS(pFirstGpu),
                                                    pGpuPeer, GPU_GET_KERNEL_BUS(pGpuPeer)))
         {
-            status = NV_ERR_NOT_SUPPORTED;
-            break;
+            return NV_ERR_NOT_SUPPORTED;
         }
     }
 
-    return status;
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          _p2pCapsGetHostSystemStatusOverPcieBar1(pFirstGpu, &writeCapStatus,
+                            &readCapStatus, bCommonPciSwitchFound));
+
+    if (*pP2PWriteCapStatus == NV0000_P2P_CAPS_STATUS_OK)
+        *pP2PWriteCapStatus = writeCapStatus;
+    if (*pP2PReadCapStatus == NV0000_P2P_CAPS_STATUS_OK)
+        *pP2PReadCapStatus = readCapStatus;
+
+    if ((*pP2PReadCapStatus != NV0000_P2P_CAPS_STATUS_OK) &&
+        (*pP2PWriteCapStatus != NV0000_P2P_CAPS_STATUS_OK))
+    {
+        // return not supported if it does not support any operation
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -568,6 +681,7 @@ p2pGetCapsStatus
     KernelNvlink *pKernelNvlink = NULL;
     OBJGPU       *pGpu          = NULL;
     NvU32         gpuInstance   = 0;
+    NvBool        bCommonSwitchFound = NV_FALSE;
 
     if ((pP2PWriteCapStatus == NULL) ||
         (pP2PReadCapStatus == NULL)  ||
@@ -625,7 +739,8 @@ p2pGetCapsStatus
         pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
         if (pKernelNvlink != NULL && pKernelNvlink->discoveredLinks != 0 &&
             (pSys->getProperty(pSys, PDB_PROP_SYS_NVSWITCH_IS_PRESENT) ||
-             knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink)))
+             knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink) ||
+             GPU_IS_NVSWITCH_DETECTED(pGpu)))
         {
             *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
             *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
@@ -650,18 +765,26 @@ p2pGetCapsStatus
     //
     // We can control P2P connectivity for PCI-E peers using regkeys, hence
     // if either read or write is supported, return success. See
-    // _p2pCapsCheckStatusOverridesForPcie for details.
+    // _kp2pCapsCheckStatusOverridesForPcie for details.
     //
     if (_kp2pCapsGetStatusOverPcie(gpuMask, pP2PWriteCapStatus,
-                                  pP2PReadCapStatus) == NV_OK)
+                                  pP2PReadCapStatus, &bCommonSwitchFound) == NV_OK)
     {
         if ((*pP2PWriteCapStatus == NV0000_P2P_CAPS_STATUS_OK) ||
             (*pP2PReadCapStatus == NV0000_P2P_CAPS_STATUS_OK))
         {
-            if (_kp2pCapsGetStatusOverPcieBar1(gpuMask) == NV_OK)
+            NvU8 bar1P2PWriteCapStatus = *pP2PWriteCapStatus;
+            NvU8 bar1P2PReadCapStatus = *pP2PReadCapStatus;
+
+            *pConnectivity = P2P_CONNECTIVITY_PCIE;
+
+            if (_kp2pCapsGetStatusOverPcieBar1(gpuMask, &bar1P2PWriteCapStatus,
+                    &bar1P2PReadCapStatus, bCommonSwitchFound) == NV_OK)
+            {
+                *pP2PWriteCapStatus = bar1P2PWriteCapStatus;
+                *pP2PReadCapStatus = bar1P2PReadCapStatus;
                 *pConnectivity = P2P_CONNECTIVITY_PCIE_BAR1;
-            else
-                *pConnectivity = P2P_CONNECTIVITY_PCIE;
+            }
 
             return NV_OK;
         }
@@ -670,3 +793,300 @@ p2pGetCapsStatus
     return NV_OK;
 }
 
+static NV_STATUS
+_removeP2PPeerGpuCapsByGpuId
+(
+    OBJGPU *pGpu,
+    NvU32 peerGpuId
+)
+{
+    GPU_P2P_PEER_GPU_CAPS *pLocalPeerCaps = NULL;
+
+    pLocalPeerCaps = gpuFindP2PPeerGpuCapsByGpuId(pGpu, peerGpuId);
+    NV_CHECK_OR_RETURN(LEVEL_WARNING, pLocalPeerCaps != NULL, NV_ERR_OBJECT_NOT_FOUND);
+
+    // Swap the target element with the last element and remove the last.
+    // pLocalPeerCaps points to an item in the pGpu->P2PPeerGpuCaps array.
+    NV_ASSERT(pGpu->P2PPeerGpuCount != 0);
+    pGpu->P2PPeerGpuCount--;
+
+    portMemMove(pLocalPeerCaps,
+                sizeof(GPU_P2P_PEER_GPU_CAPS),
+                &pGpu->P2PPeerGpuCaps[pGpu->P2PPeerGpuCount],
+                sizeof(GPU_P2P_PEER_GPU_CAPS));
+
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdInternalSetP2pCaps_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PARAMS *pParams
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 i;
+    NvU32 failingIndex;
+    OBJGPU *pGpu = gpumgrGetGpuFromSubDeviceInst(pSubdevice->deviceInst,
+                                                 pSubdevice->subDeviceInst);
+
+    // TODO: GPUSWSEC-1433 remove this check to enable this control for baremetal
+    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+        return NV_ERR_NOT_SUPPORTED;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       pParams->peerGpuCount <= NV_ARRAY_ELEMENTS32(pGpu->P2PPeerGpuCaps),
+                       NV_ERR_INVALID_ARGUMENT);
+
+    for (i = 0; i < pParams->peerGpuCount; i++)
+    {
+        NV2080_CTRL_INTERNAL_SET_P2P_CAPS_PEER_INFO *pParamsPeerInfo = &pParams->peerGpuInfos[i];
+        GPU_P2P_PEER_GPU_CAPS *pLocalPeerCaps = NULL;
+
+        // Try to find the existing entry
+        pLocalPeerCaps = gpuFindP2PPeerGpuCapsByGpuId(pGpu, pParamsPeerInfo->gpuId);
+
+        // If no entry has been found, add a new one instead
+        if (pLocalPeerCaps == NULL)
+        {
+            NV_CHECK_OR_ELSE(LEVEL_ERROR,
+                             pGpu->P2PPeerGpuCount < NV_ARRAY_ELEMENTS32(pGpu->P2PPeerGpuCaps),
+                             status = NV_ERR_INSUFFICIENT_RESOURCES; goto fail);
+
+            pLocalPeerCaps = &pGpu->P2PPeerGpuCaps[pGpu->P2PPeerGpuCount];
+            pLocalPeerCaps->peerGpuId = pParamsPeerInfo->gpuId;
+
+            pGpu->P2PPeerGpuCount++;
+        }
+
+        pLocalPeerCaps->peerGpuInstance = pParamsPeerInfo->gpuInstance;
+        pLocalPeerCaps->p2pCaps = pParamsPeerInfo->p2pCaps;
+        pLocalPeerCaps->p2pOptimalReadCEs = pParamsPeerInfo->p2pOptimalReadCEs;
+        pLocalPeerCaps->p2pOptimalWriteCEs = pParamsPeerInfo->p2pOptimalWriteCEs;
+        pLocalPeerCaps->busPeerId = pParamsPeerInfo->busPeerId;
+
+        portMemCopy(pLocalPeerCaps->p2pCapsStatus,
+                    sizeof(pLocalPeerCaps->p2pCapsStatus),
+                    pParamsPeerInfo->p2pCapsStatus,
+                    sizeof(pParamsPeerInfo->p2pCapsStatus));
+    }
+
+    goto done;
+
+fail:
+    // Remove the successfully set caps
+    failingIndex = i;
+    for (i = 0; i < failingIndex; i++)
+    {
+        NV_STATUS ignoredStatus;
+        NV_CHECK_OK(ignoredStatus, LEVEL_ERROR,
+                    _removeP2PPeerGpuCapsByGpuId(pGpu, pParams->peerGpuInfos[i].gpuId));
+    }
+
+done:
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdInternalRemoveP2pCaps_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_REMOVE_P2P_CAPS_PARAMS *pParams
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 i;
+    OBJGPU *pGpu = gpumgrGetGpuFromSubDeviceInst(pSubdevice->deviceInst,
+                                                 pSubdevice->subDeviceInst);
+
+    // TODO: GPUSWSEC-1433 remove this check to enable this control for baremetal
+    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+        return NV_ERR_NOT_SUPPORTED;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       pParams->peerGpuIdCount <= NV_ARRAY_ELEMENTS32(pGpu->P2PPeerGpuCaps),
+                       NV_ERR_INVALID_ARGUMENT);
+
+    for (i = 0; i < pParams->peerGpuIdCount; i++)
+    {
+        // Capture only the first error here, as trying to remove all caps
+        // is the best effort here.
+        NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
+                  _removeP2PPeerGpuCapsByGpuId(pGpu, pParams->peerGpuIds[i]));
+    }
+
+    return status;
+}
+
+static NV_STATUS
+subdeviceGetP2pCaps_VIRTUAL
+(
+    OBJGPU *pGpu,
+    NV2080_CTRL_GET_P2P_CAPS_PARAMS *pParams
+)
+{
+    NvU32 i;
+    NV_STATUS status = NV_OK;
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    RS_RES_CONTROL_PARAMS_INTERNAL *pControlParams = pCallContext->pControlParams;
+    NV2080_CTRL_GET_P2P_CAPS_PARAMS *pShimParams =
+        portMemAllocNonPaged(sizeof *pShimParams);
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pShimParams != NULL, NV_ERR_NO_MEMORY);
+
+    portMemCopy(pShimParams, sizeof *pShimParams, pParams, sizeof *pParams);
+
+    if (!pShimParams->bAllCaps)
+    {
+        // Must translate Guest GpuIds to Guest UUIDs
+        for (i = 0; i < pShimParams->peerGpuCount; i++)
+        {
+            NV2080_CTRL_GPU_P2P_PEER_CAPS_PEER_INFO *pParamsPeerInfo = &pShimParams->peerGpuCaps[i];
+            POBJGPU pRemoteGpu = gpumgrGetGpuFromId(pParamsPeerInfo->gpuId);
+
+            NV_CHECK_OR_ELSE(LEVEL_INFO, pRemoteGpu != NULL,
+                             status = NV_ERR_INVALID_ARGUMENT; goto done);
+
+            portMemCopy(pParamsPeerInfo->gpuUuid,
+                        sizeof(pParamsPeerInfo->gpuUuid),
+                        pRemoteGpu->gpuUuid.uuid,
+                        sizeof(pRemoteGpu->gpuUuid.uuid));
+        }
+    }
+
+    pShimParams->bUseUuid = 1;
+
+    NV_RM_RPC_CONTROL(pGpu,
+                      pControlParams->hClient,
+                      pControlParams->hObject,
+                      pControlParams->cmd,
+                      pShimParams,
+                      sizeof *pShimParams,
+                      status);
+    if (status != NV_OK)
+    {
+        goto done;
+    }
+
+    // If bAllCaps, transfer additional output gpuIds and peerGpuCount
+    if (pParams->bAllCaps)
+    {
+        pParams->peerGpuCount = pShimParams->peerGpuCount;
+
+        for (i = 0; i < pParams->peerGpuCount; ++i)
+        {
+            // Use UUID to compute corresponding Guest GPU ID
+            OBJGPU *pRemoteGpu = gpumgrGetGpuFromUuid(pShimParams->peerGpuCaps[i].gpuUuid,
+                                                      DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1) |
+                                                      DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT, _BINARY));
+
+            NV_CHECK_OR_ELSE(LEVEL_INFO, pRemoteGpu != NULL,
+                             status = NV_ERR_GPU_UUID_NOT_FOUND; goto done);
+
+            pParams->peerGpuCaps[i].gpuId = pRemoteGpu->gpuId;
+        }
+    }
+
+    // Transfer output values from shimParams to user params.
+    for (i = 0; i < pParams->peerGpuCount; ++i)
+    {
+        pParams->peerGpuCaps[i].p2pCaps = pShimParams->peerGpuCaps[i].p2pCaps;
+        pParams->peerGpuCaps[i].p2pOptimalReadCEs = pShimParams->peerGpuCaps[i].p2pOptimalReadCEs;
+        pParams->peerGpuCaps[i].p2pOptimalWriteCEs = pShimParams->peerGpuCaps[i].p2pOptimalWriteCEs;
+        portMemCopy(pParams->peerGpuCaps[i].p2pCapsStatus,
+                    sizeof(pParams->peerGpuCaps[i].p2pCapsStatus),
+                    pShimParams->peerGpuCaps[i].p2pCapsStatus,
+                    sizeof(pShimParams->peerGpuCaps[i].p2pCapsStatus));
+        pParams->peerGpuCaps[i].busPeerId = pShimParams->peerGpuCaps[i].busPeerId;
+    }
+
+done:
+    portMemFree(pShimParams);
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGetP2pCaps_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GET_P2P_CAPS_PARAMS *pParams
+)
+{
+    NvU32 i;
+    NvU32 gfid = GPU_GFID_PF;
+    OBJGPU *pGpu = gpumgrGetGpuFromSubDeviceInst(pSubdevice->deviceInst,
+                                                 pSubdevice->subDeviceInst);
+
+    // TODO: GPUSWSEC-1433 remove this check to enable this control for baremetal
+    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+        return NV_ERR_NOT_SUPPORTED;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_STATE);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, vgpuGetCallingContextGfid(pGpu, &gfid));
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       (pParams->bAllCaps ||
+                       (pParams->peerGpuCount <= NV_ARRAY_ELEMENTS32(pGpu->P2PPeerGpuCaps))),
+                       NV_ERR_INVALID_ARGUMENT);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, (pParams->bUseUuid == NV_FALSE), NV_ERR_NOT_SUPPORTED);
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        return subdeviceGetP2pCaps_VIRTUAL(pGpu, pParams);
+    }
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, RMCFG_FEATURE_PLATFORM_GSP, NV_ERR_NOT_SUPPORTED);
+
+    if (pParams->bAllCaps)
+    {
+        pParams->peerGpuCount = pGpu->P2PPeerGpuCount;
+
+        for (i = 0; i < pParams->peerGpuCount; i++)
+        {
+            pParams->peerGpuCaps[i].gpuId = pGpu->P2PPeerGpuCaps[i].peerGpuId;
+        }
+    }
+
+    for (i = 0; i < pParams->peerGpuCount; i++)
+    {
+        NV2080_CTRL_GPU_P2P_PEER_CAPS_PEER_INFO *pParamsPeerInfo = &pParams->peerGpuCaps[i];
+        GPU_P2P_PEER_GPU_CAPS *pLocalPeerCaps = NULL;
+
+        pLocalPeerCaps = gpuFindP2PPeerGpuCapsByGpuId(pGpu, pParamsPeerInfo->gpuId);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, pLocalPeerCaps != NULL, NV_ERR_OBJECT_NOT_FOUND);
+
+        //
+        // TODO: Currently, vGPU-GSP Guest only supports NVLINK DIRECT so unset caps for other modes.
+        //       May remove once vGPU adds support for other modes.
+        //
+        if (IS_GFID_VF(gfid) &&
+            !REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_NVLINK_SUPPORTED, pLocalPeerCaps->p2pCaps))
+        {
+            pParamsPeerInfo->p2pCaps = 0;
+            pParamsPeerInfo->p2pOptimalReadCEs = 0;
+            pParamsPeerInfo->p2pOptimalWriteCEs = 0;
+            pParamsPeerInfo->busPeerId = NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INVALID_PEER;
+
+            portMemSet(pParamsPeerInfo->p2pCapsStatus,
+                       NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED,
+                       sizeof(pParamsPeerInfo->p2pCapsStatus));
+        }
+        else
+        {
+            pParamsPeerInfo->p2pCaps = pLocalPeerCaps->p2pCaps;
+            pParamsPeerInfo->p2pOptimalReadCEs = pLocalPeerCaps->p2pOptimalReadCEs;
+            pParamsPeerInfo->p2pOptimalWriteCEs = pLocalPeerCaps->p2pOptimalWriteCEs;
+            pParamsPeerInfo->busPeerId = pLocalPeerCaps->busPeerId;
+
+            portMemCopy(pParamsPeerInfo->p2pCapsStatus,
+                        sizeof(pParamsPeerInfo->p2pCapsStatus),
+                        pLocalPeerCaps->p2pCapsStatus,
+                        sizeof(pLocalPeerCaps->p2pCapsStatus));
+        }
+    }
+
+    return NV_OK;
+}

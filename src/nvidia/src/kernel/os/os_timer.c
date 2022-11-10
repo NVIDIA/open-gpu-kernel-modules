@@ -232,7 +232,7 @@ osRun1HzCallbacksNow
 
     // LOCK: try to acquire GPU lock
     if (rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_DEVICE,
-                GPUS_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_TMR,
+                GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_TMR,
                 &lockedGpus) != NV_OK)
     {
         // Out of conflicting thread

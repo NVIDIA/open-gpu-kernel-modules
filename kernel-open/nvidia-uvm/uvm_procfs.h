@@ -53,8 +53,6 @@ static bool uvm_procfs_is_debug_enabled(void)
 struct proc_dir_entry *uvm_procfs_get_gpu_base_dir(void);
 struct proc_dir_entry *uvm_procfs_get_cpu_base_dir(void);
 
-void uvm_procfs_destroy_entry(struct proc_dir_entry *entry);
-
 int uvm_procfs_open_callback(void);
 void uvm_procfs_close_callback(void);
 

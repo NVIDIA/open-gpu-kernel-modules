@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -85,6 +85,23 @@
 #endif
 
 static struct nv_drm_device *dev_list = NULL;
+
+static const char* nv_get_input_colorspace_name(
+    enum NvKmsInputColorSpace colorSpace)
+{
+    switch (colorSpace) {
+        case NVKMS_INPUT_COLORSPACE_NONE:
+            return "None";
+        case NVKMS_INPUT_COLORSPACE_SCRGB_LINEAR:
+            return "IEC 61966-2-2 linear FP";
+        case NVKMS_INPUT_COLORSPACE_BT2100_PQ:
+            return "ITU-R BT.2100-PQ YCbCr";
+        default:
+            /* We shoudn't hit this */
+            WARN_ON("Unsupported input colorspace");
+            return "None";
+    }
+};
 
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 
@@ -332,6 +349,15 @@ static void nv_drm_enumerate_encoders_and_connectors
  */
 static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
 {
+    struct drm_prop_enum_list enum_list[3] = { };
+    int i, len = 0;
+
+    for (i = 0; i < 3; i++) {
+        enum_list[len].type = i;
+        enum_list[len].name = nv_get_input_colorspace_name(i);
+        len++;
+    }
+
 #if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
     if (!nv_dev->supportsSyncpts) {
         return 0;
@@ -341,6 +367,23 @@ static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
         drm_property_create_range(nv_dev->dev, DRM_MODE_PROP_ATOMIC,
             "NV_DRM_OUT_FENCE_PTR", 0, U64_MAX);
     if (nv_dev->nv_out_fence_property == NULL) {
+        return -ENOMEM;
+    }
+#endif
+
+    nv_dev->nv_input_colorspace_property =
+        drm_property_create_enum(nv_dev->dev, 0, "NV_INPUT_COLORSPACE",
+                                 enum_list, len);
+    if (nv_dev->nv_input_colorspace_property == NULL) {
+        NV_DRM_LOG_ERR("Failed to create NV_INPUT_COLORSPACE property");
+        return -ENOMEM;
+    }
+
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    nv_dev->nv_hdr_output_metadata_property =
+        drm_property_create(nv_dev->dev, DRM_MODE_PROP_BLOB,
+            "NV_HDR_STATIC_METADATA", 0);
+    if (nv_dev->nv_hdr_output_metadata_property == NULL) {
         return -ENOMEM;
     }
 #endif

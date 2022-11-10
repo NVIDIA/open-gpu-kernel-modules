@@ -34,12 +34,12 @@
 #include "cl0000_notification.h"
 
 /* object NV01_NULL_OBJECT */
-#define NV01_NULL_OBJECT (0x00000000)
+#define NV01_NULL_OBJECT (0x0) /* finn: Evaluated from "NV0000_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 /* obsolete alises */
 #define NV1_NULL_OBJECT  NV01_NULL_OBJECT
 
-#define NV01_ROOT        (0x00000000)
+#define NV01_ROOT        (0x0U) /* finn: Evaluated from "NV0000_ALLOC_PARAMETERS_MESSAGE_ID" */
 
 /* NvAlloc parameteters */
 #define NV0000_ALLOC_PARAMETERS_MESSAGE_ID (0x0000U)

@@ -133,6 +133,7 @@ struct DisplayApi {
     void (*__dispapiAddAdditionalDependants__)(struct RsClient *, struct DisplayApi *, RsResourceRef *);
     void (*__dispapiPreDestruct__)(struct DisplayApi *);
     NV_STATUS (*__dispapiUnmapFrom__)(struct DisplayApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__dispapiIsDuplicate__)(struct DisplayApi *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__dispapiGetNotificationListPtr__)(struct DisplayApi *);
     struct NotifShare *(*__dispapiGetNotificationShare__)(struct DisplayApi *);
     NV_STATUS (*__dispapiControlLookup__)(struct DisplayApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -193,12 +194,14 @@ NV_STATUS __nvoc_objCreate_DisplayApi(DisplayApi**, Dynamic*, NvU32, struct CALL
 #define dispapiAddAdditionalDependants(pClient, pResource, pReference) dispapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define dispapiPreDestruct(pResource) dispapiPreDestruct_DISPATCH(pResource)
 #define dispapiUnmapFrom(pResource, pParams) dispapiUnmapFrom_DISPATCH(pResource, pParams)
+#define dispapiIsDuplicate(pResource, hMemory, pDuplicate) dispapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispapiGetNotificationListPtr(pNotifier) dispapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define dispapiGetNotificationShare(pNotifier) dispapiGetNotificationShare_DISPATCH(pNotifier)
 #define dispapiControlLookup(pResource, pParams, ppEntry) dispapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispapiMap(pResource, pCallContext, pParams, pCpuMapping) dispapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define dispapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NV_STATUS dispapiSetUnicastAndSynchronize_KERNEL(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, NvU32 subDeviceInstance);
+
 
 #ifdef __nvoc_disp_objs_h_disabled
 static inline NV_STATUS dispapiSetUnicastAndSynchronize(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, NvU32 subDeviceInstance) {
@@ -289,6 +292,10 @@ static inline NV_STATUS dispapiUnmapFrom_DISPATCH(struct DisplayApi *pResource, 
     return pResource->__dispapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS dispapiIsDuplicate_DISPATCH(struct DisplayApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__dispapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *dispapiGetNotificationListPtr_DISPATCH(struct DisplayApi *pNotifier) {
     return pNotifier->__dispapiGetNotificationListPtr__(pNotifier);
 }
@@ -310,10 +317,13 @@ static inline NV_STATUS dispapiGetOrAllocNotifShare_DISPATCH(struct DisplayApi *
 }
 
 NV_STATUS dispapiConstruct_IMPL(struct DisplayApi *arg_pDisplayApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_dispapiConstruct(arg_pDisplayApi, arg_pCallContext, arg_pParams) dispapiConstruct_IMPL(arg_pDisplayApi, arg_pCallContext, arg_pParams)
 void dispapiDestruct_IMPL(struct DisplayApi *pDisplayApi);
+
 #define __nvoc_dispapiDestruct(pDisplayApi) dispapiDestruct_IMPL(pDisplayApi)
 NV_STATUS dispapiCtrlCmdEventSetNotification_IMPL(struct DisplayApi *pDisplayApi, NV5070_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams);
+
 #ifdef __nvoc_disp_objs_h_disabled
 static inline NV_STATUS dispapiCtrlCmdEventSetNotification(struct DisplayApi *pDisplayApi, NV5070_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pSetEventParams) {
     NV_ASSERT_FAILED_PRECOMP("DisplayApi was disabled!");
@@ -396,6 +406,7 @@ struct DispObject {
     void (*__dispobjAddAdditionalDependants__)(struct RsClient *, struct DispObject *, RsResourceRef *);
     void (*__dispobjPreDestruct__)(struct DispObject *);
     NV_STATUS (*__dispobjUnmapFrom__)(struct DispObject *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__dispobjIsDuplicate__)(struct DispObject *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__dispobjGetNotificationListPtr__)(struct DispObject *);
     void (*__dispobjControl_Epilogue__)(struct DispObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__dispobjGetNotificationShare__)(struct DispObject *);
@@ -480,6 +491,7 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
 #define dispobjAddAdditionalDependants(pClient, pResource, pReference) dispobjAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define dispobjPreDestruct(pResource) dispobjPreDestruct_DISPATCH(pResource)
 #define dispobjUnmapFrom(pResource, pParams) dispobjUnmapFrom_DISPATCH(pResource, pParams)
+#define dispobjIsDuplicate(pResource, hMemory, pDuplicate) dispobjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispobjGetNotificationListPtr(pNotifier) dispobjGetNotificationListPtr_DISPATCH(pNotifier)
 #define dispobjControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispobjControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define dispobjGetNotificationShare(pNotifier) dispobjGetNotificationShare_DISPATCH(pNotifier)
@@ -487,6 +499,7 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
 #define dispobjMap(pResource, pCallContext, pParams, pCpuMapping) dispobjMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define dispobjGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispobjGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NV_STATUS dispobjConstructHal_IMPL(struct DispObject *pDispObject, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 
 #ifdef __nvoc_disp_objs_h_disabled
 static inline NV_STATUS dispobjConstructHal(struct DispObject *pDispObject, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -747,6 +760,10 @@ static inline NV_STATUS dispobjUnmapFrom_DISPATCH(struct DispObject *pResource, 
     return pResource->__dispobjUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS dispobjIsDuplicate_DISPATCH(struct DispObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__dispobjIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *dispobjGetNotificationListPtr_DISPATCH(struct DispObject *pNotifier) {
     return pNotifier->__dispobjGetNotificationListPtr__(pNotifier);
 }
@@ -772,12 +789,16 @@ static inline NV_STATUS dispobjGetOrAllocNotifShare_DISPATCH(struct DispObject *
 }
 
 NV_STATUS dispobjConstruct_IMPL(struct DispObject *arg_pDispObject, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_dispobjConstruct(arg_pDispObject, arg_pCallContext, arg_pParams) dispobjConstruct_IMPL(arg_pDispObject, arg_pCallContext, arg_pParams)
 NV_STATUS dispobjGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDispObject, struct DispObject **ppDispObject);
+
 #define dispobjGetByHandle(pClient, hDispObject, ppDispObject) dispobjGetByHandle_IMPL(pClient, hDispObject, ppDispObject)
 NV_STATUS dispobjGetByDevice_IMPL(struct RsClient *pClient, struct Device *pDevice, struct DispObject **ppDispObject);
+
 #define dispobjGetByDevice(pClient, pDevice, ppDispObject) dispobjGetByDevice_IMPL(pClient, pDevice, ppDispObject)
 void dispobjClearRmFreeFlags_IMPL(struct DispObject *pDispObject);
+
 #ifdef __nvoc_disp_objs_h_disabled
 static inline void dispobjClearRmFreeFlags(struct DispObject *pDispObject) {
     NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
@@ -787,6 +808,7 @@ static inline void dispobjClearRmFreeFlags(struct DispObject *pDispObject) {
 #endif //__nvoc_disp_objs_h_disabled
 
 NvBool dispobjGetRmFreeFlags_IMPL(struct DispObject *pDispObject);
+
 #ifdef __nvoc_disp_objs_h_disabled
 static inline NvBool dispobjGetRmFreeFlags(struct DispObject *pDispObject) {
     NV_ASSERT_FAILED_PRECOMP("DispObject was disabled!");
@@ -847,6 +869,7 @@ struct NvDispApi {
     void (*__nvdispapiAddAdditionalDependants__)(struct RsClient *, struct NvDispApi *, RsResourceRef *);
     void (*__nvdispapiPreDestruct__)(struct NvDispApi *);
     NV_STATUS (*__nvdispapiUnmapFrom__)(struct NvDispApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__nvdispapiIsDuplicate__)(struct NvDispApi *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__nvdispapiGetNotificationListPtr__)(struct NvDispApi *);
     void (*__nvdispapiControl_Epilogue__)(struct NvDispApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__nvdispapiGetNotificationShare__)(struct NvDispApi *);
@@ -907,6 +930,7 @@ NV_STATUS __nvoc_objCreate_NvDispApi(NvDispApi**, Dynamic*, NvU32, struct CALL_C
 #define nvdispapiAddAdditionalDependants(pClient, pResource, pReference) nvdispapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define nvdispapiPreDestruct(pResource) nvdispapiPreDestruct_DISPATCH(pResource)
 #define nvdispapiUnmapFrom(pResource, pParams) nvdispapiUnmapFrom_DISPATCH(pResource, pParams)
+#define nvdispapiIsDuplicate(pResource, hMemory, pDuplicate) nvdispapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define nvdispapiGetNotificationListPtr(pNotifier) nvdispapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define nvdispapiControl_Epilogue(pDisplayApi, pCallContext, pRsParams) nvdispapiControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define nvdispapiGetNotificationShare(pNotifier) nvdispapiGetNotificationShare_DISPATCH(pNotifier)
@@ -1023,6 +1047,10 @@ static inline NV_STATUS nvdispapiUnmapFrom_DISPATCH(struct NvDispApi *pResource,
     return pResource->__nvdispapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS nvdispapiIsDuplicate_DISPATCH(struct NvDispApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__nvdispapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *nvdispapiGetNotificationListPtr_DISPATCH(struct NvDispApi *pNotifier) {
     return pNotifier->__nvdispapiGetNotificationListPtr__(pNotifier);
 }
@@ -1048,6 +1076,7 @@ static inline NV_STATUS nvdispapiGetOrAllocNotifShare_DISPATCH(struct NvDispApi 
 }
 
 NV_STATUS nvdispapiConstruct_IMPL(struct NvDispApi *arg_pNvdispApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_nvdispapiConstruct(arg_pNvdispApi, arg_pCallContext, arg_pParams) nvdispapiConstruct_IMPL(arg_pNvdispApi, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
@@ -1099,6 +1128,7 @@ struct DispSwObj {
     void (*__dispswobjAddAdditionalDependants__)(struct RsClient *, struct DispSwObj *, RsResourceRef *);
     void (*__dispswobjPreDestruct__)(struct DispSwObj *);
     NV_STATUS (*__dispswobjUnmapFrom__)(struct DispSwObj *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__dispswobjIsDuplicate__)(struct DispSwObj *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__dispswobjGetNotificationListPtr__)(struct DispSwObj *);
     void (*__dispswobjControl_Epilogue__)(struct DispSwObj *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__dispswobjGetNotificationShare__)(struct DispSwObj *);
@@ -1156,6 +1186,7 @@ NV_STATUS __nvoc_objCreate_DispSwObj(DispSwObj**, Dynamic*, NvU32, struct CALL_C
 #define dispswobjAddAdditionalDependants(pClient, pResource, pReference) dispswobjAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define dispswobjPreDestruct(pResource) dispswobjPreDestruct_DISPATCH(pResource)
 #define dispswobjUnmapFrom(pResource, pParams) dispswobjUnmapFrom_DISPATCH(pResource, pParams)
+#define dispswobjIsDuplicate(pResource, hMemory, pDuplicate) dispswobjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispswobjGetNotificationListPtr(pNotifier) dispswobjGetNotificationListPtr_DISPATCH(pNotifier)
 #define dispswobjControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispswobjControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define dispswobjGetNotificationShare(pNotifier) dispswobjGetNotificationShare_DISPATCH(pNotifier)
@@ -1254,6 +1285,10 @@ static inline NV_STATUS dispswobjUnmapFrom_DISPATCH(struct DispSwObj *pResource,
     return pResource->__dispswobjUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS dispswobjIsDuplicate_DISPATCH(struct DispSwObj *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__dispswobjIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *dispswobjGetNotificationListPtr_DISPATCH(struct DispSwObj *pNotifier) {
     return pNotifier->__dispswobjGetNotificationListPtr__(pNotifier);
 }
@@ -1279,6 +1314,7 @@ static inline NV_STATUS dispswobjGetOrAllocNotifShare_DISPATCH(struct DispSwObj 
 }
 
 NV_STATUS dispswobjConstruct_IMPL(struct DispSwObj *arg_pDispSwObj, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_dispswobjConstruct(arg_pDispSwObj, arg_pCallContext, arg_pParams) dispswobjConstruct_IMPL(arg_pDispSwObj, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 
@@ -1307,6 +1343,7 @@ struct DispCommon {
     struct DispCommon *__nvoc_pbase_DispCommon;
     NV_STATUS (*__dispcmnCtrlCmdSystemGetVblankCounter__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetVblankEnable__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSystemCheckSidebandSrSupport__)(struct DispCommon *, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetInternalDisplays__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpEnableVrr__)(struct DispCommon *, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdClearELVBlock__)(struct DispCommon *, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *);
@@ -1317,12 +1354,18 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDpAuxchI2cTransferCtrl__)(struct DispCommon *, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpASSRCtrl__)(struct DispCommon *, NV0073_CTRL_DP_ASSR_CTRL_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpSetEcf__)(struct DispCommon *, NV0073_CTRL_CMD_DP_SET_ECF_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSpecificGetBacklightBrightness__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSpecificSetBacklightBrightness__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpSwitchDispMux__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpRunPreDispMuxOperations__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpRunPostDispMuxOperations__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_RUN_POST_DISP_MUX_OPERATIONS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetDispMuxStatus__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpRecordChannelRegisters__)(struct DispCommon *, NV0073_CTRL_CMD_SYSTEM_RECORD_CHANNEL_REGS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpInternalLcdOverdrive__)(struct DispCommon *, NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSystemExecuteAcpiMethod__)(struct DispCommon *, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSystemGetAcpiIdMap__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSpecificSetAcpiIdMapping__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment__)(struct DispCommon *, NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetCapsV2__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetNumHeads__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_NUM_HEADS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetScanline__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_SCANLINE_PARAMS *);
@@ -1366,6 +1409,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdSpecificIsDirectmodeDisplay__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_IS_DIRECTMODE_DISPLAY_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_GET_HDMI_FRL_CAPACITY_COMPUTATION_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificDispI2cReadWrite__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetInfo__)(struct DispCommon *, NV0073_CTRL_DFP_GET_INFO_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetDisplayportDongleInfo__)(struct DispCommon *, NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpSetEldAudioCaps__)(struct DispCommon *, NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS *);
@@ -1427,6 +1471,7 @@ struct DispCommon {
     void (*__dispcmnAddAdditionalDependants__)(struct RsClient *, struct DispCommon *, RsResourceRef *);
     void (*__dispcmnPreDestruct__)(struct DispCommon *);
     NV_STATUS (*__dispcmnUnmapFrom__)(struct DispCommon *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__dispcmnIsDuplicate__)(struct DispCommon *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__dispcmnGetNotificationListPtr__)(struct DispCommon *);
     void (*__dispcmnControl_Epilogue__)(struct DispCommon *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__dispcmnGetNotificationShare__)(struct DispCommon *);
@@ -1467,6 +1512,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 
 #define dispcmnCtrlCmdSystemGetVblankCounter(pDispCommon, pVBCounterParams) dispcmnCtrlCmdSystemGetVblankCounter_DISPATCH(pDispCommon, pVBCounterParams)
 #define dispcmnCtrlCmdSystemGetVblankEnable(pDispCommon, pVBEnableParams) dispcmnCtrlCmdSystemGetVblankEnable_DISPATCH(pDispCommon, pVBEnableParams)
+#define dispcmnCtrlCmdSystemCheckSidebandSrSupport(pDispCommon, pParams) dispcmnCtrlCmdSystemCheckSidebandSrSupport_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSystemGetInternalDisplays(pDispCommon, pInternalDisplaysParams) dispcmnCtrlCmdSystemGetInternalDisplays_DISPATCH(pDispCommon, pInternalDisplaysParams)
 #define dispcmnCtrlCmdDpEnableVrr(pDispCommon, pParams) dispcmnCtrlCmdDpEnableVrr_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdClearELVBlock(pDispCommon, pParams) dispcmnCtrlCmdClearELVBlock_DISPATCH(pDispCommon, pParams)
@@ -1477,12 +1523,18 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDpAuxchI2cTransferCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpAuxchI2cTransferCtrl_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpASSRCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpASSRCtrl_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpSetEcf(pDispCommon, pCtrlEcfParams) dispcmnCtrlCmdDpSetEcf_DISPATCH(pDispCommon, pCtrlEcfParams)
+#define dispcmnCtrlCmdSpecificGetBacklightBrightness(pDispCommon, pAllHeadMaskParams) dispcmnCtrlCmdSpecificGetBacklightBrightness_DISPATCH(pDispCommon, pAllHeadMaskParams)
+#define dispcmnCtrlCmdSpecificSetBacklightBrightness(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetBacklightBrightness_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpSwitchDispMux(pDispCommon, pParams) dispcmnCtrlCmdDfpSwitchDispMux_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpRunPreDispMuxOperations(pDispCommon, pParams) dispcmnCtrlCmdDfpRunPreDispMuxOperations_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpRunPostDispMuxOperations(pDispCommon, pParams) dispcmnCtrlCmdDfpRunPostDispMuxOperations_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetDispMuxStatus(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDispMuxStatus_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpRecordChannelRegisters(pDispCommon, pParams) dispcmnCtrlCmdDfpRecordChannelRegisters_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpInternalLcdOverdrive(pDispCommon, pParams) dispcmnCtrlCmdDfpInternalLcdOverdrive_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdSystemExecuteAcpiMethod(pDispCommon, pAcpiMethodParams) dispcmnCtrlCmdSystemExecuteAcpiMethod_DISPATCH(pDispCommon, pAcpiMethodParams)
+#define dispcmnCtrlCmdSystemGetAcpiIdMap(pDispCommon, pAcpiIdMapParams) dispcmnCtrlCmdSystemGetAcpiIdMap_DISPATCH(pDispCommon, pAcpiIdMapParams)
+#define dispcmnCtrlCmdSpecificSetAcpiIdMapping(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetAcpiIdMapping_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSystemGetCapsV2(pDispCommon, pCapsParams) dispcmnCtrlCmdSystemGetCapsV2_DISPATCH(pDispCommon, pCapsParams)
 #define dispcmnCtrlCmdSystemGetNumHeads(pDispCommon, pNumHeadsParams) dispcmnCtrlCmdSystemGetNumHeads_DISPATCH(pDispCommon, pNumHeadsParams)
 #define dispcmnCtrlCmdSystemGetScanline(pDispCommon, pScanlineParams) dispcmnCtrlCmdSystemGetScanline_DISPATCH(pDispCommon, pScanlineParams)
@@ -1526,6 +1578,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdSpecificIsDirectmodeDisplay(pDispCommon, pParams) dispcmnCtrlCmdSpecificIsDirectmodeDisplay_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificDispI2cReadWrite(pDispCommon, pParams) dispcmnCtrlCmdSpecificDispI2cReadWrite_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetDisplayportDongleInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDisplayportDongleInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpSetEldAudioCaps(pDispCommon, pEldAudioCapsParams) dispcmnCtrlCmdDfpSetEldAudioCaps_DISPATCH(pDispCommon, pEldAudioCapsParams)
@@ -1587,6 +1640,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnAddAdditionalDependants(pClient, pResource, pReference) dispcmnAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define dispcmnPreDestruct(pResource) dispcmnPreDestruct_DISPATCH(pResource)
 #define dispcmnUnmapFrom(pResource, pParams) dispcmnUnmapFrom_DISPATCH(pResource, pParams)
+#define dispcmnIsDuplicate(pResource, hMemory, pDuplicate) dispcmnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispcmnGetNotificationListPtr(pNotifier) dispcmnGetNotificationListPtr_DISPATCH(pNotifier)
 #define dispcmnControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispcmnControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define dispcmnGetNotificationShare(pNotifier) dispcmnGetNotificationShare_DISPATCH(pNotifier)
@@ -1603,6 +1657,12 @@ NV_STATUS dispcmnCtrlCmdSystemGetVblankEnable_IMPL(struct DispCommon *pDispCommo
 
 static inline NV_STATUS dispcmnCtrlCmdSystemGetVblankEnable_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_VBLANK_ENABLE_PARAMS *pVBEnableParams) {
     return pDispCommon->__dispcmnCtrlCmdSystemGetVblankEnable__(pDispCommon, pVBEnableParams);
+}
+
+NV_STATUS dispcmnCtrlCmdSystemCheckSidebandSrSupport_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSystemCheckSidebandSrSupport_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdSystemCheckSidebandSrSupport__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdSystemGetInternalDisplays_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS *pInternalDisplaysParams);
@@ -1665,6 +1725,18 @@ static inline NV_STATUS dispcmnCtrlCmdDpSetEcf_DISPATCH(struct DispCommon *pDisp
     return pDispCommon->__dispcmnCtrlCmdDpSetEcf__(pDispCommon, pCtrlEcfParams);
 }
 
+NV_STATUS dispcmnCtrlCmdSpecificGetBacklightBrightness_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pAllHeadMaskParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetBacklightBrightness_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pAllHeadMaskParams) {
+    return pDispCommon->__dispcmnCtrlCmdSpecificGetBacklightBrightness__(pDispCommon, pAllHeadMaskParams);
+}
+
+NV_STATUS dispcmnCtrlCmdSpecificSetBacklightBrightness_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetBacklightBrightness_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdSpecificSetBacklightBrightness__(pDispCommon, pParams);
+}
+
 NV_STATUS dispcmnCtrlCmdDfpSwitchDispMux_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams);
 
 static inline NV_STATUS dispcmnCtrlCmdDfpSwitchDispMux_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams) {
@@ -1699,6 +1771,30 @@ NV_STATUS dispcmnCtrlCmdDfpInternalLcdOverdrive_IMPL(struct DispCommon *pDispCom
 
 static inline NV_STATUS dispcmnCtrlCmdDfpInternalLcdOverdrive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdDfpInternalLcdOverdrive__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *pAcpiMethodParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSystemExecuteAcpiMethod_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *pAcpiMethodParams) {
+    return pDispCommon->__dispcmnCtrlCmdSystemExecuteAcpiMethod__(pDispCommon, pAcpiMethodParams);
+}
+
+NV_STATUS dispcmnCtrlCmdSystemGetAcpiIdMap_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *pAcpiIdMapParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSystemGetAcpiIdMap_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *pAcpiIdMapParams) {
+    return pDispCommon->__dispcmnCtrlCmdSystemGetAcpiIdMap__(pDispCommon, pAcpiIdMapParams);
+}
+
+NV_STATUS dispcmnCtrlCmdSpecificSetAcpiIdMapping_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSpecificSetAcpiIdMapping_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdSpecificSetAcpiIdMapping__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdSystemGetCapsV2_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *pCapsParams);
@@ -1957,6 +2053,12 @@ NV_STATUS dispcmnCtrlCmdSpecificDispI2cReadWrite_IMPL(struct DispCommon *pDispCo
 
 static inline NV_STATUS dispcmnCtrlCmdSpecificDispI2cReadWrite_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdSpecificDispI2cReadWrite__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdDfpGetInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_INFO_PARAMS *pParams);
@@ -2291,6 +2393,10 @@ static inline NV_STATUS dispcmnUnmapFrom_DISPATCH(struct DispCommon *pResource, 
     return pResource->__dispcmnUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS dispcmnIsDuplicate_DISPATCH(struct DispCommon *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__dispcmnIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *dispcmnGetNotificationListPtr_DISPATCH(struct DispCommon *pNotifier) {
     return pNotifier->__dispcmnGetNotificationListPtr__(pNotifier);
 }
@@ -2316,10 +2422,13 @@ static inline NV_STATUS dispcmnGetOrAllocNotifShare_DISPATCH(struct DispCommon *
 }
 
 NV_STATUS dispcmnConstruct_IMPL(struct DispCommon *arg_pDispCommon, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_dispcmnConstruct(arg_pDispCommon, arg_pCallContext, arg_pParams) dispcmnConstruct_IMPL(arg_pDispCommon, arg_pCallContext, arg_pParams)
 NV_STATUS dispcmnGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDispCommon, struct DispCommon **ppDispCommon);
+
 #define dispcmnGetByHandle(pClient, hDispCommon, ppDispCommon) dispcmnGetByHandle_IMPL(pClient, hDispCommon, ppDispCommon)
 void dispcmnGetByDevice_IMPL(struct RsClient *pClient, NvHandle hDevice, struct DispCommon **ppDispCommon);
+
 #define dispcmnGetByDevice(pClient, hDevice, ppDispCommon) dispcmnGetByDevice_IMPL(pClient, hDevice, ppDispCommon)
 #undef PRIVATE_FIELD
 

@@ -378,6 +378,83 @@ NV_STATUS osTegraSocGpioSetPinInterrupt(
 {
     return NV_ERR_NOT_SUPPORTED;
 }
+
+NV_STATUS
+osTegraSocResetMipiCal
+(
+    OS_GPU_INFO *pOsGpuInfo
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS osGetValidWindowHeadMask
+(
+    OS_GPU_INFO *pArg1,
+    NvU64 *pWindowHeadMask
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NvBool
+osTegraSocIsDsiPanelConnected
+(
+    OS_GPU_INFO *pOsGpuInfo
+)
+{
+    return NV_FALSE;
+}
+
+NV_STATUS
+osTegraSocDsiParsePanelProps
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    void        *dsiPanelInfo
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+osTegraSocDsiPanelEnable
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    void        *dsiPanelInfo
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+osTegraSocDsiPanelReset
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    void        *dsiPanelInfo
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+void
+osTegraSocDsiPanelDisable
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    void        *dsiPanelInfo
+)
+{
+    return;
+}
+
+void
+osTegraSocDsiPanelCleanup
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    void        *dsiPanelInfo
+)
+{
+    return;
+}
 #endif
 
 NV_STATUS
@@ -538,6 +615,13 @@ NV_STATUS osDeferredIsr(
     return NV_OK;
 }
 
+void osSetSurfaceName(
+    void *pDescriptor,
+    char *name
+)
+{
+}
+
 NV_STATUS osGetAcpiTable(
     NvU32         tableSignature,
     void         **ppTable,
@@ -602,68 +686,6 @@ stubOsGetUefiVariable
 {
     return NV_ERR_NOT_SUPPORTED;
 }
-
-#if !RMCFG_FEATURE_PLATFORM_UNIX || \
-    (RMCFG_FEATURE_PLATFORM_UNIX && !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY)
-NV_STATUS
-osTegraSocResetMipiCal
-(
-    OS_GPU_INFO *pOsGpuInfo
-)
-{
-    return NV_FALSE;
-}
-
-NV_STATUS
-osTegraSocDsiParsePanelProps
-(
-    OS_GPU_INFO *pOsGpuInfo,
-    void        *dsiPanelInfo
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocDsiPanelEnable
-(
-    OS_GPU_INFO *pOsGpuInfo,
-    void        *dsiPanelInfo
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS
-osTegraSocDsiPanelReset
-(
-    OS_GPU_INFO *pOsGpuInfo,
-    void        *dsiPanelInfo
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-void
-osTegraSocDsiPanelDisable
-(
-    OS_GPU_INFO *pOsGpuInfo,
-    void        *dsiPanelInfo
-)
-{
-    return;
-}
-
-void
-osTegraSocDsiPanelCleanup
-(
-    OS_GPU_INFO *pOsGpuInfo,
-    void        *dsiPanelInfo
-)
-{
-    return;
-}
-#endif
 
 NvU32 osGetDynamicPowerSupportMask(void)
 {
@@ -804,15 +826,6 @@ osTegraSocPmUnpowergate
 }
 #endif
 
-NvBool
-osTegraSocIsDsiPanelConnected
-(
-    OS_GPU_INFO *pOsGpuInfo
-)
-{
-    return NV_FALSE;
-}
-
 #if !(RMCFG_FEATURE_PLATFORM_UNIX) || \
     (RMCFG_FEATURE_PLATFORM_UNIX && !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY)
 NvU32
@@ -820,5 +833,18 @@ osTegraSocFuseRegRead(NvU32 addr)
 {
     return 0;
 }
+
+NV_STATUS
+osTegraSocDpUphyPllInit(OS_GPU_INFO *pOsGpuInfo, NvU32 link_rate, NvU32 lanes)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+osTegraSocDpUphyPllDeInit(OS_GPU_INFO *pOsGpuInfo)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 #endif
 

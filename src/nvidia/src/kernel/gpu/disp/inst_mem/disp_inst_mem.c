@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/**************************** Instmem Rotuines *****************************\
+/**************************** Instmem Routines *****************************\
 *                                                                          *
 *         Display instance memory object function Definitions.             *
 *                                                                          *
@@ -339,17 +339,12 @@ instmemDestroy
 )
 {
     // Free up the inst mem descriptors
-    if (pInstMem->pInstMemDesc != NULL)
-    {
-        memdescDestroy(pInstMem->pInstMemDesc);
-        pInstMem->pInstMemDesc = NULL;
-    }
-    if (pInstMem->pAllocedInstMemDesc != NULL)
-    {
-        memdescFree(pInstMem->pAllocedInstMemDesc);
-        memdescDestroy(pInstMem->pAllocedInstMemDesc);
-        pInstMem->pAllocedInstMemDesc = NULL;
-    }
+    memdescDestroy(pInstMem->pInstMemDesc);
+    pInstMem->pInstMemDesc = NULL;
+
+    memdescFree(pInstMem->pAllocedInstMemDesc);
+    memdescDestroy(pInstMem->pAllocedInstMemDesc);
+    pInstMem->pAllocedInstMemDesc = NULL;
 
     if (pInstMem->pInstHeap != NULL)
     {
@@ -764,7 +759,9 @@ _instmemProbeHashEntry
 
     limit = hash + pInstMem->nHashTableEntries; // loop over whole table
 
-    for (i = hash; i < limit; i++) { NvU32 htEntry = i & (pInstMem->nHashTableEntries - 1);
+    for (i = hash; i < limit; i++)
+    {
+        NvU32 htEntry = i & (pInstMem->nHashTableEntries - 1);
 
         if ((pInstMem->pHashTable[htEntry].pDispChannel == pDispChannel) &&
             (pInstMem->pHashTable[htEntry].pContextDma == pContextDma))

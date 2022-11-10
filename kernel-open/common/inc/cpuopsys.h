@@ -242,7 +242,7 @@
 #endif
 
 /* For verification-only features not intended to be included in normal drivers */
-#if (defined(NV_MODS) || defined(NV_GSP_MODS)) && defined(DEBUG) && !defined(DISABLE_VERIF_FEATURES)
+#if defined(ENABLE_VERIF_FEATURES)
 #define NV_VERIF_FEATURES
 #endif
 
@@ -274,12 +274,6 @@
 #define NV_IS_MODS 1
 #else
 #define NV_IS_MODS 0
-#endif
-
-#if defined(NV_GSP_MODS)
-#define NV_IS_GSP_MODS 1
-#else
-#define NV_IS_GSP_MODS 0
 #endif
 
 #if defined(NV_WINDOWS)

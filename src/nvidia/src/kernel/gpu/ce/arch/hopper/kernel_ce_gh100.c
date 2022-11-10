@@ -133,7 +133,7 @@ _ceGetAlgorithmPceIndex
                 }
 
                 *pceIndex = CE_GET_LOWEST_AVAILABLE_IDX(pceAvailableMaskPerHshub[i]);
-                if (NVBIT32(*pceIndex) & pceAvailableMaskPerHshub[*pHshubId]) {
+                if (NVBIT32(*pceIndex) & pceAvailableMaskPerHshub[i]) {
                     break;
                 }
             }
@@ -441,6 +441,11 @@ kceMapPceLceForNvlinkPeers_GH100
 
     NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS params;
 
+    if (pKernelNvlink == NULL)
+    {
+        return NV_WARN_NOTHING_TO_DO;
+    }
+
     peerAvailableLceMask = kceGetNvlinkPeerSupportedLceMask_HAL(pGpu, pKCe, peerAvailableLceMask);
     pKCe->nvlinkNumPeers = 0;
 
@@ -497,6 +502,11 @@ kceMapPceLceForNvlinkPeers_GH100
         peerAvailableLceMask &= (~(NVBIT32(lceIndex)));
 
         peerLinkMask = knvlinkGetLinkMaskToPeer(pGpu, pKernelNvlink, pRemoteGpu);
+        if (peerLinkMask == 0)
+        {
+            NV_PRINTF(LEVEL_INFO, "GPU%d has nvlink disabled. Skip programming\n", pRemoteGpu->gpuInstance);
+            continue;
+        }
 
         portMemSet(&params, 0, sizeof(params));
         params.linkMask = peerLinkMask;

@@ -21,6 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
+
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_utils.h"

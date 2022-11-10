@@ -210,6 +210,10 @@ static NV_STATUS __nvoc_thunk_RsResource_rmresUnmapFrom(struct RmResource *pReso
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RmResource_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_rmresIsDuplicate(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RmResource_RsResource.offset), hMemory, pDuplicate);
+}
+
 static NV_STATUS __nvoc_thunk_RsResource_rmresControlLookup(struct RmResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
     return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RmResource_RsResource.offset), pParams, ppEntry);
 }
@@ -302,6 +306,8 @@ static void __nvoc_init_funcTable_RmResource_1(RmResource *pThis) {
     pThis->__rmresPreDestruct__ = &__nvoc_thunk_RsResource_rmresPreDestruct;
 
     pThis->__rmresUnmapFrom__ = &__nvoc_thunk_RsResource_rmresUnmapFrom;
+
+    pThis->__rmresIsDuplicate__ = &__nvoc_thunk_RsResource_rmresIsDuplicate;
 
     pThis->__rmresControlLookup__ = &__nvoc_thunk_RsResource_rmresControlLookup;
 

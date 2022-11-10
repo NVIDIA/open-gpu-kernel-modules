@@ -30,10 +30,8 @@
 // Source file: class/cl0060.finn
 //
 
-#define NV0060_SYNC_GPU_BOOST (0x00000060)
+#define NV0060_SYNC_GPU_BOOST (0x60U) /* finn: Evaluated from "NV0060_ALLOC_PARAMETERS_MESSAGE_ID" */
 
-/*! 
- */
 #define NV0060_ALLOC_PARAMETERS_MESSAGE_ID (0x0060U)
 
 typedef struct NV0060_ALLOC_PARAMETERS {

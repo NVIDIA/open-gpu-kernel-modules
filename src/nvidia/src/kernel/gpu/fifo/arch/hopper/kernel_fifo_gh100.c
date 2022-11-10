@@ -112,28 +112,3 @@ kfifoGetMmioUsermodeSize_GH100
 {
     return bPriv ? DRF_SIZE(NV_VIRTUAL_FUNCTION_PRIV) : DRF_SIZE(NV_VIRTUAL_FUNCTION);
 }
-
-/**
- * @brief Returns the maximum possible number of runlists.
- *
- * Returns a number which represents the limit of any runlistId indexed
- * registers in hardware.  Does not necessarily return how many runlists are
- * active.  In the range of 0..kfifoGetMaxNumRunlists() there may be runlists
- * that are not used.
- *
- * @param pGpu
- * @param pKernelFifo
- */
-NvU32
-kfifoGetMaxNumRunlists_GH100
-(
-    OBJGPU      *pGpu,
-    KernelFifo  *pKernelFifo)
-{
-    const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
-
-    // We use bit-masks of these values
-    NV_ASSERT(pEngineInfo->maxNumRunlists <= 36);
-
-    return pEngineInfo->maxNumRunlists;
-}

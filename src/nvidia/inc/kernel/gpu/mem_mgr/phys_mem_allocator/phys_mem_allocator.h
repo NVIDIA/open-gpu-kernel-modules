@@ -156,11 +156,20 @@ typedef struct _RANGELISTTYPE
     struct _RANGELISTTYPE  *pNext;
 } RANGELISTTYPE, *PRANGELISTTYPE;
 
+typedef enum
+{
+    MEMORY_PROTECTION_UNPROTECTED = 0,
+    MEMORY_PROTECTION_PROTECTED   = 1
+} MEMORY_PROTECTION;
+
 /*!
  * @brief Callbacks to UVM for eviction
  */
-typedef NV_STATUS (*pmaEvictPagesCb_t)(void *ctxPtr, NvU32 pageSize, NvU64 *pPages, NvU32 count, NvU64 physBegin, NvU64 physEnd);
-typedef NV_STATUS (*pmaEvictRangeCb_t)(void *ctxPtr, NvU64 physBegin, NvU64 physEnd);
+typedef NV_STATUS (*pmaEvictPagesCb_t)(void *ctxPtr, NvU32 pageSize, NvU64 *pPages,
+                                       NvU32 count, NvU64 physBegin, NvU64 physEnd,
+                                       MEMORY_PROTECTION prot);
+typedef NV_STATUS (*pmaEvictRangeCb_t)(void *ctxPtr, NvU64 physBegin, NvU64 physEnd,
+                                       MEMORY_PROTECTION prot);
 
 /*!
  * @brief Pluggable data structure management. Currently we have regmap and address tree.

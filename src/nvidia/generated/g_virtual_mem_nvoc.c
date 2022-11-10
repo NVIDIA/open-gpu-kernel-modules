@@ -150,16 +150,20 @@ static NvU32 __nvoc_thunk_RsResource_virtmemGetRefCount(struct VirtualMemory *pR
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_virtmemControl_Prologue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pCallContext, pParams);
-}
-
 static NvBool __nvoc_thunk_StandardMemory_virtmemCanCopy(struct VirtualMemory *pStandardMemory) {
     return stdmemCanCopy((struct StandardMemory *)(((unsigned char *)pStandardMemory) + __nvoc_rtti_VirtualMemory_StandardMemory.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_virtmemIsReady(struct VirtualMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset));
+static NvBool __nvoc_thunk_Memory_virtmemIsGpuMapAllowed(struct VirtualMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_virtmemControl_Prologue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_virtmemIsReady(struct VirtualMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_virtmemCheckCopyPermissions(struct VirtualMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -168,6 +172,10 @@ static NV_STATUS __nvoc_thunk_Memory_virtmemCheckCopyPermissions(struct VirtualM
 
 static void __nvoc_thunk_RsResource_virtmemPreDestruct(struct VirtualMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_virtmemIsDuplicate(struct VirtualMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static void __nvoc_thunk_RmResource_virtmemControl_Epilogue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -253,15 +261,19 @@ static void __nvoc_init_funcTable_VirtualMemory_1(VirtualMemory *pThis) {
 
     pThis->__virtmemGetRefCount__ = &__nvoc_thunk_RsResource_virtmemGetRefCount;
 
-    pThis->__virtmemControl_Prologue__ = &__nvoc_thunk_RmResource_virtmemControl_Prologue;
-
     pThis->__virtmemCanCopy__ = &__nvoc_thunk_StandardMemory_virtmemCanCopy;
+
+    pThis->__virtmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_virtmemIsGpuMapAllowed;
+
+    pThis->__virtmemControl_Prologue__ = &__nvoc_thunk_RmResource_virtmemControl_Prologue;
 
     pThis->__virtmemIsReady__ = &__nvoc_thunk_Memory_virtmemIsReady;
 
     pThis->__virtmemCheckCopyPermissions__ = &__nvoc_thunk_Memory_virtmemCheckCopyPermissions;
 
     pThis->__virtmemPreDestruct__ = &__nvoc_thunk_RsResource_virtmemPreDestruct;
+
+    pThis->__virtmemIsDuplicate__ = &__nvoc_thunk_Memory_virtmemIsDuplicate;
 
     pThis->__virtmemControl_Epilogue__ = &__nvoc_thunk_RmResource_virtmemControl_Epilogue;
 

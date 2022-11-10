@@ -42,6 +42,7 @@
 #include "kernel/gpu/bus/kern_bus.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
+#include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "rmapi/client.h"
 
 #include "class/cl90cdtypes.h"
@@ -60,7 +61,6 @@ typedef struct
 
 #define NV_FECS_TRACE_MAX_TIMESTAMPS 5
 #define NV_FECS_TRACE_MAGIC_INVALIDATED 0xdededede         // magic number for entries that have been read
-#define NV_FECS_TRACE_MAGIC_PENDING     0xfefefefe         // magic number for new entries that have been detected
 
 /*! Opaque pointer to private data */
 typedef struct VGPU_FECS_TRACE_STAGING_BUFFER VGPU_FECS_TRACE_STAGING_BUFFER;
@@ -683,10 +683,8 @@ fecsBufferChanged
     pPeekRecord = (FECS_EVENT_RECORD*)(pFecsBufferMapping +
                   (pFecsTraceInfo->fecsTraceRdOffset * fecsRecordSize));
 
-    if ((pPeekRecord->magic_lo != NV_FECS_TRACE_MAGIC_INVALIDATED) &&
-        (pPeekRecord->magic_lo != NV_FECS_TRACE_MAGIC_PENDING))
+    if (pPeekRecord->magic_lo != NV_FECS_TRACE_MAGIC_INVALIDATED)
     {
-        pPeekRecord->magic_lo = NV_FECS_TRACE_MAGIC_PENDING;
         return NV_TRUE;
     }
 
@@ -905,7 +903,19 @@ fecsAddBindpoint
     bSelectLOD = NV_TRUE;
 #endif
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+
+    // On a hypervisor or VM: bail-out early if admin is required
+    if (IS_VIRTUAL(pGpu) || hypervisorIsVgxHyper())
+    {
+        if (pGpu->bRmProfilingPrivileged && !bAdmin)
+        {
+            if (pReasonCode != NULL)
+                *pReasonCode = NV2080_CTRL_GR_FECS_BIND_REASON_CODE_NEED_ADMIN;
+
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
 
     if (bSelectLOD)
     {

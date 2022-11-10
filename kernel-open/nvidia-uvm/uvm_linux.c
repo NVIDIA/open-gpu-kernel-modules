@@ -34,31 +34,6 @@
 // the (out-of-tree) UVM driver from changes to the upstream Linux kernel.
 //
 
-#if !defined(NV_ADDRESS_SPACE_INIT_ONCE_PRESENT)
-void address_space_init_once(struct address_space *mapping)
-{
-    memset(mapping, 0, sizeof(*mapping));
-    INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
-
-#if defined(NV_ADDRESS_SPACE_HAS_RWLOCK_TREE_LOCK)
-    //
-    // The .tree_lock member variable was changed from type rwlock_t, to
-    // spinlock_t, on 25 July 2008, by mainline commit
-    // 19fd6231279be3c3bdd02ed99f9b0eb195978064.
-    //
-    rwlock_init(&mapping->tree_lock);
-#else
-    spin_lock_init(&mapping->tree_lock);
-#endif
-
-    spin_lock_init(&mapping->i_mmap_lock);
-    INIT_LIST_HEAD(&mapping->private_list);
-    spin_lock_init(&mapping->private_lock);
-    INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
-    INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
-}
-#endif
-
 #if UVM_CGROUP_ACCOUNTING_SUPPORTED()
 void uvm_memcg_context_start(uvm_memcg_context_t *context, struct mm_struct *mm)
 {

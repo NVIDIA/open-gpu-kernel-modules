@@ -36,62 +36,6 @@
 #include "class/cl503b.h"
 #include <class/cl90f1.h> //FERMI_VASPACE_A
 
-/*!
- * @brief Binds local BFID for SR-IOV P2P requests
- * 
- * NOTE: This call will be dispatched to the Physical RM of the
- *       GPU represented by pGpu. Be sure to pass the GPU
- *       you are intending to program (local or remote).
- *
- * @param[in]  pGpu    GPU to dispatch the bind call to
- * @param[in]  gfid    GFID to bind in the P2P source GPU
- * @param[in]  peerId  Peer ID of the P2P destination GPU
- */
-static NV_STATUS
-s_p2papiBindLocalGfid(OBJGPU *pGpu, NvU32 gfid, NvU32 peerId)
-{
-    NV_STATUS  status;
-    RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
-    NV2080_CTRL_INTERNAL_BUS_BIND_LOCAL_GFID_FOR_P2P_PARAMS params = {0};
-
-    params.localGfid = gfid;
-    params.peerId = peerId;
-
-    status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_INTERNAL_BUS_BIND_LOCAL_GFID_FOR_P2P,
-                             &params, sizeof(params));
-    return status;
-}
-
-/*!
- * @brief Binds remote GFID for SR-IOV P2P requests
- * 
- * NOTE: This call will be dispatched to the Physical RM of the
- *       GPU represented by pGpu. Be sure to pass the GPU
- *       you are intending to program (local or remote).
- *
- * @param[in]  pGpu    GPU to dispatch the bind call to
- * @param[in]  gfid    GFID to bind in the P2P destination GPU
- */
-static NV_STATUS
-s_p2papiBindRemoteGfid(OBJGPU *pGpu, NvU32 gfid)
-{
-
-    NV_STATUS  status;
-    RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
-    NV2080_CTRL_INTERNAL_BUS_BIND_REMOTE_GFID_FOR_P2P_PARAMS params = {0};
-
-    params.remoteGfid = gfid;
-
-    status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_INTERNAL_BUS_BIND_REMOTE_GFID_FOR_P2P,
-                             &params, sizeof(params));
-    return status;
-}
-
-
 NV_STATUS
 p2papiConstruct_IMPL
 (
@@ -101,7 +45,6 @@ p2papiConstruct_IMPL
 )
 {
     NvHandle                 hClient;
-    NvHandle                 hP2P;
     Subdevice               *pSubDevice;
     Subdevice               *pPeerSubDevice;
     NvU32                    subDevicePeerIdMask;
@@ -113,7 +56,6 @@ p2papiConstruct_IMPL
     NvHandle                 hPeerDevice;
     NvHandle                 hSubDevice;
     NvHandle                 hPeerSubDevice;
-    PNODE                    pNode;
     OBJGPU                  *pGpu;
     OBJGPU                  *pLocalGpu;
     KernelBus               *pLocalKernelBus;
@@ -122,20 +64,17 @@ p2papiConstruct_IMPL
     KernelBus               *pRemoteKernelBus;
     KernelNvlink            *pRemoteKernelNvlink;
     NV_STATUS                status;
-    NvU32                    gpuMask;
     NvBool                   bP2PWriteCapable = NV_FALSE;
     NvBool                   bP2PReadCapable = NV_FALSE;
     NV503B_ALLOC_PARAMETERS *pNv503bAllocParams = pParams->pAllocParams;
-    NvU32                    gfid;
-    Device                  *pLocalDevice;
-    NvBool                   bRegisteredP2P = NV_FALSE;
-    NvBool                   bRegisteredPeerP2P = NV_FALSE;
     NvU32                    flags = pNv503bAllocParams->flags;
     NvBool                   bSpaAccessOnly = FLD_TEST_DRF(503B, _FLAGS, _P2P_TYPE, _SPA, flags);
     P2P_CONNECTIVITY         p2pConnectionType = P2P_CONNECTIVITY_UNKNOWN;
+    RM_API                  *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NV0000_CTRL_SYSTEM_GET_P2P_CAPS_V2_PARAMS *pP2pCapsParams;
+    NvU32                    p2pCaps;
 
     hClient                 = pParams->hClient;
-    hP2P                    = pParams->hResource;
     subDevicePeerIdMask     = pNv503bAllocParams->subDevicePeerIdMask;
     peerSubDevicePeerIdMask = pNv503bAllocParams->peerSubDevicePeerIdMask;
 
@@ -217,15 +156,57 @@ p2papiConstruct_IMPL
     pLocalKernelBus  = GPU_GET_KERNEL_BUS(pLocalGpu);
     pRemoteKernelBus = GPU_GET_KERNEL_BUS(pRemoteGpu);
 
+    pP2pCapsParams = portMemAllocStackOrHeap(sizeof(*pP2pCapsParams));
+    if (pP2pCapsParams == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    portMemSet(pP2pCapsParams, 0, sizeof(*pP2pCapsParams));
+
+    pP2pCapsParams->gpuCount = 2;
+    pP2pCapsParams->gpuIds[0] = pLocalGpu->gpuId;
+    pP2pCapsParams->gpuIds[1] = pRemoteGpu->gpuId;
+
+    NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
+                        pRmApi->Control(pRmApi, hClient, hClient,
+                                        NV0000_CTRL_CMD_SYSTEM_GET_P2P_CAPS_V2,
+                                        pP2pCapsParams, sizeof(*pP2pCapsParams)),
+                        portMemFreeStackOrHeap(pP2pCapsParams);
+                        return status);
+
+    bP2PWriteCapable = REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_WRITES_SUPPORTED, pP2pCapsParams->p2pCaps);
+    bP2PReadCapable = REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_READS_SUPPORTED, pP2pCapsParams->p2pCaps);
+
+    p2pCaps = pP2pCapsParams->p2pCaps;
+
+    portMemFreeStackOrHeap(pP2pCapsParams);
+
+    if (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_C2C_SUPPORTED, p2pCaps))
+        p2pConnectionType = P2P_CONNECTIVITY_C2C;
+    // It's impossible to detect P2P_CONNECTIVITY_NVLINK_INDIRECT connectivity.
+    // There is no difference between NVLINK and NVLINK_INDIRECT in P2PApi creation path,
+    // so always use P2P_CONNECTIVITY_NVLINK.
+    else if (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_NVLINK_SUPPORTED, p2pCaps))
+        p2pConnectionType = P2P_CONNECTIVITY_NVLINK;
+    else if (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_BAR1_SUPPORTED, p2pCaps))
+        p2pConnectionType = P2P_CONNECTIVITY_PCIE_BAR1;
+    else if (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_SUPPORTED, p2pCaps))
+        p2pConnectionType = P2P_CONNECTIVITY_PCIE;
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unknown connection type\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     //
     // Allocate P2P PCIE Mailbox areas if all of the following conditions occur:
     // - P2P reads or/and writes are supported
     // - The P2P connection is PCIE Mailbox based 
     //
-    gpuMask = NVBIT(pLocalGpu->gpuInstance) | NVBIT(pRemoteGpu->gpuInstance);
-    if ((p2pGetCaps(gpuMask, &bP2PWriteCapable, &bP2PReadCapable, &p2pConnectionType) == NV_OK) &&
-        (bP2PWriteCapable || bP2PReadCapable) &&
-        (p2pConnectionType == P2P_CONNECTIVITY_PCIE))
+
+    if ((bP2PWriteCapable || bP2PReadCapable) &&
+        p2pConnectionType == P2P_CONNECTIVITY_PCIE)
     {
         status = kbusSetP2PMailboxBar1Area_HAL(pLocalGpu, pLocalKernelBus,
                                                pNv503bAllocParams->mailboxBar1Addr,
@@ -294,57 +275,51 @@ p2papiConstruct_IMPL
     }
 
     // check to see if a p2p mapping between these two subdevices already exist
-    if (NV_OK == btreeSearch(hPeerSubDevice, &pNode,
-                             pSubDevice->pP2PMappingList) &&
-        !IsGP100orBetter(pLocalGpu))
+    if (!IsGP100orBetter(pLocalGpu))
     {
-        NV_PRINTF(LEVEL_INFO,
-                  "Mapping already exists between the two subdevices (0x%08x), (0x%08x). "
-                  "Multiple mappings not supported on pre-PASCAL GPUs\n",
-                  hSubDevice, hPeerSubDevice);
-        return NV_ERR_INVALID_ARGUMENT;
+        RS_ORDERED_ITERATOR iter;
+        P2PApi *pOtherP2PApi = NULL;
+
+        iter = clientRefOrderedIter(pCallContext->pClient, NULL /*pScoreRef*/,
+                                    classId(P2PApi), NV_TRUE /*bExactMatch*/);
+        while (clientRefOrderedIterNext(iter.pClient, &iter))
+        {
+            pOtherP2PApi = dynamicCast(iter.pResourceRef->pResource, P2PApi);
+            if (pOtherP2PApi == NULL)
+                return NV_ERR_INVALID_OBJECT_HANDLE;
+
+            if (pP2PApi != pOtherP2PApi &&
+                ((pLocalGpu == pOtherP2PApi->peer1 && pRemoteGpu == pOtherP2PApi->peer2) ||
+                 (pLocalGpu == pOtherP2PApi->peer2 && pRemoteGpu == pOtherP2PApi->peer1)))
+            {
+                NV_PRINTF(LEVEL_INFO,
+                          "Mapping already exists between the two subdevices (0x%08x), (0x%08x). "
+                          "Multiple mappings not supported on pre-PASCAL GPUs\n",
+                          hSubDevice, hPeerSubDevice);
+                return NV_ERR_INVALID_ARGUMENT;
+            }
+        }
     }
 
-    pP2PApi->Node.keyStart = hP2P;
-    pP2PApi->Node.keyEnd = hP2P;
-    pP2PApi->Node.Data = pP2PApi;
-    pP2PApi->peer1 = pSubDevice;
-    pP2PApi->peer2 = pPeerSubDevice;
+    pP2PApi->peer1 = pLocalGpu;
+    pP2PApi->peer2 = pRemoteGpu;
     pP2PApi->attributes  = DRF_NUM(_P2PAPI, _ATTRIBUTES, _CONNECTION_TYPE, p2pConnectionType);
     pP2PApi->attributes |= bSpaAccessOnly ? DRF_DEF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA) :
                                             DRF_DEF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _GPA);
-    mapInit(&pP2PApi->dmaMappingMap, portMemAllocatorGetGlobalNonPaged());
 
-    // store away the p2pinfo within subdevice info for easy retrieval
-    status = subdeviceAddP2PApi(pSubDevice, pP2PApi);
-    if (NV_OK != status)
-        goto fail;
-
-    bRegisteredP2P = NV_TRUE;
-
-    // for loopback on same subdevice, we only need to store it once
-    if (hSubDevice != hPeerSubDevice)
-    {
-        status = subdeviceAddP2PApi(pPeerSubDevice, pP2PApi);
-        if (NV_OK != status)
-            goto fail;
-
-        bRegisteredPeerP2P = NV_TRUE;
-    }
-
-    if (!IS_VIRTUAL(pLocalGpu))
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pLocalGpu) || !IS_VIRTUAL(pLocalGpu))
     {
         // setup the p2p resources
-        status = kbusCreateP2PMapping_HAL(pLocalGpu, pLocalKernelBus, pRemoteGpu,
-                                          pRemoteKernelBus, &peer1, &peer2,
-                                          pP2PApi->attributes);
-        if (NV_OK != status)
-            goto fail;
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              kbusCreateP2PMapping_HAL(pLocalGpu, pLocalKernelBus, pRemoteGpu,
+                                                       pRemoteKernelBus, &peer1, &peer2,
+                                                       pP2PApi->attributes));
     }
 
     pGpu = pLocalGpu;
 
-    if (IS_VIRTUAL_WITH_SRIOV(pGpu) &&
+    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) &&
+        IS_VIRTUAL_WITH_SRIOV(pGpu) &&
         gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
     {
         NvU32              gpu0Instance = gpuGetInstance(pLocalGpu);
@@ -378,18 +353,12 @@ p2papiConstruct_IMPL
                 NV_PRINTF(LEVEL_ERROR,
                            "GPU%d: peerID not available for NVLink P2P\n",
                            gpu0Instance);
-                status =  NV_ERR_GENERIC;
-                goto fail;
+                return NV_ERR_GENERIC;
             }
 
             // Reserve the peer ID for NVLink use
-            status = kbusReserveP2PPeerIds_HAL(pLocalGpu, pLocalKernelBus, NVBIT(peer1));
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                         "Failed to reserve peer1, status=0x%x\n", status);
-                goto fail;
-            }
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                                  kbusReserveP2PPeerIds_HAL(pLocalGpu, pLocalKernelBus, NVBIT(peer1)));
 
             // Get the peer ID pGpu1 should use for P2P over NVLINK to pGpu0
             peer2 = kbusGetUnusedPeerId_HAL(pRemoteGpu, pRemoteKernelBus);
@@ -399,25 +368,18 @@ p2papiConstruct_IMPL
                 NV_PRINTF(LEVEL_ERROR,
                            "GPU%d: peerID not available for NVLink P2P\n",
                            gpu1Instance);
-                status =  NV_ERR_GENERIC;
-                goto fail;
+                return NV_ERR_GENERIC;
             }
 
             // Reserve the peer ID for NVLink use
-            status = kbusReserveP2PPeerIds_HAL(pRemoteGpu, pRemoteKernelBus, NVBIT(peer2));
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                         "Failed to reserve peer2, status=0x%x\n", status);
-                goto fail;
-            }
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                                  kbusReserveP2PPeerIds_HAL(pRemoteGpu, pRemoteKernelBus, NVBIT(peer2)));
         }
         else
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Unexpected state, either of the peer ID is invalid \n");
-            status =  NV_ERR_GENERIC;
-            goto fail;
+            return NV_ERR_GENERIC;
         }
 
 update_mask:
@@ -502,8 +464,10 @@ update_params:
 
     pP2PApi->peerId1 = peer1;
     pP2PApi->peerId2 = peer2;
+    pP2PApi->localGfid = GPU_GFID_PF;
+    pP2PApi->remoteGfid = GPU_GFID_PF;
 
-    if (IS_VIRTUAL(pLocalGpu))
+    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pLocalGpu) && IS_VIRTUAL(pLocalGpu))
     {
         NV_RM_RPC_ALLOC_OBJECT(pLocalGpu,
                                pParams->hClient,
@@ -513,61 +477,7 @@ update_params:
                                pNv503bAllocParams,
                                status);
         if (status != NV_OK)
-            goto fail;
-    }
-
-    //
-    // program the GFID for HSHUB when,
-    //       1. In hypervisor mode,
-    //       2. SRIOV is enabled
-    //
-    if (!IS_VIRTUAL(pLocalGpu))
-    {
-        NV_ASSERT_OK(deviceGetByHandle(pClient, hDevice, &pLocalDevice));
-        NV_ASSERT_OK_OR_RETURN(vgpuGetGfidFromDeviceInfo(pLocalGpu, pLocalDevice, &gfid));
-
-        {
-            if (!bSpaAccessOnly)
-            {
-                if (gpuIsSriovEnabled(pLocalGpu))
-                {
-                    NV_PRINTF(LEVEL_INFO, "Trying to register GPU:%x gfid: %x for P2P access with peerId: %x\n",
-                              pLocalGpu->deviceInstance, gfid, peer1);
-                    NV_ASSERT_OK_OR_RETURN(s_p2papiBindLocalGfid(pLocalGpu, gfid, peer1));
-                    if (hSubDevice != hPeerSubDevice)
-                    {
-                        NV_PRINTF(LEVEL_INFO, "Trying to register GPU:%x gfid: %x for remote access \n",
-                                  pLocalGpu->deviceInstance, gfid);
-
-                        NV_ASSERT_OK_OR_RETURN(s_p2papiBindRemoteGfid(pLocalGpu, gfid));
-                    }
-                }
-
-                if (gpuIsSriovEnabled(pRemoteGpu))
-                {
-                    if (hDevice != hPeerDevice)
-                    {
-                        Device *pRemoteDevice;
-
-                        NV_ASSERT_OK(deviceGetByHandle(pClient, hPeerDevice, &pRemoteDevice));
-                        NV_ASSERT_OK_OR_RETURN(vgpuGetGfidFromDeviceInfo(pRemoteGpu, pRemoteDevice, &gfid));
-                    }
-
-                    if (hSubDevice != hPeerSubDevice)
-                    {
-                        NV_PRINTF(LEVEL_INFO, "Trying to register GPU:%x gfid: %x for P2P access with peerId: %x\n",
-                                  pRemoteGpu->deviceInstance, gfid, peer2);
-
-                        NV_ASSERT_OK_OR_RETURN(s_p2papiBindLocalGfid(pRemoteGpu, gfid, peer2));
-                    }
-
-                    NV_PRINTF(LEVEL_INFO, "Trying to register GPU:%x gfid: %x for remote access \n",
-                              pRemoteGpu->deviceInstance, gfid);
-
-                    NV_ASSERT_OK_OR_RETURN(s_p2papiBindRemoteGfid(pRemoteGpu, gfid));
-                }
-            }
-        }
+            return status;
     }
 
     //
@@ -580,17 +490,8 @@ update_params:
         {
             goto remote_fla_bind;
         }
-        NV_ASSERT_OK(deviceGetByHandle(pClient, hDevice, &pLocalDevice));
-        NV_ASSERT_OK_OR_RETURN(vgpuGetGfidFromDeviceInfo(pLocalGpu, pLocalDevice, &gfid));
-
-        status = kbusSetupBindFla_HAL(pLocalGpu, pLocalKernelBus, gfid);
-
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "failed binding instblk for FLA, status=0x%x\n", status);
-            goto fail;
-        }
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              kbusSetupBindFla_HAL(pLocalGpu, pLocalKernelBus, pP2PApi->localGfid));
     }
 
 remote_fla_bind:
@@ -603,21 +504,18 @@ remote_fla_bind:
             {
                 return status;
             }
-            Device *pRemoteDevice;
-            NV_ASSERT_OK(deviceGetByHandle(pClient, hPeerDevice, &pRemoteDevice));
-            NV_ASSERT_OK_OR_RETURN(vgpuGetGfidFromDeviceInfo(pRemoteGpu, pRemoteDevice, &gfid));
-
-            status = kbusSetupBindFla_HAL(pRemoteGpu, pRemoteKernelBus, gfid);
-
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                        "failed binding instblk for FLA, status=0x%x\n", status);
-                goto fail;
-            }
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                                  kbusSetupBindFla_HAL(pRemoteGpu, pRemoteKernelBus, pP2PApi->remoteGfid));
         }
     }
 
+    // Adding P2PApi as a dependant of 2 Subdevices, P2PApi must be destroyed before OBJGPU destruction
+    NV_ASSERT_OK_OR_RETURN(refAddDependant(RES_GET_REF(pSubDevice), pCallContext->pResourceRef));
+    if (hDevice != hPeerDevice)
+    {
+        NV_ASSERT_OK_OR_RETURN(refAddDependant(RES_GET_REF(pPeerSubDevice), pCallContext->pResourceRef));
+    }
+    
     if (status == NV_OK)
     {
         NV_CHECK_OR_RETURN(LEVEL_ERROR, pLocalKernelBus->totalP2pObjectsAliveRefCount < NV_U32_MAX, NV_ERR_INSUFFICIENT_RESOURCES);
@@ -625,16 +523,6 @@ remote_fla_bind:
         pLocalKernelBus->totalP2pObjectsAliveRefCount++;
         pRemoteKernelBus->totalP2pObjectsAliveRefCount++;
     }
-    return status;
-
-fail:
-
-    if (bRegisteredPeerP2P)
-        subdeviceDelP2PApi(pPeerSubDevice, pP2PApi);
-
-    if (bRegisteredP2P)
-        subdeviceDelP2PApi(pSubDevice, pP2PApi);
-
     return status;
 }
 
@@ -647,167 +535,24 @@ p2papiDestruct_IMPL
     CALL_CONTEXT                *pCallContext;
     RS_RES_FREE_PARAMS_INTERNAL *pParams;
     NvHandle                     hClient;
+    OBJGPU                      *pLocalGpu;
+    KernelBus                   *pLocalKernelBus;
+    OBJGPU                      *pRemoteGpu;
+    KernelBus                   *pRemoteKernelBus;
+    RsClient                    *pClient;
+    NV_STATUS                    status = NV_OK;
 
     resGetFreeParams(staticCast(pP2PApi, RsResource), &pCallContext, &pParams);
     hClient = pParams->hClient;
 
-    // remove any resources associated with this P2P object before freeing it
-    pParams->status = CliInvalidateP2PInfo(hClient, pP2PApi);
-}
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                        serverGetClientUnderLock(&g_resServ, hClient, &pClient), end);
 
-NV_STATUS CliAddP2PDmaMappingInfo
-(
-    NvHandle              hClient,
-    NvHandle              hDevice,
-    NvU32                 subDeviceInst,
-    NvHandle              hPeerDevice,
-    NvU32                 peerSubDeviceInst,
-    PCLI_DMA_MAPPING_INFO pDmaMapping
-)
-{
-    PNODE                     pNode;
-    NV_STATUS                 status;
-    PCLI_P2P_INFO             pP2PInfo = NULL;
-    Subdevice                *pSubDevice;
-    Subdevice                *pPeerSubDevice;
-    PCLI_P2P_DMA_MAPPING_INFO pP2PDmaMappingInfo;
-    NvHandle                  hSubDevice, hPeerSubDevice;
-    RsClient                 *pClient;
+    if (NULL == pP2PApi->peer1 || NULL == pP2PApi->peer2)
+        return;
 
-    if (NV_OK != serverGetClientUnderLock(&g_resServ, hClient, &pClient))
-        return NV_ERR_INVALID_CLIENT;
-
-    if (NULL == pDmaMapping)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    // Find the subdevices for local and peer devices
-    status = subdeviceGetByInstance(pClient,
-                                    hDevice,
-                                    subDeviceInst,
-                                    &pSubDevice);
-    if ((NV_OK != status) || (NULL == pSubDevice))
-        return status;
-
-    hSubDevice = RES_GET_HANDLE(pSubDevice);
-
-    status = subdeviceGetByInstance(pClient,
-                                    hPeerDevice,
-                                    peerSubDeviceInst,
-                                    &pPeerSubDevice);
-    if ((NV_OK != status) || (NULL == pPeerSubDevice))
-        return status;
-
-    hPeerSubDevice = RES_GET_HANDLE(pPeerSubDevice);
-
-    //
-    // Find a P2P object that maps the two subdevices in question, just use the
-    // first available. If no such object exists, then this dmaMapping cannot
-    // be made.
-    //
-    status = btreeSearch(hPeerSubDevice, &pNode, pSubDevice->pP2PMappingList);
-    if (status == NV_OK)
-    {
-        PCLI_P2P_INFO_LIST *pP2PInfoList = pNode->Data;
-
-        NV_ASSERT(listHead(pP2PInfoList) != NULL);
-        pP2PInfo = *listHead(pP2PInfoList);
-    }
-
-    if (pP2PInfo == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "No P2P mapping between subdevices (0x%08x)and (0x%08x) on the client (0x%08x)\n",
-                  hSubDevice, hPeerSubDevice, hClient);
-        return status;
-    }
-
-    pNode = NULL;
-
-    //
-    // It may happen that subdevices on both sides of P2P object will try
-    // to map the same virtual address value. We handle this by using
-    // CLI_P2P_DMA_MAPPING_INFO to store references to each DMA mapping at the
-    // address.
-    //
-    pP2PDmaMappingInfo = mapFind(&pP2PInfo->dmaMappingMap, pDmaMapping->DmaOffset);
-    
-    if (pP2PDmaMappingInfo == NULL)
-    {
-        pP2PDmaMappingInfo = mapInsertNew(&pP2PInfo->dmaMappingMap, pDmaMapping->DmaOffset);
-        if (pP2PDmaMappingInfo == NULL)
-        {
-            return NV_ERR_INSUFFICIENT_RESOURCES;
-        }
-        portMemSet(pP2PDmaMappingInfo, 0, sizeof(CLI_P2P_DMA_MAPPING_INFO));
-    }
-    else
-    {
-        if (pP2PDmaMappingInfo->pPeer1Info != NULL &&
-            pP2PDmaMappingInfo->pPeer2Info != NULL)
-        {
-            NV_PRINTF(LEVEL_ERROR, "P2P DMA mapping is already allocated!\n");
-            return NV_ERR_INVALID_REQUEST;
-        }
-    }
-
-    if (pSubDevice == pP2PInfo->peer1)
-    {
-        pP2PDmaMappingInfo->pPeer1Info = pDmaMapping;
-    }
-    else
-    {
-        NV_ASSERT(pSubDevice == pP2PInfo->peer2);
-        pP2PDmaMappingInfo->pPeer2Info = pDmaMapping;
-    }
-
-    pDmaMapping->pP2PInfo = pP2PInfo;
-    return NV_OK;
-}
-
-NV_STATUS CliInvalidateP2PInfo
-(
-    NvHandle      hClient,
-    PCLI_P2P_INFO pP2PInfo
-)
-{
-    OBJGPU    *pLocalGpu;
-    KernelBus *pLocalKernelBus;
-    OBJGPU    *pRemoteGpu;
-    KernelBus *pRemoteKernelBus;
-    RsClient  *pClient;
-    NvHandle   hSubDevice;
-    NvHandle   hPeerSubDevice;
-    NvHandle   hDevice;
-    NvHandle   hPeerDevice;
-    NV_STATUS  status = NV_OK;
-
-    if (NV_OK != serverGetClientUnderLock(&g_resServ, hClient, &pClient))
-        return NV_ERR_INVALID_CLIENT;
-
-    if (NULL == pP2PInfo)
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-
-    if (NULL == pP2PInfo->peer1 || NULL == pP2PInfo->peer2)
-        return NV_OK;
-
-    hSubDevice = RES_GET_HANDLE(pP2PInfo->peer1);
-    hPeerSubDevice = RES_GET_HANDLE(pP2PInfo->peer2);
-
-    // Find the gpu for the subdevices of this P2P object
-    if (CliSetSubDeviceContext(hClient, hSubDevice, &hDevice, &pLocalGpu) != NV_OK ||
-        NULL == pLocalGpu)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to find GPU for hSubDevice (0x%08x)\n",
-                  hSubDevice);
-        return NV_ERR_INVALID_DEVICE;
-    }
-    if (CliSetSubDeviceContext(hClient, hPeerSubDevice, &hPeerDevice, &pRemoteGpu) != NV_OK ||
-        NULL == pRemoteGpu)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to find GPU for hSubDevice (0x%08x)\n",
-                  hPeerSubDevice);
-        return NV_ERR_INVALID_DEVICE;
-    }
+    pLocalGpu = pP2PApi->peer1;
+    pRemoteGpu = pP2PApi->peer2;
 
     pLocalKernelBus  = GPU_GET_KERNEL_BUS(pLocalGpu);
     pRemoteKernelBus = GPU_GET_KERNEL_BUS(pRemoteGpu);
@@ -820,154 +565,21 @@ NV_STATUS CliInvalidateP2PInfo
     if (pRemoteKernelBus->totalP2pObjectsAliveRefCount > 0)
         pRemoteKernelBus->totalP2pObjectsAliveRefCount--;
 
-    if (!IS_VIRTUAL(pLocalGpu))
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pLocalGpu) || !IS_VIRTUAL(pLocalGpu))
     {
-        // remove any mailbox resources associated with this mapping
+        // remove any resources associated with this mapping
         status = kbusRemoveP2PMapping_HAL(pLocalGpu, pLocalKernelBus,
                                           pRemoteGpu, pRemoteKernelBus,
-                                          pP2PInfo->peerId1, pP2PInfo->peerId2,
-                                          pP2PInfo->attributes);
+                                          pP2PApi->peerId1, pP2PApi->peerId2,
+                                          pP2PApi->attributes);
     }
 
-    subdeviceDelP2PApi(pP2PInfo->peer1, pP2PInfo);
-    if (hSubDevice != hPeerSubDevice)
-    {
-        subdeviceDelP2PApi(pP2PInfo->peer2, pP2PInfo);
-    }
-
-    pP2PInfo->peer1 = NULL;
-    pP2PInfo->peer2 = NULL;
-    mapDestroy(&pP2PInfo->dmaMappingMap);
+    pP2PApi->peer1 = NULL;
+    pP2PApi->peer2 = NULL;
 
     kbusUnsetP2PMailboxBar1Area_HAL(pLocalGpu, pLocalKernelBus);
     kbusUnsetP2PMailboxBar1Area_HAL(pRemoteGpu, pRemoteKernelBus);
 
-    return status;
-}
-
-NV_STATUS CliDelP2PDmaMappingInfo
-(
-    NvHandle              hClient,
-    PCLI_DMA_MAPPING_INFO pDmaMapping
-)
-{
-    PCLI_P2P_INFO             pP2PInfo;
-    PCLI_P2P_DMA_MAPPING_INFO pP2PDmaMappingInfo;
-
-    NV_ASSERT_OR_RETURN(pDmaMapping != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    pP2PInfo = pDmaMapping->pP2PInfo;
-    if (NULL == pP2PInfo || mapCount(&pP2PInfo->dmaMappingMap) == 0)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    pP2PDmaMappingInfo = mapFind(&pP2PInfo->dmaMappingMap, pDmaMapping->DmaOffset);
-    if (pP2PDmaMappingInfo != NULL)
-    {
-        if (pP2PDmaMappingInfo->pPeer1Info == pDmaMapping)
-        {
-            pP2PDmaMappingInfo->pPeer1Info = NULL;
-        }
-        else if (pP2PDmaMappingInfo->pPeer2Info == pDmaMapping)
-        {
-            pP2PDmaMappingInfo->pPeer2Info = NULL;
-        }
-
-        if (pP2PDmaMappingInfo->pPeer1Info == NULL &&
-            pP2PDmaMappingInfo->pPeer2Info == NULL)
-        {
-            mapRemove(&pP2PInfo->dmaMappingMap, pP2PDmaMappingInfo);
-        }
-    }
-
-    pDmaMapping->pP2PInfo = NULL;
-    return NV_OK;
-}
-
-NV_STATUS CliUpdateP2PDmaMappingInList
-(
-    NvHandle              hClient,
-    PCLI_DMA_MAPPING_INFO pDmaMapping,
-    NvU64                 dmaOffset
-)
-{
-    PCLI_P2P_INFO             pP2PInfo;
-    PCLI_P2P_DMA_MAPPING_INFO pP2PDmaMappingInfo;
-    PCLI_P2P_DMA_MAPPING_INFO pNewP2PDmaMappingInfo;
-    PCLI_DMA_MAPPING_INFO     pPeer1Info = NULL;
-    PCLI_DMA_MAPPING_INFO     pPeer2Info = NULL;
-
-    NV_ASSERT_OR_RETURN(pDmaMapping != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    pP2PInfo = pDmaMapping->pP2PInfo;
-    if (NULL == pP2PInfo || mapCount(&pP2PInfo->dmaMappingMap) == 0)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    pP2PDmaMappingInfo = mapFind(&pP2PInfo->dmaMappingMap, pDmaMapping->DmaOffset);
-    if (pP2PDmaMappingInfo != NULL)
-    {
-        // Cache the old values
-        pPeer1Info  = pP2PDmaMappingInfo->pPeer1Info;
-        pPeer2Info  = pP2PDmaMappingInfo->pPeer2Info;
-
-        // free the old dma mapping Info
-        mapRemove(&pP2PInfo->dmaMappingMap, pP2PDmaMappingInfo);
-
-        // allocate the new object and insert in the list
-        pNewP2PDmaMappingInfo = mapInsertNew(&pP2PInfo->dmaMappingMap, dmaOffset);
-        if (pNewP2PDmaMappingInfo == NULL)
-        {
-            if (mapFind(&pP2PInfo->dmaMappingMap, dmaOffset) != NULL)
-            {
-                return NV_ERR_INSERT_DUPLICATE_NAME;
-            }
-            else
-            {
-                return NV_ERR_INSUFFICIENT_RESOURCES;
-            }
-        }
-        portMemSet(pNewP2PDmaMappingInfo, 0, sizeof(CLI_P2P_DMA_MAPPING_INFO));
-        pNewP2PDmaMappingInfo->pPeer1Info = pPeer1Info;
-        pNewP2PDmaMappingInfo->pPeer2Info = pPeer2Info;
-
-    }
-
-    return NV_OK;
-}
-
-NV_STATUS CliFreeSubDeviceP2PList
-(
-    Subdevice    *pSubdevice,
-    CALL_CONTEXT *pCallContext
-)
-{
-    RsClient           *pRsClient = pCallContext->pClient;
-    RsResourceRef      *pResourceRef = pCallContext->pResourceRef;
-    PNODE               pNode;
-    NV_STATUS           status;
-    RM_API             *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-
-    if (pResourceRef == NULL)
-        return NV_OK;
-
-    while (NULL != (pNode = pSubdevice->pP2PMappingList))
-    {
-        PCLI_P2P_INFO_LIST *pP2PInfoList = pNode->Data;
-        PCLI_P2P_INFO      *ppP2PInfo;
-        PCLI_P2P_INFO      *ppP2PInfoNext;
-
-        for (ppP2PInfo = listHead(pP2PInfoList);
-             ppP2PInfo != NULL;
-             ppP2PInfo = ppP2PInfoNext)
-        {
-            ppP2PInfoNext = listNext(pP2PInfoList, ppP2PInfo);
-
-            status = pRmApi->Free(pRmApi, pRsClient->hClient, (NvHandle)(*ppP2PInfo)->Node.keyStart);
-            if (NV_OK != status)
-            {
-                return status;
-            }
-        }
-    }
-
-    return NV_OK;
+end:
+    pParams->status = status;
 }

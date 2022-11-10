@@ -44,6 +44,7 @@
 #include "uvm_va_block_types.h"
 #include "uvm_perf_module.h"
 #include "uvm_rb_tree.h"
+#include "uvm_perf_prefetch.h"
 #include "nv-kthread-q.h"
 
 // Buffer length to store uvm gpu id, RM device name and gpu uuid.
@@ -159,6 +160,12 @@ struct uvm_service_block_context_struct
 
     // State used by the VA block routines called by the servicing routine
     uvm_va_block_context_t block_context;
+
+    // Prefetch state hint
+    uvm_perf_prefetch_hint_t prefetch_hint;
+
+    // Prefetch temporary state.
+    uvm_perf_prefetch_bitmap_tree_t prefetch_bitmap_tree;
 };
 
 struct uvm_fault_service_batch_context_struct
@@ -374,6 +381,16 @@ struct uvm_access_counter_service_batch_context_struct
         // determine at fetch time that all the access counter notifications in the
         // batch report the same instance_ptr
         bool is_single_instance_ptr;
+
+        // Scratch space, used to generate artificial physically addressed notifications.
+        // Virtual address notifications are always aligned to 64k. This means up to 16
+        // different physical locations could have been accessed to trigger one notification.
+        // The sub-granularity mask can correspond to any of them.
+        struct {
+            uvm_processor_id_t resident_processors[16];
+            uvm_gpu_phys_address_t phys_addresses[16];
+            uvm_access_counter_buffer_entry_t phys_entry;
+        } scratch;
     } virt;
 
     struct
@@ -1309,19 +1326,19 @@ NV_STATUS uvm_gpu_check_ecc_error_no_rm(uvm_gpu_t *gpu);
 //
 // Returns the physical address of the pages that can be used to access them on
 // the GPU.
-NV_STATUS uvm_gpu_map_cpu_pages(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out);
+NV_STATUS uvm_gpu_map_cpu_pages(uvm_parent_gpu_t *parent_gpu, struct page *page, size_t size, NvU64 *dma_address_out);
 
 // Unmap num_pages pages previously mapped with uvm_gpu_map_cpu_pages().
-void uvm_gpu_unmap_cpu_pages(uvm_gpu_t *gpu, NvU64 dma_address, size_t size);
+void uvm_gpu_unmap_cpu_pages(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address, size_t size);
 
-static NV_STATUS uvm_gpu_map_cpu_page(uvm_gpu_t *gpu, struct page *page, NvU64 *dma_address_out)
+static NV_STATUS uvm_gpu_map_cpu_page(uvm_parent_gpu_t *parent_gpu, struct page *page, NvU64 *dma_address_out)
 {
-    return uvm_gpu_map_cpu_pages(gpu, page, PAGE_SIZE, dma_address_out);
+    return uvm_gpu_map_cpu_pages(parent_gpu, page, PAGE_SIZE, dma_address_out);
 }
 
-static void uvm_gpu_unmap_cpu_page(uvm_gpu_t *gpu, NvU64 dma_address)
+static void uvm_gpu_unmap_cpu_page(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address)
 {
-    uvm_gpu_unmap_cpu_pages(gpu, dma_address, PAGE_SIZE);
+    uvm_gpu_unmap_cpu_pages(parent_gpu, dma_address, PAGE_SIZE);
 }
 
 // Allocate and map a page of system DMA memory on the GPU for physical access

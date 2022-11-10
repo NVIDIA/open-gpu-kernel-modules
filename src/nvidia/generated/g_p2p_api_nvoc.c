@@ -140,6 +140,10 @@ static NV_STATUS __nvoc_thunk_RsResource_p2papiUnmapFrom(struct P2PApi *pResourc
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_P2PApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_p2papiIsDuplicate(struct P2PApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_P2PApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_p2papiControl_Epilogue(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_P2PApi_RmResource.offset), pCallContext, pParams);
 }
@@ -222,6 +226,8 @@ static void __nvoc_init_funcTable_P2PApi_1(P2PApi *pThis) {
     pThis->__p2papiPreDestruct__ = &__nvoc_thunk_RsResource_p2papiPreDestruct;
 
     pThis->__p2papiUnmapFrom__ = &__nvoc_thunk_RsResource_p2papiUnmapFrom;
+
+    pThis->__p2papiIsDuplicate__ = &__nvoc_thunk_RsResource_p2papiIsDuplicate;
 
     pThis->__p2papiControl_Epilogue__ = &__nvoc_thunk_RmResource_p2papiControl_Epilogue;
 

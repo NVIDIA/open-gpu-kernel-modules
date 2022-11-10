@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -483,6 +483,11 @@ typedef struct _def_acr_reserved_dmem
 {
     NvU32            reservedDmem[(LSF_BOOTSTRAP_OWNER_RESERVED_DMEM_SIZE/4)];  // Always first..
 } ACR_RESERVED_DMEM, *PACR_RESERVED_DMEM;
+
+typedef struct _def_booter_reserved_dmem
+{
+    NvU32            reservedDmem[(LSF_BOOTSTRAP_OWNER_RESERVED_DMEM_SIZE/4)];  // Always first..
+} BOOTER_RESERVED_DMEM;
 
 #define NV_FLCN_ACR_DESC_FLAGS_SIG_VERIF           0:0
 #define NV_FLCN_ACR_DESC_FLAGS_SIG_VERIF_DISABLE   0

@@ -125,10 +125,11 @@ kgraphicsAllocGrGlobalCtxBuffers_GP100
     {
         pCtxBuffers = &pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid];
         NV_ASSERT_OK_OR_RETURN(ctxBufPoolGetGlobalPool(pGpu, CTX_BUF_ID_GR_GLOBAL,
-            NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance), &pCtxBufPool));
+            RM_ENGINE_TYPE_GR(pKernelGraphics->instance), &pCtxBufPool));
     }
 
-    if (pCtxBufPool != NULL)
+    // Don't use context buffer pool for VF allocations managed by host RM.
+    if (ctxBufPoolIsSupported(pGpu) && (pCtxBufPool != NULL))
     {
         allocFlags |= MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL;
     }
@@ -170,7 +171,7 @@ kgraphicsAllocGlobalCtxBuffers_GP100
     NV_ASSERT_OK_OR_RETURN(
         ctxBufPoolGetGlobalPool(pGpu,
                                 CTX_BUF_ID_GR_GLOBAL,
-                                NV2080_ENGINE_TYPE_GR(pKernelGraphics->instance),
+                                RM_ENGINE_TYPE_GR(pKernelGraphics->instance),
                                 &pCtxBufPool));
 
     if (pCtxBufPool != NULL)
@@ -222,8 +223,6 @@ kgraphicsAllocGlobalCtxBuffers_GP100
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].pAllocList));
     }
-
-    pCtxBuffers->bFecsBufferAllocated = NV_TRUE;
 
     return NV_OK;
 }

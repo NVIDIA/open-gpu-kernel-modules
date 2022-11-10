@@ -55,6 +55,8 @@ usrmodeConstructHal_GV100
     status = memCreateMemDesc(pGpu, &pMemDesc, ADDR_REGMEM,
                               offset, size, attr, attr2);
 
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+
     memdescSetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK, NV_TRUE);
 
     status = memConstructCommon(pMemory, NV01_MEMORY_LOCAL_PRIVILEGED,

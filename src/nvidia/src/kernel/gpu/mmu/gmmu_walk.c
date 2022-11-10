@@ -26,6 +26,7 @@
 #include "mem_mgr/gpu_vaspace.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "gpu/mem_mgr/mem_desc.h"
 #include "nvRmReg.h"  // NV_REG_STR_RM_*
 
 #include "mmu/gmmu_fmt.h"
@@ -350,6 +351,7 @@ _gmmuWalkCBLevelAlloc
                     status = _gmmuScrubMemDesc(pGpu, pMemDescTemp);
                 }
 
+                memdescSetName(pGpu, pMemDescTemp, NV_RM_SURF_NAME_PAGE_TABLE, mmuFmtConvertLevelIdToSuffix(pLevelFmt));
                 break;
             }
             j++;

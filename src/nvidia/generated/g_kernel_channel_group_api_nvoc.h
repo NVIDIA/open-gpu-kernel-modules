@@ -118,6 +118,7 @@ struct KernelChannelGroupApi {
     NV_STATUS (*__kchangrpapiInternalControlForward__)(struct KernelChannelGroupApi *, NvU32, void *, NvU32);
     void (*__kchangrpapiPreDestruct__)(struct KernelChannelGroupApi *);
     NV_STATUS (*__kchangrpapiUnmapFrom__)(struct KernelChannelGroupApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__kchangrpapiIsDuplicate__)(struct KernelChannelGroupApi *, NvHandle, NvBool *);
     void (*__kchangrpapiControl_Epilogue__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kchangrpapiControlLookup__)(struct KernelChannelGroupApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__kchangrpapiMap__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -128,6 +129,7 @@ struct KernelChannelGroupApi {
     NvHandle hKernelGraphicsContext;
     NvHandle hLegacykCtxShareSync;
     NvHandle hLegacykCtxShareAsync;
+    NvHandle hVASpace;
 };
 
 #ifndef __NVOC_CLASS_KernelChannelGroupApi_TYPEDEF__
@@ -193,6 +195,7 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi**, Dynami
 #define kchangrpapiInternalControlForward(pGpuResource, command, pParams, size) kchangrpapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define kchangrpapiPreDestruct(pResource) kchangrpapiPreDestruct_DISPATCH(pResource)
 #define kchangrpapiUnmapFrom(pResource, pParams) kchangrpapiUnmapFrom_DISPATCH(pResource, pParams)
+#define kchangrpapiIsDuplicate(pResource, hMemory, pDuplicate) kchangrpapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kchangrpapiControl_Epilogue(pResource, pCallContext, pParams) kchangrpapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kchangrpapiControlLookup(pResource, pParams, ppEntry) kchangrpapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define kchangrpapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kchangrpapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -383,6 +386,10 @@ static inline NV_STATUS kchangrpapiUnmapFrom_DISPATCH(struct KernelChannelGroupA
     return pResource->__kchangrpapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS kchangrpapiIsDuplicate_DISPATCH(struct KernelChannelGroupApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__kchangrpapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void kchangrpapiControl_Epilogue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__kchangrpapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -400,8 +407,10 @@ static inline NvBool kchangrpapiAccessCallback_DISPATCH(struct KernelChannelGrou
 }
 
 NV_STATUS kchangrpapiConstruct_IMPL(struct KernelChannelGroupApi *arg_pKernelChannelGroupApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_kchangrpapiConstruct(arg_pKernelChannelGroupApi, arg_pCallContext, arg_pParams) kchangrpapiConstruct_IMPL(arg_pKernelChannelGroupApi, arg_pCallContext, arg_pParams)
 NV_STATUS kchangrpapiCopyConstruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 #ifdef __nvoc_kernel_channel_group_api_h_disabled
 static inline NV_STATUS kchangrpapiCopyConstruct(struct KernelChannelGroupApi *pKernelChannelGroupApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     NV_ASSERT_FAILED_PRECOMP("KernelChannelGroupApi was disabled!");
@@ -412,6 +421,7 @@ static inline NV_STATUS kchangrpapiCopyConstruct(struct KernelChannelGroupApi *p
 #endif //__nvoc_kernel_channel_group_api_h_disabled
 
 void kchangrpapiDestruct_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi);
+
 #define __nvoc_kchangrpapiDestruct(pKernelChannelGroupApi) kchangrpapiDestruct_IMPL(pKernelChannelGroupApi)
 #undef PRIVATE_FIELD
 

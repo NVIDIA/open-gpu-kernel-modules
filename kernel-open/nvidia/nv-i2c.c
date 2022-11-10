@@ -168,6 +168,17 @@ static int nv_i2c_algo_smbus_xfer(
                                         sizeof(data->block),
                                         (NvU8 *)data->block);
             break;
+
+        case I2C_SMBUS_I2C_BLOCK_DATA:
+            rmStatus = rm_i2c_transfer(sp, nv, (void *)adapter,
+                                       (read_write == I2C_SMBUS_READ) ?
+                                           NV_I2C_CMD_BLOCK_READ :
+                                           NV_I2C_CMD_BLOCK_WRITE,
+                                       (NvU8)(addr & 0x7f), (NvU8)command,
+                                       (NvU8)data->block[0],
+                                       (NvU8 *)&data->block[1]);
+            break;
+
         default:
             rc = -EINVAL;
             rmStatus = NV_ERR_INVALID_ARGUMENT;
@@ -195,7 +206,8 @@ static u32 nv_i2c_algo_functionality(struct i2c_adapter *adapter)
                 I2C_FUNC_SMBUS_BYTE |
                 I2C_FUNC_SMBUS_BYTE_DATA |
                 I2C_FUNC_SMBUS_WORD_DATA |
-                I2C_FUNC_SMBUS_BLOCK_DATA);
+                I2C_FUNC_SMBUS_BLOCK_DATA |
+                I2C_FUNC_SMBUS_I2C_BLOCK);
     }
 
     nv_kmem_cache_free_stack(sp);

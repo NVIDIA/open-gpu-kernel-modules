@@ -85,6 +85,15 @@ NvU32 EvoInterface::getRegkeyValue(const char *key)
 
 bool EvoInterface::isInbandStereoSignalingSupported()
 {
+    NVDispEvoPtr pDispEvo = pConnectorEvo->pDispEvo;
+    NVDpyEvoPtr pDpyEvo;
+
+    FOR_ALL_EVO_DPYS(pDpyEvo, pDispEvo->validDisplays, pDispEvo) {
+        if ((pDpyEvo->pConnectorEvo == pConnectorEvo) &&
+            pDpyEvo->dp.inbandStereoSignaling) {
+            return TRUE;
+        }
+    }
 
     return FALSE;
 }

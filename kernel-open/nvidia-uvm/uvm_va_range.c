@@ -1071,25 +1071,37 @@ static NV_STATUS uvm_va_range_split_blocks(uvm_va_range_t *existing, uvm_va_rang
     }
 
     // uvm_va_block_split gets first crack at injecting an error. If it did so,
-    // we wouldn't be here. However, not all splits will call uvm_va_block_split
-    // so we need an extra check here. We can't push this injection later since
-    // all paths past this point assume success, so they modify existing's
-    // state.
+    // we wouldn't be here. However, not all va_range splits will call
+    // uvm_va_block_split so we need an extra check here. We can't push this
+    // injection later since all paths past this point assume success, so they
+    // modify the state of 'existing' range.
+    //
+    // Even if there was no block split above, there is no guarantee that one
+    // of our blocks doesn't have the 'inject_split_error' flag set. We clear
+    // that here to prevent multiple errors caused by one
+    // 'uvm_test_va_range_inject_split_error' call. 
     if (existing->inject_split_error) {
         UVM_ASSERT(!block);
         existing->inject_split_error = false;
+
+        for_each_va_block_in_va_range(existing, block) {
+            uvm_va_block_test_t *block_test = uvm_va_block_get_test(block);
+            if (block_test)
+                block_test->inject_split_error = false;
+        }
+
         return NV_ERR_NO_MEMORY;
     }
 
     existing_blocks = split_index + new_index;
 
-    // Copy existing's blocks over to new, accounting for the explicit
+    // Copy existing's blocks over to the new range, accounting for the explicit
     // assignment above in case we did a block split. There are two general
     // cases:
     //
     // No split:
-    //                                    split_index
-    //                                         v
+    //                             split_index
+    //                                  v
     //  existing (before) [----- A ----][----- B ----][----- C ----]
     //  existing (after)  [----- A ----]
     //  new                             [----- B ----][----- C ----]
@@ -1701,86 +1713,6 @@ void uvm_vma_wrapper_destroy(uvm_vma_wrapper_t *vma_wrapper)
     kmem_cache_free(g_uvm_vma_wrapper_cache, vma_wrapper);
 }
 
-uvm_prot_t uvm_va_range_logical_prot(uvm_va_range_t *va_range)
-{
-    uvm_prot_t logical_prot;
-    struct vm_area_struct *vma;
-
-    UVM_ASSERT(va_range);
-    UVM_ASSERT_MSG(va_range->type == UVM_VA_RANGE_TYPE_MANAGED, "type: %d\n", va_range->type);
-
-    // Zombified VA ranges no longer have a vma, so they have no permissions
-    if (uvm_va_range_is_managed_zombie(va_range))
-        return UVM_PROT_NONE;
-
-    vma = uvm_va_range_vma(va_range);
-
-    if (!(vma->vm_flags & VM_READ))
-        logical_prot = UVM_PROT_NONE;
-    else if (!(vma->vm_flags & VM_WRITE))
-        logical_prot = UVM_PROT_READ_ONLY;
-    else
-        logical_prot = UVM_PROT_READ_WRITE_ATOMIC;
-
-    return logical_prot;
-}
-
-static bool fault_check_range_permission(uvm_va_range_t *va_range, uvm_fault_access_type_t access_type)
-{
-    uvm_prot_t logical_prot = uvm_va_range_logical_prot(va_range);
-    uvm_prot_t fault_prot = uvm_fault_access_type_to_prot(access_type);
-
-    return fault_prot <= logical_prot;
-}
-
-NV_STATUS uvm_va_range_check_logical_permissions(uvm_va_range_t *va_range,
-                                                 uvm_processor_id_t processor_id,
-                                                 uvm_fault_type_t access_type,
-                                                 bool allow_migration)
-{
-    // CPU permissions are checked later by block_map_cpu_page.
-    //
-    // TODO: Bug 1766124: permissions are checked by block_map_cpu_page because
-    //       it can also be called from change_pte. Make change_pte call this
-    //       function and only check CPU permissions here.
-    if (UVM_ID_IS_GPU(processor_id)) {
-        // Zombified VA ranges no longer have a vma, so they have no permissions
-        if (uvm_va_range_is_managed_zombie(va_range))
-            return NV_ERR_INVALID_ADDRESS;
-
-        // GPU faults only check vma permissions if uvm_enable_builtin_tests is
-        // set, because the Linux kernel can change vm_flags at any moment (for
-        // example on mprotect) and here we are not guaranteed to have
-        // vma->vm_mm->mmap_lock. During tests we ensure that this scenario
-        // does not happen
-        //
-        // TODO: Bug 1896799: On HMM/ATS we could look up the mm here and do
-        //       this check safely.
-        if (uvm_enable_builtin_tests && !fault_check_range_permission(va_range, access_type))
-            return NV_ERR_INVALID_ACCESS_TYPE;
-    }
-
-    // Non-migratable range:
-    // - CPU accesses are always fatal, regardless of the VA range residency
-    // - GPU accesses are fatal if the GPU can't map the preferred location
-    if (!allow_migration) {
-        if (UVM_ID_IS_CPU(processor_id)) {
-            return NV_ERR_INVALID_OPERATION;
-        }
-        else {
-            uvm_processor_id_t preferred_location = uvm_va_range_get_policy(va_range)->preferred_location;
-
-            return uvm_processor_mask_test(&va_range->va_space->accessible_from[uvm_id_value(preferred_location)],
-                                           processor_id) ?
-                       NV_OK : NV_ERR_INVALID_ACCESS_TYPE;
-        }
-    }
-
-    return NV_OK;
-}
-
-
-
 static NvU64 sked_reflected_pte_maker(uvm_page_table_range_vec_t *range_vec, NvU64 offset, void *caller_data)
 {
     (void)caller_data;
@@ -1801,7 +1733,7 @@ static NV_STATUS uvm_map_sked_reflected_range(uvm_va_space_t *va_space, UVM_MAP_
         return NV_ERR_INVALID_ADDRESS;
 
     // The mm needs to be locked in order to remove stale HMM va_blocks.
-    mm = uvm_va_space_mm_retain_lock(va_space);
+    mm = uvm_va_space_mm_or_current_retain_lock(va_space);
     uvm_va_space_down_write(va_space);
 
     gpu = uvm_va_space_get_gpu_by_uuid_with_gpu_va_space(va_space, &params->gpuUuid);
@@ -1856,7 +1788,7 @@ done:
         uvm_va_range_destroy(va_range, NULL);
 
     uvm_va_space_up_write(va_space);
-    uvm_va_space_mm_release_unlock(va_space, mm);
+    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
 
     return status;
 }
@@ -1888,7 +1820,7 @@ NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, 
         return NV_ERR_INVALID_ARGUMENT;
 
     // The mm needs to be locked in order to remove stale HMM va_blocks.
-    mm = uvm_va_space_mm_retain_lock(va_space);
+    mm = uvm_va_space_mm_or_current_retain_lock(va_space);
     uvm_va_space_down_write(va_space);
 
     status = uvm_va_range_create_semaphore_pool(va_space,
@@ -1920,7 +1852,7 @@ done:
 
 unlock:
     uvm_va_space_up_write(va_space);
-    uvm_va_space_mm_release_unlock(va_space, mm);
+    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
     return status;
 }
 
@@ -1931,15 +1863,16 @@ NV_STATUS uvm_test_va_range_info(UVM_TEST_VA_RANGE_INFO_PARAMS *params, struct f
     uvm_processor_id_t processor_id;
     struct vm_area_struct *vma;
     NV_STATUS status = NV_OK;
+    struct mm_struct *mm;
 
     va_space = uvm_va_space_get(filp);
 
-    uvm_down_read_mmap_lock(current->mm);
+    mm = uvm_va_space_mm_or_current_retain_lock(va_space);
     uvm_va_space_down_read(va_space);
 
     va_range = uvm_va_range_find(va_space, params->lookup_address);
     if (!va_range) {
-        status = NV_ERR_INVALID_ADDRESS;
+        status = uvm_hmm_va_range_info(va_space, mm, params);
         goto out;
     }
 
@@ -1976,18 +1909,21 @@ NV_STATUS uvm_test_va_range_info(UVM_TEST_VA_RANGE_INFO_PARAMS *params, struct f
 
     switch (va_range->type) {
         case UVM_VA_RANGE_TYPE_MANAGED:
+
+            params->managed.subtype = UVM_TEST_RANGE_SUBTYPE_UVM;
             if (!va_range->managed.vma_wrapper) {
                 params->managed.is_zombie = NV_TRUE;
                 goto out;
             }
             params->managed.is_zombie = NV_FALSE;
-            vma = uvm_va_range_vma_current(va_range);
+            vma = uvm_va_range_vma_check(va_range, mm);
             if (!vma) {
-                // We aren't in the same mm as the one which owns the vma
+                // We aren't in the same mm as the one which owns the vma, and
+                // we don't have that mm locked.
                 params->managed.owned_by_calling_process = NV_FALSE;
                 goto out;
             }
-            params->managed.owned_by_calling_process = NV_TRUE;
+            params->managed.owned_by_calling_process = (mm == current->mm ? NV_TRUE : NV_FALSE);
             params->managed.vma_start = vma->vm_start;
             params->managed.vma_end   = vma->vm_end - 1;
             break;
@@ -1997,7 +1933,7 @@ NV_STATUS uvm_test_va_range_info(UVM_TEST_VA_RANGE_INFO_PARAMS *params, struct f
 
 out:
     uvm_va_space_up_read(va_space);
-    uvm_up_read_mmap_lock(current->mm);
+    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
     return status;
 }
 
@@ -2031,20 +1967,40 @@ NV_STATUS uvm_test_va_range_inject_split_error(UVM_TEST_VA_RANGE_INJECT_SPLIT_ER
 {
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
     uvm_va_range_t *va_range;
+    struct mm_struct *mm;
     NV_STATUS status = NV_OK;
 
+    mm = uvm_va_space_mm_or_current_retain_lock(va_space);
     uvm_va_space_down_write(va_space);
 
     va_range = uvm_va_range_find(va_space, params->lookup_address);
-    if (!va_range || va_range->type != UVM_VA_RANGE_TYPE_MANAGED) {
+    if (!va_range) {
+        if (!mm)
+            status = NV_ERR_INVALID_ADDRESS;
+        else
+            status = uvm_hmm_test_va_block_inject_split_error(va_space, params->lookup_address);
+    }
+    else if (va_range->type != UVM_VA_RANGE_TYPE_MANAGED) {
         status = NV_ERR_INVALID_ADDRESS;
-        goto out;
+    }
+    else {
+        uvm_va_block_t *va_block;
+        size_t split_index;
+
+        va_range->inject_split_error = true;
+
+        split_index = uvm_va_range_block_index(va_range, params->lookup_address);
+        va_block = uvm_va_range_block(va_range, split_index);
+        if (va_block) {
+            uvm_va_block_test_t *block_test = uvm_va_block_get_test(va_block);
+
+            if (block_test)
+                block_test->inject_split_error = true;
+        }
     }
 
-    va_range->inject_split_error = true;
-
-out:
     uvm_va_space_up_write(va_space);
+    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
     return status;
 }
 

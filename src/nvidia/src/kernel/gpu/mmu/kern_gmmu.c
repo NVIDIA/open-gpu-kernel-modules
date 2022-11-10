@@ -28,6 +28,8 @@
 *
 ******************************************************************************/
 
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
+
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
@@ -162,7 +164,7 @@ fail:
 
 /*
  * Initialize the Kernel GMMU state.
- * 
+ *
  * @param      pGpu
  * @param      pKernelGmmu
  */
@@ -186,10 +188,72 @@ NV_STATUS kgmmuStateInitLocked_IMPL
     return status;
 }
 
+static NV_STATUS
+_kgmmuCreateGlobalVASpace
+(
+    POBJGPU  pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32 flags
+)
+{
+    NvU32       constructFlags = VASPACE_FLAGS_NONE;
+    POBJVASPACE pGlobalVAS     = NULL;
+    NV_STATUS   rmStatus;
+    POBJGPUGRP  pGpuGrp        = NULL;
+
+    // Bail out early on sleep/suspend cases
+    if (flags & GPU_STATE_FLAGS_PRESERVING)
+        return NV_OK;
+    if (!gpumgrIsParentGPU(pGpu))
+        return NV_OK;
+
+    //
+    // We create the device vaspace at this point. Assemble the flags needed
+    // for construction.
+    //
+
+    // Allow PTE in SYS
+    constructFlags |= VASPACE_FLAGS_RETRY_PTE_ALLOC_IN_SYS;
+
+    constructFlags |= VASPACE_FLAGS_DEFAULT_PARAMS;
+    constructFlags |= VASPACE_FLAGS_DEFAULT_SIZE;
+    constructFlags |= DRF_DEF(_VASPACE, _FLAGS, _BIG_PAGE_SIZE, _DEFAULT);
+
+    pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+    NV_ASSERT_OR_RETURN(pGpuGrp != NULL, NV_ERR_INVALID_DATA);
+
+    rmStatus = gpugrpCreateGlobalVASpace(pGpuGrp, pGpu,
+                                         FERMI_VASPACE_A,
+                                         0, 0,
+                                         constructFlags,
+                                         &pGlobalVAS);
+    NV_ASSERT_OR_RETURN((NV_OK == rmStatus), rmStatus);
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_kgmmuDestroyGlobalVASpace
+(
+    POBJGPU  pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32 flags
+)
+{
+    POBJGPUGRP pGpuGrp = NULL;
+
+    if (flags & GPU_STATE_FLAGS_PRESERVING)
+        return NV_OK;
+
+    pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+    return gpugrpDestroyGlobalVASpace(pGpuGrp, pGpu);
+}
+
 /*
- *  State Post Load 
+ *  Helper function to enable ComputePeerMode
  */
-NV_STATUS kgmmuStatePostLoad_IMPL
+NV_STATUS
+kgmmuEnableComputePeerAddressing_IMPL
 (
     OBJGPU *pGpu,
     KernelGmmu *pKernelGmmu,
@@ -222,8 +286,68 @@ NV_STATUS kgmmuStatePostLoad_IMPL
         status = pRmApi->Control(pRmApi,
                                 pGpu->hInternalClient,
                                 pGpu->hInternalSubdevice,
-                                NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_COMPUTE_PEER_ADDR, 
+                                NV2080_CTRL_CMD_INTERNAL_NVLINK_ENABLE_COMPUTE_PEER_ADDR,
                                 NULL, 0);
+    }
+    return status;
+}
+
+/*
+ *  State Post Load
+ */
+NV_STATUS kgmmuStatePostLoad_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32 flags
+)
+{
+    NV_STATUS status = NV_OK;
+
+    status = _kgmmuCreateGlobalVASpace(pGpu, pKernelGmmu, flags);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                    "Failed to create GVASpace, status:%x\n",
+                    status);
+        return status;
+    }
+
+    status = kgmmuEnableComputePeerAddressing(pGpu, pKernelGmmu, flags);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                    "Failed to enable compute peer addressing, status:%x\n",
+                    status);
+        return status;
+    }
+
+    return status;
+}
+
+/*
+ *  State Pre Unload
+ */
+NV_STATUS
+kgmmuStatePreUnload_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32 flags
+)
+{
+    NV_STATUS status = NV_OK;
+
+    status = _kgmmuDestroyGlobalVASpace(pGpu, pKernelGmmu, flags);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                    "Failed to destory GVASpace, status:%x\n",
+                    status);
+        return status;
     }
     return status;
 }
@@ -364,6 +488,7 @@ _kgmmuInitRegistryOverrides(OBJGPU *pGpu, KernelGmmu *pKernelGmmu)
                   data);
         pKernelGmmu->setProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED, data);
     }
+
 }
 
 GMMU_APERTURE
@@ -488,7 +613,7 @@ kgmmuGetStaticInfo_IMPL
  *
  * @param      pGpu
  * @param      pKernelGmmu
- * @param[out] pStaticInfo pointer to the static info init on Physical driver. 
+ * @param[out] pStaticInfo pointer to the static info init on Physical driver.
  */
 NV_STATUS
 kgmmuInitStaticInfo_KERNEL
@@ -559,10 +684,10 @@ kgmmuFmtIsBigPageSizeSupported_IMPL(KernelGmmu *pKernelGmmu, NvU64 bigPageSize)
 
 /*!
  * @bried Returns the latest supported MMU fmt.
- * 
+ *
  * @param[in]  pGpu          OBJGPU pointer
  * @param[in]  pKernelGmmu   KernelGmmu pointer
- * 
+ *
  * @returns const GMMU_FMT*
  */
 const GMMU_FMT*
@@ -923,6 +1048,7 @@ kgmmuFaultBufferAlloc_IMPL
     NV_STATUS status;
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
     struct HW_FAULT_BUFFER *pFaultBuffer;
+    const char *name = (index == REPLAYABLE_FAULT_BUFFER ? NV_RM_SURF_NAME_REPLAYABLE_FAULT_BUFFER : NV_RM_SURF_NAME_NONREPLAYABLE_FAULT_BUFFER);
 
     NV_ASSERT_OR_RETURN((index < NUM_FAULT_BUFFERS), NV_ERR_INVALID_ARGUMENT);
 
@@ -944,6 +1070,8 @@ kgmmuFaultBufferAlloc_IMPL
         memdescDestroy(pMemDesc);
         return status;
     }
+
+    memdescSetName(pGpu, pMemDesc, name, NULL);
 
     pFaultBuffer->faultBufferSize = faultBufferSize;
     pFaultBuffer->pFaultBufferMemDesc = pMemDesc;
@@ -1046,7 +1174,7 @@ kgmmuFaultBufferReplayableAllocate_IMPL
                                  pGpu->hInternalSubdevice,
                                  NV2080_CTRL_CMD_INTERNAL_GMMU_REGISTER_FAULT_BUFFER,
                                  pParams, sizeof(*pParams));
-        
+
         portMemFree(pParams);
         if (status != NV_OK)
         {
@@ -1757,7 +1885,7 @@ kgmmuInstBlkInit_IMPL
 
     if (!pInstBlkParams->bDeferFlush)
     {
-        kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_USE_PCIE_READ 
+        kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_USE_PCIE_READ
                                         | kbusGetFlushAperture(pKernelBus, memdescGetAddressSpace(pInstBlkDesc)));
     }
 
@@ -1774,8 +1902,8 @@ kgmmuGetExternalAllocAperture_IMPL
     {
         case ADDR_FBMEM:
             return GMMU_APERTURE_VIDEO;
-        case ADDR_FABRIC:
         case ADDR_FABRIC_V2:
+        case ADDR_FABRIC_MC:
             return GMMU_APERTURE_PEER;
         case ADDR_SYSMEM:
         case ADDR_VIRTUAL:
@@ -1825,12 +1953,12 @@ kgmmuRegisterIntrService_IMPL
 )
 {
     NvU32 engineIdx;
-    
+
     static NvU16 engineIdxList[] = {
         MC_ENGINE_IDX_REPLAYABLE_FAULT,
         MC_ENGINE_IDX_REPLAYABLE_FAULT_ERROR,
     };
-    
+
     for (NvU32 tableIdx = 0; tableIdx < NV_ARRAY_ELEMENTS32(engineIdxList); tableIdx++)
     {
         engineIdx = engineIdxList[tableIdx];
@@ -1903,7 +2031,6 @@ kgmmuServiceInterrupt_IMPL
  *
  * @returns none
  */
-
 void
 kgmmuExtractPteInfo_IMPL
 (
@@ -2089,4 +2216,25 @@ kgmmuExtractPteInfo_IMPL
     {
         pPteInfo->pteFlags = FLD_SET_DRF(0080_CTRL, _DMA_PTE_INFO, _PARAMS_FLAGS_COMPTAGS, _NONE, pPteInfo->pteFlags);
     }
+}
+
+NvS32*
+kgmmuGetFatalFaultIntrPendingState_IMPL
+(
+    KernelGmmu *pKernelGmmu,
+    NvU8 gfid
+)
+{
+    return &pKernelGmmu->mmuFaultBuffer[gfid].fatalFaultIntrPending;
+}
+
+struct HW_FAULT_BUFFER*
+kgmmuGetHwFaultBufferPtr_IMPL
+(
+    KernelGmmu *pKernelGmmu,
+    NvU8 gfid,
+    NvU8 faultBufferIndex
+)
+{
+    return &pKernelGmmu->mmuFaultBuffer[gfid].hwFaultBuffers[faultBufferIndex];
 }

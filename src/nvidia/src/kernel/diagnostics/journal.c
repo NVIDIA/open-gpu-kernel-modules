@@ -44,6 +44,7 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "nvdevid.h"
+#include "nvop.h"
 
 
 
@@ -204,6 +205,12 @@ rcdbConstruct_IMPL(Journal *pRcDB)
     NvU32 i;
     void *pBuffer;
 
+    // Time parameters
+    NvU32 sec, usec;
+    NvU64 timeStamp;
+    NvU64 systemTime;
+    NvU64 timeStampFreq;
+
     _initJournal(pJournal, JOURNAL_BUFFER_SIZE_DEFAULT);
 
     portMemSet(pRingBufferColl, 0x00, sizeof(pRcDB->RingBufferColl));
@@ -261,6 +268,15 @@ rcdbConstruct_IMPL(Journal *pRcDB)
      {
          NV_PRINTF(LEVEL_ERROR, "failed to allocate NOCAT Ring Buffer\n");
      }
+
+     // Save params for timestamp conversion
+     timeStampFreq = osGetTimestampFreq();
+     timeStamp = osGetTimestamp();
+     osGetCurrentTime(&sec, &usec);
+     systemTime = ((NvU64)sec * 1000000) + (NvU64)usec;
+
+     pRcDB->systemTimeReference = systemTime - ((timeStamp * 1000000) / timeStampFreq);
+     pRcDB->timeStampFreq = timeStampFreq;
 
      return NV_OK;
 }
@@ -1064,7 +1080,7 @@ rcdbDumpComponent_IMPL
     pNvDumpState->bDumpInProcess    = NV_TRUE;
     pNvDumpState->bugCheckCode      = 0;
     pNvDumpState->internalCode      = NVD_ERROR_CODE(NVD_EXTERNALLY_GENERATED, 0);
-    pNvDumpState->bRMLock           = rmApiLockIsOwner();
+    pNvDumpState->bRMLock           = rmapiLockIsOwner();
     pNvDumpState->bGpuAccessible    = NV_FALSE;
     pNvDumpState->initialbufferSize = pBuffer->size;
     pNvDumpState->nvDumpType        = NVD_DUMP_TYPE_API;
@@ -2048,7 +2064,7 @@ _rcdbAddRmGpuDumpCallback
     if (status == NV_OK)
     {
         // LOCK: acquire API lock
-        status = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DIAG);
+        status = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DIAG);
         if (status == NV_OK)
         {
             // LOCK: acquire GPUs lock
@@ -2078,7 +2094,7 @@ _rcdbAddRmGpuDumpCallback
                 NV_PRINTF(LEVEL_ERROR, "failed to acquire the GPU locks!\n");
             }
             // UNLOCK: release API lock
-            rmApiLockRelease();
+            rmapiLockRelease();
         }
         else
         {
@@ -2756,7 +2772,7 @@ rcdbAddRmGpuDump
     prbEnc.depth = 0;
     pNvDumpState->bDumpInProcess    = NV_TRUE;
     pNvDumpState->nvDumpType        = NVD_DUMP_TYPE_OCA;
-    pNvDumpState->bRMLock           = rmApiLockIsOwner();
+    pNvDumpState->bRMLock           = rmapiLockIsOwner();
 
     rcdbDumpInitGpuAccessibleFlag(pGpu, pRcDB);
 
@@ -3065,6 +3081,13 @@ _rcdbNocatCollectContext(OBJGPU *pGpu, Journal* pRcdb, NV2080_NOCAT_JOURNAL_GPU_
 
         if (!osIsRaisedIRQL())
         {
+            NV_STATUS status = pGpu->acpiMethodData.capsMethodData.status;
+            if (status == NV_OK)
+            {
+                pContextCache->bOptimus =
+                    FLD_TEST_DRF(OP_FUNC, _OPTIMUSCAPS, _OPTIMUS_CAPABILITIES,
+                        _DYNAMIC_POWER_CONTROL, pGpu->acpiMethodData.capsMethodData.optimusCaps);
+            }
 
             pContextCache->bValid = NV_TRUE;
         }
@@ -3753,7 +3776,9 @@ rcdbNocatInsertNocatError(
 #if(NOCAT_PROBE_FB_MEMORY)
                 if ((bCheckFBState)
                     && (pGpu != NULL)
-                    && (pGpu->nocatGpuCache.pCpuPtr != NULL))
+                    && (pGpu->nocatGpuCache.pCpuPtr != NULL)
+                    // If using Coherent CPU mapping instead of BAR2 do not call VerifyBar2
+                    && !pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
                 {
                     switch (kbusVerifyBar2_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu),
                         &pGpu->nocatGpuCache.fbTestMemDesc, pGpu->nocatGpuCache.pCpuPtr, 0, NOCAT_FBSIZETESTED))

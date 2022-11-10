@@ -125,7 +125,6 @@ typedef struct engine_descriptor
     _op(PTIMER)                             \
     _op(CPR)                                \
     _op(TILEOUT)                            \
-    _op(TILEOUT_PERFMON)                    \
 
 #define NVSWITCH_LIST_ALL_ENGINES(_op)      \
     _op(XVE)                                \
@@ -150,11 +149,6 @@ typedef struct engine_descriptor
     _op(NPORT_PERFMON)                      \
                                             \
     _op(NVLW_PERFMON)                       \
-    _op(RX_PERFMON)                         \
-    _op(TX_PERFMON)                         \
-                                            \
-    _op(NXBAR_PERFMON)                      \
-    _op(TILE_PERFMON)                       \
 
 #define ENGINE_ID_LIST(_eng)                \
     NVSWITCH_ENGINE_ID_##_eng,
@@ -359,12 +353,6 @@ typedef struct
     NvU32  lane_rxdet_status_mask;
 
     NvBool bIsRepeaterMode;
-
-    // Check if BUFFER_COMPLETE is seen
-    volatile NvBool isBufferComplete;
-
-    // Check if BUFFER_FAIL is seen
-    volatile NvBool isBufferFail;
 
     // Minion Inband Data structure
     nvswitch_inband_receive_data inbandData;

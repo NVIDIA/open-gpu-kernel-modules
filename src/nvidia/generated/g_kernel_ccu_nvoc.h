@@ -45,6 +45,8 @@ extern "C" {
 #include "gpu/eng_state.h"
 #include "rmapi/rmapi.h"
 #include "objtmr.h"
+#include "ctrl/ctrlcbca.h"
+#include "ctrl/ctrl2080/ctrl2080internal.h"
 
 /*!
  * KernelCcu is a logical abstraction of the GPU Ccu Engine. The
@@ -65,9 +67,17 @@ extern "C" {
 #define CCU_SHRBUF_COUNT_MAX    (GPUMGR_MAX_GPU_INSTANCES + CCU_DEV_SHRBUF_COUNT)
 #define CCU_MIG_SWIZZID_SIZE    (sizeof(NvU8))
 #define CCU_MIG_INVALID_SWIZZID (0xFF)
+#define CCU_MIG_COMPUTEID_SIZE  (sizeof(NvU8))
+#define CCU_MIG_INVALID_COMPUTEID (0xFF)
+
+#define CCU_DEV_COUNTER_ENTRY_MAX (2048)
+#define CCU_MIG_COUNTER_ENTRY_MAX (256)
+
+#define CCU_STREAM_STATE_DISABLE (0)
+#define CCU_STREAM_STATE_ENABLE  (1)
 
 #define CCU_GPU_SHARED_BUFFER_SIZE_MAX (CCU_PER_GPU_COUNTER_Q_SIZE + (2 * CCU_TIMESTAMP_SIZE) + CCU_MIG_SWIZZID_SIZE) // 16K counter block + head & tail timestamp size + mig-SwizzId size
-#define CCU_MIG_INST_SHARED_BUFFER_SIZE_MAX (CCU_MIG_INST_COUNTER_Q_SIZE + (2 * CCU_TIMESTAMP_SIZE) + CCU_MIG_SWIZZID_SIZE) // 2K counter block + head & tail timestamp size + mig-SwizzId size
+#define CCU_MIG_INST_SHARED_BUFFER_SIZE_MAX (CCU_MIG_INST_COUNTER_Q_SIZE + (2 * CCU_TIMESTAMP_SIZE) + CCU_MIG_SWIZZID_SIZE + CCU_MIG_COMPUTEID_SIZE) // 2K counter block + head & tail timestamp size + mig-SwizzId size + compute-instId size
 
 typedef struct
 {
@@ -81,6 +91,7 @@ typedef struct
     NvU64 *pHeadTimeStamp;   // Timestamp before the start of counter block
     NvU64 *pTailTimeStamp;   // Timestamp at the end of counter block
     NvU8  *pSwizzId;         // Mig inst swizz id
+    NvU8  *pComputeId;       // Compute inst id
     NvP64 pCounterBlock;     // Counter block start address
     NvU32 counterBlockSize;  // Counter block size
 } CCU_SHRBUF_INFO;
@@ -105,6 +116,7 @@ struct KernelCcu {
     NV_STATUS (*__kccuConstructEngine__)(OBJGPU *, struct KernelCcu *, ENGDESCRIPTOR);
     NV_STATUS (*__kccuStateLoad__)(OBJGPU *, struct KernelCcu *, NvU32);
     NV_STATUS (*__kccuStateUnload__)(OBJGPU *, struct KernelCcu *, NvU32);
+    NV_STATUS (*__kccuMigShrBufHandler__)(OBJGPU *, struct KernelCcu *, NvBool);
     NV_STATUS (*__kccuReconcileTunableState__)(POBJGPU, struct KernelCcu *, void *);
     NV_STATUS (*__kccuStateInitLocked__)(POBJGPU, struct KernelCcu *);
     NV_STATUS (*__kccuStatePreLoad__)(POBJGPU, struct KernelCcu *, NvU32);
@@ -123,7 +135,9 @@ struct KernelCcu {
     NV_STATUS (*__kccuSetTunableState__)(POBJGPU, struct KernelCcu *, void *);
     NvBool (*__kccuIsPresent__)(POBJGPU, struct KernelCcu *);
     MEMORY_DESCRIPTOR *pMemDesc[9];
+    NvBool bStreamState;
     CCU_SHRBUF shrBuf[9];
+    NvBool bMigShrBufAllocated;
 };
 
 #ifndef __NVOC_CLASS_KernelCcu_TYPEDEF__
@@ -160,6 +174,8 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
 #define kccuConstructEngine_HAL(pGpu, pKernelCcu, engDesc) kccuConstructEngine_DISPATCH(pGpu, pKernelCcu, engDesc)
 #define kccuStateLoad(arg0, arg1, flags) kccuStateLoad_DISPATCH(arg0, arg1, flags)
 #define kccuStateUnload(arg0, arg1, flags) kccuStateUnload_DISPATCH(arg0, arg1, flags)
+#define kccuMigShrBufHandler(arg0, arg1, bMigEnabled) kccuMigShrBufHandler_DISPATCH(arg0, arg1, bMigEnabled)
+#define kccuMigShrBufHandler_HAL(arg0, arg1, bMigEnabled) kccuMigShrBufHandler_DISPATCH(arg0, arg1, bMigEnabled)
 #define kccuReconcileTunableState(pGpu, pEngstate, pTunableState) kccuReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kccuStateInitLocked(pGpu, pEngstate) kccuStateInitLocked_DISPATCH(pGpu, pEngstate)
 #define kccuStatePreLoad(pGpu, pEngstate, arg0) kccuStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -179,12 +195,9 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
 #define kccuIsPresent(pGpu, pEngstate) kccuIsPresent_DISPATCH(pGpu, pEngstate)
 void kccuDestruct_IMPL(struct KernelCcu *arg0);
 
+
 #define __nvoc_kccuDestruct(arg0) kccuDestruct_IMPL(arg0)
 NV_STATUS kccuConstructEngine_IMPL(OBJGPU *pGpu, struct KernelCcu *pKernelCcu, ENGDESCRIPTOR engDesc);
-
-static inline NV_STATUS kccuConstructEngine_46f6a7(OBJGPU *pGpu, struct KernelCcu *pKernelCcu, ENGDESCRIPTOR engDesc) {
-    return NV_ERR_NOT_SUPPORTED;
-}
 
 static inline NV_STATUS kccuConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelCcu *pKernelCcu, ENGDESCRIPTOR engDesc) {
     return pKernelCcu->__kccuConstructEngine__(pGpu, pKernelCcu, engDesc);
@@ -200,6 +213,16 @@ NV_STATUS kccuStateUnload_IMPL(OBJGPU *arg0, struct KernelCcu *arg1, NvU32 flags
 
 static inline NV_STATUS kccuStateUnload_DISPATCH(OBJGPU *arg0, struct KernelCcu *arg1, NvU32 flags) {
     return arg1->__kccuStateUnload__(arg0, arg1, flags);
+}
+
+static inline NV_STATUS kccuMigShrBufHandler_46f6a7(OBJGPU *arg0, struct KernelCcu *arg1, NvBool bMigEnabled) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS kccuMigShrBufHandler_GH100(OBJGPU *arg0, struct KernelCcu *arg1, NvBool bMigEnabled);
+
+static inline NV_STATUS kccuMigShrBufHandler_DISPATCH(OBJGPU *arg0, struct KernelCcu *arg1, NvBool bMigEnabled) {
+    return arg1->__kccuMigShrBufHandler__(arg0, arg1, bMigEnabled);
 }
 
 static inline NV_STATUS kccuReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, void *pTunableState) {
@@ -271,6 +294,7 @@ static inline NvBool kccuIsPresent_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEng
 }
 
 NV_STATUS kccuMemDescGetForSwizzId_IMPL(OBJGPU *arg0, struct KernelCcu *arg1, NvU8 swizzId, MEMORY_DESCRIPTOR **arg2);
+
 #ifdef __nvoc_kernel_ccu_h_disabled
 static inline NV_STATUS kccuMemDescGetForSwizzId(OBJGPU *arg0, struct KernelCcu *arg1, NvU8 swizzId, MEMORY_DESCRIPTOR **arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
@@ -281,6 +305,7 @@ static inline NV_STATUS kccuMemDescGetForSwizzId(OBJGPU *arg0, struct KernelCcu 
 #endif //__nvoc_kernel_ccu_h_disabled
 
 NV_STATUS kccuMemDescGetForShrBufId_IMPL(OBJGPU *arg0, struct KernelCcu *arg1, NvU32 shrbufId, MEMORY_DESCRIPTOR **arg2);
+
 #ifdef __nvoc_kernel_ccu_h_disabled
 static inline NV_STATUS kccuMemDescGetForShrBufId(OBJGPU *arg0, struct KernelCcu *arg1, NvU32 shrbufId, MEMORY_DESCRIPTOR **arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
@@ -291,6 +316,7 @@ static inline NV_STATUS kccuMemDescGetForShrBufId(OBJGPU *arg0, struct KernelCcu
 #endif //__nvoc_kernel_ccu_h_disabled
 
 NvU32 kccuCounterBlockSizeGet_IMPL(OBJGPU *arg0, struct KernelCcu *arg1, NvBool bDevCounter);
+
 #ifdef __nvoc_kernel_ccu_h_disabled
 static inline NvU32 kccuCounterBlockSizeGet(OBJGPU *arg0, struct KernelCcu *arg1, NvBool bDevCounter) {
     NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
@@ -298,6 +324,71 @@ static inline NvU32 kccuCounterBlockSizeGet(OBJGPU *arg0, struct KernelCcu *arg1
 }
 #else //__nvoc_kernel_ccu_h_disabled
 #define kccuCounterBlockSizeGet(arg0, arg1, bDevCounter) kccuCounterBlockSizeGet_IMPL(arg0, arg1, bDevCounter)
+#endif //__nvoc_kernel_ccu_h_disabled
+
+NV_STATUS kccuStreamStateSet_IMPL(OBJGPU *arg0, struct KernelCcu *arg1, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *arg2);
+
+#ifdef __nvoc_kernel_ccu_h_disabled
+static inline NV_STATUS kccuStreamStateSet(OBJGPU *arg0, struct KernelCcu *arg1, NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_ccu_h_disabled
+#define kccuStreamStateSet(arg0, arg1, arg2) kccuStreamStateSet_IMPL(arg0, arg1, arg2)
+#endif //__nvoc_kernel_ccu_h_disabled
+
+NvBool kccuStreamStateGet_IMPL(OBJGPU *arg0, struct KernelCcu *arg1);
+
+#ifdef __nvoc_kernel_ccu_h_disabled
+static inline NvBool kccuStreamStateGet(OBJGPU *arg0, struct KernelCcu *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_kernel_ccu_h_disabled
+#define kccuStreamStateGet(arg0, arg1) kccuStreamStateGet_IMPL(arg0, arg1)
+#endif //__nvoc_kernel_ccu_h_disabled
+
+NV_STATUS kccuInitMigSharedBuffer_IMPL(OBJGPU *arg0, struct KernelCcu *arg1);
+
+#ifdef __nvoc_kernel_ccu_h_disabled
+static inline NV_STATUS kccuInitMigSharedBuffer(OBJGPU *arg0, struct KernelCcu *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_ccu_h_disabled
+#define kccuInitMigSharedBuffer(arg0, arg1) kccuInitMigSharedBuffer_IMPL(arg0, arg1)
+#endif //__nvoc_kernel_ccu_h_disabled
+
+NV_STATUS kccuShrBufInfoToCcu_IMPL(OBJGPU *arg0, struct KernelCcu *arg1, NvU32 shrBufStartIdx);
+
+#ifdef __nvoc_kernel_ccu_h_disabled
+static inline NV_STATUS kccuShrBufInfoToCcu(OBJGPU *arg0, struct KernelCcu *arg1, NvU32 shrBufStartIdx) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_ccu_h_disabled
+#define kccuShrBufInfoToCcu(arg0, arg1, shrBufStartIdx) kccuShrBufInfoToCcu_IMPL(arg0, arg1, shrBufStartIdx)
+#endif //__nvoc_kernel_ccu_h_disabled
+
+void kccuShrBufIdxCleanup_IMPL(OBJGPU *arg0, struct KernelCcu *arg1, NvU32 shrBufIdx);
+
+#ifdef __nvoc_kernel_ccu_h_disabled
+static inline void kccuShrBufIdxCleanup(OBJGPU *arg0, struct KernelCcu *arg1, NvU32 shrBufIdx) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
+}
+#else //__nvoc_kernel_ccu_h_disabled
+#define kccuShrBufIdxCleanup(arg0, arg1, shrBufIdx) kccuShrBufIdxCleanup_IMPL(arg0, arg1, shrBufIdx)
+#endif //__nvoc_kernel_ccu_h_disabled
+
+NV_STATUS kccuMemDescGetForComputeInst_IMPL(OBJGPU *arg0, struct KernelCcu *arg1, NvU8 swizzId, NvU8 computeId, MEMORY_DESCRIPTOR **arg2);
+
+#ifdef __nvoc_kernel_ccu_h_disabled
+static inline NV_STATUS kccuMemDescGetForComputeInst(OBJGPU *arg0, struct KernelCcu *arg1, NvU8 swizzId, NvU8 computeId, MEMORY_DESCRIPTOR **arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCcu was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_ccu_h_disabled
+#define kccuMemDescGetForComputeInst(arg0, arg1, swizzId, computeId, arg2) kccuMemDescGetForComputeInst_IMPL(arg0, arg1, swizzId, computeId, arg2)
 #endif //__nvoc_kernel_ccu_h_disabled
 
 #undef PRIVATE_FIELD

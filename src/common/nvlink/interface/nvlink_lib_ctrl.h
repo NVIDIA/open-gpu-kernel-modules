@@ -89,7 +89,7 @@ typedef struct
 typedef struct
 {
     NvU16               nodeId;
-    NvU32               linkIndex;
+    NvU16               linkIndex;
     nvlink_pci_dev_info pciInfo;
 } nvlink_endpoint;
 
@@ -117,7 +117,7 @@ typedef struct
 typedef struct
 {
     NvU16               nodeId;
-    NvU32               linkIndex;
+    NvU16               linkIndex;
     nvlink_pci_dev_info pciInfo;
     NvU8                devUuid[NVLINK_UUID_LEN];
     NvU32               devType;
@@ -189,9 +189,9 @@ typedef enum
 /* link and sublink state of an nvlink endpoint */
 typedef struct
 {
-    NvU32 linkMode;
-    NvU32 txSubLinkMode;
-    NvU32 rxSubLinkMode;
+    NvU8 linkMode;
+    NvU8 txSubLinkMode;
+    NvU8 rxSubLinkMode;
 } nvlink_link_state;
 
 /*
@@ -354,7 +354,7 @@ typedef struct
  */
 typedef struct
 {
-    NvU32  linkIndex;
+    NvU16  linkIndex;
     NvBool initStatus;
 } nvlink_link_init_status;
 
@@ -503,7 +503,7 @@ typedef struct
  */
 typedef struct
 {
-    NvU32 linkIndex;
+    NvU16 linkIndex;
     NV_DECLARE_ALIGNED(NvU64 tokenValue, 8);
 } nvlink_token_info;
 
@@ -1110,6 +1110,11 @@ typedef struct
     nvlink_link_state      endStates[NVLINK_MAX_NVLINK_ENDPOINTS];
     NvU32                  endStatesCount;
 } nvlink_get_device_link_states;
+
+/* 
+ * Note: Verify that new parameter structs for IOCTLs satisfy 
+ *       sizing restrictions for all OSs they could be used in.
+ */ 
 
 #define CTRL_NVLINK_CHECK_VERSION                            0x01
 #define CTRL_NVLINK_SET_NODE_ID                              0x02

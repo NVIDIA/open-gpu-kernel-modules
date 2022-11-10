@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
 #include "mmu/gmmu_fmt.h"
 #include "gpu/mmu/kern_gmmu.h"
@@ -280,7 +282,8 @@ _gmmuPrintPde
 
         PRINT_FIELD_32("PdePcf=%d", pFmtPde, PdePcf, pGmmuEntry);
         pdePcfHw = nvFieldGet32(&pFmtPde->fldPdePcf, pGmmuEntry->v8);
-        NV_ASSERT(kgmmuTranslatePdePcfFromHw_HAL(GPU_GET_KERNEL_GMMU(pGpu),
+        NV_CHECK(LEVEL_INFO,
+                 kgmmuTranslatePdePcfFromHw_HAL(GPU_GET_KERNEL_GMMU(pGpu),
                                                 pdePcfHw,
                                                 aperture,
                                                 &pdePcfSw) == NV_OK);

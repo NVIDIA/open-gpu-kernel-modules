@@ -25,9 +25,62 @@
 #include "uvm_ats_faults.h"
 #include "uvm_migrate_pageable.h"
 
+// TODO: Bug 2103669: Implement a real prefetching policy and remove or adapt
+// these experimental parameters. These are intended to help guide that policy.
+static unsigned int uvm_exp_perf_prefetch_ats_order_replayable = 0;
+module_param(uvm_exp_perf_prefetch_ats_order_replayable, uint, 0644);
+MODULE_PARM_DESC(uvm_exp_perf_prefetch_ats_order_replayable,
+                 "Max order of pages (2^N) to prefetch on replayable ATS faults");
+
+static unsigned int uvm_exp_perf_prefetch_ats_order_non_replayable = 0;
+module_param(uvm_exp_perf_prefetch_ats_order_non_replayable, uint, 0644);
+MODULE_PARM_DESC(uvm_exp_perf_prefetch_ats_order_non_replayable,
+                 "Max order of pages (2^N) to prefetch on non-replayable ATS faults");
+
+// Expand the fault region to the naturally-aligned region with order given by
+// the module parameters, clamped to the vma containing fault_addr (if any).
+// Note that this means the region contains fault_addr but may not begin at
+// fault_addr.
+static void expand_fault_region(struct mm_struct *mm,
+                                NvU64 fault_addr,
+                                uvm_fault_client_type_t client_type,
+                                unsigned long *start,
+                                unsigned long *size)
+{
+    struct vm_area_struct *vma;
+    unsigned int order;
+    unsigned long outer, aligned_start, aligned_size;
+
+    *start = fault_addr;
+    *size = PAGE_SIZE;
+
+    if (client_type == UVM_FAULT_CLIENT_TYPE_HUB)
+        order = uvm_exp_perf_prefetch_ats_order_non_replayable;
+    else
+        order = uvm_exp_perf_prefetch_ats_order_replayable;
+
+    if (order == 0)
+        return;
+
+    vma = find_vma_intersection(mm, fault_addr, fault_addr + 1);
+    if (!vma)
+        return;
+
+    UVM_ASSERT(order < BITS_PER_LONG - PAGE_SHIFT);
+
+    aligned_size = (1UL << order) * PAGE_SIZE;
+
+    aligned_start = fault_addr & ~(aligned_size - 1);
+
+    *start = max(vma->vm_start, aligned_start);
+    outer = min(vma->vm_end, aligned_start + aligned_size);
+    *size = outer - *start;
+}
+
 static NV_STATUS uvm_ats_service_fault(uvm_gpu_va_space_t *gpu_va_space,
                                        NvU64 fault_addr,
-                                       uvm_fault_access_type_t access_type)
+                                       uvm_fault_access_type_t access_type,
+                                       uvm_fault_client_type_t client_type)
 {
     uvm_va_space_t *va_space = gpu_va_space->va_space;
     struct mm_struct *mm = va_space->va_space_mm.mm;
@@ -66,8 +119,6 @@ static NV_STATUS uvm_ats_service_fault(uvm_gpu_va_space_t *gpu_va_space,
     {
         .va_space               = va_space,
         .mm                     = mm,
-        .start                  = fault_addr,
-        .length                 = PAGE_SIZE,
         .dst_id                 = gpu_va_space->gpu->parent->id,
         .dst_node_id            = -1,
         .populate_permissions   = write ? UVM_POPULATE_PERMISSIONS_WRITE : UVM_POPULATE_PERMISSIONS_ANY,
@@ -78,6 +129,8 @@ static NV_STATUS uvm_ats_service_fault(uvm_gpu_va_space_t *gpu_va_space,
     };
 
     UVM_ASSERT(uvm_ats_can_service_faults(gpu_va_space, mm));
+
+    expand_fault_region(mm, fault_addr, client_type, &uvm_migrate_args.start, &uvm_migrate_args.length);
 
     // TODO: Bug 2103669: Service more than a single fault at a time
     //
@@ -131,7 +184,10 @@ NV_STATUS uvm_ats_service_fault_entry(uvm_gpu_va_space_t *gpu_va_space,
     }
     else {
         // TODO: Bug 2103669: Service more than a single fault at a time
-        status = uvm_ats_service_fault(gpu_va_space, current_entry->fault_address, service_access_type);
+        status = uvm_ats_service_fault(gpu_va_space,
+                                       current_entry->fault_address,
+                                       service_access_type,
+                                       current_entry->fault_source.client_type);
     }
 
     // Do not flag prefetch faults as fatal unless something fatal happened
@@ -155,7 +211,8 @@ NV_STATUS uvm_ats_service_fault_entry(uvm_gpu_va_space_t *gpu_va_space,
                     uvm_fault_access_type_mask_test(current_entry->access_type_mask, UVM_FAULT_ACCESS_TYPE_READ)) {
                     status = uvm_ats_service_fault(gpu_va_space,
                                                    current_entry->fault_address,
-                                                   UVM_FAULT_ACCESS_TYPE_READ);
+                                                   UVM_FAULT_ACCESS_TYPE_READ,
+                                                   current_entry->fault_source.client_type);
 
                     // If read accesses are also invalid, cancel the fault. If a
                     // different error code is returned, exit

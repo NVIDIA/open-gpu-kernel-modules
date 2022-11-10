@@ -23,27 +23,108 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+
+#include <class/cl00fc.h>      // FABRIC_VASPACE_A
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "mem_mgr/fabric_vaspace.h"
+#include "mem_mgr/virt_mem_mgr.h"
+#include "vgpu/rpc.h"
+#include "virtualization/hypervisor/hypervisor.h"
 #include "os/os.h"
 
+#include "mem_mgr/mem_multicast_fabric.h"
+
+#include "gpu/gpu_fabric_probe.h"
 #include "published/hopper/gh100/dev_ram.h"
 #include "published/hopper/gh100/pri_nv_xal_ep.h"
 #include "published/hopper/gh100/pri_nv_xal_ep_p2p.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_mmu.h"
+#include "ctrl/ctrl2080/ctrl2080fla.h" // NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK
 
 #include "nvRmReg.h"
 
  // Defines for P2P
 #define HOPPER_WRITE_MAILBOX_SIZE            ((NvU64)64 * 1024)
-#define HOPPER_MAX_WRITE_MAILBOX_ADDR                                         \
-    ((HOPPER_WRITE_MAILBOX_SIZE << DRF_SIZE(NV_XAL_EP_P2P_WMBOX_ADDR_ADDR)) - \
+#define HOPPER_MAX_WRITE_MAILBOX_ADDR(pGpu)                                         \
+    ((HOPPER_WRITE_MAILBOX_SIZE << kbusGetP2PWriteMailboxAddressSize_HAL(pGpu)) - \
      HOPPER_WRITE_MAILBOX_SIZE)
+
+/*!
+ * @brief Gets the P2P write mailbox address size (NV_XAL_EP_P2P_WMBOX_ADDR_ADDR)
+ *
+ * @returns P2P write mailbox address size (NV_XAL_EP_P2P_WMBOX_ADDR_ADDR)
+ */
+NvU32
+kbusGetP2PWriteMailboxAddressSize_GH100(OBJGPU *pGpu)
+{
+    return DRF_SIZE(NV_XAL_EP_P2P_WMBOX_ADDR_ADDR);
+}
+
+/*!
+ * @brief Writes NV_XAL_EP_BAR0_WINDOW_BASE
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ * @param[in] base       base address to write
+ *
+ * @returns NV_OK
+ */
+NV_STATUS
+kbusWriteBAR0WindowBase_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU32      base
+)
+{
+    GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, base);
+    return NV_OK;
+}
+
+/*!
+ * @brief Reads NV_XAL_EP_BAR0_WINDOW_BASE
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ *
+ * @returns Contents of NV_XAL_EP_BAR0_WINDOW_BASE
+ */
+NvU32
+kbusReadBAR0WindowBase_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    return GPU_REG_RD_DRF(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE);
+}
+
+/*!
+ * @brief Validates that the given base fits within the width of the window base
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ * @param[in] base       base offset to validate
+ *
+ * @returns Whether given base fits within the width of the window base.
+ */
+NvBool
+kbusValidateBAR0WindowBase_GH100
+(
+    OBJGPU    *pGpu, 
+    KernelBus *pKernelBus,
+    NvU32      base
+)
+{
+    return base <= DRF_MASK(NV_XAL_EP_BAR0_WINDOW_BASE);
+}
 
 NV_STATUS
 kbusSetBAR0WindowVidOffset_GH100
@@ -55,7 +136,7 @@ kbusSetBAR0WindowVidOffset_GH100
 {
 
     NV_ASSERT((vidOffset & 0xffff)==0);
-    NV_ASSERT((vidOffset >> NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT) <= DRF_MASK(NV_XAL_EP_BAR0_WINDOW_BASE));
+    NV_ASSERT(kbusValidateBAR0WindowBase_HAL(pGpu, pKernelBus, vidOffset >> NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT));
 
     //
     // RM initialises cachedBar0WindowVidOffset with 0. Refresh its value with
@@ -63,7 +144,7 @@ kbusSetBAR0WindowVidOffset_GH100
     //
     if (pKernelBus->cachedBar0WindowVidOffset == 0)
     {
-        pKernelBus->cachedBar0WindowVidOffset = ((NvU64) GPU_REG_RD_DRF(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE))
+        pKernelBus->cachedBar0WindowVidOffset = ((NvU64) kbusReadBAR0WindowBase_HAL(pGpu, pKernelBus))
             << NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT;
     }
 
@@ -75,7 +156,7 @@ kbusSetBAR0WindowVidOffset_GH100
                   NvU64_HI32(vidOffset), NvU64_LO32(vidOffset));
 
         // _BAR0_WINDOW_TARGET field is removed. It's always VIDMEM
-        GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, NvU64_LO32(vidOffset >> 16));
+        kbusWriteBAR0WindowBase_HAL(pGpu, pKernelBus, NvU64_LO32(vidOffset >> 16));
 
         pKernelBus->cachedBar0WindowVidOffset = vidOffset;
     }
@@ -98,7 +179,7 @@ kbusGetBAR0WindowVidOffset_GH100
     //
     if (pKernelBus->cachedBar0WindowVidOffset == 0)
     {
-        pKernelBus->cachedBar0WindowVidOffset = ((NvU64) GPU_REG_RD_DRF(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE))
+        pKernelBus->cachedBar0WindowVidOffset = ((NvU64) kbusReadBAR0WindowBase_HAL(pGpu, pKernelBus))
             << NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT;
     }
 
@@ -149,6 +230,8 @@ kbusVerifyBar2_GH100
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NvU32             flagsClean       = 0;
     NvU64             bar2VirtualAddr  = 0;
+
+    NV_ASSERT_OR_RETURN(pGpu->getProperty(pGPU, PDB_PROP_GPU_COHERENT_CPU_MAPPING) == NV_FALSE, NV_ERR_INVALID_STATE);
 
     //
     // kbusVerifyBar2 will test BAR0 against sysmem on Tegra; otherwise skip
@@ -244,7 +327,7 @@ kbusVerifyBar2_GH100
     bar0Window = kbusGetBAR0WindowVidOffset_HAL(pGpu, pKernelBus);
     bar0TestAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
 
-    GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, NvU64_LO32(bar0TestAddr >> 16));
+    kbusWriteBAR0WindowBase_HAL(pGpu, pKernelBus, NvU64_LO32(bar0TestAddr >> 16));
 
     testData = GPU_REG_RD32(pGpu, DRF_BASE(NV_PRAMIN) + NvU64_LO32(bar0TestAddr & 0xffff));
 
@@ -301,7 +384,7 @@ kbusVerifyBar2_GH100
         "Bar0 window tests successfully\n");
     GPU_REG_WR32(pGpu, DRF_BASE(NV_PRAMIN) + NvU64_LO32(bar0TestAddr & 0xffff), testData);
 
-    GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, NvU64_LO32(bar0Window >> 16));
+    kbusWriteBAR0WindowBase_HAL(pGpu, pKernelBus, NvU64_LO32(bar0Window >> 16));
 
     // ==========================================================
     // Does MMU's translation logic work?
@@ -365,7 +448,7 @@ kbusVerifyBar2_GH100
     // Readback through the bar0 window
     bar0Window = kbusGetBAR0WindowVidOffset_HAL(pGpu, pKernelBus);
 
-    GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, NvU64_LO32(testMemoryOffset >> 16));
+    kbusWriteBAR0WindowBase_HAL(pGpu, pKernelBus, NvU64_LO32(testMemoryOffset >> 16));
 
     NV_PRINTF(LEVEL_INFO,
               "bar0Window = 0x%llx, testMemoryOffset = 0x%llx, testAddrSpace = %d, "
@@ -395,7 +478,7 @@ kbusVerifyBar2_GH100
         GPU_REG_WR32(pGpu, temp + index, SAMPLEDATA + 0x10);
     }
 
-    GPU_FLD_WR_DRF_NUM(pGpu, _XAL_EP, _BAR0_WINDOW, _BASE, NvU64_LO32(bar0Window >> 16));
+    kbusWriteBAR0WindowBase_HAL(pGpu, pKernelBus, NvU64_LO32(bar0Window >> 16));
 
     status = kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY | BUS_FLUSH_USE_PCIE_READ);
 
@@ -585,7 +668,7 @@ kbusGetP2PMailboxAttributes_GH100
     {
         *pMailboxBar1MaxOffset64KB =
             NvU64_LO32(
-                (HOPPER_MAX_WRITE_MAILBOX_ADDR + HOPPER_WRITE_MAILBOX_SIZE) >> 16
+                (HOPPER_MAX_WRITE_MAILBOX_ADDR(pGpu) + HOPPER_WRITE_MAILBOX_SIZE) >> 16
             );
     }
 
@@ -822,8 +905,15 @@ kbusCreateP2PMappingForBar1P2P_GH100
     NvU32 gpuInst0 = gpuGetInstance(pGpu0);
     NvU32 gpuInst1 = gpuGetInstance(pGpu1);
 
-    if (!kbusIsPcieBar1P2PMappingSupported_HAL(pGpu0, pKernelBus0, pGpu1, pKernelBus1))
+    if (IS_VIRTUAL(pGpu0) || IS_VIRTUAL(pGpu1))
+    {
         return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (!kbusIsPcieBar1P2PMappingSupported_HAL(pGpu0, pKernelBus0, pGpu1, pKernelBus1))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     pKernelBus0->p2pPcieBar1.busBar1PeerRefcount[gpuInst1]++;
     pKernelBus1->p2pPcieBar1.busBar1PeerRefcount[gpuInst0]++;
@@ -856,6 +946,11 @@ kbusRemoveP2PMappingForBar1P2P_GH100
 )
 {
     NvU32 gpuInst0, gpuInst1;
+
+    if (IS_VIRTUAL(pGpu0) || IS_VIRTUAL(pGpu1))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
 
     gpuInst0 = gpuGetInstance(pGpu0);
     gpuInst1 = gpuGetInstance(pGpu1);
@@ -982,6 +1077,11 @@ kbusCreateP2PMappingForC2C_GH100
     NvU32              c2cPeer1;
     NV_STATUS          status;
 
+    if (IS_VIRTUAL(pGpu0) || IS_VIRTUAL(pGpu1))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     if (peer0 == NULL || peer1 == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
@@ -1083,6 +1183,12 @@ _kbusRemoveC2CPeerMapping
 )
 {
     NV_STATUS          status          = NV_OK;
+
+    if (IS_VIRTUAL(pGpu0) || IS_VIRTUAL(pGpu1))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     return status;
 }
 
@@ -1139,5 +1245,353 @@ kbusWriteP2PWmbTag_GH100
     GPU_REG_RD32(pGpu, NV_XAL_EP_P2P_WREQMB_L(remote2Local));
     GPU_REG_WR32(pGpu, NV_XAL_EP_P2P_WREQMB_L(remote2Local), NvU64_LO32(p2pWmbTag));
     GPU_REG_WR32(pGpu, NV_XAL_EP_P2P_WREQMB_H(remote2Local), NvU64_HI32(p2pWmbTag));
+}
+
+/*!
+ * @brief Determine FLA Base and Size for direct-connected and NvSwitch systems.
+ *
+ * @param[in]  base       VASpace base
+ * @param[in]  size       VASpace size
+ *
+ * @return NV_OK if successful
+ */
+NV_STATUS
+kbusDetermineFlaRangeAndAllocate_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU64      base,
+    NvU64      size
+)
+{
+    NV_STATUS      status        = NV_OK;
+
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
+    if ((pSys->getProperty(pSys, PDB_PROP_SYS_NVSWITCH_IS_PRESENT) ||
+         GPU_IS_NVSWITCH_DETECTED(pGpu)) && !gpuFabricProbeIsSupported(pGpu))
+    {
+        return kbusDetermineFlaRangeAndAllocate_GA100(pGpu, pKernelBus, base, size);
+    }
+
+    NV_ASSERT_OK_OR_RETURN(kbusAllocateFlaVaspace_HAL(pGpu, pKernelBus, 0x0, NVBIT64(52)));
+
+    return status;
+}
+
+/*!
+ * @brief Sets up the Fabric FLA state for the GPU. This function will allocate fabric VASpace,
+ *        allocates PDB for fabric VAS, allocates instance block and initialize with
+ *        fabric VAS and binds the instance block to HW.
+ *
+ * @param[in]  base       VASpace base
+ * @param[in]  size       VASpace size
+ *
+ * @return NV_OK if successful
+ */
+NV_STATUS
+kbusAllocateFlaVaspace_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU64      base,
+    NvU64      size
+)
+{
+    NV_STATUS    status = NV_OK;
+    OBJVMM      *pVmm   = SYS_GET_VMM(SYS_GET_INSTANCE());
+    KernelGmmu  *pKernelGmmu  = GPU_GET_KERNEL_GMMU(pGpu);
+    INST_BLK_INIT_PARAMS pInstblkParams = {0};
+    FABRIC_VASPACE *pFabricVAS;
+    RM_API   *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(size != 0, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(!pKernelBus->flaInfo.bFlaAllocated, NV_ERR_INVALID_ARGUMENT);
+
+    pKernelBus->flaInfo.base = base;
+    pKernelBus->flaInfo.size = size;
+
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
+    if ((pSys->getProperty(pSys, PDB_PROP_SYS_NVSWITCH_IS_PRESENT) ||
+         GPU_IS_NVSWITCH_DETECTED(pGpu)) && !gpuFabricProbeIsSupported(pGpu))
+    {
+        return kbusAllocateFlaVaspace_GA100(pGpu, pKernelBus, base, size);
+    }
+
+    // TODO: Remove allocating legaccy FLA Vaspace once CUDA removes the dependency
+    NV_ASSERT_OK_OR_RETURN(kbusAllocateLegacyFlaVaspace_HAL(pGpu, pKernelBus, base, size));
+
+    // Allocate a FABRIC_VASPACE_A object
+    status = vmmCreateVaspace(pVmm, FABRIC_VASPACE_A, pGpu->gpuId, gpumgrGetGpuMask(pGpu),
+                              base, base + size - 1, 0, 0, NULL, 0,
+                              &pGpu->pFabricVAS);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed allocating fabric vaspace, status=0x%x\n",
+                  status);
+        goto cleanup;
+    }
+
+    // Pin the VASPACE page directory for pFabricVAS before writing the instance block
+    status = vaspacePinRootPageDir(pGpu->pFabricVAS, pGpu);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed pinning down fabric vaspace, status=0x%x\n",
+                    status);
+        goto cleanup;
+    }
+
+    // Construct instance block
+    status = kbusConstructFlaInstBlk_HAL(pGpu, pKernelBus, GPU_GFID_PF);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                "failed constructing instblk for FLA, status=0x%x\n",
+                status);
+        goto unpin_rootpagedir;
+    }
+
+    pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+
+    // Instantiate Inst Blk for pFlaVAS
+    status = kgmmuInstBlkInit(pKernelGmmu,
+                                pKernelBus->flaInfo.pInstblkMemDesc,
+                                pFabricVAS->pGVAS, FIFO_PDB_IDX_BASE,
+                                &pInstblkParams);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                "failed instantiating instblk for FLA, status=0x%x\n",
+                status);
+        goto free_instblk;
+    }
+
+    //
+    // For SRIOV PF/VF system, always check for P2P allocation to determine whether
+    // this function is allowed to bind FLA
+    //
+    if (gpuIsSriovEnabled(pGpu) || IS_VIRTUAL(pGpu))
+    {
+        if (gpuCheckIsP2PAllocated_HAL(pGpu))
+        {
+            status = kbusSetupBindFla(pGpu, pKernelBus, pGpu->sriovState.pP2PInfo->gfid);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "Skipping binding FLA, because no P2P GFID is"
+                      " validated yet\n");
+        }
+    }
+    else
+    {
+        status = kbusSetupBindFla(pGpu, pKernelBus, GPU_GFID_PF);
+    }
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "failed binding instblk for FLA, status=0x%x\n", status);
+        goto free_instblk;
+    }
+    if (GPU_GET_KERNEL_NVLINK(pGpu) != NULL)
+    {
+        NVLINK_INBAND_MSG_CALLBACK inbandMsgCbParams;
+        
+        inbandMsgCbParams.messageType = NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP;
+        inbandMsgCbParams.pCallback = &memorymulticastfabricTeamSetupResponseCallback;
+
+        // 
+        // Update this such that it indicates that Gpu lock shouldn't be taken
+        // when the callback is invoked
+        //
+        inbandMsgCbParams.wqItemFlags = 0;
+
+        status = knvlinkRegisterInbandCallback(pGpu,
+                                               GPU_GET_KERNEL_NVLINK(pGpu),
+                                               &inbandMsgCbParams);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Registering Inband Cb failed\n",
+                    gpuGetInstance(pGpu));
+            goto free_instblk;
+        }
+
+    }
+
+    // setup Unicast FLA range in Fabric VAS object
+    if (!GPU_IS_NVSWITCH_DETECTED(pGpu))
+    {
+        size = gpuGetFlaVasSize_HAL(pGpu, NV_FALSE);
+        base = pGpu->gpuInstance * size; 
+
+        NV_ASSERT_OK_OR_GOTO(status, fabricvaspaceInitUCRange(
+                                     dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE), pGpu, 
+                                     base, size), free_instblk);
+    }
+
+    pKernelBus->flaInfo.bFlaAllocated       = NV_TRUE;
+
+    return NV_OK;
+
+free_instblk:
+    kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
+
+unpin_rootpagedir:
+    if (pGpu->pFabricVAS != NULL)
+    {
+        vaspaceUnpinRootPageDir(pGpu->pFabricVAS, pGpu);
+    }
+
+cleanup:
+    if (pGpu->pFabricVAS != NULL)
+    {
+        vmmDestroyVaspace(pVmm, pGpu->pFabricVAS);
+        pGpu->pFabricVAS = NULL;
+    }
+
+    // TODO: remove this once legacy FLA VAS support is removed.
+    pRmApi->Free(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient);
+
+    pKernelBus->flaInfo.bFlaAllocated = NV_FALSE;
+
+    NV_PRINTF(LEVEL_ERROR, "failed allocating FLA VASpace status=0x%x\n",
+              status);
+
+    return status;
+}
+
+void
+kbusDestroyFla_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    OBJSYS *pSys   = SYS_GET_INSTANCE();
+    OBJVMM *pVmm   = SYS_GET_VMM(pSys);
+    RM_API   *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    if (pGpu->pFabricVAS != NULL)
+    {
+        if (pKernelBus->flaInfo.bFlaBind)
+        {
+            if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+            {
+                kbusSetupUnbindFla_HAL(pGpu, pKernelBus);
+            }
+        }
+
+        if (pKernelBus->flaInfo.bFlaAllocated)
+        {
+            vaspaceUnpinRootPageDir(pGpu->pFabricVAS, pGpu);\
+            kbusDestructFlaInstBlk_HAL(pGpu, pKernelBus);
+            vmmDestroyVaspace(pVmm, pGpu->pFabricVAS);
+
+            pGpu->pFabricVAS = NULL;
+            // TODO: Remove this once legacy FLA  VAS support is deprecated 
+            pRmApi->Free(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient);
+            portMemSet(&pKernelBus->flaInfo, 0, sizeof(pKernelBus->flaInfo));
+            if (GPU_GET_KERNEL_NVLINK(pGpu) != NULL)
+             {
+                // Unregister the receive callback
+                NV_ASSERT_OK(knvlinkUnregisterInbandCallback(pGpu, GPU_GET_KERNEL_NVLINK(pGpu),
+                                NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP));
+             }
+        }
+    }
+}
+
+/*!
+ * @brief Helper function to extract information from FLA data structure and
+ *        to trigger RPC to Physical RM to BIND FLA VASpace
+ *
+ * @param[in]  gfid     GFID
+ *
+ * @return NV_OK if successful
+ */
+NV_STATUS
+kbusSetupBindFla_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU32      gfid
+)
+{
+    NV_STATUS status = NV_OK;
+    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = {0};
+    MEMORY_DESCRIPTOR  *pMemDesc;
+    RM_API *pRmApi = IS_GSP_CLIENT(pGpu) ? GPU_GET_PHYSICAL_RMAPI(pGpu)
+                                         : rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    pMemDesc = pKernelBus->flaInfo.pInstblkMemDesc;
+
+    switch( memdescGetAddressSpace(pMemDesc))
+    {
+        case ADDR_FBMEM:
+            params.addrSpace = NV2080_CTRL_FLA_ADDRSPACE_FBMEM;
+            break;
+        case ADDR_SYSMEM:
+            params.addrSpace = NV2080_CTRL_FLA_ADDRSPACE_SYSMEM;
+            break;
+    }
+    params.imbPhysAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
+    params.flaAction   = NV2080_CTRL_FLA_ACTION_BIND;
+
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
+                             &params,
+                             sizeof(params));
+
+   if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "FLA bind failed, status: %x \n", status);
+        return status;
+    }
+
+    // Since FLA state is tracked in the Guest, Guest RM needs to set it here
+    pKernelBus->flaInfo.bFlaBind = NV_TRUE;
+    pKernelBus->bFlaEnabled      = NV_TRUE;
+
+    return status;
+}
+
+/*!
+ * @brief Helper function to trigger RPC to Physical RM to unbind FLA VASpace
+ *
+ * @return NV_OK if successful
+ */
+NV_STATUS
+kbusSetupUnbindFla_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NV_STATUS status = NV_OK;
+    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS params = { 0 };
+    RM_API *pRmApi = IS_GSP_CLIENT(pGpu) ? GPU_GET_PHYSICAL_RMAPI(pGpu)
+                                         : rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    if (!pKernelBus->flaInfo.bFlaBind)
+        return NV_OK;
+
+    params.flaAction = NV2080_CTRL_FLA_ACTION_UNBIND;
+
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK,
+                             &params,
+                             sizeof(params));
+
+    pKernelBus->flaInfo.bFlaBind = NV_FALSE;
+    pKernelBus->bFlaEnabled      = NV_FALSE;
+
+    return status;
 }
 

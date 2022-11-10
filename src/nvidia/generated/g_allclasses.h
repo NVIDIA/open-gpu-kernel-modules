@@ -48,14 +48,19 @@
 #include <class/cl003f.h>               // NV01_MEMORY_LOCAL_PRIVILEGED
 #include <class/cl0040.h>               // NV01_MEMORY_LOCAL_USER
 #include <class/cl0070.h>               // NV01_MEMORY_VIRTUAL
+#include <class/cl00fe.h>               // NV_MEMORY_MAPPER
 #include <class/cl00c2.h>               // NV01_MEMORY_LOCAL_PHYSICAL
 #include <class/cl0071.h>               // NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
 #include <class/cl90ce.h>               // NV01_MEMORY_DEVICELESS
 #include <class/cl0076.h>               // NV01_MEMORY_FRAMEBUFFER_CONSOLE
 #include <class/cl00b1.h>               // NV01_MEMORY_HW_RESOURCES
+#include <class/cl84a0.h>               // NV01_MEMORY_LIST_SYSTEM
+#include <class/cl84a0.h>               // NV01_MEMORY_LIST_FBMEM
+#include <class/cl84a0.h>               // NV01_MEMORY_LIST_OBJECT
 #include <class/cl00f3.h>               // NV01_MEMORY_FLA
 #include <class/cl00f8.h>               // NV_MEMORY_FABRIC
 #include <class/cl00fc.h>               // FABRIC_VASPACE_A
+#include <class/cl00fd.h>               // NV_MEMORY_MULTICAST_FABRIC
 #include <class/cl00f2.h>               // IO_VASPACE_A
 #include <class/cl0030.h>               // NV01_NULL
 #include <class/cl0005.h>               // NV01_EVENT
@@ -76,6 +81,7 @@
 #include <class/clc56f.h>               // AMPERE_CHANNEL_GPFIFO_A
 #include <class/clc86f.h>               // HOPPER_CHANNEL_GPFIFO_A
 #include <class/cl007d.h>               // NV04_SOFTWARE_TEST
+#include <class/cl30f1.h>               // NV30_GSYNC
 #include <class/clc361.h>               // VOLTA_USERMODE_A
 #include <class/clc461.h>               // TURING_USERMODE_A
 #include <class/clc561.h>               // AMPERE_USERMODE_A
@@ -99,6 +105,7 @@
 #include <class/clc67b.h>               // NVC67B_WINDOW_IMM_CHANNEL_DMA
 #include <class/clc67d.h>               // NVC67D_CORE_CHANNEL_DMA
 #include <class/clc67e.h>               // NVC67E_WINDOW_CHANNEL_DMA
+#include <class/clc77f.h>               // NVC77F_ANY_CHANNEL_DMA
 #include <class/clc770.h>               // NVC770_DISPLAY
 #include <class/clc771.h>               // NVC771_DISP_SF_USER
 #include <class/clc77d.h>               // NVC77D_CORE_CHANNEL_DMA
@@ -160,8 +167,11 @@
 #include <class/clcb97.h>               // HOPPER_A
 #include <class/clcbc0.h>               // HOPPER_COMPUTE_A
 #include <class/cl00db.h>               // NV40_DEBUG_BUFFER
+#include <class/cl00de.h>               // RM_USER_SHARED_DATA
 #include <class/cl83de.h>               // GT200_DEBUGGER
 #include <class/cl402c.h>               // NV40_I2C
+#include <class/cla081.h>               // NVA081_VGPU_CONFIG
+#include <class/cla084.h>               // NVA084_KERNEL_HOST_VGPU_DEVICE
 #include <class/cl0060.h>               // NV0060_SYNC_GPU_BOOST
 #include <class/clc076.h>               // GP100_UVM_SW
 #include <class/cl90cd.h>               // NV_EVENT_BUFFER
@@ -270,6 +280,10 @@
 #define NV1_MEMORY_SYSTEM_DYNAMIC                (0x00000070) // alias
 #endif
 
+#ifndef NV_MEMORY_MAPPER
+#define NV_MEMORY_MAPPER                         (0x000000fe)
+#endif
+
 #ifndef NV01_MEMORY_LOCAL_PHYSICAL
 #define NV01_MEMORY_LOCAL_PHYSICAL               (0x000000c2)
 #endif
@@ -290,6 +304,18 @@
 #define NV01_MEMORY_HW_RESOURCES                 (0x000000b1)
 #endif
 
+#ifndef NV01_MEMORY_LIST_SYSTEM
+#define NV01_MEMORY_LIST_SYSTEM                  (0x00000081)
+#endif
+
+#ifndef NV01_MEMORY_LIST_FBMEM
+#define NV01_MEMORY_LIST_FBMEM                   (0x00000082)
+#endif
+
+#ifndef NV01_MEMORY_LIST_OBJECT
+#define NV01_MEMORY_LIST_OBJECT                  (0x00000083)
+#endif
+
 #ifndef NV01_MEMORY_FLA
 #define NV01_MEMORY_FLA                          (0x000000f3)
 #endif
@@ -300,6 +326,10 @@
 
 #ifndef FABRIC_VASPACE_A
 #define FABRIC_VASPACE_A                         (0x000000fc)
+#endif
+
+#ifndef NV_MEMORY_MULTICAST_FABRIC
+#define NV_MEMORY_MULTICAST_FABRIC               (0x000000fd)
 #endif
 
 #ifndef IO_VASPACE_A
@@ -409,6 +439,10 @@
 #define NV4_SOFTWARE_TEST                        (0x0000007d) // alias
 #endif
 
+#ifndef NV30_GSYNC
+#define NV30_GSYNC                               (0x000030f1)
+#endif
+
 #ifndef VOLTA_USERMODE_A
 #define VOLTA_USERMODE_A                         (0x0000c361)
 #endif
@@ -499,6 +533,10 @@
 
 #ifndef NVC67E_WINDOW_CHANNEL_DMA
 #define NVC67E_WINDOW_CHANNEL_DMA                (0x0000c67e)
+#endif
+
+#ifndef NVC77F_ANY_CHANNEL_DMA
+#define NVC77F_ANY_CHANNEL_DMA                   (0x0000c77f)
 #endif
 
 #ifndef NVC770_DISPLAY
@@ -745,12 +783,24 @@
 #define NV40_DEBUG_BUFFER                        (0x000000db)
 #endif
 
+#ifndef RM_USER_SHARED_DATA
+#define RM_USER_SHARED_DATA                      (0x000000de)
+#endif
+
 #ifndef GT200_DEBUGGER
 #define GT200_DEBUGGER                           (0x000083de)
 #endif
 
 #ifndef NV40_I2C
 #define NV40_I2C                                 (0x0000402c)
+#endif
+
+#ifndef NVA081_VGPU_CONFIG
+#define NVA081_VGPU_CONFIG                       (0x0000a081)
+#endif
+
+#ifndef NVA084_KERNEL_HOST_VGPU_DEVICE
+#define NVA084_KERNEL_HOST_VGPU_DEVICE           (0x0000a084)
 #endif
 
 #ifndef NV0060_SYNC_GPU_BOOST

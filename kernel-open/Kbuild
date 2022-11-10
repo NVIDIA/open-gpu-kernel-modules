@@ -72,7 +72,7 @@ EXTRA_CFLAGS += -I$(src)/common/inc
 EXTRA_CFLAGS += -I$(src)
 EXTRA_CFLAGS += -Wall -MD $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
 EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"520.56.06\"
+EXTRA_CFLAGS += -DNV_VERSION_STRING=\"525.53\"
 
 EXTRA_CFLAGS += -Wno-unused-function
 
@@ -229,6 +229,7 @@ NV_HEADER_PRESENCE_TESTS = \
  drm/drm_ioctl.h \
  drm/drm_device.h \
  drm/drm_mode_config.h \
+ drm/drm_modeset_lock.h \
  dt-bindings/interconnect/tegra_icc_id.h \
  generated/autoconf.h \
  generated/compile.h \
@@ -243,6 +244,8 @@ NV_HEADER_PRESENCE_TESTS = \
  linux/log2.h \
  linux/of.h \
  linux/bug.h \
+ linux/sched.h \
+ linux/sched/mm.h \
  linux/sched/signal.h \
  linux/sched/task.h \
  linux/sched/task_stack.h \
@@ -286,7 +289,10 @@ NV_HEADER_PRESENCE_TESTS = \
  linux/ioasid.h \
  linux/stdarg.h \
  linux/iosys-map.h \
- asm/coco.h
+ asm/coco.h \
+ linux/vfio_pci_core.h \
+ soc/tegra/bpmp-abi.h \
+ soc/tegra/bpmp.h
 
 # Filename to store the define for the header in $(1); this is only consumed by
 # the rule below that concatenates all of these together.

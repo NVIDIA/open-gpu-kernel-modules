@@ -25,6 +25,46 @@
 #include "published/turing/tu102/hwproject.h"
 
 /*!
+ * @brief Returns SR-IOV capabilities
+ *
+ * @param[in]  pGpu           OBJGPU pointer
+ * @param[out] pParams        Pointer for get_sriov_caps params
+ *
+ * @returns NV_OK always
+ */
+NV_STATUS
+gpuGetSriovCaps_TU102
+(
+    OBJGPU *pGpu,
+    NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS *pParams
+)
+{
+    if (!gpuIsSriovEnabled(pGpu))
+    {
+        pParams->bSriovEnabled = NV_FALSE;
+        return NV_OK;
+    }
+
+    pParams->bSriovEnabled                         = NV_TRUE;
+    pParams->totalVFs                              = pGpu->sriovState.totalVFs;
+    pParams->firstVfOffset                         = pGpu->sriovState.firstVFOffset;
+    pParams->FirstVFBar0Address                    = pGpu->sriovState.firstVFBarAddress[0];
+    pParams->FirstVFBar1Address                    = pGpu->sriovState.firstVFBarAddress[1];
+    pParams->FirstVFBar2Address                    = pGpu->sriovState.firstVFBarAddress[2];
+    pParams->bar0Size                              = pGpu->sriovState.vfBarSize[0];
+    pParams->bar1Size                              = pGpu->sriovState.vfBarSize[1];
+    pParams->bar2Size                              = pGpu->sriovState.vfBarSize[2];
+    pParams->b64bitBar0                            = pGpu->sriovState.b64bitVFBar0;
+    pParams->b64bitBar1                            = pGpu->sriovState.b64bitVFBar1;
+    pParams->b64bitBar2                            = pGpu->sriovState.b64bitVFBar2;
+    pParams->bSriovHeavyEnabled                    = gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
+    pParams->bEmulateVFBar0TlbInvalidationRegister = pGpu->getProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE);
+    pParams->bClientRmAllocatedCtxBuffer           = gpuIsClientRmAllocatedCtxBufferEnabled(pGpu);
+
+    return NV_OK;
+}
+
+/*!
  * @brief determines whether this GPU mode needs to be initialized with an offset
  *        to access the registers defined in dev_vm.ref.
  *
@@ -87,9 +127,9 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     {classId(KernelDisplay), 1},
     {classId(VirtMemAllocator), 1},
     {classId(OBJDPAUX), 1},
-    {classId(OBJFAN), 1},
+    {classId(Fan), 1},
     {classId(OBJHSHUBMANAGER), 1},
-    {classId(OBJHSHUB), 1},
+    {classId(Hshub), 1},
     {classId(MemorySystem), 1},
     {classId(KernelMemorySystem), 1},
     {classId(MemoryManager), 1},
@@ -155,9 +195,9 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     {classId(KernelDisplay), 1},
     {classId(VirtMemAllocator), 1},
     {classId(OBJDPAUX), 1},
-    {classId(OBJFAN), 1},
+    {classId(Fan), 1},
     {classId(OBJHSHUBMANAGER), 1},
-    {classId(OBJHSHUB), 1},
+    {classId(Hshub), 1},
     {classId(MemorySystem), 1},
     {classId(KernelMemorySystem), 1},
     {classId(MemoryManager), 1},
@@ -223,7 +263,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
     {classId(KernelDisplay), 1},
     {classId(VirtMemAllocator), 1},
     {classId(OBJDPAUX), 1},
-    {classId(OBJFAN), 1},
+    {classId(Fan), 1},
     {classId(MemorySystem), 1},
     {classId(KernelMemorySystem), 1},
     {classId(MemoryManager), 1},

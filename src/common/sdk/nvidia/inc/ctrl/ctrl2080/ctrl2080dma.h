@@ -34,8 +34,6 @@
 
 /* NV20_SUBDEVICE_XX dma control commands and parameters */
 
-#include "ctrl2080common.h"
-
 /*
  * NV2080_CTRL_CMD_DMA_INVALIDATE_TLB
  *

@@ -30,6 +30,25 @@
 #include "published/maxwell/gm107/dev_fuse.h"
 
 /*!
+ * @brief Returns SR-IOV capabilities
+ *
+ * @param[in]  pGpu           OBJGPU pointer
+ * @param[out] pParams        Pointer for get_sriov_caps params
+ *
+ * @returns NV_OK always
+ */
+NV_STATUS
+gpuGetSriovCaps_GM107
+(
+    OBJGPU *pGpu,
+    NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS *pParams
+)
+{
+    pParams->bSriovEnabled = NV_FALSE;
+    return NV_OK;
+}
+
+/*!
  * @brief Read fuse for display supported status.
  *        Some chips not marked displayless do not support display
  */
@@ -237,6 +256,20 @@ gpuWriteFunctionConfigRegEx_GM107
     return NV_OK;
 }
 
+void
+gpuReadDeviceId_GM107
+(
+    OBJGPU *pGpu,
+    NvU32  *devId,
+    NvU32  *ssId
+)
+{
+    if (devId == NULL || ssId == NULL) return;
+
+    *devId = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_ID);
+    *ssId  = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_SUBSYSTEM);
+}
+
 /*!
  * @brief Perform gpu-dependent error handling for error during register read sanity check
  *
@@ -357,7 +390,7 @@ gpuChildOrderList_GM200[] =
     {classId(OBJTMR),             GCO_ALL},
     {classId(Therm),              GCO_ALL},
     {classId(OBJHSHUBMANAGER),    GCO_ALL},
-    {classId(OBJHSHUB),           GCO_ALL},
+    {classId(Hshub),              GCO_ALL},
     {classId(MemorySystem),       GCO_ALL},
     {classId(KernelMemorySystem), GCO_ALL},
     {classId(MemoryManager),      GCO_ALL},
@@ -385,12 +418,12 @@ gpuChildOrderList_GM200[] =
     {classId(OBJDISP),            GCO_LIST_DESTROY},
     {classId(KernelDisplay),      GCO_LIST_DESTROY},
     {classId(OBJHDA),             GCO_LIST_DESTROY},
-    {classId(OBJFAN),             GCO_LIST_DESTROY},
+    {classId(Fan),             GCO_LIST_DESTROY},
     {classId(VirtMemAllocator),   GCO_ALL},
     {classId(OBJDISP),            GCO_LIST_INIT},
     {classId(KernelDisplay),      GCO_LIST_INIT},
     {classId(OBJHDA),             GCO_LIST_INIT},
-    {classId(OBJFAN),             GCO_LIST_INIT},
+    {classId(Fan),             GCO_LIST_INIT},
     {classId(GraphicsManager),    GCO_ALL},
     {classId(MIGManager),         GCO_ALL},
     {classId(KernelMIGManager),   GCO_ALL},
@@ -412,7 +445,7 @@ gpuChildOrderList_GM200[] =
     {classId(OBJDISP),            GCO_LIST_LOAD | GCO_LIST_UNLOAD},    // LOAD Display is *after* cipher so that hdcp keys can be loaded .
     {classId(KernelDisplay),      GCO_LIST_LOAD | GCO_LIST_UNLOAD},    // LOAD Display is *after* cipher so that hdcp keys can be loaded .
     {classId(OBJHDA),             GCO_LIST_LOAD | GCO_LIST_UNLOAD},
-    {classId(OBJFAN),             GCO_LIST_LOAD | GCO_LIST_UNLOAD},
+    {classId(Fan),             GCO_LIST_LOAD | GCO_LIST_UNLOAD},
     {classId(OBJCE),              GCO_ALL},
     {classId(KernelCE),           GCO_ALL},
     {classId(OBJMSENC),           GCO_ALL},
@@ -469,9 +502,9 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GM200[] =
     {classId(KernelDisplay), 1},
     {classId(VirtMemAllocator), 1},
     {classId(OBJDPAUX), 1},
-    {classId(OBJFAN), 1},
+    {classId(Fan), 1},
     {classId(OBJHSHUBMANAGER), 1},
-    {classId(OBJHSHUB), 1},
+    {classId(Hshub), 1},
     {classId(MemorySystem), 1},
     {classId(KernelMemorySystem), 1},
     {classId(MemoryManager), 1},

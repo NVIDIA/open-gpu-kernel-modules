@@ -212,16 +212,16 @@ typedef struct OBJHSHUBMANAGER OBJHSHUBMANAGER;
 #endif /* __nvoc_class_id_OBJHSHUBMANAGER */
 
 
-struct OBJHSHUB;
+struct Hshub;
 
-#ifndef __NVOC_CLASS_OBJHSHUB_TYPEDEF__
-#define __NVOC_CLASS_OBJHSHUB_TYPEDEF__
-typedef struct OBJHSHUB OBJHSHUB;
-#endif /* __NVOC_CLASS_OBJHSHUB_TYPEDEF__ */
+#ifndef __NVOC_CLASS_Hshub_TYPEDEF__
+#define __NVOC_CLASS_Hshub_TYPEDEF__
+typedef struct Hshub Hshub;
+#endif /* __NVOC_CLASS_Hshub_TYPEDEF__ */
 
-#ifndef __nvoc_class_id_OBJHSHUB
-#define __nvoc_class_id_OBJHSHUB 0x43d089
-#endif /* __nvoc_class_id_OBJHSHUB */
+#ifndef __nvoc_class_id_Hshub
+#define __nvoc_class_id_Hshub 0x5b3331
+#endif /* __nvoc_class_id_Hshub */
 
 
 struct OBJTMR;
@@ -536,16 +536,16 @@ typedef struct OBJDPU OBJDPU;
 #endif /* __nvoc_class_id_OBJDPU */
 
 
-struct OBJFAN;
+struct Fan;
 
-#ifndef __NVOC_CLASS_OBJFAN_TYPEDEF__
-#define __NVOC_CLASS_OBJFAN_TYPEDEF__
-typedef struct OBJFAN OBJFAN;
-#endif /* __NVOC_CLASS_OBJFAN_TYPEDEF__ */
+#ifndef __NVOC_CLASS_Fan_TYPEDEF__
+#define __NVOC_CLASS_Fan_TYPEDEF__
+typedef struct Fan Fan;
+#endif /* __NVOC_CLASS_Fan_TYPEDEF__ */
 
-#ifndef __nvoc_class_id_OBJFAN
-#define __nvoc_class_id_OBJFAN 0xda9ade
-#endif /* __nvoc_class_id_OBJFAN */
+#ifndef __nvoc_class_id_Fan
+#define __nvoc_class_id_Fan 0xadd018
+#endif /* __nvoc_class_id_Fan */
 
 
 struct DisplayInstanceMemory;
@@ -608,16 +608,16 @@ typedef struct OBJHDA OBJHDA;
 #endif /* __nvoc_class_id_OBJHDA */
 
 
-struct OBJI2C;
+struct I2c;
 
-#ifndef __NVOC_CLASS_OBJI2C_TYPEDEF__
-#define __NVOC_CLASS_OBJI2C_TYPEDEF__
-typedef struct OBJI2C OBJI2C;
-#endif /* __NVOC_CLASS_OBJI2C_TYPEDEF__ */
+#ifndef __NVOC_CLASS_I2c_TYPEDEF__
+#define __NVOC_CLASS_I2c_TYPEDEF__
+typedef struct I2c I2c;
+#endif /* __NVOC_CLASS_I2c_TYPEDEF__ */
 
-#ifndef __nvoc_class_id_OBJI2C
-#define __nvoc_class_id_OBJI2C 0x2bc374
-#endif /* __nvoc_class_id_OBJI2C */
+#ifndef __nvoc_class_id_I2c
+#define __nvoc_class_id_I2c 0x48e035
+#endif /* __nvoc_class_id_I2c */
 
 
 struct KernelRc;
@@ -1361,7 +1361,7 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_INVALID              MKENGDESC(classId(OBJINVALID),          0)
 #define ENG_SW                   MKENGDESC(classId(OBJSWENG),            0)
 #define ENG_GPU                  MKENGDESC(classId(OBJGPU),              0)
-#define ENG_FLCN                 MKENGDESC(classId(Falcon),             0)
+#define ENG_FLCN                 MKENGDESC(classId(Falcon),              0)
 #define ENG_MC                   MKENGDESC(classId(OBJMC),               0)
 #define ENG_KERNEL_MC            MKENGDESC(classId(KernelMc),            0)
 #define ENG_PRIV_RING            MKENGDESC(classId(PrivRing),            0)
@@ -1389,13 +1389,13 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_KERNEL_DISPLAY       MKENGDESC(classId(KernelDisplay),       0)
 #define ENG_DISP                 MKENGDESC(classId(OBJDISP),             0)
 #define ENG_DPU                  MKENGDESC(classId(OBJDPU),              0)
-#define ENG_FAN                  MKENGDESC(classId(OBJFAN),              0)
+#define ENG_FAN                  MKENGDESC(classId(Fan),                 0)
 #define ENG_INST                 MKENGDESC(classId(DisplayInstanceMemory), 0)
 #define ENG_KERNEL_HEAD          MKENGDESC(classId(KernelHead),          0)
 #define ENG_VOLT                 MKENGDESC(classId(OBJVOLT),             0)
 #define ENG_INTR                 MKENGDESC(classId(Intr),                0)
 #define ENG_HDA                  MKENGDESC(classId(OBJHDA),              0)
-#define ENG_I2C                  MKENGDESC(classId(OBJI2C),              0)
+#define ENG_I2C                  MKENGDESC(classId(I2c),                 0)
 #define ENG_KERNEL_RC            MKENGDESC(classId(KernelRc),            0)
 #define ENG_RC                   MKENGDESC(classId(OBJRC),               0)
 #define ENG_SOR                  MKENGDESC(classId(OBJSOR),              0)
@@ -1441,7 +1441,7 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_KERNEL_SEC2          MKENGDESC(classId(KernelSec2),          0)
 #define ENG_DISPMACRO            MKENGDESC(classId(OBJDISPMACRO),        0)
 #define ENG_NNE                  MKENGDESC(classId(OBJNNE),              0)
-#define ENG_SMBPBI               MKENGDESC(classId(Smbpbi),           0)
+#define ENG_SMBPBI               MKENGDESC(classId(Smbpbi),              0)
 #define ENG_DSI                  MKENGDESC(classId(OBJDSI),              0)
 #define ENG_DCECLIENTRM          MKENGDESC(classId(OBJDCECLIENTRM),      0)
 #define ENG_DCB                  MKENGDESC(classId(OBJDCB),              0)
@@ -1499,9 +1499,9 @@ typedef struct KernelCcu KernelCcu;
 #define GET_IOCTRL_IDX(engDesc)  ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed HSHUB engine tag reference
-#define ENG_HSHUB(x)             MKENGDESC(classId(OBJHSHUB),            x)
+#define ENG_HSHUB(x)             MKENGDESC(classId(Hshub),            x)
 #define ENG_HSHUB__SIZE_1        5
-#define IS_HSHUB(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJHSHUB))
+#define IS_HSHUB(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(Hshub))
 #define GET_HSHUB_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 
 // Indexed IOCTRL engine tag reference

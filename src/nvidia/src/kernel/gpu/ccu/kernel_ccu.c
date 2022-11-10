@@ -106,7 +106,7 @@ _kccuAllocMemory
     if (pKernelCcu->shrBuf[idx].pCounterDstInfo == NULL || pKernelCcu->shrBuf[idx].pKernelMapInfo == NULL)
     {
         status = NV_ERR_NO_MEMORY;
-        NV_PRINTF(LEVEL_ERROR, "CCU port mem alloc failed for(%u) with status: 0x%x \r\n", idx, status);
+        NV_PRINTF(LEVEL_ERROR, "CCU port mem alloc failed for(%u) with status: 0x%x\n", idx, status);
         goto free_alloc;
     }
     portMemSet(pKernelCcu->shrBuf[idx].pCounterDstInfo, 0, sizeof(CCU_SHRBUF_INFO));
@@ -118,14 +118,14 @@ _kccuAllocMemory
                            MEMDESC_FLAGS_USER_READ_ONLY);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "CCU memdescCreate failed for(%u) with status: 0x%x \r\n", idx, status);
+        NV_PRINTF(LEVEL_ERROR, "CCU memdescCreate failed for(%u) with status: 0x%x\n", idx, status);
         goto free_alloc;
     }
 
     pMemDesc = pKernelCcu->pMemDesc[idx];
     if (pMemDesc == NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "CCU memdescCreate failed. memdesc for(%u) is NULL\r\n", idx);
+        NV_PRINTF(LEVEL_ERROR, "CCU memdescCreate failed. memdesc for(%u) is NULL\n", idx);
         goto free_alloc;
     }
 
@@ -133,7 +133,7 @@ _kccuAllocMemory
     status = memdescAlloc(pMemDesc);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "CCU memdescAlloc failed for(%u) with status: 0x%x \r\n", idx, status);
+        NV_PRINTF(LEVEL_ERROR, "CCU memdescAlloc failed for(%u) with status: 0x%x\n", idx, status);
         memdescDestroy(pMemDesc);
         goto free_alloc;
     }
@@ -144,7 +144,7 @@ _kccuAllocMemory
                         &pKernelCcu->shrBuf[idx].pKernelMapInfo->priv);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "CCU memdescMap failed for(%u)with status: 0x%x \r\n", idx, status);
+        NV_PRINTF(LEVEL_ERROR, "CCU memdescMap failed for(%u)with status: 0x%x\n", idx, status);
         memdescFree(pMemDesc);
         memdescDestroy(pMemDesc);
         goto free_alloc;
@@ -160,31 +160,63 @@ _kccuAllocMemory
         (NvU64 *)((NvUPtr)pKernelCcu->shrBuf[idx].pCounterDstInfo->pCounterBlock + counterBlockSize);
     pKernelCcu->shrBuf[idx].pCounterDstInfo->pSwizzId =
         (NvU8 *)((NvUPtr)pKernelCcu->shrBuf[idx].pCounterDstInfo->pTailTimeStamp + CCU_TIMESTAMP_SIZE);
+    pKernelCcu->shrBuf[idx].pCounterDstInfo->pComputeId =
+        (NvU8 *)((NvUPtr)pKernelCcu->shrBuf[idx].pCounterDstInfo->pSwizzId + CCU_MIG_SWIZZID_SIZE);
         pKernelCcu->shrBuf[idx].pCounterDstInfo->counterBlockSize = counterBlockSize;
 
-    // Set mig swizz-id to invalid
-    if (!NV_IS_MODS)
+    // Set mig swizz-id and compute-inst id to invalid
+    if (!RMCFG_FEATURE_MODS_FEATURES)
     {
         *pKernelCcu->shrBuf[idx].pCounterDstInfo->pSwizzId = CCU_MIG_INVALID_SWIZZID;
+        *pKernelCcu->shrBuf[idx].pCounterDstInfo->pComputeId = CCU_MIG_INVALID_COMPUTEID;
     }
 
     return NV_OK;
 
 free_alloc:
-    if (pKernelCcu->shrBuf[idx].pCounterDstInfo)
-    {
-        portMemFree(pKernelCcu->shrBuf[idx].pCounterDstInfo);
-    }
-    if (pKernelCcu->shrBuf[idx].pKernelMapInfo)
-    {
-        portMemFree(pKernelCcu->shrBuf[idx].pKernelMapInfo);
-    }
+    portMemFree(pKernelCcu->shrBuf[idx].pCounterDstInfo);
+    portMemFree(pKernelCcu->shrBuf[idx].pKernelMapInfo);
     return status;
 }
 
 /*!
- * Free memory desc, shared buffer and class member memory
+ * Cleanup shared buffer and class member memory for given shared buffer index
  *
+ * @param[in]      pGpu       GPU object pointer
+ * @param[in]      pKernelCcu KernelCcu object pointer
+ * @param[in]      idx        MIG inst/for non-mig case idx is "0"
+ *
+ */
+void
+kccuShrBufIdxCleanup_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelCcu  *pKernelCcu,
+    NvU32      idx
+)
+{
+    MEMORY_DESCRIPTOR *pMemDesc = pKernelCcu->pMemDesc[idx];
+
+    NV_PRINTF(LEVEL_INFO, "Shared buffer unmap & free for idx(%u).\n", idx);
+
+    memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(),
+            pKernelCcu->shrBuf[idx].pKernelMapInfo->addr,
+            pKernelCcu->shrBuf[idx].pKernelMapInfo->priv);
+    memdescFree(pMemDesc);
+    memdescDestroy(pMemDesc);
+
+    // Free class member memory
+    portMemFree(pKernelCcu->shrBuf[idx].pCounterDstInfo);
+    portMemFree(pKernelCcu->shrBuf[idx].pKernelMapInfo);
+    pKernelCcu->shrBuf[idx].pCounterDstInfo = NULL;
+    pKernelCcu->shrBuf[idx].pKernelMapInfo  = NULL;
+    pKernelCcu->pMemDesc[idx]               = NULL;
+}
+
+/*!
+ * Unmap & free memory desc, shared buffer and class member memory
+ *
+ * @param[in]      pGpu       GPU object pointer
  * @param[in]      pKernelCcu KernelCcu object pointer
  *
  */
@@ -197,49 +229,86 @@ _kccuUnmapAndFreeMemory
 {
     NvU32 i = 0;
     NV_STATUS status = NV_OK;
+    NV2080_CTRL_INTERNAL_CCU_UNMAP_INFO_PARAMS params = { 0 };
     
     NV_PRINTF(LEVEL_INFO, "KernelCcu: Unmap and free shared buffer\n");
 
-    // Internal RM api ctrl call to physical RM to unmap shared buffer memdesc
+    // Internal RM api ctrl call to physical RM to unmap dev & mig shared buffer memdesc
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    params.bDevShrBuf = NV_TRUE;
+    params.bMigShrBuf = NV_TRUE;
 
     status = pRmApi->Control(pRmApi,
                              pGpu->hInternalClient,
                              pGpu->hInternalSubdevice,
                              NV2080_CTRL_CMD_INTERNAL_CCU_UNMAP,
-                             NULL,
-                             0);
+                             &params,
+                             sizeof(params));
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "CCU memdesc unmap request failed with status: 0x%x \r\n", status);
+        NV_PRINTF(LEVEL_ERROR, "CCU memdesc unmap request failed with status: 0x%x\n", status);
     }
 
     // Unmap & free mem desc
     for (i = 0; i < CCU_SHRBUF_COUNT_MAX; i++)
     {
-        MEMORY_DESCRIPTOR *pMemDesc = pKernelCcu->pMemDesc[i];
-
-        if (pMemDesc == NULL)
-            continue;
-
-        memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(),
-                pKernelCcu->shrBuf[i].pKernelMapInfo->addr,
-                pKernelCcu->shrBuf[i].pKernelMapInfo->priv);
-        memdescFree(pMemDesc);
-        memdescDestroy(pMemDesc);
-
-        // Free class member memory
-        portMemFree(pKernelCcu->shrBuf[i].pCounterDstInfo);
-        portMemFree(pKernelCcu->shrBuf[i].pKernelMapInfo);
-        pKernelCcu->shrBuf[i].pCounterDstInfo = NULL;
-        pKernelCcu->shrBuf[i].pKernelMapInfo  = NULL;
+        if (pKernelCcu->pMemDesc[i] != NULL)
+        {
+            kccuShrBufIdxCleanup(pGpu, pKernelCcu, i);
+        }
     }
-
-    return;
 }
 
 /*!
- * Create shared buffer for counter data
+ * Send shared buffer info to phy-RM/gsp
+ *
+ * @param[in]  pGpu           GPU object pointer
+ * @param[in]  pKernelCcu     KernelCcu object pointer
+ * @param[in]  shrBufStartIdx Shared buffer start idx
+ *
+ * @return  NV_OK on success, specific error code on failure.
+ */
+NV_STATUS
+kccuShrBufInfoToCcu_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelCcu  *pKernelCcu,
+    NvU32      shrBufStartIdx
+)
+{
+    NV2080_CTRL_INTERNAL_CCU_MAP_INFO_PARAMS inParams = { 0 };
+    NV_STATUS status = NV_OK;
+    NvU32     idx    = 0;
+
+    NV_PRINTF(LEVEL_INFO, "Send shared buffer info to phyRM/gsp to map.\n");
+
+    for (idx = shrBufStartIdx; idx < CCU_SHRBUF_COUNT_MAX; idx++)
+    {
+        if (pKernelCcu->pMemDesc[idx] != NULL)
+        {
+            inParams.phyAddr[idx] = memdescGetPhysAddr(pKernelCcu->pMemDesc[idx], AT_GPU, 0);
+        }
+    }
+
+    // Internal RM api ctrl call to physical RM to map shared buffer memdesc
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_CCU_MAP,
+                             &inParams,
+                             sizeof(inParams));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "CCU memdesc map request failed with status: 0x%x\n", status);
+    }
+
+    return status;
+}
+
+/*!
+ * Create shared buffer for device counters
  *
  * @param[in]      pGpu       GPU object pointer
  * @param[in]      pKernelCcu KernelCcu object pointer
@@ -247,7 +316,37 @@ _kccuUnmapAndFreeMemory
  * @return  NV_OK on success, specific error code on failure.
  */
 static NV_STATUS
-_kccuInitSharedBuffer
+_kccuInitDevSharedBuffer
+(
+    OBJGPU     *pGpu,
+    KernelCcu  *pKernelCcu
+)
+{
+    NV_STATUS status = NV_OK;
+
+    NV_PRINTF(LEVEL_INFO, "Init shared buffer for device counters.\n");
+
+    // Allocate shared buffer for device counters
+    status = _kccuAllocMemory(pGpu, pKernelCcu, CCU_DEV_SHRBUF_ID, CCU_GPU_SHARED_BUFFER_SIZE_MAX,
+                              CCU_PER_GPU_COUNTER_Q_SIZE);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "CCU memory allocation failed with status: 0x%x\n", status);
+    }
+
+    return status;
+}
+
+/*!
+ * Create shared buffer for mig counters
+ *
+ * @param[in]      pGpu       GPU object pointer
+ * @param[in]      pKernelCcu KernelCcu object pointer
+ *
+ * @return  NV_OK on success, specific error code on failure.
+ */
+NV_STATUS
+kccuInitMigSharedBuffer_IMPL
 (
     OBJGPU     *pGpu,
     KernelCcu  *pKernelCcu
@@ -256,20 +355,7 @@ _kccuInitSharedBuffer
     NV_STATUS status = NV_OK;
     NvU32 idx;
 
-    if (IS_VIRTUAL(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    // Allocate shared buffer for device counters
-
-    status = _kccuAllocMemory(pGpu, pKernelCcu, CCU_DEV_SHRBUF_ID, CCU_GPU_SHARED_BUFFER_SIZE_MAX,
-                              CCU_PER_GPU_COUNTER_Q_SIZE);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "CCU memory allocation failed with status: 0x%x \r\n", status);
-        return status;
-    }
+    NV_PRINTF(LEVEL_INFO, "Init shared buffer for mig counters.\n");
 
     // Allocate shared buffer for each mig gpu instance
     for (idx = CCU_MIG_SHRBUF_ID_START; idx < CCU_SHRBUF_COUNT_MAX; idx++)
@@ -278,7 +364,7 @@ _kccuInitSharedBuffer
                 CCU_MIG_INST_COUNTER_Q_SIZE);
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "CCU memory allocation failed for idx(%u) with status: 0x%x \r\n",
+            NV_PRINTF(LEVEL_ERROR, "CCU memory allocation failed for idx(%u) with status: 0x%x\n",
                     idx, status);
 
             // Free shared buffer & mem desc, for earlier mig inst & device
@@ -308,44 +394,37 @@ NV_STATUS kccuStateLoad_IMPL
     NvU32      flags
 )
 {
-    NvU32 idx = 0;
     NV_STATUS status = NV_OK;
-    NV2080_CTRL_INTERNAL_CCU_MAP_INFO_PARAMS inParams = { 0 };
 
     NV_PRINTF(LEVEL_INFO, "KernelCcu: State load \n");
 
-    // Create shared buffer
-    status = _kccuInitSharedBuffer(pGpu, pKernelCcu);
+    if (IS_VIRTUAL(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // Create device shared buffer
+    status = _kccuInitDevSharedBuffer(pGpu, pKernelCcu);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Failed to init shared buffer(status: %u) \n", status);
+        NV_PRINTF(LEVEL_ERROR, "Failed to init device shared buffer(status: %u) \n", status);
         return status;
     }
 
-    for (idx = 0; idx < CCU_SHRBUF_COUNT_MAX; idx++)
+    // Create mig shared buffer
+    if (IS_MIG_ENABLED(pGpu))
     {
-        if (pKernelCcu->pMemDesc[idx] != NULL)
+        status = kccuInitMigSharedBuffer(pGpu, pKernelCcu);
+        if (status != NV_OK)
         {
-            inParams.phyAddr[idx] = memdescGetPhysAddr(pKernelCcu->pMemDesc[idx], AT_GPU, 0);
+            NV_PRINTF(LEVEL_ERROR, "Failed to init mig shared buffer(status: %u) \n", status);
+            return status;
         }
+        pKernelCcu->bMigShrBufAllocated = NV_TRUE;
     }
 
-    // Internal RM api ctrl call to physical RM to map shared buffer memdesc
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
-    status = pRmApi->Control(pRmApi,
-                             pGpu->hInternalClient,
-                             pGpu->hInternalSubdevice,
-                             NV2080_CTRL_CMD_INTERNAL_CCU_MAP,
-                             &inParams,
-                             sizeof(inParams));
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "CCU memdesc map request failed with status: 0x%x \r\n", status);
-        return status;
-    }
-
-    return status;
+    // Send shared buffer info to gsp
+    return (kccuShrBufInfoToCcu(pGpu, pKernelCcu, CCU_DEV_SHRBUF_ID));
 }
 
 /*!
@@ -368,8 +447,13 @@ NV_STATUS kccuStateUnload_IMPL
     NV_STATUS status = NV_OK;
     NV_PRINTF(LEVEL_INFO, "KernelCcu: State unload \n");
 
+    // Disable ccu stream state
+    pKernelCcu->bStreamState = CCU_STREAM_STATE_DISABLE;
+
     // Free shared buffer & mem desc
     _kccuUnmapAndFreeMemory(pGpu, pKernelCcu);
+
+    pKernelCcu->bMigShrBufAllocated = NV_FALSE;
 
     return status;
 }
@@ -402,7 +486,7 @@ NV_STATUS kccuMemDescGetForShrBufId_IMPL
 
     if (idx >= CCU_SHRBUF_COUNT_MAX)
     {
-        NV_PRINTF(LEVEL_ERROR, "CCU memdesc get failed for input idx(%u). Invalid index.\r\n",
+        NV_PRINTF(LEVEL_ERROR, "CCU memdesc get failed for input idx(%u). Invalid index.\n",
                   idx);
 
         return NV_ERR_INVALID_ARGUMENT;
@@ -450,7 +534,7 @@ NV_STATUS kccuMemDescGetForSwizzId_IMPL
 
     if (idx >= CCU_SHRBUF_COUNT_MAX)
     {
-        NV_PRINTF(LEVEL_ERROR, "KernelCcu: memdesc get failed for input swizzId(%u) \r\n",
+        NV_PRINTF(LEVEL_ERROR, "KernelCcu: memdesc get failed for input swizzId(%u)\n",
                 swizzId);
 
         return NV_ERR_INVALID_ARGUMENT;
@@ -484,3 +568,147 @@ NvU32 kccuCounterBlockSizeGet_IMPL
 
     return CCU_MIG_INST_COUNTER_Q_SIZE;
 }
+
+/*!
+ * Set ccu stream state
+ *
+ * @param[in]      pGpu         GPU object pointer
+ * @param[in]      pKernelCcu   KernelCcu object pointer
+ * @param[in]      pParams      Ccu stream state param
+ *
+ * @return  NV_OK
+ * @return  NV_ERR_INVALID_ARGUMENT
+ */
+NV_STATUS kccuStreamStateSet_IMPL
+(
+    OBJGPU                                         *pGpu,
+    KernelCcu                                      *pKernelCcu,
+    NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams    
+)
+{
+    NV_STATUS status = NV_OK;
+    NV2080_CTRL_INTERNAL_CCU_STREAM_STATE_PARAMS ccuParams = { 0 };
+
+    NV_PRINTF(LEVEL_INFO, "KernelCcu: Set ccu stream \n");
+
+    if (pParams == NULL || (pParams->bStreamState != CCU_STREAM_STATE_ENABLE &&
+                            pParams->bStreamState != CCU_STREAM_STATE_DISABLE))
+    {
+        NV_PRINTF(LEVEL_ERROR, "KernelCcu: Invalid input params\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (pKernelCcu->bStreamState == pParams->bStreamState)
+    {
+        NV_PRINTF(LEVEL_INFO, "KernelCcu: CCU stream state is already (%s)\n",
+                  pKernelCcu->bStreamState ? "ENABLED" : "DISABLED");
+        return NV_OK;
+    }
+
+    ccuParams.bStreamState = pParams->bStreamState;
+
+    // RM api ctrl call to physical RM to set ccu stream state
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_CCU_SET_STREAM_STATE,
+                             &ccuParams,
+                             sizeof(ccuParams));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "CCU stream state set failed with status: 0x%x\n", status);
+        return status;
+    }
+
+    pKernelCcu->bStreamState = ccuParams.bStreamState;
+
+    // Clear the shared buffer, when stream state is disabled
+    if (pKernelCcu->bStreamState == CCU_STREAM_STATE_DISABLE)
+    {
+        NvU32 i;
+        for (i = 0; i < CCU_SHRBUF_COUNT_MAX; i++)
+        {
+            MEMORY_DESCRIPTOR *pMemDesc = pKernelCcu->pMemDesc[i];
+
+            if (pMemDesc == NULL)
+                continue;
+
+            portMemSet(pKernelCcu->shrBuf[i].pKernelMapInfo->addr, 0, memdescGetSize(pMemDesc));
+        }
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * Get ccu stream state
+ *
+ * @param[in]      pGpu         GPU object pointer
+ * @param[in]      pKernelCcu   KernelCcu object pointer
+ *
+ * @return  CCU stream state
+ */
+NvBool kccuStreamStateGet_IMPL
+(
+    OBJGPU      *pGpu,
+    KernelCcu   *pKernelCcu
+)
+{
+    NV_PRINTF(LEVEL_INFO, "KernelCcu: Get ccu stream \n");
+
+    return pKernelCcu->bStreamState;
+}
+
+/*!
+ * Get the shared buffer memory descriptor for compute inst with
+ * swizz id and compute id
+ *
+ * @param[in]      pGpu                GPU object pointer
+ * @param[in]      pKernelCcu          KernelCcu object pointer
+ * @param[in]      swizzId             Mig inst swizz-id
+ * @param[in]      computeId           Compute inst id
+ * @param[out]     MEMORY_DESCRIPTOR   Location of pMemDesc
+ *
+ * @return  NV_OK
+ * @return  NV_ERR_NOT_SUPPORTED
+ * @return  NV_ERR_INVALID_ARGUMENT
+ */
+NV_STATUS kccuMemDescGetForComputeInst_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelCcu  *pKernelCcu,
+    NvU8       swizzId,
+    NvU8       computeId,
+    MEMORY_DESCRIPTOR **ppMemDesc
+)
+{
+    NvU32 idx;
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    for (idx = CCU_MIG_SHRBUF_ID_START; idx < CCU_SHRBUF_COUNT_MAX; idx++)
+    {
+        if (*pKernelCcu->shrBuf[idx].pCounterDstInfo->pSwizzId == swizzId &&
+            *pKernelCcu->shrBuf[idx].pCounterDstInfo->pComputeId == computeId)
+        {
+            *ppMemDesc = pKernelCcu->pMemDesc[idx];
+            break;
+        }
+    }
+
+    if (idx >= CCU_SHRBUF_COUNT_MAX)
+    {
+        NV_PRINTF(LEVEL_ERROR, "KernelCcu: memdesc get failed for input swizzId(%u), computeInst(%u)\n",
+                  swizzId, computeId);
+
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return NV_OK;
+}
+

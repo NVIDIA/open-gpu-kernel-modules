@@ -65,6 +65,8 @@ typedef struct
     // Initialize HMM for the given the va_space for testing.
     // Bug 1750144: UVM: Add HMM (Heterogeneous Memory Management) support to
     // the UVM driver. Remove this when enough HMM functionality is implemented.
+    // Locking: the va_space->va_space_mm.mm mmap_lock must be write locked
+    // and the va_space lock must be held in write mode.
     NV_STATUS uvm_hmm_va_space_initialize_test(uvm_va_space_t *va_space);
 
     // Destroy any HMM state for the given the va_space.
@@ -87,6 +89,10 @@ typedef struct
     //
     // Return NV_ERR_INVALID_ADDRESS if there is no VMA associated with the
     // address 'addr' or the VMA does not have at least PROT_READ permission.
+    // The caller is also responsible for checking that there is no UVM
+    // va_range covering the given address before calling this function.
+    // If va_block_context is not NULL, the VMA is cached in
+    // va_block_context->hmm.vma.
     // Locking: This function must be called with mm retained and locked for
     // at least read and the va_space lock at least for read.
     NV_STATUS uvm_hmm_va_block_find_create(uvm_va_space_t *va_space,
@@ -94,22 +100,52 @@ typedef struct
                                            uvm_va_block_context_t *va_block_context,
                                            uvm_va_block_t **va_block_ptr);
 
+    // Find the VMA for the given address and set va_block_context->hmm.vma.
+    // Return NV_ERR_INVALID_ADDRESS if va_block_context->mm is NULL or there
+    // is no VMA associated with the address 'addr' or the VMA does not have at
+    // least PROT_READ permission.
+    // Locking: This function must be called with mm retained and locked for
+    // at least read or mm equal to NULL.
+    NV_STATUS uvm_hmm_find_vma(uvm_va_block_context_t *va_block_context, NvU64 addr);
+
+    // If va_block is a HMM va_block, check that va_block_context->hmm.vma is
+    // not NULL and covers the given region. This always returns true and is
+    // intended to only be used with UVM_ASSERT().
+    // Locking: This function must be called with the va_block lock held and if
+    // va_block is a HMM block, va_block_context->mm must be retained and
+    // locked for at least read.
+    bool uvm_hmm_va_block_context_vma_is_valid(uvm_va_block_t *va_block,
+                                               uvm_va_block_context_t *va_block_context,
+                                               uvm_va_block_region_t region);
+
+    // Find or create a HMM va_block and mark it so the next va_block split
+    // will fail for testing purposes.
+    // Locking: This function must be called with mm retained and locked for
+    // at least read and the va_space lock at least for read.
+    NV_STATUS uvm_hmm_test_va_block_inject_split_error(uvm_va_space_t *va_space, NvU64 addr);
+
     // Reclaim any HMM va_blocks that overlap the given range.
-    // Note that 'end' is inclusive.
-    // A HMM va_block can be reclaimed if it doesn't contain any "valid" VMAs.
-    // See uvm_hmm_vma_is_valid() for details.
+    // Note that 'end' is inclusive. If mm is NULL, any HMM va_block in the
+    // range will be reclaimed which assumes that the mm is being torn down
+    // and was not retained.
     // Return values:
     // NV_ERR_NO_MEMORY: Reclaim required a block split, which failed.
     // NV_OK:            There were no HMM blocks in the range, or all HMM
     //                   blocks in the range were successfully reclaimed.
     // Locking: If mm is not NULL, it must equal va_space_mm.mm, the caller
-    // must hold a reference on it, and it must be locked for at least read
-    // mode. Also, the va_space lock must be held in write mode.
+    // must retain it with uvm_va_space_mm_or_current_retain() or be sure that
+    // mm->mm_users is not zero, and it must be locked for at least read mode.
+    // Also, the va_space lock must be held in write mode.
     // TODO: Bug 3372166: add asynchronous va_block reclaim.
     NV_STATUS uvm_hmm_va_block_reclaim(uvm_va_space_t *va_space,
                                        struct mm_struct *mm,
                                        NvU64 start,
                                        NvU64 end);
+
+    // This is called to update the va_space tree of HMM va_blocks after an
+    // existing va_block is split.
+    // Locking: the va_space lock must be held in write mode.
+    void uvm_hmm_va_block_split_tree(uvm_va_block_t *existing_va_block, uvm_va_block_t *new_block);
 
     // Find a HMM policy range that needs to be split. The callback function
     // 'split_needed_cb' returns true if the policy range needs to be split.
@@ -148,7 +184,7 @@ typedef struct
     // Note that 'last_address' is inclusive.
     // Locking: the va_space->va_space_mm.mm mmap_lock must be write locked
     // and the va_space lock must be held in write mode.
-    // TODO: Bug 2046423: need to implement read duplication support in Linux.
+    // TODO: Bug 3660922: need to implement HMM read duplication support.
     static NV_STATUS uvm_hmm_set_read_duplication(uvm_va_space_t *va_space,
                                                   uvm_read_duplication_policy_t new_policy,
                                                   NvU64 base,
@@ -159,10 +195,11 @@ typedef struct
         return NV_OK;
     }
 
-    // Set va_block_context->policy to the policy covering the given address
-    // 'addr' and update the ending address '*endp' to the minimum of *endp,
-    // va_block_context->hmm.vma->vm_end - 1, and the ending address of the
-    // policy range.
+    // This function assigns va_block_context->policy to the policy covering
+    // the given address 'addr' and assigns the ending address '*endp' to the
+    // minimum of va_block->end, va_block_context->hmm.vma->vm_end - 1, and the
+    // ending address of the policy range. Note that va_block_context->hmm.vma
+    // is expected to be initialized before calling this function.
     // Locking: This function must be called with
     // va_block_context->hmm.vma->vm_mm retained and locked for least read and
     // the va_block lock held.
@@ -171,11 +208,11 @@ typedef struct
                                  unsigned long addr,
                                  NvU64 *endp);
 
-    // Find the VMA for the page index 'page_index',
-    // set va_block_context->policy to the policy covering the given address,
-    // and update the ending page range '*outerp' to the minimum of *outerp,
-    // va_block_context->hmm.vma->vm_end - 1, and the ending address of the
-    // policy range.
+    // This function finds the VMA for the page index 'page_index' and assigns
+    // it to va_block_context->vma, sets va_block_context->policy to the policy
+    // covering the given address, and sets the ending page range '*outerp'
+    // to the minimum of *outerp, va_block_context->hmm.vma->vm_end - 1, the
+    // ending address of the policy range, and va_block->end.
     // Return NV_ERR_INVALID_ADDRESS if no VMA is found; otherwise, NV_OK.
     // Locking: This function must be called with
     // va_block_context->hmm.vma->vm_mm retained and locked for least read and
@@ -188,6 +225,48 @@ typedef struct
     // Clear thrashing policy information from all HMM va_blocks.
     // Locking: va_space lock must be held in write mode.
     NV_STATUS uvm_hmm_clear_thrashing_policy(uvm_va_space_t *va_space);
+
+    // Return the expanded region around 'address' limited to the intersection
+    // of va_block start/end, vma start/end, and policy start/end.
+    // va_block_context must not be NULL, va_block_context->hmm.vma must be
+    // valid (this is usually set by uvm_hmm_va_block_find_create()), and
+    // va_block_context->policy must be valid.
+    // Locking: the caller must hold mm->mmap_lock in at least read mode, the
+    // va_space lock must be held in at least read mode, and the va_block lock
+    // held.
+    uvm_va_block_region_t uvm_hmm_get_prefetch_region(uvm_va_block_t *va_block,
+                                                      uvm_va_block_context_t *va_block_context,
+                                                      NvU64 address);
+
+    // Return the logical protection allowed of a HMM va_block for the page at
+    // the given address.
+    // va_block_context must not be NULL and va_block_context->hmm.vma must be
+    // valid (this is usually set by uvm_hmm_va_block_find_create()).
+    // Locking: the caller must hold va_block_context->mm mmap_lock in at least
+    // read mode.
+    uvm_prot_t uvm_hmm_compute_logical_prot(uvm_va_block_t *va_block,
+                                            uvm_va_block_context_t *va_block_context,
+                                            NvU64 addr);
+
+    NV_STATUS uvm_test_hmm_init(UVM_TEST_HMM_INIT_PARAMS *params, struct file *filp);
+
+    NV_STATUS uvm_test_split_invalidate_delay(UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS *params,
+                                              struct file *filp);
+
+    NV_STATUS uvm_hmm_va_range_info(uvm_va_space_t *va_space,
+                                    struct mm_struct *mm,
+                                    UVM_TEST_VA_RANGE_INFO_PARAMS *params);
+
+    // Return true if GPU fault new residency location should be system memory.
+    // va_block_context must not be NULL and va_block_context->hmm.vma must be
+    // valid (this is usually set by uvm_hmm_va_block_find_create()).
+    // TODO: Bug 3660968: Remove this hack as soon as HMM migration is
+    // implemented for VMAs other than anonymous memory.
+    // Locking: the va_block lock must be held. If the va_block is a HMM
+    // va_block, the va_block_context->mm must be retained and locked for least
+    // read.
+    bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
+                                 uvm_va_block_context_t *va_block_context);
 
 #else // UVM_IS_CONFIG_HMM()
 
@@ -230,12 +309,33 @@ typedef struct
         return NV_ERR_INVALID_ADDRESS;
     }
 
+    static NV_STATUS uvm_hmm_find_vma(uvm_va_block_context_t *va_block_context, NvU64 addr)
+    {
+        return NV_OK;
+    }
+
+    static bool uvm_hmm_va_block_context_vma_is_valid(uvm_va_block_t *va_block,
+                                                      uvm_va_block_context_t *va_block_context,
+                                                      uvm_va_block_region_t region)
+    {
+        return true;
+    }
+
+    static NV_STATUS uvm_hmm_test_va_block_inject_split_error(uvm_va_space_t *va_space, NvU64 addr)
+    {
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
     static NV_STATUS uvm_hmm_va_block_reclaim(uvm_va_space_t *va_space,
                                               struct mm_struct *mm,
                                               NvU64 start,
                                               NvU64 end)
     {
         return NV_OK;
+    }
+
+    static void uvm_hmm_va_block_split_tree(uvm_va_block_t *existing_va_block, uvm_va_block_t *new_block)
+    {
     }
 
     static NV_STATUS uvm_hmm_split_as_needed(uvm_va_space_t *va_space,
@@ -289,6 +389,44 @@ typedef struct
     static NV_STATUS uvm_hmm_clear_thrashing_policy(uvm_va_space_t *va_space)
     {
         return NV_OK;
+    }
+
+    static uvm_va_block_region_t uvm_hmm_get_prefetch_region(uvm_va_block_t *va_block,
+                                                             uvm_va_block_context_t *va_block_context,
+                                                             NvU64 address)
+    {
+        return (uvm_va_block_region_t){};
+    }
+
+    static uvm_prot_t uvm_hmm_compute_logical_prot(uvm_va_block_t *va_block,
+                                                   uvm_va_block_context_t *va_block_context,
+                                                   NvU64 addr)
+    {
+        return UVM_PROT_NONE;
+    }
+
+    static NV_STATUS uvm_test_hmm_init(UVM_TEST_HMM_INIT_PARAMS *params, struct file *filp)
+    {
+        return NV_WARN_NOTHING_TO_DO;
+    }
+
+    static NV_STATUS uvm_test_split_invalidate_delay(UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS *params,
+                                              struct file *filp)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    static NV_STATUS uvm_hmm_va_range_info(uvm_va_space_t *va_space,
+                                           struct mm_struct *mm,
+                                           UVM_TEST_VA_RANGE_INFO_PARAMS *params)
+    {
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
+                                        uvm_va_block_context_t *va_block_context)
+    {
+        return false;
     }
 
 #endif // UVM_IS_CONFIG_HMM()

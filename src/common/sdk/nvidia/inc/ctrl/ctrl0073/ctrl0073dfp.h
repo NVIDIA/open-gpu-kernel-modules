@@ -1137,6 +1137,10 @@ typedef struct NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS {
 *     Major version number of DSC decoder on Panel.
 *   dscDecoderVersionMinor
 *     Minor version number of DSC decoder on Panel.
+*   dscUseCustomPPS
+*     Flag to indicate if Panel uses custom PPS values which deviate from standard values.
+*   dscCustomPPSData
+*     32 bytes of custom PPS data required by Panel.
 *   dscEncoderCaps
 *     Capabilities of DSC encoder in SoC.
 *
@@ -1148,31 +1152,35 @@ typedef struct NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS {
 
 #define NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING         (0x731166U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS_MESSAGE_ID" */
 
+#define NV0073_CTRL_CMD_DFP_DSI_CUSTOM_PPS_DATA_COUNT   32U
+
 #define NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS_MESSAGE_ID (0x66U)
 
 typedef struct NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS {
-    NvU32 subDeviceInstance;
-    NvU32 displayId;
-    NvU32 hActive;
-    NvU32 vActive;
-    NvU32 hFrontPorch;
-    NvU32 vFrontPorch;
-    NvU32 hBackPorch;
-    NvU32 vBackPorch;
-    NvU32 hSyncWidth;
-    NvU32 vSyncWidth;
-    NvU32 bpp;
-    NvU32 refresh;
-    NvU32 pclkHz;
-    NvU32 numLanes;
-    NvU32 dscEnable;
-    NvU32 dscBpp;
-    NvU32 dscNumSlices;
-    NvU32 dscDualDsc;
-    NvU32 dscSliceHeight;
-    NvU32 dscBlockPrediction;
-    NvU32 dscDecoderVersionMajor;
-    NvU32 dscDecoderVersionMinor;
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  hActive;
+    NvU32  vActive;
+    NvU32  hFrontPorch;
+    NvU32  vFrontPorch;
+    NvU32  hBackPorch;
+    NvU32  vBackPorch;
+    NvU32  hSyncWidth;
+    NvU32  vSyncWidth;
+    NvU32  bpp;
+    NvU32  refresh;
+    NvU32  pclkHz;
+    NvU32  numLanes;
+    NvU32  dscEnable;
+    NvU32  dscBpp;
+    NvU32  dscNumSlices;
+    NvU32  dscDualDsc;
+    NvU32  dscSliceHeight;
+    NvU32  dscBlockPrediction;
+    NvU32  dscDecoderVersionMajor;
+    NvU32  dscDecoderVersionMinor;
+    NvBool dscUseCustomPPS;
+    NvU32  dscCustomPPSData[NV0073_CTRL_CMD_DFP_DSI_CUSTOM_PPS_DATA_COUNT];
 
     struct {
         NvBool bDscSupported;

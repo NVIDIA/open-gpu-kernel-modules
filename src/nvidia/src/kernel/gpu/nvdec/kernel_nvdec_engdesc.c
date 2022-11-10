@@ -96,6 +96,7 @@ nvdecGetEngineDescFromAllocParams
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
+        RM_ENGINE_TYPE rmEngineType;
 
         NV_ASSERT_OK(
             kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
@@ -103,9 +104,9 @@ nvdecGetEngineDescFromAllocParams
 
         NV_ASSERT_OK(
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                              NV2080_ENGINE_TYPE_NVDEC(engineInstance),
-                                              &engineInstance));
-        return ENG_NVDEC(NV2080_ENGINE_TYPE_NVDEC_IDX(engineInstance));
+                                              RM_ENGINE_TYPE_NVDEC(engineInstance),
+                                              &rmEngineType));
+        return ENG_NVDEC(RM_ENGINE_TYPE_NVDEC_IDX(rmEngineType));
     }
 
     // Get the right class as per engine instance.

@@ -291,8 +291,11 @@ kbusStateInitLockedKernel_GM107
     //
     NV_ASSERT_OK_OR_RETURN(kbusInitBar2_HAL(pGpu, pKernelBus, GPU_GFID_PF));
 
-    // Verify that BAR2 and the MMU actually works
-    (void) kbusVerifyBar2_HAL(pGpu, pKernelBus, NULL, NULL, 0, 0);
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+    {
+        // Verify that BAR2 and the MMU actually works
+        NV_ASSERT_OK_OR_RETURN(kbusVerifyBar2_HAL(pGpu, pKernelBus, NULL, NULL, 0, 0));
+    }
 
     if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_VIRTUAL_WITH_SRIOV(pGpu))
     {
@@ -329,6 +332,61 @@ kbusStateInitLocked_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus)
     NV_ASSERT_OK_OR_RETURN(kbusStateInitLockedKernel_HAL(pGpu, pKernelBus));
 
     NV_ASSERT_OK_OR_RETURN(kbusStateInitLockedPhysical_HAL(pGpu, pKernelBus));
+
+    return NV_OK;
+}
+
+NV_STATUS
+kbusStateLoad_GM107
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus,
+    NvU32 flags
+)
+{
+
+    if (flags & GPU_STATE_FLAGS_PRESERVING)
+    {
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+        // FB address space may not be available on Tegra (see fbInitFbRegions)
+        if (pMemoryManager->Ram.fbAddrSpaceSizeMb != 0)
+        {
+            // Bind the BAR0 window to its default location
+            // note: we can't move the window for all intents and purposes since VBIOS
+            //       will also use the window at arbitrary locations (eg during an SMI event
+            NvU64 offsetBar0 = (pMemoryManager->Ram.fbAddrSpaceSizeMb << 20) - DRF_SIZE(NV_PRAMIN);
+            kbusSetBAR0WindowVidOffset_HAL(pGpu, pKernelBus, offsetBar0);
+        }
+        else
+        {
+            NV_ASSERT(IsTEGRA(pGpu));
+        }
+
+        if (!(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
+        {
+            if (NULL == pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping)
+            {
+                NV_ASSERT_OK_OR_RETURN(kbusSetupBar2CpuAperture_HAL(pGpu, pKernelBus, GPU_GFID_PF));
+            }
+        }
+        NV_ASSERT_OK_OR_RETURN(kbusCommitBar2_HAL(pGpu, pKernelBus, flags));
+
+        //
+        // If we are exiting GC6 and the SKIP_BAR2_TEST_GC6 is set for the
+        // chip, then don't verify BAR2. The time taken to verify causes a
+        // a hit on the GC6 exit times, so this verif only feature does not
+        // come for free.
+        //
+        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) && 
+            !(IS_GPU_GC6_STATE_EXITING(pGpu) && pKernelBus->bSkipBar2TestOnGc6Exit))
+        {
+            // Verify that BAR2 and the MMU actually works
+            NV_ASSERT_OK_OR_RETURN(kbusVerifyBar2_HAL(pGpu, pKernelBus, NULL, NULL, 0, 0));
+
+            // Fail to set this status meaning kbusVerifyBar2_HAL() failed
+        }
+    }
 
     return NV_OK;
 }
@@ -495,7 +553,7 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
     vaflags |= VASPACE_FLAGS_ALLOW_ZERO_ADDRESS; // BAR1 requires a zero VAS base.
     vaflags |= VASPACE_FLAGS_ENABLE_VMM;
 
-#if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
+#if defined(DEVELOP) || defined(DEBUG) || RMCFG_FEATURE_MODS_FEATURES
     {
         NvU32 data32 = 0;
         //
@@ -521,7 +579,7 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
             }
         }
     }
-#endif // defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
+#endif // defined(DEVELOP) || defined(DEBUG) || RMCFG_FEATURE_MODS_FEATURES
 
     switch (vaSpaceBigPageSize)
     {
@@ -1364,6 +1422,8 @@ kbusSetupBar2GpuVaSpace_GM107
     // Setup walk user context.
     userCtx.pGpu = pGpu;
     userCtx.gfid = gfid;
+
+    NV_ASSERT_OR_RETURN(pWalk != NULL, NV_ERR_INVALID_STATE);
 
     // Pre-reserve and init 4K tables through BAR0 window (bBootstrap) mode.
     mmuWalkSetUserCtx(pWalk, &userCtx);
@@ -2251,6 +2311,34 @@ OBJVASPACE *kbusGetBar1VASpace_GM107(OBJGPU *pGpu, KernelBus *pKernelBus)
     return pKernelBus->bar1[gfid].pVAS;
 }
 
+static NV_STATUS
+_kbusUpdateDebugStatistics(OBJGPU *pGpu)
+{
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    OBJVASPACE *pBar1VAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
+    OBJEHEAP *pVASHeap;
+    NV00DE_SHARED_DATA *pSharedData = gpushareddataWriteStart(pGpu);
+    NV_RANGE bar1VARange = NV_RANGE_EMPTY;
+
+    pVASHeap = vaspaceGetHeap(pBar1VAS);
+    bar1VARange = rangeMake(vaspaceGetVaStart(pBar1VAS), vaspaceGetVaLimit(pBar1VAS));
+
+    pSharedData->bar1Size = (NvU32)(rangeLength(bar1VARange) / 1024);
+    pSharedData->bar1AvailSize = 0;
+
+    if (pVASHeap != NULL)
+    {
+        NvU64 freeSize = 0;
+
+        pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, NULL, NULL, &freeSize);
+        pSharedData->bar1AvailSize = (NvU32)(freeSize / 1024);
+    }
+
+    gpushareddataWriteFinish(pGpu);
+
+    return NV_OK;
+}
+
 NV_STATUS
 kbusMapFbAperture_GM107
 (
@@ -2333,6 +2421,7 @@ kbusMapFbAperture_GM107
 
     if (rmStatus == NV_OK)
     {
+        _kbusUpdateDebugStatistics(pGpu);
         return rmStatus;
     }
 
@@ -2417,6 +2506,8 @@ kbusUnmapFbAperture_GM107
         }
     }
     SLI_LOOP_END
+
+    _kbusUpdateDebugStatistics(pGpu);
 
     if (rmStatus == NV_OK)
     {
@@ -3131,7 +3222,8 @@ kbusGetSizeOfBar2PageTables_GM107
     }
 
     // Get the @ref GMMU_FMT for this chip
-    NV_ASSERT_OR_RETURN(NULL != (pFmt = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0)), 0);
+    pFmt = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0);
+    NV_ASSERT_OR_RETURN(NULL != pFmt, 0);
 
     // Get 4K page size Page Table
     pPgTbl = mmuFmtFindLevelWithPageShift(pFmt->pRoot, RM_PAGE_SHIFT);
@@ -3594,7 +3686,7 @@ NV_STATUS kbusSetBarsApertureSize_GM107
         // keep the code path the same for emulation.  With a 8MB BAR2 we do
         // not expect instance memory to evict a cached mapping.
         //
-        if ((IS_SIM_MODS(GPU_GET_OS(pGpu)) && IS_SILICON(pGpu) == 0) || (!RMCFG_FEATURE_PLATFORM_MODS && IS_SIMULATION(pGpu)))
+        if ((IS_SIM_MODS(GPU_GET_OS(pGpu)) && IS_SILICON(pGpu) == 0) || (!RMCFG_FEATURE_MODS_FEATURES && IS_SIMULATION(pGpu)))
         {
                 pKernelBus->bar2[gfid].rmApertureLimit = ((BUS_BAR2_RM_APERTURE_MB >> 1) << 20) - 1;  // 8MB
             pKernelBus->bar2[gfid].cpuVisibleLimit = pKernelBus->bar2[gfid].rmApertureLimit;        // No VESA space
@@ -3677,7 +3769,8 @@ NvU32 kbusGetSizeOfBar2PageDirs_GM107
     }
 
     // Get the @ref GMMU_FMT for this chip
-    NV_ASSERT_OR_RETURN(NULL != (pFmt = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0)), 0);
+    pFmt = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0);
+    NV_ASSERT_OR_RETURN(NULL != pFmt, 0);
     pLevel = pFmt->pRoot;
 
     // Cache the size of the root Page Dir, once.

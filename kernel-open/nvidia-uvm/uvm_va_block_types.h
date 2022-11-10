@@ -75,28 +75,6 @@ typedef struct
     DECLARE_BITMAP(bitmap, PAGES_PER_UVM_VA_BLOCK);
 } uvm_page_mask_t;
 
-// Encapsulates a counter tree built on top of a page mask bitmap in
-// which each leaf represents a page in the block. It contains
-// leaf_count and level_count so that it can use some macros for
-// perf trees
-typedef struct
-{
-    uvm_page_mask_t pages;
-
-    NvU16 leaf_count;
-
-    NvU8 level_count;
-} uvm_va_block_bitmap_tree_t;
-
-// Iterator for the bitmap tree. It contains level_idx and node_idx so
-// that it can use some macros for perf trees
-typedef struct
-{
-    s8 level_idx;
-
-    uvm_page_index_t node_idx;
-} uvm_va_block_bitmap_tree_iter_t;
-
 // When updating GPU PTEs, this struct describes the new arrangement of PTE
 // sizes. It is calculated before the operation is applied so we know which PTE
 // sizes to allocate.
@@ -127,11 +105,6 @@ typedef struct
     // that region should be 4k, and that some of those 4k PTEs will be written
     // by the operation.
     DECLARE_BITMAP(big_ptes_covered, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
-
-    // These are the big PTE regions which will no longer have any valid
-    // mappings after the operation. Only the bits which are set in
-    // big_ptes_covered are valid.
-    DECLARE_BITMAP(big_ptes_fully_unmapped, MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
 } uvm_va_block_new_pte_state_t;
 
 // Event that triggered the call to uvm_va_block_make_resident/
@@ -269,7 +242,8 @@ typedef struct
 typedef enum
 {
     UVM_VA_BLOCK_TRANSFER_MODE_MOVE = 1,
-    UVM_VA_BLOCK_TRANSFER_MODE_COPY = 2
+    UVM_VA_BLOCK_TRANSFER_MODE_COPY = 2,
+    UVM_VA_BLOCK_TRANSFER_MODE_COPY_ONLY = 3
 } uvm_va_block_transfer_mode_t;
 
 struct uvm_reverse_map_struct

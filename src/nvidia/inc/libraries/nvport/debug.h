@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -278,8 +278,6 @@ PORT_DEBUG_INLINE void portDbgExPrintfLevel(NvU32 level, const char *format, ...
 #include "nvport/inline/debug_qnx.h"
 #elif NVOS_IS_DCECORE
 #include "nvport/inline/debug_dcecore.h"
-#elif defined(GSP_PLUGIN_BUILD)
-#include "nvport/inline/debug_vgpu_gsp.h"    
 #else
 
 #if PORT_IS_KERNEL_BUILD
