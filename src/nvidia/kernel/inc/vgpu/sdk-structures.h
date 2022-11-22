@@ -123,6 +123,7 @@ typedef struct vmiopd_SM_info {
 #define NV2080_CTRL_INTERNAL_MAX_TPC_PER_GPC_COUNT_v1C_03                       10
 #define NV2080_CTRL_INTERNAL_GR_MAX_GPC_v1C_03                                  12
 #define NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_MAX_v1E_09                         32
+#define NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL_v1F_0E                72
 
 // Defined this intermediate RM-RPC structure for making RPC call from Guest as
 // we have the restriction of passing max 4kb of data to plugin and the

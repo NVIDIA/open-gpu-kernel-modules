@@ -26,6 +26,15 @@
 
 
 #if defined(CONFIG_DMA_SHARED_BUFFER)
+
+//
+// The Linux kernel's dma_length in struct scatterlist is unsigned int
+// which limits the maximum sg length to 4GB - 1.
+// To get around this limitation, the BAR1 scatterlist returned by RM
+// is split into (4GB - PAGE_SIZE) sized chunks to build the sg_table.
+//
+#define NV_DMA_BUF_SG_MAX_LEN         ((NvU32)(NVBIT64(32) - PAGE_SIZE))
+
 typedef struct nv_dma_buf_mem_handle
 {
     NvHandle h_memory;
@@ -259,26 +268,36 @@ nv_dma_buf_unmap_unlocked(
     nv_dma_device_t *peer_dma_dev,
     nv_dma_buf_file_private_t *priv,
     struct sg_table *sgt,
-    NvU32 count
+    NvU32 mapped_handle_count
 )
 {
     NV_STATUS status;
     NvU32 i;
     NvU64 dma_len;
     NvU64 dma_addr;
-    NvU64 bar1_va;
     NvBool bar1_unmap_needed;
     struct scatterlist *sg = NULL;
 
     bar1_unmap_needed = (priv->bar1_va_ref_count == 0);
 
-    for_each_sg(sgt->sgl, sg, count, i)
+    sg = sgt->sgl;
+    for (i = 0; i < mapped_handle_count; i++)
     {
-        dma_addr = sg_dma_address(sg);
-        dma_len  = priv->handles[i].size;
-        bar1_va  = priv->handles[i].bar1_va;
+        NvU64 handle_size = priv->handles[i].size;
 
-        WARN_ON(sg_dma_len(sg) != priv->handles[i].size);
+        dma_addr = sg_dma_address(sg);
+        dma_len  = 0;
+
+        //
+        // Seek ahead in the scatterlist until the handle size is covered.
+        // IOVA unmap can then be done all at once instead of doing it
+        // one sg at a time.
+        //
+        while(handle_size != dma_len)
+        {
+            dma_len += sg_dma_len(sg);
+            sg = sg_next(sg);
+        }
 
         nv_dma_unmap_peer(peer_dma_dev, (dma_len / os_page_size), dma_addr);
 
@@ -309,7 +328,8 @@ nv_dma_buf_map(
     nv_dma_device_t peer_dma_dev = {{ 0 }};
     NvBool bar1_map_needed;
     NvBool bar1_unmap_needed;
-    NvU32 count = 0;
+    NvU32 mapped_handle_count = 0;
+    NvU32 num_sg_entries = 0;
     NvU32 i = 0;
     int rc = 0;
 
@@ -361,13 +381,23 @@ nv_dma_buf_map(
     }
 
     memset(sgt, 0, sizeof(struct sg_table));
+    //
+    // Pre-calculate number of sg entries we need based on handle size.
+    // This is needed to allocate sg_table.
+    //
+    for (i = 0; i < priv->num_objects; i++)
+    {
+        NvU64 count = priv->handles[i].size + NV_DMA_BUF_SG_MAX_LEN - 1;
+        do_div(count, NV_DMA_BUF_SG_MAX_LEN);
+        num_sg_entries += count;
+    }
 
     //
     // RM currently returns contiguous BAR1, so we create as many
-    // sg entries as the number of handles being mapped.
+    // sg entries as num_sg_entries calculated above.
     // When RM can alloc discontiguous BAR1, this code will need to be revisited.
     //
-    rc = sg_alloc_table(sgt, priv->num_objects, GFP_KERNEL);
+    rc = sg_alloc_table(sgt, num_sg_entries, GFP_KERNEL);
     if (rc != 0)
     {
         goto free_sgt;
@@ -377,7 +407,8 @@ nv_dma_buf_map(
     peer_dma_dev.addressable_range.limit = (NvU64)dev->dma_mask;
     bar1_map_needed = bar1_unmap_needed = (priv->bar1_va_ref_count == 0);
 
-    for_each_sg(sgt->sgl, sg, priv->num_objects, i)
+    sg = sgt->sgl;
+    for (i = 0; i < priv->num_objects; i++)
     {
         NvU64 dma_addr;
         NvU64 dma_len;
@@ -395,9 +426,15 @@ nv_dma_buf_map(
             }
         }
 
+        mapped_handle_count++;
+
         dma_addr = priv->handles[i].bar1_va;
         dma_len  = priv->handles[i].size;
 
+        //
+        // IOVA map the full handle at once and then breakdown the range
+        // (dma_addr, dma_addr + dma_len) into smaller sg entries.
+        //
         status = nv_dma_map_peer(&peer_dma_dev, priv->nv->dma_dev,
                                  0x1, (dma_len / os_page_size), &dma_addr);
         if (status != NV_OK)
@@ -411,14 +448,23 @@ nv_dma_buf_map(
                                                    priv->handles[i].bar1_va);
             }
 
+            mapped_handle_count--;
+
             // Unmap remaining memory handles
             goto unmap_handles;
         }
 
-        sg_set_page(sg, NULL, dma_len, 0);
-        sg_dma_address(sg) = (dma_addr_t)dma_addr;
-        sg_dma_len(sg) = dma_len;
-        count++;
+        while(dma_len != 0)
+        {
+            NvU32 sg_len = NV_MIN(dma_len, NV_DMA_BUF_SG_MAX_LEN);
+
+            sg_set_page(sg, NULL, sg_len, 0);
+            sg_dma_address(sg) = (dma_addr_t)dma_addr;
+            sg_dma_len(sg) = sg_len;
+            dma_addr += sg_len;
+            dma_len -= sg_len;
+            sg = sg_next(sg);
+        }
     }
 
     priv->bar1_va_ref_count++;
@@ -434,7 +480,7 @@ nv_dma_buf_map(
     return sgt;
 
 unmap_handles:
-    nv_dma_buf_unmap_unlocked(sp, &peer_dma_dev, priv, sgt, count);
+    nv_dma_buf_unmap_unlocked(sp, &peer_dma_dev, priv, sgt, mapped_handle_count);
 
     sg_free_table(sgt);
 
@@ -821,12 +867,12 @@ nv_dma_buf_reuse(
     }
 
 
+    if ((priv->total_objects < params->numObjects) ||
+        (params->index > (priv->total_objects - params->numObjects)))
 
 
 
-    if (params->index > (priv->total_objects - params->numObjects))
     {
-
         status = NV_ERR_INVALID_ARGUMENT;
         goto unlock_priv;
     }

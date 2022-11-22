@@ -35,6 +35,8 @@
 #include <linux/list.h>
 #include <linux/rwsem.h>
 
+#include <acpi/video.h>
+
 #include "nvstatus.h"
 
 #include "nv-register-module.h"
@@ -1059,6 +1061,12 @@ nvkms_register_backlight(NvU32 gpu_id, NvU32 display_id, void *drv_priv,
     NvU32 gpu_count = 0;
     struct nvkms_backlight_device *nvkms_bd = NULL;
     int i;
+
+#if defined(NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE)
+    if (!acpi_video_backlight_use_native()) {
+        return NULL;
+    }
+#endif
 
     gpu_info = nvkms_alloc(NV_MAX_GPUS * sizeof(*gpu_info), NV_TRUE);
     if (gpu_info == NULL) {

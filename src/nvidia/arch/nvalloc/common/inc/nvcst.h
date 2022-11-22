@@ -153,6 +153,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0xA14A, CS_INTEL_A145,      "SkyLake C232",         Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA14D, CS_INTEL_A145,      "SkyLake-H",            Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA244, CS_INTEL_A145,      "SkyLake C620",         Intel_A145_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0xA1C8, CS_INTEL_A145,      "SkyLake C620",         Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x8D47, CS_INTEL_8D47,      "IntelX99",             Intel_8D47_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x8D44, CS_INTEL_8D47,      "IntelC612",            Intel_8D44_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA2C5, CS_INTEL_A2C5,      "IntelZ270",            Intel_A2C5_setupFunc},

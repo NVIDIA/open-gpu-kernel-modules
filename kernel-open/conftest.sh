@@ -5268,7 +5268,7 @@ compile_test() {
             # Determine if 'num_registered_fb' variable is present.
             #
             # 'num_registered_fb' was removed by commit 5727dcfd8486
-            # ("fbdev: Make registered_fb[] private to fbmem.c) for
+            # ("fbdev: Make registered_fb[] private to fbmem.c") for
             # v5.20 linux-next (2022-07-27).
             #
             CODE="
@@ -5278,6 +5278,31 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_NUM_REGISTERED_FB_PRESENT" "" "types"
+        ;;
+
+        acpi_video_backlight_use_native)
+            #
+            # Determine if acpi_video_backlight_use_native() function is present
+            #
+            # acpi_video_backlight_use_native was added by commit 2600bfa3df99
+            # (ACPI: video: Add acpi_video_backlight_use_native() helper) for
+            # v6.0 (2022-08-17). Note: the include directive for <linux/types.h>
+            # in this conftest is necessary in order to support kernels between
+            # commit 0b9f7d93ca61 ("ACPI / i915: ignore firmware requests for
+            # backlight change") for v3.16 (2014-07-07) and commit 3bd6bce369f5
+            # ("ACPI / video: Port to new backlight interface selection API")
+            # for v4.2 (2015-07-16). Kernels within this range use the 'bool'
+            # type and the related 'false' value in <acpi/video.h> without first
+            # including the definitions of that type and value.
+            #
+            CODE="
+            #include <linux/types.h>
+            #include <acpi/video.h>
+            void conftest_acpi_video_backglight_use_native(void) {
+                acpi_video_backlight_use_native(0);
+            }"
+
+            compile_check_conftest "$CODE" "NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE" "" "functions"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

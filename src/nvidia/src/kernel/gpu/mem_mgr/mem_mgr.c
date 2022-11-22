@@ -1970,7 +1970,10 @@ memmgrFillComprInfo_IMPL
 
     NV_ASSERT(compTagStartOffset != ~(NvU32)0);
 
-    size = pageSize * pageCount;
+    if (!portSafeMulU32(pageSize, pageCount, &size))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     pComprInfo->compPageShift = pMemorySystemConfig->comprPageShift;
     pComprInfo->compTagLineMin = compTagStartOffset;

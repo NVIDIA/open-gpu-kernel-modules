@@ -1075,6 +1075,7 @@ kchannelMap_IMPL
     RmClient *pRmClient = dynamicCast(pRsClient, RmClient);
     GpuResource *pGpuResource;
 
+    NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_OBJECT);
     NV_ASSERT_OR_RETURN(!pKernelChannel->bClientAllocatedUserD, NV_ERR_INVALID_REQUEST);
 
     rmStatus = gpuresGetByDeviceOrSubdeviceHandle(pRsClient,
@@ -3759,7 +3760,12 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     NV_CHECK_OR_RETURN(LEVEL_INFO, index != NV_CHANNELGPFIFO_NOTIFICATION_TYPE_ERROR,
                      NV_ERR_INVALID_ARGUMENT);
 
-    notificationBufferSize = (index + 1) * sizeof(NvNotification);
+    // Check for integer overflows
+    if (((index + 1) < index) ||
+        !portSafeMulU64(index + 1, sizeof(NvNotification), &notificationBufferSize))
+    {
+        return NV_ERR_OUT_OF_RANGE;
+    }
 
     status = deviceGetByInstance(pClient, gpuGetDeviceInstance(pGpu), &pDevice);
     if (status != NV_OK)

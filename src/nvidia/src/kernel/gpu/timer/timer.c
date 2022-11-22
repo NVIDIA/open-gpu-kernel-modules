@@ -560,7 +560,7 @@ NV_STATUS tmrEventScheduleRel_IMPL
     }
     else
     {
-        AbsTime = currentTime + RelTime;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(currentTime, RelTime, &AbsTime), NV_ERR_INVALID_ARGUMENT);
     }
 
     return tmrEventScheduleAbs(pTmr, pEvent, AbsTime);
@@ -588,7 +588,7 @@ NV_STATUS tmrScheduleCallbackRel_IMPL
     if (rmStatus != NV_OK)
         return rmStatus;
 
-    AbsTime = currentTime + RelTime;
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(currentTime, RelTime, &AbsTime), NV_ERR_INVALID_ARGUMENT);
 
     return tmrScheduleCallbackAbs(pTmr, Proc, Object, AbsTime, Flags, ChId);
 }

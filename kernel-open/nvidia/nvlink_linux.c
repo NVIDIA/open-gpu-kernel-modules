@@ -208,8 +208,8 @@ static int nvlink_fops_release(struct inode *inode, struct file *filp)
     nvlink_print(NVLINK_DBG_INFO, "nvlink driver close\n");
 
 
-
-
+    if (private == NULL)
+        return -ENOMEM;
 
 
     mutex_lock(&nvlink_drvctx.lock);

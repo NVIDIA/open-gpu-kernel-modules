@@ -448,6 +448,7 @@ nvdDumpDebugBuffers_IMPL
     NvP64 pUmdBuffer = NvP64_NULL;
     NvP64 priv = NvP64_NULL;
     NvU32 bufSize = 0;
+    NvU8 *dataBuffer = NULL;
 
     status = prbEncNestedStart(pPrbEnc, NVDEBUG_NVDUMP_DCL_MSG);
     if (status != NV_OK)
@@ -463,7 +464,20 @@ nvdDumpDebugBuffers_IMPL
         if (status != NV_OK)
             break;
 
-        status = prbAppendSubMsg(pPrbEnc, pCurrent->tag, NvP64_VALUE(pUmdBuffer), bufSize);
+        dataBuffer = (NvU8 *) portMemAllocStackOrHeap(bufSize);
+        if (dataBuffer == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            break;
+        }
+
+        // Copy UmdBuffer to prevent data races
+        portMemCopy(dataBuffer, bufSize, pUmdBuffer, bufSize);
+        portAtomicMemoryFenceFull();
+
+        status = prbAppendSubMsg(pPrbEnc, pCurrent->tag, dataBuffer, bufSize);
+
+        portMemFreeStackOrHeap(dataBuffer);
 
         // Unmap DebugBuffer address
         memdescUnmap(pCurrent->pMemDesc, NV_TRUE, // Kernel mapping?
@@ -522,6 +536,24 @@ prbAppendSubMsg
         header = (NVDUMP_SUB_ALLOC_HEADER *)pCurrent;
         subAlloc = pCurrent + sizeof(NVDUMP_SUB_ALLOC_HEADER);
 
+        // Check for out-of-bounds buffer access
+        if (pCurrent < buffer || subAlloc > (buffer + size))
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
+        }
+
+        if (!portSafeSubU16(header->end, header->start, (NvU16 *) &subMsgLen))
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
+        }
+
+        if ((subAlloc + subMsgLen) >= (buffer + size))
+        {
+            status = NV_ERR_INSUFFICIENT_RESOURCES;
+            goto done;
+        }
         // If valid, copy contents
         if (header->flags & NVDUMP_SUB_ALLOC_VALID)
         {

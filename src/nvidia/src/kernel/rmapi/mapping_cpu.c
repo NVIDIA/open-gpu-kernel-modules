@@ -181,6 +181,8 @@ memMap_IMPL
     NvBool bBroadcast;
     NvU64 mapLimit;
     NvBool bIsSysmem = NV_FALSE;
+    NvBool bSkipSizeCheck = (DRF_VAL(OS33, _FLAGS, _SKIP_SIZE_CHECK, pMapParams->flags) ==
+                             NVOS33_FLAGS_SKIP_SIZE_CHECK_ENABLE);
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
@@ -242,14 +244,18 @@ memMap_IMPL
         return NV_ERR_INVALID_LIMIT;
     }
 
+    if (bSkipSizeCheck && (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL))
+    {
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     //
     // See bug #140807 and #150889 - we need to pad memory mappings to past their
     // actual allocation size (to PAGE_SIZE+1) because of a buggy ms function so
     // skip the allocation size sanity check so the map operation still succeeds.
     //
-    if ((DRF_VAL(OS33, _FLAGS, _SKIP_SIZE_CHECK, pMapParams->flags) == NVOS33_FLAGS_SKIP_SIZE_CHECK_DISABLE) &&
-        (!portSafeAddU64(pMapParams->offset, pMapParams->length, &mapLimit) ||
-         (mapLimit > pMemoryInfo->Length)))
+    if (!portSafeAddU64(pMapParams->offset, pMapParams->length, &mapLimit) ||
+        (!bSkipSizeCheck && (mapLimit > pMemoryInfo->Length)))
     {
         return NV_ERR_INVALID_LIMIT;
     }
