@@ -210,23 +210,18 @@ static inline NV_STATUS nv_sleep_ms(unsigned int ms)
     {
         //
         // If we have at least one full jiffy to wait, give up
-        // up the CPU; since we may be rescheduled before
-        // the requested timeout has expired, loop until less
+        // the CPU until the requested timeout has expired and less
         // than a jiffie of the desired delay remains.
         //
-        set_current_state(TASK_INTERRUPTIBLE);
-        do
+        schedule_timeout_uninterruptible(jiffies);
+        ktime_get_real_ts64(&tm_aux);
+        if (nv_timer_less_than(&tm_aux, &tm_end))
         {
-            schedule_timeout(jiffies);
-            ktime_get_raw_ts64(&tm_aux);
-            if (nv_timer_less_than(&tm_aux, &tm_end))
-            {
-                tm_aux = timespec64_sub(tm_end, tm_aux);
-                ns = (NvU64) timespec64_to_ns(&tm_aux);
-            }
-            else
-                ns = 0;
-        } while ((jiffies = NV_NSECS_TO_JIFFIES(ns)) != 0);
+            tm_aux = timespec64_sub(tm_end, tm_aux);
+            ns = (NvU64) timespec64_to_ns(&tm_aux);
+        }
+        else
+            ns = 0;
     }
 
     if (ns > (NvU64) NSEC_PER_MSEC)
