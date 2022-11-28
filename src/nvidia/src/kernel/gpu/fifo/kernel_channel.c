@@ -3734,7 +3734,12 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     NV_CHECK_OR_RETURN(LEVEL_INFO, index != NV_CHANNELGPFIFO_NOTIFICATION_TYPE_ERROR,
                      NV_ERR_INVALID_ARGUMENT);
 
-    notificationBufferSize = (index + 1) * sizeof(NvNotification);
+    // Check for integer overflows
+    if (((index + 1) < index) ||
+        !portSafeMulU64(index + 1, sizeof(NvNotification), &notificationBufferSize))
+    {
+        return NV_ERR_OUT_OF_RANGE;
+    }
 
     status = deviceGetByInstance(pClient, gpuGetDeviceInstance(pGpu), &pDevice);
     if (status != NV_OK)

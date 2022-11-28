@@ -273,7 +273,7 @@ static void __nvoc_init_funcTable_KernelDisplay_1(KernelDisplay *pThis, RmHalspe
     // Hal function -- kdispServiceInterrupt
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
     {
-        pThis->__kdispServiceInterrupt__ = &kdispServiceInterrupt_cd2c9e;
+        pThis->__kdispServiceInterrupt__ = &kdispServiceInterrupt_d3ef2b;
     }
 
     // Hal function -- kdispSelectClass

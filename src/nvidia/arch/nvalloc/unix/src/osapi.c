@@ -775,7 +775,7 @@ static NV_STATUS RmAccessRegistry(
         // the passed-in ParmStrLength does not account for '\0'
         ParmStrLength++;
 
-        if (ParmStrLength > NVOS38_MAX_REGISTRY_STRING_LENGTH)
+        if ((ParmStrLength == 0) || (ParmStrLength > NVOS38_MAX_REGISTRY_STRING_LENGTH))
         {
             RmStatus = NV_ERR_INVALID_STRING_LENGTH;
             goto done;
@@ -786,6 +786,11 @@ static NV_STATUS RmAccessRegistry(
         if (RmStatus != NV_OK)
         {
             RmStatus = NV_ERR_OPERATING_SYSTEM;
+            goto done;
+        }
+        if (tmpParmStr[ParmStrLength - 1] != '\0')
+        {
+            RmStatus = NV_ERR_INVALID_ARGUMENT;
             goto done;
         }
     }
@@ -2121,9 +2126,20 @@ static NV_STATUS RmGetAllocPrivate(
     if (rmStatus != NV_OK)
         goto done;
 
-    endingOffset = pageOffset + length;
+    if (!portSafeAddU64(pageOffset, length, &endingOffset))
+    {
+        rmStatus = NV_ERR_INVALID_ARGUMENT;
+        goto done;
+    }
+
     pageCount = (endingOffset / os_page_size);
-    pageCount += (*pPageIndex + ((endingOffset % os_page_size) ? 1 : 0));
+
+    if (!portSafeAddU64(*pPageIndex + ((endingOffset % os_page_size) ? 1 : 0),
+                        pageCount, &pageCount))
+    {
+        rmStatus = NV_ERR_INVALID_ARGUMENT;
+        goto done;
+    }
 
     if (pageCount > NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount))
     {

@@ -535,6 +535,14 @@ _nvswitch_init_device_regkeys
     NVSWITCH_INIT_REGKEY(_PUBLIC, minion_intr,
                          NV_SWITCH_REGKEY_MINION_INTERRUPTS,
                          NV_SWITCH_REGKEY_MINION_INTERRUPTS_DEFAULT);
+
+    NVSWITCH_INIT_REGKEY(_PRIVATE, block_code_mode,
+                         NV_SWITCH_REGKEY_BLOCK_CODE_MODE,
+                         NV_SWITCH_REGKEY_BLOCK_CODE_MODE_DEFAULT);
+
+    NVSWITCH_INIT_REGKEY(_PRIVATE, reference_clock_mode,
+                         NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE,
+                         NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_DEFAULT);
 }
 NvU64
 nvswitch_lib_deferred_task_dispatcher
@@ -4164,7 +4172,9 @@ nvswitch_lib_smbpbi_log_sxid
 {
     va_list arglist;
     int     msglen;
-    char    string[RM_SOE_SMBPBI_CMD_LOG_MESSAGE_MAX_STRING];
+    char    string[RM_SOE_SMBPBI_CMD_LOG_MESSAGE_MAX_STRING + 1];
+
+    nvswitch_os_memset(string, 0, (NvLength)sizeof(string));
 
     va_start(arglist, pFormat);
     msglen = nvswitch_os_vsnprintf(string, sizeof(string), pFormat, arglist);
@@ -4172,7 +4182,11 @@ nvswitch_lib_smbpbi_log_sxid
 
     if (!(msglen < 0))
     {
-        msglen = NV_MIN(msglen + 1, (int) sizeof(string));
+        //
+        // HALs will know that the string is being truncated by seeing that the
+        // last byte in the buffer is not nul.
+        //
+        msglen = NV_MIN(msglen + 1, (int)RM_SOE_SMBPBI_CMD_LOG_MESSAGE_MAX_STRING);
         device->hal.nvswitch_smbpbi_log_message(device, sxid, msglen, (NvU8 *) string);
     }
 }
@@ -4858,7 +4872,7 @@ nvswitch_lib_ctrl
                 CTRL_NVSWITCH_RESERVED_2);
         NVSWITCH_DEV_CMD_DISPATCH_RESERVED(
                 CTRL_NVSWITCH_RESERVED_3);
-	    NVSWITCH_DEV_CMD_DISPATCH_RESERVED(
+        NVSWITCH_DEV_CMD_DISPATCH_RESERVED(
                 CTRL_NVSWITCH_RESERVED_4);
         NVSWITCH_DEV_CMD_DISPATCH_RESERVED(
                 CTRL_NVSWITCH_RESERVED_5);

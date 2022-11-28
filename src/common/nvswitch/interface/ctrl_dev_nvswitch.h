@@ -802,6 +802,7 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_END                             = 10005,
     NVSWITCH_ERR_HW_HOST_THERMAL_SHUTDOWN                              = 10006,
     NVSWITCH_ERR_HW_HOST_IO_FAILURE                                    = 10007,
+    NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE               = 10008,
     NVSWITCH_ERR_HW_HOST_LAST,
 
 

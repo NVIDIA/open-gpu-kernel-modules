@@ -157,6 +157,8 @@ NV_STATUS _createThirdPartyP2PMappingExtent
     PCLI_THIRD_PARTY_P2P_MAPPING_EXTENT_INFO pExtentInfoTmp;
     RsClient *pClient;
     Device *pDevice;
+    NvBool bGpuLockTaken = (rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)) ||
+                            rmGpuLockIsOwner());
 
     status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
     NV_ASSERT_OR_RETURN(status == NV_OK, NV_ERR_INVALID_ARGUMENT);
@@ -200,12 +202,26 @@ NV_STATUS _createThirdPartyP2PMappingExtent
                              0,
                              &fbApertureOffset, status);
     }
-    else if ((status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+    else
     {
-        status = kbusMapFbAperture_HAL(pGpu, pKernelBus, (*ppExtentInfo)->pMemDesc, 0,
-                                        &fbApertureOffset, &fbApertureMapLength,
-                                        BUS_MAP_FB_FLAGS_MAP_UNICAST, hClient);
-        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+        if (!bGpuLockTaken)
+        {
+            status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                             RM_LOCK_MODULES_P2P);
+            NV_ASSERT_OR_GOTO(status == NV_OK, out);
+        }
+
+        status = kbusMapFbAperture_HAL(pGpu, pKernelBus,
+                                       (*ppExtentInfo)->pMemDesc, 0,
+                                       &fbApertureOffset,
+                                       &fbApertureMapLength,
+                                       BUS_MAP_FB_FLAGS_MAP_UNICAST,
+                                       hClient);
+
+        if (!bGpuLockTaken)
+        {
+            rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+        }
     }
     if (status != NV_OK)
     {
@@ -246,14 +262,32 @@ out:
                                        0,
                                        fbApertureOffset, tmpStatus);
             }
-            else if ((tmpStatus = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+            else
             {
+                if (!bGpuLockTaken)
+                {
+                    tmpStatus = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                                        RM_LOCK_MODULES_P2P);
+                    NV_ASSERT(tmpStatus == NV_OK);
+
+                    if (tmpStatus != NV_OK)
+                    {
+                        _freeMappingExtentInfo(*ppExtentInfo);
+
+                        return tmpStatus;
+                    }
+                }
+
                 tmpStatus = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
                                                     (*ppExtentInfo)->pMemDesc,
                                                     fbApertureOffset,
                                                     fbApertureMapLength,
                                                     BUS_MAP_FB_FLAGS_MAP_UNICAST);
-                rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+
+                if (!bGpuLockTaken)
+                {
+                    rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+                }
             }
             NV_ASSERT(tmpStatus == NV_OK);
         }
@@ -338,6 +372,11 @@ NV_STATUS RmThirdPartyP2PMappingFree
     PCLI_THIRD_PARTY_P2P_MAPPING_EXTENT_INFO pExtentInfoNext = NULL;
     RsClient                           *pClient;
     Device                             *pDevice;
+    NvBool                              bGpuLockTaken;
+    NvBool                              bVgpuRpc;
+
+    bGpuLockTaken = (rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)) ||
+                     rmGpuLockIsOwner());
 
     NV_ASSERT_OR_RETURN((pGpu != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((pMappingInfo != NULL), NV_ERR_INVALID_ARGUMENT);
@@ -357,6 +396,15 @@ NV_STATUS RmThirdPartyP2PMappingFree
     length = pMappingInfo->length;
     address = pMappingInfo->address;
 
+    bVgpuRpc = IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
+
+    if (!bGpuLockTaken && !bVgpuRpc)
+    {
+        status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                         RM_LOCK_MODULES_P2P);
+        NV_ASSERT_OK_OR_RETURN(status);
+    }
+
     for(pExtentInfo = pMappingInfo->pStart; (pExtentInfo != NULL) && (length != 0);
         pExtentInfo = pExtentInfoNext)
     {
@@ -369,7 +417,7 @@ NV_STATUS RmThirdPartyP2PMappingFree
         pExtentInfo->refCount--;
         if (pExtentInfo->refCount == 0)
         {
-            if (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+            if (bVgpuRpc)
             {
                 NV_RM_RPC_UNMAP_MEMORY(pGpu, hClient,
                                        RES_GET_HANDLE(pDevice),
@@ -377,14 +425,13 @@ NV_STATUS RmThirdPartyP2PMappingFree
                                        0,
                                        pExtentInfo->fbApertureOffset, status);
             }
-            else if ((status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+            else
             {
                 status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
                                                  pExtentInfo->pMemDesc,
                                                  pExtentInfo->fbApertureOffset,
                                                  pExtentInfo->length,
                                                  BUS_MAP_FB_FLAGS_MAP_UNICAST);
-                rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
             }
             NV_ASSERT(status == NV_OK);
 
@@ -394,6 +441,12 @@ NV_STATUS RmThirdPartyP2PMappingFree
             _freeMappingExtentInfo(pExtentInfo);
         }
     }
+
+    if (!bGpuLockTaken && !bVgpuRpc)
+    {
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+
     NV_ASSERT(length == 0);
 
     pMappingInfo->pStart = NULL;

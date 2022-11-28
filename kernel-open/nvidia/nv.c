@@ -1432,6 +1432,9 @@ static int nv_open_device(nv_state_t *nv, nvidia_stack_t *sp)
         return -ENODEV;
     }
 
+    if (unlikely(NV_ATOMIC_READ(nvl->usage_count) >= NV_S32_MAX))
+        return -EMFILE;
+
     if ( ! (nv->flags & NV_FLAG_OPEN))
     {
         /* Sanity check: !NV_FLAG_OPEN requires usage_count == 0 */

@@ -187,8 +187,6 @@ _gpuDetectNvswitchSupport
     OBJGPU *pGpu
 )
 {
-    NvU32 data32;
-
     //
     // Slowdown Threshold 0 leads to driver crash with DIVIDE ERROR
     // Hence setting it to 1
@@ -222,12 +220,12 @@ _gpuDetectNvswitchSupport
         }
     }
 
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_FABRIC_PROBE, &data32) == NV_OK)
+    if (pGpu->fabricProbeRegKeyOverride)
     {
         pGpu->fabricProbeSlowdownThreshold =
-            NV_MAX(DRF_VAL(_REG_STR, _RM_GPU_FABRIC_PROBE, _SLOWDOWN_THRESHOLD, data32), 1);
+            NV_MAX(DRF_VAL(_REG_STR, _RM_GPU_FABRIC_PROBE, _SLOWDOWN_THRESHOLD, pGpu->fabricProbeRegKeyOverride), 1);
         pGpu->fabricProbeRetryDelay =
-            DRF_VAL(_REG_STR, _RM_GPU_FABRIC_PROBE, _DELAY, data32);
+            DRF_VAL(_REG_STR, _RM_GPU_FABRIC_PROBE, _DELAY, pGpu->fabricProbeRegKeyOverride);
 
         if (pGpu->fabricProbeRetryDelay)
         {
@@ -2485,10 +2483,7 @@ _gpuSetVgpuMgrConfig
     RM_API *pPeerRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_VGPU_MGR_INTERNAL_SET_VGPU_MGR_CONFIG_PARAMS params = {0};
 
-    if (osIsVgpuVfioPresent() != NV_OK)
-        return NV_OK;
-
-    params.bSupportHeterogeneousTimeSlicedVgpuTypes = (osIsVgpuVfioPresent() == NV_OK);
+    params.bSupportHeterogeneousTimeSlicedVgpuTypes = kvgpumgrIsHeterogeneousVgpuSupported();
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                           pPeerRmApi->Control(pPeerRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
@@ -4615,6 +4610,7 @@ VGPU_STATIC_INFO *gpuGetStaticInfo(OBJGPU *pGpu)
 
 GspStaticConfigInfo *gpuGetGspStaticInfo(OBJGPU *pGpu)
 {
+    NV_ASSERT_OR_RETURN(GPU_GET_KERNEL_GSP(pGpu) != NULL, NULL);
     return &(GPU_GET_KERNEL_GSP(pGpu)->gspStaticInfo);
 }
 
@@ -4622,6 +4618,7 @@ OBJRPC *gpuGetGspClientRpc(OBJGPU *pGpu)
 {
     if (IS_GSP_CLIENT(pGpu))
     {
+        NV_ASSERT_OR_RETURN(GPU_GET_KERNEL_GSP(pGpu) != NULL, NULL);
         return GPU_GET_KERNEL_GSP(pGpu)->pRpc;
     }
     return NULL;

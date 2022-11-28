@@ -942,6 +942,11 @@ kdispServiceVblank_KERNEL
         // DPC/BottomHalf/whatever to service the rest of the
         // vblank callback queues
         //
+        for(i=0; i< OBJ_MAX_HEADS; i++)
+        {
+            pKernelHead = KDISP_GET_HEAD(pKernelDisplay, i);
+            kheadResetPendingVblankForKernel_HAL(pGpu, pKernelHead, pThreadState);
+        }
     }
     else
     {

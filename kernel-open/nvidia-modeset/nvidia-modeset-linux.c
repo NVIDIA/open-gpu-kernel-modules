@@ -34,6 +34,7 @@
 #include <linux/file.h>
 #include <linux/list.h>
 #include <linux/rwsem.h>
+#include <linux/freezer.h>
 
 #include <acpi/video.h>
 
@@ -182,7 +183,10 @@ static inline int nvkms_read_trylock_pm_lock(void)
 
 static inline void nvkms_read_lock_pm_lock(void)
 {
-    down_read(&nvkms_pm_lock);
+    while (!down_read_trylock(&nvkms_pm_lock)) {
+        try_to_freeze();
+        cond_resched();
+    }
 }
 
 static inline void nvkms_read_unlock_pm_lock(void)
@@ -1086,7 +1090,7 @@ failed:
     return NULL;
 }
 
-void nvkms_close_common(struct nvkms_per_open *popen)
+void nvkms_close_pm_locked(struct nvkms_per_open *popen)
 {
     /*
      * Don't use down_interruptible(): we need to free resources
@@ -1124,13 +1128,13 @@ void nvkms_close_common(struct nvkms_per_open *popen)
     nvkms_free(popen, sizeof(*popen));
 }
 
-static void nvkms_close_deferred(void *data)
+static void nvkms_close_pm_unlocked(void *data)
 {
     struct nvkms_per_open *popen = data;
 
     nvkms_read_lock_pm_lock();
 
-    nvkms_close_common(popen);
+    nvkms_close_pm_locked(popen);
 
     nvkms_read_unlock_pm_lock();
 }
@@ -1138,11 +1142,11 @@ static void nvkms_close_deferred(void *data)
 static void nvkms_close_popen(struct nvkms_per_open *popen)
 {
     if (nvkms_read_trylock_pm_lock() == 0) {
-        nvkms_close_common(popen);
+        nvkms_close_pm_locked(popen);
         nvkms_read_unlock_pm_lock();
     } else {
         nv_kthread_q_item_init(&popen->deferred_close_q_item,
-                               nvkms_close_deferred,
+                               nvkms_close_pm_unlocked,
                                popen);
         nvkms_queue_work(&nvkms_deferred_close_kthread_q,
                          &popen->deferred_close_q_item);
@@ -1195,7 +1199,7 @@ struct nvkms_per_open* nvkms_open_from_kapi
 
 void nvkms_close_from_kapi(struct nvkms_per_open *popen)
 {
-    nvkms_close_popen(popen);
+    nvkms_close_pm_unlocked(popen);
 }
 
 NvBool nvkms_ioctl_from_kapi

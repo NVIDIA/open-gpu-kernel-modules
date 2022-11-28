@@ -1364,8 +1364,6 @@ void nvUvmInterfacePagingChannelsUnmap(uvmGpuAddressSpaceHandle srcVaSpace,
           a. pre-allocated stack
           b. the fact that internal RPC infrastructure doesn't acquire GPU lock.
         Therefore, locking is the caller's responsibility.
-      - This function DOES NOT sleep (does not allocate memory or acquire locks)
-        so it can be invoked while holding a spinlock.
 
     Arguments:
         channel[IN]          - paging channel handle obtained via

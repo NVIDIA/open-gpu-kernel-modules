@@ -3627,8 +3627,6 @@ NvBool nvAllocCoreChannelEvo(NVDevEvoPtr pDevEvo)
     NvU32 dispIndex;
     NvU32 head;
 
-    nvAssert(pDevEvo->lastModesettingClient == NULL);
-
     /* Do nothing if the display was already allocated */
     if (pDevEvo->displayHandle != 0) {
         return TRUE;
@@ -3934,72 +3932,124 @@ NvBool nvAssignSOREvo(NVConnectorEvoPtr pConnectorEvo, NvU32 sorExcludeMask)
     return TRUE;
 }
 
-void nvRestoreSORAssigmentsEvo(NVDevEvoRec *pDevEvo)
+static void CacheSorAssignList(const NVDispEvoRec *pDispEvo,
+    const NVConnectorEvoRec *sorAssignList[NV0073_CTRL_CMD_DFP_ASSIGN_SOR_MAX_SORS])
 {
+    const NVConnectorEvoRec *pConnectorEvo;
+
+    FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
+        NvU32 i;
+
+        if (pConnectorEvo->or.type != NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) {
+            continue;
+        }
+
+        FOR_EACH_INDEX_IN_MASK(32, i, pConnectorEvo->or.mask) {
+            /*
+             * RM populates same sor index into more than one connectors if
+             * they are are DCC partners, this checks make sure SOR
+             * assignment happens only for a single connector. The sor
+             * assignment call before modeset/dp-link-training makes sure
+             * assignment happens for the correct connector.
+             */
+            if (sorAssignList[i] != NULL) {
+                continue;
+            }
+            sorAssignList[i] = pConnectorEvo;
+        } FOR_EACH_INDEX_IN_MASK_END
+    }
+}
+
+static void RestoreSorAssignList(NVDispEvoRec *pDispEvo,
+    const NVConnectorEvoRec *sorAssignList[NV0073_CTRL_CMD_DFP_ASSIGN_SOR_MAX_SORS])
+{
+    NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NvU32 sorIndex;
+
+    for (sorIndex = 0;
+         sorIndex < NV0073_CTRL_CMD_DFP_ASSIGN_SOR_MAX_SORS; sorIndex++) {
+
+        if (sorAssignList[sorIndex] == NULL) {
+            continue;
+        }
+
+        NV0073_CTRL_DFP_ASSIGN_SOR_PARAMS params = {
+            .subDeviceInstance = pDispEvo->displayOwner,
+            .displayId = nvDpyIdToNvU32(sorAssignList[sorIndex]->displayId),
+            .sorExcludeMask = ~NVBIT(sorIndex),
+        };
+        NvU32 ret;
+
+        ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                             pDevEvo->displayCommonHandle,
+                             NV0073_CTRL_CMD_DFP_ASSIGN_SOR,
+                             &params,
+                             sizeof(params));
+
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvEvoLogDispDebug(pDispEvo,
+                              EVO_LOG_ERROR,
+                              "Failed to restore SOR-%u -> %s assignment.",
+                              sorIndex, sorAssignList[sorIndex]->name);
+        } else {
+            RefreshSORAssignments(pDispEvo, &params);
+        }
+    }
+}
+
+NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo)
+{
+    struct {
+        const NVConnectorEvoRec *
+            sorAssignList[NV0073_CTRL_CMD_DFP_ASSIGN_SOR_MAX_SORS];
+    } disp[NVKMS_MAX_SUBDEVICES] = { };
     NVDispEvoRec *pDispEvo;
     NvU32 dispIndex;
 
-    if (!NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
+    if (NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
                 NV0073_CTRL_SYSTEM_CAPS_CROSS_BAR_SUPPORTED)) {
-        return;
-    }
-
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        const NVConnectorEvoRec *
-            sorAssignList[NV0073_CTRL_CMD_DFP_ASSIGN_SOR_MAX_SORS] = { };
-        const NVConnectorEvoRec *pConnectorEvo;
-        NvU32 sorIndex;
-
-        FOR_ALL_EVO_CONNECTORS(pConnectorEvo, pDispEvo) {
-            NvU32 i;
-
-            if (pConnectorEvo->or.type != NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) {
-                continue;
-            }
-
-            FOR_EACH_INDEX_IN_MASK(32, i, pConnectorEvo->or.mask) {
-                /*
-                 * RM populates same sor index into more than one connectors if
-                 * they are are DCC partners, this checks make sure SOR
-                 * assignment happens only for a single connector. The sor
-                 * assignment call before modeset/dp-link-training makes sure
-                 * assignment happens for the correct connector.
-                 */
-                if (sorAssignList[i] != NULL) {
-                    continue;
-                }
-                sorAssignList[i] = pConnectorEvo;
-            } FOR_EACH_INDEX_IN_MASK_END
-        }
-
-        for (sorIndex = 0; sorIndex < ARRAY_LEN(sorAssignList); sorIndex++) {
-            if (sorAssignList[sorIndex] == NULL) {
-                continue;
-            }
-
-            NV0073_CTRL_DFP_ASSIGN_SOR_PARAMS params = {
-                .subDeviceInstance = pDispEvo->displayOwner,
-                .displayId = nvDpyIdToNvU32(sorAssignList[sorIndex]->displayId),
-                .sorExcludeMask = ~NVBIT(sorIndex),
-            };
-            NvU32 ret;
-
-            ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                                 pDevEvo->displayCommonHandle,
-                                 NV0073_CTRL_CMD_DFP_ASSIGN_SOR,
-                                 &params,
-                                 sizeof(params));
-
-            if (ret != NVOS_STATUS_SUCCESS) {
-                nvEvoLogDispDebug(pDispEvo,
-                                  EVO_LOG_ERROR,
-                                  "Failed to restore SOR-%u -> %s assigment.",
-                                  sorIndex, sorAssignList[sorIndex]->name);
-            } else {
-                RefreshSORAssignments(pDispEvo, &params);
-            }
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+            CacheSorAssignList(pDispEvo, disp[dispIndex].sorAssignList);
         }
     }
+
+    if (!nvAllocCoreChannelEvo(pDevEvo)) {
+        return FALSE;
+    }
+
+    /*
+     * During the hibernate-resume cycle vbios or GOP driver programs
+     * the display engine to lit up the boot display. In
+     * hibernate-resume path, doing NV0073_CTRL_CMD_DFP_ASSIGN_SOR
+     * rm-control call before the core channel allocation causes display
+     * channel hang because at that stage RM is not aware of the boot
+     * display actived by vbios and it ends up unrouting active SOR
+     * assignments. Therefore restore the SOR assignment only after the
+     * core channel allocation.
+     */
+
+    if (NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
+                NV0073_CTRL_SYSTEM_CAPS_CROSS_BAR_SUPPORTED)) {
+
+        /*
+         * Shutdown all heads before restoring the SOR assignments because in
+         * case of hibernate-resume the SOR, for which NVKMS is trying to
+         * restore the assignment, might be in use by the boot display setup
+         * by vbios/gop driver.
+         */
+        nvShutDownHeads(pDevEvo, NULL /* pTestFunc, shut down all heads */);
+
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+            RestoreSorAssignList(pDispEvo, disp[dispIndex].sorAssignList);
+        }
+    }
+
+    return TRUE;
+}
+
+void nvSuspendDevEvo(NVDevEvoRec *pDevEvo)
+{
+    nvFreeCoreChannelEvo(pDevEvo);
 }
 
 static void ClearApiHeadState(NVDevEvoRec *pDevEvo)
@@ -4088,8 +4138,6 @@ void nvFreeCoreChannelEvo(NVDevEvoPtr pDevEvo)
 
     nvFree(pDevEvo->gpus);
     pDevEvo->gpus = NULL;
-
-    pDevEvo->lastModesettingClient = NULL;
 }
 
 

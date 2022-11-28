@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 525.53.
+version 525.60.11.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-525.53 driver release.  This can be achieved by installing
+525.60.11 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -167,7 +167,7 @@ for the target kernel.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 525.53 release,
+(see the table below). However, in the 525.60.11 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -175,7 +175,7 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/525.53/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/525.60.11/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -662,7 +662,6 @@ Subsystem Device ID.
 | NVIDIA A800-SXM4-80GB                           | 20F3 10DE 17A2 |
 | NVIDIA A800 80GB PCIe                           | 20F5 10DE 1799 |
 | NVIDIA A800 80GB PCIe LC                        | 20F5 10DE 179A |
-| NVIDIA A800 40GB PCIe                           | 20F6 10DE 17A3 |
 | NVIDIA GeForce GTX 1660 Ti                      | 2182           |
 | NVIDIA GeForce GTX 1660                         | 2184           |
 | NVIDIA GeForce GTX 1650 SUPER                   | 2187           |
@@ -795,3 +794,4 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 3050 Laptop GPU              | 25E5           |
 | NVIDIA RTX A1000 Embedded GPU                   | 25F9           |
 | NVIDIA RTX A2000 Embedded GPU                   | 25FA           |
+| NVIDIA RTX A500 Embedded GPU                    | 25FB           |

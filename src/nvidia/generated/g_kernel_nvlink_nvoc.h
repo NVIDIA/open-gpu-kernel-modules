@@ -233,6 +233,7 @@ struct KernelNvlink {
     NV_STATUS (*__knvlinkDiscoverPostRxDetLinks__)(OBJGPU *, struct KernelNvlink *, OBJGPU *);
     NV_STATUS (*__knvlinkLogAliDebugMessages__)(OBJGPU *, struct KernelNvlink *);
     NvBool (*__knvlinkIsFloorSweepingNeeded__)(OBJGPU *, struct KernelNvlink *, NvU32, NvU32);
+    void (*__knvlinkDirectConnectCheck__)(OBJGPU *, struct KernelNvlink *);
     NV_STATUS (*__knvlinkReconcileTunableState__)(POBJGPU, struct KernelNvlink *, void *);
     NV_STATUS (*__knvlinkStateInitLocked__)(POBJGPU, struct KernelNvlink *);
     NV_STATUS (*__knvlinkStatePreLoad__)(POBJGPU, struct KernelNvlink *, NvU32);
@@ -416,6 +417,8 @@ NV_STATUS __nvoc_objCreate_KernelNvlink(KernelNvlink**, Dynamic*, NvU32);
 #define knvlinkLogAliDebugMessages_HAL(pGpu, pKernelNvlink) knvlinkLogAliDebugMessages_DISPATCH(pGpu, pKernelNvlink)
 #define knvlinkIsFloorSweepingNeeded(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl) knvlinkIsFloorSweepingNeeded_DISPATCH(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl)
 #define knvlinkIsFloorSweepingNeeded_HAL(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl) knvlinkIsFloorSweepingNeeded_DISPATCH(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl)
+#define knvlinkDirectConnectCheck(pGpu, pKernelNvlink) knvlinkDirectConnectCheck_DISPATCH(pGpu, pKernelNvlink)
+#define knvlinkDirectConnectCheck_HAL(pGpu, pKernelNvlink) knvlinkDirectConnectCheck_DISPATCH(pGpu, pKernelNvlink)
 #define knvlinkReconcileTunableState(pGpu, pEngstate, pTunableState) knvlinkReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define knvlinkStateInitLocked(pGpu, pEngstate) knvlinkStateInitLocked_DISPATCH(pGpu, pEngstate)
 #define knvlinkStatePreLoad(pGpu, pEngstate, arg0) knvlinkStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -1532,6 +1535,16 @@ NvBool knvlinkIsFloorSweepingNeeded_GH100(OBJGPU *pGpu, struct KernelNvlink *pKe
 
 static inline NvBool knvlinkIsFloorSweepingNeeded_DISPATCH(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NvU32 numActiveLinksPerIoctrl, NvU32 numLinksPerIoctrl) {
     return pKernelNvlink->__knvlinkIsFloorSweepingNeeded__(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl);
+}
+
+static inline void knvlinkDirectConnectCheck_b3696a(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    return;
+}
+
+void knvlinkDirectConnectCheck_GH100(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
+
+static inline void knvlinkDirectConnectCheck_DISPATCH(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    pKernelNvlink->__knvlinkDirectConnectCheck__(pGpu, pKernelNvlink);
 }
 
 static inline NV_STATUS knvlinkReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelNvlink *pEngstate, void *pTunableState) {

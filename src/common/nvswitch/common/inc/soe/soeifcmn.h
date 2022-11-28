@@ -175,4 +175,11 @@ enum
     RM_SOE_DMAIDX_GUEST_PHYS_SYS_NCOH_BOUND = 7
 };
 
+/*!
+ * SOE Debug buffer size
+ * Creating a copy of SOE_DMESG_BUFFER_SIZE in memmap.h
+ * soe/memmap.h is conflicting with sec2/memmap.h and cannot be used in the driver
+ */
+#define SOE_DEBUG_BUFFER_SIZE 0x1000
+
 #endif  // _GSOEIFCMN_H_

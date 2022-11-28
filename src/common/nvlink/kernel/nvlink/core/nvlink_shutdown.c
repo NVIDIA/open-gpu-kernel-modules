@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2019-2020 NVidia Corporation
+    Copyright (c) 2019-2022 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1047,6 +1047,7 @@ nvlink_core_powerdown_floorswept_conns_to_off
         if (numConnsToShutdown != 0)
         {
             nvlink_core_powerdown_intranode_conns_from_active_to_off(connsToShutdown, numConnsToShutdown, 0);
+            nvlink_core_reset_intranode_conns(connsToShutdown, numConnsToShutdown, NVLINK_STATE_CHANGE_ASYNC);
 
             for (j = 0; j < numConnsToShutdown; ++j)
             {

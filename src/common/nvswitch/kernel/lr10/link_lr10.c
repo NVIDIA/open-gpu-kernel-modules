@@ -2076,7 +2076,8 @@ nvswitch_setup_link_system_registers_lr10
     nvlink_link *link
 )
 {   
-    NvU32 regval, fldval;
+    NvU32 regval = 0;
+    NvU32 fldval = 0;
     NvU32 lineRate = 0;
     NVLINK_CONFIG_DATA_LINKENTRY *vbios_link_entry = NULL;
     NVSWITCH_BIOS_NVLINK_CONFIG *bios_config;
@@ -2113,9 +2114,25 @@ nvswitch_setup_link_system_registers_lr10
                                     _LINE_RATE, lineRate, regval);
         NVSWITCH_PRINT(device, SETUP, "%s: LINE_RATE = 0x%x requested by regkey\n",
                        __FUNCTION__, lineRate);
-        NVSWITCH_LINK_WR32_LR10(device, link->linkNumber, NVLIPT_LNK,
-                            _NVLIPT_LNK_CTRL_SYSTEM_LINK, _CLK_CTRL, regval);
     }
+
+    // REFERENCE_CLOCK_MODE SYSTEM register
+    if (device->regkeys.reference_clock_mode != NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_DEFAULT)
+    {
+        regval   = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CLK_CTRL,
+                                    _REFERENCE_CLOCK_MODE, device->regkeys.reference_clock_mode, regval);
+        NVSWITCH_PRINT(device, SETUP, "%s: REFERENCE_CLOCK_MODE = 0x%x requested by regkey\n",
+                       __FUNCTION__, device->regkeys.reference_clock_mode);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CLK_CTRL, _REFERENCE_CLOCK_MODE,
+                                 DRF_VAL(_NVLINK_VBIOS,_PARAM3,_REFERENCE_CLOCK_MODE, vbios_link_entry->nvLinkparam3),
+                                 regval);
+    }
+
+    NVSWITCH_LINK_WR32_LR10(device, link->linkNumber, NVLIPT_LNK,
+                        _NVLIPT_LNK_CTRL_SYSTEM_LINK, _CLK_CTRL, regval);
 
     // TXTRAIN SYSTEM register
     regval = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLIPT_LNK,
@@ -2198,6 +2215,40 @@ nvswitch_setup_link_system_registers_lr10
         regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT,
                                  DRF_VAL(_NVLINK_VBIOS,_PARAM6,_TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT, vbios_link_entry->nvLinkparam6),
                                  regval);
+    }
+
+    // AC vs DC mode SYSTEM register
+    if (link->ac_coupled)
+    {
+        //
+        // In NVL3.0, ACMODE is handled by MINION in the INITPHASE1 command
+        // Here we just setup the register with the proper info
+        //
+        NVSWITCH_PRINT(device, SETUP, "%s: AC_DC_MODE = 0x%x\n",
+                       __FUNCTION__, DRF_VAL(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL,
+                                                _AC_DC_MODE, regval));
+        regval = FLD_SET_DRF(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _AC_DC_MODE, _AC, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _AC_DC_MODE,
+                                    DRF_VAL(_NVLINK_VBIOS, _PARAM0, _ACDC_MODE, vbios_link_entry->nvLinkparam0),
+                                    regval);
+    }
+
+    if (device->regkeys.block_code_mode != NV_SWITCH_REGKEY_BLOCK_CODE_MODE_DEFAULT)
+    {
+        NVSWITCH_PRINT(device, SETUP, "%s: BLOCK_CODE_MODE = 0x%x requested by regkey\n",
+                       __FUNCTION__, device->regkeys.block_code_mode);
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _BLOCK_CODE_MODE, device->regkeys.block_code_mode, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _BLOCK_CODE_MODE,
+                                    DRF_VAL(_NVLINK_VBIOS, _PARAM3, _CLOCK_MODE_BLOCK_CODE, vbios_link_entry->nvLinkparam3),
+                                    regval);
     }
 
     NVSWITCH_LINK_WR32_LR10(device, link->linkNumber, NVLIPT_LNK,

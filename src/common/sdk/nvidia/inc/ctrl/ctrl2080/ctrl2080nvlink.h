@@ -2922,6 +2922,29 @@ typedef struct NV2080_CTRL_NVLINK_IS_GPU_DEGRADED_PARAMS {
 
 #define NV2080_CTRL_CMD_NVLINK_IS_GPU_DEGRADED (0x20803040U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_IS_GPU_DEGRADED_PARAMS_MESSAGE_ID" */
 
+/*
+ * NV2080_CTRL_CMD_NVLINK_DIRECT_CONNECT_CHECK
+ *
+ * This command is used to check for missing
+ * bridge/nvlink for direct connect GPU
+ *
+ * [out] bIsEnoughNvLink
+ *     Check if number of active nvlink meet the minimum requirements.
+ * [out] numBridge
+ *     Number of NVLink bridge
+ * [out] bridgePresenceMask
+ *     Bit mask of NVLink bridges's presence
+ */
+#define NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS_MESSAGE_ID (0x41U)
+
+typedef struct NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS {
+    NvBool bIsEnoughNvLink;
+    NvU32  numBridge;
+    NvU32  bridgePresenceMask;
+} NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS;
+
+#define NV2080_CTRL_CMD_NVLINK_DIRECT_CONNECT_CHECK (0x20803041U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS_MESSAGE_ID" */
+
 
 /* _ctrl2080nvlink_h_ */
 

@@ -1859,6 +1859,23 @@ static void rpc_iGrp_ipVersions_Install_v1E_0B(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v1E_0C(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1E_0D(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
@@ -1945,23 +1962,6 @@ static void rpc_iGrp_ipVersions_Install_v1F_04(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 
 // No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1F_05(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1F_06(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -2319,6 +2319,23 @@ static void rpc_iGrp_ipVersions_Install_v21_09(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 
 // No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v21_0A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v21_0B(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -2756,6 +2773,9 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_0B[] = {
         { 0x1E0B0000, 0xFFFFFFFF, },          // 
     };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_0C[] = {
+        { 0x1E0C0000, 0xFFFFFFFF, },          // 
+    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_0D[] = {
         { 0x1E0D0000, 0xFFFFFFFF, },          // 
     };
@@ -2773,9 +2793,6 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_05[] = {
         { 0x1F050000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_06[] = {
-        { 0x1F060000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_07[] = {
         { 0x1F070000, 0xFFFFFFFF, },          // 
@@ -2839,6 +2856,9 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_0A[] = {
         { 0x210A0000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_0B[] = {
+        { 0x210B0000, 0xFFFFFFFF, },          // 
     };
 
 #define _RPC_HAL_IGRP_ENTRY_INIT(v) \
@@ -2947,13 +2967,13 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_08),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_0A),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_0B),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v1E_0C),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_0D),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_0E),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_00),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_03),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_04),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_05),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1F_06),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_07),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_08),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0A),               // 
@@ -2975,6 +2995,7 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v21_08),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_09),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_0A),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v21_0B),               // 
     };
 
 #undef _RPC_HAL_IGRP_ENTRY_INIT

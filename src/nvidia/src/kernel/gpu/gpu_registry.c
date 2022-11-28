@@ -32,10 +32,6 @@
 
 #include "virtualization/hypervisor/hypervisor.h"
 
-#define __VGPU_SRIOV_ENABLED_SKUS__
-#include "g_vgpu_resman_specific.h" // isSriovEnabledSKU
-#undef __VGPU_SRIOV_ENABLED_SKUS__
-
 static void _gpuInitGlobalSurfaceOverride(OBJGPU *pGpu);
 
 /*!
@@ -118,15 +114,7 @@ gpuInitRegistryOverrides_KERNEL
         {
             if (hypervisorIsVgxHyper() && !RMCFG_FEATURE_PLATFORM_GSP)
             {
-                NvU32 devID = 0;
-                NvU32 ssID = 0;
-
-                gpuReadDeviceId_HAL(pGpu, &devID, &ssID);
-
-                devID = DRF_VAL(_PCI, _DEVID, _DEVICE, devID);
-                ssID  = DRF_VAL(_PCI, _DEVID, _DEVICE, ssID);
-
-                if (isSriovEnabledSKU(devID, ssID))
+                if (!IsTURING(pGpu))
                 {
                     pGpu->bSriovEnabled = NV_TRUE;
 
@@ -179,6 +167,12 @@ gpuInitRegistryOverrides_KERNEL
         NV_PRINTF(LEVEL_INFO, "Split VAS mgmt between Server/Client RM %u\n",
                   pGpu->bSplitVasManagementServerClientRm);
     }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_FABRIC_PROBE, &pGpu->fabricProbeRegKeyOverride) == NV_OK)
+    {
+        pGpu->fabricProbeRegKeyOverride |= DRF_NUM(_REG_STR, _RM_GPU_FABRIC_PROBE, _OVERRIDE, 1);
+    }
+
 
     return NV_OK;
 }

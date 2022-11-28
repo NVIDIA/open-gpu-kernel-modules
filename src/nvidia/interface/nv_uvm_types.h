@@ -801,6 +801,8 @@ typedef struct UvmGpuFaultInfo_tag
     NvHandle faultBufferHandle;
 } UvmGpuFaultInfo;
 
+struct Device;
+
 typedef struct UvmGpuPagingChannel_tag
 {
     struct gpuDevice  *device;
@@ -808,6 +810,7 @@ typedef struct UvmGpuPagingChannel_tag
     NvHandle          channelHandle;
     NvHandle          errorNotifierHandle;
     void              *pushStreamSp;
+    struct Device     *pDevice;
 } UvmGpuPagingChannel, *UvmGpuPagingChannelHandle;
 
 typedef struct UvmGpuAccessCntrInfo_tag

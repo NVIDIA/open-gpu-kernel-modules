@@ -1078,15 +1078,12 @@ void nvHsConfigInitSwapGroup(
             }
 
             /*
-             *
              * If (pDevEvo->modesetOwner != NULL) but
-             * (pDevEvo->lastModesettingClient != pDevEvo->modesetOwner) that
-             * means the modeset ownership is grabbed by the external client
-             * but it hasn't performed any modeset and the console is still
-             * active.
+             * pDevEvo->modesetOwnerChanged is TRUE, that means the modeset
+             * ownership is grabbed by the external client but it hasn't
+             * performed any modeset and the console is still active.
              */
-            if ((pDevEvo->modesetOwner != NULL) &&
-                    (pDevEvo->lastModesettingClient != pDevEvo->modesetOwner)) {
+            if ((pDevEvo->modesetOwner != NULL) && pDevEvo->modesetOwnerChanged) {
                 continue;
             }
 

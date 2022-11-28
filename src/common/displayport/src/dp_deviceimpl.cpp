@@ -1043,6 +1043,46 @@ bool DeviceImpl::getSDPExtnForColorimetrySupported()
     return (this->bSdpExtCapable == True);
 }
 
+bool DeviceImpl::getPanelFwRevision(NvU16 *revision)
+{
+    NvU8 fwRevisionMajor   = 0;
+    NvU8 fwRevisionMinor   = 0;
+    unsigned size          = 0;
+    unsigned nakReason     = NakUndefined;
+
+    if (!revision)
+    {
+        return false;
+    }
+
+    *revision = 0;
+
+    //
+    // On faked mux devices, we cannot check if the device has
+    // the capability as we don't have access to aux.
+    //
+    if (this->isFakedMuxDevice())
+    {
+        return false;
+    }
+
+    if (AuxBus::success != this->getDpcdData(NV_DPCD14_FW_SW_REVISION_MAJOR,
+                                             &fwRevisionMajor, sizeof(fwRevisionMajor), &size, &nakReason))
+    {
+        return false;
+    }
+
+    if (AuxBus::success != this->getDpcdData(NV_DPCD14_FW_SW_REVISION_MINOR,
+                                             &fwRevisionMinor, sizeof(fwRevisionMinor), &size, &nakReason))
+    {
+        return false;
+    }
+
+    *revision = (fwRevisionMajor << 8) | fwRevisionMinor;
+
+    return true;
+}
+
 bool DeviceImpl::isPowerSuspended()
 {
     bool bPanelPowerOn, bDPCDPowerStateD0;

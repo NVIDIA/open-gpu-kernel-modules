@@ -28,6 +28,9 @@
 #define NV_MINION_DL_CMD_DATA_RXCAL_EN_ALARM 0x50
 #define NV_MINION_DL_CMD_DATA_INIT_CAL_DONE  0x26
 
+#define NV_MINION_NVLINK_DL_CMD_COMMAND_SETUPTC           0x00000094
+#define NV_MINION_NVLINK_DL_CMD_COMMAND_CLR_TLC_MISC_REGS 0x00000026
+
 // filtering dev_minion_dlstat.ref for pattern (CMINION|MINION|NVLSTAT|PMINION|SWMINION)
 #define NV_NVLSTAT                                                    0x00000103:0x00000000 /* RW--D */
 #define NV_NVLSTAT_UC01                                                          0x00000001 /* R--4R */

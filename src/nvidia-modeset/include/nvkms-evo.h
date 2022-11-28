@@ -235,7 +235,6 @@ void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
     NVEvoUpdateState *pUpdateState);
 
 NvBool nvAssignSOREvo(NVConnectorEvoPtr pConnectorEvo, NvU32 sorExcludeMask);
-void nvRestoreSORAssigmentsEvo(NVDevEvoRec *pDevEvo);
 
 void nvSetSwapBarrierNotifyEvo(NVDispEvoPtr pDispEvo,
                                NvBool enable, NvBool isPre);
@@ -306,6 +305,9 @@ NvBool nvNeedsTmoLut(NVDevEvoPtr pDevEvo,
                      NvU32 targetMaxCLL);
 
 NvBool nvIsCscMatrixIdentity(const struct NvKmsCscMatrix *matrix);
+
+void nvSuspendDevEvo(NVDevEvoRec *pDevEvo);
+NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo);
 
 #ifdef __cplusplus
 };

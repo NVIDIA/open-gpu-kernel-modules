@@ -254,6 +254,10 @@ memdescCreate
             if (pMemoryManager && pMemoryManager->sysmemPageSize)
             {
                 allocSize = RM_ALIGN_UP(allocSize, pMemoryManager->sysmemPageSize);
+                if (allocSize < Size)
+                {
+                    return NV_ERR_INVALID_ARGUMENT;
+                }
             }
         }
 
@@ -278,7 +282,10 @@ memdescCreate
             if ((AddressSpace == ADDR_SYSMEM || AddressSpace == ADDR_UNKNOWN) &&
                 PhysicallyContiguous && (Alignment > RM_PAGE_SIZE))
             {
-                allocSize += (Alignment - RM_PAGE_SIZE);
+                if (!portSafeAddU64(allocSize, (Alignment - RM_PAGE_SIZE), &allocSize))
+                {
+                    return NV_ERR_INVALID_ARGUMENT;
+                }
             }
         }
     }
@@ -2717,6 +2724,7 @@ void memdescGetPhysAddrsForGpu(MEMORY_DESCRIPTOR *pMemDesc,
         else
         {
             pageIndex = offset >> RM_PAGE_SHIFT;
+            NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pageIndex < pMemDesc->PageCount);
             pAddresses[i] = pteArray[pageIndex] + (offset & RM_PAGE_MASK);
         }
 

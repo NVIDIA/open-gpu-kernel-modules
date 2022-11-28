@@ -195,6 +195,27 @@
               (x - ROBUST_CHANNEL_NVENC1_ERROR + 1) : \
               (x - ROBUST_CHANNEL_NVENC2_ERROR + 2)))
 
+// Indexed NVJPG reference
+#define ROBUST_CHANNEL_NVJPG_ERROR(x)                   \
+    ((x < 1) ?                                          \
+        (ROBUST_CHANNEL_NVJPG0_ERROR) :                 \
+        (ROBUST_CHANNEL_NVJPG1_ERROR + (x - 1)))
+
+#define ROBUST_CHANNEL_IS_NVJPG_ERROR(x)                \
+    ((x == ROBUST_CHANNEL_NVJPG0_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG1_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG2_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG3_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG4_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG5_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG6_ERROR) ||              \
+     (x == ROBUST_CHANNEL_NVJPG7_ERROR))
+
+#define ROBUST_CHANNEL_NVJPG_ERROR_IDX(x)               \
+    ((x == ROBUST_CHANNEL_NVJPG0_ERROR) ?               \
+         (x - ROBUST_CHANNEL_NVJPG0_ERROR) :            \
+         (x - ROBUST_CHANNEL_NVJPG1_ERROR + 1))
+
 // Error Levels
 #define ROBUST_CHANNEL_ERROR_RECOVERY_LEVEL_INFO      (0)
 #define ROBUST_CHANNEL_ERROR_RECOVERY_LEVEL_NON_FATAL (1)

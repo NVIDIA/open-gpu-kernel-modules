@@ -260,6 +260,8 @@ typedef struct
     NvU32 lp_threshold;
     NvU32 minion_intr;
     NvU32 surpress_link_errors_for_gpu_reset;
+    NvU32 block_code_mode;
+    NvU32 reference_clock_mode;
 } NVSWITCH_REGKEY_TYPE;
 
 //

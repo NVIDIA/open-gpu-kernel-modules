@@ -34,6 +34,7 @@
 #include "nvswitch/ls10/dev_nvlphyctl_ip.h"
 #include "nvswitch/ls10/dev_nvltlc_ip.h"
 #include "nvswitch/ls10/dev_minion_ip.h"
+#include "nvswitch/ls10/dev_minion_ip_addendum.h"
 #include "nvswitch/ls10/dev_nvlipt_lnk_ip.h"
 #include "nvswitch/ls10/dev_nvlipt_ip.h"
 #include "nvswitch/ls10/dev_nport_ip.h"
@@ -502,27 +503,20 @@ nvswitch_reset_persistent_link_hw_state_ls10
     NvU32            linkNumber
 )
 {
-    NvU32 regData;
-    NvU32 nvliptWarmResetDelayUs = (IS_RTLSIM(device) || IS_EMULATION(device)) ? 800:8;
+    nvlink_link *link = nvswitch_get_link(device, linkNumber);
+    if (nvswitch_is_link_in_reset(device, link))
+    {
+        return;
+    }
 
-    regData = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLIPT_LNK,
-                    _NVLIPT_LNK, _DEBUG_CLEAR);
-    regData = FLD_SET_DRF_NUM(_NVLIPT_LNK, _DEBUG_CLEAR, _CLEAR,
-                     NV_NVLIPT_LNK_DEBUG_CLEAR_CLEAR_ASSERT, regData);
-    NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLIPT_LNK,
-                    _NVLIPT_LNK, _DEBUG_CLEAR, regData);
+    // SETUPTC called with HW Reset
+    (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_SETUPTC , 0x4);
 
-    NVSWITCH_NSEC_DELAY(nvliptWarmResetDelayUs * NVSWITCH_INTERVAL_1USEC_IN_NS);
+    // clear TLC TP Counters
+    (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_CLR_TLC_MISC_REGS, 0);
 
-    regData = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLIPT_LNK,
-                    _NVLIPT_LNK, _DEBUG_CLEAR);
-    regData = FLD_SET_DRF_NUM(_NVLIPT_LNK, _DEBUG_CLEAR, _CLEAR,
-                     NV_NVLIPT_LNK_DEBUG_CLEAR_CLEAR_DEASSERT, regData);
-    NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLIPT_LNK,
-                    _NVLIPT_LNK, _DEBUG_CLEAR, regData);
-
-    NVSWITCH_NSEC_DELAY(nvliptWarmResetDelayUs * NVSWITCH_INTERVAL_1USEC_IN_NS);
-
+    // clear DL error counters
+    (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_DLSTAT_CLR_DLERRCNT, 0);
 }
 
 NvlStatus

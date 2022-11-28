@@ -894,12 +894,31 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
     NvU64                                    address;
     NvU64                                    startOffset;
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO_MAPIter  vidMemMapIter;
+    NvBool                                   bGpuLockTaken;
+    NvBool                                   bVgpuRpc;
 
     NV_ASSERT_OR_RETURN((pKey != NULL), NV_ERR_INVALID_ARGUMENT);
+
+    bGpuLockTaken = (rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)) ||
+                     rmGpuLockIsOwner());
+
+    bVgpuRpc = IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
 
     pSubdevice = pThirdPartyP2P->pSubdevice;
 
     GPU_RES_SET_THREAD_BC_STATE(pThirdPartyP2P);
+
+    //
+    // vGPU RPC is being called without GPU lock held.
+    // So acquire the lock only for non-vGPU case and if
+    // no locks are held.
+    //
+    if (!bVgpuRpc && !bGpuLockTaken)
+    {
+        status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
+                                         RM_LOCK_MODULES_P2P);
+        NV_ASSERT_OK_OR_RETURN(status);
+    }
 
     vidMemMapIter = mapIterAll(&pThirdPartyP2P->vidmemInfoMap);
     while (mapIterNext(&vidMemMapIter))
@@ -930,7 +949,7 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
                               "Freeing P2P mapping for gpu VA: 0x%llx, length: 0x%llx\n",
                               pExtentInfo->address, pExtentInfo->length);
 
-                    if (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+                    if (bVgpuRpc)
                     {
                         NV_RM_RPC_UNMAP_MEMORY(pGpu, pThirdPartyP2P->hClient,
                                                RES_GET_PARENT_HANDLE(pSubdevice),
@@ -938,14 +957,13 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
                                                0,
                                                pExtentInfo->fbApertureOffset, status);
                     }
-                    else if ((status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+                    else
                     {
                         status = kbusUnmapFbAperture_HAL(pGpu, pKernelBus,
                                                          pExtentInfo->pMemDesc,
                                                          pExtentInfo->fbApertureOffset,
                                                          pExtentInfo->length,
                                                          BUS_MAP_FB_FLAGS_MAP_UNICAST);
-                        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
                     }
                     NV_ASSERT(status == NV_OK);
 
@@ -982,6 +1000,10 @@ static NV_STATUS _thirdpartyp2pDelMappingInfoByKey
         }
     }
 
+    if (!bVgpuRpc && !bGpuLockTaken)
+    {
+        rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
+    }
 
     return NV_OK;
 }

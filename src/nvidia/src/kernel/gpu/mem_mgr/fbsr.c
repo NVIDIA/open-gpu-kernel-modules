@@ -26,6 +26,12 @@
 #include "os/os.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/fbsr.h"
+#include "class/cl906f.h"
+#include "nvrm_registry.h"
+#include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/bus/kern_bus.h"
+#include "rmapi/client.h"
+#include "vgpu/rpc_headers.h"
 
 NV_STATUS
 fbsrObjectInit_IMPL(OBJFBSR *pFbsr, NvU32 type)
@@ -96,3 +102,13 @@ fbsrFreeReservedSysMemoryForPowerMgmt_IMPL(OBJFBSR *pFbsr)
         pFbsr->pSysReservedMemDesc = NULL;
     }
 }
+
+/*!
+ * @brief create channel for FB save/restore.
+ *
+ * @param[in] pGpu  OBJGPU pointer
+ * @param[in] pFbsr OBJFBSR pointer
+ *
+ * @returns status
+ */
+

@@ -25,6 +25,7 @@
 
 #include "flcn/flcn_nvswitch.h"
 #include "rmflcncmdif_nvswitch.h"
+#include "lr10/smbpbi_lr10.h"
 #include "nvVer.h"
 
 NvlStatus
@@ -117,7 +118,7 @@ nvswitch_smbpbi_log_message_ls10
 
     pLogCmd->sxidId = num;
     pLogCmd->msgLen = msglen;
-    pLogCmd->timeStamp = nvswitch_os_get_platform_time() / NVSWITCH_NSEC_PER_SEC;
+    pLogCmd->timeStamp = nvswitch_os_get_platform_time_epoch() / NVSWITCH_NSEC_PER_SEC;
 
     for (offset = 0; msglen > 0; offset += segSize)
     {
@@ -211,6 +212,7 @@ nvswitch_smbpbi_send_unload_ls10
     nvswitch_device *device
 )
 {
+    nvswitch_smbpbi_send_unload_lr10(device);
 }
 
 void

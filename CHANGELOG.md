@@ -2,6 +2,8 @@
 
 ## Release 525 Entries
 
+### [525.60.11] 2022-11-28
+
 ### [525.53] 2022-11-10
 
 #### Changed
@@ -18,6 +20,8 @@
 - Added support for rotation in X11, Quadro Sync, Stereo, and YUV 4:2:0 on Turing.
 
 ## Release 520 Entries
+
+### [520.61.07] 2022-10-20
 
 ### [520.56.06] 2022-10-12
 

@@ -132,6 +132,11 @@ nvidia_vma_access(
     pageIndex = ((addr - vma->vm_start) >> PAGE_SHIFT);
     pageOffset = (addr & ~PAGE_MASK);
 
+    if (length < 0)
+    {
+        return -EINVAL;
+    }
+
     if (!mmap_context->valid)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap context\n");
@@ -210,8 +215,12 @@ static vm_fault_t nvidia_fault(
 
     NvU64 page;
     NvU64 num_pages = NV_VMA_SIZE(vma) >> PAGE_SHIFT;
-    NvU64 pfn_start =
-        (nvlfp->mmap_context.mmap_start >> PAGE_SHIFT) + vma->vm_pgoff;
+    NvU64 pfn_start = (nvlfp->mmap_context.mmap_start >> PAGE_SHIFT);
+
+    if (vma->vm_pgoff != 0)
+    {
+        return VM_FAULT_SIGBUS;
+    }
 
     // Mapping revocation is only supported for GPU mappings.
     if (NV_IS_CTL_DEVICE(nv))
@@ -484,6 +493,11 @@ int nvidia_mmap_helper(
         return -EINVAL;
     }
 
+    if (vma->vm_pgoff != 0)
+    {
+        return -EINVAL;
+    }
+
     NV_PRINT_VMA(NV_DBG_MEMINFO, vma);
 
     status = nv_check_gpu_state(nv);
@@ -510,6 +524,11 @@ int nvidia_mmap_helper(
         NvU64 access_start = mmap_context->access_start;
         NvU64 access_len = mmap_context->access_size;
 
+        // validate the size
+        if (NV_VMA_SIZE(vma) != mmap_length)
+        {
+            return -ENXIO;
+        }
         if (IS_REG_OFFSET(nv, access_start, access_len))
         {
             if (nv_encode_caching(&vma->vm_page_prot, NV_MEMORY_UNCACHED,

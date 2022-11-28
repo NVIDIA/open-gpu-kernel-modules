@@ -865,6 +865,10 @@ kbusMapBar2Aperture_SCRATCH
     NvU32              flags
 )
 {
+    if (pMemDesc->Size >= NV_U32_MAX)
+    {
+        return NULL;
+    }
 
     return portMemAllocNonPaged((NvU32)pMemDesc->Size);
 }

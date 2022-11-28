@@ -27,9 +27,11 @@
 #include "nvtypes.h"
 #include "nvkms-api.h"
 
+#define NVKMS_KAPI_MAX_EVENT_CHANNELS 3
+
 struct NvKmsKapiPrivAllocateChannelEventParams {
     NvU32 hClient;
-    NvU32 hChannel;
+    NvU32 hChannels[NVKMS_KAPI_MAX_EVENT_CHANNELS];
 };
 
 struct NvKmsKapiPrivSurfaceParams {

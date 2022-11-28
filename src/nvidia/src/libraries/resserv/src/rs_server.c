@@ -2048,6 +2048,12 @@ _serverInsertClientEntry
     {
         ppClientEntry = (CLIENT_ENTRY **)listInsertNew(pClientList, ppClientNext);
     }
+
+    if (ppClientEntry == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
     *ppClientEntry = pClientEntry;
 
     return NV_OK;

@@ -1030,8 +1030,9 @@ knvlinkCoreShutdownDeviceLinks_IMPL
     NvU32        count = 0;
     NvU32        linkId;
 
-    // Skip link shutdown where fabric manager is present
-    if (pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED) ||
+    // Skip link shutdown where fabric manager is present, for nvlink version bellow 4.0
+    if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 && 
+         pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED)) ||
         (pKernelNvlink->pNvlinkDev == NULL))
     {
         NV_PRINTF(LEVEL_INFO,
@@ -1128,8 +1129,9 @@ knvlinkCoreResetDeviceLinks_IMPL
     NvU32        count = 0;
     NvU32        linkId;
 
-    // Skip link reset where fabric manager is present
-    if (pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED) ||
+    // Skip link reset where fabric manager is present, for nvlink version bellow 4.0
+    if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 && 
+         pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED)) ||
         (pKernelNvlink->pNvlinkDev == NULL))
     {
         NV_PRINTF(LEVEL_INFO,
@@ -1331,6 +1333,12 @@ knvlinkFloorSweep_IMPL
     {
         return NV_OK;
     }
+
+    //
+    // This call must be before the floorswept to cache the NVLink bridge
+    // information in physical RM.
+    //
+    knvlinkDirectConnectCheck_HAL(pGpu, pKernelNvlink);
 
     // floorsweeping in corelib will update connection info that RM qill query below
     (void)nvlink_lib_powerdown_floorswept_links_to_off(pKernelNvlink->pNvlinkDev);

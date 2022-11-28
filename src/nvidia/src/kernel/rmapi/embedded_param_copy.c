@@ -700,7 +700,7 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
             RMAPI_PARAM_COPY_INIT(paramCopies[0],
                             ((NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS*)pParams)->pPdeBuffer,
                             ((NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS*)pParams)->pPdeBuffer,
-                            1, 0x8/*NV_MMU_VER2_PDE__SIZE*/);
+                            1, 0x10/*NV_MMU_VER2_DUAL_PDE__SIZE*/);
 
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;

@@ -935,6 +935,7 @@ static NvBool GrabModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
     }
 
     pDevEvo->modesetOwner = pOpenDev;
+    pDevEvo->modesetOwnerChanged = TRUE;
 
     AssignFullNvKmsFlipPermissions(pDevEvo, &pOpenDev->flipPermissions);
     AssignFullNvKmsModesetPermissions(pDevEvo, &pOpenDev->modesetPermissions);
@@ -996,14 +997,6 @@ static void RevokePermissionsInternal(
     }
 }
 
-static void ReallocCoreChannel(NVDevEvoRec *pDevEvo)
-{
-    if (nvAllocCoreChannelEvo(pDevEvo)) {
-        nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
-        AllocSurfaceCtxDmasForAllOpens(pDevEvo);
-    }
-}
-
 static void RestoreConsole(NVDevEvoPtr pDevEvo)
 {
     // Try to issue a modeset and flip to the framebuffer console surface.
@@ -1016,7 +1009,10 @@ static void RestoreConsole(NVDevEvoPtr pDevEvo)
         // Reallocate the core channel right after freeing it. This makes sure
         // that it's allocated and ready right away if another NVKMS client is
         // started.
-        ReallocCoreChannel(pDevEvo);
+        if (nvAllocCoreChannelEvo(pDevEvo)) {
+            nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
+            AllocSurfaceCtxDmasForAllOpens(pDevEvo);
+        }
     }
 }
 
@@ -1039,6 +1035,7 @@ static NvBool ReleaseModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
     FreeSwapGroups(pOpenDev);
 
     pDevEvo->modesetOwner = NULL;
+    pDevEvo->modesetOwnerChanged = TRUE;
     pDevEvo->handleConsoleHotplugs = TRUE;
 
     RestoreConsole(pDevEvo);
@@ -1489,7 +1486,6 @@ static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
         ReleaseModesetOwnership(pOpenDev);
 
         nvAssert(pOpenDev->pDevEvo->modesetOwner != pOpenDev);
-        nvAssert(pOpenDev->pDevEvo->lastModesettingClient != pOpenDev);
     }
 
     nvFreePerOpenDev(pOpen, pOpenDev);
@@ -5648,7 +5644,7 @@ void nvKmsSuspend(NvU32 gpuId)
 
             FreeSurfaceCtxDmasForAllOpens(pDevEvo);
 
-            nvFreeCoreChannelEvo(pDevEvo);
+            nvSuspendDevEvo(pDevEvo);
         }
     }
 
@@ -5665,9 +5661,10 @@ void nvKmsResume(NvU32 gpuId)
         FOR_ALL_EVO_DEVS(pDevEvo) {
             nvEvoLogDevDebug(pDevEvo, EVO_LOG_INFO, "Resuming");
 
-            nvRestoreSORAssigmentsEvo(pDevEvo);
-
-            ReallocCoreChannel(pDevEvo);
+            if (nvResumeDevEvo(pDevEvo)) {
+                nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
+                AllocSurfaceCtxDmasForAllOpens(pDevEvo);
+            }
 
             if (pDevEvo->modesetOwner == NULL) {
                 // Hardware state was lost, so we need to force a console

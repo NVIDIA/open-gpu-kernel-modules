@@ -1115,6 +1115,7 @@ struct OBJGPU {
     NvBool bComputePolicyTimesliceSupported;
     NvBool bGlobalPoisonFuseEnabled;
     RmPhysAddr simAccessBufPhysAddr;
+    NvU32 fabricProbeRegKeyOverride;
     NvU8 fabricProbeRetryDelay;
     NvU8 fabricProbeSlowdownThreshold;
     NvBool bVgpuGspPluginOffloadEnabled;

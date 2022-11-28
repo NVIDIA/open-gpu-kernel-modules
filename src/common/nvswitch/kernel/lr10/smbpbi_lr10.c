@@ -430,14 +430,15 @@ _makeNewRecord
     pNewRec->recordSize = NV_UNSIGNED_DIV_CEIL(*pRecSize, sizeof(NvU32));
     pNewRec->xidId = num;
     pNewRec->seqNumber = pFifo->seqNumber++;
-    pNewRec->timeStamp = nvswitch_os_get_platform_time() / NVSWITCH_NSEC_PER_SEC;
+    pNewRec->timeStamp = nvswitch_os_get_platform_time_epoch() / NVSWITCH_NSEC_PER_SEC;
 
-    if (msglen > NV_MSGBOX_MAX_DRIVER_EVENT_MSG_TXT_SIZE)
+    if (osErrorString[msglen - 1] != 0)
     {
         // The text string is too long. Truncate and notify the client.
+        osErrorString[msglen - 1] = 0;
         pNewRec->flags = FLD_SET_DRF(_MSGBOX, _DEM_RECORD_FLAGS,
                                        _TRUNC, _SET, pNewRec->flags);
-        msglen = NV_MSGBOX_MAX_DRIVER_EVENT_MSG_TXT_SIZE - 1;
+        msglen = NV_MSGBOX_MAX_DRIVER_EVENT_MSG_TXT_SIZE;
     }
 
     nvswitch_os_memcpy(pNewRec->textMessage, osErrorString, msglen);

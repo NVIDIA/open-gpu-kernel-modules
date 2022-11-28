@@ -269,6 +269,7 @@ knvlinkLogAliDebugMessages_GH100
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Error getting debug info for link training!\n");
+        portMemFree(nvlinkErrInfoParams);
         return status;
     }
 
@@ -411,3 +412,25 @@ knvlinkIsFloorSweepingNeeded_GH100
     return NV_FALSE;
 }
 
+/*!
+ * @brief   Check if system has enough active NVLinks and
+ *          enough NVLink bridges
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ *
+ */
+void
+knvlinkDirectConnectCheck_GH100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS params = {0};
+
+    knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                        NV2080_CTRL_CMD_NVLINK_DIRECT_CONNECT_CHECK,
+                        (void *)&params,
+                        sizeof(params));
+}

@@ -63,7 +63,7 @@ _flcnRiscvRegWrite_LS10
 /*!
  * @brief Retrieve the size of the falcon data memory.
  *
- * @param[in]  pGpu             OBJGPU  pointer
+ * @param[in]  device           nvswitch_device pointer
  * @param[in]  pFlcn            Falcon object pointer
  * @param[in]  bFalconReachable If set, returns size that can be reached by Falcon
  *
@@ -105,7 +105,7 @@ _flcnSetImemAddr_LS10
  *
  * @brief Copy contents of pSrc to IMEM
  *
- * @param[in] pGpu          OBJGPU pointer
+ * @param[in] device        nvswitch_device pointer
  * @param[in] pFlcn         Falcon object pointer
  * @param[in] dst           Destination in IMEM
  * @param[in] pSrc          IMEM contents
@@ -156,7 +156,7 @@ _flcnSetDmemAddr_LS10
  * Depending on the direction of the copy, copies 'sizeBytes' to/from 'pBuf'
  * from/to DMEM offset 'dmemAddr' using DMEM access port 'port'.
  *
- * @param[in]  pGpu       GPU object pointer
+ * @param[in]  device     nvswitch_device pointer
  * @param[in]  pFlcn      Falcon object pointer
  * @param[in]  dmemAddr   The DMEM offset for the copy
  * @param[in]  pBuf       The pointer to the buffer containing the data to copy
@@ -280,6 +280,16 @@ _flcnDbgInfoCaptureRiscvPcTrace_LS10
     NvU32 ctl, ridx, widx, count, bufferSize;
     NvBool full;
 
+    // Only supported on riscv
+    if (!UPROC_ENG_ARCH_FALCON_RISCV(pFlcn))
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: is not supported on falcon\n",
+            __FUNCTION__);
+
+        NVSWITCH_ASSERT(0);
+        return;
+    }
+
     flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL,
         DRF_DEF(_PRISCV_RISCV, _TRACECTL, _MODE, _FULL) |
         DRF_DEF(_PRISCV_RISCV, _TRACECTL, _UMODE_ENABLE, _TRUE) |
@@ -346,6 +356,115 @@ _flcnDbgInfoCaptureRiscvPcTrace_LS10
     flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL, ctl);
 }
 
+static NV_STATUS
+_flcnDebugBufferInit_LS10
+(
+    nvswitch_device *device,
+    PFLCN            pFlcn,
+    NvU32            debugBufferMaxSize,
+    NvU32            writeRegAddr,
+    NvU32            readRegAddr
+)
+{
+    return NVL_SUCCESS;
+}
+
+static NV_STATUS
+_flcnDebugBufferDestroy_LS10
+(
+    nvswitch_device *device,
+    PFLCN            pFlcn
+)
+{
+    return NVL_SUCCESS;
+}
+
+static NV_STATUS
+_flcnDebugBufferDisplay_LS10
+(
+    nvswitch_device *device,
+    PFLCN            pFlcn
+)
+{
+    return NVL_SUCCESS;
+}
+
+static NvBool
+_flcnDebugBufferIsEmpty_LS10
+(
+    nvswitch_device *device,
+    PFLCN            pFlcn
+)
+{
+    return NV_TRUE;
+}
+
+//
+// Store pointers to ucode header and data.
+// Preload ucode from registry if available.
+//
+NV_STATUS
+_flcnConstruct_LS10
+(
+    nvswitch_device    *device,
+    PFLCN               pFlcn
+)
+{
+    NV_STATUS          status;
+    PFLCNABLE          pFlcnable = pFlcn->pFlcnable;
+    PFALCON_QUEUE_INFO pQueueInfo;
+    pFlcn->bConstructed         = NV_TRUE;
+
+    // Set arch to Riscv
+    pFlcn->engArch = NV_UPROC_ENGINE_ARCH_FALCON_RISCV;
+
+    // Allocate the memory for Queue Data Structure if needed.
+    if (pFlcn->bQueuesEnabled)
+    {
+        pQueueInfo = pFlcn->pQueueInfo = nvswitch_os_malloc(sizeof(*pQueueInfo));
+        if (pQueueInfo == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            NVSWITCH_ASSERT(0);
+            goto _flcnConstruct_LR10_fail;
+        }
+        nvswitch_os_memset(pQueueInfo, 0, sizeof(FALCON_QUEUE_INFO));
+        // Assert if Number of Queues are zero
+        NVSWITCH_ASSERT(pFlcn->numQueues != 0);
+        pQueueInfo->pQueues = nvswitch_os_malloc(sizeof(FLCNQUEUE) * pFlcn->numQueues);
+        if (pQueueInfo->pQueues == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            NVSWITCH_ASSERT(0);
+            goto _flcnConstruct_LR10_fail;
+        }
+        nvswitch_os_memset(pQueueInfo->pQueues, 0, sizeof(FLCNQUEUE) * pFlcn->numQueues);
+        // Sequences can be optional
+        if (pFlcn->numSequences != 0)
+        {
+            if ((pFlcn->numSequences - 1) > ((NvU32)NV_U8_MAX))
+            {
+                status = NV_ERR_OUT_OF_RANGE;
+                NVSWITCH_PRINT(device, ERROR,
+                          "Max numSequences index = %d cannot fit into byte\n",
+                          (pFlcn->numSequences - 1));
+                NVSWITCH_ASSERT(0);
+                goto _flcnConstruct_LR10_fail;
+            }
+            flcnQueueSeqInfoStateInit(device, pFlcn);
+        }
+    }
+    // DEBUG
+    NVSWITCH_PRINT(device, INFO, "Falcon: %s\n", flcnGetName_HAL(device, pFlcn));
+    NVSWITCH_ASSERT(pFlcnable != NULL);
+    flcnableGetExternalConfig(device, pFlcnable, &pFlcn->extConfig);
+    return NV_OK;
+_flcnConstruct_LR10_fail:
+    // call flcnDestruct to free the memory allocated in this construct function
+    flcnDestruct_HAL(device, pFlcn);
+    return status;
+}
+
 /**
  * @brief   set hal function pointers for functions defined in
  *          LS10 (i.e. this file)
@@ -372,5 +491,9 @@ flcnSetupHal_LS10
     pHal->setImemAddr                   =  _flcnSetImemAddr_LS10;
     pHal->dmemSize                      =  _flcnDmemSize_LS10;
     pHal->dbgInfoCaptureRiscvPcTrace    =  _flcnDbgInfoCaptureRiscvPcTrace_LS10;
+    pHal->debugBufferInit               =  _flcnDebugBufferInit_LS10;
+    pHal->debugBufferDestroy            =  _flcnDebugBufferDestroy_LS10;
+    pHal->debugBufferDisplay            =  _flcnDebugBufferDisplay_LS10;
+    pHal->debugBufferIsEmpty            =  _flcnDebugBufferIsEmpty_LS10;
+    pHal->construct                     = _flcnConstruct_LS10;
 }
-

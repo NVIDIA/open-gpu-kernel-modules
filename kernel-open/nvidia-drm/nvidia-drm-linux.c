@@ -47,6 +47,14 @@ module_param_named(modeset, nv_drm_modeset_module_param, bool, 0400);
 
 void *nv_drm_calloc(size_t nmemb, size_t size)
 {
+    size_t total_size = nmemb * size;
+    //
+    // Check for overflow.
+    //
+    if ((nmemb != 0) && ((total_size / nmemb) != size))
+    {
+        return NULL;
+    }
     return kzalloc(nmemb * size, GFP_KERNEL);
 }
 

@@ -91,6 +91,8 @@ const struct ChipID
     {                               0x0,                            0x0,   0x0 } , // T194   (disabled)
     {                               0x0,                            0x0,   0x0 } , // T002_TURING_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T234   (disabled)
+    {                               0x0,                            0x0,   0x0 } , // T003_HOPPER_NOT_EXIST (disabled)
+    {                               0x0,                            0x0,   0x0 } , // T004_ADA_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T234D  (disabled)
     {                               0x0,                            0x0,   0x0 } , // AMODEL (disabled)
 

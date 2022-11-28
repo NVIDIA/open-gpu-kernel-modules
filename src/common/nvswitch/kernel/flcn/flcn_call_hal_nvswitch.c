@@ -109,7 +109,7 @@ flcnQueueCmdPostBlocking
     if (status != NV_OK)
     {
         NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_SOE_COMMAND_QUEUE,
-            "Failed to post command to SOE\n");
+            "Fatal, Failed to post command to SOE\n");
         return status;
     }
 
@@ -117,7 +117,7 @@ flcnQueueCmdPostBlocking
     if (status == NV_ERR_TIMEOUT)
     {
         NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_SOE_TIMEOUT,
-                "Timed out while waiting for SOE command completion\n");
+                "Fatal, Timed out while waiting for SOE command completion\n");
         flcnQueueCmdCancel(device, pFlcn, *pSeqDesc);
     }
 
@@ -691,9 +691,9 @@ flcnSetDmemAddr_HAL
 NvU32
 flcnRiscvRegRead_HAL
 (
-    struct nvswitch_device *device,
-    PFLCN                   pFlcn,
-    NvU32                   offset
+    nvswitch_device *device,
+    PFLCN            pFlcn,
+    NvU32            offset
 )
 {
     NVSWITCH_ASSERT(pFlcn->pHal->riscvRegRead != (void *)0);
@@ -703,12 +703,60 @@ flcnRiscvRegRead_HAL
 void
 flcnRiscvRegWrite_HAL
 (
-    struct nvswitch_device *device,
-    PFLCN                   pFlcn,
-    NvU32                   offset,
-    NvU32                   data
+    nvswitch_device *device,
+    PFLCN            pFlcn,
+    NvU32            offset,
+    NvU32            data
 )
 {
     NVSWITCH_ASSERT(pFlcn->pHal->riscvRegWrite != (void *)0);
     pFlcn->pHal->riscvRegWrite(device, pFlcn, offset, data);
 }
+
+NV_STATUS
+flcnDebugBufferInit_HAL
+(
+    nvswitch_device *device,
+    PFLCN            pFlcn,
+    NvU32            debugBufferMaxSize,
+    NvU32            writeRegAddr,
+    NvU32            readRegAddr
+)
+{
+    NVSWITCH_ASSERT(pFlcn->pHal->debugBufferInit != (void *)0);
+    return pFlcn->pHal->debugBufferInit(device, pFlcn, debugBufferMaxSize, writeRegAddr, readRegAddr);
+}
+
+NV_STATUS
+flcnDebugBufferDestroy_HAL
+(
+    nvswitch_device    *device,
+    FLCN               *pFlcn
+)
+{
+    NVSWITCH_ASSERT(pFlcn->pHal->debugBufferDestroy != (void *)0);
+    return pFlcn->pHal->debugBufferDestroy(device, pFlcn);
+}
+
+NV_STATUS
+flcnDebugBufferDisplay_HAL
+(
+    nvswitch_device    *device,
+    FLCN               *pFlcn
+)
+{
+    NVSWITCH_ASSERT(pFlcn->pHal->debugBufferDisplay != (void *)0);
+    return pFlcn->pHal->debugBufferDisplay(device, pFlcn);
+}
+
+NvBool
+flcnDebugBufferIsEmpty_HAL
+(
+    nvswitch_device    *device,
+    FLCN               *pFlcn
+)
+{
+    NVSWITCH_ASSERT(pFlcn->pHal->debugBufferIsEmpty != (void *)0);
+    return pFlcn->pHal->debugBufferIsEmpty(device, pFlcn);
+}
+

@@ -1224,11 +1224,27 @@ void NV_API_CALL os_get_screen_info(
                 *pFbHeight = registered_fb[i]->var.yres;
                 *pFbDepth = registered_fb[i]->var.bits_per_pixel;
                 *pFbPitch = registered_fb[i]->fix.line_length;
-                break;
+                return;
             }
         }
     }
-#elif NV_IS_EXPORT_SYMBOL_PRESENT_screen_info
+#endif
+
+    /*
+     * If the screen info is not found in the registered FBs then fallback
+     * to the screen_info structure.
+     *
+     * The SYSFB_SIMPLEFB option, if enabled, marks VGA/VBE/EFI framebuffers as
+     * generic framebuffers so the new generic system-framebuffer drivers can
+     * be used instead. DRM_SIMPLEDRM drives the generic system-framebuffers
+     * device created by SYSFB_SIMPLEFB.
+     *
+     * SYSFB_SIMPLEFB registers a dummy framebuffer which does not contain the
+     * information required by os_get_screen_info(), therefore you need to
+     * fall back onto the screen_info structure.
+     */
+
+#if NV_IS_EXPORT_SYMBOL_PRESENT_screen_info
     /*
      * If there is not a framebuffer console, return 0 size.
      *

@@ -1961,7 +1961,7 @@ memmgrFillComprInfo_IMPL
     pComprInfo->compPageShift = pMemorySystemConfig->comprPageShift;
     pComprInfo->compTagLineMin = compTagStartOffset;
     pComprInfo->compPageIndexLo = (NvU32)(surfOffset >> pComprInfo->compPageShift);
-    pComprInfo->compPageIndexHi = (NvU32)((surfOffset + pageSize * pageCount - 1) >> pComprInfo->compPageShift);
+    pComprInfo->compPageIndexHi = (NvU32)((surfOffset + (NvU64)pageSize * (NvU64)pageCount - 1) >> pComprInfo->compPageShift);
     pComprInfo->compTagLineMultiplier = 1;
 
     return NV_OK;

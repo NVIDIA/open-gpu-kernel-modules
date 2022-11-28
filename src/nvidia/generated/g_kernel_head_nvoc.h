@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,17 +66,7 @@ struct __nvoc_inner_struc_KernelHead_1__ {
     struct {
         VBLANKCALLBACK *pListLL;
         VBLANKCALLBACK *pListNL;
-        VBLANKCALLBACK gatherInfo;
     } Callback;
-    struct {
-        struct {
-            NvU64 Current;
-            NvU64 Last;
-            NvU32 Average;
-        } Time;
-        NvU32 Count;
-        NvU32 Timeout;
-    } Info;
     NvU32 IntrState;
 };
 
@@ -124,10 +114,10 @@ NV_STATUS __nvoc_objCreate_KernelHead(KernelHead**, Dynamic*, NvU32);
 
 #define kheadProcessVblankCallbacks(pGpu, pKernelHead, arg0) kheadProcessVblankCallbacks_DISPATCH(pGpu, pKernelHead, arg0)
 #define kheadProcessVblankCallbacks_HAL(pGpu, pKernelHead, arg0) kheadProcessVblankCallbacks_DISPATCH(pGpu, pKernelHead, arg0)
-#define kheadResetPendingVblank(pGpu, pKhead, arg0) kheadResetPendingVblank_DISPATCH(pGpu, pKhead, arg0)
-#define kheadResetPendingVblank_HAL(pGpu, pKhead, arg0) kheadResetPendingVblank_DISPATCH(pGpu, pKhead, arg0)
-#define kheadResetPendingVblankForKernel(pGpu, pKhead, pThreadState) kheadResetPendingVblankForKernel_DISPATCH(pGpu, pKhead, pThreadState)
-#define kheadResetPendingVblankForKernel_HAL(pGpu, pKhead, pThreadState) kheadResetPendingVblankForKernel_DISPATCH(pGpu, pKhead, pThreadState)
+#define kheadResetPendingVblank(pGpu, pKernelHead, arg0) kheadResetPendingVblank_DISPATCH(pGpu, pKernelHead, arg0)
+#define kheadResetPendingVblank_HAL(pGpu, pKernelHead, arg0) kheadResetPendingVblank_DISPATCH(pGpu, pKernelHead, arg0)
+#define kheadResetPendingVblankForKernel(pGpu, pKernelHead, pThreadState) kheadResetPendingVblankForKernel_DISPATCH(pGpu, pKernelHead, pThreadState)
+#define kheadResetPendingVblankForKernel_HAL(pGpu, pKernelHead, pThreadState) kheadResetPendingVblankForKernel_DISPATCH(pGpu, pKernelHead, pThreadState)
 #define kheadReadPendingVblank(pGpu, pKernelHead, intr) kheadReadPendingVblank_DISPATCH(pGpu, pKernelHead, intr)
 #define kheadReadPendingVblank_HAL(pGpu, pKernelHead, intr) kheadReadPendingVblank_DISPATCH(pGpu, pKernelHead, intr)
 NvU32 kheadGetVblankTotalCounter_IMPL(struct KernelHead *pKernelHead);
@@ -262,33 +252,6 @@ static inline void kheadWriteVblankIntrEnable(struct OBJGPU *pGpu, struct Kernel
 
 #define kheadWriteVblankIntrEnable_HAL(pGpu, pKernelHead, arg0) kheadWriteVblankIntrEnable(pGpu, pKernelHead, arg0)
 
-void kheadSetVblankGatherInfo_IMPL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvBool arg0);
-
-
-#ifdef __nvoc_kernel_head_h_disabled
-static inline void kheadSetVblankGatherInfo(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvBool arg0) {
-    NV_ASSERT_FAILED_PRECOMP("KernelHead was disabled!");
-}
-#else //__nvoc_kernel_head_h_disabled
-#define kheadSetVblankGatherInfo(pGpu, pKernelHead, arg0) kheadSetVblankGatherInfo_IMPL(pGpu, pKernelHead, arg0)
-#endif //__nvoc_kernel_head_h_disabled
-
-#define kheadSetVblankGatherInfo_HAL(pGpu, pKernelHead, arg0) kheadSetVblankGatherInfo(pGpu, pKernelHead, arg0)
-
-NvU32 kheadTickVblankInfo_IMPL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead);
-
-
-#ifdef __nvoc_kernel_head_h_disabled
-static inline NvU32 kheadTickVblankInfo(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
-    NV_ASSERT_FAILED_PRECOMP("KernelHead was disabled!");
-    return 0;
-}
-#else //__nvoc_kernel_head_h_disabled
-#define kheadTickVblankInfo(pGpu, pKernelHead) kheadTickVblankInfo_IMPL(pGpu, pKernelHead)
-#endif //__nvoc_kernel_head_h_disabled
-
-#define kheadTickVblankInfo_HAL(pGpu, pKernelHead) kheadTickVblankInfo(pGpu, pKernelHead)
-
 void kheadProcessVblankCallbacks_IMPL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 arg0);
 
 static inline void kheadProcessVblankCallbacks_e426af(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 arg0) {
@@ -300,28 +263,28 @@ static inline void kheadProcessVblankCallbacks_DISPATCH(struct OBJGPU *pGpu, str
     pKernelHead->__kheadProcessVblankCallbacks__(pGpu, pKernelHead, arg0);
 }
 
-void kheadResetPendingVblank_v04_00_KERNEL(struct OBJGPU *pGpu, struct KernelHead *pKhead, THREAD_STATE_NODE *arg0);
+void kheadResetPendingVblank_v04_00_KERNEL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *arg0);
 
-static inline void kheadResetPendingVblank_e426af(struct OBJGPU *pGpu, struct KernelHead *pKhead, THREAD_STATE_NODE *arg0) {
+static inline void kheadResetPendingVblank_e426af(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *arg0) {
     NV_ASSERT_PRECOMP(0);
     return;
 }
 
-static inline void kheadResetPendingVblank_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKhead, THREAD_STATE_NODE *arg0) {
-    pKhead->__kheadResetPendingVblank__(pGpu, pKhead, arg0);
+static inline void kheadResetPendingVblank_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *arg0) {
+    pKernelHead->__kheadResetPendingVblank__(pGpu, pKernelHead, arg0);
 }
 
-static inline void kheadResetPendingVblankForKernel_1ad688(struct OBJGPU *pGpu, struct KernelHead *pKhead, THREAD_STATE_NODE *pThreadState) {
-    kheadResetPendingVblank(pGpu, pKhead, pThreadState);
+static inline void kheadResetPendingVblankForKernel_8305c4(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState) {
+    kheadResetPendingVblank(pGpu, pKernelHead, pThreadState);
 }
 
-static inline void kheadResetPendingVblankForKernel_e426af(struct OBJGPU *pGpu, struct KernelHead *pKhead, THREAD_STATE_NODE *pThreadState) {
+static inline void kheadResetPendingVblankForKernel_e426af(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState) {
     NV_ASSERT_PRECOMP(0);
     return;
 }
 
-static inline void kheadResetPendingVblankForKernel_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKhead, THREAD_STATE_NODE *pThreadState) {
-    pKhead->__kheadResetPendingVblankForKernel__(pGpu, pKhead, pThreadState);
+static inline void kheadResetPendingVblankForKernel_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, THREAD_STATE_NODE *pThreadState) {
+    pKernelHead->__kheadResetPendingVblankForKernel__(pGpu, pKernelHead, pThreadState);
 }
 
 NvU32 kheadReadPendingVblank_v04_00_KERNEL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 intr);

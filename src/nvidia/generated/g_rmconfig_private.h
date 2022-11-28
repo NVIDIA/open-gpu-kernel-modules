@@ -343,6 +343,12 @@
 #define IsT234(pGpu)                   ((0) && (pGpu))
 #define IsT234orBetter(pGpu)           ((0) && (pGpu))
 
+#define IsT003_HOPPER_NOT_EXIST(pGpu)  ((0) && (pGpu))
+#define IsT003_HOPPER_NOT_EXISTorBetter(pGpu) ((0) && (pGpu))
+
+#define IsT004_ADA_NOT_EXIST(pGpu)     ((0) && (pGpu))
+#define IsT004_ADA_NOT_EXISTorBetter(pGpu) ((0) && (pGpu))
+
 // Any T23XG chip?
 #define IsT23XG(pGpu)                  (0 && (pGpu))
 #define IsT23XGorBetter(pGpu)          (0 && (pGpu))
@@ -605,6 +611,16 @@
 // Any AMPERE_TEGRA_BIG_GPUS chip?
 #define IsAMPERE_TEGRA_BIG_GPUS(pGpu)  (0 && (pGpu))
 #define IsAMPERE_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
+
+
+// Any HOPPER_TEGRA_BIG_GPUS chip?
+#define IsHOPPER_TEGRA_BIG_GPUS(pGpu)  (0 && (pGpu))
+#define IsHOPPER_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
+
+
+// Any ADA_TEGRA_BIG_GPUS chip?
+#define IsADA_TEGRA_BIG_GPUS(pGpu)     (0 && (pGpu))
+#define IsADA_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
 
 
 // Any TEGRA_NVDISP_GPUS chip?

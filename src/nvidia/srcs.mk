@@ -341,7 +341,6 @@ SRCS += src/kernel/gpu/disp/disp_objs.c
 SRCS += src/kernel/gpu/disp/disp_sf_user.c
 SRCS += src/kernel/gpu/disp/head/arch/v04/kernel_head_gpu_0400.c
 SRCS += src/kernel/gpu/disp/head/kernel_head.c
-SRCS += src/kernel/gpu/disp/head/kernel_head_gpu.c
 SRCS += src/kernel/gpu/disp/inst_mem/arch/v03/disp_inst_mem_0300.c
 SRCS += src/kernel/gpu/disp/inst_mem/disp_inst_mem.c
 SRCS += src/kernel/gpu/disp/kern_disp.c

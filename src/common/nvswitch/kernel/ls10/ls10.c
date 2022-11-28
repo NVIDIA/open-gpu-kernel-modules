@@ -124,25 +124,36 @@ nvswitch_pri_ring_init_ls10
         while (keepPolling);
         if (!FLD_TEST_DRF(_GFW_GLOBAL, _BOOT_PARTITION_PROGRESS, _VALUE, _SUCCESS, command))
         {
+            NVSWITCH_RAW_ERROR_LOG_TYPE report = {0, { 0 }};
+            NVSWITCH_RAW_ERROR_LOG_TYPE report_saw = {0, { 0 }};
+            NvU32 report_idx = 0;
             NvU32 i;
 
+            report.data[report_idx++] = command;
             NVSWITCH_PRINT(device, ERROR, "%s: -- _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS (0x%x) != _SUCCESS --\n",
                 __FUNCTION__, command);
 
             for (i = 0; i <= 15; i++)
             {
                 command = NVSWITCH_SAW_RD32_LS10(device, _NVLSAW, _SW_SCRATCH(i));
+                report_saw.data[i] = command;
                 NVSWITCH_PRINT(device, ERROR, "%s: -- NV_NVLSAW_SW_SCRATCH(%d) = 0x%08x\n",
                     __FUNCTION__, i, command);
             }
 
-            for (i = 0; i <= 2; i++)
+            for (i = 0; i < NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2__SIZE_1; i++)
             {
                 command = NVSWITCH_REG_RD32(device, _PFSP, _FALCON_COMMON_SCRATCH_GROUP_2(i));
-                NVSWITCH_PRINT(device, ERROR, "%s: -- NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(%d) = 0x%08x\n",
+                report.data[report_idx++] = command;
+                    NVSWITCH_PRINT(device, ERROR, "%s: -- NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(%d) = 0x%08x\n",
                     __FUNCTION__, i, command);
             }
 
+            // Include useful scratch information for triage
+            NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE,
+                "Fatal, Firmware initialization failure (0x%x/0x%x, 0x%x, 0x%x, 0x%x/0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
+                report.data[0], report.data[1], report.data[2], report.data[3], report.data[4],
+                report_saw.data[0], report_saw.data[1], report_saw.data[12], report_saw.data[14], report_saw.data[15]);
             return -NVL_INITIALIZATION_TOTAL_FAILURE;
         }
 

@@ -589,4 +589,35 @@
 #define NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET_DISABLE   0x0
 #define NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET_ENABLE    0x1
 
+/*
+ * NV_SWITCH_REGKEY_BLOCK_CODE_MODE - Indicates the Forward Error Correction Mode
+ *
+ * Forward Error Correction Mode (Pre-HS).
+ * DEFAULT = System Default
+ * OFF = 0x0
+ * ECC96_ENABLED = 0x1
+ * ECC88_ENABLED = 0x2
+ */
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE                   "BlockCodeMode"
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE_DEFAULT           0x0
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE_OFF               0x0
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE_ECC96_ENABLED     0x1
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE_ECC88_ENABLED     0x2
+
+/*
+ * NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE - Indicates the reference clock mode for 
+ * the system w.r.t. this link.
+ *
+ * DEFAULT = System Default
+ * COMMON = Common reference clock. Spread Spectrum (SS) may or may not be enabled.
+ * NON_COMMON_NO_SS = Non-common reference clock without SS enabled.
+ * NON_COMMON_SS = Non-common reference clock with SS enabled.
+ */
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE                   "ReferenceClockMode"
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_DEFAULT           0x0
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_COMMON            0x0
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_RESERVED          0x1
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_NON_COMMON_NO_SS  0x2
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_NON_COMMON_SS     0x3
+
 #endif //_REGKEY_NVSWITCH_H_

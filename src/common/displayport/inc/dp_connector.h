@@ -203,6 +203,8 @@ namespace DisplayPort
 
         virtual bool getSDPExtnForColorimetrySupported() = 0;
 
+        virtual bool getPanelFwRevision(NvU16 *revision) = 0;
+
         virtual bool getIgnoreMSACap() = 0;
 
         virtual AuxRetry::status setIgnoreMSAEnable(bool msaTimingParamIgnoreEn) = 0;

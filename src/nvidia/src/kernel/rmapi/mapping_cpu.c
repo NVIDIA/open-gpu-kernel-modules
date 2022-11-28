@@ -252,13 +252,18 @@ memMap_IMPL
         return NV_ERR_INVALID_LIMIT;
     }
 
+    if (bSkipSizeCheck && (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL))
+    {
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
     //
     // See bug #140807 and #150889 - we need to pad memory mappings to past their
     // actual allocation size (to PAGE_SIZE+1) because of a buggy ms function so
     // skip the allocation size sanity check so the map operation still succeeds.
     //
-    if (!bSkipSizeCheck && (!portSafeAddU64(pMapParams->offset, pMapParams->length, &mapLimit) ||
-                            (mapLimit > pMemoryInfo->Length)))
+    if (!portSafeAddU64(pMapParams->offset, pMapParams->length, &mapLimit) ||
+        (!bSkipSizeCheck && (mapLimit > pMemoryInfo->Length)))
     {
         return NV_ERR_INVALID_LIMIT;
     }

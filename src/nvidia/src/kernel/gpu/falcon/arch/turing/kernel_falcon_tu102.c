@@ -181,16 +181,6 @@ kflcnSecureReset_TU102
     kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn);
 }
 
-void
-_kflcnClearInterrupts(OBJGPU *pGpu, KernelFalcon *pKernelFlcn)
-{
-    // Delay 1us in case engine is still resetting.
-    osDelayUs(1);
-
-    // Clear Interrupts
-    kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_IRQMCLR, 0xffffffff);
-}
-
 /*!
  * Enable or disable the Falcon to FALCON mode.
  */
@@ -206,11 +196,6 @@ kflcnEnable_TU102
 
     if (!bEnable)
     {
-        // Switch to Falcon to release lockdown
-        kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn);
-
-        _kflcnClearInterrupts(pGpu, pKernelFlcn);
-
         // Disable in PMC if engine is present in PMC
         if (pKernelFlcn->pmcEnableMask > 0)
         {

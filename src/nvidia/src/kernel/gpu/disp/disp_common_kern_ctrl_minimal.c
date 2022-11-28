@@ -34,7 +34,6 @@
 #include "os/os.h"
 #include "gpu/gpu.h"
 #include "gpu/disp/kern_disp.h"
-#include "gpu/disp/head/kernel_head.h"
 #include "gpu/disp/disp_objs.h"
 #include "rmapi/rs_utils.h"
 #include "rmapi/rmapi.h"
@@ -209,34 +208,3 @@ dispcmnCtrlCmdDpGenerateFakeInterrupt_IMPL
 
     return NV_OK;
 }
-
-NV_STATUS
-dispcmnCtrlCmdSystemGetVblankCounter_IMPL
-(
-    DispCommon *pDispCommon,
-    NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *pVBCounterParams
-)
-{
-    KernelDisplay *pKernelDisplay;
-    KernelHead    *pKernelHead;
-
-    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(DISPAPI_GET_GPU(pDispCommon));
-    if (pVBCounterParams->head >= kdispGetNumHeads(pKernelDisplay))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    pKernelHead = KDISP_GET_HEAD(pKernelDisplay, pVBCounterParams->head);
-    NV_ASSERT(pKernelHead);
-
-    //
-    // Add a callback to start the vblank interrupt
-    // which will update the counter.
-    //
-    kheadSetVblankGatherInfo(DISPAPI_GET_GPU(pDispCommon), pKernelHead, NV_TRUE);
-    pVBCounterParams->verticalBlankCounter =
-                            kheadGetVblankNormLatencyCounter_HAL(pKernelHead);
-
-    return NV_OK;
-}
-

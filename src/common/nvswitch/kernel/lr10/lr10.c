@@ -1112,7 +1112,6 @@ nvswitch_setup_system_registers_lr10
 {
     nvlink_link *link;
     NvU8 i;
-    NvU32 val;
     NvU64 enabledLinkMask;
 
     enabledLinkMask = nvswitch_get_enabled_link_mask(device);
@@ -1128,21 +1127,6 @@ nvswitch_setup_system_registers_lr10
             (i >= NVSWITCH_NVLINK_MAX_LINKS))
         {
             continue;
-        }
-
-        // AC vs DC mode SYSTEM register
-        if (link->ac_coupled)
-        {
-            //
-            // In NVL3.0, ACMODE is handled by MINION in the INITPHASE1 command
-            // Here we just setup the register with the proper info
-            //
-            val = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLIPT_LNK,
-                    _NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL);
-            val = FLD_SET_DRF(_NVLIPT_LNK,
-                    _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _AC_DC_MODE, _AC, val);
-            NVSWITCH_LINK_WR32_LR10(device, link->linkNumber, NVLIPT_LNK,
-                    _NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, val);
         }
 
         nvswitch_setup_link_system_registers(device, link);

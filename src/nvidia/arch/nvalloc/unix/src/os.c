@@ -890,7 +890,7 @@ NV_STATUS osAllocPagesInternal(
     OBJSYS    *pSys = SYS_GET_INSTANCE();
     OBJGPU *pGpu = pMemDesc->pGpu;
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-    void *pMemData;
+    void *pMemData = NULL;
     NV_STATUS status;
 
     memdescSetAddress(pMemDesc, NvP64_NULL);

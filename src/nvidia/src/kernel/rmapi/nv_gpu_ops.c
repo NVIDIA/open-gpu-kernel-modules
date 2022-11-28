@@ -237,6 +237,8 @@ struct gpuDevice
     NvBool             connectedToSwitch;
 
     MemdescMap         kern2PhysDescrMap;
+
+    PORT_MUTEX         *pPagingChannelRpcMutex;
 };
 
 struct gpuAddressSpace
@@ -1662,6 +1664,7 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
     NvU32 sysmemConnType;
     NvBool atomicSupported;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    OBJGPU *pGpu;
 
     device = portMemAllocNonPaged(sizeof(*device));
     if (device == NULL)
@@ -1839,6 +1842,24 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
 
     mapInit(&device->kern2PhysDescrMap, portMemAllocatorGetGlobalNonPaged());
 
+    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
+    if (status != NV_OK)
+        goto cleanup_ecc;
+    status = CliSetGpuContext(session->handle, device->handle, &pGpu, NULL);
+    rmapiLockRelease();
+    if (status != NV_OK)
+        goto cleanup_ecc;
+
+    if (IS_VIRTUAL_WITH_HEAVY_SRIOV(pGpu))
+    {
+        device->pPagingChannelRpcMutex = portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+        if (device->pPagingChannelRpcMutex == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup_ecc;
+        }
+    }
+
     *outDevice = device;
     return NV_OK;
 
@@ -1886,6 +1907,9 @@ NV_STATUS nvGpuOpsDeviceDestroy(struct gpuDevice *device)
     }
 
     mapDestroy(&device->kern2PhysDescrMap);
+
+    if (device->pPagingChannelRpcMutex != NULL)
+        portSyncMutexDestroy(device->pPagingChannelRpcMutex);
 
     portMemFree(device);
     return NV_OK;
@@ -7876,6 +7900,7 @@ _shadowMemdescCreateFlcn(gpuRetainedChannel *retainedChannel,
         NV_MEMORY_CACHED,
         MEMDESC_FLAGS_NONE
     );
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
 
     memdescSetPageSize(pMemDesc, 0, pCtxBufferInfo->pageSize);
 
@@ -8660,6 +8685,25 @@ NV_STATUS nvGpuOpsPagingChannelAllocate(struct gpuDevice *device,
 
     NV_ASSERT(channel->errorNotifier);
 
+    // Ideally, we need to acquire there locks (in that order):
+    // a. RM API lock
+    // b. device->handle GPU lock
+    // c. RPC lock
+    // (b) GPU lock is optional because RM will acquire all needed locks automatically.
+    // (c) RPC lock is optional because currently there is no scenario in which channel allocation/destruction
+    // can be run concurrently with any other SR-IOV heavy API that results on an RPC (Map/Unmap/PushStream).
+    //
+    // However, if we acquire GPU locks, NV_RM_RPC_UVM_PAGING_CHANNEL_ALLOCATE would fail.
+    // It's because PAGING_CHANNEL_ALLOCATE allocates AMPERE_CHANNEL_GPFIFO_A, that allocates
+    // KernelChannelGroupApi. KernelChannelGroupApi would fail because
+    // 'TSG alloc should be called without acquiring GPU lock'.
+    // KernelChannelGroupApi acquires GPU locks manually after allocating TSG.
+    //
+    // The TSG allocation requirement just described not only precludes the acquisition
+    // of any GPU lock in this function, but also the acquisition of the RPC lock,
+    // because it would result on a lock order violation: the RPC lock is acquired
+    // before the GPU lock. As a result, nvGpuOpsPagingChannelAllocate only acquires
+    // the RM API lock, and so does nvGpuOpsPagingChannelDestroy.
     status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
     if (status != NV_OK)
         goto cleanup_unmap_error_notifier;
@@ -8672,7 +8716,12 @@ NV_STATUS nvGpuOpsPagingChannelAllocate(struct gpuDevice *device,
     if (status != NV_OK)
         goto cleanup_under_rmapi_lock;
 
+    channel->pDevice = pDevice;
+
     GPU_RES_SET_THREAD_BC_STATE(pDevice);
+
+    if (status != NV_OK)
+        goto cleanup_under_rmapi_lock;
 
     rmapiLockRelease();
 
@@ -8722,6 +8771,7 @@ void nvGpuOpsPagingChannelDestroy(UvmGpuPagingChannel *channel)
     hClient = device->session->handle;
     NV_ASSERT(hClient);
 
+    // We acquire only RM API lock here. See comment in nvGpuOpsPagingChannelAllocate.
     status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
     NV_ASSERT(status == NV_OK);
     if (status != NV_OK)
@@ -8787,6 +8837,7 @@ NV_STATUS nvGpuOpsPagingChannelsMap(struct gpuAddressSpace *srcVaSpace,
     RsClient *pClient;
     NvHandle hAllocation;
     NvHandle hClient;
+    nvGpuOpsLockSet acquiredLocks;
 
     if (!srcVaSpace || !device || !dstAddress)
         return NV_ERR_INVALID_ARGUMENT;
@@ -8799,22 +8850,27 @@ NV_STATUS nvGpuOpsPagingChannelsMap(struct gpuAddressSpace *srcVaSpace,
     if (status != NV_OK)
         return status;
 
-    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
+    status = _nvGpuOpsLocksAcquire(RMAPI_LOCK_FLAGS_NONE, hClient, NULL, 2,
+                                   device->deviceInstance, srcVaSpace->device->deviceInstance, &acquiredLocks);
     if (status != NV_OK)
         return status;
 
     status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
     if (status != NV_OK)
-        goto exit_under_rmapi_lock;
+        goto exit_under_locks;
 
     status = deviceGetByHandle(pClient, device->handle, &pDevice);
     if (status != NV_OK)
-        goto exit_under_rmapi_lock;
+        goto exit_under_locks;
 
     GPU_RES_SET_THREAD_BC_STATE(pDevice);
 
-exit_under_rmapi_lock:
-    rmapiLockRelease();
+    portSyncMutexAcquire(device->pPagingChannelRpcMutex);
+
+    portSyncMutexRelease(device->pPagingChannelRpcMutex);
+
+exit_under_locks:
+    _nvGpuOpsLocksRelease(&acquiredLocks);
 
     return status;
 }
@@ -8828,6 +8884,7 @@ void nvGpuOpsPagingChannelsUnmap(struct gpuAddressSpace *srcVaSpace,
     RsClient *pClient;
     NvHandle hAllocation;
     NvHandle hClient;
+    nvGpuOpsLockSet acquiredLocks;
 
     NV_ASSERT(srcVaSpace && device);
     if (!srcVaSpace || !device)
@@ -8846,12 +8903,12 @@ void nvGpuOpsPagingChannelsUnmap(struct gpuAddressSpace *srcVaSpace,
         return;
     }
 
-    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
-    NV_ASSERT(status == NV_OK);
+    status = _nvGpuOpsLocksAcquire(RMAPI_LOCK_FLAGS_NONE, hClient, NULL, 2,
+                                   device->deviceInstance, srcVaSpace->device->deviceInstance, &acquiredLocks);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "%s: rmapiLockAcquire returned error %s!\n",
+                  "%s: _nvGpuOpsLocksAcquire returned error %s!\n",
                   __FUNCTION__, nvstatusToString(status));
         return;
     }
@@ -8863,7 +8920,7 @@ void nvGpuOpsPagingChannelsUnmap(struct gpuAddressSpace *srcVaSpace,
         NV_PRINTF(LEVEL_ERROR,
                   "%s: serverGetClientUnderLock returned error %s!\n",
                   __FUNCTION__, nvstatusToString(status));
-        goto exit_under_rmapi_lock;
+        goto exit_under_locks;
     }
 
     status = deviceGetByHandle(pClient, device->handle, &pDevice);
@@ -8873,23 +8930,25 @@ void nvGpuOpsPagingChannelsUnmap(struct gpuAddressSpace *srcVaSpace,
         NV_PRINTF(LEVEL_ERROR,
                   "%s: deviceGetByHandle returned error %s!\n",
                   __FUNCTION__, nvstatusToString(status));
-        goto exit_under_rmapi_lock;
+        goto exit_under_locks;
     }
 
     GPU_RES_SET_THREAD_BC_STATE(pDevice);
 
-exit_under_rmapi_lock:
-    rmapiLockRelease();
+    portSyncMutexAcquire(device->pPagingChannelRpcMutex);
+
+    portSyncMutexRelease(device->pPagingChannelRpcMutex);
+
+exit_under_locks:
+    _nvGpuOpsLocksRelease(&acquiredLocks);
 }
 
 NV_STATUS nvGpuOpsPagingChannelPushStream(UvmGpuPagingChannel *channel,
                                           char *methodStream,
                                           NvU32 methodStreamSize)
 {
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
     struct gpuDevice *device = NULL;
-    Device *pDevice;
-    RsClient *pClient;
 
     if (!channel || !methodStream)
         return NV_ERR_INVALID_ARGUMENT;
@@ -8899,15 +8958,11 @@ NV_STATUS nvGpuOpsPagingChannelPushStream(UvmGpuPagingChannel *channel,
     device = channel->device;
     NV_ASSERT(device);
 
-    status = serverGetClientUnderLock(&g_resServ, device->session->handle, &pClient);
-    if (status != NV_OK)
-        return status;
+    GPU_RES_SET_THREAD_BC_STATE(channel->pDevice);
 
-    status = deviceGetByHandle(pClient, device->handle, &pDevice);
-    if (status != NV_OK)
-        return status;
+    portSyncMutexAcquire(device->pPagingChannelRpcMutex);
 
-    GPU_RES_SET_THREAD_BC_STATE(pDevice);
+    portSyncMutexRelease(device->pPagingChannelRpcMutex);
 
     return status;
 }

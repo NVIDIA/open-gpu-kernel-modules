@@ -512,8 +512,8 @@ static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct Kernel
     pKernelDisplay->__kdispRegisterIntrService__(pGpu, pKernelDisplay, pRecords);
 }
 
-static inline NvU32 kdispServiceInterrupt_cd2c9e(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceServiceInterruptArguments *pParams) {
-    kdispServiceVblank(pGpu, pKernelDisplay, 0, ((2) | (4)), ((void *)0));
+static inline NvU32 kdispServiceInterrupt_d3ef2b(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceServiceInterruptArguments *pParams) {
+    kdispServiceVblank(pGpu, pKernelDisplay, 0, ((2) | (16)), ((void *)0));
     return NV_OK;
 }
 

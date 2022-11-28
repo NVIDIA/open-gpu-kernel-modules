@@ -971,7 +971,8 @@ knvlinkPrepareForXVEReset_IMPL
     // Let fabric manager handle link shutdown/reset if the fabric is managed
     // externally.
     //
-    if (pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED))
+    if (pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 &&
+        pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED))
     {
         NV_PRINTF(LEVEL_INFO,
                   "NVLink fabric is externally managed, skipping\n");

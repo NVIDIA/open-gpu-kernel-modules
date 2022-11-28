@@ -3382,7 +3382,7 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
 
     // TODO: Bug 3660922: need to implement HMM read duplication support.
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
-    UVM_ASSERT(va_block_context->policy = uvm_va_range_get_policy(va_block->va_range));
+    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
     va_block_context->make_resident.dest_id = dest_id;
     va_block_context->make_resident.cause = cause;

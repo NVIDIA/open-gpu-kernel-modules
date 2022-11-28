@@ -31,7 +31,7 @@
 #define RPC_VERSION_FROM_VGX_VERSION(major, minor) ( DRF_NUM(_RPC, _VERSION_NUMBER, _MAJOR, major) | \
                                                      DRF_NUM(_RPC, _VERSION_NUMBER, _MINOR, minor))
 #define VGX_MAJOR_VERSION_NUMBER  0x21
-#define VGX_MINOR_VERSION_NUMBER  0x0A
+#define VGX_MINOR_VERSION_NUMBER  0x0C
 
 
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_12_0 0x1A
@@ -50,7 +50,7 @@
  * 2. This is the first break in migration compatibility after a release.
  */
 #define NV_VGPU_GRIDSW_INTERNAL_TO_EXTERNAL_VERSION_MAPPING \
-    {{0x21, 0x0}, {0x21, 0x0A}, {0x10, 0x1}},               \
+    {{0x21, 0x0}, {0x21, 0x0C}, {0x10, 0x1}},               \
     {{0x20, 0x0}, {0x20, 0x04}, {0xF, 0x1}},                \
     {{0x1F, 0x0}, {0x1F, 0xF}, {0xE, 0x1}},                 \
     {{0x1E, 0x0}, {0x1E, 0xE}, {0xD, 0x1}},                 \

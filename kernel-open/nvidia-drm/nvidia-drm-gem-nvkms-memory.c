@@ -95,7 +95,7 @@ static vm_fault_t __nv_drm_gem_nvkms_handle_vma_fault(
         pfn >>= PAGE_SHIFT;
         pfn += page_offset;
     } else {
-        BUG_ON(page_offset > nv_nvkms_memory->pages_count);
+        BUG_ON(page_offset >= nv_nvkms_memory->pages_count);
         pfn = page_to_pfn(nv_nvkms_memory->pages[page_offset]);
     }
 

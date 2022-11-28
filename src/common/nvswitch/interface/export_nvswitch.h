@@ -804,6 +804,14 @@ nvswitch_os_strncmp
     NvLength length
 );
 
+char*
+nvswitch_os_strncat
+(
+    char *s1,
+    const char *s2,
+    NvLength length
+);
+
 void *
 nvswitch_os_memset
 (

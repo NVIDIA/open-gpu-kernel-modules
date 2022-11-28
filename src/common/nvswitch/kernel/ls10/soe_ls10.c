@@ -428,7 +428,7 @@ nvswitch_init_soe_ls10
     if (_nvswitch_soe_send_test_cmd(device) != NV_OK)
     {
         NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_SOE_BOOTSTRAP,
-            "SOE init failed(2)\n");
+            "SOE init failed(4)\n");
         status = -NVL_ERR_INVALID_STATE;
         goto nvswitch_init_soe_fail;
     }
@@ -464,6 +464,7 @@ nvswitch_unload_soe_ls10
 {
     // Detach driver from SOE Queues
     _nvswitch_soe_attach_detach_driver_ls10(device, NV_FALSE);
+
 
     return NVL_SUCCESS;
 }
@@ -577,6 +578,7 @@ _soeService_LS10
 )
 {
     NvBool  bRecheckMsgQ    = NV_FALSE;
+    NvBool  bRecheckPrintQ  = NV_FALSE;
     NvU32   clearBits       = 0;
     NvU32   intrStatus;
     PFLCN   pFlcn  = ENG_GET_FLCN(pSoe);
@@ -642,6 +644,8 @@ _soeService_LS10
         NVSWITCH_PRINT(device, INFO,
                     "%s: Received a SWGEN1 interrupt\n",
                     __FUNCTION__);
+        flcnDebugBufferDisplay_HAL(device, pFlcn);
+        bRecheckPrintQ = NV_TRUE;
     }
 
     // Clear any sources that were serviced and get the new status.
@@ -674,6 +678,22 @@ _soeService_LS10
            // It is not necessary to RMW IRQSSET (zeros are ignored)
            flcnRegWrite_HAL(device, pFlcn, NV_PFALCON_FALCON_IRQSSET,
                             DRF_DEF(_PFALCON, _FALCON_IRQSSET, _SWGEN0, _SET));
+        }
+    }
+
+    //
+    // If we just processed a SWGEN1 interrupt (Debug Buffer interrupt), peek
+    // into the Debug Buffer and see if any text was missed the last time
+    // the buffer was displayed (above). If it is not empty, re-generate SWGEN1
+    // (since it is now cleared) and exit. As long as an interrupt is pending,
+    // this function will be re-entered and the message(s) will be processed.
+    //
+    if (bRecheckPrintQ)
+    {
+        if (!flcnDebugBufferIsEmpty_HAL(device, pFlcn))
+        {
+            flcnRegWrite_HAL(device, pFlcn, NV_PFALCON_FALCON_IRQSSET,
+                              DRF_DEF(_PFALCON, _FALCON_IRQSSET, _SWGEN1, _SET));
         }
     }
 

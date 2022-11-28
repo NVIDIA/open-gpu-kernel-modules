@@ -381,6 +381,8 @@ namespace DisplayPort
 
         virtual bool getSDPExtnForColorimetrySupported();
 
+        virtual bool getPanelFwRevision(NvU16 *revision);
+
         virtual bool isPowerSuspended();
 
         virtual void setPanelPowerParams(bool bSinkPowerStateD0, bool bPanelPowerStateOn);

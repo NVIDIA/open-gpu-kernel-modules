@@ -1634,6 +1634,7 @@
 #define NV_REG_STR_RM_GPU_FABRIC_PROBE "RmGpuFabricProbe"
 #define NV_REG_STR_RM_GPU_FABRIC_PROBE_DELAY               7:0
 #define NV_REG_STR_RM_GPU_FABRIC_PROBE_SLOWDOWN_THRESHOLD 15:8
+#define NV_REG_STR_RM_GPU_FABRIC_PROBE_OVERRIDE           31:31
 // Type DWORD
 // Enable GPU fabric probe
 //

@@ -526,6 +526,12 @@ scrubSubmitPages
         pScrubList = (PSCRUB_NODE)
                      portMemAllocNonPaged((NvLength)(sizeof(SCRUB_NODE) * (pageCount - freeEntriesInList)));
         
+        if (pScrubList == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+       
         while (freeEntriesInList < pageCount)
         {
             if (pageCount > MAX_SCRUB_ITEMS)
@@ -561,6 +567,7 @@ scrubSubmitPages
         *pSize  = 0;
     }
 
+cleanup:
     portSyncMutexRelease(pScrubber->pScrubberMutex);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO, status);

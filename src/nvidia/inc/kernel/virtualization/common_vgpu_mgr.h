@@ -68,6 +68,7 @@ typedef struct
     NvU32       frlEnable;
     NvU32       gpuDirectSupported;
     NvU32       nvlinkP2PSupported;
+    NvU32       multiVgpuExclusive;
     NvU8        vgpuExtraParams[VGPU_CONFIG_PARAMS_MAX_LENGTH];
     NvU8        vgpuSignature[VGPU_SIGNATURE_SIZE];
 } VGPU_TYPE;

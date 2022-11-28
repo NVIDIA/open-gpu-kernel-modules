@@ -643,12 +643,14 @@ typedef enum {
 static inline NvBool IS_REG_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
 {
     return ((offset >= nv->regs->cpu_address) &&
+            ((offset + (length - 1)) >= offset) &&
             ((offset + (length - 1)) <= (nv->regs->cpu_address + (nv->regs->size - 1))));
 }
 
 static inline NvBool IS_FB_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
 {
     return  ((nv->fb) && (offset >= nv->fb->cpu_address) &&
+             ((offset + (length - 1)) >= offset) &&
              ((offset + (length - 1)) <= (nv->fb->cpu_address + (nv->fb->size - 1))));
 }
 
@@ -656,6 +658,7 @@ static inline NvBool IS_UD_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
 {
     return ((nv->ud.cpu_address != 0) && (nv->ud.size != 0) &&
             (offset >= nv->ud.cpu_address) &&
+            ((offset + (length - 1)) >= offset) &&
             ((offset + (length - 1)) <= (nv->ud.cpu_address + (nv->ud.size - 1))));
 }
 
@@ -664,6 +667,7 @@ static inline NvBool IS_IMEM_OFFSET(nv_state_t *nv, NvU64 offset, NvU64 length)
     return ((nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address != 0) &&
             (nv->bars[NV_GPU_BAR_INDEX_IMEM].size != 0) &&
             (offset >= nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address) &&
+            ((offset + (length - 1)) >= offset) &&
             ((offset + (length - 1)) <= (nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address +
                                          (nv->bars[NV_GPU_BAR_INDEX_IMEM].size - 1))));
 }

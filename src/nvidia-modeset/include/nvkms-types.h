@@ -926,17 +926,18 @@ typedef struct _NVEvoDevRec {
 
     NvU32               displayHandle;
 
-    /*!
-     * lastModesettingClient points to the pOpenDev of the client that
-     * performed the last modeset.
-     */
-    const struct NvKmsPerOpenDev *lastModesettingClient;
 
     /*!
      * modesetOwner points to the pOpenDev of the client that called
      * NVKMS_IOCTL_GRAB_OWNERSHIP.
      */
     const struct NvKmsPerOpenDev *modesetOwner;
+
+    /*!
+     * Indicates whether modeset ownership is changed since
+     * last modeset.
+     */
+    NvBool modesetOwnerChanged;
 
     /*!
      * NVEvoDevRec::numSubDevices is the number of GPUs in the SLI

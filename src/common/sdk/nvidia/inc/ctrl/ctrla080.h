@@ -548,6 +548,11 @@ typedef struct NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS {
  *      This parameter returns mask of UVM enabled features on vGPU. It comprises of
  *      UVM managed APIs and replayable faults that are enabled or disabled based on
  *      vGPU version.
+ *   enableKmdSysmemScratch
+ *      This parameter is used to overwrite guest regkey PreferSystemMemoryScratch.
+ *      Setting vgpu parameter "vgpu_enable_kmd_sysmem_scratch" in plugin will
+ *      set this parameter. If the parameter is set, guest moves shader buffer
+ *      allocation from FB to sysmem.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -632,19 +637,20 @@ typedef struct NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS {
 #define NVA080_CTRL_VGPU_GET_CONFIG_PARAMS_MESSAGE_ID (0x1U)
 
 typedef struct NVA080_CTRL_VGPU_GET_CONFIG_PARAMS {
-    NvU32 frameRateLimiter;
-    NvU32 swVSyncEnabled;
-    NvU32 cudaEnabled;
-    NvU32 pluginPteBlitEnabled;
-    NvU32 disableWddm1xPreemption;
-    NvU32 debugBufferSize;
+    NvU32  frameRateLimiter;
+    NvU32  swVSyncEnabled;
+    NvU32  cudaEnabled;
+    NvU32  pluginPteBlitEnabled;
+    NvU32  disableWddm1xPreemption;
+    NvU32  debugBufferSize;
     NV_DECLARE_ALIGNED(NvP64 debugBuffer, 8);
     NV_DECLARE_ALIGNED(NvU64 guestFbOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 mappableCpuHostAperture, 8);
-    NvU32 linuxInterruptOptimization;
-    NvU32 vgpuDeviceCapsBits;
-    NvU32 maxPixels;
-    NvU32 uvmEnabledFeatures;
+    NvU32  linuxInterruptOptimization;
+    NvU32  vgpuDeviceCapsBits;
+    NvU32  maxPixels;
+    NvU32  uvmEnabledFeatures;
+    NvBool enableKmdSysmemScratch;
 } NVA080_CTRL_VGPU_GET_CONFIG_PARAMS;
 
 
