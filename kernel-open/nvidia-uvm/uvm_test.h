@@ -188,7 +188,4 @@ NV_STATUS uvm_test_register_unload_state_buffer(UVM_TEST_REGISTER_UNLOAD_STATE_B
 NV_STATUS uvm_test_rb_tree_directed(UVM_TEST_RB_TREE_DIRECTED_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_rb_tree_random(UVM_TEST_RB_TREE_RANDOM_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_hmm_sanity(UVM_TEST_HMM_SANITY_PARAMS *params, struct file *filp);
-
-
-
 #endif

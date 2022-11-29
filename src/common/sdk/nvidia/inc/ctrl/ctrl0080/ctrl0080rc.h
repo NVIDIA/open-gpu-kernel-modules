@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl0080/ctrl0080rc.finn
 //
 
-
-
-
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
 /* NV01_DEVICE_XX/NV03_DEVICE gpu control commands and parameters */

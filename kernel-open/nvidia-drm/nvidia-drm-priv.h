@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2015-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -122,6 +122,11 @@ struct nv_drm_device {
     NvBool supportsSyncpts;
 
     struct drm_property *nv_out_fence_property;
+    struct drm_property *nv_input_colorspace_property;
+
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    struct drm_property *nv_hdr_output_metadata_property;
+#endif
 
     struct nv_drm_device *next;
 };

@@ -145,8 +145,12 @@ static NV_STATUS __nvoc_thunk_RmResource_physmemControl_Prologue(struct Physical
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemIsReady(struct PhysicalMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset));
+static NvBool __nvoc_thunk_Memory_physmemIsGpuMapAllowed(struct PhysicalMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_physmemIsReady(struct PhysicalMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_physmemCheckCopyPermissions(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -155,6 +159,10 @@ static NV_STATUS __nvoc_thunk_Memory_physmemCheckCopyPermissions(struct Physical
 
 static void __nvoc_thunk_RsResource_physmemPreDestruct(struct PhysicalMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_physmemIsDuplicate(struct PhysicalMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_physmemUnmapFrom(struct PhysicalMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -243,11 +251,15 @@ static void __nvoc_init_funcTable_PhysicalMemory_1(PhysicalMemory *pThis) {
 
     pThis->__physmemControl_Prologue__ = &__nvoc_thunk_RmResource_physmemControl_Prologue;
 
+    pThis->__physmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_physmemIsGpuMapAllowed;
+
     pThis->__physmemIsReady__ = &__nvoc_thunk_Memory_physmemIsReady;
 
     pThis->__physmemCheckCopyPermissions__ = &__nvoc_thunk_Memory_physmemCheckCopyPermissions;
 
     pThis->__physmemPreDestruct__ = &__nvoc_thunk_RsResource_physmemPreDestruct;
+
+    pThis->__physmemIsDuplicate__ = &__nvoc_thunk_Memory_physmemIsDuplicate;
 
     pThis->__physmemUnmapFrom__ = &__nvoc_thunk_RsResource_physmemUnmapFrom;
 

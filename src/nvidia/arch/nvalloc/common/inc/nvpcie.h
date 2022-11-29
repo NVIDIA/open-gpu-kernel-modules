@@ -58,26 +58,81 @@
 #define PCI_MULTIFUNCTION       0x80
 
 // From PCI Local Bus Specification, Revision 3.0
+// and  PCI Express Base Specification 6.0
+// numbers in comments to right of values indicate
+// the referenced section in the PCIE spec
 
-#define CAP_ID_MASK             0xFF
 
-#define CAP_ID_PMI              0x01
-#define CAP_ID_AGP              0x02
-#define CAP_ID_VPD              0x03
-#define CAP_ID_SLOT_ID          0x04
-#define CAP_ID_MSI              0x05
-#define CAP_ID_HOT_SWAP         0x06
-#define CAP_ID_PCI_X            0x07
-#define CAP_ID_HYPER_TRANSPORT  0x08
-#define CAP_ID_VENDOR_SPECIFIC  0x09
-#define CAP_ID_DEBUG_PORT       0x0A
-#define CAP_ID_CRC              0x0B
-#define CAP_ID_HOT_PLUG         0x0C
-#define CAP_ID_SUBSYSTEM_ID     0x0D
-#define CAP_ID_AGP8X            0x0E
-#define CAP_ID_SECURE           0x0F
-#define CAP_ID_PCI_EXPRESS      0x10
-#define CAP_ID_MSI_X            0x11
+#define CAP_ID_MASK                                 0xFF
+
+#define CAP_ID_NULL                                 0x00        // 7.9.28.1
+#define CAP_ID_PMI                                  0x01        // 7.5.2.1
+#define CAP_ID_AGP                                  0x02
+#define CAP_ID_VPD                                  0x03        // 7.9.18.1
+#define CAP_ID_SLOT_ID                              0x04
+#define CAP_ID_MSI                                  0x05        // 7.7.1.1
+#define CAP_ID_HOT_SWAP                             0x06
+#define CAP_ID_PCI_X                                0x07
+#define CAP_ID_HYPER_TRANSPORT                      0x08
+#define CAP_ID_VENDOR_SPECIFIC                      0x09
+#define CAP_ID_DEBUG_PORT                           0x0A
+#define CAP_ID_CRC                                  0x0B
+#define CAP_ID_HOT_PLUG                             0x0C
+#define CAP_ID_SUBSYSTEM_ID                         0x0D        // 7.9.23.1
+#define CAP_ID_AGP8X                                0x0E
+#define CAP_ID_SECURE                               0x0F
+#define CAP_ID_PCI_EXPRESS                          0x10        // 7.5.3.1
+#define CAP_ID_MSI_X                                0x11        // 7.7.2.1
+#define CAP_ID_ENHANCED_ALLOCATION                  0x14        // 7.8.5.1
+#define CAP_ID_FPB                                  0x15        // 7.8.11.1
+#define CAP_ID_AF                                   0x13        // 7.9.21.1
+
+//
+// sizes for static PCI capabilities structure
+//
+#define CAP_NULL_SIZE                               0x04        // 7.9.28
+#define CAP_PMI_SIZE                                0x08        // 7.5.2
+#define CAP_VPD_SIZE                                0x08        // 7.9.18
+#define CAP_PCI_X_SIZE                              0x3C        // 7.5.3
+#define CAP_PCI_EXPRESS_SIZE                        0x3C        // 7.5.3
+#define CAP_FPB_SIZE                                0x08        // 7.8.11.1
+#define CAP_AF_SIZE                                 0x08        // 7.9.21
+#define CAP_SUBSYSTEM_ID_SIZE                       0x08        // 7.9.23
+
+// MSI capability size related fields
+#define PCI_MSI_CONTROL                             0x02        // 7.7.1.2
+#define PCI_MSI_CONTROL_64BIT_CAPABLE               7:7
+#define PCI_MSI_CONTROL_64BIT_CAPABLE_FALSE         0
+#define PCI_MSI_CONTROL_64BIT_CAPABLE_TRUE          1
+#define PCI_MSI_CONTROL_PVM_CAPABLE                 8:8
+#define PCI_MSI_CONTROL_PVM_CAPABLE_FALSE           0
+#define PCI_MSI_CONTROL_PVM_CAPABLE_TRUE            1
+#define PCI_MSI_BASE_SIZE                           0x0C        // 7.7.1
+#define PCI_MSI_64BIT_ADDR_CAPABLE_ADJ_SIZE         0x04        // 7.7.1
+#define PCI_MSI_PVM_CAPABLE_ADJ_SIZE                0x08        // 7.7.1
+
+// MSI-X capability size related fields
+#define PCI_MSI_X_BASE_SIZE                         0x0C        // 7.7.2
+#define PCI_MSI_X_CONTROL                           0x02        // 7.7.2.2
+#define PCI_MSI_X_CONTROL_TABLE_SIZE                10:0
+#define PCI_MSI_X_TABLE_OFFSET_BIR                  0x04        // 7.7.2.3
+#define PCI_MSI_X_TABLE_OFFSET                      31:3
+#define PCI_MSI_X_PBR_OFFSET_BIR                    0x08        // 7.7.2.4
+#define PCI_MSI_X_PBR_OFFSET                        31:3
+#define PCI_MSI_X_TABLE_ENTRY_SIZE                  0x10        // 7.7.2
+#define PCI_MSI_X_PBR_ENTRY_SIZE                    0x10        // 7.7.2
+
+// Enhanced Allocation Capability size related fields
+#define PCI_ENHANCED_ALLOCATION_FIRST_DW            0x00        // 7.8.5.1
+#define PCI_ENHANCED_ALLOCATION_FIRST_DW_NUM_ENTRIES    21:16
+#define PCI_ENHANCED_ALLOCATION_TYPE_0_BASE_SIZE    0x04        // 7.8.5.1
+#define PCI_ENHANCED_ALLOCATION_TYPE_1_BASE_SIZE    0x08        // 7.8.5.2
+#define PCI_ENHANCED_ALLOCATION_ENTRY_HEADER        0x00        // 7.8.5.3
+#define PCI_ENHANCED_ALLOCATION_ENTRY_HEADER_ENTRY_SIZE 2:0
+
+// PCI Vendor Specific Capability size related fields
+#define PCI_VENDOR_SPECIFIC_CAP_HEADER              0x00        // 7.9.4
+#define PCI_VENDOR_SPECIFIC_CAP_HEADER_LENGTH       23:16
 
 //
 // Extended config space size is 4096 bytes.
@@ -99,6 +154,8 @@
 #define PCI_HEADER_TYPE0_CACHE_LINE_SIZE 0x0C
 #define PCI_HEADER_TYPE0_LATENCY_TIMER   0x0D
 #define PCI_HEADER_TYPE0_HEADER_TYPE     0x0E
+#define PCI_HEADER_TYPE0_HEADER_TYPE_0      0
+#define PCI_HEADER_TYPE0_HEADER_TYPE_1      1
 #define PCI_HEADER_TYPE0_BIST            0x0F
 #define PCI_HEADER_TYPE0_BAR0            0x10
 #define PCI_HEADER_TYPE0_BAR1            0x14
@@ -229,14 +286,120 @@
 #define PCIE_LINK_STATUS_2_DE_EMPHASIS      0:0     // PCIE De-Emphasis Level
 #define PCI_COMMON_SUBSYSTEM_VENDOR_ID      0x2c    // PCI subsystem Vendor Id
 #define PCI_COMMON_SUBSYSTEM_ID             0x2e    // PCI subsystem Id
-
+#define PCIE_CAPABILITY_BASE                0x100   // 1st PCIE capability.
 
 // PCI Express Capability ID in the enhanced configuration space
-#define PCIE_CAP_ID_ERROR                   0x1     // PCIE Advanced Error Reporting
-#define PCIE_CAP_ID_VC                      0x2     // PCIE Virtual Channel (VC)
-#define PCIE_CAP_ID_SERIAL                  0x3     // PCIE Device Serial Number
-#define PCIE_CAP_ID_POWER                   0x4     // PCIE Power Budgeting
-#define PCIE_CAP_ID_L1_PM_SUBSTATES         0x1E    // PCIE L1 PM Substates
+#define PCIE_CAP_ID_NULL                                  0x00        // 7.9.28.1
+#define PCIE_CAP_ID_ERROR                                 0x01        // 7.8.4.1
+#define PCIE_CAP_ID_VC                                    0x02        // 7.9.1.1
+#define PCIE_CAP_ID_SERIAL                                0x03        // 7.9.3.1
+#define PCIE_CAP_ID_POWER                                 0x04        // 7.8.1.1
+#define PCIE_CAP_ID_ROOT_COMPLEX                          0x05        // 7.9.8.1
+#define PCIE_CAP_ID_ROOT_COMPLEX_INTERNAL_LINK_CTRL       0x06        // 7.9.9.1
+#define PCIE_CAP_ID_ROOT_COMPLEX_EVENT_COLLECTOR_ENDPOINT 0x07        // 7.9.10.1
+#define PCIE_CAP_ID_PCIE_CAP_ID_MFVC                      0x08        // 7.9.2.1
+#define PCIE_CAP_ID_RCRB                                  0x0A        // 7.9.7.1
+#define PCIE_CAP_ID_ACS                                   0x0D        // 7.7.11.1
+#define PCIE_CAP_ID_ARI                                   0x0E        // 7.8.8.1
+#define PCIE_CAP_ID_MULTICAST                             0x12        // 7.9.11.1
+#define PCIE_CAP_ID_RESIZABLE_BAR                         0x15        // 7.8.6.1
+#define PCIE_CAP_ID_DYNAMIC_POWER_ALLOCATION              0x16        // 7.9.12.1
+#define PCIE_CAP_ID_TPH                                   0x17        // 7.9.13.1
+#define PCIE_CAP_ID_LATENCY_TOLERANCE                     0x18        // 7.8.2.1
+#define PCIE_CAP_ID_SECONDARY_PCIE_CAPABILITY             0x19        // 7.7.3.1
+#define PCIE_CAP_ID_PASID                                 0x1B        // 7.8.9.1
+#define PCIE_CAP_ID_DPC                                   0x1D        // 7.9.14.1
+#define PCIE_CAP_ID_L1_PM_SUBSTATES                       0x1E        // 7.8.3.1
+#define PCIE_CAP_ID_PTM                                   0x1F        // 7.9.15.1
+#define PCIE_CAP_ID_FRS_QUEUING                           0x21        // 7.8.10.1
+#define PCIE_CAP_ID_READINESS_TIME_REPORTING              0x22        // 7.9.16.1
+#define PCIE_CAP_ID_VENDOR_SPECIFIC                       0x23        // 7.9.6.1
+#define PCIE_CAP_ID_VF_RESIZABLE_BAR                      0x24        // 7.8.7.1
+#define PCIE_CAP_ID_DATA_LINK                             0x25        // 7.7.4.1
+#define PCIE_CAP_ID_PHYSLAYER_16_GT                       0x26        // 7.7.5.1
+#define PCIE_CAP_ID_LANE_MARGINING_AT_RECEVER             0x27        // 7.7.10.1
+#define PCIE_CAP_ID_HIERARCHY_ID                          0x28        // 7.9.17.1
+#define PCIE_CAP_ID_NPEM                                  0x29        // 7.9.19.1
+#define PCIE_CAP_ID_PHYSLAYER_32_GT                       0x2A        // 7.7.6.1
+#define PCIE_CAP_ID_ALTERNATE_PROTOCOL                    0x2B        // 7.9.20.1
+#define PCIE_CAP_ID_SFI                                   0x2C        // 7.9.22.1
+#define PCIE_CAP_ID_SHADOW_FUNCTIONS                      0x2D        // 7.9.25.1
+#define PCIE_CAP_ID_DATA_OBJECT_EXCHANGE                  0x2E        // 7.9.24.1
+#define PCIE_CAP_ID_DEVICE_3                              0x2F        // 7.7.9.1
+#define PCIE_CAP_ID_IDE                                   0x30        // 7.9.26.1
+#define PCIE_CAP_ID_PHYSLAYER_64_GT                       0x31        // 7.7.7.1
+#define PCIE_CAP_ID_FLT_LOGGING                           0x32        // 7.7.8.1
+#define PCIE_CAP_ID_FLIT_PERF_MEASURMENT                  0x33        // 7.8.12.1
+#define PCIE_CAP_ID_FLIT_ERROR_INJECTION                  0x34        // 7.8.13.1
+
+// static sized structure sizes
+#define PCIE_CAP_HEADER_SIZE                                0x04        // 7.6.3
+#define PCIE_CAP_NULL_SIZE                                  0x04        // 7.9.28
+#define PCIE_CAP_ERROR_SIZE                                 0x48        // 7.8.4
+#define PCIE_CAP_POWER_SIZE                                 0x10        // 7.8.1
+#define PCIE_CAP_ROOT_COMPLEX_INTERNAL_LINK_CTRL_SIZE       0x0C        // 7.9.9
+#define PCIE_CAP_ROOT_COMPLEX_EVENT_COLLECTOR_ENDPOINT_SIZE 0x0C        // 7.9.10
+#define PCIE_CAP_SECONDARY_PCIE_SIZE                        0x4C        // 7.7.3.1
+#define PCIE_CAP_DATA_LINK_SIZE                             0x0C        // 7.7.4
+#define PCIE_CAP_PHYSLAYER_16_GT_SIZE                       0x40        // 7.7.5
+#define PCIE_CAP_PHYSLAYER_32_GT_SIZE                       0x40        // 7.7.6
+#define PCIE_CAP_PHYSLAYER_64_GT_SIZE                       0x20        // 7.7.7
+#define PCIE_CAP_FLT_LOGGING_SIZE                           0x3C        // 7.7.8
+#define PCIE_CAP_DEVICE_3_SIZE                              0x10        // 7.7.9
+#define PCIE_CAP_LANE_MARGINING_AT_RECEVER_SIZE             0x88        // 7.7.10
+#define PCIE_CAP_ACS_SIZE                                   0x10        // 7.7.11
+#define PCIE_CAP_LATENCY_TOLERANCE_SIZE                     0x08        // 7.8.2
+#define PCIE_CAP_L1_PM_SUBSTATE_SIZE                        0x14        // 7.8.3
+#define PCIE_CAP_RESIZABLE_BAR_SIZE                         0x34        // 7.8.6
+#define PCIE_CAP_VF_RESIZABLE_BAR_SIZE                      0x34        // 7.8.7
+#define PCIE_CAP_ARI_SIZE                                   0x08        // 7.8.8
+#define PCIE_CAP_PASID_SIZE                                 0x08        // 7.8.9
+#define PCIE_CAP_FRS_QUEUING_SIZE                           0x10        // 7.8.10
+#define PCIE_CAP_FPB_SIZE                                   0x24        // 7.8.11
+#define PCIE_CAP_FLIT_PERF_MEASURMENT_SIZE                  0x24        // 7.8.12
+#define PCIE_CAP_FLIT_ERROR_INJECTION_SIZE                  0x24        // 7.8.13
+#define PCIE_CAP_DEV_SERIAL_SIZE                            0x0C        // 7.9.3
+#define PCIE_CAP_RCRB_SIZE                                  0x14        // 7.9.7
+#define PCIE_CAP_MULTICAST_SIZE                             0x30        // 7.9.11
+#define PCIE_CAP_DYNAMIC_POWER_ALLOCATION_SIZE              0x30        // 7.9.12
+#define PCIE_CAP_DPC_SIZE                                   0x5C        // 7.9.14
+#define PCIE_CAP_PTM_SIZE                                   0x0C        // 7.9.15
+#define PCIE_CAP_READINESS_TIME_REPORTING_SIZE              0x0C        // 7.9.16
+#define PCIE_CAP_HIERARCHY_ID_SIZE                          0x0C        // 7.9.17
+#define PCIE_CAP_NPEM_SIZE                                  0x10        // 7.9.19
+#define PCIE_CAP_ALTERNATE_PROTOCOL_SIZE                    0x14        // 7.9.20
+#define PCIE_CAP_SFI_SIZE                                   0x14        // 7.9.22
+#define PCIE_CAP_DATA_OBJECT_EXCHANGE_SIZE                  0x18        // 7.9.24
+#define PCIE_CAP_SHADOW_FUNCTIONS_SIZE                      0x1C        // 7.9.25
+#define PCIE_CAP_IDE_SIZE                                   0x34        // 7.9.26
+
+// Virtual Channel Capability size related fields
+#define PCIE_VC_REGISTER_1                                  0x04        // 7.9.1.2
+#define PCIE_VC_REGISTER_1_EXTENDED_VC_COUNT                2:0
+#define PCIE_VIRTUAL_CHANNELS_BASE_SIZE                     0x18        // 7.9.1
+#define PCIE_VIRTUAL_CHANNELS_EXTENDED_VC_ENTRY_SIZE        0x10        // 7.9.1
+
+// Multi Function Virtual Channel Capability size related fields
+#define PCIE_MFVC_REGISTER_1                                0x04        // 7.9.2.2
+#define PCIE_MFVC_REGISTER_1_EXTENDED_VC_COUNT              2:0
+#define PCIE_PCIE_CAP_ID_MFVC_BASE_SIZE                     0x18        // 7.9.2
+#define PCIE_PCIE_CAP_ID_MFVC_EXTENDED_VC_ENTRY_SIZE        0x10        // 7.9.2
+
+// Vendor Specific Capability size related fields
+#define PCIE_VENDOR_SPECIFIC_HEADER_1                       0x04        // 7.9.6.2
+#define PCIE_VENDOR_SPECIFIC_HEADER_1_LENGTH                31:20
+
+// Root Complex Capability size related fields
+#define PCIE_ROOT_COMPLEX_SELF_DESC_REGISTER                0x04        // 7.9.8.2
+#define PCIE_ROOT_COMPLEX_SELF_DESC_REGISTER_NUM_LINK_ENTRIES   15:8
+#define PCIE_ROOT_COMPLEX_BASE_SIZE                         0x0C        // 7.9.8
+#define PCIE_ROOT_COMPLEX_LINK_ENTRY_SIZE                   0x10        // 7.9.8.3
+
+// TPH capability size related fields
+#define PCIE_TPH_REQUESTOR_REGISTER                         0x04        // 7.9.13.2
+#define PCIE_TPH_REQUESTOR_REGISTER_ST_TABLE_SIZE           26:16
+#define PCIE_TPH_BASE_SIZE                                  0x0C        // 7.9.13
+#define PCIE_TPH_ST_ENTRY_SIZE                              0x02        // 7.9.13.4
 
 // Intel CPU family.
 #define INTEL_CPU_FAMILY_06                 0x06
@@ -249,6 +412,7 @@
 #define INTEL_CPU_MODEL_2D                  0x2d
 #define INTEL_CPU_MODEL_3A                  0x3a
 #define INTEL_CPU_MODEL_3F                  0x3f
+
 // Symbolic defines for each possible virtual channel
 enum
 {
@@ -262,6 +426,49 @@ enum
     RM_PCIE_VIRTUAL_CHANNEL_7,
     RM_PCIE_VIRTUAL_CHANNEL_INVALID
 };
+
+// Diagnostic collection actions.
+#define RM_PCIE_ACTION_NOP                          0
+#define RM_PCIE_ACTION_COLLECT_CONFIG_SPACE         1
+#define RM_PCIE_ACTION_COLLECT_PCI_CAP_STRUCT       2
+#define RM_PCIE_ACTION_COLLECT_PCIE_CAP_STRUCT      3
+#define RM_PCIE_ACTION_COLLECT_ALL_PCI_CAPS         4
+#define RM_PCIE_ACTION_COLLECT_ALL_PCIE_CAPS        5
+#define RM_PCIE_ACTION_REPORT_PCI_CAPS_COUNT        6
+#define RM_PCIE_ACTION_REPORT_PCIE_CAPS_COUNT       7
+#define RM_PCIE_ACTION_EOS                          0xff
+
+
+// Diagnostic collection device Type ids
+#define RM_PCIE_DEVICE_TYPE_NONE                    0xff
+#define RM_PCIE_DEVICE_TYPE_GPU                     0
+#define RM_PCIE_DEVICE_TYPE_UPSTREAM_BRIDGE         1
+#define RM_PCIE_DEVICE_COUNT                        2
+
+// Diagnostic collection capability Type ids
+#define RM_PCIE_DC_CAP_TYPE_NONE                    0xff
+#define RM_PCIE_DC_CAP_TYPE_PCI                     0
+#define RM_PCIE_DC_CAP_TYPE_PCIE                    1
+#define RM_PCIE_DC_CAP_TYPE_COUNT                   2
+
+typedef struct _def_bif_dc_diagnostic_collection_command
+{
+    NvU8              action;
+    NvU8              deviceType;
+    NvU16             locator;
+    NvU16             length;
+} CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY;
+
+typedef struct _def_cl_pcie_dc_capability_map_entry
+{
+    NvU16   id;
+    NvU16   blkOffset;
+} CL_PCIE_DC_CAPABILITY_MAP_ENTRY;
+typedef struct
+{
+    NvU16  count;
+    CL_PCIE_DC_CAPABILITY_MAP_ENTRY entries[PCI_MAX_CAPS];
+} CL_PCIE_DC_CAPABILITY_MAP;
 
 struct OBJCL;
 // root port setup functions
@@ -287,6 +494,6 @@ NV_STATUS AMD_RP1630_setupFunc(OBJGPU *, OBJCL*);
 NV_STATUS AMD_RP1483_setupFunc(OBJGPU *, OBJCL*);
 
 // Determines if the GPU is in a multi-GPU board based on devid checks
-NvBool gpuIsMultiGpuBoard(OBJGPU *, NvBool *, NvBool *);
+NvBool gpuIsMultiGpuBoard(OBJGPU *, NvBool *);
 
 #endif // NVPCIE_H

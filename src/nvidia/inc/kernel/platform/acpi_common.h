@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,9 @@
 #include "core/core.h"
 #include "rmconfig.h"
 
+#include "platform/nbsi/nbsi_read.h"
+NV_STATUS getAcpiDsmObjectData(OBJGPU *, NvU8**, NvU32 *, ACPI_DSM_FUNCTION, NBSI_GLOB_TYPE, NBSI_VALIDATE);
+
 NV_STATUS testIfDsmFuncSupported(OBJGPU *, ACPI_DSM_FUNCTION);
 NV_STATUS testIfDsmSubFunctionEnabled(OBJGPU *, ACPI_DSM_FUNCTION, NvU32);
 NV_STATUS remapDsmFunctionAndSubFunction(OBJGPU *, ACPI_DSM_FUNCTION *, NvU32 *);
@@ -36,6 +39,7 @@ void cacheDsmSupportedFunction(OBJGPU *, ACPI_DSM_FUNCTION, NvU32, NvU32 *, NvU3
 NV_STATUS checkDsmCall(OBJGPU *, ACPI_DSM_FUNCTION *, NvU32 *, NvU32 *, NvU16 *);
 void acpiDsmInit(OBJGPU *);
 NV_STATUS getLicenseKey(OBJGPU *, NvU32, NvU32 *, NvU16 *);
+void uncacheDsmFuncStatus(OBJGPU *, ACPI_DSM_FUNCTION, NvU32);
 
 // useful macros
 #if NV_PRINTF_ENABLED

@@ -145,8 +145,12 @@ static NV_STATUS __nvoc_thunk_RmResource_conmemControl_Prologue(struct ConsoleMe
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_conmemIsReady(struct ConsoleMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset));
+static NvBool __nvoc_thunk_Memory_conmemIsGpuMapAllowed(struct ConsoleMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_conmemIsReady(struct ConsoleMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_conmemCheckCopyPermissions(struct ConsoleMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -155,6 +159,10 @@ static NV_STATUS __nvoc_thunk_Memory_conmemCheckCopyPermissions(struct ConsoleMe
 
 static void __nvoc_thunk_RsResource_conmemPreDestruct(struct ConsoleMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_conmemIsDuplicate(struct ConsoleMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_conmemUnmapFrom(struct ConsoleMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -243,11 +251,15 @@ static void __nvoc_init_funcTable_ConsoleMemory_1(ConsoleMemory *pThis) {
 
     pThis->__conmemControl_Prologue__ = &__nvoc_thunk_RmResource_conmemControl_Prologue;
 
+    pThis->__conmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_conmemIsGpuMapAllowed;
+
     pThis->__conmemIsReady__ = &__nvoc_thunk_Memory_conmemIsReady;
 
     pThis->__conmemCheckCopyPermissions__ = &__nvoc_thunk_Memory_conmemCheckCopyPermissions;
 
     pThis->__conmemPreDestruct__ = &__nvoc_thunk_RsResource_conmemPreDestruct;
+
+    pThis->__conmemIsDuplicate__ = &__nvoc_thunk_Memory_conmemIsDuplicate;
 
     pThis->__conmemUnmapFrom__ = &__nvoc_thunk_RsResource_conmemUnmapFrom;
 

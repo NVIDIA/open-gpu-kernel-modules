@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 515.76.
+version 525.60.11.
 
 ## System pre-requisites
 
@@ -44,9 +44,9 @@ as root:
 
     make modules_install -j$(nproc)
 
-Note that the kernel modules built here must be used with gsp.bin
+Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-515.76 driver release.  This can be achieved by installing
+525.60.11 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -202,7 +202,7 @@ for the target kernel.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 515.76 release,
+(see the table below). However, in the 525.60.11 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -210,7 +210,7 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/515.76/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/525.60.11/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -687,6 +687,16 @@ Subsystem Device ID.
 | NVIDIA PG506-232                                | 20B6 10DE 1492 |
 | NVIDIA A30                                      | 20B7 10DE 1532 |
 | NVIDIA A100-PCIE-40GB                           | 20F1 10DE 145F |
+| NVIDIA A800-SXM4-80GB                           | 20F3 10DE 179B |
+| NVIDIA A800-SXM4-80GB                           | 20F3 10DE 179C |
+| NVIDIA A800-SXM4-80GB                           | 20F3 10DE 179D |
+| NVIDIA A800-SXM4-80GB                           | 20F3 10DE 179E |
+| NVIDIA A800-SXM4-80GB                           | 20F3 10DE 179F |
+| NVIDIA A800-SXM4-80GB                           | 20F3 10DE 17A0 |
+| NVIDIA A800-SXM4-80GB                           | 20F3 10DE 17A1 |
+| NVIDIA A800-SXM4-80GB                           | 20F3 10DE 17A2 |
+| NVIDIA A800 80GB PCIe                           | 20F5 10DE 1799 |
+| NVIDIA A800 80GB PCIe LC                        | 20F5 10DE 179A |
 | NVIDIA GeForce GTX 1660 Ti                      | 2182           |
 | NVIDIA GeForce GTX 1660                         | 2184           |
 | NVIDIA GeForce GTX 1650 SUPER                   | 2187           |
@@ -720,6 +730,7 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 3090 Ti                      | 2203           |
 | NVIDIA GeForce RTX 3090                         | 2204           |
 | NVIDIA GeForce RTX 3080                         | 2206           |
+| NVIDIA GeForce RTX 3070 Ti                      | 2207           |
 | NVIDIA GeForce RTX 3080 Ti                      | 2208           |
 | NVIDIA GeForce RTX 3080                         | 220A           |
 | NVIDIA CMP 90HX                                 | 220D           |
@@ -744,6 +755,7 @@ Subsystem Device ID.
 | NVIDIA A10                                      | 2236 10DE 1482 |
 | NVIDIA A10G                                     | 2237 10DE 152F |
 | NVIDIA A10M                                     | 2238 10DE 1677 |
+| NVIDIA H100 PCIe                                | 2331 10DE 1626 |
 | NVIDIA GeForce RTX 3060 Ti                      | 2414           |
 | NVIDIA GeForce RTX 3080 Ti Laptop GPU           | 2420           |
 | NVIDIA RTX A5500 Laptop GPU                     | 2438           |
@@ -771,6 +783,7 @@ Subsystem Device ID.
 | NVIDIA RTX A3000 12GB Laptop GPU                | 24B9           |
 | NVIDIA RTX A4500 Laptop GPU                     | 24BA           |
 | NVIDIA RTX A3000 12GB Laptop GPU                | 24BB           |
+| NVIDIA GeForce RTX 3060 Ti                      | 24C9           |
 | NVIDIA GeForce RTX 3080 Laptop GPU              | 24DC           |
 | NVIDIA GeForce RTX 3070 Laptop GPU              | 24DD           |
 | NVIDIA GeForce RTX 3070 Ti Laptop GPU           | 24E0           |
@@ -786,6 +799,7 @@ Subsystem Device ID.
 | NVIDIA RTX A2000                                | 2531 103C 151D |
 | NVIDIA RTX A2000                                | 2531 10DE 151D |
 | NVIDIA RTX A2000                                | 2531 17AA 151D |
+| NVIDIA GeForce RTX 3060                         | 2544           |
 | NVIDIA GeForce RTX 3060 Laptop GPU              | 2560           |
 | NVIDIA GeForce RTX 3050 Ti Laptop GPU           | 2563           |
 | NVIDIA RTX A2000 12GB                           | 2571 1028 1611 |
@@ -815,3 +829,4 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 3050 Laptop GPU              | 25E5           |
 | NVIDIA RTX A1000 Embedded GPU                   | 25F9           |
 | NVIDIA RTX A2000 Embedded GPU                   | 25FA           |
+| NVIDIA RTX A500 Embedded GPU                    | 25FB           |

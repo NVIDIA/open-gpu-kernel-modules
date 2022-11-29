@@ -66,9 +66,11 @@ struct MemoryHwResources {
     NvU32 (*__hwresGetRefCount__)(struct MemoryHwResources *);
     NV_STATUS (*__hwresMapTo__)(struct MemoryHwResources *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__hwresControl_Prologue__)(struct MemoryHwResources *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__hwresIsReady__)(struct MemoryHwResources *);
+    NvBool (*__hwresIsGpuMapAllowed__)(struct MemoryHwResources *, struct OBJGPU *);
+    NV_STATUS (*__hwresIsReady__)(struct MemoryHwResources *, NvBool);
     NV_STATUS (*__hwresCheckCopyPermissions__)(struct MemoryHwResources *, struct OBJGPU *, NvHandle);
     void (*__hwresPreDestruct__)(struct MemoryHwResources *);
+    NV_STATUS (*__hwresIsDuplicate__)(struct MemoryHwResources *, NvHandle, NvBool *);
     NV_STATUS (*__hwresUnmapFrom__)(struct MemoryHwResources *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__hwresControl_Epilogue__)(struct MemoryHwResources *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__hwresControlLookup__)(struct MemoryHwResources *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -117,9 +119,11 @@ NV_STATUS __nvoc_objCreate_MemoryHwResources(MemoryHwResources**, Dynamic*, NvU3
 #define hwresGetRefCount(pResource) hwresGetRefCount_DISPATCH(pResource)
 #define hwresMapTo(pResource, pParams) hwresMapTo_DISPATCH(pResource, pParams)
 #define hwresControl_Prologue(pResource, pCallContext, pParams) hwresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define hwresIsReady(pMemory) hwresIsReady_DISPATCH(pMemory)
+#define hwresIsGpuMapAllowed(pMemory, pGpu) hwresIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define hwresIsReady(pMemory, bCopyConstructorContext) hwresIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define hwresCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) hwresCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define hwresPreDestruct(pResource) hwresPreDestruct_DISPATCH(pResource)
+#define hwresIsDuplicate(pMemory, hMemory, pDuplicate) hwresIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define hwresUnmapFrom(pResource, pParams) hwresUnmapFrom_DISPATCH(pResource, pParams)
 #define hwresControl_Epilogue(pResource, pCallContext, pParams) hwresControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define hwresControlLookup(pResource, pParams, ppEntry) hwresControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -179,8 +183,12 @@ static inline NV_STATUS hwresControl_Prologue_DISPATCH(struct MemoryHwResources 
     return pResource->__hwresControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS hwresIsReady_DISPATCH(struct MemoryHwResources *pMemory) {
-    return pMemory->__hwresIsReady__(pMemory);
+static inline NvBool hwresIsGpuMapAllowed_DISPATCH(struct MemoryHwResources *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__hwresIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS hwresIsReady_DISPATCH(struct MemoryHwResources *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__hwresIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS hwresCheckCopyPermissions_DISPATCH(struct MemoryHwResources *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -189,6 +197,10 @@ static inline NV_STATUS hwresCheckCopyPermissions_DISPATCH(struct MemoryHwResour
 
 static inline void hwresPreDestruct_DISPATCH(struct MemoryHwResources *pResource) {
     pResource->__hwresPreDestruct__(pResource);
+}
+
+static inline NV_STATUS hwresIsDuplicate_DISPATCH(struct MemoryHwResources *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__hwresIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS hwresUnmapFrom_DISPATCH(struct MemoryHwResources *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -212,8 +224,10 @@ static inline NvBool hwresAccessCallback_DISPATCH(struct MemoryHwResources *pRes
 }
 
 NV_STATUS hwresConstruct_IMPL(struct MemoryHwResources *arg_pMemoryHwResources, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_hwresConstruct(arg_pMemoryHwResources, arg_pCallContext, arg_pParams) hwresConstruct_IMPL(arg_pMemoryHwResources, arg_pCallContext, arg_pParams)
 void hwresDestruct_IMPL(struct MemoryHwResources *pMemoryHwResources);
+
 #define __nvoc_hwresDestruct(pMemoryHwResources) hwresDestruct_IMPL(pMemoryHwResources)
 #undef PRIVATE_FIELD
 

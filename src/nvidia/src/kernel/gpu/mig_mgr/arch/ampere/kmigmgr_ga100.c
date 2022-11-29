@@ -25,6 +25,7 @@
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
+#include "gpu/bus/kern_bus.h"
 
 #include "published/ampere/ga100/dev_bus.h"
 #include "published/ampere/ga100/dev_bus_addendum.h"
@@ -63,7 +64,7 @@ kmigmgrCreateGPUInstanceCheck_GA100
 {
     Heap             *pHeap;
     KernelFifo       *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
-    NvU32             engines[NV2080_ENGINE_TYPE_LAST];
+    RM_ENGINE_TYPE    engines[RM_ENGINE_TYPE_LAST];
     NvU32             engineCount;
     NvU32             i;
     NvU64             largestFreeSize;
@@ -87,14 +88,14 @@ kmigmgrCreateGPUInstanceCheck_GA100
             // partitioning isn't really a destructive operation anyway, so
             // skip checking for copy engines
             //
-            if (NV2080_ENGINE_TYPE_IS_COPY(pGpu->engineDB.pType[i]) &&
+            if (RM_ENGINE_TYPE_IS_COPY(pGpu->engineDB.pType[i]) &&
                 !bMemoryPartitioningNeeded)
             {
                 continue;
             }
 
-            if (NV2080_ENGINE_TYPE_IS_GR(pGpu->engineDB.pType[i]) &&
-                (NV2080_ENGINE_TYPE_GR_IDX(pGpu->engineDB.pType[i]) > 0))
+            if (RM_ENGINE_TYPE_IS_GR(pGpu->engineDB.pType[i]) &&
+                (RM_ENGINE_TYPE_GR_IDX(pGpu->engineDB.pType[i]) > 0))
             {
                 //
                 // This check is used during GPU instance creation, prior to which
@@ -111,6 +112,19 @@ kmigmgrCreateGPUInstanceCheck_GA100
     // Make sure there are no channels alive on any of these engines
     if (kfifoEngineListHasChannel(pGpu, pKernelFifo, engines, engineCount))
         return NV_ERR_STATE_IN_USE;
+    
+    //
+    // Check for any alive P2P references to this GPU. P2P objects must 
+    // be re-created after disabling MIG. If it is allowed for  MIG to 
+    // continue enablement without all P2P objects torn down, there is 
+    // the possibility that P2P mappings and state will never be updated.
+    //
+    if (bMemoryPartitioningNeeded || !kmigmgrIsMIGNvlinkP2PSupportOverridden(pGpu, pKernelMIGManager))
+    {
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, 
+            !kbusIsGpuP2pAlive(pGpu, GPU_GET_KERNEL_BUS(pGpu)),
+            NV_ERR_STATE_IN_USE);
+    }
 
     pHeap = GPU_GET_HEAP(pGpu);
     if (!memmgrIsPmaInitialized(pMemoryManager))
@@ -173,6 +187,7 @@ kmigmgrIsGPUInstanceFlagValid_GA100
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_HALF:
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_HALF:
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_QUARTER:
+        case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_QUARTER:
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_EIGHTH:
             break;
         default:
@@ -209,7 +224,8 @@ kmigmgrIsGPUInstanceCombinationValid_GA100
     {
         if (kmigmgrIsA100ReducedConfig(pGpu, pKernelMIGManager))
         {
-            if (computeSizeFlag != NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_QUARTER)
+            if ((computeSizeFlag != NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_HALF) &&
+                (computeSizeFlag != NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_QUARTER))
             {
                 return NV_FALSE;
             }
@@ -221,7 +237,8 @@ kmigmgrIsGPUInstanceCombinationValid_GA100
     }
 
     if (kmigmgrIsA100ReducedConfig(pGpu, pKernelMIGManager) &&
-        computeSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_HALF)
+        ((computeSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_HALF) ||
+         (computeSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_QUARTER)))
     {
         return NV_FALSE;
     }
@@ -241,6 +258,10 @@ kmigmgrIsGPUInstanceCombinationValid_GA100
                                NV_FALSE);
             break;
         case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_QUARTER:
+            NV_CHECK_OR_RETURN(LEVEL_SILENT, memSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_QUARTER,
+                               NV_FALSE);
+            break;
+        case NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_MINI_QUARTER:
             NV_CHECK_OR_RETURN(LEVEL_SILENT, memSizeFlag == NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_QUARTER,
                                NV_FALSE);
             break;
@@ -344,4 +365,3 @@ kmigmgrIsMemoryPartitioningNeeded_GA100
     // Memory partitioning is needed for non-zero swizzIds
     return (swizzId != 0);
 }
-

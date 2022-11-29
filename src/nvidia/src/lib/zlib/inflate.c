@@ -116,7 +116,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define osMemCopy memcpy
+#define portMemCopy(p1, s1, p2, s2) memcpy(p1, p2, ((s1) > (s2)) ? (s2) : (s1))
 #define portMemSet  memset
 #define portMemAllocNonPaged malloc
 #define portMemFree  free

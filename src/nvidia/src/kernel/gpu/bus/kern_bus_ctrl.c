@@ -238,25 +238,32 @@ subdeviceCtrlCmdBusGetNvlinkPeerIdMask_IMPL
     NV2080_CTRL_BUS_GET_NVLINK_PEER_ID_MASK_PARAMS *pParams
 )
 {
-    OBJGPU    *pGpu       = GPU_RES_GET_GPU(pSubdevice);
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-    NvU32 gfid;
-
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
-
-    // This control call should always run in context of a VF.
-    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
-    if (IS_GFID_PF(gfid))
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && RMCFG_FEATURE_PLATFORM_GSP)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
+    else
+    {
+        KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+        NvU32 gfid;
 
-    portMemCopy((void *)pParams->nvlinkPeerIdMask,
-                 sizeof(pParams->nvlinkPeerIdMask),
-                (void *)pKernelBus->p2p.busNvlinkPeerNumberMask,
-                 sizeof(pParams->nvlinkPeerIdMask));
+        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
-    return NV_OK;
+        // This control call should always run in context of a VF.
+        NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+        if (IS_GFID_PF(gfid))
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+
+        portMemCopy((void *)pParams->nvlinkPeerIdMask,
+                    sizeof(pParams->nvlinkPeerIdMask),
+                    (void *)pKernelBus->p2p.busNvlinkPeerNumberMask,
+                    sizeof(pParams->nvlinkPeerIdMask));
+
+        return NV_OK;
+    }
 }
 
 static NV_STATUS
@@ -468,12 +475,12 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
             }
             case NV2080_CTRL_BUS_INFO_INDEX_GPU_GART_SIZE:
             {
-                pBusInfos[i].data = (NvU32)(pKernelGmmu->maxVASize >> 20);
+                pBusInfos[i].data = (NvU32)(kgmmuGetMaxVASize(pKernelGmmu) >> 20);
                 break;
             }
             case NV2080_CTRL_BUS_INFO_INDEX_GPU_GART_SIZE_HI:
             {
-                pBusInfos[i].data = (NvU32)((pKernelGmmu->maxVASize >> 20) >> 32);
+                pBusInfos[i].data = (NvU32)((kgmmuGetMaxVASize(pKernelGmmu) >> 20) >> 32);
                 break;
             }
             case NV2080_CTRL_BUS_INFO_INDEX_GPU_GART_FLAGS:

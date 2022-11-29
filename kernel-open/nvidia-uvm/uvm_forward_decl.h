@@ -35,9 +35,6 @@ typedef struct uvm_ce_hal_struct uvm_ce_hal_t;
 typedef struct uvm_arch_hal_struct uvm_arch_hal_t;
 typedef struct uvm_fault_buffer_hal_struct uvm_fault_buffer_hal_t;
 typedef struct uvm_access_counter_buffer_hal_struct uvm_access_counter_buffer_hal_t;
-
-
-
 typedef struct uvm_gpu_semaphore_struct uvm_gpu_semaphore_t;
 typedef struct uvm_gpu_tracking_semaphore_struct uvm_gpu_tracking_semaphore_t;
 typedef struct uvm_gpu_semaphore_pool_struct uvm_gpu_semaphore_pool_t;

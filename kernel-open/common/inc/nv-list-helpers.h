@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -72,22 +72,5 @@
         return list->prev == head;
     }
 #endif
-
-#if defined(NV_HLIST_FOR_EACH_ENTRY_ARGUMENT_COUNT)
-#if NV_HLIST_FOR_EACH_ENTRY_ARGUMENT_COUNT == 3
-#define nv_hlist_for_each_entry(pos, head, member) \
-    hlist_for_each_entry(pos, head, member)
-#else
-#if !defined(hlist_entry_safe)
-#define hlist_entry_safe(ptr, type, member) \
-    (ptr) ? hlist_entry(ptr, type, member) : NULL
-#endif
-
-#define nv_hlist_for_each_entry(pos, head, member)                          \
-    for (pos = hlist_entry_safe((head)->first, typeof(*(pos)), member);     \
-         pos;                                                               \
-         pos = hlist_entry_safe((pos)->member.next, typeof(*(pos)), member))
-#endif
-#endif // NV_HLIST_FOR_EACH_ENTRY_ARGUMENT_COUNT
 
 #endif // __NV_LIST_HELPERS_H__

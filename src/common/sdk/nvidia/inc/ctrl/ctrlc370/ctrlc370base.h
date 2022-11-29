@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrlc370/ctrlc370base.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NVC370_DISPLAY control commands and parameters */
 

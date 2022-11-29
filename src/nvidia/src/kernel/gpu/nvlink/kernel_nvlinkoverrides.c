@@ -62,6 +62,9 @@ knvlinkApplyRegkeyOverrides_IMPL
     pKernelNvlink->bDisableSingleLaneMode = NV_FALSE;
     pKernelNvlink->bDisableL2Mode         = NV_FALSE;
 
+    // Debug Settings
+    pKernelNvlink->bLinkTrainingDebugSpew = NV_FALSE;
+
     // Registry overrides for forcing NVLINK on/off
     if (NV_OK == osReadRegistryDword(pGpu,
                 NV_REG_STR_RM_NVLINK_CONTROL, &pKernelNvlink->registryControl))
@@ -152,6 +155,15 @@ knvlinkApplyRegkeyOverrides_IMPL
         {
             pKernelNvlink->bForceAutoconfig = NV_FALSE;
         }
+
+        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_CONTROL, _LINK_TRAINING_DEBUG_SPEW, _ON,
+                         pKernelNvlink->registryControl))
+        {
+            pKernelNvlink->bLinkTrainingDebugSpew = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO,
+                "Link training debug spew turned on!\n");
+        }
+
     }
     else if (!knvlinkIsNvlinkDefaultEnabled(pGpu, pKernelNvlink))
     {

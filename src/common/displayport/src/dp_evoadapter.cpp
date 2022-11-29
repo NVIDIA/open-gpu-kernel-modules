@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -93,11 +93,7 @@ const struct
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_MST,          &dpRegkeyDatabase.bOptLinkKeptAliveMst,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,          &dpRegkeyDatabase.bOptLinkKeptAliveSst,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
-    {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
-    {NV_DP_DSC_MST_ENABLE_PASS_THROUGH,             &dpRegkeyDatabase.bDscMstEnablePassThrough,        DP_REG_VAL_BOOL},
-    {NV_DP_DSC_OPTIMIZE_LT_BUG_3534707,             &dpRegkeyDatabase.bDscOptimizeLTBug3534707,        DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_NO_REPLY_TIMER_FOR_BUSY_WAITING,  &dpRegkeyDatabase.bNoReplyTimerForBusyWaiting,     DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DPCD_PROBING_FOR_BUSY_WAITING,    &dpRegkeyDatabase.bDpcdProbingForBusyWaiting,      DP_REG_VAL_BOOL}
+    {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -281,8 +277,9 @@ void EvoMainLink::queryGPUCapability()
         // MST feature on particular sku, whenever requested through INF.
         //
         _hasMultistream         = (params.bIsMultistreamSupported == NV_TRUE) && !_isMstDisabledByRegkey;
-        _isDP1_2Supported       = (params.bIsDp12Supported == NV_TRUE) ? true : false;
-        _isDP1_4Supported       = (params.bIsDp14Supported == NV_TRUE) ? true : false;
+
+        _gpuSupportedDpVersions = params.dpVersionsSupported;
+
         _isStreamCloningEnabled = (params.bIsSCEnabled == NV_TRUE) ? true : false;
         _hasIncreasedWatermarkLimits     = (params.bHasIncreasedWatermarkLimits == NV_TRUE) ? true : false;
 
@@ -1048,6 +1045,7 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
             case EDP_3_24GHZ:
             case EDP_4_32GHZ:
             case HBR2:
+            case EDP_6_75GHZ:
             case HBR3:
                 linkBw = linkrate / DP_LINK_BW_FREQ_MULTI_MBPS;
                 dpCtrlData = FLD_SET_DRF_NUM(0073_CTRL, _DP_DATA, _SET_LINK_BW,
@@ -1797,6 +1795,7 @@ bool EvoMainLink::configureLinkRateTable
                 case linkBW_3_24Gbps:
                 case linkBW_4_32Gbps:
                 case linkBW_5_40Gbps:
+                case linkBW_6_75Gbps:
                 case linkBW_8_10Gbps:
                     pLinkRates->import(params.linkBwTbl[i]);
                     break;

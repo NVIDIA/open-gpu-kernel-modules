@@ -36,6 +36,20 @@ void nvInitFlipEvoHwState(
     const NvU32 head,
     NVFlipEvoHwState *pFlipState);
 
+NvBool nvAssignSurfaceArray(
+    const NVDevEvoRec *pDevEvo,
+    const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
+    const NvKmsSurfaceHandle surfaceHandles[NVKMS_MAX_EYES],
+    const NvBool isUsedByCursorChannel,
+    const NvBool isUsedByLayerChannel,
+    NVSurfaceEvoPtr pSurfaceEvos[NVKMS_MAX_EYES]);
+
+NvBool
+nvAssignCursorSurface(const struct NvKmsPerOpenDev *pOpenDev,
+                      const NVDevEvoRec *pDevEvo,
+                      const struct NvKmsSetCursorImageCommonParams *pImgParams,
+                      NVSurfaceEvoPtr *pSurfaceEvo);
+
 NvBool nvUpdateFlipEvoHwState(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NVDevEvoRec *pDevEvo,
@@ -43,8 +57,13 @@ NvBool nvUpdateFlipEvoHwState(
     const NvU32 head,
     const struct NvKmsFlipCommonParams *pParams,
     NVFlipEvoHwState *pFlipState,
-    NvBool allowVrr,
-    const struct NvKmsUsageBounds *pPossibleUsage);
+    NvBool allowVrr);
+
+void
+nvOverrideScalingUsageBounds(const NVDevEvoRec *pDevEvo,
+                             NvU32 head,
+                             NVFlipEvoHwState *pFlipState,
+                             const struct NvKmsUsageBounds *pPossibleUsage);
 
 NvBool nvValidateFlipEvoHwState(
     const NVDevEvoRec *pDevEvo,
@@ -70,12 +89,6 @@ void nvFlipEvoOneHead(
 void nvEvoCancelPostFlipIMPTimer(
     NVDevEvoPtr pDevEvo);
 
-NvBool nvHandleSyncptRegistration(
-    NVDevEvoRec *pDevEvo,
-    NvU32 head,
-    const struct NvKmsFlipCommonParams *pParams,
-    NVFlipEvoHwState *pFlipState);
-
 void nvFillPostSyncptReplyOneChannel(
     NVEvoChannel *pChannel,
     enum NvKmsSyncptType postType,
@@ -88,5 +101,20 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
                  struct NvKmsFlipReply *reply,
                  NvBool skipUpdate,
                  NvBool allowFlipLock);
+
+void nvApiHeadGetLayerSurfaceArray(const NVDispEvoRec *pDispEvo,
+                                   const NvU32 apiHead,
+                                   const NvU32 layer,
+                                   NVSurfaceEvoPtr pSurfaceEvos[NVKMS_MAX_EYES]);
+
+void nvApiHeadGetCursorInfo(const NVDispEvoRec *pDispEvo,
+                            const NvU32 apiHead,
+                            NVSurfaceEvoPtr *ppSurfaceEvo,
+                            NvS16 *x, NvS16 *y);
+
+void nvApiHeadSetViewportPointIn(const NVDispEvoRec *pDispEvo,
+                                 const NvU32 apiHead,
+                                 const NvU16 x,
+                                 const NvU16 y);
 
 #endif /* __NVKMS_FLIP_H__ */

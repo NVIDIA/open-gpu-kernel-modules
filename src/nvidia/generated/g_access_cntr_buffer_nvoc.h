@@ -93,6 +93,7 @@ struct AccessCounterBuffer {
     NV_STATUS (*__accesscntrUnregisterEvent__)(struct AccessCounterBuffer *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__accesscntrCanCopy__)(struct AccessCounterBuffer *);
     void (*__accesscntrPreDestruct__)(struct AccessCounterBuffer *);
+    NV_STATUS (*__accesscntrIsDuplicate__)(struct AccessCounterBuffer *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__accesscntrGetNotificationListPtr__)(struct AccessCounterBuffer *);
     struct NotifShare *(*__accesscntrGetNotificationShare__)(struct AccessCounterBuffer *);
     NvBool (*__accesscntrAccessCallback__)(struct AccessCounterBuffer *, struct RsClient *, void *, RsAccessRight);
@@ -160,6 +161,7 @@ NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, 
 #define accesscntrUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) accesscntrUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define accesscntrCanCopy(pResource) accesscntrCanCopy_DISPATCH(pResource)
 #define accesscntrPreDestruct(pResource) accesscntrPreDestruct_DISPATCH(pResource)
+#define accesscntrIsDuplicate(pResource, hMemory, pDuplicate) accesscntrIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define accesscntrGetNotificationListPtr(pNotifier) accesscntrGetNotificationListPtr_DISPATCH(pNotifier)
 #define accesscntrGetNotificationShare(pNotifier) accesscntrGetNotificationShare_DISPATCH(pNotifier)
 #define accesscntrAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) accesscntrAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
@@ -325,6 +327,10 @@ static inline void accesscntrPreDestruct_DISPATCH(struct AccessCounterBuffer *pR
     pResource->__accesscntrPreDestruct__(pResource);
 }
 
+static inline NV_STATUS accesscntrIsDuplicate_DISPATCH(struct AccessCounterBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__accesscntrIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *accesscntrGetNotificationListPtr_DISPATCH(struct AccessCounterBuffer *pNotifier) {
     return pNotifier->__accesscntrGetNotificationListPtr__(pNotifier);
 }
@@ -338,8 +344,10 @@ static inline NvBool accesscntrAccessCallback_DISPATCH(struct AccessCounterBuffe
 }
 
 NV_STATUS accesscntrConstruct_IMPL(struct AccessCounterBuffer *arg_pAccessCounterBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_accesscntrConstruct(arg_pAccessCounterBuffer, arg_pCallContext, arg_pParams) accesscntrConstruct_IMPL(arg_pAccessCounterBuffer, arg_pCallContext, arg_pParams)
 void accesscntrDestruct_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer);
+
 #define __nvoc_accesscntrDestruct(pAccessCounterBuffer) accesscntrDestruct_IMPL(pAccessCounterBuffer)
 #undef PRIVATE_FIELD
 

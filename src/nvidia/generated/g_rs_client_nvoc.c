@@ -98,6 +98,10 @@ static void __nvoc_init_funcTable_RsClient_1(RsClient *pThis) {
 
     pThis->__clientValidate__ = &clientValidate_IMPL;
 
+    pThis->__clientGetCachedPrivilege__ = &clientGetCachedPrivilege_IMPL;
+
+    pThis->__clientIsAdmin__ = &clientIsAdmin_IMPL;
+
     pThis->__clientFreeResource__ = &clientFreeResource_IMPL;
 
     pThis->__clientDestructResourceRef__ = &clientDestructResourceRef_IMPL;
@@ -275,6 +279,10 @@ static NV_STATUS __nvoc_thunk_RsResource_clientresUnmapFrom(struct RsClientResou
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_clientresIsDuplicate(struct RsClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RsResource_clientresControl_Epilogue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     resControl_Epilogue((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
 }
@@ -351,6 +359,8 @@ static void __nvoc_init_funcTable_RsClientResource_1(RsClientResource *pThis) {
     pThis->__clientresPreDestruct__ = &__nvoc_thunk_RsResource_clientresPreDestruct;
 
     pThis->__clientresUnmapFrom__ = &__nvoc_thunk_RsResource_clientresUnmapFrom;
+
+    pThis->__clientresIsDuplicate__ = &__nvoc_thunk_RsResource_clientresIsDuplicate;
 
     pThis->__clientresControl_Epilogue__ = &__nvoc_thunk_RsResource_clientresControl_Epilogue;
 

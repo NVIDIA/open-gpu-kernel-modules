@@ -94,7 +94,7 @@ vaspaceapiConstruct_IMPL
             gpuMaskInitial = rmGpuLocksGetOwnedMask();
             NvU32 lockFlag = (gpuMaskInitial == 0)
                 ? GPUS_LOCK_FLAGS_NONE
-                : GPUS_LOCK_FLAGS_COND_ACQUIRE;
+                : GPU_LOCK_FLAGS_COND_ACQUIRE;
 
             NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
                                                          GPU_LOCK_GRP_ALL,
@@ -523,9 +523,19 @@ vaspaceapiDestruct_IMPL(VaSpaceApi *pVaspaceApi)
     }
 
     destroyMemDesc(pDevice, hVASpace);
+    if ((vaspaceGetFlags(pVaspaceApi->pVASpace) & VASPACE_FLAGS_FLA))
+    {
+        if (GPU_GET_KERNEL_BUS(pGpu)->flaInfo.pFlaVAS == NULL)
+        {
+            NV_PRINTF(LEVEL_INFO, "Skipping Legacy FLA vaspace destruct, gpu:%x \n",
+                      pGpu->gpuInstance);
+            goto skip_destroy;
+        }
+    }
 
     vmmDestroyVaspace(pVmm, pVaspaceApi->pVASpace);
 
+skip_destroy:
     //
     // RS-TODO: Move out to freeWithResServ?
     //
@@ -652,6 +662,10 @@ static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *tran
     if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE)
     {
         flags |= VASPACE_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE;
+    }
+    if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_REQUIRE_FIXED_OFFSET)
+    {
+        flags |= VASPACE_FLAGS_REQUIRE_FIXED_OFFSET;
     }
     flags |= VASPACE_FLAGS_ENABLE_VMM;
 

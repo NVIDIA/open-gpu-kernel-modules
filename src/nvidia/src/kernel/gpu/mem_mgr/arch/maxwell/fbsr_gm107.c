@@ -98,6 +98,88 @@
 //
 #define MAX_FILE_COPY_SIZE_WITHIN_DEFAULT_THREAD_TIMEOUT    (64 * 1024 * 1024)
 
+static NV_STATUS _fbsrInitGsp
+(
+    OBJGPU *pGpu,
+    OBJFBSR *pFbsr
+)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    NvHandle       hSysMem        = NV01_NULL_OBJECT;
+    RM_API        *pRmApi         = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_INTERNAL_FBSR_INIT_PARAMS params;
+
+    // Register sysmem memdesc with GSP. This creates memlist object
+    NV_ASSERT_OK_OR_RETURN(memdescSendMemDescToGSP(pGpu, pFbsr->pSysMemDesc, &hSysMem));
+
+    params.fbsrType   = pFbsr->type;
+    params.numRegions = pFbsr->numRegions;
+    params.hClient    = pMemoryManager->hClient; 
+    params.hSysMem    = hSysMem;
+    params.gspFbAllocsSysOffset = pFbsr->gspFbAllocsSysOffset;
+
+    // Send S/R init information to GSP
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                           pGpu->hInternalClient,
+                                           pGpu->hInternalSubdevice,
+                                           NV2080_CTRL_CMD_INTERNAL_FBSR_INIT,
+                                           &params,
+                                           sizeof(params)));
+
+    // Free memlist object
+    pRmApi->Free(pRmApi, pMemoryManager->hClient, hSysMem);
+
+    //
+    // Clear numRegions for next S/R sequence
+    // Needed only to tell GSP how many regions
+    //
+    pFbsr->numRegions = 0;
+
+    return NV_OK;
+}
+
+static NV_STATUS _fbsrMemoryCopy
+(
+    OBJGPU            *pGpu,
+    OBJFBSR           *pFbsr,
+    MEMORY_DESCRIPTOR *pDstMemDesc,
+    NvU64              dstOffset,
+    MEMORY_DESCRIPTOR *pSrcMemDesc,
+    NvU64              srcOffset,
+    NvU64              size
+)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    NvHandle       hVidMem        = NV01_NULL_OBJECT;
+    RM_API        *pRmApi         = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_INTERNAL_FBSR_SEND_REGION_INFO_PARAMS params;
+
+    // Register vidmem memdesc with GSP. This creates memlist object
+    NV_ASSERT_OK_OR_RETURN(memdescSendMemDescToGSP(pGpu, pSrcMemDesc, &hVidMem));
+
+    portMemSet(&params, 0, sizeof(params));
+
+    params.fbsrType  = pFbsr->type;
+    params.hClient   = pMemoryManager->hClient; 
+    params.hVidMem   = hVidMem;
+    params.vidOffset = srcOffset;
+    params.sysOffset = dstOffset;
+    params.size      = size;
+
+    // Send region information to GSP
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                           pGpu->hInternalClient,
+                                           pGpu->hInternalSubdevice,
+                                           NV2080_CTRL_CMD_INTERNAL_FBSR_SEND_REGION_INFO,
+                                           &params,
+                                           sizeof(params)));
+
+    // Free memlist object
+    pRmApi->Free(pRmApi, pMemoryManager->hClient, hVidMem);
+
+    return NV_OK;
+}
+
 /*!
  * Init
  *
@@ -256,7 +338,309 @@ fbsrDestroy_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
 NV_STATUS
 fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
 {
-    return NV_ERR_NOT_SUPPORTED;
+    NV_STATUS status = NV_OK;
+
+    pFbsr->op = op;
+    pFbsr->bOperationFailed = NV_FALSE;
+    if (op != FBSR_OP_SIZE_BUF && op != FBSR_OP_DESTROY)
+    {
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            pFbsr->pCe = NULL;
+        }
+
+        NV_PRINTF(LEVEL_INFO, "%s %lld bytes of data\n",
+                  pFbsr->op == FBSR_OP_SAVE ? "saving" : "restoring",
+                  pFbsr->length);
+    }
+
+    if (op == FBSR_OP_SAVE)
+    {
+        switch (pFbsr->type)
+        {
+            case FBSR_TYPE_PAGED_DMA:
+            case FBSR_TYPE_DMA:
+                //
+                // Check if system memory is pre-allocated for DMA type FBSR
+                // and use the same for performing FBSR.
+                //
+                if (pFbsr->pSysReservedMemDesc)
+                {
+                    //
+                    // Validate if reserved system memory size is sufficient,
+                    // Otherwise generate the assert and free the
+                    // pre-allocated reserved system memory
+                    //
+                    if (pFbsr->pSysReservedMemDesc->Size >= pFbsr->length)
+                    {
+                        pFbsr->pSysMemDesc = pFbsr->pSysReservedMemDesc;
+                        //
+                        // The reference to the reserved memory is transferred
+                        // and the pSysMemDesc pointer will be used for actual
+                        // FBSR operations. The actual object will be freed
+                        // during FBSR_OP_RESTORE operation.
+                        //
+                        pFbsr->pSysReservedMemDesc = NULL;
+                        break;
+                    }
+
+                    NV_ASSERT(pFbsr->pSysReservedMemDesc->Size >= pFbsr->length);
+                    memdescFree(pFbsr->pSysReservedMemDesc);
+                    memdescDestroy(pFbsr->pSysReservedMemDesc);
+                    pFbsr->pSysReservedMemDesc = NULL;
+                    status = NV_ERR_GENERIC;
+                    break;
+                }
+
+                if (pFbsr->length)
+                {
+                    if (pFbsr->type == FBSR_TYPE_DMA)
+                    {
+                        // This buffer is never touched by the CPU, so it can be uncached.
+                        status = memdescCreate(&pFbsr->pSysMemDesc, pGpu,
+                                               pFbsr->length, 0, NV_FALSE,
+                                               ADDR_SYSMEM, NV_MEMORY_UNCACHED,
+                                               MEMDESC_FLAGS_NONE);
+                    }
+                    else if (pFbsr->type == FBSR_TYPE_PAGED_DMA)
+                    {
+                        // On Windows, pageable memory is also cacheable.
+                        status = memdescCreate(&pFbsr->pSysMemDesc, pGpu,
+                                               pFbsr->length, 0, NV_FALSE,
+                                               ADDR_SYSMEM, NV_MEMORY_CACHED,
+                                               MEMDESC_FLAGS_PAGED_SYSMEM);
+                    }
+                    if (status != NV_OK)
+                    {
+                        NV_ASSERT(status == NV_OK);
+                        break;
+                    }
+
+                    status = memdescAlloc(pFbsr->pSysMemDesc);
+                    if (status != NV_OK)
+                    {
+                        NV_ASSERT(status == NV_OK);
+                        memdescDestroy(pFbsr->pSysMemDesc);
+                        pFbsr->pSysMemDesc = NULL;
+                        break;
+                    }
+
+                    if (pFbsr->type == FBSR_TYPE_PAGED_DMA)
+                    {
+                        status = memdescLock(pFbsr->pSysMemDesc);
+                        if (status != NV_OK)
+                        {
+                            NV_ASSERT(status == NV_OK);
+                            memdescFree(pFbsr->pSysMemDesc);
+                            memdescDestroy(pFbsr->pSysMemDesc);
+                            pFbsr->pSysMemDesc = NULL;
+                            break;
+                        }
+                    }
+                }
+
+                break;
+
+            case FBSR_TYPE_WDDM_FAST_DMA_DEFERRED_NONPAGED:
+                {
+                    NvBool bIommuEnabled = pGpu->getProperty(pGpu, PDB_PROP_GPU_ENABLE_IOMMU_SUPPORT);
+
+                    if (pFbsr->length > pFbsr->pagedBufferInfo.maxLength)
+                    {
+                        status = NV_ERR_GENERIC;
+                        break;
+                    }
+
+                    if(bIommuEnabled)
+                    {
+                        status = osSrPinSysmem(pGpu->pOsGpuInfo, 
+                                                    pFbsr->length,
+                                                    &pFbsr->pagedBufferInfo.pMdl);
+
+                        if (status != NV_OK)
+                            break;
+
+                        NV_ASSERT(pFbsr->pagedBufferInfo.pMdl);
+                        status = osCreateMemFromOsDescriptorInternal(pGpu,
+                                                                     pFbsr->pagedBufferInfo.pMdl,
+                                                                     0,
+                                                                     pFbsr->length,
+                                                                     &pFbsr->pSysMemDesc,
+                                                                     NV_TRUE,
+                                                                     RS_PRIV_LEVEL_KERNEL
+                                                                     );
+                        if (status != NV_OK)
+                            (void) osSrUnpinSysmem(pGpu->pOsGpuInfo);
+                    }
+                    else
+                    {
+                        pFbsr->pagedBufferInfo.sysAddr = 0;
+                        status = osMapViewToSection(pGpu->pOsGpuInfo,
+                                                    pFbsr->pagedBufferInfo.sectionHandle,
+                                                    (void **) (&pFbsr->pagedBufferInfo.sysAddr),
+                                                    pFbsr->length, 0, bIommuEnabled);
+                        NV_ASSERT(pFbsr->pagedBufferInfo.sysAddr);
+                        if (status != NV_OK)
+                            break;
+
+                        status = osCreateMemFromOsDescriptorInternal(pGpu,
+                                                           NvP64_VALUE(pFbsr->pagedBufferInfo.sysAddr),
+                                                           0,
+                                                           pFbsr->length,
+                                                           &pFbsr->pSysMemDesc,
+                                                           NV_TRUE,
+                                                           RS_PRIV_LEVEL_KERNEL);
+                        // would return error
+                        if (status != NV_OK)
+                        {
+                             NV_ASSERT(osUnmapViewFromSection(pGpu->pOsGpuInfo,
+                                                NvP64_VALUE(pFbsr->pagedBufferInfo.sysAddr),
+                                                bIommuEnabled) == NV_OK);
+                        }
+                    }
+                }
+                break;
+
+            case FBSR_TYPE_WDDM_SLOW_CPU_PAGED:
+                if (pFbsr->length > pFbsr->pagedBufferInfo.maxLength ||
+                    (!pGpu->getProperty(pGpu, PDB_PROP_GPU_ENABLE_IOMMU_SUPPORT) &&
+                     !pFbsr->pagedBufferInfo.sectionHandle))
+                {
+                    status = NV_ERR_GENERIC;
+                    break;
+                }
+                pFbsr->pagedBufferInfo.avblViewSz = 0;
+                // fallthrough
+            case FBSR_TYPE_CPU:
+                if (!pFbsr->pSysMemDesc)
+                {
+                    status = NV_ERR_GENERIC;
+                }
+
+                break;
+            case FBSR_TYPE_PERSISTENT:
+                break;
+            case FBSR_TYPE_FILE:
+                // XXX can this condition ever evaluate to true?
+                if (!pFbsr->pSysMemDesc)
+                {
+                    status = NV_ERR_GENERIC;
+                    break;
+                }
+
+                // Open a temporary file for writing
+                status = osOpenTemporaryFile(&pFbsr->pagedBufferInfo.sectionHandle);
+                if (status != NV_OK)
+                    break;
+
+                pFbsr->pagedBufferInfo.avblViewSz = 0;
+                break;
+            default:
+                status = NV_ERR_GENERIC;
+                NV_ASSERT(0);
+                break;
+        }
+
+        // Initialize FBSR on GSP
+        if (IS_GSP_CLIENT(pGpu) && (pFbsr->pSysMemDesc != NULL))
+        {
+            NV_ASSERT_OK_OR_RETURN(_fbsrInitGsp(pGpu, pFbsr));
+        }
+    }
+    else if (pFbsr->op == FBSR_OP_RESTORE || pFbsr->op == FBSR_OP_DESTROY)
+    {
+        switch (pFbsr->type)
+        {
+            case FBSR_TYPE_PAGED_DMA:
+                status = memdescLock(pFbsr->pSysMemDesc);
+                NV_ASSERT(status == NV_OK);
+                break;
+            case FBSR_TYPE_FILE:
+                 if (!pFbsr->pagedBufferInfo.sectionHandle)
+                 {
+                     status = NV_ERR_GENERIC;
+                     break;
+                 }
+                 pFbsr->pagedBufferInfo.avblViewSz = 0;
+                 break;
+            case FBSR_TYPE_WDDM_SLOW_CPU_PAGED:
+                if (pFbsr->length > pFbsr->pagedBufferInfo.maxLength ||
+                    (!pGpu->getProperty(pGpu, PDB_PROP_GPU_ENABLE_IOMMU_SUPPORT) &&
+                     !pFbsr->pagedBufferInfo.sectionHandle))
+                {
+                    status = NV_ERR_GENERIC;
+                    break;
+                }
+                pFbsr->pagedBufferInfo.avblViewSz = 0;
+                break;
+            case FBSR_TYPE_WDDM_FAST_DMA_DEFERRED_NONPAGED:
+                {
+                    NvBool  bIommuEnabled = pGpu->getProperty(pGpu, PDB_PROP_GPU_ENABLE_IOMMU_SUPPORT);
+                    // Error checked during SAVE
+                    if (pFbsr->length > pFbsr->pagedBufferInfo.maxLength)
+                    {
+                        status = NV_ERR_GENERIC;
+                        break;
+                    }
+                    if(bIommuEnabled)
+                    {
+                        status = osSrPinSysmem(pGpu->pOsGpuInfo,
+                                                    pFbsr->length,
+                                                    &pFbsr->pagedBufferInfo.pMdl);
+
+                        if (status != NV_OK)
+                            break;
+
+                        NV_ASSERT(pFbsr->pagedBufferInfo.pMdl);
+                        status = osCreateMemFromOsDescriptorInternal(pGpu,
+                                                                     pFbsr->pagedBufferInfo.pMdl,
+                                                                     0,
+                                                                     pFbsr->length,
+                                                                     &pFbsr->pSysMemDesc,
+                                                                     NV_TRUE,
+                                                                     RS_PRIV_LEVEL_KERNEL
+                                                                     );
+                        if (status != NV_OK)
+                            (void) osSrUnpinSysmem(pGpu->pOsGpuInfo);
+                    }
+                    else
+                    {
+                        pFbsr->pagedBufferInfo.sysAddr = 0;
+                        status = osMapViewToSection(pGpu->pOsGpuInfo,
+                                                    pFbsr->pagedBufferInfo.sectionHandle,
+                                                    (void **)(&pFbsr->pagedBufferInfo.sysAddr),
+                                                    pFbsr->length, 0, bIommuEnabled);
+
+                        if (status != NV_OK)
+                            break;
+
+                        NV_ASSERT(pFbsr->pagedBufferInfo.sysAddr);
+                        status = osCreateMemFromOsDescriptorInternal(pGpu,
+                                                                     NvP64_VALUE(pFbsr->pagedBufferInfo.sysAddr),
+                                                                     0,
+                                                                     pFbsr->length,
+                                                                     &pFbsr->pSysMemDesc,
+                                                                     NV_TRUE,
+                                                                     RS_PRIV_LEVEL_KERNEL);
+                        // would return error
+                        if (status != NV_OK)
+                        {
+                            NV_ASSERT(osUnmapViewFromSection(pGpu->pOsGpuInfo,
+                                                NvP64_VALUE(pFbsr->pagedBufferInfo.sysAddr),
+                                                bIommuEnabled) == NV_OK);
+                        }
+                    }
+                }
+
+                break;
+        }
+    }
+
+    pFbsr->pSysMemNodeCurrent = pFbsr->pSysMemNodeHead;
+    pFbsr->length = 0;
+    pFbsr->sysOffset = 0;
+
+    return status;
 }
 
 /*!
@@ -411,7 +795,362 @@ fbsrEnd_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
 void
 fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc)
 {
+    NV_STATUS  status = NV_OK;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    pVidMemDesc = memdescGetMemDescFromGpu(pVidMemDesc, pGpu);
+
+    if (pFbsr->bOperationFailed)
+    {
+        // If we hit a failure igonre the rest of the copy requests
+        return;
+    }
+
+    pFbsr->length += pVidMemDesc->Size;
+
+    // We should have nothing reserved when FB is broken
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB))
+    {
+        NV_ASSERT(pVidMemDesc->Size == 0);
+        NV_PRINTF(LEVEL_WARNING, "return early since FB is broken!\n");
+        return;
+    }
+
+    if (pFbsr->op == FBSR_OP_SIZE_BUF)
+    {
+        pFbsr->numRegions++;
+
+        switch (pFbsr->type)
+        {
+            case FBSR_TYPE_CPU:
+                {
+                    PFBSR_NODE pNode;
+
+                    pNode = portMemAllocNonPaged(
+                        sizeof(FBSR_NODE) + (NvU32)pVidMemDesc->Size - sizeof(pNode->data));
+
+                    if (pNode == NULL)
+                    {
+                        NV_ASSERT(0);
+                        pFbsr->bOperationFailed = NV_TRUE;
+                        return;
+                    }
+
+                    pNode->pNext = NULL;
+
+                    // Insert node
+                    if (!pFbsr->pSysMemNodeHead)
+                    {
+                        pFbsr->pSysMemNodeHead = pNode;
+                    }
+                    else
+                    {
+                        pFbsr->pSysMemNodeCurrent->pNext = pNode;
+                    }
+
+                    pFbsr->pSysMemNodeCurrent = pNode;
+
+                    break;
+                }
+            case FBSR_TYPE_PERSISTENT:
+                {
+                    MEMORY_DESCRIPTOR *pStandbyBuffer;
+
+                    if (memdescGetStandbyBuffer(pVidMemDesc) == NULL)
+                    {
+                        status = memdescCreate(&pStandbyBuffer, pGpu,
+                                               pVidMemDesc->Size, 0, NV_FALSE,
+                                               ADDR_SYSMEM,
+                                               NV_MEMORY_WRITECOMBINED,
+                                               MEMDESC_FLAGS_NONE);
+                        if (status == NV_OK)
+                        {
+                            status = memdescAlloc(pStandbyBuffer);
+                            if (status != NV_OK )
+                            {
+                                memdescDestroy(pStandbyBuffer);
+                                pFbsr->bOperationFailed = NV_TRUE;
+                                break;
+                            }
+                            memdescSetStandbyBuffer(pVidMemDesc, pStandbyBuffer);
+                        }
+                        else
+                        {
+                            pFbsr->bOperationFailed = NV_TRUE;
+                        }
+                    }
+                    break;
+                }
+            default:
+                break;
+        }
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_INFO, "%s allocation %llx-%llx [%s]\n",
+                  pFbsr->op == FBSR_OP_SAVE ? "saving" : "restoring",
+                  memdescGetPhysAddr(pVidMemDesc, AT_GPU, 0),
+                  memdescGetPhysAddr(pVidMemDesc, AT_GPU, 0) + pVidMemDesc->Size - 1,
+                  pFbsr->type == FBSR_TYPE_DMA ? "DMA" : "CPU");
+
+        switch (pFbsr->type)
+        {
+            case FBSR_TYPE_WDDM_FAST_DMA_DEFERRED_NONPAGED:
+            case FBSR_TYPE_PAGED_DMA:
+            case FBSR_TYPE_DMA:
+                {
+                    if (pFbsr->op == FBSR_OP_RESTORE)
+                    {
+                    }
+                    else
+                    {
+                        if (IS_GSP_CLIENT(pGpu))
+                        {
+                            _fbsrMemoryCopy(pGpu, pFbsr, pFbsr->pSysMemDesc,
+                                pFbsr->sysOffset, pVidMemDesc, 0,
+                                pVidMemDesc->Size);
+                        }
+                    }
+                    break;
+                }
+            case FBSR_TYPE_PERSISTENT:
+                {
+                    if (pFbsr->op == FBSR_OP_RESTORE)
+                    {
+                    }
+                    else
+                    {
+                    }
+                    break;
+                }
+            case FBSR_TYPE_WDDM_SLOW_CPU_PAGED:
+                {
+                    NvU64      totalCopySize = pVidMemDesc->Size;
+                    NvU64      vidOffset = 0;
+                    NvU64      copySize, i;
+                    NvU32      *cpuCopyOffset = 0;
+                    NvBool     bIommuEnabled = pGpu->getProperty(pGpu, PDB_PROP_GPU_ENABLE_IOMMU_SUPPORT);
+
+                    // Saves/restores a fbregion at memdesc granularity
+                    while(totalCopySize)
+                    {
+                        // Backing system buffer (paged VA) is 64k and only map new 64k section
+                        // when backing buffer is consumed.
+                        if (pFbsr->pagedBufferInfo.avblViewSz == 0)
+                        {
+                            NV_ASSERT(((pFbsr->sysOffset + vidOffset)& 0xffff) == 0);
+                            pFbsr->pagedBufferInfo.avblViewSz = CPU_MAX_PINNED_BUFFER_SIZE;
+                            pFbsr->pagedBufferInfo.sysAddr = 0;
+
+                            // Get VA to a 64K view in the section at the offset sysOffset + vidOffset
+                            // sysOffset tracks across memdesc, vidOffset tracks the 4k copy
+                            status = osMapViewToSection(pGpu->pOsGpuInfo,
+                                                  pFbsr->pagedBufferInfo.sectionHandle,
+                                                  (void **)(&pFbsr->pagedBufferInfo.sysAddr),
+                                                  pFbsr->pagedBufferInfo.avblViewSz,
+                                                  pFbsr->sysOffset + vidOffset,
+                                                  bIommuEnabled);
+                            if (status != NV_OK)
+                            {
+                                pFbsr->bOperationFailed = NV_TRUE;
+                                NV_ASSERT(0);
+                                break;
+                            }
+                        }
+                        // Compute the cpuOffset to copy to / from
+                        cpuCopyOffset = KERNEL_POINTER_FROM_NvP64(NvU32*, NvP64_PLUS_OFFSET(pFbsr->pagedBufferInfo.sysAddr,
+                                                                   ((NvU64) CPU_MAX_PINNED_BUFFER_SIZE - pFbsr->pagedBufferInfo.avblViewSz)));
+                        copySize = NV_MIN(pFbsr->pagedBufferInfo.avblViewSz, totalCopySize);
+
+                        if (pFbsr->op == FBSR_OP_RESTORE)
+                        {
+                            // pPinnedBuffer is the 64K scratch buffer
+                            // cpuCopyOffset is the mapped paged CPU VA
+                            // Restore from the backing store to the pinned 64k scratch buffer
+                            // We copy the region in 4byte granularity
+                            for (i = 0; i < (copySize / 4); i++)
+                            {
+                                pFbsr->pPinnedBuffer[i] = cpuCopyOffset[i];
+                            }
+                        }
+
+                        if (pFbsr->op == FBSR_OP_RESTORE)
+                        {
+                        }
+                        else
+                        {
+                        }
+
+                        if (pFbsr->op == FBSR_OP_SAVE)
+                        {
+                            // Copy from the scratch buffer to the sysmem backing store
+                            for (i = 0; i < (copySize / 4); i++)
+                            {
+                                cpuCopyOffset[i] = pFbsr->pPinnedBuffer[i];
+                            }
+                        }
+
+                        vidOffset += copySize;
+                        totalCopySize -= copySize;
+                        pFbsr->pagedBufferInfo.avblViewSz -= copySize;
+                        if (pFbsr->pagedBufferInfo.avblViewSz == 0)
+                        {
+                            status = osUnmapViewFromSection(pGpu->pOsGpuInfo,
+                                            NvP64_VALUE(pFbsr->pagedBufferInfo.sysAddr),
+                                            bIommuEnabled);
+                            if (status != NV_OK)
+                            {
+                                pFbsr->bOperationFailed = NV_TRUE;
+                                NV_ASSERT(0);
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+            case FBSR_TYPE_FILE:
+                {
+                    NvU64      totalCopySize = pVidMemDesc->Size;
+                    NvU64      vidOffset = 0;
+                    NvU64      copySize;
+                    NvU64      threadTimeoutCopySize = 0;
+
+                    //
+                    // File based operation can take longer time in completion, if the
+                    // FB usage is high. Also, the File read/write time is
+                    // system dependent (the temporary file location, Free
+                    // system RAM, secondary storage type, etc.). Reset the thread
+                    // timeout at the starting and at the end to prevent GPU
+                    // thread timeout errors. Also, keep track of file copy size
+                    // since last threadStateResetTimeout() in variable
+                    // threadTimeoutCopySize. When this copy size go above certain
+                    // threshold, then also reset the thread timeout and
+                    // threadTimeoutCopySize variable.
+                    //
+                    NV_ASSERT_OK(threadStateResetTimeout(pGpu));
+
+                    // Saves/restores a fbregion at memdesc granularity
+                    while (totalCopySize)
+                    {
+                        // Backing system buffer (paged VA) is 64k and only map new 64k section
+                        // when backing buffer is consumed.
+                        if (pFbsr->pagedBufferInfo.avblViewSz == 0)
+                        {
+                            NV_ASSERT(((pFbsr->sysOffset + vidOffset) & (CPU_MAX_PINNED_BUFFER_SIZE - 1)) == 0);
+                            pFbsr->pagedBufferInfo.avblViewSz = CPU_MAX_PINNED_BUFFER_SIZE;
+                        }
+
+                        copySize = NV_MIN(pFbsr->pagedBufferInfo.avblViewSz, totalCopySize);
+
+                        if (threadTimeoutCopySize >= MAX_FILE_COPY_SIZE_WITHIN_DEFAULT_THREAD_TIMEOUT)
+                        {
+                            NV_ASSERT_OK(threadStateResetTimeout(pGpu));
+                            threadTimeoutCopySize = 0;
+                        }
+
+                        threadTimeoutCopySize += copySize;
+
+                        if (pFbsr->op == FBSR_OP_RESTORE)
+                        {
+                            // pPinnedBuffer is the 64K scratch buffer
+                            // cpuCopyOffset is the mapped paged CPU VA
+                            // Restore from the backing store to the pinned 64k scratch buffer
+                            // We copy the region in 4byte granularity
+                                                            // replace this with file read
+                            status = osReadFromFile(pFbsr->pagedBufferInfo.sectionHandle,
+                                                    &pFbsr->pDmaBuffer[0],
+                                                    copySize,
+                                                    pFbsr->sysOffset + vidOffset);
+                            if (status != NV_OK)
+                            {
+                                pFbsr->bOperationFailed = NV_TRUE;
+                                NV_ASSERT(0);
+                                break;
+                            }
+                        }
+
+                        if (pFbsr->op == FBSR_OP_RESTORE)
+                        {
+                        }
+                        else
+                        {
+                        }
+
+                        if (pFbsr->op == FBSR_OP_SAVE)
+                        {
+                            status = osWriteToFile(pFbsr->pagedBufferInfo.sectionHandle,
+                                                   &pFbsr->pDmaBuffer[0],
+                                                   copySize,
+                                                   pFbsr->sysOffset + vidOffset);
+                            if (status != NV_OK)
+                            {
+                                pFbsr->bOperationFailed = NV_TRUE;
+                                NV_ASSERT(0);
+                                break;
+                            }
+                        }
+
+                        vidOffset += copySize;
+                        totalCopySize -= copySize;
+                        pFbsr->pagedBufferInfo.avblViewSz -= copySize;
+                    }
+                }
+
+                NV_ASSERT_OK(threadStateResetTimeout(pGpu));
+                break;
+            case FBSR_TYPE_CPU:
+                {
+                    PFBSR_NODE pNode = pFbsr->pSysMemNodeCurrent;
+                    NvU64      vidOffset = 0;
+                    NvU64      copySize;
+                    NvU64      size = pVidMemDesc->Size;
+                    NvU64      i;
+
+                    NV_ASSERT(pNode);
+                    NV_ASSERT((pFbsr->sysOffset & 3) == 0);
+
+                    while (size)
+                    {
+                        copySize = NV_MIN(CPU_PINNED_BUFFER_SIZE, size);
+
+                        if (pFbsr->op == FBSR_OP_RESTORE)
+                        {
+                            for (i = 0; i < (copySize / 4); i++)
+                            {
+                                pFbsr->pPinnedBuffer[i] = pNode->data[i];
+                            }
+                        }
+
+                        if (pFbsr->op == FBSR_OP_RESTORE)
+                        {
+                        }
+                        else
+                        {
+                        }
+
+                        if (pFbsr->op == FBSR_OP_SAVE)
+                        {
+                            for (i = 0; i < (copySize / 4); i++)
+                            {
+                                pNode->data[i] = pFbsr->pPinnedBuffer[i];
+                            }
+                        }
+
+                        vidOffset += copySize;
+                        size -= copySize;
+                    }
+
+                    pFbsr->pSysMemNodeCurrent = pFbsr->pSysMemNodeCurrent->pNext;
+                }
+
+                break;
+        }
+
+        pFbsr->sysOffset += pVidMemDesc->Size;
+    }
 }
 
 #ifdef DEBUG
 #endif
+

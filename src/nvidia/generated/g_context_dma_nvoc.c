@@ -170,6 +170,10 @@ static void __nvoc_thunk_RsResource_ctxdmaPreDestruct(struct ContextDma *pResour
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_ctxdmaIsDuplicate(struct ContextDma *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_ctxdmaGetNotificationListPtr(struct ContextDma *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset));
 }
@@ -347,6 +351,8 @@ static void __nvoc_init_funcTable_ContextDma_1(ContextDma *pThis) {
     pThis->__ctxdmaAddAdditionalDependants__ = &__nvoc_thunk_RsResource_ctxdmaAddAdditionalDependants;
 
     pThis->__ctxdmaPreDestruct__ = &__nvoc_thunk_RsResource_ctxdmaPreDestruct;
+
+    pThis->__ctxdmaIsDuplicate__ = &__nvoc_thunk_RsResource_ctxdmaIsDuplicate;
 
     pThis->__ctxdmaGetNotificationListPtr__ = &__nvoc_thunk_Notifier_ctxdmaGetNotificationListPtr;
 

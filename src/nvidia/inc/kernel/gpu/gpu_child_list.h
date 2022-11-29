@@ -90,8 +90,11 @@
 #if GPU_CHILD_MODULE(FBFLCN)
     GPU_CHILD_SINGLE_INST( OBJFBFLCN,            GPU_GET_FBFLCN,                      1,                NV_FALSE,        NV_FALSE,      pFbflcn          )
 #endif
+#if GPU_CHILD_MODULE(HSHUBMANAGER)
+    GPU_CHILD_SINGLE_INST( OBJHSHUBMANAGER,      GPU_GET_HSHUBMANAGER,                 1,               NV_FALSE,        NV_FALSE,      pHshMgr          )
+#endif
 #if GPU_CHILD_MODULE(HSHUB)
-    GPU_CHILD_MULTI_INST ( OBJHSHUB,             GPU_GET_HSHUB,                       GPU_MAX_HSHUBS,   NV_FALSE,        NV_FALSE,      pHshub           )
+    GPU_CHILD_MULTI_INST ( Hshub,                GPU_GET_HSHUB,                       GPU_MAX_HSHUBS,   NV_FALSE,        NV_FALSE,      pHshub           )
 #endif
 #if GPU_CHILD_MODULE(SEQ)
     GPU_CHILD_SINGLE_INST( OBJSEQ,               GPU_GET_SEQ,                         1,                NV_FALSE,        NV_TRUE,       pSeq             )
@@ -119,9 +122,6 @@
 #endif
 #if GPU_CHILD_MODULE(KERNEL_GMMU)
     GPU_CHILD_SINGLE_INST( KernelGmmu,           GPU_GET_KERNEL_GMMU,                 1,                NV_FALSE,        NV_FALSE,      pKernelGmmu      )
-#endif
-#if GPU_CHILD_MODULE(KERNEL_NVDEC)
-    GPU_CHILD_SINGLE_INST( KernelNvdec,          GPU_GET_KERNEL_NVDEC,                1,                NV_FALSE,        NV_FALSE,      pKernelNvdec     )
 #endif
 #if GPU_CHILD_MODULE(KERNEL_SEC2)
     GPU_CHILD_SINGLE_INST( KernelSec2,           GPU_GET_KERNEL_SEC2,                 1,                NV_FALSE,        NV_FALSE,      pKernelSec2      )
@@ -157,7 +157,7 @@
     GPU_CHILD_SINGLE_INST( ClockManager,         GPU_GET_CLK_MGR,                     1,                NV_FALSE,        NV_FALSE,      pClk             )
 #endif
 #if GPU_CHILD_MODULE(FAN)
-    GPU_CHILD_SINGLE_INST( OBJFAN,               GPU_GET_FAN,                         1,                NV_FALSE,        NV_FALSE,      pFan             )
+    GPU_CHILD_SINGLE_INST( Fan,                  GPU_GET_FAN,                         1,                NV_FALSE,        NV_FALSE,      pFan             )
 #endif
 #if GPU_CHILD_MODULE(PERF)
     GPU_CHILD_SINGLE_INST( Perf,                 GPU_GET_PERF,                        1,                NV_FALSE,        NV_FALSE,      pPerf            )
@@ -187,7 +187,7 @@
     GPU_CHILD_SINGLE_INST( OBJVOLT,              GPU_GET_VOLT,                        1,                NV_FALSE,        NV_FALSE,      pVolt            )
 #endif
 #if GPU_CHILD_MODULE(I2C)
-    GPU_CHILD_SINGLE_INST( OBJI2C,               GPU_GET_I2C,                         1,                NV_FALSE,        NV_TRUE,       pI2c             )
+    GPU_CHILD_SINGLE_INST( I2c,                  GPU_GET_I2C,                         1,                NV_FALSE,        NV_TRUE,       pI2c             )
 #endif
 #if GPU_CHILD_MODULE(SPI)
     GPU_CHILD_SINGLE_INST( Spi,               GPU_GET_SPI,                            1,                NV_FALSE,        NV_TRUE,       pSpi             )
@@ -291,8 +291,14 @@
 #if GPU_CHILD_MODULE(GSP)
     GPU_CHILD_SINGLE_INST( Gsp,                  GPU_GET_GSP,                         1,                NV_FALSE,        NV_FALSE,      pGsp             )
 #endif
+#if RMCFG_MODULE_KERNEL_FSP && GPU_CHILD_MODULE(KERNEL_FSP)
+    GPU_CHILD_SINGLE_INST( KernelFsp,            GPU_GET_KERNEL_FSP,                  1,                NV_FALSE,        NV_FALSE,      pKernelFsp       )
+#endif
 #if GPU_CHILD_MODULE(OFA)
     GPU_CHILD_SINGLE_INST( OBJOFA,               GPU_GET_OFA,                         1,                NV_FALSE,        NV_FALSE,      pOfa             )
+#endif
+#if RMCFG_MODULE_KERNEL_CCU && GPU_CHILD_MODULE(KERNEL_CCU)
+    GPU_CHILD_SINGLE_INST( KernelCcu,            GPU_GET_KERNEL_CCU,                  1,                NV_FALSE,        NV_FALSE,     pKernelCcu        )   
 #endif
 
 // Undefine the entry macros to simplify call sites

@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2020 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #include "nvlink.h"
 #include "nvlink_export.h"
@@ -115,6 +114,24 @@ nvlink_lib_check_training_complete
     }
 
     nvlink_lib_top_lock_release();
+
+    // Only run the check if ALI is enabled
+    if(links[0]->dev->enableALI)
+    {
+        //
+        // This will be the returned back to the caller, the core function
+        // will return early with an error status if a link is not Active
+        //
+        status = nvlink_core_train_check_link_ready_ALI(lockLinks, lockLinkCount);
+    }
+    else
+    {
+        // If ALI is not enabled, return error
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: ALI is not enabled! Cannot check training status, please use non-ALI or ALT training to get links to active\n",
+            __FUNCTION__));
+        status = NVL_ERR_GENERIC;
+    }
 
     // Release the per-link locks
     nvlink_lib_link_locks_release(lockLinks, lockLinkCount);
@@ -297,7 +314,18 @@ nvlink_lib_train_links_from_swcfg_to_active
 
     if (connCount > 0)
     {
-        if ((conn->end0->version >= NVLINK_DEVICE_VERSION_30) ||
+        if ((conn->end0->version >= NVLINK_DEVICE_VERSION_40) ||
+            (conn->end1->version >= NVLINK_DEVICE_VERSION_40))
+        {
+            if (!conn->end0->dev->enableALI)
+            {
+                status = nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI(conns,
+                                                                                connCount,
+                                                                                flags);
+            }
+        }
+        // For NVLink3+, use ALT sequence
+        else if ((conn->end0->version >= NVLINK_DEVICE_VERSION_30) ||
             (conn->end1->version >= NVLINK_DEVICE_VERSION_30))
         {
             status = nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT(conns,
@@ -685,9 +713,23 @@ nvlink_lib_retrain_link_from_swcfg_to_active
 
         return status;
     }
-    if ((conn->end0->version >= NVLINK_DEVICE_VERSION_30) ||
+    
+    if ((conn->end0->version >= NVLINK_DEVICE_VERSION_40) ||
+        (conn->end1->version >= NVLINK_DEVICE_VERSION_40))
+    {
+        if (!conn->end0->bInitnegotiateConfigGood ||
+            !conn->end1->bInitnegotiateConfigGood)
+        {
+            status = NVL_ERR_GENERIC;
+        }
+        else if (!conn->end0->dev->enableALI)
+        {
+            // ALI training for NVLink4.0+
+            status = nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI(conns, 0x1, flags);
+        }
+    }
+    else if ((conn->end0->version >= NVLINK_DEVICE_VERSION_30) ||
         (conn->end1->version >= NVLINK_DEVICE_VERSION_30))
-
     {
         if (!conn->end0->bInitnegotiateConfigGood ||
             !conn->end1->bInitnegotiateConfigGood)

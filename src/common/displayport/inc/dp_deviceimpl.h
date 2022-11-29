@@ -173,6 +173,8 @@ namespace DisplayPort
         bool bIsFakedMuxDevice;
         bool bIsPreviouslyFakedMuxDevice;
         bool bisMarkedForDeletion;
+        bool bIgnoreMsaCap;
+        bool bIgnoreMsaCapCached;
 
         //
         // Device doing the DSC decompression for this device. This could be device itself
@@ -194,6 +196,7 @@ namespace DisplayPort
 
         TriState bSdpExtCapable;
         bool bMSAOverMSTCapable;
+        bool bDscPassThroughColorFormatWar;
 
         DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent);
         ~DeviceImpl();
@@ -349,15 +352,9 @@ namespace DisplayPort
             return true;
         }
 
-        bool getIgnoreMSACap()
-        {
-            return hal->getMsaTimingparIgnored();
-        }
+        bool getIgnoreMSACap();
 
-        AuxRetry::status setIgnoreMSAEnable(bool msaTimingParamIgnoreEn)
-        {
-            return hal->setIgnoreMSATimingParamters(msaTimingParamIgnoreEn);
-        }
+        AuxRetry::status setIgnoreMSAEnable(bool msaTimingParamIgnoreEn);
 
         bool isVirtualPeerDevice()
         {
@@ -383,6 +380,8 @@ namespace DisplayPort
         virtual void queryGUID2();
 
         virtual bool getSDPExtnForColorimetrySupported();
+
+        virtual bool getPanelFwRevision(NvU16 *revision);
 
         virtual bool isPowerSuspended();
 
@@ -442,6 +441,7 @@ namespace DisplayPort
         bool isPanelReplaySupported(void);
         void getPanelReplayCaps(void);
         bool setPanelReplayConfig(panelReplayConfig prcfg);
+        bool getPanelReplayStatus(PanelReplayStatus *pPrStatus);
 
         NvBool getDSCSupport();
         bool getFECSupport();
@@ -454,6 +454,7 @@ namespace DisplayPort
         bool parseDscCaps(const NvU8 *buffer, NvU32 bufferSize);
         bool parseBranchSpecificDscCaps(const NvU8 *buffer, NvU32 bufferSize);
         bool setDscEnable(bool enable);
+        bool setDscEnableDPToHDMIPCON(bool bDscEnable, bool bEnablePassThroughForPCON);
         bool getDscEnable(bool *pEnable);
         unsigned getDscVersionMajor();
         unsigned getDscVersionMinor();

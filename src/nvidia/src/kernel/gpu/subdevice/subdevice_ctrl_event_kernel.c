@@ -69,7 +69,7 @@ subdeviceCtrlCmdEventSetTriggerFifo_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    engineNonStallIntrNotifyEvent(pGpu, NV2080_ENGINE_TYPE_HOST,
+    engineNonStallIntrNotifyEvent(pGpu, RM_ENGINE_TYPE_HOST,
                                   pTriggerFifoParams->hEvent);
 
     return NV_OK;

@@ -66,24 +66,19 @@ kperfBoostSet_3x
 )
 {
     OBJGPU    *pGpu   = GPU_RES_GET_GPU(pSubdevice);
+    RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV_STATUS  status = NV_OK;
     NV2080_CTRL_INTERNAL_PERF_BOOST_SET_PARAMS_2X boostParams2x = {0};
 
     boostParams2x.flags    = pBoostParams->flags;
     boostParams2x.duration = pBoostParams->duration;
 
-    //
-    // This should always be GSP CLIENT.
-    //
-    NV_ASSERT(IS_GSP_CLIENT(pGpu));
-
-    NV_RM_RPC_CONTROL(pGpu,
-                      RES_GET_CLIENT_HANDLE(pSubdevice),
-                      RES_GET_HANDLE(pSubdevice),
-                      NV2080_CTRL_CMD_INTERNAL_PERF_BOOST_SET_2X,
-                      &boostParams2x,
-                      sizeof(boostParams2x),
-                      status);
+    status = pRmApi->Control(pRmApi,
+                             RES_GET_CLIENT_HANDLE(pSubdevice),
+                             RES_GET_HANDLE(pSubdevice),
+                             NV2080_CTRL_CMD_INTERNAL_PERF_BOOST_SET_2X,
+                             &boostParams2x,
+                             sizeof(boostParams2x));
 
     return status;
 }

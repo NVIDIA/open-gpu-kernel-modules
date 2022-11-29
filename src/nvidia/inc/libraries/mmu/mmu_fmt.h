@@ -104,6 +104,17 @@ const MMU_FMT_LEVEL *mmuFmtGetNextLevel(
                         const MMU_FMT_LEVEL *pTargetFmt);
 
 /*!
+ * Return a level description from the format. Used for Verif.
+ * 
+ * @returns const char* string description of the level.
+ */
+const char*
+mmuFmtConvertLevelIdToSuffix
+(
+    const MMU_FMT_LEVEL *pLevelFmt
+);
+
+/*!
  * Bitmask of VA covered by a given level.
  * e.g. for the root level this is the maximum VAS limit.
  */

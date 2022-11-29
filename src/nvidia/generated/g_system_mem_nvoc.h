@@ -65,11 +65,13 @@ struct SystemMemory {
     void (*__sysmemAddAdditionalDependants__)(struct RsClient *, struct SystemMemory *, RsResourceRef *);
     NvU32 (*__sysmemGetRefCount__)(struct SystemMemory *);
     NV_STATUS (*__sysmemMapTo__)(struct SystemMemory *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__sysmemControl_Prologue__)(struct SystemMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__sysmemCanCopy__)(struct SystemMemory *);
-    NV_STATUS (*__sysmemIsReady__)(struct SystemMemory *);
+    NvBool (*__sysmemIsGpuMapAllowed__)(struct SystemMemory *, struct OBJGPU *);
+    NV_STATUS (*__sysmemControl_Prologue__)(struct SystemMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__sysmemIsReady__)(struct SystemMemory *, NvBool);
     NV_STATUS (*__sysmemCheckCopyPermissions__)(struct SystemMemory *, struct OBJGPU *, NvHandle);
     void (*__sysmemPreDestruct__)(struct SystemMemory *);
+    NV_STATUS (*__sysmemIsDuplicate__)(struct SystemMemory *, NvHandle, NvBool *);
     NV_STATUS (*__sysmemUnmapFrom__)(struct SystemMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__sysmemControl_Epilogue__)(struct SystemMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__sysmemControlLookup__)(struct SystemMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -118,17 +120,20 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory**, Dynamic*, NvU32, CALL_CO
 #define sysmemAddAdditionalDependants(pClient, pResource, pReference) sysmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define sysmemGetRefCount(pResource) sysmemGetRefCount_DISPATCH(pResource)
 #define sysmemMapTo(pResource, pParams) sysmemMapTo_DISPATCH(pResource, pParams)
-#define sysmemControl_Prologue(pResource, pCallContext, pParams) sysmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define sysmemCanCopy(pStandardMemory) sysmemCanCopy_DISPATCH(pStandardMemory)
-#define sysmemIsReady(pMemory) sysmemIsReady_DISPATCH(pMemory)
+#define sysmemIsGpuMapAllowed(pMemory, pGpu) sysmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define sysmemControl_Prologue(pResource, pCallContext, pParams) sysmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define sysmemIsReady(pMemory, bCopyConstructorContext) sysmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define sysmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) sysmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define sysmemPreDestruct(pResource) sysmemPreDestruct_DISPATCH(pResource)
+#define sysmemIsDuplicate(pMemory, hMemory, pDuplicate) sysmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define sysmemUnmapFrom(pResource, pParams) sysmemUnmapFrom_DISPATCH(pResource, pParams)
 #define sysmemControl_Epilogue(pResource, pCallContext, pParams) sysmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define sysmemControlLookup(pResource, pParams, ppEntry) sysmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define sysmemMap(pMemory, pCallContext, pParams, pCpuMapping) sysmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
 #define sysmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) sysmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NV_STATUS sysmemInitAllocRequest_HMM(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest);
+
 
 #ifdef __nvoc_system_mem_h_disabled
 static inline NV_STATUS sysmemInitAllocRequest(struct OBJGPU *pGpu, struct SystemMemory *pSystemMemory, MEMORY_ALLOCATION_REQUEST *pAllocRequest) {
@@ -197,16 +202,20 @@ static inline NV_STATUS sysmemMapTo_DISPATCH(struct SystemMemory *pResource, RS_
     return pResource->__sysmemMapTo__(pResource, pParams);
 }
 
-static inline NV_STATUS sysmemControl_Prologue_DISPATCH(struct SystemMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__sysmemControl_Prologue__(pResource, pCallContext, pParams);
-}
-
 static inline NvBool sysmemCanCopy_DISPATCH(struct SystemMemory *pStandardMemory) {
     return pStandardMemory->__sysmemCanCopy__(pStandardMemory);
 }
 
-static inline NV_STATUS sysmemIsReady_DISPATCH(struct SystemMemory *pMemory) {
-    return pMemory->__sysmemIsReady__(pMemory);
+static inline NvBool sysmemIsGpuMapAllowed_DISPATCH(struct SystemMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__sysmemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS sysmemControl_Prologue_DISPATCH(struct SystemMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__sysmemControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS sysmemIsReady_DISPATCH(struct SystemMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__sysmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS sysmemCheckCopyPermissions_DISPATCH(struct SystemMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -215,6 +224,10 @@ static inline NV_STATUS sysmemCheckCopyPermissions_DISPATCH(struct SystemMemory 
 
 static inline void sysmemPreDestruct_DISPATCH(struct SystemMemory *pResource) {
     pResource->__sysmemPreDestruct__(pResource);
+}
+
+static inline NV_STATUS sysmemIsDuplicate_DISPATCH(struct SystemMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__sysmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS sysmemUnmapFrom_DISPATCH(struct SystemMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -238,6 +251,7 @@ static inline NvBool sysmemAccessCallback_DISPATCH(struct SystemMemory *pResourc
 }
 
 NV_STATUS sysmemConstruct_IMPL(struct SystemMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_sysmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) sysmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

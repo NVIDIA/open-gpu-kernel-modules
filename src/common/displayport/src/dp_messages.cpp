@@ -63,27 +63,19 @@ bool MessageManager::send(MessageManager::Message * message, NakData & nakData)
     DP_USED(sb);
 
     NvU64 startTime, elapsedTime;
-
-    if (bNoReplyTimerForBusyWaiting)
-    {
-        message->bBusyWaiting = true;
-    }
+    message->bBusyWaiting = true;
     post(message, &completion);
     startTime = timer->getTimeUs();
     do
     {
-        if (bDpcdProbingForBusyWaiting)
+        hal->updateDPCDOffline();
+        if (hal->isDpcdOffline())
         {
-            hal->updateDPCDOffline();
-            if (hal->isDpcdOffline())
-            {
-                DP_LOG(("DP-MM> Device went offline while waiting for reply and so ignoring message %p (ID = %02X, target = %s)",
-                    (Message*)this, ((Message*)this)->requestIdentifier, (((Message*)this)->state.target).toString(sb)));
-
-                nakData = completion.nakData;
-                completion.failed = true;
-                break;
-            }
+            DP_LOG(("DP-MM> Device went offline while waiting for reply and so ignoring message %p (ID = %02X, target = %s)",
+                    message, message->requestIdentifier, ((message->state).target).toString(sb)));
+            nakData = completion.nakData;
+            completion.failed = true;
+            break;
         }
 
         hal->notifyIRQ();

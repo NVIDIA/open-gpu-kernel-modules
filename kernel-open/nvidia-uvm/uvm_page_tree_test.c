@@ -43,11 +43,9 @@
 // AMPERE_*
 #include "clc56f.h"
 #include "clc6b5.h"
-
-
-
-
-
+// HOPPER_*
+#include "clc8b5.h"
+#include "clc86f.h"
 // ARCHITECTURE_*
 #include "ctrl2080mc.h"
 
@@ -407,33 +405,31 @@ static NV_STATUS alloc_64k_memory(uvm_gpu_t *gpu)
     return NV_OK;
 }
 
+static NV_STATUS alloc_64k_memory_57b_va(uvm_gpu_t *gpu)
+{
+    uvm_page_tree_t tree;
+    uvm_page_table_range_t range;
 
+    NvLength size = 64 * 1024;
+    MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
+    MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_64K, 0x100000000000000ULL, size, &range), NV_OK);
+    TEST_CHECK_RET(range.entry_count == 1);
+    TEST_CHECK_RET(range.table->depth == 5);
+    TEST_CHECK_RET(range.start_index == 0);
+    TEST_CHECK_RET(range.page_size == UVM_PAGE_SIZE_64K);
+    TEST_CHECK_RET(tree.root->ref_count == 1);
+    TEST_CHECK_RET(tree.root->entries[1]->ref_count == 1);
+    TEST_CHECK_RET(tree.root->entries[1]->entries[0]->ref_count == 1);
+    TEST_CHECK_RET(tree.root->entries[1]->entries[0]->entries[0]->ref_count == 1);
+    TEST_CHECK_RET(tree.root->entries[1]->entries[0]->entries[0]->entries[0]->ref_count == 1);
+    TEST_CHECK_RET(tree.root->entries[1]->entries[0]->entries[0]->entries[0]->entries[0]->ref_count == 1);
+    TEST_CHECK_RET(range.table == tree.root->entries[1]->entries[0]->entries[0]->entries[0]->entries[0]);
+    uvm_page_tree_put_ptes(&tree, &range);
+    UVM_ASSERT(tree.root->ref_count == 0);
+    uvm_page_tree_deinit(&tree);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return NV_OK;
+}
 
 static NV_STATUS alloc_adjacent_64k_memory(uvm_gpu_t *gpu)
 {
@@ -1513,20 +1509,18 @@ static NV_STATUS entry_test_page_size_ampere(uvm_gpu_t *gpu, size_t page_size)
     return entry_test_page_size_volta(gpu, page_size);
 }
 
+static NV_STATUS entry_test_page_size_hopper(uvm_gpu_t *gpu, size_t page_size)
+{
+    uvm_mmu_mode_hal_t *hal = gpu->parent->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K);
 
+    // Page table entries
+    if (page_size == UVM_PAGE_SIZE_64K)
+        TEST_CHECK_RET(hal->unmapped_pte(page_size) == 0x18);
+    else
+        TEST_CHECK_RET(hal->unmapped_pte(page_size) == 0);
 
-
-
-
-
-
-
-
-
-
-
-
-
+    return NV_OK;
+}
 
 typedef NV_STATUS (*entry_test_page_size_func)(uvm_gpu_t *gpu, size_t page_size);
 
@@ -1783,109 +1777,107 @@ static NV_STATUS entry_test_ampere(uvm_gpu_t *gpu, entry_test_page_size_func ent
     return NV_OK;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+static NV_STATUS entry_test_hopper(uvm_gpu_t *gpu, entry_test_page_size_func entry_test_page_size)
+{
+    NvU32 page_sizes[MAX_NUM_PAGE_SIZES];
+    NvU64 pde_bits[2];
+    size_t i, num_page_sizes;
+    uvm_mmu_page_table_alloc_t *phys_allocs[2] = {NULL, NULL};
+    uvm_mmu_page_table_alloc_t alloc_sys = fake_table_alloc(UVM_APERTURE_SYS, 0x9999999999000LL);
+    uvm_mmu_page_table_alloc_t alloc_vid = fake_table_alloc(UVM_APERTURE_VID, 0xBBBBBBB000LL);
+
+    // big versions have [11:8] set as well to test the page table merging
+    uvm_mmu_page_table_alloc_t alloc_big_sys = fake_table_alloc(UVM_APERTURE_SYS, 0x9999999999900LL);
+    uvm_mmu_page_table_alloc_t alloc_big_vid = fake_table_alloc(UVM_APERTURE_VID, 0xBBBBBBBB00LL);
+
+    uvm_mmu_mode_hal_t *hal = gpu->parent->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K);
+
+    // Make sure cleared PDEs work as expected
+    hal->make_pde(pde_bits, phys_allocs, 0);
+    TEST_CHECK_RET(pde_bits[0] == 0);
+
+    // Cleared PDEs work as expected for big and small PDEs.
+    memset(pde_bits, 0xFF, sizeof(pde_bits));
+    hal->make_pde(pde_bits, phys_allocs, 4);
+    TEST_CHECK_RET(pde_bits[0] == 0 && pde_bits[1] == 0);
+
+    // Sys and vidmem PDEs, uncached ATS allowed.
+    phys_allocs[0] = &alloc_sys;
+    hal->make_pde(pde_bits, phys_allocs, 0);
+    TEST_CHECK_RET(pde_bits[0] == 0x999999999900C);
+
+    phys_allocs[0] = &alloc_vid;
+    hal->make_pde(pde_bits, phys_allocs, 0);
+    TEST_CHECK_RET(pde_bits[0] == 0xBBBBBBB00A);
+
+    // Dual PDEs, uncached.
+    phys_allocs[0] = &alloc_big_sys;
+    phys_allocs[1] = &alloc_vid;
+    hal->make_pde(pde_bits, phys_allocs, 4);
+    TEST_CHECK_RET(pde_bits[0] == 0x999999999991C && pde_bits[1] == 0xBBBBBBB01A);
+
+    phys_allocs[0] = &alloc_big_vid;
+    phys_allocs[1] = &alloc_sys;
+    hal->make_pde(pde_bits, phys_allocs, 4);
+    TEST_CHECK_RET(pde_bits[0] == 0xBBBBBBBB1A && pde_bits[1] == 0x999999999901C);
+
+    // uncached, i.e., the sysmem data is not cached in GPU's L2 cache, and
+    // access counters disabled.
+    TEST_CHECK_RET(hal->make_pte(UVM_APERTURE_SYS,
+                                 0x9999999999000LL,
+                                 UVM_PROT_READ_WRITE_ATOMIC,
+                                 UVM_MMU_PTE_FLAGS_ACCESS_COUNTERS_DISABLED) == 0x999999999968D);
+
+    // change to cached.
+    TEST_CHECK_RET(hal->make_pte(UVM_APERTURE_SYS,
+                                 0x9999999999000LL,
+                                 UVM_PROT_READ_WRITE_ATOMIC,
+                                 UVM_MMU_PTE_FLAGS_CACHED | UVM_MMU_PTE_FLAGS_ACCESS_COUNTERS_DISABLED) ==
+                   0x9999999999685);
+
+    // enable access counters.
+    TEST_CHECK_RET(hal->make_pte(UVM_APERTURE_SYS,
+                                 0x9999999999000LL,
+                                 UVM_PROT_READ_WRITE_ATOMIC,
+                                 UVM_MMU_PTE_FLAGS_CACHED) == 0x9999999999605);
+
+    // remove atomic
+    TEST_CHECK_RET(hal->make_pte(UVM_APERTURE_SYS,
+                                 0x9999999999000LL,
+                                 UVM_PROT_READ_WRITE,
+                                 UVM_MMU_PTE_FLAGS_CACHED) == 0x9999999999645);
+
+    // read only
+    TEST_CHECK_RET(hal->make_pte(UVM_APERTURE_SYS,
+                                 0x9999999999000LL,
+                                 UVM_PROT_READ_ONLY,
+                                 UVM_MMU_PTE_FLAGS_CACHED) == 0x9999999999665);
+
+    // local video
+    TEST_CHECK_RET(hal->make_pte(UVM_APERTURE_VID,
+                                 0xBBBBBBB000LL,
+                                 UVM_PROT_READ_ONLY,
+                                 UVM_MMU_PTE_FLAGS_CACHED) == 0xBBBBBBB661);
+
+    // peer 1
+    TEST_CHECK_RET(hal->make_pte(UVM_APERTURE_PEER_1,
+                                 0xBBBBBBB000LL,
+                                 UVM_PROT_READ_ONLY,
+                                 UVM_MMU_PTE_FLAGS_CACHED) == 0x200000BBBBBBB663);
+
+    // sparse
+    TEST_CHECK_RET(hal->make_sparse_pte() == 0x8);
+
+    // sked reflected
+    TEST_CHECK_RET(hal->make_sked_reflected_pte() == 0xF09);
+
+    num_page_sizes = get_page_sizes(gpu, page_sizes);
+
+    for (i = 0; i < num_page_sizes; i++)
+        TEST_NV_CHECK_RET(entry_test_page_size(gpu, page_sizes[i]));
+
+    return NV_OK;
+}
 
 static NV_STATUS alloc_4k_maxwell(uvm_gpu_t *gpu)
 {
@@ -2121,15 +2113,13 @@ static NV_STATUS fake_gpu_init_ampere(uvm_gpu_t *fake_gpu)
                          fake_gpu);
 }
 
-
-
-
-
-
-
-
-
-
+static NV_STATUS fake_gpu_init_hopper(uvm_gpu_t *fake_gpu)
+{
+    return fake_gpu_init(HOPPER_CHANNEL_GPFIFO_A,
+                         HOPPER_DMA_COPY_A,
+                         NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+                         fake_gpu);
+}
 
 static NV_STATUS maxwell_test_page_tree(uvm_gpu_t *maxwell)
 {
@@ -2271,17 +2261,15 @@ static NV_STATUS ampere_test_page_tree(uvm_gpu_t *ampere)
     return NV_OK;
 }
 
+static NV_STATUS hopper_test_page_tree(uvm_gpu_t *hopper)
+{
+    TEST_CHECK_RET(fake_gpu_init_hopper(hopper) == NV_OK);
 
+    MEM_NV_CHECK_RET(entry_test_hopper(hopper, entry_test_page_size_hopper), NV_OK);
+    MEM_NV_CHECK_RET(alloc_64k_memory_57b_va(hopper), NV_OK);
 
-
-
-
-
-
-
-
-
-
+    return NV_OK;
+}
 
 NV_STATUS uvm_test_page_tree(UVM_TEST_PAGE_TREE_PARAMS *params, struct file *filp)
 {
@@ -2315,9 +2303,7 @@ NV_STATUS uvm_test_page_tree(UVM_TEST_PAGE_TREE_PARAMS *params, struct file *fil
     TEST_NV_CHECK_GOTO(pascal_test_page_tree(gpu), done);
     TEST_NV_CHECK_GOTO(volta_test_page_tree(gpu), done);
     TEST_NV_CHECK_GOTO(ampere_test_page_tree(gpu), done);
-
-
-
+    TEST_NV_CHECK_GOTO(hopper_test_page_tree(gpu), done);
 
 done:
     fake_tlb_invals_free();

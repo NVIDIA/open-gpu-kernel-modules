@@ -71,12 +71,12 @@ vmrangeConstruct_IMPL
     //
     if (pAllocData->hVASpace == 0)
     {
-        NV_ASSERT_OR_RETURN(pKernelGmmu->maxVASize, NV_ERR_INVALID_STATE);
-        maxVA = pKernelGmmu->maxVASize;
+        NV_ASSERT_OR_RETURN(kgmmuGetMaxVASize(pKernelGmmu), NV_ERR_INVALID_STATE);
+        maxVA = kgmmuGetMaxVASize(pKernelGmmu);
     }
     else if (pAllocData->hVASpace == NV_MEMORY_VIRTUAL_SYSMEM_DYNAMIC_HVASPACE)
     {
-        NV_ASSERT_OR_RETURN(pKernelGmmu->maxVASize, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(kgmmuGetMaxVASize(pKernelGmmu), NV_ERR_INVALID_STATE);
         maxVA = 1ULL << 40;
     }
     else

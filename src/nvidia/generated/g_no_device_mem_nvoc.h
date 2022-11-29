@@ -67,10 +67,12 @@ struct NoDeviceMemory {
     NvU32 (*__nodevicememGetRefCount__)(struct NoDeviceMemory *);
     NV_STATUS (*__nodevicememMapTo__)(struct NoDeviceMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__nodevicememControl_Prologue__)(struct NoDeviceMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__nodevicememIsGpuMapAllowed__)(struct NoDeviceMemory *, struct OBJGPU *);
     NvBool (*__nodevicememCanCopy__)(struct NoDeviceMemory *);
-    NV_STATUS (*__nodevicememIsReady__)(struct NoDeviceMemory *);
+    NV_STATUS (*__nodevicememIsReady__)(struct NoDeviceMemory *, NvBool);
     NV_STATUS (*__nodevicememCheckCopyPermissions__)(struct NoDeviceMemory *, struct OBJGPU *, NvHandle);
     void (*__nodevicememPreDestruct__)(struct NoDeviceMemory *);
+    NV_STATUS (*__nodevicememIsDuplicate__)(struct NoDeviceMemory *, NvHandle, NvBool *);
     NV_STATUS (*__nodevicememUnmapFrom__)(struct NoDeviceMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__nodevicememControl_Epilogue__)(struct NoDeviceMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nodevicememControlLookup__)(struct NoDeviceMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -118,10 +120,12 @@ NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory**, Dynamic*, NvU32, CAL
 #define nodevicememGetRefCount(pResource) nodevicememGetRefCount_DISPATCH(pResource)
 #define nodevicememMapTo(pResource, pParams) nodevicememMapTo_DISPATCH(pResource, pParams)
 #define nodevicememControl_Prologue(pResource, pCallContext, pParams) nodevicememControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define nodevicememIsGpuMapAllowed(pMemory, pGpu) nodevicememIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define nodevicememCanCopy(pResource) nodevicememCanCopy_DISPATCH(pResource)
-#define nodevicememIsReady(pMemory) nodevicememIsReady_DISPATCH(pMemory)
+#define nodevicememIsReady(pMemory, bCopyConstructorContext) nodevicememIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define nodevicememCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) nodevicememCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define nodevicememPreDestruct(pResource) nodevicememPreDestruct_DISPATCH(pResource)
+#define nodevicememIsDuplicate(pMemory, hMemory, pDuplicate) nodevicememIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define nodevicememUnmapFrom(pResource, pParams) nodevicememUnmapFrom_DISPATCH(pResource, pParams)
 #define nodevicememControl_Epilogue(pResource, pCallContext, pParams) nodevicememControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define nodevicememControlLookup(pResource, pParams, ppEntry) nodevicememControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -177,12 +181,16 @@ static inline NV_STATUS nodevicememControl_Prologue_DISPATCH(struct NoDeviceMemo
     return pResource->__nodevicememControl_Prologue__(pResource, pCallContext, pParams);
 }
 
+static inline NvBool nodevicememIsGpuMapAllowed_DISPATCH(struct NoDeviceMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__nodevicememIsGpuMapAllowed__(pMemory, pGpu);
+}
+
 static inline NvBool nodevicememCanCopy_DISPATCH(struct NoDeviceMemory *pResource) {
     return pResource->__nodevicememCanCopy__(pResource);
 }
 
-static inline NV_STATUS nodevicememIsReady_DISPATCH(struct NoDeviceMemory *pMemory) {
-    return pMemory->__nodevicememIsReady__(pMemory);
+static inline NV_STATUS nodevicememIsReady_DISPATCH(struct NoDeviceMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__nodevicememIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS nodevicememCheckCopyPermissions_DISPATCH(struct NoDeviceMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -191,6 +199,10 @@ static inline NV_STATUS nodevicememCheckCopyPermissions_DISPATCH(struct NoDevice
 
 static inline void nodevicememPreDestruct_DISPATCH(struct NoDeviceMemory *pResource) {
     pResource->__nodevicememPreDestruct__(pResource);
+}
+
+static inline NV_STATUS nodevicememIsDuplicate_DISPATCH(struct NoDeviceMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__nodevicememIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS nodevicememUnmapFrom_DISPATCH(struct NoDeviceMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -214,8 +226,10 @@ static inline NvBool nodevicememAccessCallback_DISPATCH(struct NoDeviceMemory *p
 }
 
 NV_STATUS nodevicememConstruct_IMPL(struct NoDeviceMemory *arg_pNoDeviceMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_nodevicememConstruct(arg_pNoDeviceMemory, arg_pCallContext, arg_pParams) nodevicememConstruct_IMPL(arg_pNoDeviceMemory, arg_pCallContext, arg_pParams)
 void nodevicememDestruct_IMPL(struct NoDeviceMemory *pNoDeviceMemory);
+
 #define __nvoc_nodevicememDestruct(pNoDeviceMemory) nodevicememDestruct_IMPL(pNoDeviceMemory)
 #undef PRIVATE_FIELD
 

@@ -94,6 +94,7 @@ NV_STATUS __nvoc_objCreate_OBJVMM(OBJVMM**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJVMM((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS vmmCreateVaspace_IMPL(struct OBJVMM *pVmm, NvU32 _class, NvU32 vaspaceId, NvU32 gpuMask, NvU64 vaStart, NvU64 vaLimit, NvU64 vaInternalStart, NvU64 vaInternalEnd, struct OBJVASPACE *pPteSpaceMap, NvU32 flags, struct OBJVASPACE **ppVAS);
+
 #ifdef __nvoc_virt_mem_mgr_h_disabled
 static inline NV_STATUS vmmCreateVaspace(struct OBJVMM *pVmm, NvU32 _class, NvU32 vaspaceId, NvU32 gpuMask, NvU64 vaStart, NvU64 vaLimit, NvU64 vaInternalStart, NvU64 vaInternalEnd, struct OBJVASPACE *pPteSpaceMap, NvU32 flags, struct OBJVASPACE **ppVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJVMM was disabled!");
@@ -104,6 +105,7 @@ static inline NV_STATUS vmmCreateVaspace(struct OBJVMM *pVmm, NvU32 _class, NvU3
 #endif //__nvoc_virt_mem_mgr_h_disabled
 
 void vmmDestroyVaspace_IMPL(struct OBJVMM *pVmm, struct OBJVASPACE *pVAS);
+
 #ifdef __nvoc_virt_mem_mgr_h_disabled
 static inline void vmmDestroyVaspace(struct OBJVMM *pVmm, struct OBJVASPACE *pVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJVMM was disabled!");
@@ -113,6 +115,7 @@ static inline void vmmDestroyVaspace(struct OBJVMM *pVmm, struct OBJVASPACE *pVA
 #endif //__nvoc_virt_mem_mgr_h_disabled
 
 NV_STATUS vmmGetVaspaceFromId_IMPL(struct OBJVMM *pVmm, NvU32 vaspaceId, NvU32 classId, struct OBJVASPACE **ppVAS);
+
 #ifdef __nvoc_virt_mem_mgr_h_disabled
 static inline NV_STATUS vmmGetVaspaceFromId(struct OBJVMM *pVmm, NvU32 vaspaceId, NvU32 classId, struct OBJVASPACE **ppVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJVMM was disabled!");

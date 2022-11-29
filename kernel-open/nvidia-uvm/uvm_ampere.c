@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2021 NVIDIA Corporation
+    Copyright (c) 2018-20221 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -53,7 +53,7 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
 
     // See uvm_mmu.h for mapping placement
-    parent_gpu->flat_vidmem_va_base = 132ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->flat_vidmem_va_base = 136ull * 1024 * 1024 * 1024 * 1024;
     parent_gpu->flat_sysmem_va_base = 256ull * 1024 * 1024 * 1024 * 1024;
 
     parent_gpu->peer_copy_mode = g_uvm_global.peer_copy_mode;

@@ -161,10 +161,6 @@ struct uvm_mem_struct
     // lifetime of the GPU. For CPU allocations there is no lifetime limitation.
     uvm_gpu_t *backing_gpu;
 
-
-
-
-
     uvm_gpu_t *dma_owner;
 
     // Size of the physical chunks.
@@ -183,6 +179,8 @@ struct uvm_mem_struct
             //
             // There is no equivalent mask for vidmem, because only the backing
             // GPU can physical access the memory
+            //
+            // TODO: Bug 3723779: Share DMA mappings within a single parent GPU
             uvm_global_processor_mask_t mapped_on_phys;
 
             struct page **pages;
@@ -396,14 +394,12 @@ static NV_STATUS uvm_mem_alloc_sysmem_and_map_cpu_kernel(NvU64 size, struct mm_s
     return NV_OK;
 }
 
-
-
-
-
-
-
-
-
+// Helper for allocating sysmem DMA and mapping it on the CPU. This is useful
+// for certain systems where the main system memory is encrypted
+// (e.g., AMD SEV) and cannot be read from IO devices unless specially
+// allocated using the DMA APIs.
+//
+// See uvm_mem_alloc()
 static NV_STATUS uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(NvU64 size,
                                                              uvm_gpu_t *gpu,
                                                              struct mm_struct *mm,

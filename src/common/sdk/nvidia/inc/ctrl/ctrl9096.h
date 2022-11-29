@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl9096.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 #define NV9096_CTRL_CMD(cat,idx)  \
     NVXXXX_CTRL_CMD(0x9096, NV9096_CTRL_##cat, idx)
@@ -113,8 +110,6 @@
  *   NV_OK
  *   NVOS_STATUS_INSUFFICIENT_RESOURCES
  */
-
-
 #define NV9096_CTRL_CMD_SET_ZBC_COLOR_CLEAR        (0x90960101U) /* finn: Evaluated from "(FINN_GF100_ZBC_CLEAR_ZBC_INTERFACE_ID << 8) | NV9096_CTRL_SET_ZBC_COLOR_CLEAR_PARAMS_MESSAGE_ID" */
 
 #define NV9096_CTRL_SET_ZBC_COLOR_CLEAR_VALUE_SIZE 4U

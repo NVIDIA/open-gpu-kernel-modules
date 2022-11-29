@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -100,14 +100,20 @@ typedef struct _tagDISPLAYID_2_0_DATA_BLOCK_HEADER
 #define DISPLAYID_2_0_BLOCK_TYPE_TIMING_7             0x22 
 #define DISPLAYID_2_0_BLOCK_TYPE_TIMING_8             0x23
 #define DISPLAYID_2_0_BLOCK_TYPE_TIMING_9             0x24
-#define DISPLAYID_2_0_BLOCK_TYPE_TIMING_10            0x2A
 #define DISPLAYID_2_0_BLOCK_TYPE_RANGE_LIMITS         0x25
 #define DISPLAYID_2_0_BLOCK_TYPE_INTERFACE_FEATURES   0x26
 #define DISPLAYID_2_0_BLOCK_TYPE_STEREO               0x27
 #define DISPLAYID_2_0_BLOCK_TYPE_TILED_DISPLAY        0x28
 #define DISPLAYID_2_0_BLOCK_TYPE_CONTAINER_ID         0x29
+#define DISPLAYID_2_0_BLOCK_TYPE_TIMING_10            0x2A
+#define DISPLAYID_2_0_BLOCK_TYPE_ADAPTIVE_SYNC        0x2B
+#define DISPLAYID_2_0_BLOCK_TYPE_ARVR_HMD             0x2C
+#define DISPLAYID_2_0_BLOCK_TYPE_ARVR_LAYER           0x2D
+// 0x7D - 0x2E RESERVED for Additional VESA-defined Data Blocks
 #define DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC          0x7E
+// 0x80 - 0x7F RESERVED
 #define DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA             0x81
+// 0xFF - 0x82 RESERVED for additional data blocks related to external standards organization(s). 
 
 #define DISPLAYID_2_0_PRODUCT_NAME_STRING_MAX_LEN     ((0xFB - 0xF) + 1)
 
@@ -236,7 +242,7 @@ typedef struct _tag_DISPLAYID_2_0_TIMING_7_DESCRIPTOR
         NvU8 interface_frame_scanning_type  : 1;
         NvU8 stereo_support                 : 2;
         NvU8 is_preferred_or_ycc420         : 1;
-    }options;
+    } options;
 
     struct
     {
@@ -246,7 +252,7 @@ typedef struct _tag_DISPLAYID_2_0_TIMING_7_DESCRIPTOR
         NvU8 front_porch_pixels_high        : 7;
         NvU8 sync_polarity                  : 1;
         NvU8 sync_width_pixels[2];
-    }horizontal;
+    } horizontal;
 
     struct
     {
@@ -256,8 +262,7 @@ typedef struct _tag_DISPLAYID_2_0_TIMING_7_DESCRIPTOR
         NvU8 front_porch_lines_high         : 7;
         NvU8 sync_polarity                  : 1;
         NvU8 sync_width_lines[2];
-    }vertical;
-
+    } vertical;
 } DISPLAYID_2_0_TIMING_7_DESCRIPTOR;
 
 #define DISPLAYID_2_0_TIMING_7_MAX_DESCRIPTORS 12
@@ -336,11 +341,11 @@ typedef struct _tagDISPLAYID_2_0_TIMING_8_BLOCK
 typedef struct _TAG_DISPLAYID_2_0_TIMING_9_DESCRIPTOR
 {
     struct {
-        NvU8 timing_formula:3;
-        NvU8 reserved0:1;
-        NvU8 fractional_refresh_rate_support:1;
-        NvU8 stereo_support:2;
-        NvU8 reserved1:1;
+        NvU8 timing_formula          :3;
+        NvU8 reserved0               :1;
+        NvU8 rr_1000div1001_support  :1;
+        NvU8 stereo_support          :2;
+        NvU8 reserved1               :1;
     } options;
 
     NvU8  horizontal_active_pixels[2];
@@ -350,10 +355,10 @@ typedef struct _TAG_DISPLAYID_2_0_TIMING_9_DESCRIPTOR
 
 #define DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD            0
 #define DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_REDUCED_BLANKING_1  1
-#define DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_REDUCED_BLANKING_2  2
-#define DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_REDUCED_BLANKING_3  3
+#define DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_2  2
+#define DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_3  3
 
-#define DISPLAYID_2_0_TIMING_9_MAX_DESCRIPTORS 41
+#define DISPLAYID_2_0_TIMING_9_MAX_DESCRIPTORS 18
 
 typedef struct _tagDISPLAYID_2_0_TIMING_9_BLOCK
 {
@@ -379,8 +384,8 @@ typedef struct _DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR
 {
     struct {
         NvU8 timing_formula :3;
-        NvU8 reserved0      :1;
-        NvU8 vrr_or_hblank  :1;
+        NvU8 early_vsync    :1;        
+        NvU8 rr1000div1001_or_hblank :1;              
         NvU8 stereo_support :2;
         NvU8 ycc420_support :1;
     } options;
@@ -398,8 +403,8 @@ typedef struct _DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR
     NvU8                                      additional_vblank_timing :3;
 } DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR;
 
-#define DISPLAYID_2_0_TIMING_10_MAX_6BYTES_DESCRIPTORS 41
-#define DISPLAYID_2_0_TIMING_10_MAX_7BYTES_DESCRIPTORS 35
+#define DISPLAYID_2_0_TIMING_10_MAX_6BYTES_DESCRIPTORS 18
+#define DISPLAYID_2_0_TIMING_10_MAX_7BYTES_DESCRIPTORS 16
 
 typedef struct _DISPLAYID_2_0_TIMING_10_BLOCK
 {
@@ -416,10 +421,11 @@ typedef struct _tagDISPLAYID_2_0_RANGE_LIMITS_BLOCK
     NvU8  pixel_clock_max[3];
     NvU8  vertical_frequency_min;
     NvU8  vertical_frequency_max_7_0;
+
     struct {
-       NvU8  vertical_frequency_max_9_8:2;
-       NvU8  reserved:5;
-       NvU8  seamless_dynamic_video_timing_change:1;
+       NvU8  vertical_frequency_max_9_8           :2;
+       NvU8  reserved                             :5;
+       NvU8  seamless_dynamic_video_timing_change :1;
     } dynamic_video_timing_range_support;
 } DISPLAYID_2_0_RANGE_LIMITS_BLOCK;
 
@@ -676,6 +682,51 @@ typedef struct _tagDISPLAYID_2_0_CONTAINERID_BLOCK
     DISPLAYID_2_0_DATA_BLOCK_HEADER header;
     NvU8  container_id[DISPLAYID_2_0_CONTAINERID_BLOCK_PAYLOAD_LENGTH];
 } DISPLAYID_2_0_CONTAINERID_BLOCK;
+
+#define DISPLAYID_2_0_ADAPTIVE_SYNC_DETAILED_TIMING_COUNT 4
+typedef struct _tagDISPLAYID_2_0_ADAPTIVE_SYNC_BLOCK_HEADER
+{
+    NvU8  type;                                // Adaptive-Sync (0x2B)
+    NvU8  revision                        :3;
+    NvU8  reserved0                       :1;
+    NvU8  payload_bytes_adaptive_sync_len :3;
+    NvU8  reserved1                       :1;
+    NvU8  payload_bytes;
+} DISPLAYID_2_0_ADAPTIVE_SYNC_BLOCK_HEADER;
+
+typedef struct _tagDISPLAYID_2_0_ADAPTIVE_SYNC_DESCRIPTOR
+{
+    struct
+    {
+        NvU8 range                          : 1;
+        NvU8 successive_frame_inc_tolerance : 1;
+        NvU8 modes                          : 2;
+        NvU8 seamless_transition_not_support: 1;
+        NvU8 successive_frame_dec_tolerance : 1;
+        NvU8 reserved                       : 2;
+    } operation_range_info;
+    
+    // 6.2 format (six integer bits and two fractional bits)
+    // six integer bits    == 0 - 63ms
+    // two fractional bits == 0.00(00), 0.25(01b),0.50(10), 0.75(11b)
+    NvU8 max_single_frame_inc;
+    NvU8 min_refresh_rate;
+    struct
+    {
+        NvU8 max_rr_7_0;
+        NvU8 max_rr_9_8 : 2;
+        NvU8 reserved   : 6;
+    } max_refresh_rate;
+    
+    // same as max_single_frame_inc expression
+    NvU8 max_single_frame_dec; 
+} DISPLAYID_2_0_ADAPTIVE_SYNC_DESCRIPTOR;
+
+typedef struct _tagDISPLAYID_2_0_ADAPTIVE_SYNC_BLOCK
+{
+    DISPLAYID_2_0_ADAPTIVE_SYNC_BLOCK_HEADER header;
+    DISPLAYID_2_0_ADAPTIVE_SYNC_DESCRIPTOR   descriptors[DISPLAYID_2_0_ADAPTIVE_SYNC_DETAILED_TIMING_COUNT];
+} DISPLAYID_2_0_ADAPTIVE_SYNC_BLOCK;
 
 typedef struct _tagDISPLAYID_2_0_VENDOR_SPECIFIC_BLOCK
 {

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,8 +28,6 @@
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file: ctrl/ctrl0080/ctrl0080bsp.finn
 //
-
-
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
 

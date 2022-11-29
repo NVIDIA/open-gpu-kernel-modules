@@ -362,25 +362,25 @@ kfifoGetInstBlkSizeAlign_GM107
  *
  * @param[in] pGpu
  * @param[in] pKernelFifo
- * @param[in] engineType      - Engine type of the channel to retrieve default runlist id for
+ * @param[in] rmEngineType      - Engine type of the channel to retrieve default runlist id for
  */
 NvU32
 kfifoGetDefaultRunlist_GM107
 (
     OBJGPU *pGpu,
     KernelFifo *pKernelFifo,
-    NvU32 engineType
+    RM_ENGINE_TYPE rmEngineType
 )
 {
     NvU32 runlistId = INVALID_RUNLIST_ID;
     ENGDESCRIPTOR engDesc = ENG_GR(0);
 
-    if (NV2080_ENGINE_TYPE_IS_VALID(engineType))
+    if (RM_ENGINE_TYPE_IS_VALID(rmEngineType))
     {
         // if translation fails, defualt is ENG_GR(0)
         NV_ASSERT_OK(
             kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                    ENGINE_INFO_TYPE_NV2080, engineType,
+                                    ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32)rmEngineType,
                                     ENGINE_INFO_TYPE_ENG_DESC, &engDesc));
     }
 
@@ -622,7 +622,7 @@ kfifoConvertInstToKernelChannel_GM107
                                NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY);
 
     memdescCreateExisting(&instMemDesc, pGpu, NV_RAMIN_ALLOC_SIZE,
-                          ADDR_UNKNOWN, NV_MEMORY_UNCACHED,
+                          instAperture, NV_MEMORY_UNCACHED,
                           MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
 
     memdescDescribe(&instMemDesc, instAperture, pInst->address, NV_RAMIN_ALLOC_SIZE);
@@ -869,9 +869,6 @@ kfifoGetMaxNumRunlists_GM107
 {
     const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
 
-    // We use bit-masks of these values
-    NV_ASSERT(pEngineInfo->maxNumRunlists <= 32);
-
     return pEngineInfo->maxNumRunlists;
 }
 
@@ -941,7 +938,6 @@ kfifoGetEnginePartnerList_GM107
     NvU32 i;
     NvU32 srcRunlist;
     NvU32 runlist;
-    NvU32 nv2080type;
     NvU32 *pSrcPbdmaIds;
     NvU32 numSrcPbdmaIds;
     NvU32 srcPbdmaId;
@@ -949,19 +945,20 @@ kfifoGetEnginePartnerList_GM107
     NvU32 numPbdmaIds;
     NvU32 numClasses = 0;
     ENGDESCRIPTOR engDesc;
+    RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(pPartnerListParams->engineType);
 
     if (pPartnerListParams->runqueue >= kfifoGetNumRunqueues_HAL(pGpu, pKernelFifo))
         return NV_ERR_INVALID_ARGUMENT;
 
     NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                                    ENGINE_INFO_TYPE_NV2080,
-                                                    pPartnerListParams->engineType,
+                                                    ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                                    (NvU32)rmEngineType,
                                                     ENGINE_INFO_TYPE_RUNLIST,
                                                     &srcRunlist));
 
     NV_ASSERT_OK_OR_RETURN(kfifoGetEnginePbdmaIds_HAL(pGpu, pKernelFifo,
-                                                      ENGINE_INFO_TYPE_NV2080,
-                                                      pPartnerListParams->engineType,
+                                                      ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                                      (NvU32)rmEngineType,
                                                       &pSrcPbdmaIds,
                                                       &numSrcPbdmaIds));
 
@@ -1000,6 +997,7 @@ kfifoGetEnginePartnerList_GM107
         if (runlist == srcRunlist)
         {
             NvU32 j;
+            RM_ENGINE_TYPE localRmEngineType;
 
             NV_ASSERT_OK_OR_RETURN(kfifoGetEnginePbdmaIds_HAL(pGpu, pKernelFifo,
                                                               ENGINE_INFO_TYPE_INVALID, i,
@@ -1011,12 +1009,13 @@ kfifoGetEnginePartnerList_GM107
                 {
                     NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
                                                                     ENGINE_INFO_TYPE_INVALID, i,
-                                                                    ENGINE_INFO_TYPE_NV2080, &nv2080type));
+                                                                    ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&localRmEngineType));
 
                     // Don't include input in output list
-                    if (nv2080type != pPartnerListParams->engineType)
+                    if (localRmEngineType != rmEngineType)
                     {
-                        pPartnerListParams->partnerList[pPartnerListParams->numPartners++] = nv2080type;
+                        pPartnerListParams->partnerList[pPartnerListParams->numPartners++] =
+                            gpuGetNv2080EngineType(localRmEngineType);
 
                         if (pPartnerListParams->numPartners >= NV2080_CTRL_GPU_MAX_ENGINE_PARTNERS)
                             return NV_ERR_INVALID_ARGUMENT;

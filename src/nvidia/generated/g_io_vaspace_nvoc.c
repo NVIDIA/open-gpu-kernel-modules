@@ -166,6 +166,10 @@ static NV_STATUS __nvoc_thunk_OBJVASPACE_iovaspaceSetPteInfo(struct OBJIOVASPACE
     return vaspaceSetPteInfo((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset), pGpu, pParams);
 }
 
+static NV_STATUS __nvoc_thunk_OBJVASPACE_iovaspaceFreeV2(struct OBJIOVASPACE *pVAS, NvU64 vAddr, NvU64 *pSize) {
+    return vaspaceFreeV2((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset), vAddr, pSize);
+}
+
 static NV_STATUS __nvoc_thunk_OBJVASPACE_iovaspaceGetPasid(struct OBJIOVASPACE *pVAS, NvU32 *pPasid) {
     return vaspaceGetPasid((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset), pPasid);
 }
@@ -281,6 +285,8 @@ static void __nvoc_init_funcTable_OBJIOVASPACE_1(OBJIOVASPACE *pThis) {
     pThis->__iovaspaceUnpinRootPageDir__ = &__nvoc_thunk_OBJVASPACE_iovaspaceUnpinRootPageDir;
 
     pThis->__iovaspaceSetPteInfo__ = &__nvoc_thunk_OBJVASPACE_iovaspaceSetPteInfo;
+
+    pThis->__iovaspaceFreeV2__ = &__nvoc_thunk_OBJVASPACE_iovaspaceFreeV2;
 
     pThis->__iovaspaceGetPasid__ = &__nvoc_thunk_OBJVASPACE_iovaspaceGetPasid;
 

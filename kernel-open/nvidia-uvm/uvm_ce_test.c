@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -52,13 +52,13 @@ static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
     uvm_push_t push;
     bool is_proxy;
 
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, CE_TEST_MEM_SIZE, &host_mem);
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, CE_TEST_MEM_SIZE, 0, &host_mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
     host_ptr = (NvU32 *)uvm_rm_mem_get_cpu_va(host_mem);
     memset(host_ptr, 0, CE_TEST_MEM_SIZE);
 
     for (i = 0; i < CE_TEST_MEM_COUNT; ++i) {
-        status = uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, CE_TEST_MEM_SIZE, &mem[i]);
+        status = uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, CE_TEST_MEM_SIZE, 0, &mem[i]);
         TEST_CHECK_GOTO(status == NV_OK, done);
     }
 
@@ -167,7 +167,7 @@ static NV_STATUS test_membar(uvm_gpu_t *gpu)
     uvm_push_t push;
     NvU32 value;
 
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, sizeof(NvU32), &host_mem);
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, sizeof(NvU32), 0, &host_mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
     host_ptr = (NvU32 *)uvm_rm_mem_get_cpu_va(host_mem);
     *host_ptr = 0;
@@ -429,13 +429,13 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     gpu_addresses[1] = uvm_mem_gpu_address_physical(gpu_uvm_mem, gpu, 0, size);
 
     // Virtual address (in UVM's internal address space) backed by vidmem
-    TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, size, &gpu_rm_mem), done);
+    TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, size, 0, &gpu_rm_mem), done);
     is_proxy_va_space = false;
     gpu_va = uvm_rm_mem_get_gpu_va(gpu_rm_mem, gpu, is_proxy_va_space);
     gpu_addresses[2] = uvm_gpu_address_virtual(gpu_va);
 
     // Virtual address (in UVM's internal address space) backed by sysmem
-    TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_SYS, size, &sys_rm_mem), done);
+    TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &sys_rm_mem), done);
     gpu_va = uvm_rm_mem_get_gpu_va(sys_rm_mem, gpu, is_proxy_va_space);
     gpu_addresses[3] = uvm_gpu_address_virtual(gpu_va);
 

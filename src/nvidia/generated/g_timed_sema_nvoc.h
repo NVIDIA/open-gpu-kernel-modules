@@ -97,6 +97,7 @@ struct TimedSemaSwObject {
     NV_STATUS (*__tsemaUnregisterEvent__)(struct TimedSemaSwObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__tsemaCanCopy__)(struct TimedSemaSwObject *);
     void (*__tsemaPreDestruct__)(struct TimedSemaSwObject *);
+    NV_STATUS (*__tsemaIsDuplicate__)(struct TimedSemaSwObject *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__tsemaGetNotificationListPtr__)(struct TimedSemaSwObject *);
     struct NotifShare *(*__tsemaGetNotificationShare__)(struct TimedSemaSwObject *);
     NV_STATUS (*__tsemaMap__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -172,10 +173,17 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU3
 #define tsemaUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) tsemaUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define tsemaCanCopy(pResource) tsemaCanCopy_DISPATCH(pResource)
 #define tsemaPreDestruct(pResource) tsemaPreDestruct_DISPATCH(pResource)
+#define tsemaIsDuplicate(pResource, hMemory, pDuplicate) tsemaIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define tsemaGetNotificationListPtr(pNotifier) tsemaGetNotificationListPtr_DISPATCH(pNotifier)
 #define tsemaGetNotificationShare(pNotifier) tsemaGetNotificationShare_DISPATCH(pNotifier)
 #define tsemaMap(pGpuResource, pCallContext, pParams, pCpuMapping) tsemaMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define tsemaGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) tsemaGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+NV_STATUS tsemaRelease_KERNEL(struct OBJGPU *pGpu, NvU64 semaphoreVA, NvU64 notifierVA, NvU32 hVASpace, NvU32 releasevalue, NvU32 completionStatus, NvHandle hClient);
+
+
+#define tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, hClient) tsemaRelease_KERNEL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, hClient)
+#define tsemaRelease_HAL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, hClient) tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, hClient)
+
 NV_STATUS tsemaGetSwMethods_IMPL(struct TimedSemaSwObject *pTimedSemSw, METHOD **ppMethods, NvU32 *pNumMethods);
 
 static inline NV_STATUS tsemaGetSwMethods_DISPATCH(struct TimedSemaSwObject *pTimedSemSw, METHOD **ppMethods, NvU32 *pNumMethods) {
@@ -296,6 +304,10 @@ static inline void tsemaPreDestruct_DISPATCH(struct TimedSemaSwObject *pResource
     pResource->__tsemaPreDestruct__(pResource);
 }
 
+static inline NV_STATUS tsemaIsDuplicate_DISPATCH(struct TimedSemaSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__tsemaIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *tsemaGetNotificationListPtr_DISPATCH(struct TimedSemaSwObject *pNotifier) {
     return pNotifier->__tsemaGetNotificationListPtr__(pNotifier);
 }
@@ -313,8 +325,10 @@ static inline NV_STATUS tsemaGetOrAllocNotifShare_DISPATCH(struct TimedSemaSwObj
 }
 
 NV_STATUS tsemaConstruct_IMPL(struct TimedSemaSwObject *arg_pTimedSemSw, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_tsemaConstruct(arg_pTimedSemSw, arg_pCallContext, arg_pParams) tsemaConstruct_IMPL(arg_pTimedSemSw, arg_pCallContext, arg_pParams)
 void tsemaDestruct_IMPL(struct TimedSemaSwObject *pTimedSemSw);
+
 #define __nvoc_tsemaDestruct(pTimedSemSw) tsemaDestruct_IMPL(pTimedSemSw)
 #undef PRIVATE_FIELD
 

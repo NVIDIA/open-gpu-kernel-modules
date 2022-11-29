@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,9 +29,6 @@
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file: ctrl/ctrl208f/ctrl208fgpu.finn
 //
-
-
-
 
 #include "ctrl/ctrl2080/ctrl2080gr.h"        /* 208F is partially derivative of 2080 */
 #include "ctrl/ctrl208f/ctrl208fbase.h"
@@ -85,7 +82,7 @@ typedef struct NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS {
  *   NV_ERR_INVALID_ARGUMENT
  */
 
-#define NV208F_CTRL_CMD_GPU_SET_RAM_SVOP_VALUES (0x208f1102) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GPU_INTERFACE_ID << 8) | 0x2" */
+#define NV208F_CTRL_CMD_GPU_SET_RAM_SVOP_VALUES     (0x208f1102) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_DIAG_GPU_INTERFACE_ID << 8) | 0x2" */
 
 
 

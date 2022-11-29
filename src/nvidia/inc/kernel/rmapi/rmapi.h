@@ -191,6 +191,10 @@ struct _RM_API
     NV_STATUS (*MapToCpuWithSecInfo)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemory,
                                      NvU64 offset, NvU64 length, NvP64 *ppCpuVirtAddr, NvU32 flags, API_SECURITY_INFO *pSecInfo);
 
+    // Map memory v2. Pass in flags as a pointer for in/out access
+    NV_STATUS (*MapToCpuWithSecInfoV2)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemory,
+                                       NvU64 offset, NvU64 length, NvP64 *ppCpuVirtAddr, NvU32 *flags, API_SECURITY_INFO *pSecInfo);
+
     // Unmap memory with default security attributes and local pointers (no NvP64)
     NV_STATUS (*UnmapFromCpu)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemory, void *pLinearAddress,
                               NvU32 flags, NvU32 ProcessId);
@@ -258,16 +262,21 @@ NV_STATUS RmConfigSetEx   (NvHandle, NvHandle, NvU32, NvP64, NvU32, NvBool);
 
 /**
  * Control cache API.
- * Every function except rmapiControlCacheInit and rmapiControlCacheFree is thread safe.
  */
-void rmapiControlCacheInit(void);
-NvBool rmapiControlIsCacheable(NvU32 flags, NvBool isGSPClient);
-void* rmapiControlCacheGet(NvHandle hClient, NvHandle hObject, NvU32 cmd);
+NV_STATUS rmapiControlCacheInit(void);
+NvBool rmapiControlIsCacheable(NvU32 flags, NvU32 accessRight, NvBool bAllowInternal);
+NvBool rmapiCmdIsCacheable(NvU32 cmd, NvBool bAllowInternal);
+NV_STATUS rmapiControlCacheGet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                               void* params, NvU32 paramsSize);
 NV_STATUS rmapiControlCacheSet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
-    void* params, NvU32 paramsSize);
+                               const void* params, NvU32 paramsSize);
+NV_STATUS rmapiControlCacheSetGpuInstForObject(NvHandle hClient, NvHandle hObject, NvU32 gpuInst);
+void rmapiControlCacheFreeAllCacheForGpu(NvU32 gpuInst);
+void rmapiControlCacheSetMode(NvU32 mode);
+NvU32 rmapiControlCacheGetMode(void);
 void rmapiControlCacheFree(void);
-void rmapiControlCacheFreeClient(NvHandle hClient);
-void rmapiControlCacheFreeObject(NvHandle hClient, NvHandle hObject);
+void rmapiControlCacheFreeClientEntry(NvHandle hClient);
+void rmapiControlCacheFreeObjectEntry(NvHandle hClient, NvHandle hObject);
 
 typedef struct _RM_API_CONTEXT {
     NvU32 gpuMask;
@@ -358,7 +367,7 @@ rmapiInitLockInfo
 #define RM_LOCK_MODULES_TMR                 RM_LOCK_MODULE_VAL(0x000800, 0x04)
 
 #define RM_LOCK_MODULES_I2C                 RM_LOCK_MODULE_VAL(0x001000, 0x00)
-#define RM_LOCK_MODULES_GPS                 RM_LOCK_MODULE_VAL(0x001000, 0x01)
+#define RM_LOCK_MODULES_PFM_REQ_HNDLR       RM_LOCK_MODULE_VAL(0x001000, 0x01)
 #define RM_LOCK_MODULES_SEC2                RM_LOCK_MODULE_VAL(0x001000, 0x02)
 #define RM_LOCK_MODULES_THERM               RM_LOCK_MODULE_VAL(0x001000, 0x03)
 #define RM_LOCK_MODULES_INFOROM             RM_LOCK_MODULE_VAL(0x001000, 0x04)

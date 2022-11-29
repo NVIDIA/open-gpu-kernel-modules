@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1055,13 +1055,17 @@ static NV_STATUS preprocess_fault_batch(uvm_gpu_t *gpu, uvm_fault_service_batch_
 // - service_access_type: highest access type that can be serviced.
 static uvm_fault_access_type_t check_fault_access_permissions(uvm_gpu_t *gpu,
                                                               uvm_va_block_t *va_block,
+                                                              uvm_va_block_context_t *va_block_context,
                                                               uvm_fault_buffer_entry_t *fault_entry,
                                                               bool allow_migration)
 {
     NV_STATUS perm_status;
 
-    perm_status = uvm_va_range_check_logical_permissions(va_block->va_range,
+    perm_status = uvm_va_block_check_logical_permissions(va_block,
+                                                         va_block_context,
                                                          gpu->id,
+                                                         uvm_va_block_cpu_page_index(va_block,
+                                                                                     fault_entry->fault_address),
                                                          fault_entry->fault_access_type,
                                                          allow_migration);
     if (perm_status == NV_OK)
@@ -1083,8 +1087,11 @@ static uvm_fault_access_type_t check_fault_access_permissions(uvm_gpu_t *gpu,
         // service them before we can cancel the write/atomic faults. So we
         // retry with read fault access type.
         if (uvm_fault_access_type_mask_test(fault_entry->access_type_mask, UVM_FAULT_ACCESS_TYPE_READ)) {
-            perm_status = uvm_va_range_check_logical_permissions(va_block->va_range,
+            perm_status = uvm_va_block_check_logical_permissions(va_block,
+                                                                 va_block_context,
                                                                  gpu->id,
+                                                                 uvm_va_block_cpu_page_index(va_block,
+                                                                                             fault_entry->fault_address),
                                                                  UVM_FAULT_ACCESS_TYPE_READ,
                                                                  allow_migration);
             if (perm_status == NV_OK)
@@ -1156,14 +1163,16 @@ static NV_STATUS service_batch_managed_faults_in_block_locked(uvm_gpu_t *gpu,
     UVM_ASSERT(ordered_fault_cache[first_fault_index]->fault_address >= va_block->start);
     UVM_ASSERT(ordered_fault_cache[first_fault_index]->fault_address <= va_block->end);
 
-    end = va_block->end;
-    if (uvm_va_block_is_hmm(va_block))
+    if (uvm_va_block_is_hmm(va_block)) {
         uvm_hmm_find_policy_end(va_block,
                                 &block_context->block_context,
                                 ordered_fault_cache[first_fault_index]->fault_address,
                                 &end);
-    else
+    }
+    else {
         block_context->block_context.policy = uvm_va_range_get_policy(va_block->va_range);
+        end = va_block->end;
+    }
 
     // Scan the sorted array and notify the fault event for all fault entries
     // in the block
@@ -1226,7 +1235,11 @@ static NV_STATUS service_batch_managed_faults_in_block_locked(uvm_gpu_t *gpu,
 
         UVM_ASSERT(iter.start <= current_entry->fault_address && iter.end >= current_entry->fault_address);
 
-        service_access_type = check_fault_access_permissions(gpu, va_block, current_entry, iter.migratable);
+        service_access_type = check_fault_access_permissions(gpu,
+                                                             va_block,
+                                                             &block_context->block_context,
+                                                             current_entry,
+                                                             iter.migratable);
 
         // Do not exit early due to logical errors such as access permission
         // violation.
@@ -1269,6 +1282,7 @@ static NV_STATUS service_batch_managed_faults_in_block_locked(uvm_gpu_t *gpu,
 
         // Compute new residency and update the masks
         new_residency = uvm_va_block_select_residency(va_block,
+                                                      &block_context->block_context,
                                                       page_index,
                                                       gpu->id,
                                                       service_access_type_mask,
@@ -1348,7 +1362,6 @@ static NV_STATUS service_batch_managed_faults_in_block_locked(uvm_gpu_t *gpu,
 // See the comments for function service_fault_batch_block_locked for
 // implementation details and error codes.
 static NV_STATUS service_batch_managed_faults_in_block(uvm_gpu_t *gpu,
-                                                       struct mm_struct *mm,
                                                        uvm_va_block_t *va_block,
                                                        NvU32 first_fault_index,
                                                        uvm_fault_service_batch_context_t *batch_context,
@@ -1361,7 +1374,6 @@ static NV_STATUS service_batch_managed_faults_in_block(uvm_gpu_t *gpu,
 
     fault_block_context->operation = UVM_SERVICE_OPERATION_REPLAYABLE_FAULTS;
     fault_block_context->num_retries = 0;
-    fault_block_context->block_context.mm = mm;
 
     uvm_mutex_lock(&va_block->lock);
 
@@ -1531,6 +1543,7 @@ static NV_STATUS service_fault_batch(uvm_gpu_t *gpu,
             // to remain valid until we release. If no mm is registered, we
             // can only service managed faults, not ATS/HMM faults.
             mm = uvm_va_space_mm_retain_lock(va_space);
+            va_block_context->mm = mm;
 
             uvm_va_space_down_read(va_space);
 
@@ -1576,13 +1589,11 @@ static NV_STATUS service_fault_batch(uvm_gpu_t *gpu,
         // TODO: Bug 2103669: Service more than one ATS fault at a time so we
         //       don't do an unconditional VA range lookup for every ATS fault.
         status = uvm_va_block_find_create(va_space,
-                                          mm,
                                           current_entry->fault_address,
                                           va_block_context,
                                           &va_block);
         if (status == NV_OK) {
             status = service_batch_managed_faults_in_block(gpu_va_space->gpu,
-                                                           mm,
                                                            va_block,
                                                            i,
                                                            batch_context,

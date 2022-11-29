@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -100,6 +100,14 @@ NV_STATUS stdmemValidateParams
     //
     if (FLD_TEST_DRF(OS32, _ATTR2, _PAGE_OFFLINING, _OFF, pAllocData->attr2))
     {
+        if (hypervisorIsVgxHyper())
+        {
+            if (!(rmclientIsAdminByHandle(hClient, privLevel) || hypervisorCheckForObjectAccess(hClient)))
+            {
+                return NV_ERR_INSUFFICIENT_PERMISSIONS;
+            }
+        }
+        else
         {
             // if the client requesting is not kernel mode, return early
 #if defined(DEBUG) || defined(DEVELOP) || defined(NV_VERIF_FEATURES)
@@ -145,6 +153,7 @@ NV_STATUS stdmemValidateParams
     {
         NV_CHECK_OR_RETURN(LEVEL_ERROR, FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _VIDMEM, pAllocData->attr),
                            NV_ERR_INVALID_ARGUMENT);
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
     return NV_OK;

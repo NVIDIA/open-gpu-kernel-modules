@@ -45,14 +45,12 @@
 extern "C" {
 #endif
 
-#if !defined(XAPIGEN)        /* avoid duplicate generated xapi fns */
 #include "nvgputypes.h"
 #ifndef _H2INC
 #include "rmcd.h"
 #endif
 
 #include "nverror.h"
-#endif  /* !XAPIGEN */
 
 #define NV_ROBUST_CHANNEL_ALLOCFAIL_CLIENT      0x00000001
 #define NV_ROBUST_CHANNEL_ALLOCFAIL_DEVICE      0x00000002

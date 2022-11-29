@@ -82,9 +82,11 @@ struct StandardMemory {
     NvU32 (*__stdmemGetRefCount__)(struct StandardMemory *);
     NV_STATUS (*__stdmemMapTo__)(struct StandardMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__stdmemControl_Prologue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__stdmemIsReady__)(struct StandardMemory *);
+    NvBool (*__stdmemIsGpuMapAllowed__)(struct StandardMemory *, struct OBJGPU *);
+    NV_STATUS (*__stdmemIsReady__)(struct StandardMemory *, NvBool);
     NV_STATUS (*__stdmemCheckCopyPermissions__)(struct StandardMemory *, struct OBJGPU *, NvHandle);
     void (*__stdmemPreDestruct__)(struct StandardMemory *);
+    NV_STATUS (*__stdmemIsDuplicate__)(struct StandardMemory *, NvHandle, NvBool *);
     NV_STATUS (*__stdmemUnmapFrom__)(struct StandardMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__stdmemControl_Epilogue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__stdmemControlLookup__)(struct StandardMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -133,15 +135,18 @@ NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory**, Dynamic*, NvU32, CAL
 #define stdmemGetRefCount(pResource) stdmemGetRefCount_DISPATCH(pResource)
 #define stdmemMapTo(pResource, pParams) stdmemMapTo_DISPATCH(pResource, pParams)
 #define stdmemControl_Prologue(pResource, pCallContext, pParams) stdmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define stdmemIsReady(pMemory) stdmemIsReady_DISPATCH(pMemory)
+#define stdmemIsGpuMapAllowed(pMemory, pGpu) stdmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define stdmemIsReady(pMemory, bCopyConstructorContext) stdmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define stdmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) stdmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define stdmemPreDestruct(pResource) stdmemPreDestruct_DISPATCH(pResource)
+#define stdmemIsDuplicate(pMemory, hMemory, pDuplicate) stdmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define stdmemUnmapFrom(pResource, pParams) stdmemUnmapFrom_DISPATCH(pResource, pParams)
 #define stdmemControl_Epilogue(pResource, pCallContext, pParams) stdmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define stdmemControlLookup(pResource, pParams, ppEntry) stdmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define stdmemMap(pMemory, pCallContext, pParams, pCpuMapping) stdmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
 #define stdmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) stdmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvU32 stdmemGetSysmemPageSize_IMPL(struct OBJGPU *pGpu, struct StandardMemory *pMemory);
+
 
 #ifdef __nvoc_standard_mem_h_disabled
 static inline NvU32 stdmemGetSysmemPageSize(struct OBJGPU *pGpu, struct StandardMemory *pMemory) {
@@ -208,8 +213,12 @@ static inline NV_STATUS stdmemControl_Prologue_DISPATCH(struct StandardMemory *p
     return pResource->__stdmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS stdmemIsReady_DISPATCH(struct StandardMemory *pMemory) {
-    return pMemory->__stdmemIsReady__(pMemory);
+static inline NvBool stdmemIsGpuMapAllowed_DISPATCH(struct StandardMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__stdmemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS stdmemIsReady_DISPATCH(struct StandardMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__stdmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS stdmemCheckCopyPermissions_DISPATCH(struct StandardMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -218,6 +227,10 @@ static inline NV_STATUS stdmemCheckCopyPermissions_DISPATCH(struct StandardMemor
 
 static inline void stdmemPreDestruct_DISPATCH(struct StandardMemory *pResource) {
     pResource->__stdmemPreDestruct__(pResource);
+}
+
+static inline NV_STATUS stdmemIsDuplicate_DISPATCH(struct StandardMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__stdmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS stdmemUnmapFrom_DISPATCH(struct StandardMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -241,14 +254,19 @@ static inline NvBool stdmemAccessCallback_DISPATCH(struct StandardMemory *pResou
 }
 
 NV_STATUS stdmemConstruct_IMPL(struct StandardMemory *arg_pStandardMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_stdmemConstruct(arg_pStandardMemory, arg_pCallContext, arg_pParams) stdmemConstruct_IMPL(arg_pStandardMemory, arg_pCallContext, arg_pParams)
 NV_STATUS stdmemValidateParams_IMPL(struct OBJGPU *pGpu, NvHandle hClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+
 #define stdmemValidateParams(pGpu, hClient, pAllocData) stdmemValidateParams_IMPL(pGpu, hClient, pAllocData)
 void stdmemDumpInputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData, CALL_CONTEXT *pCallContext);
+
 #define stdmemDumpInputAllocParams(pAllocData, pCallContext) stdmemDumpInputAllocParams_IMPL(pAllocData, pCallContext)
 void stdmemDumpOutputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+
 #define stdmemDumpOutputAllocParams(pAllocData) stdmemDumpOutputAllocParams_IMPL(pAllocData)
 NvU32 stdmemQueryPageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+
 #define stdmemQueryPageSize(pMemoryManager, hClient, pAllocData) stdmemQueryPageSize_IMPL(pMemoryManager, hClient, pAllocData)
 #undef PRIVATE_FIELD
 

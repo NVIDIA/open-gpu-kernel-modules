@@ -68,8 +68,6 @@ namespace DisplayPort
             Watermark         watermarks;           // Cached watermark calculations
         } timeslot;
 
-        bool            bIsCurrentModesetGroup;     // Group that is getting attached 
-
         GroupImpl(ConnectorImpl * parent, bool isFirmwareGroup = false)
             : parent(parent),
               streamValidationDone(true),
@@ -82,7 +80,6 @@ namespace DisplayPort
               dscModeActive(DSC_MODE_NONE),
               singleHeadMultiStreamID(DP_SINGLE_HEAD_MULTI_STREAM_PIPELINE_ID_PRIMARY),
               singleHeadMultiStreamMode(DP_SINGLE_HEAD_MULTI_STREAM_MODE_NONE),
-              bIsCurrentModesetGroup(false),
               headAttached(false)
         {
             timeslot.count = 0;

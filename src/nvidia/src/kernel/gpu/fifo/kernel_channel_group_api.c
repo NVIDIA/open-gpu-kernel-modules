@@ -69,6 +69,7 @@ kchangrpapiConstruct_IMPL
     RM_API           *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     KernelChannelGroup *pKernelChannelGroup = NULL;
     NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS *pAllocParams = NULL;
+    RM_ENGINE_TYPE    rmEngineType;
 
     NV_PRINTF(LEVEL_INFO,
               "hClient: 0x%x, hParent: 0x%x, hObject:0x%x, hClass: 0x%x\n",
@@ -129,6 +130,7 @@ kchangrpapiConstruct_IMPL
         goto failed;
     }
 
+    pKernelChannelGroupApi->hVASpace = hVASpace;
 
     rmStatus = serverGetClientUnderLock(&g_resServ, pParams->hClient, &pClient);
     if (rmStatus != NV_OK)
@@ -149,9 +151,11 @@ kchangrpapiConstruct_IMPL
     pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     bMIGInUse = IS_MIG_IN_USE(pGpu);
 
+    rmEngineType = gpuGetRmEngineType(pAllocParams->engineType);
+
     if (kfifoIsPerRunlistChramSupportedInHw(pKernelFifo))
     {
-        if (!NV2080_ENGINE_TYPE_IS_VALID(pAllocParams->engineType))
+        if (!RM_ENGINE_TYPE_IS_VALID(rmEngineType))
         {
             NV_PRINTF(LEVEL_NOTICE, "Valid engine Id must be specified while allocating TSGs or bare channels!\n");
             rmStatus = NV_ERR_INVALID_ARGUMENT;
@@ -166,7 +170,7 @@ kchangrpapiConstruct_IMPL
         // corresponding to that engine to be chosen in
         // kchangrpGetDefaultRunlist_HAL.
         //
-        pKernelChannelGroup->engineType = pAllocParams->engineType;
+        pKernelChannelGroup->engineType = rmEngineType;
     }
 
     //
@@ -176,10 +180,8 @@ kchangrpapiConstruct_IMPL
     //
     if (bMIGInUse)
     {
-        NvU32 engineId;
-
         // Engine type must be valid for MIG
-        NV_CHECK_OR_ELSE(LEVEL_NOTICE, NV2080_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType),
+        NV_CHECK_OR_ELSE(LEVEL_NOTICE, RM_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType),
                          rmStatus = NV_ERR_INVALID_STATE; goto failed);
 
         NV_CHECK_OK_OR_GOTO(
@@ -192,12 +194,12 @@ kchangrpapiConstruct_IMPL
             rmStatus,
             LEVEL_ERROR,
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                              pAllocParams->engineType,
-                                              &engineId),
+                                              rmEngineType,
+                                              &rmEngineType),
             failed);
 
         // Rewrite the engineType with the global engine type
-        pKernelChannelGroup->engineType = engineId;
+        pKernelChannelGroup->engineType = rmEngineType;
         pHeap = ref.pKernelMIGGpuInstance->pMemoryPartitionHeap;
     }
 
@@ -275,9 +277,9 @@ kchangrpapiConstruct_IMPL
         kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, pKernelChannelGroup->engineType, ref))
     {
         // GR Buffers
-        if (NV2080_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
+        if (RM_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
         {
-            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, NV2080_ENGINE_TYPE_GR_IDX(pKernelChannelGroup->engineType));
+            KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, RM_ENGINE_TYPE_GR_IDX(pKernelChannelGroup->engineType));
             NvU32 bufId;
             portMemSet(&bufInfoList[0], 0, sizeof(CTX_BUF_INFO) * NV_ENUM_SIZE(GR_CTX_BUFFER));
             bufCount = 0;
@@ -325,19 +327,21 @@ kchangrpapiConstruct_IMPL
                 bufInfoList[0].align = RM_PAGE_SIZE;
                 bufInfoList[0].attr  = RM_ATTR_PAGE_SIZE_4KB;
                 bufInfoList[0].bContig = NV_TRUE;
-                NV_PRINTF(LEVEL_INFO, "Reserving 0x%llx bytes for engineType %u flcn ctx buffer\n",
-                              bufInfoList[0].size, pKernelChannelGroup->engineType);
+                NV_PRINTF(LEVEL_INFO, "Reserving 0x%llx bytes for engineType %d (%d) flcn ctx buffer\n",
+                              bufInfoList[0].size, gpuGetNv2080EngineType(pKernelChannelGroup->engineType),
+                              pKernelChannelGroup->engineType);
                 bufCount++;
             }
             else
             {
-                NV_PRINTF(LEVEL_INFO, "No buffer reserved for engineType %u in ctx_buf_pool\n",
+                NV_PRINTF(LEVEL_INFO, "No buffer reserved for engineType %d (%d) in ctx_buf_pool\n",
+                                  gpuGetNv2080EngineType(pKernelChannelGroup->engineType),
                                   pKernelChannelGroup->engineType);
             }
         }
     }
 
-    if ((!bMIGInUse || NV2080_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
+    if ((!bMIGInUse || RM_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
         && !IsT234D(pGpu))
     {
         NV_ASSERT_OK_OR_GOTO(rmStatus,
@@ -548,7 +552,8 @@ kchangrpapiDestruct_IMPL
         goto done;
     }
 
-    kchangrpSetRealtime_HAL(pGpu, pKernelChannelGroup, NV_FALSE);
+    if (pKernelChannelGroup != NULL)
+        kchangrpSetRealtime_HAL(pGpu, pKernelChannelGroup, NV_FALSE);
 
     // If channels still exist in this group, free them
     // RS-TODO this can be removed after re-parenting support is added
@@ -579,9 +584,9 @@ kchangrpapiDestruct_IMPL
             ctxBufPoolRelease(pKernelChannelGroup->pChannelBufPool);
             ctxBufPoolDestroy(&pKernelChannelGroup->pChannelBufPool);
         }
-    }
 
-    listClear(&pKernelChannelGroup->apiObjList);
+        listClear(&pKernelChannelGroup->apiObjList);
+    }
 
 done:
     serverFreeShare(&g_resServ, pShared);
@@ -1134,14 +1139,14 @@ kchangrpapiCtrlCmdBind_IMPL
     OBJGPU       *pGpu     = GPU_RES_GET_GPU(pKernelChannelGroupApi);
     NvHandle      hClient  = RES_GET_CLIENT_HANDLE(pKernelChannelGroupApi);
     CHANNEL_NODE *pChanNode;
-    NvU32         localEngineType;
-    NvU32         globalEngineType;
+    RM_ENGINE_TYPE localEngineType;
+    RM_ENGINE_TYPE globalEngineType;
     ENGDESCRIPTOR engineDesc;
     NvBool        bMIGInUse = IS_MIG_IN_USE(pGpu);
 
     NV_ASSERT_OR_RETURN(pParams != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    localEngineType = globalEngineType = pParams->engineType;
+    localEngineType = globalEngineType = gpuGetRmEngineType(pParams->engineType);
 
     if (bMIGInUse)
     {
@@ -1158,9 +1163,9 @@ kchangrpapiCtrlCmdBind_IMPL
     }
 
     NV_PRINTF(LEVEL_INFO,
-              "Binding TSG %d to Engine %d\n",
+              "Binding TSG %d to Engine %d (%d)\n",
               pKernelChannelGroupApi->pKernelChannelGroup->grpID,
-              globalEngineType);
+              gpuGetNv2080EngineType(globalEngineType), globalEngineType);
 
     // Translate globalEnginetype -> enginedesc
     NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,

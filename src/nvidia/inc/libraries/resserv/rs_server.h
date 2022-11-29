@@ -155,6 +155,10 @@ struct RsServer
     /// If true, control call param copies will be performed outside the top/api lock
     NvBool                    bUnlockedParamCopy;
 
+    // If true, calls annotated with ROUTE_TO_PHYISCAL will not grab global gpu locks
+    // (and the readonly API lock).
+    NvBool                    bRouteToPhysicalLockBypass;
+
     /**
      * Setting this flag to false disables any attempts to
      * automatically acquire access rights or to control access to resources by
@@ -173,6 +177,7 @@ struct RsServer
     RsShareList               globalInternalSharePolicyList;
 
     NvU32                     internalHandleBase;
+    NvU32                     clientHandleBase;
 
     NvU32                     activeClientCount;
     NvU64                     activeResourceCount;
@@ -339,6 +344,14 @@ RS_SHARE_ITERATOR serverShareIter(RsServer *pServer, NvU32 internalClassId);
  * Get an iterator to the elements in the server's shared object map
  */
 NvBool serverShareIterNext(RS_SHARE_ITERATOR*);
+
+/**
+ * Set fixed client handle base in case clients wants to use a different
+ * base for client allocations
+ * @param[in] pServer
+ * @param[in] clientHandleBase
+ */
+ NV_STATUS serverSetClientHandleBase(RsServer *pServer, NvU32 clientHandleBase);
 
 
 /**

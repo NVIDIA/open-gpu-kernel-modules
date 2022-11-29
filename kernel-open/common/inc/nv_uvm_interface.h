@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -201,7 +201,8 @@ void nvUvmInterfaceAddressSpaceDestroy(uvmGpuAddressSpaceHandle vaSpace);
     and will return a unique GPU virtual address.
 
     The default page size will be the small page size (as returned by query
-    caps). The Alignment will also be enforced to small page size(64K/128K).
+    caps). The physical alignment will also be enforced to small page
+    size(64K/128K).
 
     Arguments:
         vaSpace[IN]          - Pointer to vaSpace object
@@ -211,15 +212,15 @@ void nvUvmInterfaceAddressSpaceDestroy(uvmGpuAddressSpaceHandle vaSpace);
                                contains below given fields
 
         allocInfo Members:
-        rangeBegin[IN]             - Allocation will be made between rangeBegin
-        rangeEnd[IN]                 and rangeEnd(both inclusive). Default will be
-                                     no-range limitation.
         gpuPhysOffset[OUT]         - Physical offset of allocation returned only
                                      if contiguous allocation is requested.
+        pageSize[IN]               - Override the default page size (see above).
+        alignment[IN]              - gpuPointer GPU VA alignment. 0 means 4KB
+                                     alignment.
         bContiguousPhysAlloc[IN]   - Flag to request contiguous allocation. Default
                                      will follow the vidHeapControl default policy.
-        bHandleProvided [IN]       - Flag to signify that the client has provided
-                                     the handle for phys allocation.
+        bMemGrowsDown[IN]
+        bPersistentVidmem[IN]      - Allocate persistent vidmem.
         hPhysHandle[IN/OUT]        - The handle will be used in allocation if provided.
                                      If not provided; allocator will return the handle
                                      it used eventually.
@@ -247,7 +248,6 @@ NV_STATUS nvUvmInterfaceMemoryAllocFB(uvmGpuAddressSpaceHandle vaSpace,
     and will return a unique GPU virtual address.
 
     The default page size will be the small page size (as returned by query caps)
-    The Alignment will also be enforced to small page size.
 
     Arguments:
         vaSpace[IN]          - Pointer to vaSpace object
@@ -257,15 +257,15 @@ NV_STATUS nvUvmInterfaceMemoryAllocFB(uvmGpuAddressSpaceHandle vaSpace,
                                contains below given fields
 
         allocInfo Members:
-        rangeBegin[IN]             - Allocation will be made between rangeBegin
-        rangeEnd[IN]                 and rangeEnd(both inclusive). Default will be
-                                     no-range limitation.
         gpuPhysOffset[OUT]         - Physical offset of allocation returned only
                                      if contiguous allocation is requested.
+        pageSize[IN]               - Override the default page size (see above).
+        alignment[IN]              - gpuPointer GPU VA alignment. 0 means 4KB
+                                     alignment.
         bContiguousPhysAlloc[IN]   - Flag to request contiguous allocation. Default
                                      will follow the vidHeapControl default policy.
-        bHandleProvided [IN]       - Flag to signify that the client has provided
-                                     the handle for phys allocation.
+        bMemGrowsDown[IN]
+        bPersistentVidmem[IN]      - Allocate persistent vidmem.
         hPhysHandle[IN/OUT]        - The handle will be used in allocation if provided.
                                      If not provided; allocator will return the handle
                                      it used eventually.
@@ -331,10 +331,14 @@ typedef NV_STATUS (*uvmPmaEvictPagesCallback)(void *callbackData,
                                               NvU64 *pPages,
                                               NvU32 count,
                                               NvU64 physBegin,
-                                              NvU64 physEnd);
+                                              NvU64 physEnd,
+                                              UVM_PMA_GPU_MEMORY_TYPE mem_type);
 
 // Mirrors pmaEvictRangeCb_t, see its documentation in pma.h.
-typedef NV_STATUS (*uvmPmaEvictRangeCallback)(void *callbackData, NvU64 physBegin, NvU64 physEnd);
+typedef NV_STATUS (*uvmPmaEvictRangeCallback)(void *callbackData,
+                                              NvU64 physBegin,
+                                              NvU64 physEnd,
+                                              UVM_PMA_GPU_MEMORY_TYPE mem_type);
 
 /*******************************************************************************
     nvUvmInterfacePmaRegisterEvictionCallbacks
@@ -671,14 +675,16 @@ NV_STATUS nvUvmInterfaceUnsetPageDirectory(uvmGpuAddressSpaceHandle vaSpace);
     For duplication of physical memory use nvUvmInterfaceDupMemory.
 
     Arguments:
-        srcVaSpace[IN]  - Source VA space.
-        srcAddress[IN]  - GPU VA in the source VA space. The provided address
-                          should match one previously returned by
-                          nvUvmInterfaceMemoryAllocFB or
-                          nvUvmInterfaceMemoryAllocSys.
-        dstVaSpace[IN]  - Destination VA space where the new mapping will be
-                          created.
-        dstAddress[OUT] - Pointer to the GPU VA in the destination VA space.
+        srcVaSpace[IN]     - Source VA space.
+        srcAddress[IN]     - GPU VA in the source VA space. The provided address
+                             should match one previously returned by
+                             nvUvmInterfaceMemoryAllocFB or
+                             nvUvmInterfaceMemoryAllocSys.
+        dstVaSpace[IN]     - Destination VA space where the new mapping will be
+                             created.
+        dstVaAlignment[IN] - Alignment of the GPU VA in the destination VA
+                             space. 0 means 4KB alignment.
+        dstAddress[OUT]    - Pointer to the GPU VA in the destination VA space.
 
     Error codes:
       NV_ERR_INVALID_ARGUMENT - If any of the inputs is invalid, or the source
@@ -692,6 +698,7 @@ NV_STATUS nvUvmInterfaceUnsetPageDirectory(uvmGpuAddressSpaceHandle vaSpace);
 NV_STATUS nvUvmInterfaceDupAllocation(uvmGpuAddressSpaceHandle srcVaSpace,
                                       NvU64 srcAddress,
                                       uvmGpuAddressSpaceHandle dstVaSpace,
+                                      NvU64 dstVaAlignment,
                                       NvU64 *dstAddress);
 
 /*******************************************************************************
@@ -1068,10 +1075,6 @@ void nvUvmInterfaceP2pObjectDestroy(uvmGpuSessionHandle session,
         NV_ERR_NOT_READY                - Returned when querying the PTEs requires a deferred setup
                                           which has not yet completed. It is expected that the caller
                                           will reattempt the call until a different code is returned.
-
-
-
-
 */
 NV_STATUS nvUvmInterfaceGetExternalAllocPtes(uvmGpuAddressSpaceHandle vaSpace,
                                              NvHandle hMemory,
@@ -1260,7 +1263,7 @@ void nvUvmInterfacePagingChannelDestroy(UvmGpuPagingChannelHandle channel);
         device[IN]      - device under which paging channels were allocated
         dstAddress[OUT] - a virtual address that is valid (i.e. is mapped) in
                           all the paging channels allocated under the given vaSpace.
-        
+
    Error codes:
         NV_ERR_INVALID_ARGUMENT         - Invalid parameter/s is passed.
         NV_ERR_NOT_SUPPORTED            - SR-IOV heavy mode is disabled.
@@ -1361,8 +1364,6 @@ void nvUvmInterfacePagingChannelsUnmap(uvmGpuAddressSpaceHandle srcVaSpace,
           a. pre-allocated stack
           b. the fact that internal RPC infrastructure doesn't acquire GPU lock.
         Therefore, locking is the caller's responsibility.
-      - This function DOES NOT sleep (does not allocate memory or acquire locks)
-        so it can be invoked while holding a spinlock.
 
     Arguments:
         channel[IN]          - paging channel handle obtained via
@@ -1373,7 +1374,7 @@ void nvUvmInterfacePagingChannelsUnmap(uvmGpuAddressSpaceHandle srcVaSpace,
         methodStreamSize[IN] - Size of methodStream, in bytes. The maximum push
                                size is 128KB.
 
-        
+
    Error codes:
         NV_ERR_INVALID_ARGUMENT         - Invalid parameter/s is passed.
         NV_ERR_NOT_SUPPORTED            - SR-IOV heavy mode is disabled.
@@ -1382,136 +1383,4 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
                                                 char *methodStream,
                                                 NvU32 methodStreamSize);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                   
 #endif // _NV_UVM_INTERFACE_H_

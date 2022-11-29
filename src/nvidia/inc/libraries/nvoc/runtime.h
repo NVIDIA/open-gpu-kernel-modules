@@ -102,6 +102,7 @@ Dynamic *objFindAncestor_IMPL(Dynamic *pDynamic, NVOC_CLASS_ID classId);
  * This is a linear-time operation.
  */
 const struct NVOC_EXPORTED_METHOD_DEF* objGetExportedMethodDef_IMPL(Dynamic* pObj, NvU32 methodId);
+const struct NVOC_EXPORTED_METHOD_DEF* nvocGetExportedMethodDefFromMethodInfo_IMPL(const struct NVOC_EXPORT_INFO *pExportInfo, NvU32 methodId);
 
 /*!
  * @brief Dynamic cast by class id

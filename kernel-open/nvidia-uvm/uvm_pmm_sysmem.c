@@ -428,10 +428,10 @@ uvm_chunk_sizes_mask_t uvm_cpu_chunk_get_allocation_sizes(void)
         return uvm_cpu_chunk_allocation_sizes & UVM_CPU_CHUNK_SIZES;
 }
 
-static void uvm_cpu_chunk_set_phys_size(uvm_cpu_chunk_t *chunk, uvm_chunk_size_t size)
+static void uvm_cpu_chunk_set_size(uvm_cpu_chunk_t *chunk, uvm_chunk_size_t size)
 {
 #if !UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
-    chunk->log2_phys_size = ilog2(size);
+    chunk->log2_size = ilog2(size);
 #endif
 }
 
@@ -440,13 +440,7 @@ uvm_chunk_size_t uvm_cpu_chunk_get_size(uvm_cpu_chunk_t *chunk)
 #if UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
     return PAGE_SIZE;
 #else
-    uvm_chunk_size_t chunk_size;
-
-    UVM_ASSERT(chunk);
-    UVM_ASSERT(uvm_cpu_chunk_get_phys_size(chunk));
-    chunk_size = uvm_va_block_region_size(chunk->region);
-    UVM_ASSERT(uvm_cpu_chunk_get_phys_size(chunk) >= chunk_size);
-    return chunk_size;
+    return ((uvm_chunk_size_t)1) << chunk->log2_size;
 #endif
 }
 
@@ -1036,8 +1030,7 @@ void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *
             return;
     };
 
-    uvm_page_mask_region_clear(&va_block->cpu.allocated,
-                               uvm_va_block_region(page_index, page_index + uvm_cpu_chunk_num_pages(chunk)));
+    uvm_page_mask_region_clear(&va_block->cpu.allocated, chunk->region);
 
     if (uvm_page_mask_empty(&va_block->cpu.allocated)) {
         if (UVM_CPU_STORAGE_GET_TYPE(va_block) != UVM_CPU_CHUNK_STORAGE_CHUNK)
@@ -1191,7 +1184,7 @@ NV_STATUS uvm_cpu_chunk_alloc(uvm_va_block_t *va_block,
     }
 
     chunk->page = page;
-    uvm_cpu_chunk_set_phys_size(chunk, alloc_size);
+    uvm_cpu_chunk_set_size(chunk, alloc_size);
     chunk->region = region;
     nv_kref_init(&chunk->refcount);
     uvm_spin_lock_init(&chunk->lock, UVM_LOCK_ORDER_LEAF);
@@ -1224,13 +1217,15 @@ error:
     return status;
 }
 
-NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_chunk_size_t new_size)
+NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block,
+                              uvm_cpu_chunk_t *chunk,
+                              uvm_chunk_size_t new_size,
+                              uvm_page_index_t page_index,
+                              uvm_cpu_chunk_t **new_chunks)
 {
     NV_STATUS status = NV_OK;
-    NV_STATUS insert_status;
     uvm_cpu_chunk_t *new_chunk;
-    uvm_page_index_t running_page_index = chunk->region.first;
-    uvm_page_index_t next_page_index;
+    uvm_page_index_t running_page_index = page_index;
     size_t num_new_chunks;
     size_t num_subchunk_pages;
     size_t i;
@@ -1238,21 +1233,13 @@ NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, 
     UVM_ASSERT(chunk);
     UVM_ASSERT(is_power_of_2(new_size));
     UVM_ASSERT(new_size < uvm_cpu_chunk_get_size(chunk));
+    UVM_ASSERT(new_chunks);
 
-    // We subtract 1 from the computed number of subchunks because we always
-    // keep the original chunk as the first in the block's list. This is so we
-    // don't lose the physical chunk.
-    // All new subchunks will point to the original chunk as their parent.
-    num_new_chunks = (uvm_cpu_chunk_get_size(chunk) / new_size) - 1;
+    num_new_chunks = uvm_cpu_chunk_get_size(chunk) / new_size;
     num_subchunk_pages = new_size / PAGE_SIZE;
-    running_page_index += num_subchunk_pages;
-
-    // Remove the existing chunk from the block first. We re-insert it after
-    // the split.
-    uvm_cpu_chunk_remove_from_block(va_block, chunk, chunk->region.first);
 
     for (i = 0; i < num_new_chunks; i++) {
-        uvm_page_index_t relative_page_index = running_page_index - chunk->region.first;
+        uvm_page_index_t relative_page_index = running_page_index - page_index;
         uvm_gpu_id_t id;
 
         new_chunk = uvm_kvmalloc_zero(sizeof(*new_chunk));
@@ -1264,10 +1251,10 @@ NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, 
         new_chunk->page = chunk->page + relative_page_index;
         new_chunk->offset = chunk->offset + relative_page_index;
         new_chunk->region = uvm_va_block_region(running_page_index, running_page_index + num_subchunk_pages);
-        uvm_cpu_chunk_set_phys_size(new_chunk, new_size);
+        uvm_cpu_chunk_set_size(new_chunk, new_size);
         nv_kref_init(&new_chunk->refcount);
 
-        // This lock is unused for logical blocks but initialize it for
+        // This lock is unused for logical chunks but initialize it for
         // consistency.
         uvm_spin_lock_init(&new_chunk->lock, UVM_LOCK_ORDER_LEAF);
         new_chunk->parent = chunk;
@@ -1286,109 +1273,64 @@ NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, 
                                                parent_dma_addr + (relative_page_index * PAGE_SIZE));
         }
 
-        status = uvm_cpu_chunk_insert_in_block(va_block, new_chunk, new_chunk->region.first);
-        if (status != NV_OK) {
-            uvm_cpu_chunk_put(new_chunk);
-            goto error;
-        }
-
+        new_chunks[i] = new_chunk;
         running_page_index += num_subchunk_pages;
     }
 
-    chunk->region = uvm_va_block_region(chunk->region.first, chunk->region.first + num_subchunk_pages);
+    // Drop the original reference count on the parent (from its creation). This
+    // is done so the parent's reference count goes to 0 when all the children
+    // are released.
+    uvm_cpu_chunk_put(chunk);
 
 error:
-    // Re-insert the split chunk. This is done unconditionally in both the
-    // success and error paths. The difference is that on the success path,
-    // the chunk's region has been updated.
-    // This operation should never fail with NV_ERR_NO_MEMORY since all
-    // state memory should already be allocated. Failing with other errors
-    // is a programmer error.
-    insert_status = uvm_cpu_chunk_insert_in_block(va_block, chunk, chunk->region.first);
-    UVM_ASSERT(insert_status != NV_ERR_INVALID_ARGUMENT && insert_status != NV_ERR_INVALID_STATE);
-
     if (status != NV_OK) {
-        for_each_cpu_chunk_in_block_region_safe(new_chunk,
-                                                running_page_index,
-                                                next_page_index,
-                                                va_block,
-                                                chunk->region) {
-            uvm_cpu_chunk_remove_from_block(va_block, new_chunk, new_chunk->region.first);
+        while (i--)
             uvm_cpu_chunk_put(new_chunk);
-        }
     }
 
     return status;
 }
 
-uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk)
+NV_STATUS uvm_cpu_chunk_merge(uvm_va_block_t *va_block,
+                              uvm_cpu_chunk_t **chunks,
+                              size_t num_merge_chunks,
+                              uvm_chunk_size_t merge_size,
+                              uvm_cpu_chunk_t **merged_chunk)
 {
     uvm_cpu_chunk_t *parent;
-    uvm_cpu_chunk_t *subchunk;
-    uvm_chunk_sizes_mask_t merge_sizes = uvm_cpu_chunk_get_allocation_sizes();
-    uvm_chunk_size_t merge_chunk_size;
-    uvm_chunk_size_t parent_phys_size;
     uvm_chunk_size_t chunk_size;
-    uvm_va_block_region_t subchunk_region;
-    uvm_page_index_t page_index;
-    uvm_page_index_t next_page_index;
-    NV_STATUS insert_status;
+    size_t i;
 
-    UVM_ASSERT(chunk);
-    parent = chunk->parent;
+    UVM_ASSERT(chunks);
+    UVM_ASSERT(num_merge_chunks > 0);
+    UVM_ASSERT(merged_chunk);
 
-    // If the chunk does not have a parent, a merge cannot be done.
+    parent = chunks[0]->parent;
     if (!parent)
-        return NULL;
+        return NV_WARN_NOTHING_TO_DO;
 
-    chunk_size = uvm_cpu_chunk_get_size(chunk);
-    parent_phys_size = uvm_cpu_chunk_get_phys_size(parent);
+    chunk_size = uvm_cpu_chunk_get_size(chunks[0]);
 
-    // Remove all sizes above the parent's physical size.
-    merge_sizes &= parent_phys_size | (parent_phys_size - 1);
+    UVM_ASSERT(uvm_cpu_chunk_get_size(parent) == merge_size);
+    UVM_ASSERT(merge_size > chunk_size);
 
-    // Remove all sizes including and below the chunk's current size.
-    merge_sizes &= ~(chunk_size | (chunk_size - 1));
+    for (i = 1; i < num_merge_chunks; i++) {
+        if (chunks[i]->parent != parent || uvm_cpu_chunk_get_size(chunks[i]) != chunk_size)
+            return NV_ERR_INVALID_ARGUMENT;
 
-    // Find the largest size that is fully contained within the VA block.
-    for_each_chunk_size_rev(merge_chunk_size, merge_sizes) {
-        NvU64 parent_start = uvm_cpu_chunk_get_virt_addr(va_block, parent);
-        NvU64 parent_end = parent_start + parent_phys_size - 1;
-
-        if (uvm_va_block_contains_address(va_block, parent_start) &&
-            uvm_va_block_contains_address(va_block, parent_start + merge_chunk_size - 1) &&
-            IS_ALIGNED(parent_start, merge_chunk_size) &&
-            IS_ALIGNED(parent_end + 1, merge_chunk_size))
-            break;
+        UVM_ASSERT(nv_kref_read(&chunks[i]->refcount) == 1);
     }
 
-    if (merge_chunk_size == UVM_CHUNK_SIZE_INVALID)
-        return NULL;
+    // Take a reference on the parent chunk so it doesn't get released when all
+    // of the children are released below.
+    uvm_cpu_chunk_get(parent);
 
-    if (uvm_cpu_chunk_get_size(parent) == merge_chunk_size)
-        return NULL;
+    for (i = 0; i < num_merge_chunks; i++)
+        uvm_cpu_chunk_put(chunks[i]);
 
-    UVM_ASSERT(chunk_size == uvm_cpu_chunk_get_size(parent));
-    UVM_ASSERT(IS_ALIGNED(merge_chunk_size, chunk_size));
+    *merged_chunk = parent;
 
-    subchunk_region = uvm_va_block_region(parent->region.first + uvm_cpu_chunk_num_pages(parent),
-                                          parent->region.first + (merge_chunk_size / PAGE_SIZE));
-
-    // Remove the first (parent) subchunk. It will be re-inserted later with an
-    // updated region.
-    uvm_cpu_chunk_remove_from_block(va_block, parent, parent->region.first);
-
-    for_each_cpu_chunk_in_block_region_safe(subchunk, page_index, next_page_index, va_block, subchunk_region) {
-        UVM_ASSERT(subchunk);
-        uvm_cpu_chunk_remove_from_block(va_block, subchunk, subchunk->region.first);
-        uvm_cpu_chunk_put(subchunk);
-    }
-
-    parent->region = uvm_va_block_region(parent->region.first, parent->region.first + (merge_chunk_size / PAGE_SIZE));
-    insert_status = uvm_cpu_chunk_insert_in_block(va_block, parent, parent->region.first);
-    UVM_ASSERT(insert_status != NV_ERR_INVALID_ARGUMENT && insert_status != NV_ERR_INVALID_STATE);
-
-    return parent;
+    return NV_OK;
 }
 
 static uvm_cpu_chunk_t *get_parent_cpu_chunk(uvm_cpu_chunk_t *chunk)
@@ -1414,7 +1356,7 @@ static void check_cpu_dirty_flag(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_i
     // compound pages.
     page = chunk->page + page_index;
     if (PageDirty(page)) {
-        bitmap_fill(chunk->dirty_bitmap, uvm_cpu_chunk_get_phys_size(chunk) / PAGE_SIZE);
+        bitmap_fill(chunk->dirty_bitmap, uvm_cpu_chunk_get_size(chunk) / PAGE_SIZE);
         ClearPageDirty(page);
     }
 }
@@ -1432,7 +1374,7 @@ static uvm_cpu_chunk_t *get_parent_and_page_index(uvm_cpu_chunk_t *chunk, uvm_pa
 
     page_index = chunk->offset + (page_index - chunk->region.first);
     parent = get_parent_cpu_chunk(chunk);
-    UVM_ASSERT(page_index < uvm_cpu_chunk_get_phys_size(parent) / PAGE_SIZE);
+    UVM_ASSERT(page_index < uvm_cpu_chunk_get_size(parent) / PAGE_SIZE);
     *out_page_index = page_index;
     return parent;
 }
@@ -1442,7 +1384,7 @@ void uvm_cpu_chunk_mark_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_inde
     uvm_cpu_chunk_t *parent;
 
     parent = get_parent_and_page_index(chunk, &page_index);
-    if (uvm_cpu_chunk_get_phys_size(parent) == PAGE_SIZE) {
+    if (uvm_cpu_chunk_get_size(parent) == PAGE_SIZE) {
         SetPageDirty(parent->page);
         return;
     }
@@ -1457,7 +1399,7 @@ void uvm_cpu_chunk_mark_clean(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_inde
     uvm_cpu_chunk_t *parent;
 
     parent = get_parent_and_page_index(chunk, &page_index);
-    if (uvm_cpu_chunk_get_phys_size(parent) == PAGE_SIZE) {
+    if (uvm_cpu_chunk_get_size(parent) == PAGE_SIZE) {
         ClearPageDirty(parent->page);
         return;
     }
@@ -1474,7 +1416,7 @@ bool uvm_cpu_chunk_is_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
     bool dirty;
 
     parent = get_parent_and_page_index(chunk, &page_index);
-    if (uvm_cpu_chunk_get_phys_size(parent) == PAGE_SIZE)
+    if (uvm_cpu_chunk_get_size(parent) == PAGE_SIZE)
         return PageDirty(parent->page);
 
     uvm_spin_lock(&parent->lock);

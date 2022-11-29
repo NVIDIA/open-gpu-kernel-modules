@@ -88,6 +88,7 @@ struct MmuFaultBuffer {
     NV_STATUS (*__faultbufUnregisterEvent__)(struct MmuFaultBuffer *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__faultbufCanCopy__)(struct MmuFaultBuffer *);
     void (*__faultbufPreDestruct__)(struct MmuFaultBuffer *);
+    NV_STATUS (*__faultbufIsDuplicate__)(struct MmuFaultBuffer *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__faultbufGetNotificationListPtr__)(struct MmuFaultBuffer *);
     struct NotifShare *(*__faultbufGetNotificationShare__)(struct MmuFaultBuffer *);
     NvBool (*__faultbufAccessCallback__)(struct MmuFaultBuffer *, struct RsClient *, void *, RsAccessRight);
@@ -149,6 +150,7 @@ NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, str
 #define faultbufUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) faultbufUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define faultbufCanCopy(pResource) faultbufCanCopy_DISPATCH(pResource)
 #define faultbufPreDestruct(pResource) faultbufPreDestruct_DISPATCH(pResource)
+#define faultbufIsDuplicate(pResource, hMemory, pDuplicate) faultbufIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define faultbufGetNotificationListPtr(pNotifier) faultbufGetNotificationListPtr_DISPATCH(pNotifier)
 #define faultbufGetNotificationShare(pNotifier) faultbufGetNotificationShare_DISPATCH(pNotifier)
 #define faultbufAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) faultbufAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
@@ -278,6 +280,10 @@ static inline void faultbufPreDestruct_DISPATCH(struct MmuFaultBuffer *pResource
     pResource->__faultbufPreDestruct__(pResource);
 }
 
+static inline NV_STATUS faultbufIsDuplicate_DISPATCH(struct MmuFaultBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__faultbufIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *faultbufGetNotificationListPtr_DISPATCH(struct MmuFaultBuffer *pNotifier) {
     return pNotifier->__faultbufGetNotificationListPtr__(pNotifier);
 }
@@ -291,8 +297,10 @@ static inline NvBool faultbufAccessCallback_DISPATCH(struct MmuFaultBuffer *pRes
 }
 
 NV_STATUS faultbufConstruct_IMPL(struct MmuFaultBuffer *arg_pMmuFaultBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_faultbufConstruct(arg_pMmuFaultBuffer, arg_pCallContext, arg_pParams) faultbufConstruct_IMPL(arg_pMmuFaultBuffer, arg_pCallContext, arg_pParams)
 void faultbufDestruct_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer);
+
 #define __nvoc_faultbufDestruct(pMmuFaultBuffer) faultbufDestruct_IMPL(pMmuFaultBuffer)
 #undef PRIVATE_FIELD
 

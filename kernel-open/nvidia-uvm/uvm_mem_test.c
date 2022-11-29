@@ -25,9 +25,6 @@
 #include "uvm_kvmalloc.h"
 #include "uvm_mem.h"
 #include "uvm_push.h"
-
-
-
 #include "uvm_test.h"
 #include "uvm_test_ioctl.h"
 #include "uvm_va_space.h"
@@ -46,14 +43,10 @@ static NvU32 first_page_size(NvU32 page_sizes)
 
 static inline NV_STATUS __alloc_map_sysmem(NvU64 size, uvm_gpu_t *gpu, uvm_mem_t **sys_mem)
 {
-
-
-
-
-
-
-    return uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, sys_mem);
-
+    if (g_uvm_global.sev_enabled)
+        return uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(size, gpu, current->mm, sys_mem);
+    else
+        return uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, sys_mem);
 }
 
 static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
@@ -94,11 +87,7 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
         sys_mem_gpu_address = uvm_mem_gpu_address_virtual_kernel(sys_mem, gpu);
         sys_mem_gpu_address.address += offset;
 
-
-
-
         should_use_pa = uvm_channel_is_privileged(push.channel);
-
 
         if (should_use_pa) {
             mem_gpu_address = uvm_mem_gpu_address_physical(mem, gpu, offset, size_this_time);
@@ -348,10 +337,8 @@ error:
 
 static bool should_test_page_size(size_t alloc_size, NvU32 page_size)
 {
-
-
-
-
+    if (g_uvm_global.sev_enabled)
+        return false;
 
     if (g_uvm_global.num_simulated_devices == 0)
         return true;
@@ -543,45 +530,6 @@ done:
     return status;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static NV_STATUS test_basic(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
@@ -591,9 +539,6 @@ static NV_STATUS test_basic(uvm_va_space_t *va_space)
     for_each_va_space_gpu(gpu, va_space) {
         TEST_CHECK_RET(test_basic_vidmem(gpu) == NV_OK);
         TEST_CHECK_RET(test_basic_sysmem_dma(gpu) == NV_OK);
-
-
-
     }
 
     return NV_OK;

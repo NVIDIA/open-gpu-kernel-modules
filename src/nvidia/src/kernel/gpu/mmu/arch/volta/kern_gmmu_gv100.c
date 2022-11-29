@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/gpu.h"
@@ -399,7 +401,7 @@ kgmmuReportFaultBufferOverflow_GV100
     faultBufferGet = DRF_VAL(_PFB_PRI, _MMU_FAULT_BUFFER_GET, _PTR, faultBufferGet);
 
     kgmmuReadFaultBufferPutPtr_HAL(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER,
-                                  &faultBufferPut);
+                                  &faultBufferPut, NULL);
     faultBufferPut = DRF_VAL(_PFB_PRI, _MMU_FAULT_BUFFER_PUT, _PTR, faultBufferPut);
 
     faultBufferSize = kgmmuReadMmuFaultBufferSize_HAL(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);

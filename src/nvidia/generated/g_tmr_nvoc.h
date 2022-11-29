@@ -121,6 +121,7 @@ struct TimerApi {
     NV_STATUS (*__tmrapiUnregisterEvent__)(struct TimerApi *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__tmrapiCanCopy__)(struct TimerApi *);
     void (*__tmrapiPreDestruct__)(struct TimerApi *);
+    NV_STATUS (*__tmrapiIsDuplicate__)(struct TimerApi *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__tmrapiGetNotificationListPtr__)(struct TimerApi *);
     struct NotifShare *(*__tmrapiGetNotificationShare__)(struct TimerApi *);
     NV_STATUS (*__tmrapiMap__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -179,6 +180,7 @@ NV_STATUS __nvoc_objCreate_TimerApi(TimerApi**, Dynamic*, NvU32, struct CALL_CON
 #define tmrapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) tmrapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define tmrapiCanCopy(pResource) tmrapiCanCopy_DISPATCH(pResource)
 #define tmrapiPreDestruct(pResource) tmrapiPreDestruct_DISPATCH(pResource)
+#define tmrapiIsDuplicate(pResource, hMemory, pDuplicate) tmrapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define tmrapiGetNotificationListPtr(pNotifier) tmrapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define tmrapiGetNotificationShare(pNotifier) tmrapiGetNotificationShare_DISPATCH(pNotifier)
 #define tmrapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) tmrapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -283,6 +285,10 @@ static inline void tmrapiPreDestruct_DISPATCH(struct TimerApi *pResource) {
     pResource->__tmrapiPreDestruct__(pResource);
 }
 
+static inline NV_STATUS tmrapiIsDuplicate_DISPATCH(struct TimerApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__tmrapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *tmrapiGetNotificationListPtr_DISPATCH(struct TimerApi *pNotifier) {
     return pNotifier->__tmrapiGetNotificationListPtr__(pNotifier);
 }
@@ -300,10 +306,13 @@ static inline NvBool tmrapiAccessCallback_DISPATCH(struct TimerApi *pResource, s
 }
 
 NV_STATUS tmrapiConstruct_IMPL(struct TimerApi *arg_pTimerApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_tmrapiConstruct(arg_pTimerApi, arg_pCallContext, arg_pParams) tmrapiConstruct_IMPL(arg_pTimerApi, arg_pCallContext, arg_pParams)
 void tmrapiDestruct_IMPL(struct TimerApi *pTimerApi);
+
 #define __nvoc_tmrapiDestruct(pTimerApi) tmrapiDestruct_IMPL(pTimerApi)
 void tmrapiDeregisterEvents_IMPL(struct TimerApi *pTimerApi);
+
 #ifdef __nvoc_tmr_h_disabled
 static inline void tmrapiDeregisterEvents(struct TimerApi *pTimerApi) {
     NV_ASSERT_FAILED_PRECOMP("TimerApi was disabled!");

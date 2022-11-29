@@ -177,11 +177,58 @@ void GroupImpl::remove(Device * dev)
 
 void GroupImpl::destroy()
 {
+    ConnectorImpl* parent = NULL;
     for (Device * i = enumDevices(0); i; i = enumDevices(i))
         remove(i);
 
     // Cancel any queue the auth callback.
     cancelHdcpCallbacks();
+
+    parent = this->parent;
+
+    if (parent)
+    {
+        if (!parent->activeGroups.isEmpty())
+        {
+            for (ListElement * i = parent->activeGroups.begin(); i != parent->activeGroups.end(); i = i->next)
+            {
+                GroupImpl * group = (GroupImpl *)i;
+                if (group == this)
+                {
+                    parent->activeGroups.remove(this);
+                    DP_LOG(("DP-GRP> Deleted group 0x%x from active group!", this));
+                    break;
+                }
+            }
+        }
+
+
+        if (!parent->inactiveGroups.isEmpty())
+        {
+            for (ListElement * i = parent->inactiveGroups.begin(); i != parent->inactiveGroups.end(); i = i->next)
+            {
+                GroupImpl * group = (GroupImpl *)i;
+                if (group == this)
+                {
+                    parent->inactiveGroups.remove(this);
+                    DP_LOG(("DP-GRP> Deleted group 0x%x from inactive group!", this));
+                    break;
+                }
+            }
+        }
+
+        if (parent->intransitionGroups.contains(this))
+        {
+            parent->intransitionGroups.remove(this);
+            DP_LOG(("DP-GRP> Deleted group 0x%x from intransition group!", this));
+        }
+
+        if (parent->addStreamMSTIntransitionGroups.contains(this))
+        {
+            parent->addStreamMSTIntransitionGroups.remove(this);
+            DP_LOG(("DP-GRP> Deleted group 0x%x from addStreamMSTIntransitionGroups group!", this));
+        }
+    }
 
     delete this;
 }

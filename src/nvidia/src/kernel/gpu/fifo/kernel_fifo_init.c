@@ -50,7 +50,7 @@ kfifoConstructEngine_IMPL
 
     portMemSet((void *)&pKernelFifo->userdInfo, 0, sizeof(PREALLOCATED_USERD_INFO));
 
-    for (i = 0; i < NV2080_ENGINE_TYPE_LAST; i++)
+    for (i = 0; i < RM_ENGINE_TYPE_LAST; i++)
     {
         pKernelFifo->pRunlistBufPool[i] = NULL;
     }
@@ -108,11 +108,8 @@ kfifoDestruct_IMPL
     listDestroy(&pKernelFifo->postSchedulingEnableHandlerList);
     listDestroy(&pKernelFifo->preSchedulingDisableHandlerList);
 
-    if (pKernelFifo->pKernelSchedMgr != NULL)
-    {
-        objDelete(pKernelFifo->pKernelSchedMgr);
-        pKernelFifo->pKernelSchedMgr = NULL;
-    }
+    objDelete(pKernelFifo->pKernelSchedMgr);
+    pKernelFifo->pKernelSchedMgr = NULL;
 
     portMemFree(pEngineInfo->engineInfoList);
     pEngineInfo->engineInfoList = NULL;
@@ -173,14 +170,14 @@ kfifoStateDestroy_IMPL
     kfifoGetChannelIterator(pGpu, pKernelFifo, &chanIt);
     while ((kfifoGetNextKernelChannel(pGpu, pKernelFifo, &chanIt, &pKernelChannel) == NV_OK))
     {
-        NvU32 engineType;
+        RM_ENGINE_TYPE rmEngineType;
 
-        engineType = kchannelGetEngineType(pKernelChannel);
+        rmEngineType = kchannelGetEngineType(pKernelChannel);
 
-        if (NV2080_ENGINE_TYPE_IS_GR(engineType))
+        if (RM_ENGINE_TYPE_IS_GR(rmEngineType))
         {
             MEMORY_DESCRIPTOR *grCtxBufferMemDesc = NULL;
-            NvU32 grIdx = NV2080_ENGINE_TYPE_GR_IDX(engineType);
+            NvU32 grIdx = RM_ENGINE_TYPE_GR_IDX(rmEngineType);
 
             NV_ASSERT_OK(
                 kchangrpGetEngineContextMemDesc(pGpu,

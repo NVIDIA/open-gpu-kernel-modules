@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 
 #include "gpu/gpu.h"
 #include "gpu/disp/kern_disp.h"
+#include "gpu/external_device/gsync.h"
 
 #include "disp/v03_00/dev_disp.h"
 
@@ -106,6 +107,13 @@ kdispGetChannelNum_v03_00
                     status = NV_ERR_NOT_SUPPORTED;
                 }
             }
+            break;
+
+        case dispChnClass_Any:
+            // Assert incase of physical RM, Any channel is kernel only channel.
+            NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_INVALID_CHANNEL);
+            *pChannelNum = NV_PDISP_CHN_NUM_ANY;
+            status = NV_OK;
             break;
 
         default:
@@ -269,4 +277,106 @@ kdispSelectClass_v03_00_KERNEL
     }
 
     return NV_OK;
+}
+
+/*!
+ * @brief Read line count and frame count from RG_DPCA.
+ *
+ * @param[in]  pGpu           OBJGPU pointer
+ * @param[in]  pKernelDisplay KernelDisplay pointer
+ * @param[in]  head           head index
+ * @param[out] pLineCount     line count
+ * @param[out] pFrameCount    frame count
+ *
+ * @return NV_STATUS
+ */
+NV_STATUS
+kdispReadRgLineCountAndFrameCount_v03_00_KERNEL
+(
+    OBJGPU        *pGpu,
+    KernelDisplay *pKernelDisplay,
+    NvU32          head,
+    NvU32         *pLineCount,
+    NvU32         *pFrameCount
+)
+{
+    NvU32 data32;
+
+    if (head >= kdispGetNumHeads(pKernelDisplay))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    data32 = GPU_REG_RD32(pGpu,NV_PDISP_RG_DPCA(head));
+
+    *pLineCount = DRF_VAL(_PDISP, _RG_DPCA, _LINE_CNT, data32);
+    *pFrameCount = DRF_VAL(_PDISP, _RG_DPCA, _FRM_CNT, data32);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief - restore original  LSR_MIN_TIME
+ *
+ * @param[in]  pGpu            GPU  object pointer
+ * @param[in]  pKernelDisplay  KernelDisplay pointer
+ * @param[in]  head            head number
+ * @param[out] oriLsrMinTime   original LSR_MIN_TIME value
+ */
+void
+kdispRestoreOriginalLsrMinTime_v03_00
+(
+    OBJGPU  *pGpu,
+    KernelDisplay *pKernelDisplay,
+    NvU32    head,
+    NvU32    origLsrMinTime
+)
+{
+    NvU32 feFliplock;
+
+    feFliplock = GPU_REG_RD32(pGpu, NV_PDISP_FE_FLIPLOCK);
+
+    feFliplock = FLD_SET_DRF_NUM(_PDISP, _FE_FLIPLOCK, _LSR_MIN_TIME,
+            origLsrMinTime, feFliplock);
+
+    GPU_REG_WR32(pGpu, NV_PDISP_FE_FLIPLOCK, feFliplock);
+}
+
+/*!
+ * @brief - Set LSR_MIN_TIME for swap barrier
+ *
+ * @param[in]  pGpu            GPU  object pointer
+ * @param[in]  pKernelDisplay  KernelDisplay pointer
+ * @param[in]  head            head number
+ * @param[out] pOriLsrMinTime  pointer to original LSR_MIN_TIME value
+ * @param[in]  pNewLsrMinTime  new LSR_MIN_TIME value to be set. If this is 0
+ *                             use default LSR_MIN_TIME value of respective gpu.
+ */
+void
+kdispSetSwapBarrierLsrMinTime_v03_00
+(
+    OBJGPU  *pGpu,
+    KernelDisplay *pKernelDisplay,
+    NvU32    head,
+    NvU32   *pOrigLsrMinTime,
+    NvU32    newLsrMinTime
+)
+{
+    NvU32    dsiFliplock;
+
+    dsiFliplock = GPU_REG_RD32(pGpu, NV_PDISP_FE_FLIPLOCK);
+    *pOrigLsrMinTime = DRF_VAL(_PDISP, _FE_FLIPLOCK, _LSR_MIN_TIME, dsiFliplock);
+
+    if (newLsrMinTime == 0)
+    {
+        dsiFliplock = FLD_SET_DRF_NUM(_PDISP, _FE_FLIPLOCK, _LSR_MIN_TIME,
+                      FLIPLOCK_LSR_MIN_TIME_FOR_SAWP_BARRIER_V02, dsiFliplock);
+    }
+    else
+    {
+        dsiFliplock = FLD_SET_DRF_NUM(_PDISP, _FE_FLIPLOCK, _LSR_MIN_TIME,
+                                      newLsrMinTime, dsiFliplock);
+    }
+
+    GPU_REG_WR32(pGpu, NV_PDISP_FE_FLIPLOCK, dsiFliplock);
 }

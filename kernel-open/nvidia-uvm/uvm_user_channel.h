@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -98,16 +98,10 @@ struct uvm_user_channel_struct
         // If valid is true, tsg_id contains the ID of the TSG
         NvU32 id;
 
-        // If valid is true, this is the maximum number of subcontexts in the TSG
+        // If valid is true, this is the maximum number of subcontexts in the
+        // TSG
         NvU32 max_subctx_count;
     } tsg;
-
-    // This is the value that needs to be used when ringing the channel's
-    // doorbell
-    NvU32 work_submission_token;
-
-    // This is the address of the channel's doorbell
-    volatile NvU32 *work_submission_offset;
 
     // On Turing+, the CLEAR_FAULTED method requires passing a RM-provided
     // handle to identify the channel.
@@ -117,9 +111,11 @@ struct uvm_user_channel_struct
     // channel removal
     uvm_tracker_t clear_faulted_tracker;
 
-    // Address of the NV_CHRAM_CHANNEL register. Only valid on GPUs with
-    // non_replayable_faults_supported && !has_clear_faulted_channel_method
+    // Address of the NV_CHRAM_CHANNEL register and the runlist PRI base
+    // register. Only valid on GPUs with
+    // non_replayable_faults_supported && !has_clear_faulted_channel_method.
     volatile NvU32 *chram_channel_register;
+    volatile NvU32 *runlist_pri_base_register;
 
     // Id of the SMC engine this channel is bound to, or zero if the GPU
     // does not support SMC or it is a CE channel

@@ -54,7 +54,7 @@ deviceCtrlCmdGpuGetClasslist_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     return gpuGetClassList(pGpu, &pClassListParams->numClasses,
                            NvP64_VALUE(pClassListParams->classList), ENG_INVALID);
@@ -76,7 +76,7 @@ deviceCtrlCmdGpuGetClasslistV2_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     pClassListParams->numClasses = NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE;
 
@@ -223,6 +223,25 @@ deviceCtrlCmdGpuGetVirtualizationMode_IMPL
 }
 
 /*!
+ * @brief   This Command is used to get GPU SRIOV capabilities
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+deviceCtrlCmdGpuGetSriovCaps_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    return gpuGetSriovCaps_HAL(pGpu, pParams);
+}
+
+/*!
  * @brief   This command is used to find a subdevice handle by subdeviceinst
  */
 NV_STATUS
@@ -277,7 +296,7 @@ deviceCtrlCmdGpuGetSparseTextureComputeMode_IMPL
     NV_STATUS status;
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     status = gpuGetSparseTextureComputeMode(pGpu,
                                            &pModeParams->defaultSetting,
@@ -313,7 +332,7 @@ deviceCtrlCmdGpuSetSparseTextureComputeMode_IMPL
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pDevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     //
     // In SLI, both GPUs will have the same setting for sparse texture/compute
@@ -364,7 +383,7 @@ deviceCtrlCmdGpuSetVgpuVfBar1Size_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     return gpuSetVFBarSizes_HAL(pGpu, pParams);
 }

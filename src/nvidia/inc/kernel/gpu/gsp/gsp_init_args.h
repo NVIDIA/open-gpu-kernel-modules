@@ -50,6 +50,7 @@ typedef struct
 {
     MESSAGE_QUEUE_INIT_ARGUMENTS      messageQueueInitArguments;
     GSP_SR_INIT_ARGUMENTS             srInitArguments;
+    NvU32                             gpuInstance;
 } GSP_ARGUMENTS_CACHED;
 
 #endif // GSP_INIT_ARGS_H

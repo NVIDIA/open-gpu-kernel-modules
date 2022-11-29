@@ -148,6 +148,8 @@ kperfDoSyncGpuBoostLimits_IMPL
         return status;
     }
 
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, (pKernelPerf != NULL), NV_ERR_INVALID_POINTER);
+
     for (i = 0; i < NV2080_CTRL_INTERNAL_PERF_SYNC_GPU_BOOST_LIMITS_NUM; i++)
     {
         pKernelPerf->sliGpuBoostSync.limits[i] = pParams->currLimits[i];

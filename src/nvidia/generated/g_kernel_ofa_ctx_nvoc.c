@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_ofactxPreDestruct(struct OfaContext *pResour
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_OfaContext_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_ofactxIsDuplicate(struct OfaContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_OfaContext_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_ofactxGetNotificationListPtr(struct OfaContext *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_OfaContext_Notifier.offset));
 }
@@ -334,6 +338,8 @@ static void __nvoc_init_funcTable_OfaContext_1(OfaContext *pThis, RmHalspecOwner
     pThis->__ofactxCanCopy__ = &__nvoc_thunk_RsResource_ofactxCanCopy;
 
     pThis->__ofactxPreDestruct__ = &__nvoc_thunk_RsResource_ofactxPreDestruct;
+
+    pThis->__ofactxIsDuplicate__ = &__nvoc_thunk_RsResource_ofactxIsDuplicate;
 
     pThis->__ofactxGetNotificationListPtr__ = &__nvoc_thunk_Notifier_ofactxGetNotificationListPtr;
 

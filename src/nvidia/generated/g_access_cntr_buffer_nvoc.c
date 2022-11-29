@@ -207,6 +207,10 @@ static void __nvoc_thunk_RsResource_accesscntrPreDestruct(struct AccessCounterBu
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_accesscntrIsDuplicate(struct AccessCounterBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_accesscntrGetNotificationListPtr(struct AccessCounterBuffer *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset));
 }
@@ -517,6 +521,8 @@ static void __nvoc_init_funcTable_AccessCounterBuffer_1(AccessCounterBuffer *pTh
     pThis->__accesscntrCanCopy__ = &__nvoc_thunk_RsResource_accesscntrCanCopy;
 
     pThis->__accesscntrPreDestruct__ = &__nvoc_thunk_RsResource_accesscntrPreDestruct;
+
+    pThis->__accesscntrIsDuplicate__ = &__nvoc_thunk_RsResource_accesscntrIsDuplicate;
 
     pThis->__accesscntrGetNotificationListPtr__ = &__nvoc_thunk_Notifier_accesscntrGetNotificationListPtr;
 

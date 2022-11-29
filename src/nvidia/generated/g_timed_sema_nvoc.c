@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_tsemaPreDestruct(struct TimedSemaSwObject *p
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_tsemaIsDuplicate(struct TimedSemaSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_tsemaGetNotificationListPtr(struct TimedSemaSwObject *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset));
 }
@@ -392,6 +396,8 @@ static void __nvoc_init_funcTable_TimedSemaSwObject_1(TimedSemaSwObject *pThis) 
     pThis->__tsemaCanCopy__ = &__nvoc_thunk_RsResource_tsemaCanCopy;
 
     pThis->__tsemaPreDestruct__ = &__nvoc_thunk_RsResource_tsemaPreDestruct;
+
+    pThis->__tsemaIsDuplicate__ = &__nvoc_thunk_RsResource_tsemaIsDuplicate;
 
     pThis->__tsemaGetNotificationListPtr__ = &__nvoc_thunk_Notifier_tsemaGetNotificationListPtr;
 

@@ -28,15 +28,11 @@
 #define NV_PFALCON_FALCON_IRQSCLR_HALT_SET                                                             0x00000001     /* -W--V */
 #define NV_PFALCON_FALCON_IRQSCLR_SWGEN0                                                               6:6            /* -WXVF */
 #define NV_PFALCON_FALCON_IRQSCLR_SWGEN0_SET                                                           0x00000001     /* -W--V */
-#define NV_PFALCON_FALCON_IRQSCLR_SWGEN1                                                               7:7            /* -WXVF */
-#define NV_PFALCON_FALCON_IRQSCLR_SWGEN1_SET                                                           0x00000001     /* -W--V */
 #define NV_PFALCON_FALCON_IRQSTAT                                                                      0x00000008     /* R--4R */
 #define NV_PFALCON_FALCON_IRQSTAT_HALT                                                                 4:4            /* R-IVF */
 #define NV_PFALCON_FALCON_IRQSTAT_HALT_TRUE                                                            0x00000001     /* R---V */
 #define NV_PFALCON_FALCON_IRQSTAT_SWGEN0                                                               6:6            /* R-IVF */
 #define NV_PFALCON_FALCON_IRQSTAT_SWGEN0_TRUE                                                          0x00000001     /* R---V */
-#define NV_PFALCON_FALCON_IRQSTAT_SWGEN1                                                               7:7            /* R-IVF */
-#define NV_PFALCON_FALCON_IRQSTAT_SWGEN1_TRUE                                                          0x00000001     /* R---V */
 #define NV_PFALCON_FALCON_IRQMSET                                                                      0x00000010     /* -W-4R */
 #define NV_PFALCON_FALCON_IRQMCLR                                                                      0x00000014     /* -W-4R */
 #define NV_PFALCON_FALCON_IRQMASK                                                                      0x00000018     /* R--4R */

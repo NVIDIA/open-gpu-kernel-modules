@@ -32,52 +32,6 @@
 
 #define NVLINK_CE_AUTO_CONFIG_TABLE_DEFAULT_ENTRY      0
 
-#define MAX_CE_CNT 15
-
-/*
- * sysmemLinks
- *    Represents the number of sysmem links detected
- *    This affects how many PCEs LCE0(sysmem read CE)
- *    and LCE1(sysmem write CE) should be mapped to
- * maxLinksPerPeer
- *    Represents the maximum number of peer links
- *    between this GPU and all its peers. This affects
- *    how many PCEs LCE3(P2P CE) should be mapped to
- * numPeers
- *    Represents the number of Peer GPUs discovered so far
- * bSymmetric
- *    Represents whether the topology detected so far
- *    is symmetric i.e. has same number of links to all
- *    peers connected through nvlink. This affects how
- *    many PCEs to assign to LCEs3-5 (nvlink P2P CEs)
- * bSwitchConfig
- *    Represents whether the config listed is intended
- *    for use with nvswitch systems
- * pceLceMap
- *    Value of NV_CE_PCE2LCE_CONFIG0 register with the
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- * grceConfig
- *    Value of NV_CE_GRCE_CONFIG register with the
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- * exposeCeMask
- *    Mask of CEs to expose to clients for the above
- *    above values for sysmemLinks, maxLinksPerPeer,
- *    numLinks and bSymmetric
- */
-typedef struct
-{
-    NvU32  sysmemLinks;
-    NvU32  maxLinksPerPeer;
-    NvU32  numPeers;
-    NvBool bSymmetric;
-    NvBool bSwitchConfig;
-    NvU32  pceLceMap[MAX_CE_CNT];
-    NvU32  grceConfig[MAX_CE_CNT];
-    NvU32  exposeCeMask;
-} NVLINK_CE_AUTO_CONFIG_TABLE;
-
 /*
  * Table for setting the PCE2LCE mapping
 */
@@ -132,29 +86,31 @@ kceGetNvlinkAutoConfigCeValues_TU102
     NvU32         grceConfigSize1    = kceGetGrceConfigSize1_HAL(pKCe);
     NvBool        bEntryExists;
     NvU32         pceIdx, grceIdx;
-    NVLINK_TOPOLOGY_PARAMS currentTopo = { 0 };
+    NVLINK_TOPOLOGY_PARAMS *pCurrentTopo = NULL;
 
     if ((pPceLceMap == NULL) || (pGrceConfig == NULL) || (pExposeCeMask == NULL))
     {
-        return NV_ERR_INVALID_ARGUMENT;
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto done;
     }
 
     if (pKernelNvlink == NULL)
     {
-        return NV_ERR_NOT_SUPPORTED;
+        status = NV_ERR_NOT_SUPPORTED;
+        goto done;
     }
 
-    // Initialize pPceLceMap with no mappings
-    for (pceIdx = 0; pceIdx < pce2lceConfigSize1; pceIdx++)
-    {
-        pPceLceMap[pceIdx] = NV_CE_PCE2LCE_CONFIG_PCE_ASSIGNED_LCE_NONE;
-    }
+    pCurrentTopo = portMemAllocNonPaged(sizeof(*pCurrentTopo));
+    NV_ASSERT_OR_RETURN(pCurrentTopo != NULL, NV_ERR_NO_MEMORY);
+
+    portMemSet(pCurrentTopo, 0, sizeof(*pCurrentTopo));
 
     sysmemLinks = knvlinkGetNumLinksToSystem(pGpu, pKernelNvlink);
 
     if (gpuGetNumCEs(pGpu) == 0)
     {
-        return NV_ERR_NOT_SUPPORTED;
+        status = NV_ERR_NOT_SUPPORTED;
+        goto done;
     }
 
     (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
@@ -187,14 +143,14 @@ kceGetNvlinkAutoConfigCeValues_TU102
         }
     }
 
-    currentTopo.sysmemLinks     = sysmemLinks;
-    currentTopo.maxLinksPerPeer = maxLinksPerPeer;
-    currentTopo.numPeers        = numPeers;
-    currentTopo.bSymmetric      = bSymmetric;
-    currentTopo.bSwitchConfig   = knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink);
+    pCurrentTopo->sysmemLinks     = sysmemLinks;
+    pCurrentTopo->maxLinksPerPeer = maxLinksPerPeer;
+    pCurrentTopo->numPeers        = numPeers;
+    pCurrentTopo->bSymmetric      = bSymmetric;
+    pCurrentTopo->bSwitchConfig   = knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink);
 
     // Use largest topology seen by this GPU
-    bEntryExists = kceGetNvlinkMaxTopoForTable_HAL(pGpu, pKCe, &currentTopo, nvLinkCeAutoConfigTable_TU102,
+    bEntryExists = kceGetNvlinkMaxTopoForTable_HAL(pGpu, pKCe, pCurrentTopo, nvLinkCeAutoConfigTable_TU102,
                     NV_ARRAY_ELEMENTS(nvLinkCeAutoConfigTable_TU102), &topoIdx);
 
     if (!bEntryExists)
@@ -210,13 +166,13 @@ kceGetNvlinkAutoConfigCeValues_TU102
     // info across GPU loads.
     // Preserving across GPU loads enables UVM to optimize perf
     //
-    currentTopo.sysmemLinks     = nvLinkCeAutoConfigTable_TU102[topoIdx].sysmemLinks;
-    currentTopo.maxLinksPerPeer = nvLinkCeAutoConfigTable_TU102[topoIdx].maxLinksPerPeer;
-    currentTopo.numPeers        = nvLinkCeAutoConfigTable_TU102[topoIdx].numPeers;
-    currentTopo.bSymmetric      = nvLinkCeAutoConfigTable_TU102[topoIdx].bSymmetric;
-    currentTopo.bSwitchConfig   = nvLinkCeAutoConfigTable_TU102[topoIdx].bSwitchConfig;
+    pCurrentTopo->sysmemLinks     = nvLinkCeAutoConfigTable_TU102[topoIdx].sysmemLinks;
+    pCurrentTopo->maxLinksPerPeer = nvLinkCeAutoConfigTable_TU102[topoIdx].maxLinksPerPeer;
+    pCurrentTopo->numPeers        = nvLinkCeAutoConfigTable_TU102[topoIdx].numPeers;
+    pCurrentTopo->bSymmetric      = nvLinkCeAutoConfigTable_TU102[topoIdx].bSymmetric;
+    pCurrentTopo->bSwitchConfig   = nvLinkCeAutoConfigTable_TU102[topoIdx].bSwitchConfig;
 
-    gpumgrUpdateSystemNvlinkTopo(gpuGetDBDF(pGpu), &currentTopo);
+    gpumgrUpdateSystemNvlinkTopo(gpuGetDBDF(pGpu), pCurrentTopo);
 
     for (pceIdx = 0; pceIdx < pce2lceConfigSize1; pceIdx++)
     {
@@ -252,6 +208,8 @@ kceGetNvlinkAutoConfigCeValues_TU102
               nvLinkCeAutoConfigTable_TU102[topoIdx].grceConfig[0],
               *pExposeCeMask, gpuMask);
 
+done:
+    portMemFree(pCurrentTopo);
     return status;
 }
 

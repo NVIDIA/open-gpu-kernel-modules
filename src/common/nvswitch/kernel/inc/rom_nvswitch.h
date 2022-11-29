@@ -547,6 +547,9 @@ nvswitch_read_rom_tables
 #define NVLINK_CONFIG_DATA_HEADER_20_SIZE   8
 #define NVLINK_CONFIG_DATA_HEADER_20_FMT    "6b1w"
 
+#define NVLINK_CONFIG_DATA_HEADER_VER_30    0x3
+#define NVLINK_CONFIG_DATA_HEADER_30_SIZE   8
+
 typedef struct _PCI_DATA_STRUCT
 {
     bios_U032       sig;                    //  00h: Signature, the string "PCIR" or NVIDIA's alternate "NPDS"
@@ -747,7 +750,9 @@ typedef struct _nvlink_Config_Data_Header_20
 #define NV_NVLINK_VBIOS_PARAM6_TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT           7:4
 
 #define NVLINK_CONFIG_DATA_BASEENTRY_FMT "1b"
-#define NVLINK_CONFIG_DATA_LINKENTRY_FMT "7b"
+#define NVLINK_CONFIG_DATA_LINKENTRY_FMT_20 "7b"
+#define NVLINK_CONFIG_DATA_LINKENTRY_FMT_30 "10b"
+
 // Version 2.0 Link Entry and Base Entry
 typedef struct _nvlink_config_data_baseentry_20
 {
@@ -764,8 +769,10 @@ typedef struct _nvlink_config_data_linkentry_20
      NvU8  nvLinkparam4;
      NvU8  nvLinkparam5;
      NvU8  nvLinkparam6;
+     NvU8  nvLinkparam7;
+     NvU8  nvLinkparam8;
+     NvU8  nvLinkparam9;
 } NVLINK_CONFIG_DATA_LINKENTRY;
-
 
 // Union of different VBIOS configuration table formats
 typedef union __nvlink_Config_Data_Header
@@ -788,7 +795,22 @@ typedef struct _nvlink_vbios_config_data_linkentry_20
      bios_U008  nvLinkparam4;
      bios_U008  nvLinkparam5;
      bios_U008  nvLinkparam6;
-} NVLINK_VBIOS_CONFIG_DATA_LINKENTRY, *PNVLINK_VBIOS_CONFIG_DATA_LINKENTRY;
+} NVLINK_VBIOS_CONFIG_DATA_LINKENTRY_20, *PNVLINK_VBIOS_CONFIG_DATA_LINKENTRY_20;
+
+typedef struct _nvlink_vbios_config_data_linkentry_30
+{
+    // VBIOS configuration Data
+     bios_U008  nvLinkparam0;
+     bios_U008  nvLinkparam1;
+     bios_U008  nvLinkparam2;
+     bios_U008  nvLinkparam3;
+     bios_U008  nvLinkparam4;
+     bios_U008  nvLinkparam5;
+     bios_U008  nvLinkparam6;
+     bios_U008  nvLinkparam7;
+     bios_U008  nvLinkparam8;
+     bios_U008  nvLinkparam9;
+} NVLINK_VBIOS_CONFIG_DATA_LINKENTRY_30, *PNVLINK_VBIOS_CONFIG_DATA_LINKENTRY_30;
 
 //
 // NVSwitch driver structures

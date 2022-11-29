@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2019-2022 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #include "nvlink.h"
 #include "nvlink_export.h"
@@ -62,6 +61,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
         return NVL_ERR_GENERIC;
     }
 
+    if (conns[0] == NULL)
+        return NVL_ERR_GENERIC;
+
     // Set the version. Currently, only one version is supported on a chip
     version = conns[0]->end0->version;
 
@@ -72,6 +74,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = nvlink_core_check_intranode_conn_state(conns[i], NVLINK_LINKSTATE_HS);
             if ((status == NVL_SUCCESS) || (status == NVL_ERR_INVALID_STATE))
             {
@@ -99,6 +104,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 0: Disable HeartBeat on the endpoints of all connections
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_HEARTBEAT,
                                                         flags);
@@ -115,6 +123,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 1: Disable PM on the endpoints of all connections
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_PM,
                                                         flags);
@@ -133,6 +144,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -156,6 +170,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // Check for each connection, if both the ends and their sublinks are in HS mode
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = nvlink_core_check_intranode_conn_state(conns[i], NVLINK_LINKSTATE_HS);
         if (status == NVL_ERR_INVALID_STATE)
         {
@@ -187,6 +204,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     //
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for the end0 to go to SWCFG
         status = nvlink_core_poll_link_state(conns[i]->end0,
                                              NVLINK_LINKSTATE_SAFE,
@@ -213,6 +233,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 3: Change sub-link state to SAFE on all endpoints
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
                                                    NVLINK_SUBLINK_STATE_TX_SAFE,
                                                    flags);
@@ -229,6 +252,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // Poll for all endpoints sub-link state to reach SAFE
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for sublinks to go to SAFE
         status = nvlink_core_poll_sublink_state(conns[i]->end0,
                                                 NVLINK_SUBLINK_STATE_TX_SAFE,
@@ -262,6 +288,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 4: Save link state on all the endpoints
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         if (!conns[i]->end0->bStateSaved)
         {
             conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
@@ -282,6 +311,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     {
         for (i = 0; i < connCount; i++)
         {
+            if (conns[i] == NULL)
+                continue;
+
             status = conns[i]->end0->link_handlers->get_dl_link_mode(conns[i]->end0, &linkMode);
             if ((status != NVL_SUCCESS) ||
                 (linkMode == NVLINK_LINKSTATE_FAIL) || (linkMode == NVLINK_LINKSTATE_FAULT))
@@ -305,6 +337,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // STEP 5: Trigger the sleep request on all the endpoints
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         //
         // Send SLEEP request on one end of connection if not in loopback.
         // Don' poll, since transition will happen when both ends get the request
@@ -328,6 +363,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_L2
     // Finally check the connection states
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = nvlink_core_check_intranode_conn_state(conns[i], NVLINK_LINKSTATE_SLEEP);
         if (status != NVL_SUCCESS)
         {
@@ -393,6 +431,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Disable Power Management before moving link out of Active
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_PM,
@@ -419,6 +460,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
     // Poll for links to reach SWCFG & initiate sublinks to SAFE state
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for the end0 to go to SWCFG
         status = nvlink_core_poll_link_state(conns[i]->end0,
                                              NVLINK_LINKSTATE_SAFE,
@@ -431,7 +475,7 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
                 
             // to track Failure
             conns[i]->end0->inSWCFG = NV_FALSE;        
-	}
+	    }
         else
         {
             conns[i]->end0->inSWCFG = NV_TRUE;
@@ -449,14 +493,14 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
 
             // to track Failure
             conns[i]->end1->inSWCFG = NV_FALSE; 
-	}
+	    }
         else
         {
             conns[i]->end1->inSWCFG = NV_TRUE;
         }
 
         // Change each sublink state to SAFE
-	if(conns[i]->end0->inSWCFG == NV_TRUE)
+	    if(conns[i]->end0->inSWCFG == NV_TRUE)
         {
             conns[i]->end0->link_handlers->set_tx_mode(conns[i]->end0,
                                                        NVLINK_SUBLINK_STATE_TX_SAFE,
@@ -474,6 +518,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
     // Poll for sublinks to reach SAFE state
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for sublinks to go to SAFE
         if(conns[i]->end0->inSWCFG == NV_TRUE)
         {
@@ -624,6 +671,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Disable Power Management before moving link out of Active
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_PM,
@@ -652,6 +702,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
     //
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         // Wait for the end0 to go to SWCFG
         status = nvlink_core_poll_link_state(conns[i]->end0,
                                              NVLINK_LINKSTATE_SAFE,
@@ -695,6 +748,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
     // Wait for sublinks to go to SAFE
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         status = nvlink_core_poll_sublink_state(conns[i]->end0,
                                                 NVLINK_SUBLINK_STATE_TX_SAFE,
                                                 NVLINK_SUBLINK_SUBSTATE_TX_STABLE,
@@ -737,6 +793,9 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
     // Update tracking info
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
             "%s: Connection is in SAFE mode. ",
             __FUNCTION__));
@@ -780,6 +839,9 @@ nvlink_core_reset_intranode_conns
 
     for (i = 0; i < connCount; i++)
     {
+        if (conns[i] == NULL)
+            continue;
+
         //
         // Reset both ends of this connection.
         // This path should enable/init those link endpoints as well.
@@ -826,6 +888,9 @@ _nvlink_core_clear_link_state
     nvlink_link *link
 )
 {
+    if (link == NULL)
+        return;
+
     // Receiver Detect needs to happen again
     link->bRxDetected = NV_FALSE;
 
@@ -842,4 +907,154 @@ _nvlink_core_clear_link_state
     link->state            = NVLINK_LINKSTATE_OFF;
     link->tx_sublink_state = NVLINK_SUBLINK_STATE_TX_OFF;
     link->rx_sublink_state = NVLINK_SUBLINK_STATE_RX_OFF;
+}
+
+static NvBool
+_nvlink_core_check_if_conn_in_array
+(
+    nvlink_intranode_conn **connArray,
+    NvU32                  connArrayLength,
+    nvlink_intranode_conn *conn
+)
+{
+    NvU32 i;
+
+    for (i = 0; i < connArrayLength; ++i)
+    {
+        if (conn == connArray[i])
+        {
+            return NV_TRUE;
+        }
+    }
+    return NV_FALSE;
+}
+
+NvlStatus
+nvlink_core_powerdown_floorswept_conns_to_off
+(
+    nvlink_link           **links,
+    NvU32                   linkCount,
+    NvU32                   numIoctrls,
+    NvU32                   numLinksPerIoctrl,
+    NvU32                   numActiveLinksPerIoctrl
+)
+{
+    NvU32 i,j;
+    nvlink_intranode_conn **connsToShutdown = NULL;
+    nvlink_intranode_conn **visitedConns    = NULL;
+    nvlink_intranode_conn *conn;
+    NvU32 connCount;
+    NvU32 numConnsToShutdown;
+
+    if (linkCount == 0 || numIoctrls == 0 || numLinksPerIoctrl == 0 ||
+        numActiveLinksPerIoctrl == 0)
+    {
+        return NVL_BAD_ARGS;
+    }
+
+    connsToShutdown = (nvlink_intranode_conn **)nvlink_malloc(
+                            sizeof(nvlink_intranode_conn *) * NVLINK_MAX_SYSTEM_LINK_NUM);
+
+    if (connsToShutdown == NULL)
+    {
+        return NVL_NO_MEM;
+    }
+
+    visitedConns = (nvlink_intranode_conn **)nvlink_malloc(
+                            sizeof(nvlink_intranode_conn *) * NVLINK_MAX_SYSTEM_LINK_NUM);
+
+    if (visitedConns == NULL)
+    {
+        return NVL_NO_MEM;
+    }
+
+
+    //
+    // For each IOCTRL find the total # of connections and shutdown
+    // any connections over the number of active links per IOCTRL
+    //
+    for (i=0; i<numIoctrls; i++)
+    {
+        connCount = 0;
+        numConnsToShutdown = 0;
+        for (j = 0; j < linkCount; j++)
+        {
+            //
+            // If the link is associated with the current IOCTRL
+            // then retrieve its connection. If there is no
+            // active connection associated with the link then continue
+            // If the connection is not active, shutdown the links but don't
+            // increment connCount as this is not an active connection to be used for P2P
+            // If the number of connections found so far is greater
+            // then the number of active links allowed, mark the connection
+            // as being needed to shutdown. Increment the total connection count
+            //
+            if (links[j]->linkNumber >= numLinksPerIoctrl*i &&
+                links[j]->linkNumber < numLinksPerIoctrl*(i+1))
+            {
+                conn = NULL;
+                nvlink_core_get_intranode_conn(links[j], &(conn));
+                if (conn == NULL ||
+                    _nvlink_core_check_if_conn_in_array(visitedConns, connCount, conn) || 
+                    (conn->end0 == NULL || conn->end1 == NULL))
+                {
+                    NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                        "%s: AC debug -- conn gotten: 0x%x\n",
+                        __FUNCTION__, conn));
+                    continue;
+                }
+                else if(nvlink_core_check_intranode_conn_state(conn, NVLINK_LINKSTATE_OFF) ==
+                            NVL_SUCCESS)
+                {
+                    continue;
+                }
+                else if ((nvlink_core_check_intranode_conn_state(conn, NVLINK_LINKSTATE_HS) != NVL_SUCCESS  &&
+                          nvlink_core_check_intranode_conn_state(conn, NVLINK_LINKSTATE_SAFE) != NVL_SUCCESS) &&
+                        (!_nvlink_core_check_if_conn_in_array(connsToShutdown, numConnsToShutdown, conn)))
+                {
+                    // If link is not in SAFE or HS and not currently in our connsToShutdown array then add it
+                    connsToShutdown[numConnsToShutdown++] = conn;
+                }
+                else
+                {
+                    visitedConns[connCount++] = conn;
+                    if (connCount > numActiveLinksPerIoctrl &&
+                        !_nvlink_core_check_if_conn_in_array(connsToShutdown, numConnsToShutdown, conn))
+                    {
+                        connsToShutdown[numConnsToShutdown++] = conn;
+                    }
+                }
+
+                //
+                // If the #of conns found == #of links per IOCTRl then
+                // bail early since we know none of the other links can be
+                // part of this IOCTRL
+                //
+                if (connCount == numLinksPerIoctrl)
+                {
+                    connCount = 0;
+                    break;
+                }
+            }
+        }
+
+        //
+        // If the number of shutdown is non-zero then shutdown the connections
+        // and remove the connection from the corelib since all endpoints
+        // will query the corelib for topology and this connection should no longer
+        // be reported
+        //
+        if (numConnsToShutdown != 0)
+        {
+            nvlink_core_powerdown_intranode_conns_from_active_to_off(connsToShutdown, numConnsToShutdown, 0);
+            nvlink_core_reset_intranode_conns(connsToShutdown, numConnsToShutdown, NVLINK_STATE_CHANGE_ASYNC);
+
+            for (j = 0; j < numConnsToShutdown; ++j)
+            {
+                nvlink_core_remove_intranode_conn(connsToShutdown[j]);
+            }
+        }
+    }
+
+    return NVL_SUCCESS;
 }

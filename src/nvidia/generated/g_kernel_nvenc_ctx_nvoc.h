@@ -83,6 +83,7 @@ struct MsencContext {
     NV_STATUS (*__msencctxUnregisterEvent__)(struct MsencContext *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__msencctxCanCopy__)(struct MsencContext *);
     void (*__msencctxPreDestruct__)(struct MsencContext *);
+    NV_STATUS (*__msencctxIsDuplicate__)(struct MsencContext *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__msencctxGetNotificationListPtr__)(struct MsencContext *);
     struct NotifShare *(*__msencctxGetNotificationShare__)(struct MsencContext *);
     NV_STATUS (*__msencctxMap__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -142,11 +143,13 @@ NV_STATUS __nvoc_objCreate_MsencContext(MsencContext**, Dynamic*, NvU32, struct 
 #define msencctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) msencctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define msencctxCanCopy(pResource) msencctxCanCopy_DISPATCH(pResource)
 #define msencctxPreDestruct(pResource) msencctxPreDestruct_DISPATCH(pResource)
+#define msencctxIsDuplicate(pResource, hMemory, pDuplicate) msencctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define msencctxGetNotificationListPtr(pNotifier) msencctxGetNotificationListPtr_DISPATCH(pNotifier)
 #define msencctxGetNotificationShare(pNotifier) msencctxGetNotificationShare_DISPATCH(pNotifier)
 #define msencctxMap(pGpuResource, pCallContext, pParams, pCpuMapping) msencctxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define msencctxGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) msencctxGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NV_STATUS msencctxConstructHal_KERNEL(struct MsencContext *pMsencContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 
 #ifdef __nvoc_kernel_nvenc_ctx_h_disabled
 static inline NV_STATUS msencctxConstructHal(struct MsencContext *pMsencContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -160,6 +163,7 @@ static inline NV_STATUS msencctxConstructHal(struct MsencContext *pMsencContext,
 #define msencctxConstructHal_HAL(pMsencContext, pCallContext, pParams) msencctxConstructHal(pMsencContext, pCallContext, pParams)
 
 void msencctxDestructHal_KERNEL(struct MsencContext *pMsencContext);
+
 
 #ifdef __nvoc_kernel_nvenc_ctx_h_disabled
 static inline void msencctxDestructHal(struct MsencContext *pMsencContext) {
@@ -269,6 +273,10 @@ static inline NvBool msencctxCanCopy_DISPATCH(struct MsencContext *pResource) {
 
 static inline void msencctxPreDestruct_DISPATCH(struct MsencContext *pResource) {
     pResource->__msencctxPreDestruct__(pResource);
+}
+
+static inline NV_STATUS msencctxIsDuplicate_DISPATCH(struct MsencContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__msencctxIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline PEVENTNOTIFICATION *msencctxGetNotificationListPtr_DISPATCH(struct MsencContext *pNotifier) {

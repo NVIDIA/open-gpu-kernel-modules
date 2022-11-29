@@ -84,6 +84,7 @@ struct MpsApi {
     NV_STATUS (*__mpsApiMapTo__)(struct MpsApi *, RS_RES_MAP_TO_PARAMS *);
     void (*__mpsApiPreDestruct__)(struct MpsApi *);
     NV_STATUS (*__mpsApiUnmapFrom__)(struct MpsApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__mpsApiIsDuplicate__)(struct MpsApi *, NvHandle, NvBool *);
     void (*__mpsApiControl_Epilogue__)(struct MpsApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__mpsApiControlLookup__)(struct MpsApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__mpsApiMap__)(struct MpsApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -132,6 +133,7 @@ NV_STATUS __nvoc_objCreate_MpsApi(MpsApi**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define mpsApiMapTo(pResource, pParams) mpsApiMapTo_DISPATCH(pResource, pParams)
 #define mpsApiPreDestruct(pResource) mpsApiPreDestruct_DISPATCH(pResource)
 #define mpsApiUnmapFrom(pResource, pParams) mpsApiUnmapFrom_DISPATCH(pResource, pParams)
+#define mpsApiIsDuplicate(pResource, hMemory, pDuplicate) mpsApiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define mpsApiControl_Epilogue(pResource, pCallContext, pParams) mpsApiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define mpsApiControlLookup(pResource, pParams, ppEntry) mpsApiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define mpsApiMap(pResource, pCallContext, pParams, pCpuMapping) mpsApiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -192,6 +194,10 @@ static inline NV_STATUS mpsApiUnmapFrom_DISPATCH(struct MpsApi *pResource, RS_RE
     return pResource->__mpsApiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS mpsApiIsDuplicate_DISPATCH(struct MpsApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__mpsApiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void mpsApiControl_Epilogue_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__mpsApiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -209,8 +215,10 @@ static inline NvBool mpsApiAccessCallback_DISPATCH(struct MpsApi *pResource, str
 }
 
 NV_STATUS mpsApiConstruct_IMPL(struct MpsApi *arg_pMpsApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_mpsApiConstruct(arg_pMpsApi, arg_pCallContext, arg_pParams) mpsApiConstruct_IMPL(arg_pMpsApi, arg_pCallContext, arg_pParams)
 void mpsApiDestruct_IMPL(struct MpsApi *pMpsApi);
+
 #define __nvoc_mpsApiDestruct(pMpsApi) mpsApiDestruct_IMPL(pMpsApi)
 #undef PRIVATE_FIELD
 

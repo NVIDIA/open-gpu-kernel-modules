@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,7 +40,6 @@
 /* ------------------------ RM library and utils ---------------------------- */
 #include "nvport/nvport.h"
 #include "nvoc/runtime.h"
-#include "nvoc/utility.h"
 #include "core/printf.h"
 #include "core/strict.h"
 #include "utils/nvassert.h"

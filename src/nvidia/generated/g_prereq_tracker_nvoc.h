@@ -200,10 +200,13 @@ NV_STATUS __nvoc_objCreate_PrereqTracker(PrereqTracker**, Dynamic*, NvU32, struc
     __nvoc_objCreate_PrereqTracker((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParent)
 
 NV_STATUS prereqConstruct_IMPL(struct PrereqTracker *arg_pTracker, struct OBJGPU *arg_pParent);
+
 #define __nvoc_prereqConstruct(arg_pTracker, arg_pParent) prereqConstruct_IMPL(arg_pTracker, arg_pParent)
 void prereqDestruct_IMPL(struct PrereqTracker *pTracker);
+
 #define __nvoc_prereqDestruct(pTracker) prereqDestruct_IMPL(pTracker)
 NV_STATUS prereqSatisfy_IMPL(struct PrereqTracker *pTracker, PREREQ_ID prereqId);
+
 #ifdef __nvoc_prereq_tracker_h_disabled
 static inline NV_STATUS prereqSatisfy(struct PrereqTracker *pTracker, PREREQ_ID prereqId) {
     NV_ASSERT_FAILED_PRECOMP("PrereqTracker was disabled!");
@@ -214,6 +217,7 @@ static inline NV_STATUS prereqSatisfy(struct PrereqTracker *pTracker, PREREQ_ID 
 #endif //__nvoc_prereq_tracker_h_disabled
 
 NV_STATUS prereqRetract_IMPL(struct PrereqTracker *pTracker, PREREQ_ID prereqId);
+
 #ifdef __nvoc_prereq_tracker_h_disabled
 static inline NV_STATUS prereqRetract(struct PrereqTracker *pTracker, PREREQ_ID prereqId) {
     NV_ASSERT_FAILED_PRECOMP("PrereqTracker was disabled!");
@@ -224,6 +228,7 @@ static inline NV_STATUS prereqRetract(struct PrereqTracker *pTracker, PREREQ_ID 
 #endif //__nvoc_prereq_tracker_h_disabled
 
 NvBool prereqIdIsSatisfied_IMPL(struct PrereqTracker *pTracker, PREREQ_ID prereqId);
+
 #ifdef __nvoc_prereq_tracker_h_disabled
 static inline NvBool prereqIdIsSatisfied(struct PrereqTracker *pTracker, PREREQ_ID prereqId) {
     NV_ASSERT_FAILED_PRECOMP("PrereqTracker was disabled!");
@@ -234,6 +239,7 @@ static inline NvBool prereqIdIsSatisfied(struct PrereqTracker *pTracker, PREREQ_
 #endif //__nvoc_prereq_tracker_h_disabled
 
 NV_STATUS prereqComposeEntry_IMPL(struct PrereqTracker *pTracker, GpuPrereqCallback *callback, union PREREQ_ID_BIT_VECTOR *pDepends, PREREQ_ENTRY **ppPrereq);
+
 #ifdef __nvoc_prereq_tracker_h_disabled
 static inline NV_STATUS prereqComposeEntry(struct PrereqTracker *pTracker, GpuPrereqCallback *callback, union PREREQ_ID_BIT_VECTOR *pDepends, PREREQ_ENTRY **ppPrereq) {
     NV_ASSERT_FAILED_PRECOMP("PrereqTracker was disabled!");

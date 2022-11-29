@@ -1190,34 +1190,286 @@ _nvswitch_service_priv_ring_lr10
     return NVL_SUCCESS;
 }
 
-static void
-_nvswitch_save_route_err_header_lr10
+static NvlStatus
+_nvswitch_collect_nport_error_info_lr10
 (
     nvswitch_device    *device,
     NvU32               link,
+    NVSWITCH_RAW_ERROR_LOG_TYPE *data,
+    NvU32               *idx,
+    NvU32               register_start,
+    NvU32               register_end
+)
+{
+    NvU32 register_block_size;
+    NvU32 i = *idx;
+
+    if ((register_start > register_end) ||
+        (register_start % sizeof(NvU32) != 0) ||
+        (register_end % sizeof(NvU32) != 0))
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    register_block_size = (register_end - register_start)/sizeof(NvU32) + 1;
+    if ((i + register_block_size > NVSWITCH_RAW_ERROR_LOG_DATA_SIZE) ||
+        (register_block_size > NVSWITCH_RAW_ERROR_LOG_DATA_SIZE))
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    do
+    {
+        data->data[i] = NVSWITCH_ENG_OFF_RD32(device, NPORT, , link, register_start);
+        register_start += sizeof(NvU32);
+        i++;
+
+    }
+    while (register_start <= register_end);
+    
+    *idx = i;
+    return NVL_SUCCESS;
+}
+
+static void
+_nvswitch_collect_error_info_lr10
+(
+    nvswitch_device    *device,
+    NvU32               link,
+    NvU32               collect_flags,  // NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_*
     NVSWITCH_RAW_ERROR_LOG_TYPE *data
 )
 {
     NvU32 val;
     NvU32 i = 0;
+    NvBool data_collect_error = NV_FALSE;
+    NvlStatus status = NVL_SUCCESS;
 
-    data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_TIMESTAMP_LOG);
+    //
+    // The requested data 'collect_flags' is captured, if valid.
+    // if the error log buffer fills, then the currently captured data block
+    // could be truncated and subsequent blocks will be skipped.
+    // The 'flags' field in the log structure describes which blocks are
+    // actually captured.
+    // Captured blocks are packed, in order.
+    //
+
+    data->flags = 0;
+
+    // ROUTE
+    if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME)
+    {
+        status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                     NV_ROUTE_ERR_TIMESTAMP_LOG,
+                     NV_ROUTE_ERR_TIMESTAMP_LOG);
+        if (status == NVL_SUCCESS)
+        {
+            data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME;
+            NVSWITCH_PRINT(device, INFO,
+                "ROUTE: TIMESTAMP: 0x%08x\n", data->data[i-1]);
+        }
+        else
+        {
+            data_collect_error = NV_TRUE;
+            NVSWITCH_PRINT(device, ERROR,
+                "ROUTE: TIMESTAMP: Error collecting error data\n");
+        }
+    }
+
     val = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_VALID);
 
     if (FLD_TEST_DRF_NUM(_ROUTE, _ERR_HEADER_LOG_VALID, _HEADERVALID0, 1, val))
     {
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_MISC_LOG_0);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_0);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_1);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_2);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_3);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_4);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_5);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_6);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_7);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_8);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_9);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_HEADER_LOG_10);
+        if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_MISC)
+        {
+            status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                         NV_ROUTE_ERR_MISC_LOG_0,
+                         NV_ROUTE_ERR_MISC_LOG_0);
+            if (status == NVL_SUCCESS)
+            {
+                data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_MISC;
+                NVSWITCH_PRINT(device, INFO,
+                    "ROUTE: MISC: 0x%08x\n", data->data[i-1]);
+            }
+            else
+            {
+                data_collect_error = NV_TRUE;
+                NVSWITCH_PRINT(device, ERROR,
+                    "ROUTE: MISC: Error collecting error data\n");
+            }
+        }
+
+        if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_HDR)
+        {
+            status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                         NV_ROUTE_ERR_HEADER_LOG_0,
+                         NV_ROUTE_ERR_HEADER_LOG_10);
+            if (status == NVL_SUCCESS)
+            {
+                data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_HDR;
+                NVSWITCH_PRINT(device, INFO,
+                    "ROUTE: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
+                    data->data[i-12], data->data[i-11], data->data[i-10], data->data[i-9],
+                    data->data[i-8], data->data[i-7], data->data[i-6], data->data[i-5]);
+                NVSWITCH_PRINT(device, INFO,
+                    "ROUTE: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+                    data->data[i-4], data->data[i-3], data->data[i-2], data->data[i-1]);
+            }
+            else
+            {
+                data_collect_error = NV_TRUE;
+                NVSWITCH_PRINT(device, ERROR,
+                    "ROUTE: HEADER: Error collecting error data\n");
+            }
+        }
+    }
+
+    // INGRESS
+    if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME)
+    {
+        status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                     NV_INGRESS_ERR_TIMESTAMP_LOG,
+                     NV_INGRESS_ERR_TIMESTAMP_LOG);
+        if (status == NVL_SUCCESS)
+        {
+            data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME;
+            NVSWITCH_PRINT(device, INFO,
+                "INGRESS: TIMESTAMP: 0x%08x\n", data->data[i-1]);
+        }
+        else
+        {
+            data_collect_error = NV_TRUE;
+            NVSWITCH_PRINT(device, ERROR,
+                "INGRESS: TIMESTAMP: Error collecting error data\n");
+        }
+    }
+
+    val = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_VALID);
+
+    if (FLD_TEST_DRF_NUM(_INGRESS, _ERR_HEADER_LOG_VALID, _HEADERVALID0, 1, val))
+    {
+        if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_MISC)
+        {
+            status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                         NV_INGRESS_ERR_MISC_LOG_0,
+                         NV_INGRESS_ERR_MISC_LOG_0);
+            if (status == NVL_SUCCESS)
+            {
+                data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_MISC;
+                NVSWITCH_PRINT(device, INFO,
+                    "INGRESS: MISC: 0x%08x\n", data->data[i-1]);
+            }
+            else
+            {
+                data_collect_error = NV_TRUE;
+                NVSWITCH_PRINT(device, ERROR,
+                    "INGRESS: MISC: Error collecting error data\n");
+            }
+        }
+
+        if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR)
+        {
+            status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                         NV_INGRESS_ERR_HEADER_LOG_0,
+                         NV_INGRESS_ERR_HEADER_LOG_10);
+            if (status == NVL_SUCCESS)
+            {
+                data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR;
+                NVSWITCH_PRINT(device, INFO,
+                    "INGRESS: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
+                    data->data[i-12], data->data[i-11], data->data[i-10], data->data[i-9],
+                    data->data[i-8], data->data[i-7], data->data[i-6], data->data[i-5]);
+                NVSWITCH_PRINT(device, INFO,
+                    "INGRESS: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+                    data->data[i-4], data->data[i-3], data->data[i-2], data->data[i-1]);
+            }
+            else
+            {
+                data_collect_error = NV_TRUE;
+                NVSWITCH_PRINT(device, ERROR,
+                    "INGRESS: HEADER: Error collecting error data\n");
+            }
+        }
+    }
+
+    // EGRESS
+    if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME)
+    {
+        status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                     NV_EGRESS_ERR_TIMESTAMP_LOG,
+                     NV_EGRESS_ERR_TIMESTAMP_LOG);
+        if (status == NVL_SUCCESS)
+        {
+            data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME;
+            NVSWITCH_PRINT(device, INFO,
+                "EGRESS: TIMESTAMP: 0x%08x\n", data->data[i-1]);
+        }
+        else
+        {
+            data_collect_error = NV_TRUE;
+            NVSWITCH_PRINT(device, ERROR,
+                "EGRESS: TIMESTAMP: Error collecting error data\n");
+        }
+    }
+
+    val = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_VALID);
+
+    if (FLD_TEST_DRF_NUM(_EGRESS, _ERR_HEADER_LOG_VALID, _HEADERVALID0, 1, val))
+    {
+        if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC)
+        {
+            status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                         NV_EGRESS_ERR_MISC_LOG_0,
+                         NV_EGRESS_ERR_MISC_LOG_0);
+            if (status == NVL_SUCCESS)
+            {
+                data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC;
+                NVSWITCH_PRINT(device, INFO,
+                    "EGRESS: MISC: 0x%08x\n", data->data[i-1]);
+            }
+            else
+            {
+                data_collect_error = NV_TRUE;
+                NVSWITCH_PRINT(device, ERROR,
+                    "EGRESS: MISC: Error collecting error data\n");
+            }
+        }
+
+        if (collect_flags & NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR)
+        {
+            status = _nvswitch_collect_nport_error_info_lr10(device, link, data, &i,
+                         NV_EGRESS_ERR_HEADER_LOG_0,
+                         NV_EGRESS_ERR_HEADER_LOG_10);
+            if (status == NVL_SUCCESS)
+            {
+                data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR;
+                NVSWITCH_PRINT(device, INFO,
+                    "EGRESS: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
+                    data->data[i-12], data->data[i-11], data->data[i-10], data->data[i-9],
+                    data->data[i-8], data->data[i-7], data->data[i-6], data->data[i-5]);
+                NVSWITCH_PRINT(device, INFO,
+                    "EGRESS: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
+                    data->data[i-4], data->data[i-3], data->data[i-2], data->data[i-1]);
+            }
+            else
+            {
+                data_collect_error = NV_TRUE;
+                NVSWITCH_PRINT(device, ERROR,
+                    "EGRESS: HEADER: Error collecting error data\n");
+            }
+        }
+    }
+
+    while (i < NVSWITCH_RAW_ERROR_LOG_DATA_SIZE)
+    {
+        data->data[i++] = 0;
+    }
+
+    if (data_collect_error)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Error collecting error info 0x%x.  Only 0x%x error data collected.\n",
+            __FUNCTION__, collect_flags, data->flags);
     }
 }
 
@@ -1231,7 +1483,7 @@ _nvswitch_service_route_fatal_lr10
     lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, contain, unhandled;
-    NVSWITCH_RAW_ERROR_LOG_TYPE data = {{ 0 }};
+    NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
 
     report.raw_pending = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_STATUS_0);
@@ -1248,7 +1500,11 @@ _nvswitch_service_route_fatal_lr10
 
     report.raw_first = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_FIRST_0);
     contain = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_CONTAIN_EN_0);
-    _nvswitch_save_route_err_header_lr10(device, link, &data);
+    _nvswitch_collect_error_info_lr10(device, link,
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_MISC |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_HDR,
+        &data);
 
     bit = DRF_NUM(_ROUTE, _ERR_STATUS_0, _ROUTEBUFERR, 1);
     if (nvswitch_test_flags(pending, bit))
@@ -1371,7 +1627,7 @@ _nvswitch_service_route_nonfatal_lr10
     lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, unhandled;
-    NVSWITCH_RAW_ERROR_LOG_TYPE data = {{ 0 }};
+    NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
 
     report.raw_pending = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_STATUS_0);
@@ -1386,7 +1642,11 @@ _nvswitch_service_route_nonfatal_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_NPORT_RD32_LR10(device, link, _ROUTE, _ERR_FIRST_0);
-    _nvswitch_save_route_err_header_lr10(device, link, &data);
+    _nvswitch_collect_error_info_lr10(device, link,
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_TIME |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_MISC |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_HDR,
+        &data);
 
     bit = DRF_NUM(_ROUTE, _ERR_STATUS_0, _NOPORTDEFINEDERR, 1);
     if (nvswitch_test_flags(pending, bit))
@@ -1463,41 +1723,6 @@ _nvswitch_service_route_nonfatal_lr10
 // Ingress
 //
 
-static void
-_nvswitch_save_ingress_err_header_lr10
-(
-    nvswitch_device    *device,
-    NvU32               link,
-    NVSWITCH_RAW_ERROR_LOG_TYPE *data
-)
-{
-    NvU32 val;
-    NvU32 i = 0;
-
-    data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_TIMESTAMP_LOG);
-
-    val = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_VALID);
-    if (FLD_TEST_DRF_NUM(_INGRESS, _ERR_HEADER_LOG_VALID, _HEADERVALID0, 1, val))
-    {
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_MISC_LOG_0);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_0);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_1);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_2);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_3);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_4);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_5);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_6);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_7);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_8);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_9);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_HEADER_LOG_10);
-    }
-    else
-    {
-        data->data[i++] = 0xdeadbeef;
-    }
-}
-
 static NvlStatus
 _nvswitch_service_ingress_fatal_lr10
 (
@@ -1508,7 +1733,7 @@ _nvswitch_service_ingress_fatal_lr10
     lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, contain, unhandled;
-    NVSWITCH_RAW_ERROR_LOG_TYPE data = {{ 0 }};
+    NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
 
     report.raw_pending = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_STATUS_0);
@@ -1524,7 +1749,11 @@ _nvswitch_service_ingress_fatal_lr10
     unhandled = pending;
     report.raw_first = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_FIRST_0);
     contain = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_CONTAIN_EN_0);
-    _nvswitch_save_ingress_err_header_lr10(device, link, &data);
+    _nvswitch_collect_error_info_lr10(device, link,
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_MISC |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR,
+        &data);
 
     bit = DRF_NUM(_INGRESS, _ERR_STATUS_0, _CMDDECODEERR, 1);
     if (nvswitch_test_flags(pending, bit))
@@ -1704,7 +1933,7 @@ _nvswitch_service_ingress_nonfatal_lr10
     lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, unhandled;
-    NVSWITCH_RAW_ERROR_LOG_TYPE data = {{ 0 }};
+    NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
 
     report.raw_pending = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_STATUS_0);
@@ -1719,7 +1948,11 @@ _nvswitch_service_ingress_nonfatal_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_NPORT_RD32_LR10(device, link, _INGRESS, _ERR_FIRST_0);
-    _nvswitch_save_ingress_err_header_lr10(device, link, &data);
+    _nvswitch_collect_error_info_lr10(device, link,
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_MISC |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR,
+        &data);
 
     bit = DRF_NUM(_INGRESS, _ERR_STATUS_0, _REQCONTEXTMISMATCHERR, 1);
     if (nvswitch_test_flags(pending, bit))
@@ -1820,41 +2053,6 @@ _nvswitch_service_ingress_nonfatal_lr10
 // Egress
 //
 
-static void
-_nvswitch_save_egress_err_header_lr10
-(
-    nvswitch_device    *device,
-    NvU32               link,
-    NVSWITCH_RAW_ERROR_LOG_TYPE *data
-)
-{
-    NvU32 val;
-    NvU32 i = 0;
-
-    data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_TIMESTAMP_LOG);
-
-    val = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_VALID);
-    if (FLD_TEST_DRF_NUM(_EGRESS, _ERR_HEADER_LOG_VALID, _HEADERVALID0, 1, val))
-    {
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_MISC_LOG_0);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_0);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_1);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_2);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_3);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_4);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_5);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_6);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_7);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_8);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_9);
-        data->data[i++] = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_HEADER_LOG_10);
-    }
-    else
-    {
-        data->data[i++] = 0xdeadbeef;
-    }
-}
-
 static NvlStatus
 _nvswitch_service_tstate_nonfatal_lr10
 (
@@ -1865,7 +2063,7 @@ _nvswitch_service_tstate_nonfatal_lr10
     lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, unhandled;
-    NVSWITCH_RAW_ERROR_LOG_TYPE data = {{ 0 }};
+    NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
 
     report.raw_pending = NVSWITCH_NPORT_RD32_LR10(device, link, _TSTATE, _ERR_STATUS_0);
@@ -1906,7 +2104,11 @@ _nvswitch_service_tstate_nonfatal_lr10
             NVSWITCH_NPORT_WR32_LR10(device, link, _TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
                 DRF_DEF(_TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_TSTATE_TAGPOOL_ECC_LIMIT_ERR, "TS tag store single-bit threshold");
-            _nvswitch_save_egress_err_header_lr10(device, link, &data);
+            _nvswitch_collect_error_info_lr10(device, link,
+                NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME |
+                NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC |
+                NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR,
+                &data);
             NVSWITCH_REPORT_DATA(_HW_NPORT_TSTATE_TAGPOOL_ECC_LIMIT_ERR, data);
 
             _nvswitch_construct_ecc_error_event(&err_event,
@@ -1943,7 +2145,11 @@ _nvswitch_service_tstate_nonfatal_lr10
             NVSWITCH_NPORT_WR32_LR10(device, link, _TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
                 DRF_DEF(_TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
             NVSWITCH_REPORT_NONFATAL(_HW_NPORT_TSTATE_CRUMBSTORE_ECC_LIMIT_ERR, "TS crumbstore single-bit threshold");
-            _nvswitch_save_ingress_err_header_lr10(device, link, &data);
+            _nvswitch_collect_error_info_lr10(device, link,
+                NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME |
+                NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_MISC |
+                NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR,
+                &data);
             NVSWITCH_REPORT_DATA(_HW_NPORT_TSTATE_CRUMBSTORE_ECC_LIMIT_ERR, data);
 
             _nvswitch_construct_ecc_error_event(&err_event,
@@ -1992,7 +2198,7 @@ _nvswitch_service_tstate_fatal_lr10
     lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, contain, unhandled;
-    NVSWITCH_RAW_ERROR_LOG_TYPE data = {{ 0 }};
+    NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
 
     report.raw_pending = NVSWITCH_NPORT_RD32_LR10(device, link, _TSTATE, _ERR_STATUS_0);
@@ -2014,7 +2220,11 @@ _nvswitch_service_tstate_fatal_lr10
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_CONTAIN(_HW_NPORT_TSTATE_TAGPOOLBUFERR, "TS pointer crossover", NV_FALSE);
-        _nvswitch_save_egress_err_header_lr10(device, link, &data);
+        _nvswitch_collect_error_info_lr10(device, link,
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR,
+            &data);
         NVSWITCH_REPORT_CONTAIN_DATA(_HW_NPORT_TSTATE_TAGPOOLBUFERR, data);
         nvswitch_clear_flags(&unhandled, bit);
     }
@@ -2039,7 +2249,11 @@ _nvswitch_service_tstate_fatal_lr10
         NVSWITCH_NPORT_WR32_LR10(device, link, _TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER,
             DRF_DEF(_TSTATE, _ERR_TAGPOOL_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
         NVSWITCH_REPORT_CONTAIN(_HW_NPORT_TSTATE_TAGPOOL_ECC_DBE_ERR, "TS tag store fatal ECC", NV_FALSE);
-        _nvswitch_save_egress_err_header_lr10(device, link, &data);
+        _nvswitch_collect_error_info_lr10(device, link,
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR,
+            &data);
         NVSWITCH_REPORT_CONTAIN_DATA(_HW_NPORT_TSTATE_TAGPOOL_ECC_DBE_ERR, data);
         nvswitch_clear_flags(&unhandled, bit);
 
@@ -2061,7 +2275,11 @@ _nvswitch_service_tstate_fatal_lr10
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_CONTAIN(_HW_NPORT_TSTATE_CRUMBSTOREBUFERR, "TS crumbstore", NV_FALSE);
-        _nvswitch_save_egress_err_header_lr10(device, link, &data);
+        _nvswitch_collect_error_info_lr10(device, link,
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR,
+            &data);
         NVSWITCH_REPORT_CONTAIN_DATA(_HW_NPORT_TSTATE_CRUMBSTOREBUFERR, data);
         nvswitch_clear_flags(&unhandled, bit);
     }
@@ -2086,7 +2304,11 @@ _nvswitch_service_tstate_fatal_lr10
         NVSWITCH_NPORT_WR32_LR10(device, link, _TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER,
             DRF_DEF(_TSTATE, _ERR_CRUMBSTORE_ECC_ERROR_COUNTER, _ERROR_COUNT, _INIT));
         NVSWITCH_REPORT_CONTAIN(_HW_NPORT_TSTATE_CRUMBSTORE_ECC_DBE_ERR, "TS crumbstore fatal ECC", NV_FALSE);
-        _nvswitch_save_ingress_err_header_lr10(device, link, &data);
+        _nvswitch_collect_error_info_lr10(device, link,
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_MISC |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR,
+            &data);
         NVSWITCH_REPORT_CONTAIN_DATA(_HW_NPORT_TSTATE_CRUMBSTORE_ECC_DBE_ERR, data);
         nvswitch_clear_flags(&unhandled, bit);
 
@@ -2119,7 +2341,11 @@ _nvswitch_service_tstate_fatal_lr10
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_CONTAIN(_HW_NPORT_TSTATE_CAMRSP_ERR, "Rsp Tag value out of range", NV_FALSE);
-        _nvswitch_save_ingress_err_header_lr10(device, link, &data);
+        _nvswitch_collect_error_info_lr10(device, link,
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_TIME |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_MISC |
+            NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR,
+            &data);
         NVSWITCH_REPORT_CONTAIN_DATA(_HW_NPORT_TSTATE_CAMRSP_ERR, data);
         nvswitch_clear_flags(&unhandled, bit);
     }
@@ -2160,7 +2386,7 @@ _nvswitch_service_egress_nonfatal_lr10
     lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, unhandled;
-    NVSWITCH_RAW_ERROR_LOG_TYPE data = { { 0 } };
+    NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
 
     report.raw_pending = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_STATUS_0);
@@ -2175,7 +2401,11 @@ _nvswitch_service_egress_nonfatal_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_FIRST_0);
-    _nvswitch_save_egress_err_header_lr10(device, link, &data);
+    _nvswitch_collect_error_info_lr10(device, link,
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR,
+        &data);
 
     bit = DRF_NUM(_EGRESS, _ERR_STATUS_0, _NXBAR_HDR_ECC_LIMIT_ERR, 1);
     if (nvswitch_test_flags(pending, bit))
@@ -2293,9 +2523,9 @@ _nvswitch_service_egress_fatal_lr10
     lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, contain, unhandled;
-    NVSWITCH_RAW_ERROR_LOG_TYPE data = {{ 0 }};
-    NVSWITCH_RAW_ERROR_LOG_TYPE credit_data = { { 0 } };
-    NVSWITCH_RAW_ERROR_LOG_TYPE buffer_data = { { 0 } };
+    NVSWITCH_RAW_ERROR_LOG_TYPE data = {0, { 0 }};
+    NVSWITCH_RAW_ERROR_LOG_TYPE credit_data = {0, { 0 }};
+    NVSWITCH_RAW_ERROR_LOG_TYPE buffer_data = {0, { 0 }};
     INFOROM_NVS_ECC_ERROR_EVENT err_event = {0};
 
     report.raw_pending = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_STATUS_0);
@@ -2311,7 +2541,11 @@ _nvswitch_service_egress_fatal_lr10
     unhandled = pending;
     report.raw_first = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_FIRST_0);
     contain = NVSWITCH_NPORT_RD32_LR10(device, link, _EGRESS, _ERR_CONTAIN_EN_0);
-    _nvswitch_save_egress_err_header_lr10(device, link, &data);
+    _nvswitch_collect_error_info_lr10(device, link,
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_TIME |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_MISC |
+        NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_EGRESS_HDR,
+        &data);
 
     bit = DRF_NUM(_EGRESS, _ERR_STATUS_0, _EGRESSBUFERR, 1);
     if (nvswitch_test_flags(pending, bit))

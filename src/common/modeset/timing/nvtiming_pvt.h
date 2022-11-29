@@ -78,8 +78,9 @@ void       parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiIn
 void       getEdidHDM1_4bVsdbTiming(NVT_EDID_INFO *pInfo);
 void       parseEdidHDMILLCTiming(NVT_EDID_INFO *pInfo, VSDB_DATA *pVsdb, NvU32 *pSupported, HDMI3DSUPPORTMAP * pM);
 void       parseEdidNvidiaVSDBBlock(VSDB_DATA *pVsdb, NVDA_VSDB_PARSED_INFO *vsdbInfo);
-void       parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN);
-void       parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, NVT_DV_STATIC_METADATA *pDvInfo);
+void       parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCea861Hdr10PlusDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 NvBool     isMatchedCTA861Timing(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
 NvU32      isHdmi3DStereoType(NvU8 StereoStructureType);
 NvU32      getCEA861TimingAspectRatio(NvU32 vic);
@@ -91,7 +92,9 @@ void       getMonitorDescriptorString(NvU8 *pEdid, NvU8 tag, char *str, int once
 // DispalyID base / extension related functions
 NvU32      getDID2Version(NvU8 *pData, NvU32 *pVer);
 NVT_STATUS getDisplayIdEDIDExtInfo(NvU8* pEdid, NvU32 edidSize, NVT_EDID_INFO* pEdidInfo);
+NVT_STATUS parseDisplayIdBlock(NvU8* pBlock, NvU8 max_length, NvU8* pLength, NVT_EDID_INFO* pEdidInfo);
 NVT_STATUS getDisplayId20EDIDExtInfo(NvU8* pDisplayid, NvU32 edidSize, NVT_EDID_INFO* pEdidInfo);
+NVT_STATUS parseDisplayId20EDIDExtDataBlocks(NvU8* pDataBlock, NvU8 remainSectionLength, NvU8* pCurrentDBLength, NVT_EDID_INFO* pEdidInfo);
 void       updateColorFormatForDisplayIdExtnTimings(NVT_EDID_INFO* pInfo, NvU32 timingIdx);
 void       updateColorFormatForDisplayId20ExtnTimings(NVT_EDID_INFO* pInfo, NvU32 timingIdx);
 NvBool     assignNextAvailableDisplayId20Timing(NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo, const NVT_TIMING *pTiming);

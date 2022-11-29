@@ -166,30 +166,6 @@ void uvm_range_tree_shrink_node(uvm_range_tree_t *tree, uvm_range_tree_node_t *n
     node->end = new_end;
 }
 
-void uvm_range_tree_adjust_interval(uvm_range_tree_t *tree,
-                                    NvU64 addr,
-                                    NvU64 *startp,
-                                    NvU64 *endp)
-{
-    uvm_range_tree_node_t *node;
-    NvU64 start = *startp;
-    NvU64 end = *endp;
-
-    uvm_range_tree_for_each_in(node, tree, start, end) {
-        if (node->start > addr) {
-            end = node->start - 1;
-            break;
-        }
-        else if (node->end < addr)
-            start = node->end + 1;
-        else
-            UVM_ASSERT_MSG(0, "Found node at address 0x%llx\n", addr);
-    }
-
-    *startp = start;
-    *endp = end;
-}
-
 void uvm_range_tree_split(uvm_range_tree_t *tree,
                           uvm_range_tree_node_t *existing,
                           uvm_range_tree_node_t *new)
@@ -260,4 +236,56 @@ uvm_range_tree_node_t *uvm_range_tree_iter_first(uvm_range_tree_t *tree, NvU64 s
     }
 
     return NULL;
+}
+
+NV_STATUS uvm_range_tree_find_hole(uvm_range_tree_t *tree, NvU64 addr, NvU64 *start, NvU64 *end)
+{
+    uvm_range_tree_node_t *node;
+
+    // Find the first node on or after addr, if any
+    node = uvm_range_tree_iter_first(tree, addr, ULLONG_MAX);
+    if (node) {
+        if (node->start <= addr)
+            return NV_ERR_UVM_ADDRESS_IN_USE;
+
+        // node->start can't be 0, otherwise it would contain addr
+        if (end)
+            *end = node->start - 1;
+
+        node = uvm_range_tree_prev(tree, node);
+    }
+    else {
+        // All nodes in the tree must come before addr, if any exist
+        node = uvm_range_tree_last(tree);
+        if (end)
+            *end = ULLONG_MAX;
+    }
+
+    if (start) {
+        if (node)
+            *start = node->end + 1;
+        else
+            *start = 0;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS uvm_range_tree_find_hole_in(uvm_range_tree_t *tree, NvU64 addr, NvU64 *start, NvU64 *end)
+{
+    NvU64 temp_start, temp_end;
+    NV_STATUS status;
+
+    UVM_ASSERT(start);
+    UVM_ASSERT(end);
+    UVM_ASSERT(*start <= addr);
+    UVM_ASSERT(*end >= addr);
+
+    status = uvm_range_tree_find_hole(tree, addr, &temp_start, &temp_end);
+    if (status == NV_OK) {
+        *start = max(temp_start, *start);
+        *end = min(temp_end, *end);
+    }
+
+    return status;
 }

@@ -42,6 +42,22 @@ enum
     RM_SOE_INIT_MSG_ID_SOE_INIT = 0,
 };
 
+/*
+ * CMDQ and MSGQ lengths used in INIT-MSG on LS10
+ *
+ * These values are hard-coded in soe-riscv.
+ * They need to be same in SOE and driver and
+ * are protected by compile time checks in SOE.
+ *
+ */
+#define SOE_CMD_QUEUE_LENGTH    (0x80ul)
+#define SOE_MSG_QUEUE_LENGTH    (0x80ul)
+
+/*!
+ * Define SOE CMDQ and MSGQ EMEM offsets
+ */
+#define SOE_EMEM_CHANNEL_CMDQ_OFFSET 0x1000080
+#define SOE_EMEM_CHANNEL_MSGQ_OFFSET 0x1000000
 
 /*!
  * Defines the logical queue IDs that must be used when submitting commands

@@ -204,6 +204,12 @@ NvBool gpuIsGlobalPoisonFuseEnabled_FWCLIENT(OBJGPU *pGpu)
     return pGSCI->poisonFuseEnabled;
 }
 
+void gpuInitProperties_FWCLIENT(OBJGPU *pGpu)
+{
+    GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_MOBILE, pGSCI->bIsMobile);
+}
+
 /*!
  * @brief These functions are used on CPU RM when pGpu is a GSP client.
  * Data is fetched from GSP using subdeviceCtrlCmdInternalGetChipInfo and cached,

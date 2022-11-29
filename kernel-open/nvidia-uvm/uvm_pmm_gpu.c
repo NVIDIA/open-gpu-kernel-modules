@@ -173,9 +173,6 @@
 #include "uvm_test.h"
 #include "uvm_linux.h"
 
-
-
-
 static int uvm_global_oversubscription = 1;
 module_param(uvm_global_oversubscription, int, S_IRUGO);
 MODULE_PARM_DESC(uvm_global_oversubscription, "Enable (1) or disable (0) global oversubscription support.");
@@ -245,21 +242,11 @@ const char *uvm_pmm_gpu_memory_type_string(uvm_pmm_gpu_memory_type_t type)
 {
     switch (type) {
         UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_USER);
-
-
-
         UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_KERNEL);
-
-
-
         UVM_ENUM_STRING_DEFAULT();
     }
 
-
-
-
     BUILD_BUG_ON(UVM_PMM_GPU_MEMORY_TYPE_COUNT != 2);
-
 }
 
 const char *uvm_pmm_gpu_chunk_state_string(uvm_pmm_gpu_chunk_state_t state)
@@ -461,30 +448,12 @@ bool uvm_pmm_gpu_memory_type_is_user(uvm_pmm_gpu_memory_type_t type)
     UVM_ASSERT(type < UVM_PMM_GPU_MEMORY_TYPE_COUNT);
 
     switch (type) {
-
-
-
-
         case UVM_PMM_GPU_MEMORY_TYPE_USER:
-
             return true;
         default:
             return false;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 static void uvm_gpu_chunk_set_in_eviction(uvm_gpu_chunk_t *chunk, bool in_eviction)
 {
@@ -545,20 +514,7 @@ void uvm_pmm_gpu_sync(uvm_pmm_gpu_t *pmm)
 
 static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_parent_gpu_t *parent_gpu, uvm_pmm_gpu_memory_type_t type)
 {
-
-
-
-
-
-
-
-
-
-
-
-
     return type;
-
 }
 
 NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
@@ -635,23 +591,16 @@ error:
     return status;
 }
 
-NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
-                                   size_t num_chunks,
-                                   uvm_chunk_size_t chunk_size,
-                                   uvm_pmm_alloc_flags_t flags,
-                                   uvm_gpu_chunk_t **chunks,
-                                   uvm_tracker_t *out_tracker)
+static NV_STATUS pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
+                                      size_t num_chunks,
+                                      uvm_chunk_size_t chunk_size,
+                                      uvm_pmm_gpu_memory_type_t memory_type,
+                                      uvm_pmm_alloc_flags_t flags,
+                                      uvm_gpu_chunk_t **chunks,
+                                      uvm_tracker_t *out_tracker)
 {
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    NV_STATUS status;
     size_t i;
-    uvm_pmm_gpu_memory_type_t memory_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
-
-
-
-
-
-    status = uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, memory_type, flags, chunks, out_tracker);
+    NV_STATUS status = uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, memory_type, flags, chunks, out_tracker);
     if (status != NV_OK)
         return status;
 
@@ -664,6 +613,18 @@ NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
     }
 
     return NV_OK;
+}
+
+NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
+                                   size_t num_chunks,
+                                   uvm_chunk_size_t chunk_size,
+                                   uvm_pmm_alloc_flags_t flags,
+                                   uvm_gpu_chunk_t **chunks,
+                                   uvm_tracker_t *out_tracker)
+{
+    uvm_pmm_gpu_memory_type_t memory_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
+
+    return pmm_gpu_alloc_kernel(pmm, num_chunks, chunk_size, memory_type, flags, chunks, out_tracker);
 }
 
 static void chunk_update_lists_locked(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
@@ -1222,7 +1183,7 @@ static void root_chunk_unmap_indirect_peer(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chun
     if (status != NV_OK)
         UVM_ASSERT(uvm_global_get_status() != NV_OK);
 
-    uvm_gpu_unmap_cpu_pages(other_gpu, indirect_peer->dma_addrs[index], UVM_CHUNK_SIZE_MAX);
+    uvm_gpu_unmap_cpu_pages(other_gpu->parent, indirect_peer->dma_addrs[index], UVM_CHUNK_SIZE_MAX);
     uvm_processor_mask_clear(&root_chunk->indirect_peers_mapped, other_gpu->id);
     new_count = atomic64_dec_return(&indirect_peer->map_count);
     UVM_ASSERT(new_count >= 0);
@@ -1352,7 +1313,7 @@ NV_STATUS uvm_pmm_gpu_indirect_peer_map(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chu
     root_chunk_lock(pmm, root_chunk);
 
     if (!uvm_processor_mask_test(&root_chunk->indirect_peers_mapped, accessing_gpu->id)) {
-        status = uvm_gpu_map_cpu_pages(accessing_gpu,
+        status = uvm_gpu_map_cpu_pages(accessing_gpu->parent,
                                        uvm_gpu_chunk_to_page(pmm, &root_chunk->chunk),
                                        UVM_CHUNK_SIZE_MAX,
                                        &indirect_peer->dma_addrs[index]);
@@ -1714,11 +1675,6 @@ void uvm_pmm_gpu_mark_root_chunk_unused(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chu
 {
     root_chunk_update_eviction_list(pmm, chunk, &pmm->root_chunks.va_block_unused);
 }
-
-
-
-
-
 
 static uvm_gpu_root_chunk_t *pick_root_chunk_to_evict(uvm_pmm_gpu_t *pmm)
 {
@@ -2192,13 +2148,6 @@ NV_STATUS alloc_root_chunk(uvm_pmm_gpu_t *pmm,
     if (gpu->parent->numa_info.enabled)
         flags |= UVM_PMM_ALLOC_FLAGS_DONT_BATCH;
 
-
-
-
-
-
-
-
     if (!gpu->parent->rm_info.isSimulated &&
         !(options.flags & UVM_PMA_ALLOCATE_PINNED) &&
         !(flags & UVM_PMM_ALLOC_FLAGS_DONT_BATCH)) {
@@ -2447,14 +2396,6 @@ static bool check_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     UVM_ASSERT(chunk_size & chunk_sizes);
     UVM_ASSERT(IS_ALIGNED(chunk->address, chunk_size));
     UVM_ASSERT(uvm_global_id_equal(uvm_global_gpu_id_from_index(chunk->gpu_global_index), gpu->global_id));
-
-
-
-
-
-
-
-
 
 
     if (chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT)
@@ -2766,13 +2707,6 @@ static bool uvm_pmm_should_inject_pma_eviction_error(uvm_pmm_gpu_t *pmm)
     return false;
 }
 
-
-
-
-
-
-
-
 // See the documentation of pmaEvictPagesCb_t in pma.h for details of the
 // expected semantics.
 static NV_STATUS uvm_pmm_gpu_pma_evict_pages(void *void_pmm,
@@ -2780,7 +2714,8 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_pages(void *void_pmm,
                                              NvU64 *pages,
                                              NvU32 num_pages_to_evict,
                                              NvU64 phys_start,
-                                             NvU64 phys_end)
+                                             NvU64 phys_end,
+                                             UVM_PMA_GPU_MEMORY_TYPE mem_type)
 {
     NV_STATUS status;
     uvm_pmm_gpu_t *pmm = (uvm_pmm_gpu_t *)void_pmm;
@@ -2879,14 +2814,15 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_pages_wrapper(void *void_pmm,
                                                      NvU64 *pages,
                                                      NvU32 num_pages_to_evict,
                                                      NvU64 phys_start,
-                                                     NvU64 phys_end)
+                                                     NvU64 phys_end,
+                                                     UVM_PMA_GPU_MEMORY_TYPE mem_type)
 {
     NV_STATUS status;
 
     // RM invokes the eviction callbacks with its API lock held, but not its GPU
     // lock.
     uvm_record_lock_rm_api();
-    status = uvm_pmm_gpu_pma_evict_pages(void_pmm, page_size, pages, num_pages_to_evict, phys_start, phys_end);
+    status = uvm_pmm_gpu_pma_evict_pages(void_pmm, page_size, pages, num_pages_to_evict, phys_start, phys_end, mem_type);
     uvm_record_unlock_rm_api();
     return status;
 }
@@ -2896,19 +2832,24 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_pages_wrapper_entry(void *void_pmm,
                                                            NvU64 *pages,
                                                            NvU32 num_pages_to_evict,
                                                            NvU64 phys_start,
-                                                           NvU64 phys_end)
+                                                           NvU64 phys_end,
+                                                           UVM_PMA_GPU_MEMORY_TYPE mem_type)
 {
     UVM_ENTRY_RET(uvm_pmm_gpu_pma_evict_pages_wrapper(void_pmm,
                                                       page_size,
                                                       pages,
                                                       num_pages_to_evict,
                                                       phys_start,
-                                                      phys_end));
+                                                      phys_end,
+                                                      mem_type));
 }
 
 // See the documentation of pmaEvictRangeCb_t in pma.h for details of the
 // expected semantics.
-static NV_STATUS uvm_pmm_gpu_pma_evict_range(void *void_pmm, NvU64 phys_begin, NvU64 phys_end)
+static NV_STATUS uvm_pmm_gpu_pma_evict_range(void *void_pmm,
+                                             NvU64 phys_begin,
+                                             NvU64 phys_end,
+                                             UVM_PMA_GPU_MEMORY_TYPE mem_type)
 {
     NV_STATUS status;
     uvm_pmm_gpu_t *pmm = (uvm_pmm_gpu_t *)void_pmm;
@@ -2997,21 +2938,27 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_range(void *void_pmm, NvU64 phys_begin, N
     return NV_OK;
 }
 
-static NV_STATUS uvm_pmm_gpu_pma_evict_range_wrapper(void *void_pmm, NvU64 phys_begin, NvU64 phys_end)
+static NV_STATUS uvm_pmm_gpu_pma_evict_range_wrapper(void *void_pmm,
+                                                     NvU64 phys_begin,
+                                                     NvU64 phys_end,
+                                                     UVM_PMA_GPU_MEMORY_TYPE mem_type)
 {
     NV_STATUS status;
 
     // RM invokes the eviction callbacks with its API lock held, but not its GPU
     // lock.
     uvm_record_lock_rm_api();
-    status = uvm_pmm_gpu_pma_evict_range(void_pmm, phys_begin, phys_end);
+    status = uvm_pmm_gpu_pma_evict_range(void_pmm, phys_begin, phys_end, mem_type);
     uvm_record_unlock_rm_api();
     return status;
 }
 
-static NV_STATUS uvm_pmm_gpu_pma_evict_range_wrapper_entry(void *void_pmm, NvU64 phys_begin, NvU64 phys_end)
+static NV_STATUS uvm_pmm_gpu_pma_evict_range_wrapper_entry(void *void_pmm,
+                                                           NvU64 phys_begin,
+                                                           NvU64 phys_end,
+                                                           UVM_PMA_GPU_MEMORY_TYPE mem_type)
 {
-    UVM_ENTRY_RET(uvm_pmm_gpu_pma_evict_range_wrapper(void_pmm, phys_begin, phys_end));
+    UVM_ENTRY_RET(uvm_pmm_gpu_pma_evict_range_wrapper(void_pmm, phys_begin, phys_end, mem_type));
 }
 
 static void deinit_chunk_split_cache(uvm_pmm_gpu_t *pmm)
@@ -3312,16 +3259,8 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
     uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     const uvm_chunk_sizes_mask_t chunk_size_init[][UVM_PMM_GPU_MEMORY_TYPE_COUNT] =
     {
-
-
-
-
-
-
-
         { gpu->parent->mmu_user_chunk_sizes, gpu->parent->mmu_kernel_chunk_sizes },
         { 0, uvm_mem_kernel_chunk_sizes(gpu)},
-
     };
     NV_STATUS status = NV_OK;
     size_t i, j, k;
@@ -3503,12 +3442,13 @@ NV_STATUS uvm_test_evict_chunk(UVM_TEST_EVICT_CHUNK_PARAMS *params, struct file 
     params->evicted_physical_address = 0;
     params->chunk_size_backing_virtual = 0;
 
-    mm = uvm_va_space_mm_retain_lock(va_space);
+    mm = uvm_va_space_mm_or_current_retain_lock(va_space);
     uvm_va_space_down_read(va_space);
 
     gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
     if (!gpu || !uvm_gpu_supports_eviction(gpu)) {
         uvm_va_space_up_read(va_space);
+        uvm_va_space_mm_or_current_release_unlock(va_space, mm);
         return NV_ERR_INVALID_DEVICE;
     }
     pmm = &gpu->pmm;
@@ -3519,10 +3459,21 @@ NV_STATUS uvm_test_evict_chunk(UVM_TEST_EVICT_CHUNK_PARAMS *params, struct file 
     // For virtual mode, look up and retain the block first so that eviction can
     // be started without the VA space lock held.
     if (params->eviction_mode == UvmTestEvictModeVirtual) {
-        status = uvm_va_block_find_create(va_space, mm, params->address, NULL, &block);
-        if (status != NV_OK) {
+        uvm_va_block_context_t *block_context;
+
+        block_context = uvm_va_block_context_alloc(mm);
+        if (!block_context) {
+            status = NV_ERR_NO_MEMORY;
             uvm_va_space_up_read(va_space);
             uvm_va_space_mm_release_unlock(va_space, mm);
+            goto out;
+        }
+
+        status = uvm_va_block_find_create(va_space, params->address, block_context, &block);
+        uvm_va_block_context_free(block_context);
+        if (status != NV_OK) {
+            uvm_va_space_up_read(va_space);
+            uvm_va_space_mm_or_current_release_unlock(va_space, mm);
             goto out;
         }
 
@@ -3534,7 +3485,7 @@ NV_STATUS uvm_test_evict_chunk(UVM_TEST_EVICT_CHUNK_PARAMS *params, struct file 
     // Unlock the VA space to emulate real eviction better where a VA space lock
     // may not be held or may be held for a different VA space.
     uvm_va_space_up_read(va_space);
-    uvm_va_space_mm_release_unlock(va_space, mm);
+    uvm_va_space_mm_or_current_release_unlock(va_space, mm);
 
     if (params->eviction_mode == UvmTestEvictModeVirtual) {
         UVM_ASSERT(block);

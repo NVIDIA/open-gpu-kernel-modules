@@ -25,6 +25,7 @@
  * Purpose:   Provide initialization functions for HDMI library
  */
 
+#include <stddef.h>
 #include "nvlimits.h"
 #include "nvhdmipkt_common.h"
 #include "nvhdmipkt_class.h"
@@ -46,6 +47,7 @@
 #include "class/clc57d.h"
 #include "class/clc670.h"
 #include "class/clc67d.h"
+#include "class/clc770.h"
 
 // Class hierarchy structure
 typedef struct tagNVHDMIPKT_CLASS_HIERARCHY
@@ -167,6 +169,16 @@ static const NVHDMIPKT_CLASS_HIERARCHY hierarchy[] =
         NVC670_DISPLAY,                   // displayClass
         NVC67D_CORE_CHANNEL_DMA           // coreDmaClass
     },
+    {// Index 8==NVHDMIPKT_C771_CLASS
+        NVHDMIPKT_C771_CLASS,             // classId
+        NVHDMIPKT_C671_CLASS,             // parentClassId
+        NV_FALSE,                         // isRootClass
+        initializeHdmiPktInterfaceC771,   // initInterface
+        hdmiConstructorC771,              // constructor
+        hdmiDestructorC771,               // destructor
+        NVC770_DISPLAY,                   // displayClass
+        NVC67D_CORE_CHANNEL_DMA           // coreDmaClass
+    },
 };
 
 #if defined(DSC_CALLBACK_MODIFIED)
@@ -232,6 +244,11 @@ NvHdmiPkt_PacketWrite(NvHdmiPkt_Handle  libHandle,
     if (libHandle == NVHDMIPKT_INVALID_HANDLE)
     {
         return NVHDMIPKT_LIBRARY_INIT_FAIL;
+    }
+
+    if ((pPacket == NULL) || (packetLen == 0))
+    {
+        return NVHDMIPKT_INVALID_ARG;
     }
 
     return pClass->hdmiPacketWrite(pClass,

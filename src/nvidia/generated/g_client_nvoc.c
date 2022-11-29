@@ -241,6 +241,14 @@ static NV_STATUS __nvoc_thunk_RmClient_clientPostProcessPendingFreeList(struct R
     return rmclientPostProcessPendingFreeList((struct RmClient *)(((unsigned char *)pClient) - __nvoc_rtti_RmClient_RsClient.offset), ppFirstLowPriRef);
 }
 
+static RS_PRIV_LEVEL __nvoc_thunk_RmClient_clientGetCachedPrivilege(struct RsClient *pClient) {
+    return rmclientGetCachedPrivilege((struct RmClient *)(((unsigned char *)pClient) - __nvoc_rtti_RmClient_RsClient.offset));
+}
+
+static NvBool __nvoc_thunk_RmClient_clientIsAdmin(struct RsClient *pClient, RS_PRIV_LEVEL privLevel) {
+    return rmclientIsAdmin((struct RmClient *)(((unsigned char *)pClient) - __nvoc_rtti_RmClient_RsClient.offset), privLevel);
+}
+
 static NV_STATUS __nvoc_thunk_RsClient_rmclientDestructResourceRef(struct RmClient *pClient, RsServer *pServer, struct RsResourceRef *pResourceRef) {
     return clientDestructResourceRef((struct RsClient *)(((unsigned char *)pClient) + __nvoc_rtti_RmClient_RsClient.offset), pServer, pResourceRef);
 }
@@ -306,6 +314,10 @@ static void __nvoc_init_funcTable_RmClient_1(RmClient *pThis) {
 
     pThis->__rmclientPostProcessPendingFreeList__ = &rmclientPostProcessPendingFreeList_IMPL;
 
+    pThis->__rmclientGetCachedPrivilege__ = &rmclientGetCachedPrivilege_IMPL;
+
+    pThis->__rmclientIsAdmin__ = &rmclientIsAdmin_IMPL;
+
     pThis->__nvoc_base_RsClient.__clientValidate__ = &__nvoc_thunk_RmClient_clientValidate;
 
     pThis->__nvoc_base_RsClient.__clientFreeResource__ = &__nvoc_thunk_RmClient_clientFreeResource;
@@ -315,6 +327,10 @@ static void __nvoc_init_funcTable_RmClient_1(RmClient *pThis) {
     pThis->__nvoc_base_RsClient.__clientInterUnmap__ = &__nvoc_thunk_RmClient_clientInterUnmap;
 
     pThis->__nvoc_base_RsClient.__clientPostProcessPendingFreeList__ = &__nvoc_thunk_RmClient_clientPostProcessPendingFreeList;
+
+    pThis->__nvoc_base_RsClient.__clientGetCachedPrivilege__ = &__nvoc_thunk_RmClient_clientGetCachedPrivilege;
+
+    pThis->__nvoc_base_RsClient.__clientIsAdmin__ = &__nvoc_thunk_RmClient_clientIsAdmin;
 
     pThis->__rmclientDestructResourceRef__ = &__nvoc_thunk_RsClient_rmclientDestructResourceRef;
 

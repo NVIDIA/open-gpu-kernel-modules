@@ -55,7 +55,7 @@ _vgpuRcResetCallback
 
     if (osCondAcquireRmSema(pSys->pSema) == NV_OK)
     {
-        if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_COND_ACQUIRE,
+        if (rmGpuLocksAcquire(GPU_LOCK_FLAGS_COND_ACQUIRE,
                               RM_LOCK_MODULES_RC) == NV_OK)
         {
             THREAD_STATE_NODE                             threadState;
@@ -167,16 +167,17 @@ krcResetCallback
                                   status = NV_ERR_INVALID_STATE;
                                   goto error_cleanup);
 
-                if (IS_GSP_CLIENT(pRcErrorContext->pGpu))
                 {
                     NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS params = {0};
-                    NV_RM_RPC_CONTROL(pRcErrorContext->pGpu,
-                                      RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                      RES_GET_HANDLE(pKernelChannel),
-                                      NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL,
-                                      &params,
-                                      sizeof params,
-                                      status);
+                    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pRcErrorContext->pGpu);
+
+                    // Client lock is already obtained above.
+                    status = pRmApi->Control(pRmApi,
+                        RES_GET_CLIENT_HANDLE(pKernelChannel),
+                        RES_GET_HANDLE(pKernelChannel),
+                        NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL,
+                        &params,
+                        sizeof params);
                 }
 
                 threadStateFreeISRAndDeferredIntHandler(
@@ -223,7 +224,7 @@ krcErrorInvokeCallback_IMPL
     FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData,
     NvU32                    exceptType,
     NvU32                    exceptLevel,
-    NvU32                    engineId,
+    RM_ENGINE_TYPE           rmEngineType,
     NvU32                    rcDiagRecStart
 )
 {
@@ -234,7 +235,7 @@ krcErrorInvokeCallback_IMPL
     RmClient           *pClient           = NULL;
     RsClient           *pRsClient;
     RC_CALLBACK_STATUS  clientAction;
-    NvU32               localEngineId  = engineId;
+    RM_ENGINE_TYPE      localRmEngineType  = rmEngineType;
     NvU32               rcDiagRecOwner = RCDB_RCDIAG_DEFAULT_OWNER;
     NV_STATUS           status;
     NvBool              bReturn = NV_TRUE;
@@ -256,8 +257,8 @@ krcErrorInvokeCallback_IMPL
     // If SMC is enabled, RM need to notify partition local engineIds.
     // Convert global ID to partition local
     //
-    if (IS_MIG_IN_USE(pGpu) && NV2080_ENGINE_TYPE_IS_VALID(engineId) &&
-        kmigmgrIsEnginePartitionable(pGpu, pKernelMigManager, engineId))
+    if (IS_MIG_IN_USE(pGpu) && RM_ENGINE_TYPE_IS_VALID(rmEngineType) &&
+        kmigmgrIsEnginePartitionable(pGpu, pKernelMigManager, rmEngineType))
     {
         MIG_INSTANCE_REF ref;
         status = kmigmgrGetInstanceRefFromClient(pGpu,
@@ -267,13 +268,11 @@ krcErrorInvokeCallback_IMPL
         if (status != NV_OK)
             return bReturn;
 
-        if (!kmigmgrIsEngineInInstance(pGpu, pKernelMigManager, engineId, ref))
+        if (!kmigmgrIsEngineInInstance(pGpu, pKernelMigManager, rmEngineType, ref))
         {
             // Notifier is requested for an unsupported engine
-            NV_PRINTF(
-                LEVEL_ERROR,
-                "RcErroCallback requested for an unsupported engine (0x%x)\n",
-                localEngineId);
+            NV_PRINTF(LEVEL_ERROR, "RcErroCallback requested for an unsupported engine 0x%x (0x%x)\n",
+                                    gpuGetNv2080EngineType(rmEngineType), rmEngineType);
             return bReturn;
         }
 
@@ -281,8 +280,8 @@ krcErrorInvokeCallback_IMPL
         status = kmigmgrGetGlobalToLocalEngineType(pGpu,
                                                    pKernelMigManager,
                                                    ref,
-                                                   engineId,
-                                                   &localEngineId);
+                                                   rmEngineType,
+                                                   &localRmEngineType);
         if (status != NV_OK)
             return bReturn;
     }
@@ -319,7 +318,7 @@ krcErrorInvokeCallback_IMPL
             pRcErrorContext->secChId    = 0xFFFFFFFF;
             pRcErrorContext->sechClient = RES_GET_CLIENT_HANDLE(pKernelChannel);
             pRcErrorContext->exceptType = exceptType;
-            pRcErrorContext->EngineId   = localEngineId;
+            pRcErrorContext->EngineId   = gpuGetNv2080EngineType(localRmEngineType);
             pRcErrorContext->subdeviceInstance = pGpu->subdeviceInstance;
 
             if (pMmuExceptionData != NULL)

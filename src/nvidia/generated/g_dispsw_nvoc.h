@@ -148,6 +148,7 @@ struct DispSwObject {
     NV_STATUS (*__dispswUnregisterEvent__)(struct DispSwObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__dispswCanCopy__)(struct DispSwObject *);
     void (*__dispswPreDestruct__)(struct DispSwObject *);
+    NV_STATUS (*__dispswIsDuplicate__)(struct DispSwObject *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__dispswGetNotificationListPtr__)(struct DispSwObject *);
     struct NotifShare *(*__dispswGetNotificationShare__)(struct DispSwObject *);
     NV_STATUS (*__dispswMap__)(struct DispSwObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -213,6 +214,7 @@ NV_STATUS __nvoc_objCreate_DispSwObject(DispSwObject**, Dynamic*, NvU32, CALL_CO
 #define dispswUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispswUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispswCanCopy(pResource) dispswCanCopy_DISPATCH(pResource)
 #define dispswPreDestruct(pResource) dispswPreDestruct_DISPATCH(pResource)
+#define dispswIsDuplicate(pResource, hMemory, pDuplicate) dispswIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispswGetNotificationListPtr(pNotifier) dispswGetNotificationListPtr_DISPATCH(pNotifier)
 #define dispswGetNotificationShare(pNotifier) dispswGetNotificationShare_DISPATCH(pNotifier)
 #define dispswMap(pGpuResource, pCallContext, pParams, pCpuMapping) dispswMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -327,6 +329,10 @@ static inline void dispswPreDestruct_DISPATCH(struct DispSwObject *pResource) {
     pResource->__dispswPreDestruct__(pResource);
 }
 
+static inline NV_STATUS dispswIsDuplicate_DISPATCH(struct DispSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__dispswIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *dispswGetNotificationListPtr_DISPATCH(struct DispSwObject *pNotifier) {
     return pNotifier->__dispswGetNotificationListPtr__(pNotifier);
 }
@@ -344,8 +350,10 @@ static inline NV_STATUS dispswGetOrAllocNotifShare_DISPATCH(struct DispSwObject 
 }
 
 NV_STATUS dispswConstruct_IMPL(struct DispSwObject *arg_pDispSw, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_dispswConstruct(arg_pDispSw, arg_pCallContext, arg_pParams) dispswConstruct_IMPL(arg_pDispSw, arg_pCallContext, arg_pParams)
 void dispswDestruct_IMPL(struct DispSwObject *pDispSw);
+
 #define __nvoc_dispswDestruct(pDispSw) dispswDestruct_IMPL(pDispSw)
 #undef PRIVATE_FIELD
 

@@ -260,6 +260,7 @@ static inline NvBool kgraphicsShouldForceMainCtxContiguity_cbe027(OBJGPU *arg0, 
     return ((NvBool)(0 == 0));
 }
 
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NvBool kgraphicsShouldForceMainCtxContiguity(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -272,6 +273,7 @@ static inline NvBool kgraphicsShouldForceMainCtxContiguity(OBJGPU *arg0, struct 
 #define kgraphicsShouldForceMainCtxContiguity_HAL(arg0, arg1) kgraphicsShouldForceMainCtxContiguity(arg0, arg1)
 
 NV_STATUS kgraphicsAllocKgraphicsBuffers_KERNEL(OBJGPU *arg0, struct KernelGraphics *arg1, struct KernelGraphicsContext *arg2, struct KernelChannel *arg3);
+
 
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsAllocKgraphicsBuffers(OBJGPU *arg0, struct KernelGraphics *arg1, struct KernelGraphicsContext *arg2, struct KernelChannel *arg3) {
@@ -286,6 +288,7 @@ static inline NV_STATUS kgraphicsAllocKgraphicsBuffers(OBJGPU *arg0, struct Kern
 
 NV_STATUS kgraphicsAllocGrGlobalCtxBuffers_TU102(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 gfid, struct KernelGraphicsContext *arg2);
 
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsAllocGrGlobalCtxBuffers(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 gfid, struct KernelGraphicsContext *arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -299,6 +302,7 @@ static inline NV_STATUS kgraphicsAllocGrGlobalCtxBuffers(OBJGPU *arg0, struct Ke
 
 NV_STATUS kgraphicsAllocGlobalCtxBuffers_GP100(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 gfid);
 
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsAllocGlobalCtxBuffers(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 gfid) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -311,6 +315,7 @@ static inline NV_STATUS kgraphicsAllocGlobalCtxBuffers(OBJGPU *arg0, struct Kern
 #define kgraphicsAllocGlobalCtxBuffers_HAL(arg0, arg1, gfid) kgraphicsAllocGlobalCtxBuffers(arg0, arg1, gfid)
 
 NV_STATUS kgraphicsLoadStaticInfo_KERNEL(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId);
+
 
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsLoadStaticInfo(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId) {
@@ -327,6 +332,7 @@ static inline void kgraphicsNonstallIntrCheckAndClear_b3696a(OBJGPU *arg0, struc
     return;
 }
 
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline void kgraphicsNonstallIntrCheckAndClear(OBJGPU *arg0, struct KernelGraphics *arg1, struct THREAD_STATE_NODE *arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -339,6 +345,7 @@ static inline void kgraphicsNonstallIntrCheckAndClear(OBJGPU *arg0, struct Kerne
 
 void kgraphicsInitFecsRegistryOverrides_GP100(OBJGPU *arg0, struct KernelGraphics *arg1);
 
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline void kgraphicsInitFecsRegistryOverrides(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -350,6 +357,7 @@ static inline void kgraphicsInitFecsRegistryOverrides(OBJGPU *arg0, struct Kerne
 #define kgraphicsInitFecsRegistryOverrides_HAL(arg0, arg1) kgraphicsInitFecsRegistryOverrides(arg0, arg1)
 
 NvBool kgraphicsIsUnrestrictedAccessMapSupported_PF(OBJGPU *arg0, struct KernelGraphics *arg1);
+
 
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NvBool kgraphicsIsUnrestrictedAccessMapSupported(OBJGPU *arg0, struct KernelGraphics *arg1) {
@@ -410,9 +418,9 @@ static inline NV_STATUS kgraphicsStatePostLoad_DISPATCH(OBJGPU *arg0, struct Ker
     return arg1->__kgraphicsStatePostLoad__(arg0, arg1, flags);
 }
 
-void kgraphicsRegisterIntrService_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[155]);
+void kgraphicsRegisterIntrService_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[163]);
 
-static inline void kgraphicsRegisterIntrService_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[155]) {
+static inline void kgraphicsRegisterIntrService_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[163]) {
     arg1->__kgraphicsRegisterIntrService__(arg0, arg1, arg2);
 }
 
@@ -424,19 +432,11 @@ static inline NV_STATUS kgraphicsServiceNotificationInterrupt_DISPATCH(OBJGPU *a
 
 NvBool kgraphicsClearInterrupt_GP100(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceClearInterruptArguments *arg2);
 
-static inline NvBool kgraphicsClearInterrupt_5baef9(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceClearInterruptArguments *arg2) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
 static inline NvBool kgraphicsClearInterrupt_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceClearInterruptArguments *arg2) {
     return arg1->__kgraphicsClearInterrupt__(arg0, arg1, arg2);
 }
 
 NvU32 kgraphicsServiceInterrupt_GP100(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceServiceInterruptArguments *arg2);
-
-static inline NvU32 kgraphicsServiceInterrupt_5baef9(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceServiceInterruptArguments *arg2) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
 
 static inline NvU32 kgraphicsServiceInterrupt_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceServiceInterruptArguments *arg2) {
     return arg1->__kgraphicsServiceInterrupt__(arg0, arg1, arg2);
@@ -547,8 +547,10 @@ static inline NvBool kgraphicsIsRtvCbSupported(OBJGPU *pGpu, struct KernelGraphi
 }
 
 void kgraphicsDestruct_IMPL(struct KernelGraphics *arg0);
+
 #define __nvoc_kgraphicsDestruct(arg0) kgraphicsDestruct_IMPL(arg0)
 void kgraphicsInvalidateStaticInfo_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline void kgraphicsInvalidateStaticInfo(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -558,6 +560,7 @@ static inline void kgraphicsInvalidateStaticInfo(OBJGPU *arg0, struct KernelGrap
 #endif //__nvoc_kernel_graphics_h_disabled
 
 const CTX_BUF_INFO *kgraphicsGetCtxBufferInfo_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, GR_CTX_BUFFER arg2);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline const CTX_BUF_INFO *kgraphicsGetCtxBufferInfo(OBJGPU *arg0, struct KernelGraphics *arg1, GR_CTX_BUFFER arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -568,6 +571,7 @@ static inline const CTX_BUF_INFO *kgraphicsGetCtxBufferInfo(OBJGPU *arg0, struct
 #endif //__nvoc_kernel_graphics_h_disabled
 
 void kgraphicsSetCtxBufferInfo_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, GR_CTX_BUFFER arg2, NvU64 size, NvU64 align, RM_ATTR_PAGE_SIZE attr, NvBool bContiguous);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline void kgraphicsSetCtxBufferInfo(OBJGPU *arg0, struct KernelGraphics *arg1, GR_CTX_BUFFER arg2, NvU64 size, NvU64 align, RM_ATTR_PAGE_SIZE attr, NvBool bContiguous) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -577,6 +581,7 @@ static inline void kgraphicsSetCtxBufferInfo(OBJGPU *arg0, struct KernelGraphics
 #endif //__nvoc_kernel_graphics_h_disabled
 
 void kgraphicsClearCtxBufferInfo_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline void kgraphicsClearCtxBufferInfo(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -586,6 +591,7 @@ static inline void kgraphicsClearCtxBufferInfo(OBJGPU *arg0, struct KernelGraphi
 #endif //__nvoc_kernel_graphics_h_disabled
 
 NV_STATUS kgraphicsInitCtxBufPool_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, struct Heap *arg2);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsInitCtxBufPool(OBJGPU *arg0, struct KernelGraphics *arg1, struct Heap *arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -596,6 +602,7 @@ static inline NV_STATUS kgraphicsInitCtxBufPool(OBJGPU *arg0, struct KernelGraph
 #endif //__nvoc_kernel_graphics_h_disabled
 
 struct CTX_BUF_POOL_INFO *kgraphicsGetCtxBufPool_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline struct CTX_BUF_POOL_INFO *kgraphicsGetCtxBufPool(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -606,6 +613,7 @@ static inline struct CTX_BUF_POOL_INFO *kgraphicsGetCtxBufPool(OBJGPU *arg0, str
 #endif //__nvoc_kernel_graphics_h_disabled
 
 void kgraphicsDestroyCtxBufPool_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline void kgraphicsDestroyCtxBufPool(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -615,6 +623,7 @@ static inline void kgraphicsDestroyCtxBufPool(OBJGPU *arg0, struct KernelGraphic
 #endif //__nvoc_kernel_graphics_h_disabled
 
 GR_GLOBALCTX_BUFFERS *kgraphicsGetGlobalCtxBuffers_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 gfid);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline GR_GLOBALCTX_BUFFERS *kgraphicsGetGlobalCtxBuffers(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 gfid) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -625,6 +634,7 @@ static inline GR_GLOBALCTX_BUFFERS *kgraphicsGetGlobalCtxBuffers(OBJGPU *arg0, s
 #endif //__nvoc_kernel_graphics_h_disabled
 
 NvBool kgraphicsIsGlobalCtxBufferSizeAligned_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, GR_GLOBALCTX_BUFFER arg2);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NvBool kgraphicsIsGlobalCtxBufferSizeAligned(OBJGPU *arg0, struct KernelGraphics *arg1, GR_GLOBALCTX_BUFFER arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -635,6 +645,7 @@ static inline NvBool kgraphicsIsGlobalCtxBufferSizeAligned(OBJGPU *arg0, struct 
 #endif //__nvoc_kernel_graphics_h_disabled
 
 const GR_BUFFER_ATTR *kgraphicsGetGlobalPrivAccessMapAttr_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline const GR_BUFFER_ATTR *kgraphicsGetGlobalPrivAccessMapAttr(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -645,6 +656,7 @@ static inline const GR_BUFFER_ATTR *kgraphicsGetGlobalPrivAccessMapAttr(OBJGPU *
 #endif //__nvoc_kernel_graphics_h_disabled
 
 NV_STATUS kgraphicsMapCtxBuffer_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, MEMORY_DESCRIPTOR *arg2, struct OBJVASPACE *arg3, VA_LIST *arg4, NvBool bAlignSize, NvBool bIsReadOnly);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsMapCtxBuffer(OBJGPU *arg0, struct KernelGraphics *arg1, MEMORY_DESCRIPTOR *arg2, struct OBJVASPACE *arg3, VA_LIST *arg4, NvBool bAlignSize, NvBool bIsReadOnly) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -655,6 +667,7 @@ static inline NV_STATUS kgraphicsMapCtxBuffer(OBJGPU *arg0, struct KernelGraphic
 #endif //__nvoc_kernel_graphics_h_disabled
 
 void kgraphicsUnmapCtxBuffer_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, struct OBJVASPACE *arg2, VA_LIST *arg3);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline void kgraphicsUnmapCtxBuffer(OBJGPU *arg0, struct KernelGraphics *arg1, struct OBJVASPACE *arg2, VA_LIST *arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -664,6 +677,7 @@ static inline void kgraphicsUnmapCtxBuffer(OBJGPU *arg0, struct KernelGraphics *
 #endif //__nvoc_kernel_graphics_h_disabled
 
 void kgraphicsFreeGlobalCtxBuffers_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 gfid);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline void kgraphicsFreeGlobalCtxBuffers(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 gfid) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -673,6 +687,7 @@ static inline void kgraphicsFreeGlobalCtxBuffers(OBJGPU *arg0, struct KernelGrap
 #endif //__nvoc_kernel_graphics_h_disabled
 
 NV_STATUS kgraphicsGetMainCtxBufferSize_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, NvBool bIncludeSubctxHdrs, NvU32 *pSize);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsGetMainCtxBufferSize(OBJGPU *arg0, struct KernelGraphics *arg1, NvBool bIncludeSubctxHdrs, NvU32 *pSize) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -683,6 +698,7 @@ static inline NV_STATUS kgraphicsGetMainCtxBufferSize(OBJGPU *arg0, struct Kerne
 #endif //__nvoc_kernel_graphics_h_disabled
 
 NV_STATUS kgraphicsGetClassByType_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 objectType, NvU32 *pClass);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsGetClassByType(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 objectType, NvU32 *pClass) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -693,6 +709,7 @@ static inline NV_STATUS kgraphicsGetClassByType(OBJGPU *arg0, struct KernelGraph
 #endif //__nvoc_kernel_graphics_h_disabled
 
 const GR_BUFFER_ATTR *kgraphicsGetContextBufferAttr_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, GR_CTX_BUFFER arg2);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline const GR_BUFFER_ATTR *kgraphicsGetContextBufferAttr(OBJGPU *arg0, struct KernelGraphics *arg1, GR_CTX_BUFFER arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -703,6 +720,7 @@ static inline const GR_BUFFER_ATTR *kgraphicsGetContextBufferAttr(OBJGPU *arg0, 
 #endif //__nvoc_kernel_graphics_h_disabled
 
 NV_STATUS kgraphicsCreateGoldenImageChannel_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsCreateGoldenImageChannel(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -713,6 +731,7 @@ static inline NV_STATUS kgraphicsCreateGoldenImageChannel(OBJGPU *arg0, struct K
 #endif //__nvoc_kernel_graphics_h_disabled
 
 NV_STATUS kgraphicsInitializeDeferredStaticData_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, NvHandle hClient, NvHandle hSubdevice);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsInitializeDeferredStaticData(OBJGPU *arg0, struct KernelGraphics *arg1, NvHandle hClient, NvHandle hSubdevice) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -723,6 +742,7 @@ static inline NV_STATUS kgraphicsInitializeDeferredStaticData(OBJGPU *arg0, stru
 #endif //__nvoc_kernel_graphics_h_disabled
 
 const struct KGRAPHICS_STATIC_INFO *kgraphicsGetStaticInfo_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline const struct KGRAPHICS_STATIC_INFO *kgraphicsGetStaticInfo(OBJGPU *arg0, struct KernelGraphics *arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
@@ -733,6 +753,7 @@ static inline const struct KGRAPHICS_STATIC_INFO *kgraphicsGetStaticInfo(OBJGPU 
 #endif //__nvoc_kernel_graphics_h_disabled
 
 NV_STATUS kgraphicsGetCaps_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, NvU8 *pGrCaps);
+
 #ifdef __nvoc_kernel_graphics_h_disabled
 static inline NV_STATUS kgraphicsGetCaps(OBJGPU *arg0, struct KernelGraphics *arg1, NvU8 *pGrCaps) {
     NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");

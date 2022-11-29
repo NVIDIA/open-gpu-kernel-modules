@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_nvdecctxPreDestruct(struct NvdecContext *pRe
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_nvdecctxIsDuplicate(struct NvdecContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvdecContext_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_nvdecctxGetNotificationListPtr(struct NvdecContext *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_NvdecContext_Notifier.offset));
 }
@@ -334,6 +338,8 @@ static void __nvoc_init_funcTable_NvdecContext_1(NvdecContext *pThis, RmHalspecO
     pThis->__nvdecctxCanCopy__ = &__nvoc_thunk_RsResource_nvdecctxCanCopy;
 
     pThis->__nvdecctxPreDestruct__ = &__nvoc_thunk_RsResource_nvdecctxPreDestruct;
+
+    pThis->__nvdecctxIsDuplicate__ = &__nvoc_thunk_RsResource_nvdecctxIsDuplicate;
 
     pThis->__nvdecctxGetNotificationListPtr__ = &__nvoc_thunk_Notifier_nvdecctxGetNotificationListPtr;
 

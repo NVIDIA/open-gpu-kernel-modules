@@ -748,6 +748,8 @@ pmaAllocatePages_retry:
 
     for (regionIdx = 0; regionIdx < pPma->regSize; regionIdx++)
     {
+        MEMORY_PROTECTION prot;
+
         if (regionList[regionIdx] == -1)
         {
             status = NV_ERR_NO_MEMORY;
@@ -760,6 +762,8 @@ pmaAllocatePages_retry:
 
         addrBase = pPma->pRegDescriptors[regId]->base;
         addrLimit = pPma->pRegDescriptors[regId]->limit;
+        prot = pPma->pRegDescriptors[regId]->bProtected ? MEMORY_PROTECTION_PROTECTED :
+                                                          MEMORY_PROTECTION_UNPROTECTED;
 
         //
         // If the start address of the range is less than the region's base
@@ -889,7 +893,7 @@ pmaAllocatePages_retry:
                                       (evictStart - addrBase) >> PMA_PAGE_SHIFT,
                                       (evictEnd - addrBase) >> PMA_PAGE_SHIFT);
 
-                status = _pmaEvictContiguous(pPma, pMap, evictStart, evictEnd);
+                status = _pmaEvictContiguous(pPma, pMap, evictStart, evictEnd, prot);
             }
             else
             {
@@ -920,7 +924,8 @@ pmaAllocatePages_retry:
                                       (evictPhysEnd - addrBase) >> PMA_PAGE_SHIFT);
 
                 status = _pmaEvictPages(pPma, pMap, curPages, numPagesLeftToAllocate,
-                                        pPages, numPagesAllocatedSoFar, pageSize, evictPhysBegin, evictPhysEnd);
+                                        pPages, numPagesAllocatedSoFar, pageSize,
+                                        evictPhysBegin, evictPhysEnd, prot);
             }
 
             if (status == NV_OK)

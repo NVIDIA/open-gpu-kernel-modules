@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0004.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV01_TIMER control commands and parameters */
 

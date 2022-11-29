@@ -68,9 +68,11 @@ struct PhysicalMemory {
     NvU32 (*__physmemGetRefCount__)(struct PhysicalMemory *);
     NV_STATUS (*__physmemMapTo__)(struct PhysicalMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__physmemControl_Prologue__)(struct PhysicalMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__physmemIsReady__)(struct PhysicalMemory *);
+    NvBool (*__physmemIsGpuMapAllowed__)(struct PhysicalMemory *, struct OBJGPU *);
+    NV_STATUS (*__physmemIsReady__)(struct PhysicalMemory *, NvBool);
     NV_STATUS (*__physmemCheckCopyPermissions__)(struct PhysicalMemory *, struct OBJGPU *, NvHandle);
     void (*__physmemPreDestruct__)(struct PhysicalMemory *);
+    NV_STATUS (*__physmemIsDuplicate__)(struct PhysicalMemory *, NvHandle, NvBool *);
     NV_STATUS (*__physmemUnmapFrom__)(struct PhysicalMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__physmemControl_Epilogue__)(struct PhysicalMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__physmemControlLookup__)(struct PhysicalMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -119,9 +121,11 @@ NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CAL
 #define physmemGetRefCount(pResource) physmemGetRefCount_DISPATCH(pResource)
 #define physmemMapTo(pResource, pParams) physmemMapTo_DISPATCH(pResource, pParams)
 #define physmemControl_Prologue(pResource, pCallContext, pParams) physmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define physmemIsReady(pMemory) physmemIsReady_DISPATCH(pMemory)
+#define physmemIsGpuMapAllowed(pMemory, pGpu) physmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define physmemIsReady(pMemory, bCopyConstructorContext) physmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define physmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) physmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define physmemPreDestruct(pResource) physmemPreDestruct_DISPATCH(pResource)
+#define physmemIsDuplicate(pMemory, hMemory, pDuplicate) physmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define physmemUnmapFrom(pResource, pParams) physmemUnmapFrom_DISPATCH(pResource, pParams)
 #define physmemControl_Epilogue(pResource, pCallContext, pParams) physmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define physmemControlLookup(pResource, pParams, ppEntry) physmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -181,8 +185,12 @@ static inline NV_STATUS physmemControl_Prologue_DISPATCH(struct PhysicalMemory *
     return pResource->__physmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS physmemIsReady_DISPATCH(struct PhysicalMemory *pMemory) {
-    return pMemory->__physmemIsReady__(pMemory);
+static inline NvBool physmemIsGpuMapAllowed_DISPATCH(struct PhysicalMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__physmemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS physmemIsReady_DISPATCH(struct PhysicalMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__physmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS physmemCheckCopyPermissions_DISPATCH(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -191,6 +199,10 @@ static inline NV_STATUS physmemCheckCopyPermissions_DISPATCH(struct PhysicalMemo
 
 static inline void physmemPreDestruct_DISPATCH(struct PhysicalMemory *pResource) {
     pResource->__physmemPreDestruct__(pResource);
+}
+
+static inline NV_STATUS physmemIsDuplicate_DISPATCH(struct PhysicalMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__physmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS physmemUnmapFrom_DISPATCH(struct PhysicalMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -214,6 +226,7 @@ static inline NvBool physmemAccessCallback_DISPATCH(struct PhysicalMemory *pReso
 }
 
 NV_STATUS physmemConstruct_IMPL(struct PhysicalMemory *arg_pPhysicalMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_physmemConstruct(arg_pPhysicalMemory, arg_pCallContext, arg_pParams) physmemConstruct_IMPL(arg_pPhysicalMemory, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

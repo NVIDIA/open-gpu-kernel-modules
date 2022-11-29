@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_dispswPreDestruct(struct DispSwObject *pReso
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispSwObject_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_dispswIsDuplicate(struct DispSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispSwObject_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispswGetNotificationListPtr(struct DispSwObject *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispSwObject_Notifier.offset));
 }
@@ -310,10 +314,7 @@ static void __nvoc_init_funcTable_DispSwObject_1(DispSwObject *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // Hal function -- dispswGetSwMethods
-    if (0)
-    {
-    }
-    else if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
     {
         pThis->__dispswGetSwMethods__ = &dispswGetSwMethods_46f6a7;
     }
@@ -371,6 +372,8 @@ static void __nvoc_init_funcTable_DispSwObject_1(DispSwObject *pThis, RmHalspecO
     pThis->__dispswCanCopy__ = &__nvoc_thunk_RsResource_dispswCanCopy;
 
     pThis->__dispswPreDestruct__ = &__nvoc_thunk_RsResource_dispswPreDestruct;
+
+    pThis->__dispswIsDuplicate__ = &__nvoc_thunk_RsResource_dispswIsDuplicate;
 
     pThis->__dispswGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispswGetNotificationListPtr;
 

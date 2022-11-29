@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl208f/ctrl208fbase.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV20_SUBDEVICE_DIAG: diagnostic class control commands and parameters */
 

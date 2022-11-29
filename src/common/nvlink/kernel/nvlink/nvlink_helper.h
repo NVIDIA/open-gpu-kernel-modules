@@ -1,29 +1,27 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2017-2020 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #ifndef _NVLINK_HELPER_H_
 #define _NVLINK_HELPER_H_
-
 
 //
 // fabric node id will be used as MSB 16 bits of the link token value to 
@@ -66,6 +64,11 @@ void nvlink_core_copy_device_info(nvlink_device *tmpDev, nvlink_detailed_dev_inf
 /************************************************************************************************/
 /****************************** NVLink initialization functions *********************************/
 /************************************************************************************************/
+
+/**
+ * Kick-off INITPHASE5 on the given array of links
+ */
+NvlStatus nvlink_core_initphase5(nvlink_link **links, NvU32 numLinks, NvU32 flags);
 
 /**
  * Kick-off INITPHASE1 on the given array of links
@@ -124,11 +127,17 @@ void nvlink_core_init_links_from_off_to_swcfg(nvlink_link **pLinks,
                                               NvU32         numLinks,
                                               NvU32         flags);
 
+/*
+ * Initialize all the endpoints from OFF to SWCFG state for Non-ALI sequence
+ * Used for nvlink 4.0+
+ */
+void nvlink_core_init_links_from_off_to_swcfg_non_ALI(nvlink_link **pLinks,
+                                                     NvU32         numLinks,
+                                                     NvU32         flags);
 /**
  * Send INITNEGOTIATE command on the given array of links
  */
 NvlStatus nvlink_core_initnegotiate(nvlink_link **links, NvU32 numLinks, NvU32 flags);
-
 
 /************************************************************************************************/
 /*************************** NVLink topology discovery functions ********************************/
@@ -195,6 +204,7 @@ NvlStatus nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT(nvlink_intr
                                                                      NvU32                   flags);
 
 
+
 /**
  * Train a single intranode connection associated with a list of links to HS using legacy
  * pre-Ampere sequence
@@ -202,6 +212,21 @@ NvlStatus nvlink_core_train_intranode_conns_from_swcfg_to_active_ALT(nvlink_intr
 NvlStatus nvlink_core_train_intranode_conns_from_swcfg_to_active_legacy(nvlink_intranode_conn **conns,
                                                                         NvU32                   connCount,
                                                                         NvU32                   flags);
+
+/**
+ * Train intranode connections associated with a list of links to HS using non-ALI sequence
+ * for nvlink 4.0+
+ */
+NvlStatus nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI(nvlink_intranode_conn **conns,
+                                                                        NvU32                   connCount,
+                                                                        NvU32                   flags);
+
+/**
+ * Check to make sure that links are in active and ready for ALI training for nvlink 4.0+
+ */
+NvlStatus nvlink_core_train_check_link_ready_ALI(nvlink_link **links,
+                                                 NvU32         linkCount);
+
 
 /************************************************************************************************/
 /********************************** NVLink shutdown functions ***********************************/
@@ -238,6 +263,15 @@ NvlStatus nvlink_core_powerdown_intranode_conns_from_active_to_swcfg(nvlink_intr
 NvlStatus nvlink_core_reset_intranode_conns(nvlink_intranode_conn **conns,
                                             NvU32                   connCount,
                                             NvU32                   flags);
+
+/**
+ * Check to make sure that links are in active and ready for ALI training for nvlink 4.0+
+ */
+NvlStatus nvlink_core_powerdown_floorswept_conns_to_off(nvlink_link **links,
+                                       NvU32          numLinks,
+                                       NvU32          numIoctrls,
+                                       NvU32          numLinksPerIoctrl,
+                                       NvU32          numActiveLinksPerIoctrl);
 
 
 /************************************************************************************************/

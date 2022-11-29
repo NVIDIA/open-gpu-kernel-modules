@@ -28,8 +28,6 @@
 // Source file: ctrl/ctrla06f/ctrla06finternal.finn
 //
 
-
-
 #include "ctrl/ctrla06f/ctrla06fbase.h"
 #include "ctrl/ctrla06f/ctrla06fgpfifo.h"
 

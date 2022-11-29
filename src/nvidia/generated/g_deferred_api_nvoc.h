@@ -52,27 +52,7 @@ typedef struct _def_deferred_api_info
     RS_PRIV_LEVEL       privLevel;              // privilege level of the client that initiated deferred call.
     void *              pDeferredApiInfo;
     NvP64               pDeferredPrivateData;
-} DEFERRED_API_INFO, *PDEFERRED_API_INFO;
-
-// RS-TODO: Delete. Keeping old typedef for transition.
-typedef struct DeferredApiObject *PDEFERRED_API_OBJECT;
-
-#ifndef __NVOC_CLASS_DeferredApiObject_TYPEDEF__
-#define __NVOC_CLASS_DeferredApiObject_TYPEDEF__
-typedef struct DeferredApiObject DeferredApiObject;
-#endif /* __NVOC_CLASS_DeferredApiObject_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_DeferredApiObject
-#define __nvoc_class_id_DeferredApiObject 0x8ea933
-#endif /* __nvoc_class_id_DeferredApiObject */
-
-
-
-NV_STATUS Class5080GetDeferredApiInfo(
-    PDEFERRED_API_OBJECT pDeferredApiObject,
-    NvHandle             hDeferredApi,
-    PDEFERRED_API_INFO  *ppCliDeferredApi
-);
+} DEFERRED_API_INFO;
 
 
 /*!
@@ -123,6 +103,7 @@ struct DeferredApiObject {
     NV_STATUS (*__defapiUnregisterEvent__)(struct DeferredApiObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__defapiCanCopy__)(struct DeferredApiObject *);
     void (*__defapiPreDestruct__)(struct DeferredApiObject *);
+    NV_STATUS (*__defapiIsDuplicate__)(struct DeferredApiObject *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__defapiGetNotificationListPtr__)(struct DeferredApiObject *);
     struct NotifShare *(*__defapiGetNotificationShare__)(struct DeferredApiObject *);
     NV_STATUS (*__defapiMap__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -187,6 +168,7 @@ NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject**, Dynamic*, NvU3
 #define defapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) defapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define defapiCanCopy(pResource) defapiCanCopy_DISPATCH(pResource)
 #define defapiPreDestruct(pResource) defapiPreDestruct_DISPATCH(pResource)
+#define defapiIsDuplicate(pResource, hMemory, pDuplicate) defapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define defapiGetNotificationListPtr(pNotifier) defapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define defapiGetNotificationShare(pNotifier) defapiGetNotificationShare_DISPATCH(pNotifier)
 #define defapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) defapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -313,6 +295,10 @@ static inline void defapiPreDestruct_DISPATCH(struct DeferredApiObject *pResourc
     pResource->__defapiPreDestruct__(pResource);
 }
 
+static inline NV_STATUS defapiIsDuplicate_DISPATCH(struct DeferredApiObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__defapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *defapiGetNotificationListPtr_DISPATCH(struct DeferredApiObject *pNotifier) {
     return pNotifier->__defapiGetNotificationListPtr__(pNotifier);
 }
@@ -330,8 +316,10 @@ static inline NV_STATUS defapiGetOrAllocNotifShare_DISPATCH(struct DeferredApiOb
 }
 
 NV_STATUS defapiConstruct_IMPL(struct DeferredApiObject *arg_pDeferredApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_defapiConstruct(arg_pDeferredApi, arg_pCallContext, arg_pParams) defapiConstruct_IMPL(arg_pDeferredApi, arg_pCallContext, arg_pParams)
 void defapiDestruct_IMPL(struct DeferredApiObject *pDeferredApi);
+
 #define __nvoc_defapiDestruct(pDeferredApi) defapiDestruct_IMPL(pDeferredApi)
 #undef PRIVATE_FIELD
 

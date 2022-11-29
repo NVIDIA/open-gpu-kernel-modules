@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -301,6 +301,12 @@ struct NVSWITCH_OBJI2C
     // I2C device allow list
     NVSWITCH_I2C_DEVICE_DESCRIPTOR_TYPE        *i2c_allow_list;
     NvU32                                  i2c_allow_list_size;
+
+    // For I2C via SOE support
+    NvBool      soeI2CSupported;
+    NvBool      kernelI2CSupported;
+    void        *pCpuAddr;
+    NvU64       dmaHandle;
 };
 
 //

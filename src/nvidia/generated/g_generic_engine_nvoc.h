@@ -77,6 +77,7 @@ struct GenericEngineApi {
     NV_STATUS (*__genapiInternalControlForward__)(struct GenericEngineApi *, NvU32, void *, NvU32);
     void (*__genapiPreDestruct__)(struct GenericEngineApi *);
     NV_STATUS (*__genapiUnmapFrom__)(struct GenericEngineApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__genapiIsDuplicate__)(struct GenericEngineApi *, NvHandle, NvBool *);
     void (*__genapiControl_Epilogue__)(struct GenericEngineApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__genapiControlLookup__)(struct GenericEngineApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvBool (*__genapiAccessCallback__)(struct GenericEngineApi *, struct RsClient *, void *, RsAccessRight);
@@ -131,6 +132,7 @@ NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi**, Dynamic*, NvU32,
 #define genapiInternalControlForward(pGpuResource, command, pParams, size) genapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define genapiPreDestruct(pResource) genapiPreDestruct_DISPATCH(pResource)
 #define genapiUnmapFrom(pResource, pParams) genapiUnmapFrom_DISPATCH(pResource, pParams)
+#define genapiIsDuplicate(pResource, hMemory, pDuplicate) genapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define genapiControl_Epilogue(pResource, pCallContext, pParams) genapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define genapiControlLookup(pResource, pParams, ppEntry) genapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define genapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) genapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
@@ -228,6 +230,10 @@ static inline NV_STATUS genapiUnmapFrom_DISPATCH(struct GenericEngineApi *pResou
     return pResource->__genapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS genapiIsDuplicate_DISPATCH(struct GenericEngineApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__genapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void genapiControl_Epilogue_DISPATCH(struct GenericEngineApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__genapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -241,8 +247,10 @@ static inline NvBool genapiAccessCallback_DISPATCH(struct GenericEngineApi *pRes
 }
 
 NV_STATUS genapiConstruct_IMPL(struct GenericEngineApi *arg_pGenericEngineApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_genapiConstruct(arg_pGenericEngineApi, arg_pCallContext, arg_pParams) genapiConstruct_IMPL(arg_pGenericEngineApi, arg_pCallContext, arg_pParams)
 void genapiDestruct_IMPL(struct GenericEngineApi *pGenericEngineApi);
+
 #define __nvoc_genapiDestruct(pGenericEngineApi) genapiDestruct_IMPL(pGenericEngineApi)
 #undef PRIVATE_FIELD
 

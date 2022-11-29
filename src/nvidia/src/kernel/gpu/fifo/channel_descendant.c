@@ -62,7 +62,7 @@ chandesConstruct_IMPL
     // Bad class creation can happen when GPU is in low power because class DB is invalid
     NV_ASSERT(gpuIsGpuFullPower(pGpu));
 
-    NV_ASSERT(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    NV_ASSERT(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     //
     // If debug mode is enabled on this GPU, check if the GPU is occupied by a
@@ -83,7 +83,7 @@ chandesConstruct_IMPL
     // engineType set in channel
     //
     if (kfifoIsPerRunlistChramEnabled(pKernelFifo) &&
-        (kchannelGetEngineType(pKernelChannel) == NV2080_ENGINE_TYPE_NULL))
+        (!RM_ENGINE_TYPE_IS_VALID(kchannelGetEngineType(pKernelChannel))))
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Channel should have engineType associated with it\n");
@@ -99,7 +99,7 @@ chandesConstruct_IMPL
     // be removed once we move to per engine chid management.
     //
     if (kfifoIsHostEngineExpansionSupported(pKernelFifo) &&
-        NV2080_ENGINE_TYPE_IS_VALID(kchannelGetEngineType(pKernelChannel)) &&
+        RM_ENGINE_TYPE_IS_VALID(kchannelGetEngineType(pKernelChannel)) &&
        (gpuIsCCorApmFeatureEnabled(pGpu) || bMIGInUse))
     {
         if (rmapiutilIsExternalClassIdInternalOnly(pParams->externalClassId))
@@ -114,7 +114,7 @@ chandesConstruct_IMPL
             //
             NV_ASSERT_OK_OR_RETURN(
                 kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                         ENGINE_INFO_TYPE_NV2080, kchannelGetEngineType(pKernelChannel),
+                                         ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32)kchannelGetEngineType(pKernelChannel),
                                          ENGINE_INFO_TYPE_ENG_DESC, &engDesc));
             portMemSet(&internalClassDescriptor, 0, sizeof(internalClassDescriptor));
             internalClassDescriptor.externalClassId = pParams->externalClassId;
@@ -128,26 +128,26 @@ chandesConstruct_IMPL
             if ((status != NV_OK) || (pClassDescriptor->engDesc != ENG_SW))
             {
                 NvU32 engDesc;
-                NvU32 engineId = kchannelGetEngineType(pKernelChannel);
+                RM_ENGINE_TYPE rmEngineType = kchannelGetEngineType(pKernelChannel);
                 // detect the GRCE case where we may be allocating a CE object on GR channel
-                if ((status == NV_OK) && IS_CE(pClassDescriptor->engDesc) && NV2080_ENGINE_TYPE_IS_GR(engineId))
+                if ((status == NV_OK) && IS_CE(pClassDescriptor->engDesc) && RM_ENGINE_TYPE_IS_GR(rmEngineType))
                 {
                     //
                     // Get the partner CE of GR engine based on runqueue of this channel
                     // Use this partner CE alongside externalClassId to fetch the correct class descriptor
                     //
                     NV2080_CTRL_GPU_GET_ENGINE_PARTNERLIST_PARAMS partnerParams = {0};
-                    partnerParams.engineType = engineId;
+                    partnerParams.engineType = gpuGetNv2080EngineType(rmEngineType);
                     partnerParams.runqueue = kchannelGetRunqueue(pKernelChannel);
                     NV_ASSERT_OK_OR_RETURN(kfifoGetEnginePartnerList_HAL(pGpu, pKernelFifo, &partnerParams));
                     NV_ASSERT_OR_RETURN(partnerParams.numPartners == 1, NV_ERR_INVALID_STATE);
-                    engineId = partnerParams.partnerList[0]; 
+                    rmEngineType = gpuGetRmEngineType(partnerParams.partnerList[0]); 
                 }
 
                 // Get the engDesc from engineType
                 NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                                                ENGINE_INFO_TYPE_NV2080,
-                                                                engineId,
+                                                                ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                                                (NvU32)rmEngineType,
                                                                 ENGINE_INFO_TYPE_ENG_DESC,
                                                                 &engDesc));
 

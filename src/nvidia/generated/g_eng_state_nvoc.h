@@ -293,6 +293,7 @@ static inline NvBool engstateIsPresent_DISPATCH(POBJGPU pGpu, POBJENGSTATE pEngs
 }
 
 NV_STATUS engstateConstructBase_IMPL(struct OBJENGSTATE *arg0, struct OBJGPU *arg1, ENGDESCRIPTOR arg2);
+
 #ifdef __nvoc_eng_state_h_disabled
 static inline NV_STATUS engstateConstructBase(struct OBJENGSTATE *arg0, struct OBJGPU *arg1, ENGDESCRIPTOR arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
@@ -303,6 +304,7 @@ static inline NV_STATUS engstateConstructBase(struct OBJENGSTATE *arg0, struct O
 #endif //__nvoc_eng_state_h_disabled
 
 void engstateLogStateTransitionPre_IMPL(struct OBJENGSTATE *arg0, ENGSTATE_STATE arg1, ENGSTATE_TRANSITION_DATA *arg2);
+
 #ifdef __nvoc_eng_state_h_disabled
 static inline void engstateLogStateTransitionPre(struct OBJENGSTATE *arg0, ENGSTATE_STATE arg1, ENGSTATE_TRANSITION_DATA *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
@@ -312,6 +314,7 @@ static inline void engstateLogStateTransitionPre(struct OBJENGSTATE *arg0, ENGST
 #endif //__nvoc_eng_state_h_disabled
 
 void engstateLogStateTransitionPost_IMPL(struct OBJENGSTATE *arg0, ENGSTATE_STATE arg1, ENGSTATE_TRANSITION_DATA *arg2);
+
 #ifdef __nvoc_eng_state_h_disabled
 static inline void engstateLogStateTransitionPost(struct OBJENGSTATE *arg0, ENGSTATE_STATE arg1, ENGSTATE_TRANSITION_DATA *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
@@ -321,6 +324,7 @@ static inline void engstateLogStateTransitionPost(struct OBJENGSTATE *arg0, ENGS
 #endif //__nvoc_eng_state_h_disabled
 
 const char *engstateGetName_IMPL(struct OBJENGSTATE *arg0);
+
 #ifdef __nvoc_eng_state_h_disabled
 static inline const char *engstateGetName(struct OBJENGSTATE *arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
@@ -331,8 +335,10 @@ static inline const char *engstateGetName(struct OBJENGSTATE *arg0) {
 #endif //__nvoc_eng_state_h_disabled
 
 void engstateDestruct_IMPL(POBJENGSTATE pEngstate);
+
 #define __nvoc_engstateDestruct(pEngstate) engstateDestruct_IMPL(pEngstate)
 NV_STATUS engstateStatePreInit_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+
 #ifdef __nvoc_eng_state_h_disabled
 static inline NV_STATUS engstateStatePreInit(POBJGPU pGpu, POBJENGSTATE pEngstate) {
     NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
@@ -343,6 +349,7 @@ static inline NV_STATUS engstateStatePreInit(POBJGPU pGpu, POBJENGSTATE pEngstat
 #endif //__nvoc_eng_state_h_disabled
 
 NV_STATUS engstateStateInit_IMPL(POBJGPU pGpu, POBJENGSTATE pEngstate);
+
 #ifdef __nvoc_eng_state_h_disabled
 static inline NV_STATUS engstateStateInit(POBJGPU pGpu, POBJENGSTATE pEngstate) {
     NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
@@ -353,6 +360,7 @@ static inline NV_STATUS engstateStateInit(POBJGPU pGpu, POBJENGSTATE pEngstate) 
 #endif //__nvoc_eng_state_h_disabled
 
 ENGDESCRIPTOR engstateGetDescriptor_IMPL(POBJENGSTATE pEngstate);
+
 #ifdef __nvoc_eng_state_h_disabled
 static inline ENGDESCRIPTOR engstateGetDescriptor(POBJENGSTATE pEngstate) {
     NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
@@ -365,6 +373,7 @@ static inline ENGDESCRIPTOR engstateGetDescriptor(POBJENGSTATE pEngstate) {
 #endif //__nvoc_eng_state_h_disabled
 
 struct OBJFIFO *engstateGetFifo_IMPL(POBJENGSTATE pEngstate);
+
 #ifdef __nvoc_eng_state_h_disabled
 static inline struct OBJFIFO *engstateGetFifo(POBJENGSTATE pEngstate) {
     NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");

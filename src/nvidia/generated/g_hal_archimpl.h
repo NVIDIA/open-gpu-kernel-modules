@@ -5,7 +5,7 @@
 // Profile:  shipping-gpus-openrm
 // Template: templates/gt_hal_archimpl.h
 //
-// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107
+// Chips:    TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 //
 
 #ifndef _G_RMCFG_HAL_ARCHIMPL_H_
@@ -77,6 +77,12 @@ const struct ChipID
     {  NV_PMC_BOOT_0_ARCHITECTURE_GA100, NV_PMC_BOOT_0_IMPLEMENTATION_7,   0x0 } , // GA107 
     {                               0x0,                            0x0,   0x0 } , // GA10B  (disabled)
     {                               0x0,                            0x0,   0x0 } , // GA102F (disabled)
+    {  NV_PMC_BOOT_0_ARCHITECTURE_AD100, NV_PMC_BOOT_0_IMPLEMENTATION_2,   0x0 } , // AD102 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_AD100, NV_PMC_BOOT_0_IMPLEMENTATION_3,   0x0 } , // AD103 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_AD100, NV_PMC_BOOT_0_IMPLEMENTATION_4,   0x0 } , // AD104 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_AD100, NV_PMC_BOOT_0_IMPLEMENTATION_6,   0x0 } , // AD106 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_AD100, NV_PMC_BOOT_0_IMPLEMENTATION_7,   0x0 } , // AD107 
+    {  NV_PMC_BOOT_0_ARCHITECTURE_GH100, NV_PMC_BOOT_0_IMPLEMENTATION_0,   0x0 } , // GH100 
     {                               0x0,                            0x0,   0x0 } , // T001_FERMI_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T124   (disabled)
     {                               0x0,                            0x0,   0x0 } , // T132   (disabled)
@@ -85,6 +91,8 @@ const struct ChipID
     {                               0x0,                            0x0,   0x0 } , // T194   (disabled)
     {                               0x0,                            0x0,   0x0 } , // T002_TURING_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T234   (disabled)
+    {                               0x0,                            0x0,   0x0 } , // T003_HOPPER_NOT_EXIST (disabled)
+    {                               0x0,                            0x0,   0x0 } , // T004_ADA_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T234D  (disabled)
     {                               0x0,                            0x0,   0x0 } , // AMODEL (disabled)
 

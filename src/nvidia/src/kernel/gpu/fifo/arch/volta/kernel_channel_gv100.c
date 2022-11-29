@@ -97,7 +97,7 @@ kchannelCreateUserdMemDescBc_GV100
                       "User provided memory info for index %d is NULL\n",
                       iter);
             NV_PRINTF(LEVEL_ERROR,
-                      "NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS needs to have all subdevice info\n");
+                      "NV_CHANNEL_ALLOC_PARAMS needs to have all subdevice info\n");
 
             hUserdMemory = phUserdMemory[0];
             userdOffset  = pUserdOffset[0];
@@ -269,7 +269,7 @@ kchannelCreateUserdMemDesc_GV100
  * @brief Delete the memory descriptors for userd memory allocated
  *        by client
  */
-NV_STATUS
+void
 kchannelDestroyUserdMemDesc_GV100
 (
     OBJGPU           *pGpu,
@@ -278,11 +278,6 @@ kchannelDestroyUserdMemDesc_GV100
 {
     NvU32 subdevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
-    if (pKernelChannel->pUserdSubDeviceMemDesc[subdevInst])
-    {
-        memdescDestroy(pKernelChannel->pUserdSubDeviceMemDesc[subdevInst]);
-        pKernelChannel->pUserdSubDeviceMemDesc[subdevInst] = NULL;
-    }
-
-    return NV_OK;
+    memdescDestroy(pKernelChannel->pUserdSubDeviceMemDesc[subdevInst]);
+    pKernelChannel->pUserdSubDeviceMemDesc[subdevInst] = NULL;
 }

@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_vblcbUnmapFrom(struct VblankCallback *p
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VblankCallback_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_vblcbIsDuplicate(struct VblankCallback *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VblankCallback_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_vblcbControl_Epilogue(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VblankCallback_RmResource.offset), pCallContext, pParams);
 }
@@ -283,6 +287,8 @@ static void __nvoc_init_funcTable_VblankCallback_1(VblankCallback *pThis) {
     pThis->__vblcbPreDestruct__ = &__nvoc_thunk_RsResource_vblcbPreDestruct;
 
     pThis->__vblcbUnmapFrom__ = &__nvoc_thunk_RsResource_vblcbUnmapFrom;
+
+    pThis->__vblcbIsDuplicate__ = &__nvoc_thunk_RsResource_vblcbIsDuplicate;
 
     pThis->__vblcbControl_Epilogue__ = &__nvoc_thunk_RmResource_vblcbControl_Epilogue;
 

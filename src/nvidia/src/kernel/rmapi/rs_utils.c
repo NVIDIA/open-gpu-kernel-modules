@@ -255,7 +255,7 @@ serverutilGenResourceHandle
     RmClient *pClient;
 
     // LOCK TEST: we should have the API lock here
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     if (NV_OK != serverutilGetClientUnderLock(hClient, &pClient))
         return NV_ERR_INVALID_CLIENT;
@@ -356,7 +356,7 @@ serverutilAcquireClient
     RmClient *pClient;
 
     // LOCK TEST: we should have the API lock here
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     if (NV_OK != serverAcquireClient(&g_resServ, hClient, access, &pRsClient))
         return NV_ERR_INVALID_CLIENT;

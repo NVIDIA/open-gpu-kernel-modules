@@ -37,6 +37,7 @@
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/pool_alloc.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
+#include "kernel/gpu/gpu_engine_type.h"
 
 // state of context buffer pools
 struct CTX_BUF_POOL_INFO
@@ -77,7 +78,7 @@ void      ctxBufPoolRelease(CTX_BUF_POOL_INFO *pCtxBufPool);
 void      ctxBufPoolDestroy(CTX_BUF_POOL_INFO **ppCtxBufPool);
 NvBool    ctxBufPoolIsSupported(OBJGPU *pGpu);
 NV_STATUS ctxBufPoolGetSizeAndPageSize(CTX_BUF_POOL_INFO *pCtxBufPool, OBJGPU *pGpu, NvU64 alignment, RM_ATTR_PAGE_SIZE attr, NvBool bContig, NvU64 *pSize, NvU32 *pPageSize);
-NV_STATUS ctxBufPoolGetGlobalPool(OBJGPU *pGpu, CTX_BUF_ID bufId, NvU32 engineType, CTX_BUF_POOL_INFO **ppCtxBufPool);
+NV_STATUS ctxBufPoolGetGlobalPool(OBJGPU *pGpu, CTX_BUF_ID bufId, RM_ENGINE_TYPE rmEngineType, CTX_BUF_POOL_INFO **ppCtxBufPool);
 NvBool    ctxBufPoolIsScrubSkipped(CTX_BUF_POOL_INFO *pCtxBufPool);
 void      ctxBufPoolSetScrubSkip(CTX_BUF_POOL_INFO *pCtxBufPool, NvBool bSkipScrub);
 #endif // _CTX_BUF_POOL_H_

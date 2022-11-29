@@ -59,6 +59,12 @@
 #include "mem_mgr/mem.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
 
+#include <acpidsmguids.h>
+#include <pex.h>
+#include "gps.h"
+#include "jt.h"
+
+
 
 
 extern const char *ppOsBugCheckBugcodeStr[];
@@ -716,6 +722,12 @@ NvU32 osReleaseRmSema(void *pSema, OBJGPU *pDpcGpu)
 
 void osSpinLoop(void)
 {
+    // Enable this code to get debug prints from Libos.
+}
+
+NvU64 osGetMaxUserVa(void)
+{
+    return os_get_max_user_va();
 }
 
 NV_STATUS osSchedule(void)
@@ -878,7 +890,7 @@ NV_STATUS osAllocPagesInternal(
     OBJSYS    *pSys = SYS_GET_INSTANCE();
     OBJGPU *pGpu = pMemDesc->pGpu;
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
-    void *pMemData;
+    void *pMemData = NULL;
     NV_STATUS status;
 
     memdescSetAddress(pMemDesc, NvP64_NULL);
@@ -926,6 +938,11 @@ NV_STATUS osAllocPagesInternal(
             nv->force_dma32_alloc = NV_FALSE;
     }
 
+    if (status != NV_OK)
+    {
+        return status;
+    }
+    
     //
     // If the OS layer doesn't think in RM page size, we need to inflate the
     // PTE array into RM pages.
@@ -1592,6 +1609,7 @@ void osDevWriteReg032(
 {
     NvBool vgpuHandled = NV_FALSE;
 
+    vgpuDevWriteReg032(pGpu, thisAddress, thisValue, &vgpuHandled);
     if (vgpuHandled)
     {
         return;
@@ -1651,6 +1669,7 @@ NvU32 osDevReadReg032(
     NvU32 retval = 0;
     NvBool vgpuHandled = NV_FALSE;
 
+    retval = vgpuDevReadReg032(pGpu, thisAddress, &vgpuHandled);
     if (vgpuHandled)
     {
         return retval;
@@ -1777,6 +1796,16 @@ void osGetTimeoutParams(OBJGPU *pGpu, NvU32 *pTimeoutUs, NvU32 *pScale, NvU32 *p
     NV_ASSERT((NV_GPU_MODE_GRAPHICS_MODE == gpuMode) ||
               (NV_GPU_MODE_COMPUTE_MODE  == gpuMode));
 
+    if (hypervisorIsVgxHyper())
+    {
+        //
+        // 1.8 seconds is chosen because it is 90% of the overall hard limit of 2.0
+        // seconds, imposed by WDDM driver rules.
+        // Currently primary use case of VGX is Windows, so setting 1.8 as default
+        //
+        *pTimeoutUs = 1.8 * 1000000;
+    }
+    else
     {
         switch (gpuMode)
         {
@@ -1798,7 +1827,6 @@ void osGetTimeoutParams(OBJGPU *pGpu, NvU32 *pTimeoutUs, NvU32 *pScale, NvU32 *p
     {
         *pScale = 60;       // 1s -> 1m
     }
-
     return;
 }
 
@@ -1935,22 +1963,28 @@ _initializeExportObjectFd
     NV_STATUS      status;
     RsResourceRef *pResourceRef;
     Device        *pDevice;
+    NvU32          deviceInstance = NV_MAX_DEVICES;
 
     if (nvfp->handles != NULL)
     {
         return NV_ERR_STATE_IN_USE;
     }
 
-    status = serverutilGetResourceRef(hClient, hDevice, &pResourceRef);
-    if (status != NV_OK)
+    if (hDevice != 0)
     {
-        return status;
-    }
+        status = serverutilGetResourceRef(hClient, hDevice, &pResourceRef);
+        if (status != NV_OK)
+        {
+            return status;
+        }
 
-    pDevice = dynamicCast(pResourceRef->pResource, Device);
-    if (pDevice == NULL)
-    {
-        return NV_ERR_INVALID_PARAMETER;
+        pDevice = dynamicCast(pResourceRef->pResource, Device);
+        if (pDevice == NULL)
+        {
+            return NV_ERR_INVALID_PARAMETER;
+        }
+
+        deviceInstance = pDevice->deviceInst;
     }
 
     NV_ASSERT_OK_OR_RETURN(os_alloc_mem((void **)&nvfp->handles,
@@ -1960,7 +1994,7 @@ _initializeExportObjectFd
                sizeof(nvfp->handles[0]) * maxObjects);
 
     nvfp->maxHandles     = maxObjects;
-    nvfp->deviceInstance = pDevice->deviceInst;
+    nvfp->deviceInstance = deviceInstance;
 
     if (metadata != NULL)
     {
@@ -2426,7 +2460,115 @@ NV_STATUS osCallACPI_DSM
     NvU16             *pSize
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    NV_STATUS   status;
+    NvU8       *pAcpiDsmGuid = NULL;
+    NvU32       acpiDsmRev;
+    nv_state_t *nv  = NV_GET_NV_STATE(pGpu);
+    nv_priv_t  *nvp = NV_GET_NV_PRIV(nv);
+    NvU16       acpiDsmInArgSize = 4;
+    NvBool      acpiNvpcfDsmFunction = NV_FALSE;
+
+    // do any handling/remapping of guid needed.
+    status = checkDsmCall(pGpu,
+                          (ACPI_DSM_FUNCTION *) &acpiDsmFunction,
+                          &acpiDsmSubFunction,
+                          pInOut,
+                          pSize);
+
+    // return if subfunction is not supported or we're returning cache data
+    if (status != NV_WARN_MORE_PROCESSING_REQUIRED)
+    {
+        return status;
+    }
+
+    switch ((NvU32) acpiDsmFunction)
+    {
+        case ACPI_DSM_FUNCTION_NBSI:
+            pAcpiDsmGuid = (NvU8 *) &NBSI_DSM_GUID;
+            acpiDsmRev  = NBSI_REVISION_ID;
+            break;
+        case ACPI_DSM_FUNCTION_NVHG:
+            pAcpiDsmGuid = (NvU8 *) &NVHG_DSM_GUID;
+            acpiDsmRev  = NVHG_REVISION_ID;
+            break;
+        case ACPI_DSM_FUNCTION_MXM:
+            pAcpiDsmGuid = (NvU8 *) &DSM_MXM_GUID;
+            acpiDsmRev  = ACPI_MXM_REVISION_ID;
+            break;
+        case ACPI_DSM_FUNCTION_NBCI:
+            pAcpiDsmGuid = (NvU8 *) &NBCI_DSM_GUID;
+            acpiDsmRev  = NBCI_REVISION_ID;
+            break;
+        case ACPI_DSM_FUNCTION_NVOP:
+            pAcpiDsmGuid = (NvU8 *) &NVOP_DSM_GUID;
+            acpiDsmRev  = NVOP_REVISION_ID;
+            break;
+        case ACPI_DSM_FUNCTION_PCFG:
+            pAcpiDsmGuid = (NvU8 *) &PCFG_DSM_GUID;
+            acpiDsmRev  = PCFG_REVISION_ID;
+            break;
+        case ACPI_DSM_FUNCTION_PEX:
+            pAcpiDsmGuid = (NvU8 *) &PEX_DSM_GUID;
+            acpiDsmRev   = PEX_REVISION_ID;
+            if (acpiDsmSubFunction == PEX_FUNC_SETLTRLATENCY)
+            {
+                acpiDsmInArgSize = (3 + *pSize);
+            }
+            break;
+        case (ACPI_DSM_FUNCTION_JT):
+            pAcpiDsmGuid = (NvU8 *) &JT_DSM_GUID;
+            acpiDsmRev = JT_REVISION_ID;
+            break;
+        case ACPI_DSM_FUNCTION_NVPCF:
+            {
+                pAcpiDsmGuid = (NvU8 *)&NVPCF_ACPI_DSM_GUID;
+                acpiDsmRev = NVPCF_ACPI_DSM_REVISION_ID;
+                acpiDsmInArgSize = (*pSize);
+                acpiNvpcfDsmFunction = NV_TRUE;
+                break;
+            }
+        case ACPI_DSM_FUNCTION_NVPCF_2X:
+            pAcpiDsmGuid = (NvU8 *)&NVPCF_ACPI_DSM_GUID;
+            acpiDsmRev = NVPCF_2X_ACPI_DSM_REVISION_ID;
+            acpiDsmInArgSize = (*pSize);
+            if (!nv->nvpcf_dsm_in_gpu_scope)
+            {
+                acpiNvpcfDsmFunction = NV_TRUE;
+            }
+            break;
+
+        default:
+            return NV_ERR_NOT_SUPPORTED;
+            break;
+    }
+
+    status = nv_acpi_dsm_method(nv,
+                                pAcpiDsmGuid,
+                                acpiDsmRev,
+                                acpiNvpcfDsmFunction,
+                                acpiDsmSubFunction,
+                                pInOut,
+                                acpiDsmInArgSize,
+                                NULL,
+                                pInOut,
+                                pSize);
+
+    if (status == NV_OK)
+    {
+        if (acpiDsmSubFunction == NV_ACPI_ALL_FUNC_SUPPORT)
+        {
+            // if handling get supported functions list... cache it for later calls
+            cacheDsmSupportedFunction(pGpu, acpiDsmFunction, acpiDsmSubFunction, pInOut, *pSize);
+        }
+    }
+    else if (nvp->b_mobile_config_enabled)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "osCallACPI_DSM: Error during 0x%x DSM subfunction 0x%x! status=0x%x\n",
+                  acpiDsmFunction, acpiDsmSubFunction, status);
+    }
+
+    return status;
 }
 
 NV_STATUS osCallACPI_DOD
@@ -3497,17 +3639,14 @@ osRemoveGpuSupported
  * - All address values are in the System Physical Address (SPA) space
  * - Targets can either be "Local" (bIsPeer=False) or for a specified "Peer"
  *   (bIsPeer=True, peerIndex=#) GPU
- * - Granularity of the target address space is returned as a bit shift value
- *   (e.g. granularity=37 implies a granularity of 128GiB)
  * - Target address and mask values have a specified bit width, and represent
  *   the higher order bits above the target address granularity
  *
  * @param[in]   pGpu                GPU object pointer
- * @param[out]  pAddrSysPhys        Pointer to hold SPA aligned at 128GB boundary
+ * @param[out]  pAddrSysPhys        Pointer to hold SPA
  * @param[out]  pAddrWidth          Address range width value pointer
  * @param[out]  pMask               Mask value pointer
  * @param[out]  pMaskWidth          Mask width value pointer
- * @param[out]  pGranularity        Granularity value pointer
  * @param[in]   bIsPeer             NV_TRUE if this is a peer, local GPU otherwise
  * @param[in]   peerIndex           Peer index
  *
@@ -3520,11 +3659,10 @@ NV_STATUS
 osGetAtsTargetAddressRange
 (
     OBJGPU *pGpu,
-    NvU32   *pAddrSysPhys,
+    NvU64   *pAddrSysPhys,
     NvU32   *pAddrWidth,
     NvU32   *pMask,
     NvU32   *pMaskWidth,
-    NvU32   *pGranularity,
     NvBool  bIsPeer,
     NvU32   peerIndex
 )
@@ -3548,27 +3686,21 @@ osGetAtsTargetAddressRange
     if (bIsPeer)
     {
         const int addrWidth = 0x10;
-        const NvU32 guestAddrGranularity = 37;
 
         *pAddrSysPhys = 0;
         *pAddrWidth = addrWidth;
         *pMask = 0;
         *pMaskWidth = addrMaskWidth;
-        *pGranularity = guestAddrGranularity;
         return NV_OK;
     }
     else
     {
-        NvU64 addrSysPhys;
-
-        NV_STATUS status = nv_get_device_memory_config(nv, &addrSysPhys, NULL,
-                                                       pAddrWidth, pGranularity, NULL);
+        NV_STATUS status = nv_get_device_memory_config(nv, pAddrSysPhys, NULL,
+                                                       pAddrWidth, NULL);
         if (status == NV_OK)
         {
             *pMask = NVBIT(*pAddrWidth) - 1U;
             *pMaskWidth = addrMaskWidth;
-
-            *pAddrSysPhys = addrSysPhys >> *pGranularity;
         }
         return status;
     }
@@ -3615,7 +3747,7 @@ osGetFbNumaInfo
 
     nv = NV_GET_NV_STATE(pGpu);
 
-    NV_STATUS status = nv_get_device_memory_config(nv, NULL, pAddrPhys, NULL, NULL, pNodeId);
+    NV_STATUS status = nv_get_device_memory_config(nv, NULL, pAddrPhys, NULL, pNodeId);
 
     return status;
 #endif
@@ -3901,7 +4033,7 @@ osNumaOnliningEnabled
     // Note that this numaNodeId value fetched from Linux layer might not be
     // accurate since it is possible to overwrite it with regkey on some configs
     //
-    if (nv_get_device_memory_config(pOsGpuInfo, NULL, NULL, NULL, NULL,
+    if (nv_get_device_memory_config(pOsGpuInfo, NULL, NULL, NULL,
                                     &numaNodeId) != NV_OK)
     {
         return NV_FALSE;
@@ -4750,6 +4882,35 @@ osTegraSocGetImpImportData
 }
 
 /*!
+ * @brief Tells BPMP whether or not RFL is valid
+ *
+ * Display HW generates an ok_to_switch signal which asserts when mempool
+ * occupancy is high enough to be able to turn off memory long enough to
+ * execute a dramclk frequency switch without underflowing display output.
+ * ok_to_switch drives the RFL ("request for latency") signal in the memory
+ * unit, and the switch sequencer waits for this signal to go active before
+ * starting a dramclk switch.  However, if the signal is not valid (e.g., if
+ * display HW or SW has not been initialized yet), the switch sequencer ignores
+ * the signal.  This API tells BPMP whether or not the signal is valid.
+ *
+ * @param[in] pOsGpuInfo    Per GPU Linux state
+ * @param[in] bEnable       True if RFL will be valid; false if invalid
+ *
+ * @returns NV_OK if successful,
+ *          NV_ERR_NOT_SUPPORTED if the functionality is not available, or
+ *          NV_ERR_GENERIC if some other kind of error occurred.
+ */
+NV_STATUS
+osTegraSocEnableDisableRfl
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvBool       bEnable
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+/*!
  * @brief Allocates a specified amount of ISO memory bandwidth for display
  *
  * floorBandwidthKBPS is the minimum required (i.e., floor) dramclk frequency
@@ -4798,7 +4959,8 @@ osCreateNanoTimer
     void **pTimer
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    nv_create_nano_timer(pOsGpuInfo, pTmrEvent, (nv_nano_timer_t **)pTimer);
+    return NV_OK;
 }
 
 /*!
@@ -4816,7 +4978,8 @@ osStartNanoTimer
     NvU64 timeNs
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    nv_start_nano_timer(pOsGpuInfo, (nv_nano_timer_t *)pTimer, timeNs);
+    return NV_OK;
 }
 
 /*!
@@ -4832,8 +4995,8 @@ osCancelNanoTimer
     void *pTimer
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
-
+    nv_cancel_nano_timer(pOsGpuInfo, (nv_nano_timer_t *)pTimer);
+    return NV_OK;
 }
 
 /*!
@@ -4850,7 +5013,8 @@ osDestroyNanoTimer
     void *pTimer
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    nv_destroy_nano_timer(pOsGpuInfo, (nv_nano_timer_t *)pTimer);
+    return NV_OK;
 }
 
 /*!
@@ -4960,6 +5124,51 @@ osGetSyncpointAperture
 }
 
 /*!
+ * @brief Enable PCIe AtomicOp Requester Enable and return
+ * the completer side capabilities that the requester can send.
+ *
+ * @param[in]    pOsGpuInfo   OS_GPU_INFO OS specific GPU information pointer
+ * @param[out]   pMask        mask of supported atomic size, including one or more of:
+ *                            OS_PCIE_CAP_MASK_REQ_ATOMICS_32
+ *                            OS_PCIE_CAP_MASK_REQ_ATOMICS_64
+ *                            OS_PCIE_CAP_MASK_REQ_ATOMICS_128
+ *
+ * @returns NV_STATUS, NV_OK if success
+ *                     NV_ERR_NOT_SUPPORTED if platform doesn't support this
+ *                     feature.
+ *                     NV_ERR_GENERIC for any other error
+ */
+
+NV_STATUS
+osConfigurePcieReqAtomics
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvU32       *pMask
+)
+{
+    if (pMask)
+    {
+        *pMask = 0U;
+        if (pOsGpuInfo)
+        {
+            if (os_enable_pci_req_atomics(pOsGpuInfo->handle,
+                                          OS_INTF_PCIE_REQ_ATOMICS_32BIT) == NV_OK)
+                *pMask |= OS_PCIE_CAP_MASK_REQ_ATOMICS_32;
+            if (os_enable_pci_req_atomics(pOsGpuInfo->handle,
+                                          OS_INTF_PCIE_REQ_ATOMICS_64BIT) == NV_OK)
+                *pMask |= OS_PCIE_CAP_MASK_REQ_ATOMICS_64;
+            if (os_enable_pci_req_atomics(pOsGpuInfo->handle,
+                                          OS_INTF_PCIE_REQ_ATOMICS_128BIT) == NV_OK)
+                *pMask |= OS_PCIE_CAP_MASK_REQ_ATOMICS_128;
+
+            if (*pMask != 0)
+                return NV_OK;
+        }
+    }
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+/*!
  * @brief Check GPU is accessible or not
  *
  * @param[in]  pGpu           GPU object pointer
@@ -4974,6 +5183,52 @@ osIsGpuAccessible
 )
 {
     return nv_is_gpu_accessible(NV_GET_NV_STATE(pGpu));
+}
+
+/*!
+ * @brief Check whether GPU has received a shutdown notification from the OS
+ */
+NvBool
+osIsGpuShutdown
+(
+    OBJGPU *pGpu
+)
+{
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+    return nv ? nv->is_shutdown : NV_TRUE;
+}
+
+/*!
+ * @brief Check GPU OS info matches
+ *
+ * @param[in]  pGpu           GPU object pointer
+ *
+ * @returns NVBool, Returns TRUE if matched.
+ */
+NvBool
+osMatchGpuOsInfo
+(
+    OBJGPU *pGpu,
+    void   *pOsInfo
+)
+{
+    return nv_match_gpu_os_info(NV_GET_NV_STATE(pGpu), pOsInfo);
+}
+
+/*!
+ * @brief Release GPU OS info.
+ *
+ * @param[in]  pOsInfo        GPU OS info pointer
+ *
+ * @returns void
+ */
+void
+osReleaseGpuOsInfo
+(
+    void   *pOsInfo
+)
+{
+    nv_put_file_private(pOsInfo);
 }
 
 NvBool

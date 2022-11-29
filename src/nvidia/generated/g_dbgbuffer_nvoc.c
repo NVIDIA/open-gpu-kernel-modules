@@ -169,6 +169,10 @@ static NV_STATUS __nvoc_thunk_RsResource_dbgbufUnmapFrom(struct DebugBufferApi *
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_dbgbufIsDuplicate(struct DebugBufferApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_dbgbufControl_Epilogue(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RmResource.offset), pCallContext, pParams);
 }
@@ -265,6 +269,8 @@ static void __nvoc_init_funcTable_DebugBufferApi_1(DebugBufferApi *pThis) {
     pThis->__dbgbufPreDestruct__ = &__nvoc_thunk_RsResource_dbgbufPreDestruct;
 
     pThis->__dbgbufUnmapFrom__ = &__nvoc_thunk_RsResource_dbgbufUnmapFrom;
+
+    pThis->__dbgbufIsDuplicate__ = &__nvoc_thunk_RsResource_dbgbufIsDuplicate;
 
     pThis->__dbgbufControl_Epilogue__ = &__nvoc_thunk_RmResource_dbgbufControl_Epilogue;
 

@@ -44,6 +44,7 @@ CC_ONLY_CFLAGS        ?=
 CXX_ONLY_CFLAGS       ?=
 LDFLAGS               ?=
 BIN_LDFLAGS           ?=
+EXTRA_CFLAGS          ?=
 
 STACK_USAGE_WARNING   ?=
 CFLAGS                += $(if $(STACK_USAGE_WARNING),-Wstack-usage=$(STACK_USAGE_WARNING))
@@ -83,6 +84,8 @@ ifeq ($(DEVELOP),1)
   DO_STRIP            ?=
   CFLAGS              += -DDEVELOP=1
 endif
+
+CFLAGS                += $(EXTRA_CFLAGS)
 
 STRIP_CMD             ?= strip
 DO_STRIP              ?= 1
@@ -209,7 +212,6 @@ ifneq ($(_eval_available),T)
   $(error This Makefile requires a GNU Make that supports 'eval'.  Please upgrade to GNU make 3.80 or later)
 endif
 
-
 ##############################################################################
 # Test passing $(1) to $(CC).  If $(CC) succeeds, then echo $(1).
 #
@@ -223,6 +225,19 @@ endif
 TEST_CC_ARG = \
  $(shell $(CC) -c -x c /dev/null -Werror $(1) -o /dev/null > /dev/null 2>&1 && \
    $(ECHO) $(1))
+
+
+##############################################################################
+# Test if instruction $(1) is understood by the assembler
+# Returns "1" if the instruction is understood, else returns empty string.
+#
+# Example usage:
+# ENDBR_SUPPORTED := $(call AS_HAS_INSTR, endbr64)
+##############################################################################
+
+AS_HAS_INSTR = \
+ $(shell if ($(ECHO) "$(1)" | $(CC) -c -x assembler - -o /dev/null) >/dev/null 2>&1 ;\
+   then $(ECHO) "1"; else $(ECHO) ""; fi)
 
 
 ##############################################################################
@@ -243,7 +258,7 @@ MANDIR = $(DESTDIR)$(PREFIX)/share/man/man1
 ##############################################################################
 
 default build: all
-
+.PHONY: default build
 
 ##############################################################################
 # get the definition of NVIDIA_VERSION from version.mk

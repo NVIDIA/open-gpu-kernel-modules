@@ -27,6 +27,7 @@
 #include <platform/chipset/chipset.h>
 #include <platform/chipset/chipset_info.h>
 #include <nvpcie.h>
+#include <nvdevid.h>
 
 #define CHIPSET_SETUP_FUNC(name) static NV_STATUS name(OBJCL *pCl);
 
@@ -61,6 +62,7 @@ CHIPSET_SETUP_FUNC(Intel_A2D2_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_A2C9_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_A301_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_0685_setupFunc)
+CHIPSET_SETUP_FUNC(Intel_IceLake_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_4381_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_7A82_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_7A04_setupFunc)
@@ -85,7 +87,6 @@ CHIPSET_SETUP_FUNC(Huawei_Kunpeng920_setupFunc)
 CHIPSET_SETUP_FUNC(Mellanox_BlueField_setupFunc)
 CHIPSET_SETUP_FUNC(Amazon_Gravitron2_setupFunc)
 CHIPSET_SETUP_FUNC(Fujitsu_A64FX_setupFunc)
-CHIPSET_SETUP_FUNC(Phytium_FT2000_setupFunc)
 CHIPSET_SETUP_FUNC(Ampere_Altra_setupFunc)
 CHIPSET_SETUP_FUNC(Arm_NeoverseN1_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_T210_setupFunc)
@@ -153,6 +154,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0xA14A, CS_INTEL_A145,      "SkyLake C232",         Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA14D, CS_INTEL_A145,      "SkyLake-H",            Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA244, CS_INTEL_A145,      "SkyLake C620",         Intel_A145_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0xA1C8, CS_INTEL_A145,      "SkyLake C620",         Intel_A145_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x8D47, CS_INTEL_8D47,      "IntelX99",             Intel_8D47_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x8D44, CS_INTEL_8D47,      "IntelC612",            Intel_8D44_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA2C5, CS_INTEL_A2C5,      "IntelZ270",            Intel_A2C5_setupFunc},
@@ -177,13 +179,13 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0xA30D, CS_INTEL_A2C9,      "IntelH370",            Intel_A2C9_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA301, CS_INTEL_A301,      "Intel-CannonLake",     Intel_A301_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x0685, CS_INTEL_0685,      "Intel-CometLake",      Intel_0685_setupFunc},
-    {PCI_VENDOR_ID_INTEL,       0xA1CB, CS_INTEL_C620,      "Intel-IceLake",        NULL},
+    {PCI_VENDOR_ID_INTEL,       0xA1CB, CS_INTEL_C620,      "Intel-IceLake",        Intel_IceLake_setupFunc},
 	{PCI_VENDOR_ID_INTEL,       0x4381, CS_INTEL_4381,      "Intel-RocketLake",     Intel_4381_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x4385, CS_INTEL_4381,      "Intel-RocketLake",     Intel_4381_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A82, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A84, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x1B81, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
-    {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        NULL},
+    {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        Intel_IceLake_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A04, CS_INTEL_7A04,      "Intel-RaptorLake",     Intel_7A04_setupFunc},
 
     {PCI_VENDOR_ID_NVIDIA,      0x0FAE, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},
@@ -196,7 +198,8 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_NVIDIA,      0x229A, CS_NVIDIA_T234,      "T234",      Nvidia_T194_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x229C, CS_NVIDIA_T234,      "T234",      Nvidia_T194_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x229E, CS_NVIDIA_T234,      "T234",      Nvidia_T194_setupFunc},
-
+    {PCI_VENDOR_ID_NVIDIA,      0x22C2, CS_NVIDIA_T23x,      "T23x",      Nvidia_T194_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22C3, CS_NVIDIA_T23x,      "T23x",      Nvidia_T194_setupFunc},
 
     {PCI_VENDOR_ID_SIS,         0x0649, CS_SIS_649,          "649",          SiS_656_setupFunc},
     {PCI_VENDOR_ID_SIS,         0x0656, CS_SIS_656,          "656",          SiS_656_setupFunc},
@@ -237,12 +240,6 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2, "Mellanox BlueField 2 Crypto disabled",  NULL},
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2, "Amazon Gravitron2",  Amazon_Gravitron2_setupFunc},
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX,     "Fujitsu A64FX", Fujitsu_A64FX_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xDC08, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xFC01, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xFC08, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
-    {PCI_VENDOR_ID_CADENCE,     0xFC16, CS_PHYTIUM_FT2000, "Phytium FT2000", Phytium_FT2000_setupFunc},
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500,  "Phytium S2500",  NULL},
     {PCI_VENDOR_ID_CADENCE,     0xDC08, CS_PHYTIUM_S2500,  "Phytium S2500",  NULL},
     {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_S2500,  "Phytium S2500",  NULL},
@@ -313,6 +310,8 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_NVIDIA,      0x229A, CS_NVIDIA_T234},        // NVIDIA Tegra Orin RP0
     {PCI_VENDOR_ID_NVIDIA,      0x229C, CS_NVIDIA_T234},        // NVIDIA Tegra Orin RP1
     {PCI_VENDOR_ID_NVIDIA,      0x229E, CS_NVIDIA_T234},        // NVIDIA Tegra Orin RP2
+    {PCI_VENDOR_ID_NVIDIA,      0x22C2, CS_NVIDIA_T23x},        // NVIDIA Tegra RP0
+    {PCI_VENDOR_ID_NVIDIA,      0x22C3, CS_NVIDIA_T23x},        // NVIDIA Tegra RP1
 
     {PCI_VENDOR_ID_APM,         0xe004, CS_APM_STORM},          // Applied Micro X-Gene "Storm"
     {PCI_VENDOR_ID_MARVELL,     0xAF00, CS_MARVELL_THUNDERX2},  // Marvell ThunderX2
@@ -331,18 +330,12 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2 Crypto disabled
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2},  // Amazon Gravitron2
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX},      // Fujitsu A64FX
-    {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xDC08, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xFC01, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xFC08, CS_PHYTIUM_FT2000},     // Phytium FT2000
-    {PCI_VENDOR_ID_CADENCE,     0xFC16, CS_PHYTIUM_FT2000},     // Phytium FT2000
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_CADENCE,     0xDC08, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_CADENCE,     0xFC01, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_CADENCE,     0xFC08, CS_PHYTIUM_S2500},      // Phytium S2500
-    {PCI_VENDOR_ID_CADENCE,     0xDC16, CS_PHYTIUM_S2500},      // Phytium S2500
+    {PCI_VENDOR_ID_CADENCE,     0xFC16, CS_PHYTIUM_S2500},      // Phytium S2500
     {PCI_VENDOR_ID_AMPERE,      0xE000, CS_AMPERE_ALTRA},       // Ampere Altra
     {PCI_VENDOR_ID_AMPERE,      0xE00D, CS_AMPERE_ALTRA},       // Ampere Altra
     {PCI_VENDOR_ID_AMPERE,      0xE00E, CS_AMPERE_ALTRA},       // Ampere Altra

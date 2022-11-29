@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2021 NVIDIA Corporation
+    Copyright (c) 2018-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -30,39 +30,41 @@
 #include "uvm_test.h"
 #include "uvm_test_ioctl.h"
 
+#if defined(NV_LINUX_SCHED_MM_H_PRESENT)
+#include <linux/sched/mm.h>
+#elif defined(NV_LINUX_SCHED_H_PRESENT)
+#include <linux/sched.h>
+#endif
+
 //
 // This comment block describes some implementation rationale. See the header
 // for the API descriptions.
 //
 // ========================= Retain count vs mm_users ==========================
 //
-// uvm_va_space_mm manages its own retained ref count and wait queue. When the
-// mm is disabled via mmu_notifier_release, we use the wait queue to wait for
-// the ref count to go to 0.
+// We use two methods to guarantee the mm is available and won't be destroyed.
 //
-// An alternative is to scrap all that and just use mm_users. Retain would call
-// something like mmget_not_zero(mm), and release would use mmput(). No
-// additional count would be needed, since we'd be guaranteed that the mm_struct
-// couldn't start teardown while we have the count.
+// On the call paths where mmput() can be called, we call
+// uvm_va_space_mm_or_current_retain() which calls mmget_not_zero(). This
+// prevents mm teardown and avoids races with uvm_va_space_mm_shutdown() since
+// it prevents mmput() -> __mmput() -> exit_mmap() -> mmu_notifier_release() ->
+// uvm_va_space_mm_shutdown() until uvm_va_space_mm_or_current_release(), and
+// we guarantee that we can't call uvm_va_space_mm_unregister() ->
+// mmu_notifier_unregister() -> uvm_va_space_mm_shutdown() path when someone is
+// about to call uvm_va_space_mm_or_current_retain().
+// Kernel calls like mmu_interval_notifier_insert() require mm_users to be
+// greater than 0. In general, these are the ioctl paths.
 //
-// There are two reasons we don't take that approach. The first is that we
-// cannot call mmput() on all paths which retain a va_space_mm, particularly the
-// GPU fault handler. mmput() may result in exit_mmap(), which could result in
-// RM calls and VA space destroy. Those need to wait for the GPU fault handler
-// to finish, so if we took that approach we'd deadlock.
-//
-// There is a recent mmput_async() addition to the kernel which would resolve
-// this problem. As of v5.2 it was not exported for drivers, although that
-// appears to be in the works. However, even if exported we would have to
-// implement a fallback path for earlier kernels, and the complexity of such a
-// path would be significant.
-//
-// The second problem is that mmget_not_zero() approach is susceptible to
-// livelock problems. Two threads, say the fault handlers for two GPUs, could
-// conceivably keep mm_users high by constantly retaining and releasing,
-// preventing the mm from ever being torn down. The va_space_mm implementation
-// below does not have this problem because mm shutdown causes later retains to
-// fail, which guarantees that the count will eventually go to 0.
+// On the replayable GPU fault handling path, we need the mm to be able to
+// service faults in the window when mm_users == 0 but mmu_notifier_release()
+// hasn't yet been called. We can't call mmput() because it may result in
+// exit_mmap(), which could result in RM calls and VA space destroy. Those need
+// to wait for the GPU fault handler to finish, so on that path we use an
+// internal retained reference count and wait queue. When the mm is disabled
+// via mmu_notifier_release(), we use the wait queue to wait for the reference
+// count to go to 0.
+// We also use this path for older Linux kernels where mm_users > 0 isn't
+// required.
 //
 // ============================ Handling mm teardown ===========================
 //
@@ -195,7 +197,19 @@ bool uvm_va_space_mm_enabled(uvm_va_space_t *va_space)
 
 static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space);
 
+#if !defined(NV_MMGET_NOT_ZERO_PRESENT)
+static bool mmget_not_zero(struct mm_struct *mm)
+{
+    return atomic_inc_not_zero(&mm->mm_users);
+}
+#endif
+
 #if UVM_CAN_USE_MMU_NOTIFIERS()
+
+    static void uvm_mmput(struct mm_struct *mm)
+    {
+        mmput(mm);
+    }
 
     static uvm_va_space_t *get_va_space(struct mmu_notifier *mn)
     {
@@ -264,6 +278,11 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space);
         mmu_notifier_unregister(&va_space_mm->mmu_notifier, va_space_mm->mm);
     }
 #else
+    static void uvm_mmput(struct mm_struct *mm)
+    {
+        UVM_ASSERT(0);
+    }
+
     static int uvm_mmu_notifier_register(uvm_va_space_mm_t *va_space_mm)
     {
         UVM_ASSERT(0);
@@ -371,12 +390,12 @@ struct mm_struct *uvm_va_space_mm_or_current_retain(uvm_va_space_t *va_space)
         return NULL;
 
     // If the va_space_mm matches current->mm then it would be safe but sub-
-    // optimal to call uvm_va_space_mm_retain(). current->mm is always valid to
+    // optimal to call mmget_not_zero(). current->mm is always valid to
     // use when non-NULL so there is no need to retain it.
     if (!uvm_va_space_mm_enabled(va_space) || va_space_mm->mm == current->mm)
         return current->mm;
 
-    return uvm_va_space_mm_retain(va_space);
+    return mmget_not_zero(va_space_mm->mm) ? va_space_mm->mm : NULL;
 }
 
 void uvm_va_space_mm_release(uvm_va_space_t *va_space)
@@ -408,8 +427,14 @@ void uvm_va_space_mm_release(uvm_va_space_t *va_space)
 
 void uvm_va_space_mm_or_current_release(uvm_va_space_t *va_space, struct mm_struct *mm)
 {
+    // We can't hold the VA space lock or mmap_lock across this function since
+    // mmput() may trigger uvm_va_space_mm_shutdown(), which takes those locks
+    // and also waits for other threads which may take those locks.
+    uvm_assert_unlocked_order(UVM_LOCK_ORDER_MMAP_LOCK);
+    uvm_assert_unlocked_order(UVM_LOCK_ORDER_VA_SPACE);
+
     if (mm && mm != current->mm)
-        uvm_va_space_mm_release(va_space);
+        uvm_mmput(mm);
 }
 
 static void uvm_va_space_mm_shutdown_delay(uvm_va_space_t *va_space)
@@ -587,14 +612,13 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
 static NV_STATUS mm_read64(struct mm_struct *mm, NvU64 addr, NvU64 *val)
 {
     long ret;
-    int write = 0, force = 0;
     struct page *page;
     NvU64 *mapping;
 
     UVM_ASSERT(IS_ALIGNED(addr, sizeof(*val)));
 
     uvm_down_read_mmap_lock(mm);
-    ret = NV_GET_USER_PAGES_REMOTE(NULL, mm, (unsigned long)addr, 1, write, force, &page, NULL);
+    ret = NV_PIN_USER_PAGES_REMOTE(mm, (unsigned long)addr, 1, 0, &page, NULL, NULL);
     uvm_up_read_mmap_lock(mm);
 
     if (ret < 0)
@@ -605,7 +629,7 @@ static NV_STATUS mm_read64(struct mm_struct *mm, NvU64 addr, NvU64 *val)
     mapping = (NvU64 *)((char *)kmap(page) + (addr % PAGE_SIZE));
     *val = *mapping;
     kunmap(page);
-    put_page(page);
+    NV_UNPIN_USER_PAGE(page);
 
     return NV_OK;
 }
@@ -663,6 +687,36 @@ NV_STATUS uvm_test_va_space_mm_delay_shutdown(UVM_TEST_VA_SPACE_MM_DELAY_SHUTDOW
     }
 
     uvm_va_space_up_write(va_space);
+
+    return status;
+}
+
+NV_STATUS uvm_test_va_space_mm_or_current_retain(UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN_PARAMS *params,
+                                                 struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+    struct mm_struct *mm;
+    NV_STATUS status = NV_OK;
+
+    mm = uvm_va_space_mm_or_current_retain(va_space);
+    if (!mm)
+        return NV_ERR_PAGE_TABLE_NOT_AVAIL;
+
+    if (params->retain_done_ptr) {
+        NvU64 flag = true;
+
+        if (nv_copy_to_user((void __user *)params->retain_done_ptr, &flag, sizeof(flag)))
+            status = NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (status == NV_OK) {
+        if (params->sleep_us)
+            usleep_range(params->sleep_us, params->sleep_us + 1000);
+
+        params->mm_users = atomic_read(&mm->mm_users);
+    }
+
+    uvm_va_space_mm_or_current_release(va_space, mm);
 
     return status;
 }

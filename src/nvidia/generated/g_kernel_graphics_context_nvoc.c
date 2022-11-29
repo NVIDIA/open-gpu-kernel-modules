@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_kgrctxUnmapFrom(struct KernelGraphicsCo
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_kgrctxIsDuplicate(struct KernelGraphicsContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_kgrctxControl_Epilogue(struct KernelGraphicsContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsContext_RmResource.offset), pCallContext, pParams);
 }
@@ -362,6 +366,8 @@ static void __nvoc_init_funcTable_KernelGraphicsContext_1(KernelGraphicsContext 
     pThis->__kgrctxPreDestruct__ = &__nvoc_thunk_RsResource_kgrctxPreDestruct;
 
     pThis->__kgrctxUnmapFrom__ = &__nvoc_thunk_RsResource_kgrctxUnmapFrom;
+
+    pThis->__kgrctxIsDuplicate__ = &__nvoc_thunk_RsResource_kgrctxIsDuplicate;
 
     pThis->__kgrctxControl_Epilogue__ = &__nvoc_thunk_RmResource_kgrctxControl_Epilogue;
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
@@ -228,6 +230,9 @@ kgmmuDetermineMaxVASize_GM107
         case GMMU_FMT_VERSION_2:
             pKernelGmmu->maxVASize = 1ULL << 49;
         break;
+        case GMMU_FMT_VERSION_3:
+            pKernelGmmu->maxVASize = 1ULL << 57;
+        break;
         default:
             pKernelGmmu->maxVASize = 1ULL << 40;
     }
@@ -310,9 +315,11 @@ kgmmuGetHwPteApertureFromMemdesc_GM107
                 aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
             }
             break;
-        case ADDR_FBMEM:
-        case ADDR_FABRIC:
         case ADDR_FABRIC_V2:
+        case ADDR_FABRIC_MC:
+            aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
+            break;
+        case ADDR_FBMEM:
             aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
             break;
         default:

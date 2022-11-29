@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_kgrobjPreDestruct(struct KernelGraphicsObjec
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsObject_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_kgrobjIsDuplicate(struct KernelGraphicsObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelGraphicsObject_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_kgrobjGetNotificationListPtr(struct KernelGraphicsObject *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelGraphicsObject_Notifier.offset));
 }
@@ -344,6 +348,8 @@ static void __nvoc_init_funcTable_KernelGraphicsObject_1(KernelGraphicsObject *p
     pThis->__kgrobjCanCopy__ = &__nvoc_thunk_RsResource_kgrobjCanCopy;
 
     pThis->__kgrobjPreDestruct__ = &__nvoc_thunk_RsResource_kgrobjPreDestruct;
+
+    pThis->__kgrobjIsDuplicate__ = &__nvoc_thunk_RsResource_kgrobjIsDuplicate;
 
     pThis->__kgrobjGetNotificationListPtr__ = &__nvoc_thunk_Notifier_kgrobjGetNotificationListPtr;
 

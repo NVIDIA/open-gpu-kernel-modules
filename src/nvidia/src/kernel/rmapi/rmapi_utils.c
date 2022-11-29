@@ -23,6 +23,7 @@
 #include "rmapi/rmapi_utils.h"
 #include "rmapi/rs_utils.h"
 #include "resource_desc.h"
+#include "nvoc/rtti.h"
 
 #include "gpu/gpu.h"
 #include "gpu_mgr/gpu_mgr.h"
@@ -144,4 +145,38 @@ rmapiutilIsExternalClassIdInternalOnly
     RS_RESOURCE_DESC *pResDesc = RsResInfoByExternalClassId(externalClassId);
     NV_ASSERT_OR_RETURN(pResDesc != NULL, NV_FALSE);
     return (pResDesc->flags & RS_FLAGS_INTERNAL_ONLY) != 0x0;
+}
+
+NV_STATUS
+rmapiutilGetControlInfo
+(
+    NvU32 cmd,
+    NvU32 *pFlags,
+    NvU32 *pAccessRight
+)
+{
+    RS_RESOURCE_DESC *pResourceDesc = RsResInfoByExternalClassId(DRF_VAL(XXXX, _CTRL_CMD, _CLASS, cmd));
+
+    if (pResourceDesc != NULL)
+    {
+        struct NVOC_CLASS_DEF *pClassDef = (void*)pResourceDesc->pClassInfo;
+        if (pClassDef != NULL)
+        {
+            const struct NVOC_EXPORTED_METHOD_DEF *pMethodDef =
+                nvocGetExportedMethodDefFromMethodInfo_IMPL(pClassDef->pExportInfo, cmd);
+
+            if (pMethodDef != NULL)
+            {
+                if (pFlags != NULL)
+                    *pFlags = pMethodDef->flags;
+
+                if (pAccessRight != NULL)
+                    *pAccessRight = pMethodDef->accessRight;
+
+                return NV_OK;
+            }
+        }
+    }
+
+    return NV_ERR_OBJECT_NOT_FOUND;
 }

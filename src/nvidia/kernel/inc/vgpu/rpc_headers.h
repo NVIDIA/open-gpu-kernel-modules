@@ -227,4 +227,10 @@ typedef struct VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS
 
 #define PMA_SCRUBBER_SHARED_BUFFER_MAX_GUEST_PAGES_v1F_0C 500
 
+/*
+ *  Maximum number of SMs that can be read in one RPC call to get error states
+ */
+
+#define VGPU_RPC_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PER_RPC_v21_06 80
+
 #endif // __vgpu_rpc_nv_headers_h__

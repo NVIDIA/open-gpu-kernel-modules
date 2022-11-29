@@ -30,10 +30,6 @@
 // Source file: ctrl/ctrl2080/ctrl2080nvd.finn
 //
 
-
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 #include "ctrl/ctrlxxxx.h"

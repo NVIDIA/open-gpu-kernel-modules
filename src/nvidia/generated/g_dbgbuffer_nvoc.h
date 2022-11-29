@@ -80,6 +80,7 @@ struct DebugBufferApi {
     NV_STATUS (*__dbgbufInternalControlForward__)(struct DebugBufferApi *, NvU32, void *, NvU32);
     void (*__dbgbufPreDestruct__)(struct DebugBufferApi *);
     NV_STATUS (*__dbgbufUnmapFrom__)(struct DebugBufferApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__dbgbufIsDuplicate__)(struct DebugBufferApi *, NvHandle, NvBool *);
     void (*__dbgbufControl_Epilogue__)(struct DebugBufferApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dbgbufControlLookup__)(struct DebugBufferApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvBool (*__dbgbufAccessCallback__)(struct DebugBufferApi *, struct RsClient *, void *, RsAccessRight);
@@ -133,6 +134,7 @@ NV_STATUS __nvoc_objCreate_DebugBufferApi(DebugBufferApi**, Dynamic*, NvU32, CAL
 #define dbgbufInternalControlForward(pGpuResource, command, pParams, size) dbgbufInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dbgbufPreDestruct(pResource) dbgbufPreDestruct_DISPATCH(pResource)
 #define dbgbufUnmapFrom(pResource, pParams) dbgbufUnmapFrom_DISPATCH(pResource, pParams)
+#define dbgbufIsDuplicate(pResource, hMemory, pDuplicate) dbgbufIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dbgbufControl_Epilogue(pResource, pCallContext, pParams) dbgbufControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define dbgbufControlLookup(pResource, pParams, ppEntry) dbgbufControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dbgbufAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) dbgbufAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
@@ -220,6 +222,10 @@ static inline NV_STATUS dbgbufUnmapFrom_DISPATCH(struct DebugBufferApi *pResourc
     return pResource->__dbgbufUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS dbgbufIsDuplicate_DISPATCH(struct DebugBufferApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__dbgbufIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void dbgbufControl_Epilogue_DISPATCH(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__dbgbufControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -233,8 +239,10 @@ static inline NvBool dbgbufAccessCallback_DISPATCH(struct DebugBufferApi *pResou
 }
 
 NV_STATUS dbgbufConstruct_IMPL(struct DebugBufferApi *arg_pDebugBufferApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_dbgbufConstruct(arg_pDebugBufferApi, arg_pCallContext, arg_pParams) dbgbufConstruct_IMPL(arg_pDebugBufferApi, arg_pCallContext, arg_pParams)
 void dbgbufDestruct_IMPL(struct DebugBufferApi *pDebugBufferApi);
+
 #define __nvoc_dbgbufDestruct(pDebugBufferApi) dbgbufDestruct_IMPL(pDebugBufferApi)
 #undef PRIVATE_FIELD
 

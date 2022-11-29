@@ -38,6 +38,7 @@
 #include "gpu/gsp/gsp_static_config.h"
 #include "vgpu/vgpu_events.h"
 #include "gpu/perf/kern_perf_gpuboostsync.h"
+#include "nvdevid.h"
 
 /*-----------------------Static Private Method Prototypes---------------------*/
 static NV_STATUS _gpuboostmgrApplyPolicyFilters(NV0000_SYNC_GPU_BOOST_GROUP_CONFIG *);

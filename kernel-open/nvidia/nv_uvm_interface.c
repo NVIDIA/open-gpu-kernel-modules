@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -196,9 +196,7 @@ NV_STATUS nvUvmInterfaceSessionCreate(uvmGpuSessionHandle *session,
     memset(platformInfo, 0, sizeof(*platformInfo));
     platformInfo->atsSupported = nv_ats_supported;
 
-
-
-
+    platformInfo->sevEnabled = os_sev_enabled;
 
     status = rm_gpu_ops_create_session(sp, (gpuSessionHandle *)session);
 
@@ -700,6 +698,7 @@ EXPORT_SYMBOL(nvUvmInterfaceUnsetPageDirectory);
 NV_STATUS nvUvmInterfaceDupAllocation(uvmGpuAddressSpaceHandle srcVaSpace,
                                       NvU64 srcAddress,
                                       uvmGpuAddressSpaceHandle dstVaSpace,
+                                      NvU64 dstVaAlignment,
                                       NvU64 *dstAddress)
 {
     nvidia_stack_t *sp = NULL;
@@ -714,6 +713,7 @@ NV_STATUS nvUvmInterfaceDupAllocation(uvmGpuAddressSpaceHandle srcVaSpace,
                                       (gpuAddressSpaceHandle)srcVaSpace,
                                       srcAddress,
                                       (gpuAddressSpaceHandle)dstVaSpace,
+                                      dstVaAlignment,
                                       dstAddress);
 
     nv_kmem_cache_free_stack(sp);
@@ -1419,115 +1419,6 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
                                                  methodStreamSize);
 }
 EXPORT_SYMBOL(nvUvmInterfacePagingChannelPushStream);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #else // NV_UVM_ENABLE
 

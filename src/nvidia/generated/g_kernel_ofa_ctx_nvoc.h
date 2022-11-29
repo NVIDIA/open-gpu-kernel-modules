@@ -81,6 +81,7 @@ struct OfaContext {
     NV_STATUS (*__ofactxUnregisterEvent__)(struct OfaContext *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__ofactxCanCopy__)(struct OfaContext *);
     void (*__ofactxPreDestruct__)(struct OfaContext *);
+    NV_STATUS (*__ofactxIsDuplicate__)(struct OfaContext *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__ofactxGetNotificationListPtr__)(struct OfaContext *);
     struct NotifShare *(*__ofactxGetNotificationShare__)(struct OfaContext *);
     NV_STATUS (*__ofactxMap__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -140,11 +141,13 @@ NV_STATUS __nvoc_objCreate_OfaContext(OfaContext**, Dynamic*, NvU32, struct CALL
 #define ofactxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ofactxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define ofactxCanCopy(pResource) ofactxCanCopy_DISPATCH(pResource)
 #define ofactxPreDestruct(pResource) ofactxPreDestruct_DISPATCH(pResource)
+#define ofactxIsDuplicate(pResource, hMemory, pDuplicate) ofactxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define ofactxGetNotificationListPtr(pNotifier) ofactxGetNotificationListPtr_DISPATCH(pNotifier)
 #define ofactxGetNotificationShare(pNotifier) ofactxGetNotificationShare_DISPATCH(pNotifier)
 #define ofactxMap(pGpuResource, pCallContext, pParams, pCpuMapping) ofactxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define ofactxGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ofactxGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NV_STATUS ofactxConstructHal_KERNEL(struct OfaContext *pOfaContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 
 #ifdef __nvoc_kernel_ofa_ctx_h_disabled
 static inline NV_STATUS ofactxConstructHal(struct OfaContext *pOfaContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -158,6 +161,7 @@ static inline NV_STATUS ofactxConstructHal(struct OfaContext *pOfaContext, struc
 #define ofactxConstructHal_HAL(pOfaContext, pCallContext, pParams) ofactxConstructHal(pOfaContext, pCallContext, pParams)
 
 void ofactxDestructHal_KERNEL(struct OfaContext *pOfaContext);
+
 
 #ifdef __nvoc_kernel_ofa_ctx_h_disabled
 static inline void ofactxDestructHal(struct OfaContext *pOfaContext) {
@@ -267,6 +271,10 @@ static inline NvBool ofactxCanCopy_DISPATCH(struct OfaContext *pResource) {
 
 static inline void ofactxPreDestruct_DISPATCH(struct OfaContext *pResource) {
     pResource->__ofactxPreDestruct__(pResource);
+}
+
+static inline NV_STATUS ofactxIsDuplicate_DISPATCH(struct OfaContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__ofactxIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline PEVENTNOTIFICATION *ofactxGetNotificationListPtr_DISPATCH(struct OfaContext *pNotifier) {

@@ -110,6 +110,8 @@ NvBool nvRmEvoMapVideoMemory(NVDevEvoPtr pDevEvo,
 NvBool nvRmAllocDeviceEvo(NVDevEvoPtr pDevEvo,
                           const struct NvKmsAllocDeviceRequest *pRequest);
 void nvRmFreeDeviceEvo(NVDevEvoPtr pDevEvo);
+NvBool nvRmRegisterDIFREventHandler(NVDevEvoPtr pDevEvo);
+void nvRmUnregisterDIFREventHandler(NVDevEvoPtr pDevEvo);
 NvBool nvRmIsPossibleToActivateDpyIdList(NVDispEvoPtr pDispEvo,
                                          const NVDpyIdList dpyIdList);
 NvBool nvRmVTSwitch(NVDevEvoPtr pDevEvo, NvU32 cmd);

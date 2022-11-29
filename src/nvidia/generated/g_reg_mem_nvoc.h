@@ -68,9 +68,11 @@ struct RegisterMemory {
     NvU32 (*__regmemGetRefCount__)(struct RegisterMemory *);
     NV_STATUS (*__regmemMapTo__)(struct RegisterMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__regmemControl_Prologue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__regmemIsReady__)(struct RegisterMemory *);
+    NvBool (*__regmemIsGpuMapAllowed__)(struct RegisterMemory *, struct OBJGPU *);
+    NV_STATUS (*__regmemIsReady__)(struct RegisterMemory *, NvBool);
     NV_STATUS (*__regmemCheckCopyPermissions__)(struct RegisterMemory *, struct OBJGPU *, NvHandle);
     void (*__regmemPreDestruct__)(struct RegisterMemory *);
+    NV_STATUS (*__regmemIsDuplicate__)(struct RegisterMemory *, NvHandle, NvBool *);
     NV_STATUS (*__regmemUnmapFrom__)(struct RegisterMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__regmemControl_Epilogue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__regmemControlLookup__)(struct RegisterMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -119,9 +121,11 @@ NV_STATUS __nvoc_objCreate_RegisterMemory(RegisterMemory**, Dynamic*, NvU32, CAL
 #define regmemGetRefCount(pResource) regmemGetRefCount_DISPATCH(pResource)
 #define regmemMapTo(pResource, pParams) regmemMapTo_DISPATCH(pResource, pParams)
 #define regmemControl_Prologue(pResource, pCallContext, pParams) regmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define regmemIsReady(pMemory) regmemIsReady_DISPATCH(pMemory)
+#define regmemIsGpuMapAllowed(pMemory, pGpu) regmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define regmemIsReady(pMemory, bCopyConstructorContext) regmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define regmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) regmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define regmemPreDestruct(pResource) regmemPreDestruct_DISPATCH(pResource)
+#define regmemIsDuplicate(pMemory, hMemory, pDuplicate) regmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define regmemUnmapFrom(pResource, pParams) regmemUnmapFrom_DISPATCH(pResource, pParams)
 #define regmemControl_Epilogue(pResource, pCallContext, pParams) regmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define regmemControlLookup(pResource, pParams, ppEntry) regmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -181,8 +185,12 @@ static inline NV_STATUS regmemControl_Prologue_DISPATCH(struct RegisterMemory *p
     return pResource->__regmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS regmemIsReady_DISPATCH(struct RegisterMemory *pMemory) {
-    return pMemory->__regmemIsReady__(pMemory);
+static inline NvBool regmemIsGpuMapAllowed_DISPATCH(struct RegisterMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__regmemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS regmemIsReady_DISPATCH(struct RegisterMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__regmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS regmemCheckCopyPermissions_DISPATCH(struct RegisterMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -191,6 +199,10 @@ static inline NV_STATUS regmemCheckCopyPermissions_DISPATCH(struct RegisterMemor
 
 static inline void regmemPreDestruct_DISPATCH(struct RegisterMemory *pResource) {
     pResource->__regmemPreDestruct__(pResource);
+}
+
+static inline NV_STATUS regmemIsDuplicate_DISPATCH(struct RegisterMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__regmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS regmemUnmapFrom_DISPATCH(struct RegisterMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -214,6 +226,7 @@ static inline NvBool regmemAccessCallback_DISPATCH(struct RegisterMemory *pResou
 }
 
 NV_STATUS regmemConstruct_IMPL(struct RegisterMemory *arg_pRegisterMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_regmemConstruct(arg_pRegisterMemory, arg_pCallContext, arg_pParams) regmemConstruct_IMPL(arg_pRegisterMemory, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

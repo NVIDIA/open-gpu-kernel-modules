@@ -99,6 +99,7 @@ struct EventBuffer {
     NV_STATUS (*__eventbufferMapTo__)(struct EventBuffer *, RS_RES_MAP_TO_PARAMS *);
     void (*__eventbufferPreDestruct__)(struct EventBuffer *);
     NV_STATUS (*__eventbufferUnmapFrom__)(struct EventBuffer *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__eventbufferIsDuplicate__)(struct EventBuffer *, NvHandle, NvBool *);
     void (*__eventbufferControl_Epilogue__)(struct EventBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__eventbufferControlLookup__)(struct EventBuffer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__eventbufferMap__)(struct EventBuffer *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -171,6 +172,7 @@ NV_STATUS __nvoc_objCreate_EventBuffer(EventBuffer**, Dynamic*, NvU32, struct CA
 #define eventbufferMapTo(pResource, pParams) eventbufferMapTo_DISPATCH(pResource, pParams)
 #define eventbufferPreDestruct(pResource) eventbufferPreDestruct_DISPATCH(pResource)
 #define eventbufferUnmapFrom(pResource, pParams) eventbufferUnmapFrom_DISPATCH(pResource, pParams)
+#define eventbufferIsDuplicate(pResource, hMemory, pDuplicate) eventbufferIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define eventbufferControl_Epilogue(pResource, pCallContext, pParams) eventbufferControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define eventbufferControlLookup(pResource, pParams, ppEntry) eventbufferControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define eventbufferMap(pResource, pCallContext, pParams, pCpuMapping) eventbufferMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -255,6 +257,10 @@ static inline NV_STATUS eventbufferUnmapFrom_DISPATCH(struct EventBuffer *pResou
     return pResource->__eventbufferUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS eventbufferIsDuplicate_DISPATCH(struct EventBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__eventbufferIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void eventbufferControl_Epilogue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__eventbufferControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -272,8 +278,10 @@ static inline NvBool eventbufferAccessCallback_DISPATCH(struct EventBuffer *pRes
 }
 
 NV_STATUS eventbufferConstruct_IMPL(struct EventBuffer *arg_pEventBuffer, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_eventbufferConstruct(arg_pEventBuffer, arg_pCallContext, arg_pParams) eventbufferConstruct_IMPL(arg_pEventBuffer, arg_pCallContext, arg_pParams)
 void eventbufferDestruct_IMPL(struct EventBuffer *pEventBuffer);
+
 #define __nvoc_eventbufferDestruct(pEventBuffer) eventbufferDestruct_IMPL(pEventBuffer)
 #undef PRIVATE_FIELD
 

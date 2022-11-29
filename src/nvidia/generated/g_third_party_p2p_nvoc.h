@@ -217,6 +217,7 @@ struct ThirdPartyP2P {
     NV_STATUS (*__thirdpartyp2pInternalControlForward__)(struct ThirdPartyP2P *, NvU32, void *, NvU32);
     void (*__thirdpartyp2pPreDestruct__)(struct ThirdPartyP2P *);
     NV_STATUS (*__thirdpartyp2pUnmapFrom__)(struct ThirdPartyP2P *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__thirdpartyp2pIsDuplicate__)(struct ThirdPartyP2P *, NvHandle, NvBool *);
     void (*__thirdpartyp2pControl_Epilogue__)(struct ThirdPartyP2P *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__thirdpartyp2pControlLookup__)(struct ThirdPartyP2P *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__thirdpartyp2pMap__)(struct ThirdPartyP2P *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -288,6 +289,7 @@ NV_STATUS __nvoc_objCreate_ThirdPartyP2P(ThirdPartyP2P**, Dynamic*, NvU32, struc
 #define thirdpartyp2pInternalControlForward(pGpuResource, command, pParams, size) thirdpartyp2pInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define thirdpartyp2pPreDestruct(pResource) thirdpartyp2pPreDestruct_DISPATCH(pResource)
 #define thirdpartyp2pUnmapFrom(pResource, pParams) thirdpartyp2pUnmapFrom_DISPATCH(pResource, pParams)
+#define thirdpartyp2pIsDuplicate(pResource, hMemory, pDuplicate) thirdpartyp2pIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define thirdpartyp2pControl_Epilogue(pResource, pCallContext, pParams) thirdpartyp2pControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define thirdpartyp2pControlLookup(pResource, pParams, ppEntry) thirdpartyp2pControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define thirdpartyp2pMap(pGpuResource, pCallContext, pParams, pCpuMapping) thirdpartyp2pMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -394,6 +396,10 @@ static inline NV_STATUS thirdpartyp2pUnmapFrom_DISPATCH(struct ThirdPartyP2P *pR
     return pResource->__thirdpartyp2pUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS thirdpartyp2pIsDuplicate_DISPATCH(struct ThirdPartyP2P *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__thirdpartyp2pIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void thirdpartyp2pControl_Epilogue_DISPATCH(struct ThirdPartyP2P *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__thirdpartyp2pControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -411,10 +417,13 @@ static inline NvBool thirdpartyp2pAccessCallback_DISPATCH(struct ThirdPartyP2P *
 }
 
 NV_STATUS thirdpartyp2pConstruct_IMPL(struct ThirdPartyP2P *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_thirdpartyp2pConstruct(arg_pResource, arg_pCallContext, arg_pParams) thirdpartyp2pConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 void thirdpartyp2pDestruct_IMPL(struct ThirdPartyP2P *pResource);
+
 #define __nvoc_thirdpartyp2pDestruct(pResource) thirdpartyp2pDestruct_IMPL(pResource)
 NvBool thirdpartyp2pIsValidClientPid_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 pid, NvHandle hClient);
+
 #ifdef __nvoc_third_party_p2p_h_disabled
 static inline NvBool thirdpartyp2pIsValidClientPid(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 pid, NvHandle hClient) {
     NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
@@ -425,6 +434,7 @@ static inline NvBool thirdpartyp2pIsValidClientPid(struct ThirdPartyP2P *pThirdP
 #endif //__nvoc_third_party_p2p_h_disabled
 
 NV_STATUS thirdpartyp2pDelMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey, NvBool bIsRsyncNeeded);
+
 #ifdef __nvoc_third_party_p2p_h_disabled
 static inline NV_STATUS thirdpartyp2pDelMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey, NvBool bIsRsyncNeeded) {
     NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
@@ -435,6 +445,7 @@ static inline NV_STATUS thirdpartyp2pDelMappingInfoByKey(struct ThirdPartyP2P *p
 #endif //__nvoc_third_party_p2p_h_disabled
 
 NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey, NvBool bIsRsyncNeeded);
+
 #ifdef __nvoc_third_party_p2p_h_disabled
 static inline NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey(struct ThirdPartyP2P *pThirdPartyP2P, void *pKey, NvBool bIsRsyncNeeded) {
     NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
@@ -445,6 +456,7 @@ static inline NV_STATUS thirdpartyp2pDelPersistentMappingInfoByKey(struct ThirdP
 #endif //__nvoc_third_party_p2p_h_disabled
 
 NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 vaSpaceToken, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *ppVASpaceInfo);
+
 #ifdef __nvoc_third_party_p2p_h_disabled
 static inline NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken(struct ThirdPartyP2P *pThirdPartyP2P, NvU32 vaSpaceToken, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *ppVASpaceInfo) {
     NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");
@@ -455,6 +467,7 @@ static inline NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken(struct ThirdPartyP2
 #endif //__nvoc_third_party_p2p_h_disabled
 
 NV_STATUS thirdpartyp2pGetNextVASpaceInfo_IMPL(struct ThirdPartyP2P *pThirdPartyP2P, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *arg0);
+
 #ifdef __nvoc_third_party_p2p_h_disabled
 static inline NV_STATUS thirdpartyp2pGetNextVASpaceInfo(struct ThirdPartyP2P *pThirdPartyP2P, PCLI_THIRD_PARTY_P2P_VASPACE_INFO *arg0) {
     NV_ASSERT_FAILED_PRECOMP("ThirdPartyP2P was disabled!");

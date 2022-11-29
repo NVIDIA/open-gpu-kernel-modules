@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_perfbufferUnmapFrom(struct PerfBuffer *
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_perfbufferIsDuplicate(struct PerfBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_perfbufferControl_Epilogue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
 }
@@ -265,6 +269,8 @@ static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner
     pThis->__perfbufferPreDestruct__ = &__nvoc_thunk_RsResource_perfbufferPreDestruct;
 
     pThis->__perfbufferUnmapFrom__ = &__nvoc_thunk_RsResource_perfbufferUnmapFrom;
+
+    pThis->__perfbufferIsDuplicate__ = &__nvoc_thunk_RsResource_perfbufferIsDuplicate;
 
     pThis->__perfbufferControl_Epilogue__ = &__nvoc_thunk_RmResource_perfbufferControl_Epilogue;
 

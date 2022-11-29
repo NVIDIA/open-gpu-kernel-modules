@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0000/ctrl0000unix.finn
 //
 
-
-
-
 #include "ctrl/ctrl0000/ctrl0000base.h"
 
 #include "ctrl/ctrlxxxx.h"
@@ -224,6 +221,9 @@ typedef struct NV0000_CTRL_OS_GET_GPU_INFO_PARAMS {
  *
  *  deviceInstatnce
  *    This parameter returns a deviceInstance on which the object is located.
+ *
+ *    NV_MAX_DEVICES is returned if the object is parented by a client instead
+ *    of a device.
  *
  *  maxObjects
  *    This parameter returns the maximum number of object handles that may be
@@ -418,6 +418,8 @@ typedef struct NV0000_CTRL_OS_UNIX_EXPORT_OBJECTS_TO_FD_PARAMS {
 #define NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_VIDMEM    1
 #define NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_SYSMEM    2
 #define NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_FABRIC    3
+
+
 
 #define NV0000_CTRL_OS_UNIX_IMPORT_OBJECTS_FROM_FD_PARAMS_MESSAGE_ID (0xCU)
 

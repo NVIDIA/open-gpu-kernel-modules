@@ -44,8 +44,6 @@ extern "C" {
 #include "gpu/gpu.h"
 #include "gpu/eng_state.h"
 #include "gpu/gpu_halspec.h"
-#include "gpu/perf/kern_perf_boost.h"
-#include "gpu/perf/kern_perf_1hz.h"
 #include "gpu/perf/kern_perf_gpuboostsync.h"
 #include "ctrl/ctrl2080/ctrl2080perf.h"
 
@@ -74,14 +72,14 @@ struct KernelPerf {
     struct Object *__nvoc_pbase_Object;
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct KernelPerf *__nvoc_pbase_KernelPerf;
-    NV_STATUS (*__kperfConstructEngine__)(OBJGPU *, struct KernelPerf *, ENGDESCRIPTOR);
-    NV_STATUS (*__kperfStateInitLocked__)(OBJGPU *, struct KernelPerf *);
-    NV_STATUS (*__kperfStateLoad__)(OBJGPU *, struct KernelPerf *, NvU32);
-    NV_STATUS (*__kperfStateUnload__)(OBJGPU *, struct KernelPerf *, NvU32);
+    NV_STATUS (*__kperfConstructEngine__)(struct OBJGPU *, struct KernelPerf *, ENGDESCRIPTOR);
+    NV_STATUS (*__kperfStateInitLocked__)(struct OBJGPU *, struct KernelPerf *);
+    NV_STATUS (*__kperfStateLoad__)(struct OBJGPU *, struct KernelPerf *, NvU32);
+    NV_STATUS (*__kperfStateUnload__)(struct OBJGPU *, struct KernelPerf *, NvU32);
+    void (*__kperfStateDestroy__)(struct OBJGPU *, struct KernelPerf *);
     NV_STATUS (*__kperfReconcileTunableState__)(POBJGPU, struct KernelPerf *, void *);
     NV_STATUS (*__kperfStatePreLoad__)(POBJGPU, struct KernelPerf *, NvU32);
     NV_STATUS (*__kperfStatePostUnload__)(POBJGPU, struct KernelPerf *, NvU32);
-    void (*__kperfStateDestroy__)(POBJGPU, struct KernelPerf *);
     NV_STATUS (*__kperfStatePreUnload__)(POBJGPU, struct KernelPerf *, NvU32);
     NV_STATUS (*__kperfStateInitUnlocked__)(POBJGPU, struct KernelPerf *);
     void (*__kperfInitMissing__)(POBJGPU, struct KernelPerf *);
@@ -96,9 +94,6 @@ struct KernelPerf {
     NvBool (*__kperfIsPresent__)(POBJGPU, struct KernelPerf *);
     struct KERNEL_PERF_GPU_BOOST_SYNC sliGpuBoostSync;
     NvU32 reentrancyMask;
-    KERNEL_PERF_BOOST_HINTS perfBoostHints;
-    KERNEL_PERF_1HZ timer1HzCallback;
-    NvU32 longestDurationIndex;
 };
 
 #ifndef __NVOC_CLASS_KernelPerf_TYPEDEF__
@@ -135,10 +130,10 @@ NV_STATUS __nvoc_objCreate_KernelPerf(KernelPerf**, Dynamic*, NvU32);
 #define kperfStateInitLocked(pGpu, pKernelPerf) kperfStateInitLocked_DISPATCH(pGpu, pKernelPerf)
 #define kperfStateLoad(pGpu, pKernelPerf, flags) kperfStateLoad_DISPATCH(pGpu, pKernelPerf, flags)
 #define kperfStateUnload(pGpu, pKernelPerf, flags) kperfStateUnload_DISPATCH(pGpu, pKernelPerf, flags)
+#define kperfStateDestroy(pGpu, pKernelPerf) kperfStateDestroy_DISPATCH(pGpu, pKernelPerf)
 #define kperfReconcileTunableState(pGpu, pEngstate, pTunableState) kperfReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kperfStatePreLoad(pGpu, pEngstate, arg0) kperfStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kperfStatePostUnload(pGpu, pEngstate, arg0) kperfStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define kperfStateDestroy(pGpu, pEngstate) kperfStateDestroy_DISPATCH(pGpu, pEngstate)
 #define kperfStatePreUnload(pGpu, pEngstate, arg0) kperfStatePreUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kperfStateInitUnlocked(pGpu, pEngstate) kperfStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kperfInitMissing(pGpu, pEngstate) kperfInitMissing_DISPATCH(pGpu, pEngstate)
@@ -151,10 +146,11 @@ NV_STATUS __nvoc_objCreate_KernelPerf(KernelPerf**, Dynamic*, NvU32);
 #define kperfAllocTunableState(pGpu, pEngstate, ppTunableState) kperfAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
 #define kperfSetTunableState(pGpu, pEngstate, pTunableState) kperfSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kperfIsPresent(pGpu, pEngstate) kperfIsPresent_DISPATCH(pGpu, pEngstate)
-NV_STATUS kperfGpuBoostSyncStateInit_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
+NV_STATUS kperfGpuBoostSyncStateInit_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
+
 
 #ifdef __nvoc_kern_perf_h_disabled
-static inline NV_STATUS kperfGpuBoostSyncStateInit(OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
+static inline NV_STATUS kperfGpuBoostSyncStateInit(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
     NV_ASSERT_FAILED_PRECOMP("KernelPerf was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -165,6 +161,7 @@ static inline NV_STATUS kperfGpuBoostSyncStateInit(OBJGPU *pGpu, struct KernelPe
 #define kperfGpuBoostSyncStateInit_HAL(pGpu, pKernelPerf) kperfGpuBoostSyncStateInit(pGpu, pKernelPerf)
 
 NV_STATUS kperfBoostSet_3x(struct KernelPerf *pKernelPerf, struct Subdevice *pSubdevice, NV2080_CTRL_PERF_BOOST_PARAMS *pBoostParams);
+
 
 #ifdef __nvoc_kern_perf_h_disabled
 static inline NV_STATUS kperfBoostSet(struct KernelPerf *pKernelPerf, struct Subdevice *pSubdevice, NV2080_CTRL_PERF_BOOST_PARAMS *pBoostParams) {
@@ -177,28 +174,34 @@ static inline NV_STATUS kperfBoostSet(struct KernelPerf *pKernelPerf, struct Sub
 
 #define kperfBoostSet_HAL(pKernelPerf, pSubdevice, pBoostParams) kperfBoostSet(pKernelPerf, pSubdevice, pBoostParams)
 
-NV_STATUS kperfConstructEngine_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, ENGDESCRIPTOR engDesc);
+NV_STATUS kperfConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, ENGDESCRIPTOR engDesc);
 
-static inline NV_STATUS kperfConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, ENGDESCRIPTOR engDesc) {
+static inline NV_STATUS kperfConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, ENGDESCRIPTOR engDesc) {
     return pKernelPerf->__kperfConstructEngine__(pGpu, pKernelPerf, engDesc);
 }
 
-NV_STATUS kperfStateInitLocked_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
+NV_STATUS kperfStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
 
-static inline NV_STATUS kperfStateInitLocked_DISPATCH(OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
+static inline NV_STATUS kperfStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
     return pKernelPerf->__kperfStateInitLocked__(pGpu, pKernelPerf);
 }
 
-NV_STATUS kperfStateLoad_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 flags);
+NV_STATUS kperfStateLoad_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 flags);
 
-static inline NV_STATUS kperfStateLoad_DISPATCH(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 flags) {
+static inline NV_STATUS kperfStateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 flags) {
     return pKernelPerf->__kperfStateLoad__(pGpu, pKernelPerf, flags);
 }
 
-NV_STATUS kperfStateUnload_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 flags);
+NV_STATUS kperfStateUnload_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 flags);
 
-static inline NV_STATUS kperfStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 flags) {
+static inline NV_STATUS kperfStateUnload_DISPATCH(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 flags) {
     return pKernelPerf->__kperfStateUnload__(pGpu, pKernelPerf, flags);
+}
+
+void kperfStateDestroy_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
+
+static inline void kperfStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
+    pKernelPerf->__kperfStateDestroy__(pGpu, pKernelPerf);
 }
 
 static inline NV_STATUS kperfReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, void *pTunableState) {
@@ -211,10 +214,6 @@ static inline NV_STATUS kperfStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelPe
 
 static inline NV_STATUS kperfStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, NvU32 arg0) {
     return pEngstate->__kperfStatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline void kperfStateDestroy_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate) {
-    pEngstate->__kperfStateDestroy__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kperfStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, NvU32 arg0) {
@@ -265,9 +264,10 @@ static inline NvBool kperfIsPresent_DISPATCH(POBJGPU pGpu, struct KernelPerf *pE
     return pEngstate->__kperfIsPresent__(pGpu, pEngstate);
 }
 
-NV_STATUS kperfBoostStateInit_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
+NV_STATUS kperfBoostStateInit_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
+
 #ifdef __nvoc_kern_perf_h_disabled
-static inline NV_STATUS kperfBoostStateInit(OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
+static inline NV_STATUS kperfBoostStateInit(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
     NV_ASSERT_FAILED_PRECOMP("KernelPerf was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -275,9 +275,10 @@ static inline NV_STATUS kperfBoostStateInit(OBJGPU *pGpu, struct KernelPerf *pKe
 #define kperfBoostStateInit(pGpu, pKernelPerf) kperfBoostStateInit_IMPL(pGpu, pKernelPerf)
 #endif //__nvoc_kern_perf_h_disabled
 
-NV_STATUS kperfGpuBoostSyncActivate_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvBool bActivate);
+NV_STATUS kperfGpuBoostSyncActivate_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvBool bActivate);
+
 #ifdef __nvoc_kern_perf_h_disabled
-static inline NV_STATUS kperfGpuBoostSyncActivate(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvBool bActivate) {
+static inline NV_STATUS kperfGpuBoostSyncActivate(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvBool bActivate) {
     NV_ASSERT_FAILED_PRECOMP("KernelPerf was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -285,9 +286,10 @@ static inline NV_STATUS kperfGpuBoostSyncActivate(OBJGPU *pGpu, struct KernelPer
 #define kperfGpuBoostSyncActivate(pGpu, pKernelPerf, bActivate) kperfGpuBoostSyncActivate_IMPL(pGpu, pKernelPerf, bActivate)
 #endif //__nvoc_kern_perf_h_disabled
 
-NV_STATUS kperfDoSyncGpuBoostLimits_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NV2080_CTRL_INTERNAL_PERF_GPU_BOOST_SYNC_SET_LIMITS_PARAMS *pParams);
+NV_STATUS kperfDoSyncGpuBoostLimits_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NV2080_CTRL_INTERNAL_PERF_GPU_BOOST_SYNC_SET_LIMITS_PARAMS *pParams);
+
 #ifdef __nvoc_kern_perf_h_disabled
-static inline NV_STATUS kperfDoSyncGpuBoostLimits(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NV2080_CTRL_INTERNAL_PERF_GPU_BOOST_SYNC_SET_LIMITS_PARAMS *pParams) {
+static inline NV_STATUS kperfDoSyncGpuBoostLimits(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NV2080_CTRL_INTERNAL_PERF_GPU_BOOST_SYNC_SET_LIMITS_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("KernelPerf was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -295,32 +297,15 @@ static inline NV_STATUS kperfDoSyncGpuBoostLimits(OBJGPU *pGpu, struct KernelPer
 #define kperfDoSyncGpuBoostLimits(pGpu, pKernelPerf, pParams) kperfDoSyncGpuBoostLimits_IMPL(pGpu, pKernelPerf, pParams)
 #endif //__nvoc_kern_perf_h_disabled
 
-NV_STATUS kperfReentrancy_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 function, NvBool bSet);
+NV_STATUS kperfReentrancy_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 function, NvBool bSet);
+
 #ifdef __nvoc_kern_perf_h_disabled
-static inline NV_STATUS kperfReentrancy(OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 function, NvBool bSet) {
+static inline NV_STATUS kperfReentrancy(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvU32 function, NvBool bSet) {
     NV_ASSERT_FAILED_PRECOMP("KernelPerf was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kern_perf_h_disabled
 #define kperfReentrancy(pGpu, pKernelPerf, function, bSet) kperfReentrancy_IMPL(pGpu, pKernelPerf, function, bSet)
-#endif //__nvoc_kern_perf_h_disabled
-
-void kperfTimer1HzCallback_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
-#ifdef __nvoc_kern_perf_h_disabled
-static inline void kperfTimer1HzCallback(OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
-    NV_ASSERT_FAILED_PRECOMP("KernelPerf was disabled!");
-}
-#else //__nvoc_kern_perf_h_disabled
-#define kperfTimer1HzCallback(pGpu, pKernelPerf) kperfTimer1HzCallback_IMPL(pGpu, pKernelPerf)
-#endif //__nvoc_kern_perf_h_disabled
-
-void kperfBoostHintCallback_IMPL(OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
-#ifdef __nvoc_kern_perf_h_disabled
-static inline void kperfBoostHintCallback(OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
-    NV_ASSERT_FAILED_PRECOMP("KernelPerf was disabled!");
-}
-#else //__nvoc_kern_perf_h_disabled
-#define kperfBoostHintCallback(pGpu, pKernelPerf) kperfBoostHintCallback_IMPL(pGpu, pKernelPerf)
 #endif //__nvoc_kern_perf_h_disabled
 
 #undef PRIVATE_FIELD

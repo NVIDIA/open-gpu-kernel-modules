@@ -139,8 +139,18 @@ memmgrPreInitReservedMemory_FWCLIENT
     MemoryManager *pMemoryManager
 )
 {
-    KernelBus              *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
-    NvU64                   tmpAddr       = 0;
+    KernelBus     *pKernelBus     = GPU_GET_KERNEL_BUS(pGpu);
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvU64          tmpAddr        = 0;
+
+    if (pKernelDisplay)
+    {
+        // TODO: Determine the correct size of display instance memory
+        // via instmemGetSize_HAL(), as well as other parameters.
+        // I.e. refactor and leverage the code performing these tasks
+        // in memmgrPreInitReservedMemory_GM107() today.
+        tmpAddr += 0x10000;
+    }
 
     if (KBUS_BAR2_ENABLED(pKernelBus))
     {

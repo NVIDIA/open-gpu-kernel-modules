@@ -32,7 +32,5 @@
 
 /* _ctrl2080gpio_h_ */
 
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 

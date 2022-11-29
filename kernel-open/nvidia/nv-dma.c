@@ -197,8 +197,7 @@ NV_STATUS nv_create_dma_map_scatterlist(nv_dma_map_t *dma_map)
             break;
         }
 
-#if !defined(NV_SG_ALLOC_TABLE_FROM_PAGES_PRESENT) || \
-    defined(NV_DOM0_KERNEL_PRESENT)
+#if defined(NV_DOM0_KERNEL_PRESENT)
         {
             NvU64 page_idx = NV_DMA_SUBMAP_IDX_TO_PAGE_IDX(i);
             nv_fill_scatterlist(submap->sgt.sgl,
@@ -774,14 +773,16 @@ static NvBool nv_dma_use_map_resource
     nv_dma_device_t *dma_dev
 )
 {
+#if defined(NV_DMA_MAP_RESOURCE_PRESENT)
+    const struct dma_map_ops *ops = get_dma_ops(dma_dev->dev);
+#endif
+
     if (nv_dma_remap_peer_mmio == NV_DMA_REMAP_PEER_MMIO_DISABLE)
     {
         return NV_FALSE;
     }
 
 #if defined(NV_DMA_MAP_RESOURCE_PRESENT)
-    const struct dma_map_ops *ops = get_dma_ops(dma_dev->dev);
-
     if (ops == NULL)
     {
         /* On pre-5.0 kernels, if dma_map_resource() is present, then we
@@ -806,13 +807,14 @@ NV_STATUS NV_API_CALL nv_dma_map_peer
 (
     nv_dma_device_t *dma_dev,
     nv_dma_device_t *peer_dma_dev,
-    NvU8             bar_index,
+    NvU8             nv_bar_index,
     NvU64            page_count,
     NvU64           *va
 )
 {
     struct pci_dev *peer_pci_dev = to_pci_dev(peer_dma_dev->dev);
     struct resource *res;
+    NvU8 bar_index;
     NV_STATUS status;
 
     if (peer_pci_dev == NULL)
@@ -822,7 +824,7 @@ NV_STATUS NV_API_CALL nv_dma_map_peer
         return NV_ERR_INVALID_REQUEST;
     }
 
-    BUG_ON(bar_index >= NV_GPU_NUM_BARS);
+    bar_index = nv_bar_index_to_os_bar_index(peer_pci_dev, nv_bar_index);
     res = &peer_pci_dev->resource[bar_index];
     if (res->start == 0)
     {
@@ -1089,187 +1091,6 @@ void NV_API_CALL nv_dma_release_sgt
 #endif /* NV_LINUX_DMA_BUF_H_PRESENT && NV_DRM_AVAILABLE && NV_DRM_DRM_GEM_H_PRESENT */
 
 #if defined(NV_LINUX_DMA_BUF_H_PRESENT)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif /* NV_LINUX_DMA_BUF_H_PRESENT */
 
 #ifndef IMPORT_DMABUF_FUNCTIONS_DEFINED

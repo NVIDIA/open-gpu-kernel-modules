@@ -558,7 +558,44 @@ NV_STATUS kgrctxGetUnicast_IMPL
     return NV_OK;
 }
 
-NV_STATUS kgrctxLookupMmuFault_IMPL
+/*!
+ * @brief Query the details of MMU faults caused by this context
+ */
+NV_STATUS
+kgrctxLookupMmuFaultInfo_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *pParams
+)
+{
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    const NvU32 size = NV_ARRAY_ELEMENTS(pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfoList);
+    NvU32 i;
+
+    NV_ASSERT_OK_OR_RETURN(
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast));
+
+    NV_ASSERT_OR_RETURN(pKernelGraphicsContextUnicast->mmuFault.head < size, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(pKernelGraphicsContextUnicast->mmuFault.tail < size, NV_ERR_INVALID_STATE);
+
+    pParams->count = 0;
+    for (i = pKernelGraphicsContextUnicast->mmuFault.tail;
+         i != pKernelGraphicsContextUnicast->mmuFault.head;
+         i = (i + 1) % size)
+    {
+        pParams->mmuFaultInfoList[pParams->count] = pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfoList[i];
+        pParams->count++;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Query the details of MMU faults caused by this context
+ */
+NV_STATUS
+kgrctxLookupMmuFault_IMPL
 (
     OBJGPU *pGpu,
     KernelGraphicsContext *pKernelGraphicsContext,
@@ -570,11 +607,15 @@ NV_STATUS kgrctxLookupMmuFault_IMPL
     NV_ASSERT_OK_OR_RETURN(
         kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast));
 
-    *pMmuFaultInfo = pKernelGraphicsContextUnicast->mmuFaultInfo;
+    *pMmuFaultInfo = pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfo;
     return NV_OK;
 }
 
-NV_STATUS kgrctxClearMmuFault_IMPL
+/*!
+ * @brief clear the details of MMU faults caused by this context
+ */
+NV_STATUS
+kgrctxClearMmuFault_IMPL
 (
     OBJGPU *pGpu,
     KernelGraphicsContext *pKernelGraphicsContext
@@ -585,16 +626,23 @@ NV_STATUS kgrctxClearMmuFault_IMPL
     NV_ASSERT_OK_OR_RETURN(
         kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast));
 
-    pKernelGraphicsContextUnicast->mmuFaultInfo.valid = NV_FALSE;
-    pKernelGraphicsContextUnicast->mmuFaultInfo.faultInfo = 0;
+    pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfo.valid = NV_FALSE;
+    pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfo.faultInfo = 0;
     return NV_OK;
 }
 
-void kgrctxRecordMmuFault_IMPL
+/*!
+ * @brief Record the details of an MMU fault caused by this context
+ */
+void
+kgrctxRecordMmuFault_IMPL
 (
     OBJGPU *pGpu,
     KernelGraphicsContext *pKernelGraphicsContext,
-    NvU32 mmuFaultInfo
+    NvU32 mmuFaultInfo,
+    NvU64 mmuFaultAddress,
+    NvU32 mmuFaultType,
+    NvU32 mmuFaultAccessType
 )
 {
     KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
@@ -604,8 +652,22 @@ void kgrctxRecordMmuFault_IMPL
         kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
         return;);
 
-    pKernelGraphicsContextUnicast->mmuFaultInfo.valid = NV_TRUE;
-    pKernelGraphicsContextUnicast->mmuFaultInfo.faultInfo = mmuFaultInfo;
+    pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfo.valid = NV_TRUE;
+    pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfo.faultInfo = mmuFaultInfo;
+
+    {
+        const NvU32 size = NV_ARRAY_ELEMENTS(pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfoList);
+
+        NV_ASSERT_OR_RETURN_VOID(pKernelGraphicsContextUnicast->mmuFault.head < size);
+        NV_ASSERT_OR_RETURN_VOID(pKernelGraphicsContextUnicast->mmuFault.tail < size);
+
+        pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfoList[pKernelGraphicsContextUnicast->mmuFault.head].faultAddress = mmuFaultAddress;
+        pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfoList[pKernelGraphicsContextUnicast->mmuFault.head].faultType = mmuFaultType;
+        pKernelGraphicsContextUnicast->mmuFault.mmuFaultInfoList[pKernelGraphicsContextUnicast->mmuFault.head].accessType = mmuFaultAccessType;
+        pKernelGraphicsContextUnicast->mmuFault.head = (pKernelGraphicsContextUnicast->mmuFault.head + 1) % size;
+        if (pKernelGraphicsContextUnicast->mmuFault.head == pKernelGraphicsContextUnicast->mmuFault.tail)
+            pKernelGraphicsContextUnicast->mmuFault.tail = (pKernelGraphicsContextUnicast->mmuFault.tail + 1) % size;
+    }
 }
 
 /*!
@@ -690,19 +752,19 @@ kgrctxGetCtxBuffers_IMPL
 
     // Get context patch buffer memdesc.
     NV_CHECK_OR_RETURN(LEVEL_SILENT,
-                       pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc != NULL,
+                       pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc != NULL,
                        NV_ERR_INVALID_STATE);
 
     NV_CHECK_OR_RETURN(LEVEL_INFO, bufferCountOut < bufferCount, NV_ERR_INVALID_ARGUMENT);
     pCtxBufferType[bufferCountOut] = NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_PATCH;
-    ppBuffers[bufferCountOut++] = pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc;
+    ppBuffers[bufferCountOut++] = pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc;
 
     // Add PM ctxsw buffer if it's allocated.
-    if (pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc != NULL)
+    if (pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL)
     {
         NV_CHECK_OR_RETURN(LEVEL_INFO, bufferCountOut < bufferCount, NV_ERR_INVALID_ARGUMENT);
         pCtxBufferType[bufferCountOut] = NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_PM;
-        ppBuffers[bufferCountOut++] = pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc;
+        ppBuffers[bufferCountOut++] = pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc;
     }
 
     if (pFirstGlobalBuffer != NULL)
@@ -1080,7 +1142,7 @@ kgrctxAllocPatchBuffer_IMPL
         pCtxBufPool = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pCtxBufPool;
     }
 
-    ppMemDesc = &pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc;
+    ppMemDesc = &pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc;
     size = pStaticInfo->pContextBuffersInfo->engine[NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_PATCH].size;
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         memdescCreate(ppMemDesc, pGpu, size, RM_PAGE_SIZE, NV_TRUE,
@@ -1161,7 +1223,7 @@ kgrctxAllocPmBuffer_IMPL
         flags |= MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
     }
 
-    ppMemDesc = &pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc;
+    ppMemDesc = &pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc;
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         memdescCreate(ppMemDesc, pGpu,
                       size,
@@ -1251,7 +1313,7 @@ kgrctxAllocCtxBuffers_IMPL
     // will be used to override settings in the context after it is restored, things
     // like the global ctx buffer addresses, etc.
     //
-    if (pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc == NULL)
+    if (pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc == NULL)
     {
         NV_ASSERT_OK_OR_RETURN(
             kgrctxAllocPatchBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel));
@@ -1486,24 +1548,14 @@ kgrctxMapCtxBuffers_IMPL
     kgrmgrGetGrObjectType(classNum, &objType);
 
     NV_ASSERT_OK_OR_RETURN(
-        kgraphicsMapCtxBuffer(pGpu, pKernelGraphics, pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc, pKernelChannel->pVAS,
+        kgraphicsMapCtxBuffer(pGpu, pKernelGraphics, pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc, pKernelChannel->pVAS,
                               &pKernelGraphicsContextUnicast->ctxPatchBuffer.vAddrList, NV_FALSE, NV_FALSE));
 
-    // TODO: Check if this can be moved to subcontext allocation time
-    if (kgraphicsIsPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics) &&
-        (pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc != NULL))
+    if (pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL)
     {
-        NvU64 vaddr = 0;
-
-        if (vaListFindVa(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, pKernelChannel->pVAS, &vaddr) != NV_OK)
-        {
-            if (vaListGetManaged(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList))
-            {
-                NV_ASSERT_OK_OR_RETURN(
-                    kgraphicsMapCtxBuffer(pGpu, pKernelGraphics, pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc, pKernelChannel->pVAS,
-                                          &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, NV_FALSE, NV_FALSE));
-            }
-        }
+        NV_ASSERT_OK_OR_RETURN(
+            kgraphicsMapCtxBuffer(pGpu, pKernelGraphics, pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc, pKernelChannel->pVAS,
+                                  &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, NV_FALSE, NV_FALSE));
     }
 
     if (kgraphicsDoesUcodeSupportPrivAccessMap(pGpu, pKernelGraphics))
@@ -1590,17 +1642,17 @@ kgrctxPrepareInitializeCtxBuffer_IMPL
             if (pKernelGraphicsContextUnicast->bKGrPmCtxBufferInitialized)
                 return NV_OK;
 
-            if (pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc == NULL)
+            if (pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc == NULL)
                 return NV_OK;
 
-            pMemDesc = pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc;
+            pMemDesc = pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc;
             break;
         case NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_PATCH:
             if (pKernelGraphicsContextUnicast->bKGrPatchCtxBufferInitialized)
                 return NV_OK;
 
-            NV_ASSERT(pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc != NULL);
-            pMemDesc = pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc;
+            NV_ASSERT(pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc != NULL);
+            pMemDesc = pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc;
             break;
         case NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_BUFFER_BUNDLE_CB:
             // fall-through
@@ -1928,10 +1980,10 @@ kgrctxSetupDeferredPmBuffer_IMPL
         // buffers being allocated at channel allocation time and are not going to work for a buffer
         // created later with an rm ctrl
         //
-        NV_ASSERT_OR_RETURN(pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc != NULL, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL, NV_ERR_INVALID_STATE);
         return NV_OK;
     }
-    else if (pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc != NULL)
+    else if (pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL)
     {
         return NV_OK;
     }
@@ -1945,93 +1997,109 @@ kgrctxSetupDeferredPmBuffer_IMPL
     // !!!
     //
 
-    if (kgraphicsIsPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics))
     {
         RS_ORDERED_ITERATOR it;
         RsResourceRef *pScopeRef = RES_GET_REF(pKernelChannel);
 
         // Iterate over all channels in this TSG and map the new buffer
-        if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm)
+        if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm &&
+            kgraphicsIsPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics))
+        {
             pScopeRef = RES_GET_REF(pKernelChannel->pKernelChannelGroupApi);
+        }
 
         it = kchannelGetIter(RES_GET_CLIENT(pKernelChannel), pScopeRef);
         while (clientRefOrderedIterNext(it.pClient, &it))
         {
-            pKernelChannel = dynamicCast(it.pResourceRef->pResource, KernelChannel);
-            NV_ASSERT_OR_ELSE(pKernelChannel != NULL,
+            NvU64 vaddr;
+            KernelChannel *pLoopKernelChannel = dynamicCast(it.pResourceRef->pResource, KernelChannel);
+
+            NV_ASSERT_OR_ELSE(pLoopKernelChannel != NULL,
                               status = NV_ERR_INVALID_STATE;
                               goto failed;);
 
-            NV_ASSERT_OK_OR_GOTO(status,
-                kgraphicsMapCtxBuffer(pGpu, pKernelGraphics,
-                                      pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc,
-                                      pKernelChannel->pVAS,
-                                      &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList,
-                                      NV_FALSE,
-                                      NV_FALSE),
-                failed);
-        }
-    }
+            if ((vaListFindVa(&pKernelGraphicsContextUnicast->ctxPatchBuffer.vAddrList, pLoopKernelChannel->pVAS, &vaddr) == NV_OK) &&
+                (vaListFindVa(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, pLoopKernelChannel->pVAS, &vaddr) != NV_OK))
+            {
+                NvU64 refCount;
+                NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS params;
+                RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+                NvBool bInitialize;
+                NvBool bPromote;
 
-    {
-        NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS params;
-        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        NvBool bInitialize;
-        NvBool bPromote;
+                NV_ASSERT_OK_OR_GOTO(status,
+                    kgraphicsMapCtxBuffer(pGpu, pKernelGraphics,
+                                          pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc,
+                                          pLoopKernelChannel->pVAS,
+                                          &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList,
+                                          NV_FALSE,
+                                          NV_FALSE),
+                    failed);
 
-        portMemSet(&params, 0, sizeof(params));
+                // Promote the vaddr for each unique VAS
+                portMemSet(&params, 0, sizeof(params));
 
-        // Setup parameters to initialize the PA if necessary
-        NV_ASSERT_OK_OR_GOTO(status,
-            kgrctxPrepareInitializeCtxBuffer(pGpu,
-                                             pKernelGraphicsContext,
-                                             pKernelGraphics,
-                                             pKernelChannel,
-                                             NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_PM,
-                                             &params.promoteEntry[0],
-                                             &bInitialize),
-            failed);
+                // Setup parameters to initialize the PA if necessary
+                NV_ASSERT_OK_OR_GOTO(status,
+                    kgrctxPrepareInitializeCtxBuffer(pGpu,
+                                                     pKernelGraphicsContext,
+                                                     pKernelGraphics,
+                                                     pKernelChannel,
+                                                     NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_PM,
+                                                     &params.promoteEntry[0],
+                                                     &bInitialize),
+                    failed);
 
-        // Setup parameters to promote the VA if necessary
-        NV_ASSERT_OK_OR_GOTO(status,
-            kgrctxPreparePromoteCtxBuffer(pGpu,
-                                          pKernelGraphicsContext,
-                                          pKernelChannel,
-                                          NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_PM,
-                                          &params.promoteEntry[0],
-                                          &bPromote),
-            failed);
+                // Setup parameters to promote the VA if necessary
+                NV_ASSERT_OK_OR_GOTO(status,
+                    kgrctxPreparePromoteCtxBuffer(pGpu,
+                                                  pKernelGraphicsContext,
+                                                  pKernelChannel,
+                                                  NV2080_CTRL_GPU_PROMOTE_CTX_BUFFER_ID_PM,
+                                                  &params.promoteEntry[0],
+                                                  &bPromote),
+                    failed);
 
-        NV_ASSERT_OR_ELSE(bInitialize && bPromote,
-                          status = NV_ERR_INVALID_STATE;
-                          goto failed;);
+                NV_ASSERT_OR_ELSE(bInitialize || bPromote,
+                                  status = NV_ERR_INVALID_STATE;
+                                  goto failed;);
 
-        params.engineType  = NV2080_ENGINE_TYPE_GR(kgraphicsGetInstance(pGpu, pKernelGraphics));
-        params.hChanClient = RES_GET_CLIENT_HANDLE(pKernelChannel);
-        params.hObject     = RES_GET_HANDLE(pKernelChannel);
-        params.entryCount  = 1;
+                params.engineType  = NV2080_ENGINE_TYPE_GR(kgraphicsGetInstance(pGpu, pKernelGraphics));
+                params.hChanClient = RES_GET_CLIENT_HANDLE(pKernelChannel);
+                params.hObject     = RES_GET_HANDLE(pKernelChannel);
+                params.entryCount  = 1;
 
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            pRmApi->Control(pRmApi,
-                            RES_GET_CLIENT_HANDLE(pSubdevice),
-                            RES_GET_HANDLE(pSubdevice),
-                            NV2080_CTRL_CMD_GPU_PROMOTE_CTX,
-                            &params,
-                            sizeof(params)),
-            failed);
+                NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                    pRmApi->Control(pRmApi,
+                                    RES_GET_CLIENT_HANDLE(pSubdevice),
+                                    RES_GET_HANDLE(pSubdevice),
+                                    NV2080_CTRL_CMD_GPU_PROMOTE_CTX,
+                                    &params,
+                                    sizeof(params)),
+                    failed);
 
-        //
-        // If we successfully promoted the PA, flip a flag to ensure we don't
-        // try to promote it again. The VA_LIST should already track this for
-        // VA, but we can't rely on it for PA due to UVM.
-        //
-        if (params.promoteEntry[0].bInitialize)
-        {
-            kgrctxMarkCtxBufferInitialized(pGpu,
-                                           pKernelGraphicsContext,
-                                           pKernelGraphics,
-                                           pKernelChannel,
-                                           params.promoteEntry[0].bufferId);
+                //
+                // If we successfully promoted the PA, flip a flag to ensure we don't
+                // try to promote it again. The VA_LIST should already track this for
+                // VA, but we can't rely on it for PA due to UVM.
+                //
+                if (params.promoteEntry[0].bInitialize)
+                {
+                    kgrctxMarkCtxBufferInitialized(pGpu,
+                                                   pKernelGraphicsContext,
+                                                   pKernelGraphics,
+                                                   pKernelChannel,
+                                                   params.promoteEntry[0].bufferId);
+                }
+
+                // Update the refcount for this buffer now that we've promoted it
+                NV_ASSERT_OK_OR_GOTO(status,
+                    vaListGetRefCount(&pKernelGraphicsContextUnicast->ctxPatchBuffer.vAddrList, pLoopKernelChannel->pVAS, &refCount),
+                    failed);
+                NV_ASSERT_OK_OR_GOTO(status,
+                    vaListSetRefCount(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, pLoopKernelChannel->pVAS, refCount),
+                    failed);
+            }
         }
     }
 
@@ -2045,19 +2113,26 @@ failed:
         RsResourceRef *pScopeRef = RES_GET_REF(pKernelChannel);
 
         // Iterate over all channels in this TSG and try to unmap the PM ctx buffer
-        if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm)
+        if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm &&
+            kgraphicsIsPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics))
+        {
             pScopeRef = RES_GET_REF(pKernelChannel->pKernelChannelGroupApi);
+        }
 
         it = kchannelGetIter(RES_GET_CLIENT(pKernelChannel), pScopeRef);
         while (clientRefOrderedIterNext(it.pClient, &it))
         {
-            pKernelChannel = dynamicCast(it.pResourceRef->pResource, KernelChannel);
-            if (pKernelChannel == NULL)
+            NvU64 vaddr;
+            KernelChannel *pLoopKernelChannel = dynamicCast(it.pResourceRef->pResource, KernelChannel);
+            if (pLoopKernelChannel == NULL)
                 continue;
 
-            kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics,
-                                    pKernelChannel->pVAS,
-                                    &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList);
+            while (vaListFindVa(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, pLoopKernelChannel->pVAS, &vaddr) == NV_OK)
+            {
+                kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics,
+                                        pLoopKernelChannel->pVAS,
+                                        &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList);
+            }
         }
     }
 
@@ -2078,7 +2153,6 @@ kgrctxUnmapCtxPmBuffer_IMPL
     OBJVASPACE            *pVAS
 )
 {
-    MEMORY_DESCRIPTOR *pMemDesc;
     KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
     NV_STATUS status;
 
@@ -2088,17 +2162,86 @@ kgrctxUnmapCtxPmBuffer_IMPL
         kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
         return;);
 
-    pMemDesc = pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc;
+    kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList);
+}
+
+/**
+ * @brief unmap the memory for the zcull context buffer
+ */
+void
+kgrctxUnmapCtxZcullBuffer_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    KernelGraphics *pKernelGraphics,
+    OBJVASPACE *pVAS
+)
+{
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    MEMORY_DESCRIPTOR *pMemDesc;
+    VA_LIST *pVaList;
+    NvU64 vaddr;
+    NV_STATUS status;
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
+        return;);
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    pMemDesc = pKernelGraphicsContextUnicast->zcullCtxswBuffer.pMemDesc;
+    pVaList = &pKernelGraphicsContextUnicast->zcullCtxswBuffer.vAddrList;
     if (pMemDesc != NULL)
     {
         //
         // This func assumes that the buffer was not allocated per subdevice,
-        // and will leak any mappings performed by the secondary.
+        // and will leak any mappings performed by the secondaries.
         //
         NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
 
-        kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList);
+        if (vaListFindVa(pVaList, pVAS, &vaddr) == NV_OK)
+        {
+            dmaUnmapBuffer_HAL(pGpu, GPU_GET_DMA(pGpu), pVAS, vaddr);
+            vaListRemoveVa(pVaList, pVAS);
+        }
     }
+    else if (vaListFindVa(pVaList, pVAS, &vaddr) == NV_OK)
+    {
+        // Zcull buffer mapped by client. Remove the VA here
+        vaListRemoveVa(pVaList, pVAS);
+    }
+}
+
+/**
+ * @brief unmap the memory for the preemption context buffers
+ */
+void
+kgrctxUnmapCtxPreemptionBuffers_IMPL
+(
+    OBJGPU                *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    KernelGraphics        *pKernelGraphics,
+    OBJVASPACE            *pVAS
+)
+{
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    NV_STATUS status;
+
+    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
+
+    NV_ASSERT_OK_OR_ELSE(status,
+        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
+        return;);
+
+    kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->preemptCtxswBuffer.vAddrList);
+
+    kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->spillCtxswBuffer.vAddrList);
+
+    kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->betaCBCtxswBuffer.vAddrList);
+
+    kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.vAddrList);
+
+    kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.vAddrList);
 }
 
 /**
@@ -2120,9 +2263,10 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
 )
 {
     KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
-    NvBool                        bRelease3d  = NV_FALSE;
-    NvU32                         gfid = kchannelGetGfid(pKernelChannel);
-    NvU32                         status;
+    NvBool bRelease3d  = NV_FALSE;
+    NvU32 gfid = kchannelGetGfid(pKernelChannel);
+    NvU32 status;
+    NvU64 refCount;
 
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
 
@@ -2155,6 +2299,21 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
         kgrctxUnmapGlobalCtxBuffers(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS, gfid);
     }
 
+    // Only unmap once the last channel using this VAS has gone
+    if ((kgraphicsGetGlobalCtxBuffers(pGpu, pKernelGraphics, gfid)->memDesc[GR_GLOBALCTX_BUFFER_FECS_EVENT] != NULL) &&
+        (vaListGetRefCount(&pKernelGraphicsContextUnicast->globalCtxBufferVaList[GR_GLOBALCTX_BUFFER_FECS_EVENT], pKernelChannel->pVAS, &refCount) == NV_OK) &&
+        (refCount == 1))
+    {
+        kgrctxUnmapGlobalCtxBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS, GR_GLOBALCTX_BUFFER_FECS_EVENT);
+    }
+
+    if ((pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL) &&
+        (vaListGetRefCount(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, pKernelChannel->pVAS, &refCount) == NV_OK) &&
+        (refCount == 1))
+    {
+        kgrctxUnmapCtxPmBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS);
+    }
+
     //
     // When sharing contexts across channels we need to defer this until all
     // objects have been freed.
@@ -2162,7 +2321,7 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
     NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT,
         pKernelGraphicsContextUnicast->channelObjects == 0);
 
-    if (pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc != NULL)
+    if (pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc != NULL)
     {
         //
         // Delay freeing the patch buffer until the last channel free.
@@ -2171,13 +2330,10 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
         kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pKernelChannel->pVAS, &pKernelGraphicsContextUnicast->ctxPatchBuffer.vAddrList);
     }
 
-    kgrctxUnmapCtxPmBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS);
-
-    // if we have a zcull ctxsw buffer, this will free it up
-    kgrctxFreeZcullBuffer(pGpu, pKernelGraphicsContext, pKernelChannel->pVAS);
+    kgrctxUnmapCtxZcullBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS);
 
     // Release all preemption buffers if they were allocated
-    kgrctxFreeCtxPreemptionBuffers(pGpu, pKernelGraphicsContext, pKernelChannel->pVAS);
+    kgrctxUnmapCtxPreemptionBuffers(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS);
 
     kgrctxUnmapMainCtxBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel);
 }
@@ -2219,7 +2375,7 @@ NvBool kgrctxShouldPreAllocPmBuffer_PF
     pGVAS = dynamicCast(pKernelChannel->pVAS, OBJGVASPACE);
 
     // Do not allocate the buffer, if already allocated
-    if (pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc != NULL)
+    if (pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL)
     {
         return NV_FALSE;
     }
@@ -2258,7 +2414,7 @@ kgrctxShouldPreAllocPmBuffer_VF
                          &pKernelGraphicsContextUnicast));
 
     // Do not allocate the buffer, if already allocated
-    if (pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc != NULL)
+    if (pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL)
     {
         return NV_FALSE;
     }
@@ -2470,20 +2626,17 @@ kgrctxFreeMainCtxBuffer_IMPL
 }
 
 /**
- * @brief unmap and free the memory for the zcull context buffer
+ * @brief free the memory for the zcull context buffer
  */
 void
 kgrctxFreeZcullBuffer_IMPL
 (
     OBJGPU *pGpu,
-    KernelGraphicsContext *pKernelGraphicsContext,
-    OBJVASPACE *pVAS
+    KernelGraphicsContext *pKernelGraphicsContext
 )
 {
     KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
     MEMORY_DESCRIPTOR *pMemDesc;
-    VA_LIST *pVaList;
-    NvU64 vaddr;
     NV_STATUS status;
 
     NV_ASSERT_OK_OR_ELSE(status,
@@ -2492,51 +2645,29 @@ kgrctxFreeZcullBuffer_IMPL
 
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
 
-    pMemDesc = pKernelGraphicsContextUnicast->zcullCtxswBuffer.memDesc;
-    pVaList = &pKernelGraphicsContextUnicast->zcullCtxswBuffer.vAddrList;
-    if (pMemDesc != NULL)
-    {
-        //
-        // This func assumes that the buffer was not allocated per subdevice,
-        // and will leak any mappings performed by the secondaries.
-        //
-        NV_ASSERT(!memdescHasSubDeviceMemDescs(pMemDesc));
-
-        // TODO separate unmapping from free
-        NV_ASSERT_OK(vaListFindVa(pVaList, pVAS, &vaddr));
-        dmaUnmapBuffer_HAL(pGpu, GPU_GET_DMA(pGpu), pVAS, vaddr);
-        vaListRemoveVa(pVaList, pVAS);
-
-        // buffer can be shared and refcounted -- released on final free
-        memdescFree(pMemDesc);
-        memdescDestroy(pMemDesc);
-    }
-    else if (vaListFindVa(pVaList, pVAS, &vaddr) == NV_OK)
-    {
-        // Zcull buffer mapped by client. Remove the VA here
-        vaListRemoveVa(pVaList, pVAS);
-    }
-    else
+    pMemDesc = pKernelGraphicsContextUnicast->zcullCtxswBuffer.pMemDesc;
+    if (pMemDesc == NULL)
     {
         NV_PRINTF(LEVEL_INFO,
                   "call to free zcull ctx buffer not RM managed, skipped!\n");
     }
 
-    pKernelGraphicsContextUnicast->zcullCtxswBuffer.memDesc = NULL;
+    // buffer can be shared and refcounted -- released on final free
+    memdescFree(pMemDesc);
+    memdescDestroy(pMemDesc);
+    pKernelGraphicsContextUnicast->zcullCtxswBuffer.pMemDesc = NULL;
 }
 
 /**
- * @brief unmap and free the memory for the preemption context buffers
+ * @brief free the memory for the preemption context buffers
  */
 void
 kgrctxFreeCtxPreemptionBuffers_IMPL
 (
     OBJGPU                *pGpu,
-    KernelGraphicsContext *pKernelGraphicsContext,
-    OBJVASPACE            *pVAS
+    KernelGraphicsContext *pKernelGraphicsContext
 )
 {
-    VirtMemAllocator *pDma = GPU_GET_DMA(pGpu);
     KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
     NV_STATUS status;
 
@@ -2546,65 +2677,25 @@ kgrctxFreeCtxPreemptionBuffers_IMPL
         kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
         return;);
 
-    if (pKernelGraphicsContextUnicast->preemptCtxswBuffer.pMemDesc != NULL)
-    {
-        dmaUnmapBuffer_HAL(pGpu, pDma, pVAS,
-                           pKernelGraphicsContextUnicast->preemptCtxswBuffer.virtualAddr);
-
-        memdescFree(pKernelGraphicsContextUnicast->preemptCtxswBuffer.pMemDesc);
-        memdescDestroy(pKernelGraphicsContextUnicast->preemptCtxswBuffer.pMemDesc);
-    }
-
-    if (pKernelGraphicsContextUnicast->spillCtxswBuffer.pMemDesc != NULL)
-    {
-        dmaUnmapBuffer_HAL(pGpu, pDma, pVAS,
-                           pKernelGraphicsContextUnicast->spillCtxswBuffer.virtualAddr);
-
-        memdescFree(pKernelGraphicsContextUnicast->spillCtxswBuffer.pMemDesc);
-        memdescDestroy(pKernelGraphicsContextUnicast->spillCtxswBuffer.pMemDesc);
-    }
-
-    if (pKernelGraphicsContextUnicast->betaCBCtxswBuffer.pMemDesc != NULL)
-    {
-        dmaUnmapBuffer_HAL(pGpu, pDma, pVAS,
-                           pKernelGraphicsContextUnicast->betaCBCtxswBuffer.virtualAddr);
-
-        memdescFree(pKernelGraphicsContextUnicast->betaCBCtxswBuffer.pMemDesc);
-        memdescDestroy(pKernelGraphicsContextUnicast->betaCBCtxswBuffer.pMemDesc);
-    }
-
-    if (pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.pMemDesc != NULL)
-    {
-        dmaUnmapBuffer_HAL(pGpu, pDma, pVAS,
-                           pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.virtualAddr);
-
-        memdescFree(pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.pMemDesc);
-        memdescDestroy(pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.pMemDesc);
-    }
-
-    if (pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.pMemDesc != NULL)
-    {
-        dmaUnmapBuffer_HAL(pGpu, pDma, pVAS,
-                           pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.virtualAddr);
-
-        memdescFree(pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.pMemDesc);
-        memdescDestroy(pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.pMemDesc);
-    }
-
+    memdescFree(pKernelGraphicsContextUnicast->preemptCtxswBuffer.pMemDesc);
+    memdescDestroy(pKernelGraphicsContextUnicast->preemptCtxswBuffer.pMemDesc);
     pKernelGraphicsContextUnicast->preemptCtxswBuffer.pMemDesc = NULL;
-    pKernelGraphicsContextUnicast->preemptCtxswBuffer.virtualAddr = 0;
 
+    memdescFree(pKernelGraphicsContextUnicast->spillCtxswBuffer.pMemDesc);
+    memdescDestroy(pKernelGraphicsContextUnicast->spillCtxswBuffer.pMemDesc);
     pKernelGraphicsContextUnicast->spillCtxswBuffer.pMemDesc = NULL;
-    pKernelGraphicsContextUnicast->spillCtxswBuffer.virtualAddr = 0;
 
+    memdescFree(pKernelGraphicsContextUnicast->betaCBCtxswBuffer.pMemDesc);
+    memdescDestroy(pKernelGraphicsContextUnicast->betaCBCtxswBuffer.pMemDesc);
     pKernelGraphicsContextUnicast->betaCBCtxswBuffer.pMemDesc = NULL;
-    pKernelGraphicsContextUnicast->betaCBCtxswBuffer.virtualAddr = 0;
 
+    memdescFree(pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.pMemDesc);
+    memdescDestroy(pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.pMemDesc);
     pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.pMemDesc = NULL;
-    pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.virtualAddr = 0;
 
+    memdescFree(pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.pMemDesc);
+    memdescDestroy(pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.pMemDesc);
     pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.pMemDesc = NULL;
-    pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.virtualAddr = 0;
 }
 
 /*!
@@ -2626,17 +2717,17 @@ kgrctxFreePatchBuffer_IMPL
                          &pKernelGraphicsContextUnicast),
         return;);
 
-    if (pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc == NULL)
+    if (pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc == NULL)
     {
         NV_PRINTF(LEVEL_INFO,
                   "Attempt to free null ctx patch buffer pointer, skipped!\n");
         return;
     }
 
-    memdescFree(pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc);
-    memdescDestroy(pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc);
+    memdescFree(pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc);
+    memdescDestroy(pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc);
 
-    pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc = NULL;
+    pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc = NULL;
     pKernelGraphicsContextUnicast->bKGrPatchCtxBufferInitialized = NV_FALSE;
 }
 
@@ -2662,7 +2753,7 @@ kgrctxFreePmBuffer_IMPL
                          &pKernelGraphicsContextUnicast),
         return;);
 
-    pMemDesc = pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc;
+    pMemDesc = pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc;
     if (pMemDesc != NULL)
     {
         //
@@ -2680,7 +2771,7 @@ kgrctxFreePmBuffer_IMPL
                   "Attempt to free null pm ctx buffer pointer??\n");
     }
 
-    pKernelGraphicsContextUnicast->pmCtxswBuffer.memDesc = NULL;
+    pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc = NULL;
     pKernelGraphicsContextUnicast->bKGrPmCtxBufferInitialized = NV_FALSE;
 }
 
@@ -2762,6 +2853,12 @@ void kgrctxFreeAssociatedCtxBuffers_IMPL
     // if we have a PM ctxsw buffer, this will free it up
     kgrctxFreePmBuffer(pGpu, pKernelGraphicsContext);
 
+    // if we have a zcull buffer, this will free it up
+    kgrctxFreeZcullBuffer(pGpu, pKernelGraphicsContext);
+
+    // If we have preemption buffers, this will free them up
+    kgrctxFreeCtxPreemptionBuffers(pGpu, pKernelGraphicsContext);
+
     // Release all common buffers used as part of the gr context.
     kgrctxFreeLocalGlobalCtxBuffers(pGpu, pKernelGraphicsContext);
 
@@ -2788,6 +2885,7 @@ kgrctxUnmapCtxBuffers_IMPL
     NvBool                        bRelease3d = NV_FALSE;
     NvU32                         objType;
     NvU32                         gfid;
+    NvU64                         refCount;
 
     NV_PRINTF(LEVEL_INFO, "gpu:%d isBC=%d\n", pGpu->gpuInstance,
               gpumgrGetBcEnabledStatus(pGpu));
@@ -2817,13 +2915,21 @@ kgrctxUnmapCtxBuffers_IMPL
     }
 
     if ((pKernelGraphicsContextUnicast->channelObjects != 0) &&
-         (pKernelGraphicsContextUnicast->ctxPatchBuffer.memDesc != NULL))
+         (pKernelGraphicsContextUnicast->ctxPatchBuffer.pMemDesc != NULL))
     {
         //
         // Delay freeing the patch buffer until the last channel free.
         // these buffers are accessed even after the last GR object is freed.
         //
         kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pKernelChannel->pVAS, &pKernelGraphicsContextUnicast->ctxPatchBuffer.vAddrList);
+    }
+
+    // Defer releasing mapping if this would cause the buffer to be unmapped
+    if ((pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL) &&
+        (vaListGetRefCount(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, pKernelChannel->pVAS, &refCount) == NV_OK) &&
+        (refCount > 1))
+    {
+        kgrctxUnmapCtxPmBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS);
     }
 
     if (kgraphicsDoesUcodeSupportPrivAccessMap(pGpu, pKernelGraphics))
@@ -2833,6 +2939,14 @@ kgrctxUnmapCtxBuffers_IMPL
                                    pKernelGraphics,
                                    pKernelChannel->pVAS,
                                    kgrctxGetRegisterAccessMapId_HAL(pGpu, pKernelGraphicsContext, pChannelDescendant->pKernelChannel));
+    }
+
+    // Defer releasing mapping if this would cause the buffer to be unmapped
+    if ((kgraphicsGetGlobalCtxBuffers(pGpu, pKernelGraphics, gfid)->memDesc[GR_GLOBALCTX_BUFFER_FECS_EVENT] != NULL) &&
+        (vaListGetRefCount(&pKernelGraphicsContextUnicast->globalCtxBufferVaList[GR_GLOBALCTX_BUFFER_FECS_EVENT], pKernelChannel->pVAS, &refCount) == NV_OK) &&
+        (refCount > 1))
+    {
+        kgrctxUnmapGlobalCtxBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS, GR_GLOBALCTX_BUFFER_FECS_EVENT);
     }
 
     //
@@ -2864,73 +2978,6 @@ kgrctxUnmapCtxBuffers_IMPL
         kgrctxUnmapGlobalCtxBuffers(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS, gfid);
     }
 
-    return NV_OK;
-}
-
-/**
- * @brief Release subcontext GR resources.
- *
- * To free GR resources (per-subcontext mappings) where refcouning doesn't work.
- * For e.g, PM buffer can be enabled at any time.
- * We also free CTXSW logging buffer here since since it is mapped unconditionally for
- * all objects but can't be unmapped unconditionally as FECS may try to access this buffer
- * even after all objects are freed and may hit page faults.
- * We free them when subcontext is freed by calling this function.
- */
-NV_STATUS
-kgrctxReleaseSubctxResources_IMPL
-(
-    OBJGPU *pGpu,
-    KernelGraphicsContext *pKernelGraphicsContext,
-    KernelGraphics *pKernelGraphics,
-    OBJVASPACE *pVAS,
-    NvU32 veid
-)
-{
-    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
-    NvU64                         vaddr;
-    NvU32                         gfid;
-    NvBool                        bCallingContextPlugin;
-    GR_GLOBALCTX_BUFFERS         *pGlobalCtxBuffers;
-
-    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
-    NV_ASSERT_OK_OR_RETURN(vgpuIsCallingContextPlugin(pGpu, &bCallingContextPlugin));
-
-    pGlobalCtxBuffers = kgraphicsGetGlobalCtxBuffers(pGpu, pKernelGraphics, gfid);
-
-    if (bCallingContextPlugin)
-    {
-        gfid = GPU_GFID_PF;
-    }
-
-    NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
-
-    NV_ASSERT_OK_OR_RETURN(
-        kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast));
-
-    while (vaListFindVa(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList, pVAS, &vaddr) == NV_OK)
-    {
-        kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList);
-    }
-
-    if (kgraphicsIsCtxswLoggingSupported(pGpu, pKernelGraphics))
-    {
-        MEMORY_DESCRIPTOR *pMemDesc = pGlobalCtxBuffers->memDesc[GR_GLOBALCTX_BUFFER_FECS_EVENT];
-        if (pMemDesc == NULL)
-            goto done;
-
-        while (vaListFindVa(&pKernelGraphicsContextUnicast->globalCtxBufferVaList[GR_GLOBALCTX_BUFFER_FECS_EVENT], pVAS, &vaddr) == NV_OK)
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "Unmapping CTXSW Buffer PA @ 0x%llx VA @ 0x%llx of Size 0x%llx for VEID = %d\n",
-                      memdescGetPhysAddr(memdescGetMemDescFromGpu(pMemDesc, pGpu), AT_GPU, 0),
-                      vaddr, pMemDesc->Size, veid);
-
-            kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->globalCtxBufferVaList[GR_GLOBALCTX_BUFFER_FECS_EVENT]);
-        }
-    }
-
-done:
     return NV_OK;
 }
 
@@ -3073,7 +3120,7 @@ kgrctxGetRegisterAccessMapId_PF
 
     // Using cached privilege because this function is called at a raised IRQL.
     if ((privLevel >= RS_PRIV_LEVEL_USER_ROOT)
-        )
+            && !hypervisorIsVgxHyper() && IS_GFID_PF(kchannelGetGfid(pKernelChannel)))
     {
         return GR_GLOBALCTX_BUFFER_UNRESTRICTED_PRIV_ACCESS_MAP;
     }
@@ -3090,7 +3137,7 @@ kgrctxCtrlGetTpcPartitionMode_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelGraphicsContext);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
@@ -3124,7 +3171,7 @@ kgrctxCtrlSetTpcPartitionMode_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelGraphicsContext);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
@@ -3158,7 +3205,7 @@ kgrctxCtrlGetMMUDebugMode_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelGraphicsContext);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
@@ -3192,7 +3239,7 @@ kgrctxCtrlProgramVidmemPromote_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelGraphicsContext);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
@@ -3314,6 +3361,12 @@ shrkgrctxConstructUnicast_IMPL
     NV_ASSERT_OK_OR_RETURN(vaListInit(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList));
     NV_ASSERT_OK_OR_RETURN(vaListInit(&pKernelGraphicsContextUnicast->zcullCtxswBuffer.vAddrList));
 
+    NV_ASSERT_OK_OR_RETURN(vaListInit(&pKernelGraphicsContextUnicast->preemptCtxswBuffer.vAddrList));
+    NV_ASSERT_OK_OR_RETURN(vaListInit(&pKernelGraphicsContextUnicast->spillCtxswBuffer.vAddrList));
+    NV_ASSERT_OK_OR_RETURN(vaListInit(&pKernelGraphicsContextUnicast->betaCBCtxswBuffer.vAddrList));
+    NV_ASSERT_OK_OR_RETURN(vaListInit(&pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.vAddrList));
+    NV_ASSERT_OK_OR_RETURN(vaListInit(&pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.vAddrList));
+
     pKernelGraphicsContextUnicast->bSupportsPerSubctxHeader =
         kgraphicsIsPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics);
 
@@ -3381,6 +3434,12 @@ shrkgrctxDestructUnicast_IMPL
     vaListDestroy(&pKernelGraphicsContextUnicast->ctxPatchBuffer.vAddrList);
     vaListDestroy(&pKernelGraphicsContextUnicast->pmCtxswBuffer.vAddrList);
     vaListDestroy(&pKernelGraphicsContextUnicast->zcullCtxswBuffer.vAddrList);
+
+    vaListDestroy(&pKernelGraphicsContextUnicast->preemptCtxswBuffer.vAddrList);
+    vaListDestroy(&pKernelGraphicsContextUnicast->spillCtxswBuffer.vAddrList);
+    vaListDestroy(&pKernelGraphicsContextUnicast->betaCBCtxswBuffer.vAddrList);
+    vaListDestroy(&pKernelGraphicsContextUnicast->pagepoolCtxswBuffer.vAddrList);
+    vaListDestroy(&pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.vAddrList);
 }
 
 /*!
@@ -3394,8 +3453,27 @@ void shrkgrctxDetach_IMPL
     KernelChannel *pKernelChannel
 )
 {
+    RM_ENGINE_TYPE rmEngineType = kchannelGetEngineType(pKernelChannel);
 
-    if (NV2080_ENGINE_TYPE_IS_GR(kchannelGetEngineType(pKernelChannel)))
+    // pre-Ampere chips can have NULL engine types. Find the engine type based on runlistId if set
+    if (!RM_ENGINE_TYPE_IS_VALID(rmEngineType))
+    {
+        if (kchannelIsRunlistSet(pGpu, pKernelChannel))
+        {
+            KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+
+            NV_ASSERT_OK(
+                kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
+                                         ENGINE_INFO_TYPE_RUNLIST, kchannelGetRunlistId(pKernelChannel),
+                                         ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType));
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "Channel destroyed but never bound, scheduled, or had a descendant object created\n");
+        }
+    }
+
+    if (RM_ENGINE_TYPE_IS_GR(rmEngineType))
     {
         OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelChannel);
         KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);

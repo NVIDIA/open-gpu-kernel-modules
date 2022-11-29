@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -149,6 +149,7 @@ struct Memory {
     struct RmResourceCommon *__nvoc_pbase_RmResourceCommon;
     struct RmResource *__nvoc_pbase_RmResource;
     struct Memory *__nvoc_pbase_Memory;
+    NV_STATUS (*__memIsDuplicate__)(struct Memory *, NvHandle, NvBool *);
     NV_STATUS (*__memGetMapAddrSpace__)(struct Memory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     NV_STATUS (*__memControl__)(struct Memory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memMap__)(struct Memory *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -157,9 +158,9 @@ struct Memory {
     NV_STATUS (*__memCheckMemInterUnmap__)(struct Memory *, NvBool);
     NV_STATUS (*__memGetMemoryMappingDescriptor__)(struct Memory *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__memCheckCopyPermissions__)(struct Memory *, struct OBJGPU *, NvHandle);
-    NV_STATUS (*__memIsReady__)(struct Memory *);
+    NV_STATUS (*__memIsReady__)(struct Memory *, NvBool);
+    NvBool (*__memIsGpuMapAllowed__)(struct Memory *, struct OBJGPU *);
     NV_STATUS (*__memCtrlCmdGetSurfaceCompressionCoverageLvm__)(struct Memory *, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *);
-    NV_STATUS (*__memCtrlCmdGetSurfacePartitionStrideLvm__)(struct Memory *, NV0041_CTRL_GET_SURFACE_PARTITION_STRIDE_PARAMS *);
     NV_STATUS (*__memCtrlCmdGetSurfaceInfoLvm__)(struct Memory *, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *);
     NV_STATUS (*__memCtrlCmdSurfaceFlushGpuCache__)(struct Memory *, NV0041_CTRL_SURFACE_FLUSH_GPU_CACHE_PARAMS *);
     NV_STATUS (*__memCtrlCmdGetMemPageSize__)(struct Memory *, NV0041_CTRL_GET_MEM_PAGE_SIZE_PARAMS *);
@@ -234,6 +235,7 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define __objCreate_Memory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_Memory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
+#define memIsDuplicate(pMemory, hMemory, pDuplicate) memIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define memGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) memGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
 #define memControl(pMemory, pCallContext, pParams) memControl_DISPATCH(pMemory, pCallContext, pParams)
 #define memMap(pMemory, pCallContext, pParams, pCpuMapping) memMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
@@ -242,9 +244,9 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define memCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) memCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define memGetMemoryMappingDescriptor(pMemory, ppMemDesc) memGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define memCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) memCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
-#define memIsReady(pMemory) memIsReady_DISPATCH(pMemory)
+#define memIsReady(pMemory, bCopyConstructorContext) memIsReady_DISPATCH(pMemory, bCopyConstructorContext)
+#define memIsGpuMapAllowed(pMemory, pGpu) memIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define memCtrlCmdGetSurfaceCompressionCoverageLvm(pMemory, pParams) memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(pMemory, pParams)
-#define memCtrlCmdGetSurfacePartitionStrideLvm(pMemory, pParams) memCtrlCmdGetSurfacePartitionStrideLvm_DISPATCH(pMemory, pParams)
 #define memCtrlCmdGetSurfaceInfoLvm(pMemory, pSurfaceInfoParams) memCtrlCmdGetSurfaceInfoLvm_DISPATCH(pMemory, pSurfaceInfoParams)
 #define memCtrlCmdSurfaceFlushGpuCache(pMemory, pCacheFlushParams) memCtrlCmdSurfaceFlushGpuCache_DISPATCH(pMemory, pCacheFlushParams)
 #define memCtrlCmdGetMemPageSize(pMemory, pPageSizeParams) memCtrlCmdGetMemPageSize_DISPATCH(pMemory, pPageSizeParams)
@@ -262,6 +264,12 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define memControl_Epilogue(pResource, pCallContext, pParams) memControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define memControlLookup(pResource, pParams, ppEntry) memControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define memAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) memAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
+NV_STATUS memIsDuplicate_IMPL(struct Memory *pMemory, NvHandle hMemory, NvBool *pDuplicate);
+
+static inline NV_STATUS memIsDuplicate_DISPATCH(struct Memory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__memIsDuplicate__(pMemory, hMemory, pDuplicate);
+}
+
 NV_STATUS memGetMapAddrSpace_IMPL(struct Memory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
 
 static inline NV_STATUS memGetMapAddrSpace_DISPATCH(struct Memory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -314,22 +322,24 @@ static inline NV_STATUS memCheckCopyPermissions_DISPATCH(struct Memory *pMemory,
     return pMemory->__memCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
 }
 
-NV_STATUS memIsReady_IMPL(struct Memory *pMemory);
+NV_STATUS memIsReady_IMPL(struct Memory *pMemory, NvBool bCopyConstructorContext);
 
-static inline NV_STATUS memIsReady_DISPATCH(struct Memory *pMemory) {
-    return pMemory->__memIsReady__(pMemory);
+static inline NV_STATUS memIsReady_DISPATCH(struct Memory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__memIsReady__(pMemory, bCopyConstructorContext);
+}
+
+static inline NvBool memIsGpuMapAllowed_0c883b(struct Memory *pMemory, struct OBJGPU *pGpu) {
+    return ((NvBool)(0 == 0));
+}
+
+static inline NvBool memIsGpuMapAllowed_DISPATCH(struct Memory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__memIsGpuMapAllowed__(pMemory, pGpu);
 }
 
 NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams);
 
 static inline NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams) {
     return pMemory->__memCtrlCmdGetSurfaceCompressionCoverageLvm__(pMemory, pParams);
-}
-
-NV_STATUS memCtrlCmdGetSurfacePartitionStrideLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_PARTITION_STRIDE_PARAMS *pParams);
-
-static inline NV_STATUS memCtrlCmdGetSurfacePartitionStrideLvm_DISPATCH(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_PARTITION_STRIDE_PARAMS *pParams) {
-    return pMemory->__memCtrlCmdGetSurfacePartitionStrideLvm__(pMemory, pParams);
 }
 
 NV_STATUS memCtrlCmdGetSurfaceInfoLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *pSurfaceInfoParams);
@@ -411,8 +421,10 @@ static inline NvBool memAccessCallback_DISPATCH(struct Memory *pResource, struct
 }
 
 NV_STATUS memConstruct_IMPL(struct Memory *arg_pMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_memConstruct(arg_pMemory, arg_pCallContext, arg_pParams) memConstruct_IMPL(arg_pMemory, arg_pCallContext, arg_pParams)
 NV_STATUS memCopyConstruct_IMPL(struct Memory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 #ifdef __nvoc_mem_h_disabled
 static inline NV_STATUS memCopyConstruct(struct Memory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     NV_ASSERT_FAILED_PRECOMP("Memory was disabled!");
@@ -423,8 +435,10 @@ static inline NV_STATUS memCopyConstruct(struct Memory *pMemory, CALL_CONTEXT *p
 #endif //__nvoc_mem_h_disabled
 
 void memDestruct_IMPL(struct Memory *pMemory);
+
 #define __nvoc_memDestruct(pMemory) memDestruct_IMPL(pMemory)
 NV_STATUS memConstructCommon_IMPL(struct Memory *pMemory, NvU32 categoryClassId, NvU32 flags, MEMORY_DESCRIPTOR *pMemDesc, NvU32 heapOwner, struct Heap *pHeap, NvU32 attr, NvU32 attr2, NvU32 Pitch, NvU32 type, NvU32 tag, HWRESOURCE_INFO *pHwResource);
+
 #ifdef __nvoc_mem_h_disabled
 static inline NV_STATUS memConstructCommon(struct Memory *pMemory, NvU32 categoryClassId, NvU32 flags, MEMORY_DESCRIPTOR *pMemDesc, NvU32 heapOwner, struct Heap *pHeap, NvU32 attr, NvU32 attr2, NvU32 Pitch, NvU32 type, NvU32 tag, HWRESOURCE_INFO *pHwResource) {
     NV_ASSERT_FAILED_PRECOMP("Memory was disabled!");
@@ -435,6 +449,7 @@ static inline NV_STATUS memConstructCommon(struct Memory *pMemory, NvU32 categor
 #endif //__nvoc_mem_h_disabled
 
 void memDestructCommon_IMPL(struct Memory *pMemory);
+
 #ifdef __nvoc_mem_h_disabled
 static inline void memDestructCommon(struct Memory *pMemory) {
     NV_ASSERT_FAILED_PRECOMP("Memory was disabled!");
@@ -444,8 +459,10 @@ static inline void memDestructCommon(struct Memory *pMemory) {
 #endif //__nvoc_mem_h_disabled
 
 NV_STATUS memCreateMemDesc_IMPL(struct OBJGPU *pGpu, MEMORY_DESCRIPTOR **ppMemDesc, NV_ADDRESS_SPACE addrSpace, NvU64 FBOffset, NvU64 length, NvU32 attr, NvU32 attr2);
+
 #define memCreateMemDesc(pGpu, ppMemDesc, addrSpace, FBOffset, length, attr, attr2) memCreateMemDesc_IMPL(pGpu, ppMemDesc, addrSpace, FBOffset, length, attr, attr2)
 NV_STATUS memCreateKernelMapping_IMPL(struct Memory *pMemory, NvU32 Protect, NvBool bClear);
+
 #ifdef __nvoc_mem_h_disabled
 static inline NV_STATUS memCreateKernelMapping(struct Memory *pMemory, NvU32 Protect, NvBool bClear) {
     NV_ASSERT_FAILED_PRECOMP("Memory was disabled!");
@@ -456,10 +473,13 @@ static inline NV_STATUS memCreateKernelMapping(struct Memory *pMemory, NvU32 Pro
 #endif //__nvoc_mem_h_disabled
 
 NV_STATUS memGetByHandle_IMPL(struct RsClient *pClient, NvHandle hMemory, struct Memory **ppMemory);
+
 #define memGetByHandle(pClient, hMemory, ppMemory) memGetByHandle_IMPL(pClient, hMemory, ppMemory)
 NV_STATUS memGetByHandleAndDevice_IMPL(struct RsClient *pClient, NvHandle hMemory, NvHandle hDevice, struct Memory **ppMemory);
+
 #define memGetByHandleAndDevice(pClient, hMemory, hDevice, ppMemory) memGetByHandleAndDevice_IMPL(pClient, hMemory, hDevice, ppMemory)
 NV_STATUS memGetByHandleAndGroupedGpu_IMPL(struct RsClient *pClient, NvHandle hMemory, struct OBJGPU *pGpu, struct Memory **ppMemory);
+
 #define memGetByHandleAndGroupedGpu(pClient, hMemory, pGpu, ppMemory) memGetByHandleAndGroupedGpu_IMPL(pClient, hMemory, pGpu, ppMemory)
 #undef PRIVATE_FIELD
 

@@ -132,6 +132,7 @@ NV_STATUS __nvoc_objCreate_OBJGPUMON(OBJGPUMON**, Dynamic*, NvU32);
 #define gpumonIsPresent(pGpu, pEngstate) gpumonIsPresent_DISPATCH(pGpu, pEngstate)
 void gpumonGetContextProcessInfo_GM107(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, NvU32 arg0, NvU32 *arg1, NvU32 *arg2, const char **arg3);
 
+
 #ifdef __nvoc_objgpumon_h_disabled
 static inline void gpumonGetContextProcessInfo(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, NvU32 arg0, NvU32 *arg1, NvU32 *arg2, const char **arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUMON was disabled!");
@@ -223,6 +224,7 @@ static inline NvBool gpumonIsPresent_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pE
 }
 
 NV_STATUS gpumonGetPerfmonUtilSamples_IMPL(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE *arg0, NvU32 arg1, NvU32 *arg2);
+
 #ifdef __nvoc_objgpumon_h_disabled
 static inline NV_STATUS gpumonGetPerfmonUtilSamples(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE *arg0, NvU32 arg1, NvU32 *arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUMON was disabled!");

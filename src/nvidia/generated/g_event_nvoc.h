@@ -39,6 +39,7 @@ extern "C" {
 #include "nvoc/prelude.h"
 #include "resserv/rs_server.h"
 #include "rmapi/resource.h"
+#include "kernel/gpu/gpu_engine_type.h"
 
 typedef struct _def_system_event_queue      SYSTEM_EVENTS_QUEUE;
 
@@ -146,8 +147,10 @@ NV_STATUS __nvoc_objCreate_NotifShare(NotifShare**, Dynamic*, NvU32);
     __nvoc_objCreate_NotifShare((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS shrnotifConstruct_IMPL(struct NotifShare *arg_pNotifShare);
+
 #define __nvoc_shrnotifConstruct(arg_pNotifShare) shrnotifConstruct_IMPL(arg_pNotifShare)
 void shrnotifDestruct_IMPL(struct NotifShare *pNotifShare);
+
 #define __nvoc_shrnotifDestruct(pNotifShare) shrnotifDestruct_IMPL(pNotifShare)
 #undef PRIVATE_FIELD
 
@@ -182,6 +185,7 @@ struct Event {
     NV_STATUS (*__eventMapTo__)(struct Event *, RS_RES_MAP_TO_PARAMS *);
     void (*__eventPreDestruct__)(struct Event *);
     NV_STATUS (*__eventUnmapFrom__)(struct Event *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__eventIsDuplicate__)(struct Event *, NvHandle, NvBool *);
     void (*__eventControl_Epilogue__)(struct Event *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__eventControlLookup__)(struct Event *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__eventMap__)(struct Event *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -234,6 +238,7 @@ NV_STATUS __nvoc_objCreate_Event(Event**, Dynamic*, NvU32, struct CALL_CONTEXT *
 #define eventMapTo(pResource, pParams) eventMapTo_DISPATCH(pResource, pParams)
 #define eventPreDestruct(pResource) eventPreDestruct_DISPATCH(pResource)
 #define eventUnmapFrom(pResource, pParams) eventUnmapFrom_DISPATCH(pResource, pParams)
+#define eventIsDuplicate(pResource, hMemory, pDuplicate) eventIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define eventControl_Epilogue(pResource, pCallContext, pParams) eventControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define eventControlLookup(pResource, pParams, ppEntry) eventControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define eventMap(pResource, pCallContext, pParams, pCpuMapping) eventMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -294,6 +299,10 @@ static inline NV_STATUS eventUnmapFrom_DISPATCH(struct Event *pResource, RS_RES_
     return pResource->__eventUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS eventIsDuplicate_DISPATCH(struct Event *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__eventIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void eventControl_Epilogue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__eventControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -311,10 +320,13 @@ static inline NvBool eventAccessCallback_DISPATCH(struct Event *pResource, struc
 }
 
 NV_STATUS eventConstruct_IMPL(struct Event *arg_pEvent, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_eventConstruct(arg_pEvent, arg_pCallContext, arg_pParams) eventConstruct_IMPL(arg_pEvent, arg_pCallContext, arg_pParams)
 void eventDestruct_IMPL(struct Event *pEvent);
+
 #define __nvoc_eventDestruct(pEvent) eventDestruct_IMPL(pEvent)
 NV_STATUS eventInit_IMPL(struct Event *pEvent, struct CALL_CONTEXT *pCallContext, NvHandle hNotifierClient, NvHandle hNotifierResource, PEVENTNOTIFICATION **pppEventNotification);
+
 #ifdef __nvoc_event_h_disabled
 static inline NV_STATUS eventInit(struct Event *pEvent, struct CALL_CONTEXT *pCallContext, NvHandle hNotifierClient, NvHandle hNotifierResource, PEVENTNOTIFICATION **pppEventNotification) {
     NV_ASSERT_FAILED_PRECOMP("Event was disabled!");
@@ -399,10 +411,13 @@ static inline NV_STATUS inotifyGetOrAllocNotifShare_DISPATCH(struct INotifier *p
 }
 
 NV_STATUS inotifyConstruct_IMPL(struct INotifier *arg_pNotifier, struct CALL_CONTEXT *arg_pCallContext);
+
 #define __nvoc_inotifyConstruct(arg_pNotifier, arg_pCallContext) inotifyConstruct_IMPL(arg_pNotifier, arg_pCallContext)
 void inotifyDestruct_IMPL(struct INotifier *pNotifier);
+
 #define __nvoc_inotifyDestruct(pNotifier) inotifyDestruct_IMPL(pNotifier)
 PEVENTNOTIFICATION inotifyGetNotificationList_IMPL(struct INotifier *pNotifier);
+
 #ifdef __nvoc_event_h_disabled
 static inline PEVENTNOTIFICATION inotifyGetNotificationList(struct INotifier *pNotifier) {
     NV_ASSERT_FAILED_PRECOMP("INotifier was disabled!");
@@ -500,8 +515,10 @@ static inline NV_STATUS notifyGetOrAllocNotifShare_DISPATCH(struct Notifier *pNo
 }
 
 NV_STATUS notifyConstruct_IMPL(struct Notifier *arg_pNotifier, struct CALL_CONTEXT *arg_pCallContext);
+
 #define __nvoc_notifyConstruct(arg_pNotifier, arg_pCallContext) notifyConstruct_IMPL(arg_pNotifier, arg_pCallContext)
 void notifyDestruct_IMPL(struct Notifier *pNotifier);
+
 #define __nvoc_notifyDestruct(pNotifier) notifyDestruct_IMPL(pNotifier)
 #undef PRIVATE_FIELD
 
@@ -517,9 +534,9 @@ NV_STATUS registerEventNotification(PEVENTNOTIFICATION*, NvHandle, NvHandle, NvH
 NV_STATUS unregisterEventNotification(PEVENTNOTIFICATION*, NvHandle, NvHandle, NvHandle);
 NV_STATUS unregisterEventNotificationWithData(PEVENTNOTIFICATION *, NvHandle, NvHandle, NvHandle, NvBool, NvP64);
 NV_STATUS bindEventNotificationToSubdevice(PEVENTNOTIFICATION, NvHandle, NvU32);
-NV_STATUS engineNonStallIntrNotify(OBJGPU *, NvU32);
+NV_STATUS engineNonStallIntrNotify(OBJGPU *, RM_ENGINE_TYPE);
 NV_STATUS notifyEvents(OBJGPU*, EVENTNOTIFICATION*, NvU32, NvU32, NvU32, NV_STATUS, NvU32);
-NV_STATUS engineNonStallIntrNotifyEvent(OBJGPU *, NvU32, NvHandle);
+NV_STATUS engineNonStallIntrNotifyEvent(OBJGPU *, RM_ENGINE_TYPE, NvHandle);
 
 #endif // _EVENT_H_
 

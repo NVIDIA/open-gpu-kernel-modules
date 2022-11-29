@@ -586,6 +586,9 @@ portMemAllocPaged
     PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 )
 {
+#if defined(__COVERITY__)
+    return __coverity_alloc__(length);
+#endif
     PORT_MEM_ALLOCATOR *pAlloc = portMemAllocatorGetGlobalPaged();
     return _portMemAllocatorAlloc(pAlloc, length PORT_MEM_CALLERINFO_COMMA_PARAM);
 }
@@ -597,6 +600,9 @@ portMemAllocNonPaged
     PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 )
 {
+#if defined(__COVERITY__)
+    return __coverity_alloc__(length);
+#endif
     PORT_MEM_ALLOCATOR *pAlloc = portMemAllocatorGetGlobalNonPaged();
     return _portMemAllocatorAlloc(pAlloc, length PORT_MEM_CALLERINFO_COMMA_PARAM);
 }

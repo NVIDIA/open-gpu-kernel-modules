@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include "nvstatus.h"
 #include "flcnifcmn.h"
 #include "flcn/haldefs_flcnable_nvswitch.h"
+#include "common_nvswitch.h"
 
 struct SOE;
 
@@ -112,9 +113,13 @@ typedef struct {
     NvlStatus                   (*setPcieLinkSpeed)(
                                         struct nvswitch_device         *device,
                                         NvU32                           linkSpeed);
+    NvlStatus                   (*i2cAccess)(
+                                        struct nvswitch_device           *device,
+                                        NVSWITCH_CTRL_I2C_INDEXED_PARAMS *pParams);
 } soe_hal;
 
 // HAL functions
 void soeSetupHal_LR10(struct SOE *pSoe);
+void soeSetupHal_LS10(struct SOE *pSoe);
 
 #endif //_HALDEFS_SOE_NVSWITCH_H_

@@ -42,6 +42,7 @@
 #include "gpu/gpu.h"
 #include "gpu/gpu_timeout.h"
 
+#include "virtualization/hypervisor/hypervisor.h"
 #include "diagnostics/journal.h"
 
 THREAD_STATE_DB threadStateDatabase;
@@ -324,6 +325,25 @@ static NV_STATUS _threadNodeInitTime(THREAD_STATE_NODE *pThreadNode)
     {
         nonComputeTimeoutMsecs = pThreadNode->timeout.overrideTimeoutMsecs;
         computeTimeoutMsecs = pThreadNode->timeout.overrideTimeoutMsecs;
+    }
+
+    NvBool deviceInit = ((pThreadNode->flags & THREAD_STATE_FLAGS_DEVICE_INIT) != 0);
+    if (deviceInit && hypervisorIsType(OS_HYPERVISOR_HYPERV))
+    {
+        //
+        // Hyper-V intercepts MMIO accesses to the GPU adding a lot of extra
+        // latency. This causes RM device init that is very heavy in MMIO
+        // accesses to take much longer than on baremetal. To WAR this, use a
+        // long 60 secs timeout for threads performing device init. This should
+        // leave us with a comfortable buffer as the longest init observed so
+        // far was 20 seconds on K80.
+        //
+        // See bug 1900927 for more details.
+        //
+        const NvU32 HYPER_V_INIT_TIMEOUT_MS = 60 * 1000;
+
+        computeTimeoutMsecs = HYPER_V_INIT_TIMEOUT_MS;
+        nonComputeTimeoutMsecs = HYPER_V_INIT_TIMEOUT_MS;
     }
 
     _threadStateSetNextCpuYieldTime(pThreadNode);
@@ -1207,12 +1227,12 @@ NV_STATUS threadStateEnqueueCallbackOnFree
 {
     THREAD_STATE_FREE_CALLBACK *pCbListNode;
 
-    if (!(pThreadNode->flags & THREAD_STATE_FLAGS_STATE_FREE_CB_ENABLED))
-        return NV_ERR_INVALID_OPERATION;
-
     if ((pThreadNode == NULL) || (pCallback == NULL) ||
         (pCallback->pCb == NULL))
         return NV_ERR_INVALID_ARGUMENT;
+
+    if (!(pThreadNode->flags & THREAD_STATE_FLAGS_STATE_FREE_CB_ENABLED))
+        return NV_ERR_INVALID_OPERATION;
 
     // Add from tail to maintain FIFO semantics.
     pCbListNode = listAppendNew(&pThreadNode->cbList);

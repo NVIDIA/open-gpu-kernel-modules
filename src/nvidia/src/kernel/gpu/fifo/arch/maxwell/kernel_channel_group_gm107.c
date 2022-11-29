@@ -42,12 +42,12 @@ kchangrpGetDefaultRunlist_GM107
     NvU32         runlistId = INVALID_RUNLIST_ID;
     ENGDESCRIPTOR engDesc   = ENG_GR(0);
 
-    if (NV2080_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType))
+    if (RM_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType))
     {
         // if translation fails, default is GR0
         NV_ASSERT_OK(kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                              ENGINE_INFO_TYPE_NV2080,
-                                              pKernelChannelGroup->engineType,
+                                              ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
+                                              (NvU32)pKernelChannelGroup->engineType,
                                               ENGINE_INFO_TYPE_ENG_DESC,
                                               &engDesc));
     }

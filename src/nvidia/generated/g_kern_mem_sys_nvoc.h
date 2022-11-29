@@ -203,11 +203,18 @@ struct KernelMemorySystem {
     void (*__kmemsysStateDestroy__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysGetFbNumaInfo__)(OBJGPU *, struct KernelMemorySystem *, NvU64 *, NvS32 *);
     NV_STATUS (*__kmemsysReadUsableFbSize__)(OBJGPU *, struct KernelMemorySystem *, NvU64 *);
+    NV_STATUS (*__kmemsysCacheOp__)(OBJGPU *, struct KernelMemorySystem *, PMEMORY_DESCRIPTOR, FB_CACHE_MEMTYPE, FB_CACHE_OP);
+    NV_STATUS (*__kmemsysDoCacheOp__)(OBJGPU *, struct KernelMemorySystem *, NvU32, NvU32, NvU32, PRMTIMEOUT);
+    NvU32 (*__kmemsysReadL2SysmemInvalidateReg__)(OBJGPU *, struct KernelMemorySystem *);
+    void (*__kmemsysWriteL2SysmemInvalidateReg__)(OBJGPU *, struct KernelMemorySystem *, NvU32);
+    NvU32 (*__kmemsysReadL2PeermemInvalidateReg__)(OBJGPU *, struct KernelMemorySystem *);
+    void (*__kmemsysWriteL2PeermemInvalidateReg__)(OBJGPU *, struct KernelMemorySystem *, NvU32);
     NV_STATUS (*__kmemsysInitFlushSysmemBuffer__)(OBJGPU *, struct KernelMemorySystem *);
     void (*__kmemsysProgramSysmemFlushBuffer__)(OBJGPU *, struct KernelMemorySystem *);
     NvBool (*__kmemsysIsPagePLCable__)(OBJGPU *, struct KernelMemorySystem *, NvU64, NvU64);
     NV_STATUS (*__kmemsysReadMIGMemoryCfg__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysInitMIGMemoryPartitionTable__)(OBJGPU *, struct KernelMemorySystem *);
+    NV_STATUS (*__kmemsysSwizzIdToVmmuSegmentsRange__)(OBJGPU *, struct KernelMemorySystem *, NvU32, NvU32, NvU32);
     NV_STATUS (*__kmemsysReconcileTunableState__)(POBJGPU, struct KernelMemorySystem *, void *);
     NV_STATUS (*__kmemsysStateLoad__)(POBJGPU, struct KernelMemorySystem *, NvU32);
     NV_STATUS (*__kmemsysStateUnload__)(POBJGPU, struct KernelMemorySystem *, NvU32);
@@ -280,6 +287,18 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysGetFbNumaInfo_HAL(pGpu, pKernelMemorySystem, physAddr, numaNodeId) kmemsysGetFbNumaInfo_DISPATCH(pGpu, pKernelMemorySystem, physAddr, numaNodeId)
 #define kmemsysReadUsableFbSize(pGpu, pKernelMemorySystem, pFbSize) kmemsysReadUsableFbSize_DISPATCH(pGpu, pKernelMemorySystem, pFbSize)
 #define kmemsysReadUsableFbSize_HAL(pGpu, pKernelMemorySystem, pFbSize) kmemsysReadUsableFbSize_DISPATCH(pGpu, pKernelMemorySystem, pFbSize)
+#define kmemsysCacheOp(pGpu, pKernelMemorySystem, arg0, arg1, operation) kmemsysCacheOp_DISPATCH(pGpu, pKernelMemorySystem, arg0, arg1, operation)
+#define kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, arg0, arg1, operation) kmemsysCacheOp_DISPATCH(pGpu, pKernelMemorySystem, arg0, arg1, operation)
+#define kmemsysDoCacheOp(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3) kmemsysDoCacheOp_DISPATCH(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3)
+#define kmemsysDoCacheOp_HAL(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3) kmemsysDoCacheOp_DISPATCH(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3)
+#define kmemsysReadL2SysmemInvalidateReg(pGpu, pKernelMemorySystem) kmemsysReadL2SysmemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysReadL2SysmemInvalidateReg_HAL(pGpu, pKernelMemorySystem) kmemsysReadL2SysmemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysWriteL2SysmemInvalidateReg(pGpu, pKernelMemorySystem, arg0) kmemsysWriteL2SysmemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem, arg0)
+#define kmemsysWriteL2SysmemInvalidateReg_HAL(pGpu, pKernelMemorySystem, arg0) kmemsysWriteL2SysmemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem, arg0)
+#define kmemsysReadL2PeermemInvalidateReg(pGpu, pKernelMemorySystem) kmemsysReadL2PeermemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysReadL2PeermemInvalidateReg_HAL(pGpu, pKernelMemorySystem) kmemsysReadL2PeermemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysWriteL2PeermemInvalidateReg(pGpu, pKernelMemorySystem, arg0) kmemsysWriteL2PeermemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem, arg0)
+#define kmemsysWriteL2PeermemInvalidateReg_HAL(pGpu, pKernelMemorySystem, arg0) kmemsysWriteL2PeermemInvalidateReg_DISPATCH(pGpu, pKernelMemorySystem, arg0)
 #define kmemsysInitFlushSysmemBuffer(pGpu, pKernelMemorySystem) kmemsysInitFlushSysmemBuffer_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysInitFlushSysmemBuffer_HAL(pGpu, pKernelMemorySystem) kmemsysInitFlushSysmemBuffer_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysProgramSysmemFlushBuffer(pGpu, pKernelMemorySystem) kmemsysProgramSysmemFlushBuffer_DISPATCH(pGpu, pKernelMemorySystem)
@@ -290,6 +309,8 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysReadMIGMemoryCfg_HAL(pGpu, pKernelMemorySystem) kmemsysReadMIGMemoryCfg_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysInitMIGMemoryPartitionTable(pGpu, pKernelMemorySystem) kmemsysInitMIGMemoryPartitionTable_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysInitMIGMemoryPartitionTable_HAL(pGpu, pKernelMemorySystem) kmemsysInitMIGMemoryPartitionTable_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysSwizzIdToVmmuSegmentsRange(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments) kmemsysSwizzIdToVmmuSegmentsRange_DISPATCH(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments)
+#define kmemsysSwizzIdToVmmuSegmentsRange_HAL(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments) kmemsysSwizzIdToVmmuSegmentsRange_DISPATCH(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments)
 #define kmemsysReconcileTunableState(pGpu, pEngstate, pTunableState) kmemsysReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kmemsysStateLoad(pGpu, pEngstate, arg0) kmemsysStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kmemsysStateUnload(pGpu, pEngstate, arg0) kmemsysStateUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -308,6 +329,7 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysIsPresent(pGpu, pEngstate) kmemsysIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kmemsysGetUsableFbSize_KERNEL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 *pFbSize);
 
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysGetUsableFbSize(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 *pFbSize) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -319,85 +341,16 @@ static inline NV_STATUS kmemsysGetUsableFbSize(OBJGPU *pGpu, struct KernelMemory
 
 #define kmemsysGetUsableFbSize_HAL(pGpu, pKernelMemorySystem, pFbSize) kmemsysGetUsableFbSize(pGpu, pKernelMemorySystem, pFbSize)
 
-NV_STATUS kmemsysCacheOp_GM200(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, PMEMORY_DESCRIPTOR arg0, FB_CACHE_MEMTYPE arg1, FB_CACHE_OP operation);
-
-#ifdef __nvoc_kern_mem_sys_h_disabled
-static inline NV_STATUS kmemsysCacheOp(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, PMEMORY_DESCRIPTOR arg0, FB_CACHE_MEMTYPE arg1, FB_CACHE_OP operation) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_mem_sys_h_disabled
-#define kmemsysCacheOp(pGpu, pKernelMemorySystem, arg0, arg1, operation) kmemsysCacheOp_GM200(pGpu, pKernelMemorySystem, arg0, arg1, operation)
-#endif //__nvoc_kern_mem_sys_h_disabled
-
-#define kmemsysCacheOp_HAL(pGpu, pKernelMemorySystem, arg0, arg1, operation) kmemsysCacheOp(pGpu, pKernelMemorySystem, arg0, arg1, operation)
-
-NV_STATUS kmemsysDoCacheOp_GM107(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0, NvU32 arg1, NvU32 arg2, PRMTIMEOUT arg3);
-
-#ifdef __nvoc_kern_mem_sys_h_disabled
-static inline NV_STATUS kmemsysDoCacheOp(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0, NvU32 arg1, NvU32 arg2, PRMTIMEOUT arg3) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_mem_sys_h_disabled
-#define kmemsysDoCacheOp(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3) kmemsysDoCacheOp_GM107(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3)
-#endif //__nvoc_kern_mem_sys_h_disabled
-
-#define kmemsysDoCacheOp_HAL(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3) kmemsysDoCacheOp(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3)
-
-NvU32 kmemsysReadL2SysmemInvalidateReg_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
-
-#ifdef __nvoc_kern_mem_sys_h_disabled
-static inline NvU32 kmemsysReadL2SysmemInvalidateReg(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
-    return 0;
-}
-#else //__nvoc_kern_mem_sys_h_disabled
-#define kmemsysReadL2SysmemInvalidateReg(pGpu, pKernelMemorySystem) kmemsysReadL2SysmemInvalidateReg_TU102(pGpu, pKernelMemorySystem)
-#endif //__nvoc_kern_mem_sys_h_disabled
-
-#define kmemsysReadL2SysmemInvalidateReg_HAL(pGpu, pKernelMemorySystem) kmemsysReadL2SysmemInvalidateReg(pGpu, pKernelMemorySystem)
-
-void kmemsysWriteL2SysmemInvalidateReg_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0);
-
-#ifdef __nvoc_kern_mem_sys_h_disabled
-static inline void kmemsysWriteL2SysmemInvalidateReg(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
-}
-#else //__nvoc_kern_mem_sys_h_disabled
-#define kmemsysWriteL2SysmemInvalidateReg(pGpu, pKernelMemorySystem, arg0) kmemsysWriteL2SysmemInvalidateReg_TU102(pGpu, pKernelMemorySystem, arg0)
-#endif //__nvoc_kern_mem_sys_h_disabled
-
-#define kmemsysWriteL2SysmemInvalidateReg_HAL(pGpu, pKernelMemorySystem, arg0) kmemsysWriteL2SysmemInvalidateReg(pGpu, pKernelMemorySystem, arg0)
-
-NvU32 kmemsysReadL2PeermemInvalidateReg_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
-
-#ifdef __nvoc_kern_mem_sys_h_disabled
-static inline NvU32 kmemsysReadL2PeermemInvalidateReg(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
-    return 0;
-}
-#else //__nvoc_kern_mem_sys_h_disabled
-#define kmemsysReadL2PeermemInvalidateReg(pGpu, pKernelMemorySystem) kmemsysReadL2PeermemInvalidateReg_TU102(pGpu, pKernelMemorySystem)
-#endif //__nvoc_kern_mem_sys_h_disabled
-
-#define kmemsysReadL2PeermemInvalidateReg_HAL(pGpu, pKernelMemorySystem) kmemsysReadL2PeermemInvalidateReg(pGpu, pKernelMemorySystem)
-
-void kmemsysWriteL2PeermemInvalidateReg_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0);
-
-#ifdef __nvoc_kern_mem_sys_h_disabled
-static inline void kmemsysWriteL2PeermemInvalidateReg(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
-}
-#else //__nvoc_kern_mem_sys_h_disabled
-#define kmemsysWriteL2PeermemInvalidateReg(pGpu, pKernelMemorySystem, arg0) kmemsysWriteL2PeermemInvalidateReg_TU102(pGpu, pKernelMemorySystem, arg0)
-#endif //__nvoc_kern_mem_sys_h_disabled
-
-#define kmemsysWriteL2PeermemInvalidateReg_HAL(pGpu, pKernelMemorySystem, arg0) kmemsysWriteL2PeermemInvalidateReg(pGpu, pKernelMemorySystem, arg0)
-
 static inline void kmemsysAssertSysmemFlushBufferValid_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     return;
 }
+
+void kmemsysAssertSysmemFlushBufferValid_GM107(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+void kmemsysAssertSysmemFlushBufferValid_GA100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+void kmemsysAssertSysmemFlushBufferValid_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
 
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline void kmemsysAssertSysmemFlushBufferValid(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
@@ -409,7 +362,22 @@ static inline void kmemsysAssertSysmemFlushBufferValid(OBJGPU *pGpu, struct Kern
 
 #define kmemsysAssertSysmemFlushBufferValid_HAL(pGpu, pKernelMemorySystem) kmemsysAssertSysmemFlushBufferValid(pGpu, pKernelMemorySystem)
 
+NvU32 kmemsysGetFlushSysmemBufferAddrShift_GM107(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+
+#ifdef __nvoc_kern_mem_sys_h_disabled
+static inline NvU32 kmemsysGetFlushSysmemBufferAddrShift(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
+    return 0;
+}
+#else //__nvoc_kern_mem_sys_h_disabled
+#define kmemsysGetFlushSysmemBufferAddrShift(pGpu, pKernelMemorySystem) kmemsysGetFlushSysmemBufferAddrShift_GM107(pGpu, pKernelMemorySystem)
+#endif //__nvoc_kern_mem_sys_h_disabled
+
+#define kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem) kmemsysGetFlushSysmemBufferAddrShift(pGpu, pKernelMemorySystem)
+
 NV_STATUS kmemsysInitStaticConfig_KERNEL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, MEMORY_SYSTEM_STATIC_CONFIG *pConfig);
+
 
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysInitStaticConfig(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, MEMORY_SYSTEM_STATIC_CONFIG *pConfig) {
@@ -426,6 +394,9 @@ static inline NV_STATUS kmemsysPreFillCacheOnlyMemory_56cd7a(OBJGPU *pGpu, struc
     return NV_OK;
 }
 
+NV_STATUS kmemsysPreFillCacheOnlyMemory_GM107(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 arg0, NvU64 arg1);
+
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysPreFillCacheOnlyMemory(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 arg0, NvU64 arg1) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -440,6 +411,7 @@ static inline NV_STATUS kmemsysPreFillCacheOnlyMemory(OBJGPU *pGpu, struct Kerne
 static inline NV_STATUS kmemsysCheckDisplayRemapperRange_14278f(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 arg0, NvU64 arg1) {
     NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_INVALID_STATE);
 }
+
 
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysCheckDisplayRemapperRange(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 arg0, NvU64 arg1) {
@@ -456,6 +428,7 @@ static inline void kmemsysPostHeapCreate_b3696a(OBJGPU *pGpu, struct KernelMemor
     return;
 }
 
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline void kmemsysPostHeapCreate(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -470,6 +443,7 @@ static inline void kmemsysPreHeapDestruct_b3696a(OBJGPU *pGpu, struct KernelMemo
     return;
 }
 
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline void kmemsysPreHeapDestruct(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -481,6 +455,7 @@ static inline void kmemsysPreHeapDestruct(OBJGPU *pGpu, struct KernelMemorySyste
 #define kmemsysPreHeapDestruct_HAL(pGpu, pKernelMemorySystem) kmemsysPreHeapDestruct(pGpu, pKernelMemorySystem)
 
 NV_STATUS kmemsysAllocComprResources_KERNEL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, FB_ALLOC_INFO *arg0, NvU64 arg1, NvU32 arg2, NvU32 *arg3, NvU32 arg4);
+
 
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysAllocComprResources(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, FB_ALLOC_INFO *arg0, NvU64 arg1, NvU32 arg2, NvU32 *arg3, NvU32 arg4) {
@@ -497,6 +472,7 @@ static inline void kmemsysFreeComprResources_b3696a(OBJGPU *pGpu, struct KernelM
     return;
 }
 
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline void kmemsysFreeComprResources(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 hwResId) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -507,20 +483,8 @@ static inline void kmemsysFreeComprResources(OBJGPU *pGpu, struct KernelMemorySy
 
 #define kmemsysFreeComprResources_HAL(pGpu, pKernelMemorySystem, hwResId) kmemsysFreeComprResources(pGpu, pKernelMemorySystem, hwResId)
 
-NV_STATUS kmemsysSwizzIdToVmmuSegmentsRange_GA100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, NvU32 vmmuSegmentSize, NvU32 totalVmmuSegments);
-
-#ifdef __nvoc_kern_mem_sys_h_disabled
-static inline NV_STATUS kmemsysSwizzIdToVmmuSegmentsRange(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, NvU32 vmmuSegmentSize, NvU32 totalVmmuSegments) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_mem_sys_h_disabled
-#define kmemsysSwizzIdToVmmuSegmentsRange(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments) kmemsysSwizzIdToVmmuSegmentsRange_GA100(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments)
-#endif //__nvoc_kern_mem_sys_h_disabled
-
-#define kmemsysSwizzIdToVmmuSegmentsRange_HAL(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments) kmemsysSwizzIdToVmmuSegmentsRange(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments)
-
 NV_STATUS kmemsysPopulateMIGGPUInstanceMemConfig_KERNEL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
 
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysPopulateMIGGPUInstanceMemConfig(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
@@ -571,16 +535,64 @@ NV_STATUS kmemsysReadUsableFbSize_GP102(OBJGPU *pGpu, struct KernelMemorySystem 
 
 NV_STATUS kmemsysReadUsableFbSize_GA102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 *pFbSize);
 
-static inline NV_STATUS kmemsysReadUsableFbSize_5baef9(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 *pFbSize) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
 static inline NV_STATUS kmemsysReadUsableFbSize_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 *pFbSize) {
     return pKernelMemorySystem->__kmemsysReadUsableFbSize__(pGpu, pKernelMemorySystem, pFbSize);
 }
 
-static inline NV_STATUS kmemsysInitFlushSysmemBuffer_56cd7a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
-    return NV_OK;
+NV_STATUS kmemsysCacheOp_GM200(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, PMEMORY_DESCRIPTOR arg0, FB_CACHE_MEMTYPE arg1, FB_CACHE_OP operation);
+
+NV_STATUS kmemsysCacheOp_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, PMEMORY_DESCRIPTOR arg0, FB_CACHE_MEMTYPE arg1, FB_CACHE_OP operation);
+
+static inline NV_STATUS kmemsysCacheOp_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, PMEMORY_DESCRIPTOR arg0, FB_CACHE_MEMTYPE arg1, FB_CACHE_OP operation) {
+    return pKernelMemorySystem->__kmemsysCacheOp__(pGpu, pKernelMemorySystem, arg0, arg1, operation);
+}
+
+NV_STATUS kmemsysDoCacheOp_GM107(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0, NvU32 arg1, NvU32 arg2, PRMTIMEOUT arg3);
+
+NV_STATUS kmemsysDoCacheOp_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0, NvU32 arg1, NvU32 arg2, PRMTIMEOUT arg3);
+
+static inline NV_STATUS kmemsysDoCacheOp_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0, NvU32 arg1, NvU32 arg2, PRMTIMEOUT arg3) {
+    return pKernelMemorySystem->__kmemsysDoCacheOp__(pGpu, pKernelMemorySystem, arg0, arg1, arg2, arg3);
+}
+
+NvU32 kmemsysReadL2SysmemInvalidateReg_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline NvU32 kmemsysReadL2SysmemInvalidateReg_68b109(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, -1);
+}
+
+static inline NvU32 kmemsysReadL2SysmemInvalidateReg_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return pKernelMemorySystem->__kmemsysReadL2SysmemInvalidateReg__(pGpu, pKernelMemorySystem);
+}
+
+void kmemsysWriteL2SysmemInvalidateReg_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0);
+
+static inline void kmemsysWriteL2SysmemInvalidateReg_f2d351(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0) {
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void kmemsysWriteL2SysmemInvalidateReg_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0) {
+    pKernelMemorySystem->__kmemsysWriteL2SysmemInvalidateReg__(pGpu, pKernelMemorySystem, arg0);
+}
+
+NvU32 kmemsysReadL2PeermemInvalidateReg_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline NvU32 kmemsysReadL2PeermemInvalidateReg_68b109(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, -1);
+}
+
+static inline NvU32 kmemsysReadL2PeermemInvalidateReg_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return pKernelMemorySystem->__kmemsysReadL2PeermemInvalidateReg__(pGpu, pKernelMemorySystem);
+}
+
+void kmemsysWriteL2PeermemInvalidateReg_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0);
+
+static inline void kmemsysWriteL2PeermemInvalidateReg_f2d351(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0) {
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void kmemsysWriteL2PeermemInvalidateReg_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 arg0) {
+    pKernelMemorySystem->__kmemsysWriteL2PeermemInvalidateReg__(pGpu, pKernelMemorySystem, arg0);
 }
 
 NV_STATUS kmemsysInitFlushSysmemBuffer_GM107(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
@@ -591,20 +603,14 @@ static inline NV_STATUS kmemsysInitFlushSysmemBuffer_DISPATCH(OBJGPU *pGpu, stru
     return pKernelMemorySystem->__kmemsysInitFlushSysmemBuffer__(pGpu, pKernelMemorySystem);
 }
 
-static inline void kmemsysProgramSysmemFlushBuffer_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
-    return;
-}
-
 void kmemsysProgramSysmemFlushBuffer_GM107(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
 
 void kmemsysProgramSysmemFlushBuffer_GA100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
 
+void kmemsysProgramSysmemFlushBuffer_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
 static inline void kmemsysProgramSysmemFlushBuffer_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     pKernelMemorySystem->__kmemsysProgramSysmemFlushBuffer__(pGpu, pKernelMemorySystem);
-}
-
-static inline NvBool kmemsysIsPagePLCable_cbe027(OBJGPU *pGpu, struct KernelMemorySystem *KernelMemorySystem, NvU64 physAddr, NvU64 pageSize) {
-    return ((NvBool)(0 == 0));
 }
 
 NvBool kmemsysIsPagePLCable_GA100(OBJGPU *pGpu, struct KernelMemorySystem *KernelMemorySystem, NvU64 physAddr, NvU64 pageSize);
@@ -637,6 +643,14 @@ NV_STATUS kmemsysInitMIGMemoryPartitionTable_GA100(OBJGPU *pGpu, struct KernelMe
 
 static inline NV_STATUS kmemsysInitMIGMemoryPartitionTable_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     return pKernelMemorySystem->__kmemsysInitMIGMemoryPartitionTable__(pGpu, pKernelMemorySystem);
+}
+
+NV_STATUS kmemsysSwizzIdToVmmuSegmentsRange_GA100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, NvU32 vmmuSegmentSize, NvU32 totalVmmuSegments);
+
+NV_STATUS kmemsysSwizzIdToVmmuSegmentsRange_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, NvU32 vmmuSegmentSize, NvU32 totalVmmuSegments);
+
+static inline NV_STATUS kmemsysSwizzIdToVmmuSegmentsRange_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, NvU32 vmmuSegmentSize, NvU32 totalVmmuSegments) {
+    return pKernelMemorySystem->__kmemsysSwizzIdToVmmuSegmentsRange__(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments);
 }
 
 static inline NV_STATUS kmemsysReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, void *pTunableState) {
@@ -708,8 +722,10 @@ static inline NvBool kmemsysIsL2CleanFbPull(struct KernelMemorySystem *pKernelMe
 }
 
 void kmemsysDestruct_IMPL(struct KernelMemorySystem *pKernelMemorySystem);
+
 #define __nvoc_kmemsysDestruct(pKernelMemorySystem) kmemsysDestruct_IMPL(pKernelMemorySystem)
 NV_STATUS kmemsysEnsureSysmemFlushBufferInitialized_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysEnsureSysmemFlushBufferInitialized(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -720,6 +736,7 @@ static inline NV_STATUS kmemsysEnsureSysmemFlushBufferInitialized(OBJGPU *pGpu, 
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 const MEMORY_SYSTEM_STATIC_CONFIG *kmemsysGetStaticConfig_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline const MEMORY_SYSTEM_STATIC_CONFIG *kmemsysGetStaticConfig(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -730,6 +747,7 @@ static inline const MEMORY_SYSTEM_STATIC_CONFIG *kmemsysGetStaticConfig(OBJGPU *
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 NV_STATUS kmemsysSetupCoherentCpuLink_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvBool bFlush);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysSetupCoherentCpuLink(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvBool bFlush) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -740,6 +758,7 @@ static inline NV_STATUS kmemsysSetupCoherentCpuLink(OBJGPU *pGpu, struct KernelM
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 void kmemsysTeardownCoherentCpuLink_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvBool bFlush);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline void kmemsysTeardownCoherentCpuLink(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvBool bFlush) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -749,6 +768,7 @@ static inline void kmemsysTeardownCoherentCpuLink(OBJGPU *pGpu, struct KernelMem
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 NV_STATUS kmemsysSendL2InvalidateEvict_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 flags);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysSendL2InvalidateEvict(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 flags) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -759,6 +779,7 @@ static inline NV_STATUS kmemsysSendL2InvalidateEvict(OBJGPU *pGpu, struct Kernel
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 NV_STATUS kmemsysSendFlushL2AllRamsAndCaches_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysSendFlushL2AllRamsAndCaches(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -769,6 +790,7 @@ static inline NV_STATUS kmemsysSendFlushL2AllRamsAndCaches(OBJGPU *pGpu, struct 
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 NV_STATUS kmemsysSwizzIdToMIGMemSize_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, struct NV_RANGE totalRange, NvU32 *pPartitionSizeFlag, NvU64 *pSizeInBytes);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysSwizzIdToMIGMemSize(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, struct NV_RANGE totalRange, NvU32 *pPartitionSizeFlag, NvU64 *pSizeInBytes) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -779,6 +801,7 @@ static inline NV_STATUS kmemsysSwizzIdToMIGMemSize(OBJGPU *pGpu, struct KernelMe
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 NV_STATUS kmemsysSwizzIdToMIGMemRange_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, struct NV_RANGE totalRange, struct NV_RANGE *pAddrRange);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysSwizzIdToMIGMemRange(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, struct NV_RANGE totalRange, struct NV_RANGE *pAddrRange) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -789,6 +812,7 @@ static inline NV_STATUS kmemsysSwizzIdToMIGMemRange(OBJGPU *pGpu, struct KernelM
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 NV_STATUS kmemsysGetMIGGPUInstanceMemInfo_IMPL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, struct NV_RANGE *pAddrRange);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysGetMIGGPUInstanceMemInfo(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 swizzId, struct NV_RANGE *pAddrRange) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -799,6 +823,7 @@ static inline NV_STATUS kmemsysGetMIGGPUInstanceMemInfo(OBJGPU *pGpu, struct Ker
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 NV_STATUS kmemsysGetMIGGPUInstanceMemConfigFromSwizzId_IMPL(OBJGPU *arg0, struct KernelMemorySystem *arg1, NvU32 swizzId, const MIG_GPU_INSTANCE_MEMORY_CONFIG **arg2);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysGetMIGGPUInstanceMemConfigFromSwizzId(OBJGPU *arg0, struct KernelMemorySystem *arg1, NvU32 swizzId, const MIG_GPU_INSTANCE_MEMORY_CONFIG **arg2) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");
@@ -809,6 +834,7 @@ static inline NV_STATUS kmemsysGetMIGGPUInstanceMemConfigFromSwizzId(OBJGPU *arg
 #endif //__nvoc_kern_mem_sys_h_disabled
 
 NV_STATUS kmemsysInitMIGGPUInstanceMemConfigForSwizzId_IMPL(OBJGPU *arg0, struct KernelMemorySystem *arg1, NvU32 swizzId, NvU64 startingVmmuSegment, NvU64 memSizeInVmmuSegment);
+
 #ifdef __nvoc_kern_mem_sys_h_disabled
 static inline NV_STATUS kmemsysInitMIGGPUInstanceMemConfigForSwizzId(OBJGPU *arg0, struct KernelMemorySystem *arg1, NvU32 swizzId, NvU64 startingVmmuSegment, NvU64 memSizeInVmmuSegment) {
     NV_ASSERT_FAILED_PRECOMP("KernelMemorySystem was disabled!");

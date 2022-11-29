@@ -101,7 +101,7 @@ static NV_STATUS split_as_needed(uvm_va_space_t *va_space,
 
     UVM_ASSERT(PAGE_ALIGNED(addr));
 
-    // Look for UVM managed allocations first, then look for HMM policies.
+    // Look for managed allocations first, then look for HMM policies.
     va_range = uvm_va_range_find(va_space, addr);
     if (!va_range)
         return uvm_hmm_split_as_needed(va_space, addr, split_needed_cb, data);
@@ -203,6 +203,10 @@ NV_STATUS uvm_va_block_set_preferred_location_locked(uvm_va_block_t *va_block,
                                                      uvm_va_block_context_t *va_block_context)
 {
     uvm_assert_mutex_locked(&va_block->lock);
+    // TODO: Bug 1750144: remove this restriction when HMM handles setting
+    // the preferred location semantics instead of just recording the policy.
+    UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
+    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
     uvm_va_block_mark_cpu_dirty(va_block);
 
@@ -432,10 +436,9 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
 
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
+    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
-    va_block_context->policy = uvm_va_range_get_policy(va_block->va_range);
-
-    // Read duplication takes precedence over SetAccesedBy. Do not add mappings
+    // Read duplication takes precedence over SetAccessedBy. Do not add mappings
     // if read duplication is enabled.
     if (uvm_va_policy_is_read_duplicate(va_block_context->policy, va_space))
         return NV_OK;
@@ -617,6 +620,10 @@ NV_STATUS uvm_va_block_set_read_duplication(uvm_va_block_t *va_block,
     NV_STATUS status;
     uvm_va_block_retry_t va_block_retry;
 
+    // TODO: Bug 3660922: need to implement HMM read duplication support.
+    UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
+    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
+
     status = UVM_VA_BLOCK_LOCK_RETRY(va_block, &va_block_retry,
                                      va_block_set_read_duplication_locked(va_block,
                                                                           &va_block_retry,
@@ -713,6 +720,9 @@ NV_STATUS uvm_va_block_unset_read_duplication(uvm_va_block_t *va_block,
     uvm_va_block_retry_t va_block_retry;
     NV_STATUS status = NV_OK;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
+
+    UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
+    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
     // Restore all SetAccessedBy mappings
     status = UVM_VA_BLOCK_LOCK_RETRY(va_block, &va_block_retry,

@@ -44,10 +44,8 @@
 #include "uvm_va_block_types.h"
 #include "uvm_perf_module.h"
 #include "uvm_rb_tree.h"
+#include "uvm_perf_prefetch.h"
 #include "nv-kthread-q.h"
-
-
-
 
 // Buffer length to store uvm gpu id, RM device name and gpu uuid.
 #define UVM_GPU_NICE_NAME_BUFFER_LENGTH (sizeof("ID 999: : ") + \
@@ -162,6 +160,12 @@ struct uvm_service_block_context_struct
 
     // State used by the VA block routines called by the servicing routine
     uvm_va_block_context_t block_context;
+
+    // Prefetch state hint
+    uvm_perf_prefetch_hint_t prefetch_hint;
+
+    // Prefetch temporary state.
+    uvm_perf_prefetch_bitmap_tree_t prefetch_bitmap_tree;
 };
 
 struct uvm_fault_service_batch_context_struct
@@ -377,6 +381,16 @@ struct uvm_access_counter_service_batch_context_struct
         // determine at fetch time that all the access counter notifications in the
         // batch report the same instance_ptr
         bool is_single_instance_ptr;
+
+        // Scratch space, used to generate artificial physically addressed notifications.
+        // Virtual address notifications are always aligned to 64k. This means up to 16
+        // different physical locations could have been accessed to trigger one notification.
+        // The sub-granularity mask can correspond to any of them.
+        struct {
+            uvm_processor_id_t resident_processors[16];
+            uvm_gpu_phys_address_t phys_addresses[16];
+            uvm_access_counter_buffer_entry_t phys_entry;
+        } scratch;
     } virt;
 
     struct
@@ -508,10 +522,8 @@ typedef enum
     UVM_GPU_LINK_NVLINK_1,
     UVM_GPU_LINK_NVLINK_2,
     UVM_GPU_LINK_NVLINK_3,
-
-
-
-
+    UVM_GPU_LINK_NVLINK_4,
+    UVM_GPU_LINK_C2C,
     UVM_GPU_LINK_MAX
 } uvm_gpu_link_type_t;
 
@@ -684,10 +696,6 @@ struct uvm_gpu_struct
     // mappings (instead of kernel), and it is used in most configurations.
     uvm_pmm_sysmem_mappings_t pmm_reverse_sysmem_mappings;
 
-
-
-
-
     // ECC handling
     // In order to trap ECC errors as soon as possible the driver has the hw
     // interrupt register mapped directly. If an ECC interrupt is ever noticed
@@ -742,6 +750,9 @@ struct uvm_gpu_struct
 
     // Placeholder for per-GPU performance heuristics information
     uvm_perf_module_data_desc_t perf_modules_data[UVM_PERF_MODULE_TYPE_COUNT];
+
+    // Force pushbuffer's GPU VA to be >= 1TB; used only for testing purposes.
+    bool uvm_test_force_upper_pushbuffer_segment;
 };
 
 struct uvm_parent_gpu_struct
@@ -822,9 +833,6 @@ struct uvm_parent_gpu_struct
     uvm_arch_hal_t *arch_hal;
     uvm_fault_buffer_hal_t *fault_buffer_hal;
     uvm_access_counter_buffer_hal_t *access_counter_buffer_hal;
-
-
-
 
     uvm_gpu_peer_copy_mode_t peer_copy_mode;
 
@@ -1318,19 +1326,19 @@ NV_STATUS uvm_gpu_check_ecc_error_no_rm(uvm_gpu_t *gpu);
 //
 // Returns the physical address of the pages that can be used to access them on
 // the GPU.
-NV_STATUS uvm_gpu_map_cpu_pages(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out);
+NV_STATUS uvm_gpu_map_cpu_pages(uvm_parent_gpu_t *parent_gpu, struct page *page, size_t size, NvU64 *dma_address_out);
 
 // Unmap num_pages pages previously mapped with uvm_gpu_map_cpu_pages().
-void uvm_gpu_unmap_cpu_pages(uvm_gpu_t *gpu, NvU64 dma_address, size_t size);
+void uvm_gpu_unmap_cpu_pages(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address, size_t size);
 
-static NV_STATUS uvm_gpu_map_cpu_page(uvm_gpu_t *gpu, struct page *page, NvU64 *dma_address_out)
+static NV_STATUS uvm_gpu_map_cpu_page(uvm_parent_gpu_t *parent_gpu, struct page *page, NvU64 *dma_address_out)
 {
-    return uvm_gpu_map_cpu_pages(gpu, page, PAGE_SIZE, dma_address_out);
+    return uvm_gpu_map_cpu_pages(parent_gpu, page, PAGE_SIZE, dma_address_out);
 }
 
-static void uvm_gpu_unmap_cpu_page(uvm_gpu_t *gpu, NvU64 dma_address)
+static void uvm_gpu_unmap_cpu_page(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address)
 {
-    uvm_gpu_unmap_cpu_pages(gpu, dma_address, PAGE_SIZE);
+    uvm_gpu_unmap_cpu_pages(parent_gpu, dma_address, PAGE_SIZE);
 }
 
 // Allocate and map a page of system DMA memory on the GPU for physical access
@@ -1360,14 +1368,13 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
 // addresses.
 NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr);
 
+static bool uvm_gpu_has_pushbuffer_segments(uvm_gpu_t *gpu)
+{
+    return gpu->parent->max_host_va > (1ull << 40);
+}
+
 static bool uvm_gpu_supports_eviction(uvm_gpu_t *gpu)
 {
-
-
-
-
-
-
     // Eviction is supported only if the GPU supports replayable faults
     return gpu->parent->replayable_faults_supported;
 }

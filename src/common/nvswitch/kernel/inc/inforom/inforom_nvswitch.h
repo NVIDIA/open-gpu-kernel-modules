@@ -46,6 +46,20 @@
     (destName)[2] = (srcName)[2];                    \
 }
 
+//
+// OS type defines.
+//
+#define INFOROM_BBX_OBJ_V1_00_SYSTEM_OS_TYPE_OTHER                           0x0
+#define INFOROM_BBX_OBJ_V1_00_SYSTEM_OS_TYPE_WIN9X                           0x1
+#define INFOROM_BBX_OBJ_V1_00_SYSTEM_OS_TYPE_WIN2K                           0x2
+#define INFOROM_BBX_OBJ_V1_00_SYSTEM_OS_TYPE_WIN                             0x4
+#define INFOROM_BBX_OBJ_V1_00_SYSTEM_OS_TYPE_UNIX                            0x5
+
+#define INFOROM_BBX_OBJ_V1_00_SYSTEM_OS_MAJOR                                7:0
+#define INFOROM_BBX_OBJ_V1_00_SYSTEM_OS_MINOR                               15:8
+#define INFOROM_BBX_OBJ_V1_00_SYSTEM_OS_BUILD                              31:16
+
+
 struct INFOROM_OBJECT_CACHE_ENTRY
 {
     INFOROM_OBJECT_HEADER_V1_00         header;
@@ -110,6 +124,7 @@ NvlStatus nvswitch_inforom_load_object(nvswitch_device* device,
                 const char *pObjectFormat, NvU8 *pPackedObject, void *pObject);
 void nvswitch_inforom_read_static_data(nvswitch_device *device,
                 struct inforom  *pInforom, RM_SOE_SMBPBI_INFOROM_DATA *pData);
+void nvswitch_inforom_string_copy(inforom_U008 *pSrc, NvU8 *pDst, NvU32 size);
 
 // InfoROM RO APIs
 NvlStatus nvswitch_inforom_read_only_objects_load(nvswitch_device *device);
@@ -151,8 +166,6 @@ void nvswitch_inforom_bbx_unload(nvswitch_device * device);
 NvlStatus nvswitch_inforom_bbx_add_sxid(nvswitch_device *device,
                                     NvU32 exceptionType, NvU32 data0,
                                     NvU32 data1, NvU32 data2);
-void nvswitch_bbx_collect_current_time(nvswitch_device *device,
-                            void *pBbxState);
 NvlStatus nvswitch_inforom_bbx_get_sxid(nvswitch_device *device,
                             NVSWITCH_GET_SXIDS_PARAMS *params);
 

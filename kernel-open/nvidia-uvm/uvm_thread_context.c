@@ -430,10 +430,12 @@ static bool thread_context_non_interrupt_add(uvm_thread_context_t *thread_contex
         if (thread_context->array_index == UVM_THREAD_CONTEXT_ARRAY_SIZE) {
             NvU64 old = atomic64_cmpxchg(&array_entry->task, 0, task);
 
-            // Task already added a different thread context. There is nothing
-            // to undo because the current thread context has not been inserted.
-            if (old == task)
+            // Task already added a different thread context. The current thread
+            // context has not been inserted but needs to be freed.
+            if (old == task) {
+                thread_context_non_interrupt_deinit(thread_context);
                 return false;
+            }
 
             // Speculatively add the current thread context.
             if (old == 0)
@@ -444,6 +446,7 @@ static bool thread_context_non_interrupt_add(uvm_thread_context_t *thread_contex
             // Task already added a different thread context to the array, so
             // undo the speculative insertion
             atomic64_set(&table_entry->array[thread_context->array_index].task, 0);
+            thread_context_non_interrupt_deinit(thread_context);
 
             return false;
         }
@@ -473,6 +476,9 @@ static bool thread_context_non_interrupt_add(uvm_thread_context_t *thread_contex
         table_entry->array[thread_context->array_index].thread_context = thread_context;
         added = true;
     }
+
+    if (!added)
+        thread_context_non_interrupt_deinit(thread_context);
 
     spin_unlock_irqrestore(&table_entry->tree_lock, flags);
     return added;

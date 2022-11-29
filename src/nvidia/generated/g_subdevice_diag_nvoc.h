@@ -68,6 +68,7 @@ struct DiagApi {
     NV_STATUS (*__diagapiCtrlCmdFifoGetChannelState__)(struct DiagApi *, NV208F_CTRL_FIFO_GET_CHANNEL_STATE_PARAMS *);
     NV_STATUS (*__diagapiCtrlCmdFbCtrlGpuCache__)(struct DiagApi *, NV208F_CTRL_FB_CTRL_GPU_CACHE_PARAMS *);
     NV_STATUS (*__diagapiCtrlCmdFbEccSetKillPtr__)(struct DiagApi *, NV208F_CTRL_FB_ECC_SET_KILL_PTR_PARAMS *);
+    NV_STATUS (*__diagapiCtrlCmdFbClearRemappedRows__)(struct DiagApi *, NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS *);
     NV_STATUS (*__diagapiCtrlCmdGpuGetRamSvopValues__)(struct DiagApi *, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *);
     NV_STATUS (*__diagapiCtrlCmdGpuSetRamSvopValues__)(struct DiagApi *, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *);
     NV_STATUS (*__diagapiCtrlCmdGpuVerifyInforom__)(struct DiagApi *, NV208F_CTRL_GPU_VERIFY_INFOROM_PARAMS *);
@@ -75,7 +76,6 @@ struct DiagApi {
     NV_STATUS (*__diagapiCtrlCmdBifConfigRegRead__)(struct DiagApi *, NV208F_CTRL_BIF_CONFIG_REG_READ_PARAMS *);
     NV_STATUS (*__diagapiCtrlCmdBifConfigRegWrite__)(struct DiagApi *, NV208F_CTRL_BIF_CONFIG_REG_WRITE_PARAMS *);
     NV_STATUS (*__diagapiCtrlCmdBifInfo__)(struct DiagApi *, NV208F_CTRL_BIF_INFO_PARAMS *);
-    NV_STATUS (*__diagapiCtrlCmdMmuGetNumHshubmmus__)(struct DiagApi *, NV208F_CTRL_MMU_GET_NUM_HSHUBMMUS_PARAMS *);
     NvBool (*__diagapiShareCallback__)(struct DiagApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__diagapiMapTo__)(struct DiagApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__diagapiGetOrAllocNotifShare__)(struct DiagApi *, NvHandle, NvHandle, struct NotifShare **);
@@ -97,6 +97,7 @@ struct DiagApi {
     NV_STATUS (*__diagapiUnregisterEvent__)(struct DiagApi *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__diagapiCanCopy__)(struct DiagApi *);
     void (*__diagapiPreDestruct__)(struct DiagApi *);
+    NV_STATUS (*__diagapiIsDuplicate__)(struct DiagApi *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__diagapiGetNotificationListPtr__)(struct DiagApi *);
     struct NotifShare *(*__diagapiGetNotificationShare__)(struct DiagApi *);
     NV_STATUS (*__diagapiMap__)(struct DiagApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -139,6 +140,7 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi**, Dynamic*, NvU32, struct CALL_CONTE
 #define diagapiCtrlCmdFifoGetChannelState(pDiagApi, pChannelStateParams) diagapiCtrlCmdFifoGetChannelState_DISPATCH(pDiagApi, pChannelStateParams)
 #define diagapiCtrlCmdFbCtrlGpuCache(pDiagApi, pGpuCacheParams) diagapiCtrlCmdFbCtrlGpuCache_DISPATCH(pDiagApi, pGpuCacheParams)
 #define diagapiCtrlCmdFbEccSetKillPtr(pDiagApi, pParams) diagapiCtrlCmdFbEccSetKillPtr_DISPATCH(pDiagApi, pParams)
+#define diagapiCtrlCmdFbClearRemappedRows(pDiagApi, pRemappedRowsParams) diagapiCtrlCmdFbClearRemappedRows_DISPATCH(pDiagApi, pRemappedRowsParams)
 #define diagapiCtrlCmdGpuGetRamSvopValues(pDiagApi, pGetRamSvopParams) diagapiCtrlCmdGpuGetRamSvopValues_DISPATCH(pDiagApi, pGetRamSvopParams)
 #define diagapiCtrlCmdGpuSetRamSvopValues(pDiagApi, pSetRamSvopParams) diagapiCtrlCmdGpuSetRamSvopValues_DISPATCH(pDiagApi, pSetRamSvopParams)
 #define diagapiCtrlCmdGpuVerifyInforom(pDiagApi, pParams) diagapiCtrlCmdGpuVerifyInforom_DISPATCH(pDiagApi, pParams)
@@ -146,7 +148,6 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi**, Dynamic*, NvU32, struct CALL_CONTE
 #define diagapiCtrlCmdBifConfigRegRead(pDiagApi, pReadConfigReg) diagapiCtrlCmdBifConfigRegRead_DISPATCH(pDiagApi, pReadConfigReg)
 #define diagapiCtrlCmdBifConfigRegWrite(pDiagApi, pWriteConfigReg) diagapiCtrlCmdBifConfigRegWrite_DISPATCH(pDiagApi, pWriteConfigReg)
 #define diagapiCtrlCmdBifInfo(pDiagApi, pInfo) diagapiCtrlCmdBifInfo_DISPATCH(pDiagApi, pInfo)
-#define diagapiCtrlCmdMmuGetNumHshubmmus(pDiagApi, pParams) diagapiCtrlCmdMmuGetNumHshubmmus_DISPATCH(pDiagApi, pParams)
 #define diagapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) diagapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define diagapiMapTo(pResource, pParams) diagapiMapTo_DISPATCH(pResource, pParams)
 #define diagapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) diagapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
@@ -168,6 +169,7 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi**, Dynamic*, NvU32, struct CALL_CONTE
 #define diagapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) diagapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define diagapiCanCopy(pResource) diagapiCanCopy_DISPATCH(pResource)
 #define diagapiPreDestruct(pResource) diagapiPreDestruct_DISPATCH(pResource)
+#define diagapiIsDuplicate(pResource, hMemory, pDuplicate) diagapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define diagapiGetNotificationListPtr(pNotifier) diagapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define diagapiGetNotificationShare(pNotifier) diagapiGetNotificationShare_DISPATCH(pNotifier)
 #define diagapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) diagapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -214,6 +216,12 @@ static inline NV_STATUS diagapiCtrlCmdFbEccSetKillPtr_DISPATCH(struct DiagApi *p
     return pDiagApi->__diagapiCtrlCmdFbEccSetKillPtr__(pDiagApi, pParams);
 }
 
+NV_STATUS diagapiCtrlCmdFbClearRemappedRows_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS *pRemappedRowsParams);
+
+static inline NV_STATUS diagapiCtrlCmdFbClearRemappedRows_DISPATCH(struct DiagApi *pDiagApi, NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS *pRemappedRowsParams) {
+    return pDiagApi->__diagapiCtrlCmdFbClearRemappedRows__(pDiagApi, pRemappedRowsParams);
+}
+
 NV_STATUS diagapiCtrlCmdGpuGetRamSvopValues_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *pGetRamSvopParams);
 
 static inline NV_STATUS diagapiCtrlCmdGpuGetRamSvopValues_DISPATCH(struct DiagApi *pDiagApi, NV208F_CTRL_GPU_RAM_SVOP_VALUES_PARAMS *pGetRamSvopParams) {
@@ -254,12 +262,6 @@ NV_STATUS diagapiCtrlCmdBifInfo_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_BIF_I
 
 static inline NV_STATUS diagapiCtrlCmdBifInfo_DISPATCH(struct DiagApi *pDiagApi, NV208F_CTRL_BIF_INFO_PARAMS *pInfo) {
     return pDiagApi->__diagapiCtrlCmdBifInfo__(pDiagApi, pInfo);
-}
-
-NV_STATUS diagapiCtrlCmdMmuGetNumHshubmmus_IMPL(struct DiagApi *pDiagApi, NV208F_CTRL_MMU_GET_NUM_HSHUBMMUS_PARAMS *pParams);
-
-static inline NV_STATUS diagapiCtrlCmdMmuGetNumHshubmmus_DISPATCH(struct DiagApi *pDiagApi, NV208F_CTRL_MMU_GET_NUM_HSHUBMMUS_PARAMS *pParams) {
-    return pDiagApi->__diagapiCtrlCmdMmuGetNumHshubmmus__(pDiagApi, pParams);
 }
 
 static inline NvBool diagapiShareCallback_DISPATCH(struct DiagApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -346,6 +348,10 @@ static inline void diagapiPreDestruct_DISPATCH(struct DiagApi *pResource) {
     pResource->__diagapiPreDestruct__(pResource);
 }
 
+static inline NV_STATUS diagapiIsDuplicate_DISPATCH(struct DiagApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__diagapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *diagapiGetNotificationListPtr_DISPATCH(struct DiagApi *pNotifier) {
     return pNotifier->__diagapiGetNotificationListPtr__(pNotifier);
 }
@@ -363,6 +369,7 @@ static inline NvBool diagapiAccessCallback_DISPATCH(struct DiagApi *pResource, s
 }
 
 NV_STATUS diagapiConstruct_IMPL(struct DiagApi *arg_pDiagApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_diagapiConstruct(arg_pDiagApi, arg_pCallContext, arg_pParams) diagapiConstruct_IMPL(arg_pDiagApi, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

@@ -27,6 +27,7 @@
 #include "kernel/mem_mgr/mem.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/mem_mgr/mem_desc.h"
 
 #include "class/cl906f.h"
 
@@ -52,7 +53,7 @@ kchannelGetClassEngineID_GM107
     NvHandle       handle,
     NvU32         *pClassEngineID,
     NvU32         *pClassID,
-    NvU32         *pEngineID
+    RM_ENGINE_TYPE *pRmEngineID
 )
 {
     NV_STATUS   status         =  NV_OK;
@@ -84,7 +85,7 @@ kchannelGetClassEngineID_GM107
         return NV_ERR_OBJECT_NOT_FOUND;
     }
 
-    status = gpuXlateEngDescToClientEngineId(pGpu, halEngineTag, pEngineID);
+    status = gpuXlateEngDescToClientEngineId(pGpu, halEngineTag, pRmEngineID);
 
     if (status == NV_OK)
     {
@@ -282,6 +283,7 @@ NV_STATUS kchannelAllocMem_GM107
             SLI_LOOP_BREAK;
         }
 
+        memdescSetName(pGpu, pInstanceBlock->pInstanceBlockDesc, NV_RM_SURF_NAME_INSTANCE_BLOCK, NULL);
     }
     else
     {
@@ -399,11 +401,8 @@ kchannelDestroyMem_GM107
     }
 
     // Remove USERD memDescs
-    if (pKernelChannel->pInstSubDeviceMemDesc[subdevInst] != NULL)
-    {
-        memdescDestroy(pKernelChannel->pInstSubDeviceMemDesc[subdevInst]);
-        pKernelChannel->pInstSubDeviceMemDesc[subdevInst] = NULL;
-    }
+    memdescDestroy(pKernelChannel->pInstSubDeviceMemDesc[subdevInst]);
+    pKernelChannel->pInstSubDeviceMemDesc[subdevInst] = NULL;
 
     SLI_LOOP_END
 

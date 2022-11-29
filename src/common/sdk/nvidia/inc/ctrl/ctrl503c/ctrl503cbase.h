@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl503c/ctrl503cbase.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV50_THIRD_PARTY_P2P control commands and parameters */
 #define NV503C_CTRL_CMD(cat,idx)  NVXXXX_CTRL_CMD(0x503C,NV503C_CTRL_##cat,idx)

@@ -85,10 +85,11 @@ typedef enum nvswitch_get_info_index
     NVSWITCH_GET_INFO_INDEX_ENABLED_PORTS_MASK_63_32,
     NVSWITCH_GET_INFO_INDEX_NUM_VCS,
     NVSWITCH_GET_INFO_INDEX_REMAP_POLICY_TABLE_SIZE,
-    NVSWITCH_GET_INFO_INDEX_REMAP_POLICY_EXTA_TABLE_SIZE,
-    NVSWITCH_GET_INFO_INDEX_REMAP_POLICY_EXTB_TABLE_SIZE,
     NVSWITCH_GET_INFO_INDEX_ROUTING_ID_TABLE_SIZE,
     NVSWITCH_GET_INFO_INDEX_ROUTING_LAN_TABLE_SIZE,
+    NVSWITCH_GET_INFO_INDEX_REMAP_POLICY_EXTA_TABLE_SIZE,
+    NVSWITCH_GET_INFO_INDEX_REMAP_POLICY_EXTB_TABLE_SIZE,
+    NVSWITCH_GET_INFO_INDEX_REMAP_POLICY_MULTICAST_TABLE_SIZE,
 
     NVSWITCH_GET_INFO_INDEX_FREQ_KHZ = 0x200,
     NVSWITCH_GET_INFO_INDEX_VCOFREQ_KHZ,
@@ -104,6 +105,9 @@ typedef enum nvswitch_get_info_index
 
 #define NVSWITCH_GET_INFO_INDEX_ARCH_LR10     0x02
 #define NVSWITCH_GET_INFO_INDEX_IMPL_LR10     0x01
+
+#define NVSWITCH_GET_INFO_INDEX_ARCH_LS10     0x03
+#define NVSWITCH_GET_INFO_INDEX_IMPL_LS10     0x01
 
 #define NVSWITCH_GET_INFO_INDEX_PLATFORM_UNKNOWN    0x00
 #define NVSWITCH_GET_INFO_INDEX_PLATFORM_RTLSIM     0x01
@@ -352,7 +356,8 @@ typedef enum nvswitch_table_select_remap
     NVSWITCH_TABLE_SELECT_REMAP_PRIMARY = 0,
     NVSWITCH_TABLE_SELECT_REMAP_EXTA,
     NVSWITCH_TABLE_SELECT_REMAP_EXTB,
-    NVSWITCH_TABLE_SELECT_REMAP_MULTICAST
+    NVSWITCH_TABLE_SELECT_REMAP_MULTICAST,
+    NVSWITCH_TABLE_SELECT_REMAP_MAX
 } NVSWITCH_TABLE_SELECT_REMAP;
 
 typedef struct nvswitch_set_remap_policy
@@ -797,6 +802,7 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_END                             = 10005,
     NVSWITCH_ERR_HW_HOST_THERMAL_SHUTDOWN                              = 10006,
     NVSWITCH_ERR_HW_HOST_IO_FAILURE                                    = 10007,
+    NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE               = 10008,
     NVSWITCH_ERR_HW_HOST_LAST,
 
 
@@ -826,6 +832,29 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_NPORT_INGRESS_RIDTAB_ECC_LIMIT_ERR                 = 11022,
     NVSWITCH_ERR_HW_NPORT_INGRESS_RLANTAB_ECC_LIMIT_ERR                = 11023,
     NVSWITCH_ERR_HW_NPORT_INGRESS_ADDRTYPEERR                          = 11024,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTAREMAPTAB_INDEX_ERR               = 11025,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTBREMAPTAB_INDEX_ERR               = 11026,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_MCREMAPTAB_INDEX_ERR                 = 11027,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTAREMAPTAB_ECC_DBE_ERR             = 11028,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTBREMAPTAB_ECC_DBE_ERR             = 11029,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_MCREMAPTAB_ECC_DBE_ERR               = 11030,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTAREMAPTAB_REQCONTEXTMISMATCHERR   = 11031,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTBREMAPTAB_REQCONTEXTMISMATCHERR   = 11032,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_MCREMAPTAB_REQCONTEXTMISMATCHERR     = 11033,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTAREMAPTAB_ACLFAIL                 = 11034,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTBREMAPTAB_ACLFAIL                 = 11035,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_MCREMAPTAB_ACLFAIL                   = 11036,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTAREMAPTAB_ADDRBOUNDSERR           = 11037,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTBREMAPTAB_ADDRBOUNDSERR           = 11038,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_MCREMAPTAB_ADDRBOUNDSERR             = 11039,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTAREMAPTAB_ECC_LIMIT_ERR           = 11040,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTBREMAPTAB_ECC_LIMIT_ERR           = 11041,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_MCREMAPTAB_ECC_LIMIT_ERR             = 11042,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_MCCMDTOUCADDRERR                     = 11043,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_READMCREFLECTMEMERR                  = 11044,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTAREMAPTAB_ADDRTYPEERR             = 11045,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_EXTBREMAPTAB_ADDRTYPEERR             = 11046,
+    NVSWITCH_ERR_HW_NPORT_INGRESS_MCREMAPTAB_ADDRTYPEERR               = 11047,
     NVSWITCH_ERR_HW_NPORT_INGRESS_LAST, /* NOTE: Must be last */
 
     /* NPORT: Egress errors */
@@ -863,9 +892,24 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_NPORT_EGRESS_NCISOC_CREDIT_PARITY_ERR              = 12031,
     NVSWITCH_ERR_HW_NPORT_EGRESS_NXBAR_FLITTYPE_MISMATCH_ERR           = 12032,
     NVSWITCH_ERR_HW_NPORT_EGRESS_CREDIT_TIME_OUT_ERR                   = 12033,
-    NVSWITCH_ERR_HW_NPORT_EGRESS_TIMESTAMP_LOG                         = 12034,
-    NVSWITCH_ERR_HW_NPORT_EGRESS_MISC_LOG                              = 12035,
-    NVSWITCH_ERR_HW_NPORT_EGRESS_HEADER_LOG                            = 12036,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_INVALIDVCSET_ERR                      = 12034,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_NXBAR_SIDEBAND_PD_PARITY_ERR          = 12035,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_NXBAR_REDUCTION_HDR_ECC_LIMIT_ERR     = 12036,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_NXBAR_REDUCTION_HDR_ECC_DBE_ERR       = 12037,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCRSPCTRLSTORE_ECC_LIMIT_ERR          = 12038,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCRSPCTRLSTORE_ECC_DBE_ERR            = 12039,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_RBCTRLSTORE_ECC_LIMIT_ERR             = 12040,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_RBCTRLSTORE_ECC_DBE_ERR               = 12041,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCREDSGT_ECC_LIMIT_ERR                = 12042,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCREDSGT_ECC_DBE_ERR                  = 12043,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCREDBUF_ECC_LIMIT_ERR                = 12044,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCREDBUF_ECC_DBE_ERR                  = 12045,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCRSP_RAM_HDR_ECC_LIMIT_ERR           = 12046,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCRSP_RAM_HDR_ECC_DBE_ERR             = 12047,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_NXBAR_REDUCTION_HDR_PARITY_ERR        = 12048,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_NXBAR_REDUCTION_FLITTYPE_MISMATCH_ERR = 12049,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_MCRSP_CNT_ERR                         = 12050,
+    NVSWITCH_ERR_HW_NPORT_EGRESS_RBRSP_CNT_ERR                         = 12051,
     NVSWITCH_ERR_HW_NPORT_EGRESS_LAST, /* NOTE: Must be last */
 
     /* NPORT: Fstate errors */
@@ -917,6 +961,13 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_NPORT_ROUTE_NVS_ECC_LIMIT_ERR                      = 15011,
     NVSWITCH_ERR_HW_NPORT_ROUTE_NVS_ECC_DBE_ERR                        = 15012,
     NVSWITCH_ERR_HW_NPORT_ROUTE_CDTPARERR                              = 15013,
+    NVSWITCH_ERR_HW_NPORT_ROUTE_MCRID_ECC_LIMIT_ERR                    = 15014,
+    NVSWITCH_ERR_HW_NPORT_ROUTE_MCRID_ECC_DBE_ERR                      = 15015,
+    NVSWITCH_ERR_HW_NPORT_ROUTE_EXTMCRID_ECC_LIMIT_ERR                 = 15016,
+    NVSWITCH_ERR_HW_NPORT_ROUTE_EXTMCRID_ECC_DBE_ERR                   = 15017,
+    NVSWITCH_ERR_HW_NPORT_ROUTE_RAM_ECC_LIMIT_ERR                      = 15018,
+    NVSWITCH_ERR_HW_NPORT_ROUTE_RAM_ECC_DBE_ERR                        = 15019,
+    NVSWITCH_ERR_HW_NPORT_ROUTE_INVALID_MCRID_ERR                      = 15020,
     NVSWITCH_ERR_HW_NPORT_ROUTE_LAST, /* NOTE: Must be last */
 
     /* NPORT: Nport errors */
@@ -1153,6 +1204,9 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_NPORT_SOURCETRACK_CREQ_TCEN0_TD_CRUMBSTORE_ECC_DBE_ERR    = 24005,
     NVSWITCH_ERR_HW_NPORT_SOURCETRACK_CREQ_TCEN1_CRUMBSTORE_ECC_DBE_ERR       = 24006,
     NVSWITCH_ERR_HW_NPORT_SOURCETRACK_SOURCETRACK_TIME_OUT_ERR                = 24007,
+    NVSWITCH_ERR_HW_NPORT_SOURCETRACK_DUP_CREQ_TCEN0_TAG_ERR                  = 24008,
+    NVSWITCH_ERR_HW_NPORT_SOURCETRACK_INVALID_TCEN0_RSP_ERR                   = 24009,
+    NVSWITCH_ERR_HW_NPORT_SOURCETRACK_INVALID_TCEN1_RSP_ERR                   = 24010,
     NVSWITCH_ERR_HW_NPORT_SOURCETRACK_LAST, /* NOTE: Must be last */
 
     /* NVLIPT_LNK errors */
@@ -1166,6 +1220,7 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_NVLIPT_LNK_SLEEPWHILEACTIVELINK                    = 25007,
     NVSWITCH_ERR_HW_NVLIPT_LNK_RSTSEQ_PHYCTL_TIMEOUT                   = 25008,
     NVSWITCH_ERR_HW_NVLIPT_LNK_RSTSEQ_CLKCTL_TIMEOUT                   = 25009,
+    NVSWITCH_ERR_HW_NVLIPT_LNK_ALI_TRAINING_FAIL                       = 25010,
     NVSWITCH_ERR_HW_NVLIPT_LNK_LAST, /* Note: Must be last */
 
     /* SOE errors */
@@ -1179,6 +1234,26 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_SOE_EXTERR                                         = 26007,
     NVSWITCH_ERR_HW_SOE_WATCHDOG                                       = 26008,
     NVSWITCH_ERR_HW_SOE_LAST, /* Note: Must be last */
+
+    /* NPORT: Multicast Tstate errors */
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE                              = 28000,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR        = 28001,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_DBE_ERR          = 28002,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR     = 28003,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_DBE_ERR       = 28004,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_BUF_OVERWRITE_ERR = 28005,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_MCTO_ERR          = 28006,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_LAST, /* Note: Must be last */
+
+    /* NPORT: Reduction Tstate errors */
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE                              = 29000,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR        = 29001,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_DBE_ERR          = 29002,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR     = 29003,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_DBE_ERR       = 29004,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_BUF_OVERWRITE_ERR = 29005,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_RTO_ERR           = 29006,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_LAST, /* Note: Must be last */
 
     /* Please update nvswitch_translate_hw_errors with a newly added error class. */
     NVSWITCH_ERR_LAST
@@ -1300,6 +1375,8 @@ typedef struct nvswitch_set_latency_bins
  *      Set true, if the port is AC coupled.
  *   enableVC1 [IN]
  *      Set true, if VC1 should be enabled for the port.
+ *   trunkSrcMask [IN]
+ *      Mask of source trunk ports.
  */
 
 typedef enum nvswitch_connection_type
@@ -1328,6 +1405,7 @@ typedef struct nvswitch_set_switch_port_config
     NvU32  count;
     NvBool acCoupled;
     NvBool enableVC1;
+    NvU64  trunkSrcMask;
 
 } NVSWITCH_SET_SWITCH_PORT_CONFIG;
 
@@ -1652,6 +1730,7 @@ typedef struct
 #define NVSWITCH_NVLINK_CAPS_NVLINK_VERSION_2_2          (0x00000004)
 #define NVSWITCH_NVLINK_CAPS_NVLINK_VERSION_3_0          (0x00000005)
 #define NVSWITCH_NVLINK_CAPS_NVLINK_VERSION_3_1          (0x00000006)
+#define NVSWITCH_NVLINK_CAPS_NVLINK_VERSION_4_0          (0x00000007)
 
 #define NVSWITCH_NVLINK_CAPS_NCI_VERSION_INVALID         (0x00000000)
 #define NVSWITCH_NVLINK_CAPS_NCI_VERSION_1_0             (0x00000001)
@@ -1659,6 +1738,7 @@ typedef struct
 #define NVSWITCH_NVLINK_CAPS_NCI_VERSION_2_2             (0x00000004)
 #define NVSWITCH_NVLINK_CAPS_NCI_VERSION_3_0             (0x00000005)
 #define NVSWITCH_NVLINK_CAPS_NCI_VERSION_3_1             (0x00000006)
+#define NVSWITCH_NVLINK_CAPS_NCI_VERSION_4_0             (0x00000007)
 
 
 /*
@@ -1769,16 +1849,21 @@ typedef struct
     // LR10+ only
     NvU32   laneRxdetStatusMask;
 
+    // LS10+ only
+    NvBool  bIsRepeaterMode;
+
     NVSWITCH_NVLINK_DEVICE_INFO remoteDeviceInfo;
     NVSWITCH_NVLINK_DEVICE_INFO localDeviceInfo;
 } NVSWITCH_NVLINK_LINK_STATUS_INFO;
 
 /* NVLink link states */
 #define NVSWITCH_NVLINK_STATUS_LINK_STATE_INIT               (0x00000000)
+#define NVSWITCH_NVLINK_STATUS_LINK_STATE_HWPCFG             (0x0000000c)
 #define NVSWITCH_NVLINK_STATUS_LINK_STATE_HWCFG              (0x00000001)
 #define NVSWITCH_NVLINK_STATUS_LINK_STATE_SWCFG              (0x00000002)
 #define NVSWITCH_NVLINK_STATUS_LINK_STATE_ACTIVE             (0x00000003)
 #define NVSWITCH_NVLINK_STATUS_LINK_STATE_FAULT              (0x00000004)
+#define NVSWITCH_NVLINK_STATUS_LINK_STATE_SLEEP              (0x00000005)
 #define NVSWITCH_NVLINK_STATUS_LINK_STATE_RECOVERY           (0x00000006)
 #define NVSWITCH_NVLINK_STATUS_LINK_STATE_INVALID            (0xFFFFFFFF)
 
@@ -1927,6 +2012,24 @@ typedef struct
 #define NVSWITCH_NUM_CHANNELS_LR10                        4
 
 /*
+ * Laguna Seca thermal channels
+ */
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_MAX         0x00
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_OFFSET_MAX  0x01
+#define NVSWITCH_THERM_CHANNEL_LS10_TDIODE             0x02
+#define NVSWITCH_THERM_CHANNEL_LS10_TDIODE_OFFSET      0x03
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_0           0x04
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_1           0x05
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_2           0x06
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_3           0x07
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_4           0x08
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_5           0x09
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_6           0x0A
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_7           0x0B
+#define NVSWITCH_THERM_CHANNEL_LS10_TSENSE_8           0x0C
+#define NVSWITCH_NUM_CHANNELS_LS10                       13
+
+/*
  * CTRL_NVSWITCH_GET_THROUGHPUT_COUNTERS
  *
  * Control for querying NVLINK throughput counters.
@@ -1984,6 +2087,21 @@ typedef struct nvswitch_get_bios_info
 {
     NvU64 version;
 } NVSWITCH_GET_BIOS_INFO_PARAMS;
+
+#define NVSWITCH_INFOROM_VERSION_LEN 16
+/*
+ * CTRL_NVSWITCH_GET_INFOROM_VERSION
+ *
+ * Control call to get INFOROM information.
+ *
+ * Parameters:
+ *     version [OUT]
+ *       Inforom version in char value.
+ */
+typedef struct nvswitch_get_inforom_version
+{
+    NvU8 version[NVSWITCH_INFOROM_VERSION_LEN];
+} NVSWITCH_GET_INFOROM_VERSION_PARAMS;
 
 /*
  * CTRL_NVSWITCH_BLACKLIST_DEVICE
@@ -2094,7 +2212,9 @@ typedef struct nvswitch_set_training_error_info
 #define NVSWITCH_DEVICE_EVENT_NONFATAL        1
 #define NVSWITCH_DEVICE_EVENT_PORT_UP         2
 #define NVSWITCH_DEVICE_EVENT_PORT_DOWN       3
-#define NVSWITCH_DEVICE_EVENT_COUNT           4
+#define NVSWITCH_DEVICE_EVENT_FABRIC_STATE    4
+#define NVSWITCH_DEVICE_EVENT_INBAND_DATA     5
+#define NVSWITCH_DEVICE_EVENT_COUNT           6
 #define NVSWITCH_REGISTER_EVENTS_MAX_EVENT_IDS (500)
 
 /*
@@ -2174,6 +2294,158 @@ typedef struct nvswitch_get_fatal_error_scope_params
     NvBool device;
     NvBool port[NVSWITCH_MAX_PORTS];
 } NVSWITCH_GET_FATAL_ERROR_SCOPE_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_SET_MC_RID_TABLE
+ *
+ * Control for programming an ingress multicast RID table entry.
+ * This interface is only supported on LS10 architecture.  All others will
+ * return an error. Architecture can be queried using _GET_INFO_INDEX_ARCH.
+ *
+ * Parameters:
+ *   portNum [IN]
+ *      A valid port number present in the port masks returned by
+ *      NVSWITCH_GET_INFO
+ *   index [IN]
+ *      Index within the multicast RID table to be programmed. This is
+ *      equivalent to MCID.
+ *   extendedTable [IN]
+ *      boolean: Set the requested entry in the extended table
+ *      else set the requested entry in the main table
+ *   ports [IN]
+ *      The list of ports. For each multicast request, the address hash
+ *      selects the multicast port string, and hardware multicasts to ports
+ *      in that string.
+ *   vcHop [IN]
+ *      Array of VC hop values for each port.
+ *   mcSize [IN]
+ *      Number of ports in the multicast group (must be a nonzero value).
+ *      Must be the number of ports in the main table, plus the extended table
+ *      if that is used.
+ *      Must be the same for all spray groups.
+ *      Caller is responsible for ensuring the above conditions, as the driver
+ *      provides only minimal range checking.
+ *   numSprayGroups [IN]
+ *      Number of groups to spray over. This must be a nonzero value.
+ *   portsPerSprayGroup [IN]
+ *      Array, number of ports contained in each spray group.
+ *      Note these must all be the same size unless an extended entry
+ *      is used,
+ *      _and_ numSprayGroups is the same for both the main entry and extended
+ *      entry,
+ *      _and_ the sum of ports in the main and extended groups equals
+ *      mcSize for each spray group.
+ *      FM is responsible for providing the correct value. Driver provides only
+ *      minimal range checking.
+ *   replicaOffset [IN]
+ *      Array, offsets within each spray group to the primary replica port for the group.
+ *      The caller should specify mcSize primaryReplicas.
+ *   replicaValid [IN]
+ *      boolean:  Array, set the primary replica according to the replicaOffset array.
+ *      else let hardware choose a default primary replica port
+ *   extendedPtr [IN]
+ *      pointer to the extended table to append to the multicast table entry
+ *      can only be valid in the main table entries
+ *   extendedValid [IN]
+ *      boolean: Use the extended index to append to the main table string.
+ *      else the main string specifies the complete operation for its MCID
+ *   noDynRsp [IN]
+ *      boolean: no dynamic alt selection on MC responses. This field has no meaning in
+ *      the extended table
+ *   entryValid
+ *      boolean: flag this entry in the MC RID table as valid
+ */
+
+#define NVSWITCH_MC_MAX_PORTS           64
+#define NVSWITCH_MC_MAX_SPRAYGROUPS     16
+
+#define NVSWITCH_MC_VCHOP_PASS          0
+#define NVSWITCH_MC_VCHOP_INVERT        1
+#define NVSWITCH_MC_VCHOP_FORCE0        2
+#define NVSWITCH_MC_VCHOP_FORCE1        3
+
+typedef struct nvswitch_set_mc_rid_table_params
+{
+    NvU32                           portNum;
+    NvU32                           index;
+    NvBool                          extendedTable;
+    NvU32                           ports[NVSWITCH_MC_MAX_PORTS];
+    NvU8                            vcHop[NVSWITCH_MC_MAX_PORTS];
+    NvU32                           mcSize;
+    NvU32                           numSprayGroups;
+    NvU32                           portsPerSprayGroup[NVSWITCH_MC_MAX_SPRAYGROUPS];
+    NvU32                           replicaOffset[NVSWITCH_MC_MAX_SPRAYGROUPS];
+    NvBool                          replicaValid[NVSWITCH_MC_MAX_SPRAYGROUPS];
+    NvU32                           extendedPtr;
+    NvBool                          extendedValid;
+    NvBool                          noDynRsp;
+    NvBool                          entryValid;
+} NVSWITCH_SET_MC_RID_TABLE_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_GET_MC_RID_TABLE
+ *
+ * Control for reading an ingress multicast RID table entry.
+ * This interface is only supported on LS10 architecture.  All others will
+ * return an error. Architecture can be queried using _GET_INFO_INDEX_ARCH.
+ *
+ * Parameters:
+ *   portNum [IN]
+ *      A valid port number present in the port masks returned by
+ *      NVSWITCH_GET_INFO
+ *   index [IN]
+ *      Index within the multicast RID table to be retrieved. This is
+ *      equivalent to MCID.
+ *   extendedTable [IN]
+ *      boolean: Get the requested entry from the extended table.
+ *      Else get the requested entry from the main table.
+ *   ports [OUT]
+ *      The list of ports. Port order within spray groups is not guaranteed
+ *      to be preserved.
+ *   vcHop [OUT]
+ *      Array containing VC hop values for each entry in the ports array.
+ *   mcSize [OUT]
+ *      Number of ports in the multicast group.
+ *   numSprayGroups [OUT]
+ *      Number of groups to spray over.
+ *   portsPerSprayGroup [OUT]
+ *      Array, each element contains the number of ports within each corresponding
+ *      spray group.
+ *   replicaOffset [OUT]
+ *      Array, offsets within each spray group to the primary replica port
+ *      for the group.
+ *   replicaValid [OUT]
+ *      boolean:  Array, specifies whether each entry in the replicaOffset
+ *      array is valid.
+ *   extendedPtr [OUT]
+ *      Pointer to the extended table appended to the main table entry.
+ *      Only valid for main table entries.
+ *   extendedValid [OUT]
+ *      boolean: Whether the extendedPtr is valid.
+ *   noDynRsp [IN]
+ *      boolean: no dynamic alt selection on MC responses.
+ *      This field has no meaning in the extended table.
+ *   entryValid
+ *      boolean: Whether this entry in the MC RID table is valid
+ */
+
+typedef struct nvswitch_get_mc_rid_table_params
+{
+    NvU32                           portNum;
+    NvU32                           index;
+    NvBool                          extendedTable;
+    NvU32                           ports[NVSWITCH_MC_MAX_PORTS];
+    NvU8                            vcHop[NVSWITCH_MC_MAX_PORTS];
+    NvU32                           mcSize;
+    NvU32                           numSprayGroups;
+    NvU32                           portsPerSprayGroup[NVSWITCH_MC_MAX_SPRAYGROUPS];
+    NvU32                           replicaOffset[NVSWITCH_MC_MAX_SPRAYGROUPS];
+    NvBool                          replicaValid[NVSWITCH_MC_MAX_SPRAYGROUPS];
+    NvU32                           extendedPtr;
+    NvBool                          extendedValid;
+    NvBool                          noDynRsp;
+    NvBool                          entryValid;
+} NVSWITCH_GET_MC_RID_TABLE_PARAMS;
 
 #define NVSWITCH_I2C_SMBUS_CMD_QUICK      0
 #define NVSWITCH_I2C_SMBUS_CMD_BYTE       1
@@ -2784,6 +3056,235 @@ typedef struct nvswitch_get_rd_stall_busy
     NVSWITCH_STALL_BUSY vc1;
 } NVSWITCH_GET_RB_STALL_BUSY;
 
+/*
+ * CTRL_NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR
+ *
+ * Control for querying multicast ID error vector
+ *
+ * Parameters:
+ *  [in] link
+ *    Link number on which the error vector is requested
+ *
+ *  [out] error_vector[]
+ *      Bit vector of multicast IDs that are in error.
+ */
+
+#define NVSWITCH_MC_ID_ERROR_VECTOR_COUNT   128
+
+typedef struct nvswitch_get_multicast_id_error_vector
+{
+    NvU32 link;
+    NvU32 error_vector[NVSWITCH_MC_ID_ERROR_VECTOR_COUNT / 32];
+} NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR;
+
+/*
+ * CTRL_NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR
+ *
+ * Control for clearing multicast ID error vector
+ *
+ * Parameters:
+ *  [in] link
+ *    Link number on which the error vector clear is requested
+ *
+ *  [in] error_vector[]
+ *      Bit vector of multicast IDs to clear error.
+ */
+
+typedef struct nvswitch_clear_multicast_id_error_vector
+{
+    NvU32 link;
+    NvU32 error_vector[NVSWITCH_MC_ID_ERROR_VECTOR_COUNT / 32];
+} NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR;
+
+/*
+ * NVSWITCH_NVLINK_ERR_INFO
+ *   Error information per link
+ *
+ * Parameters:
+ *   TLErrlog
+ *     Returns the error mask for NVLINK TL errors
+ *     Used in Pascal
+ *
+ *   TLIntrEn
+ *     Returns the intr enable mask for NVLINK TL errors
+ *     Used in Pascal
+ *
+ *   TLCTxErrStatus0
+ *     Returns the TLC Tx Error Mask 0
+ *     Used in Volta
+ *
+ *   TLCRxErrStatus0
+ *     Returns the TLC Rx Error Mask 0
+ *     Used in Volta
+ *
+ *   TLCRxErrStatus1
+ *     Returns the TLC Rx Error Mask 1
+ *     Used in Volta
+ *
+ *   TLCTxErrLogEn0
+ *     Returns the TLC Tx Error Log En 0
+ *     Used in Volta
+ *
+ *   TLCRxErrLogEn0
+ *     Returns the TLC Rx Error Log En 0
+ *     Used in Volta
+ *
+ *   TLCRxErrLogEn1
+ *     Returns the TLC Rx Error Log En 1
+ *     Used in Volta
+ *
+ *   MIFTxErrStatus0
+ *     Returns the MIF Rx Error Mask 0
+ *     Used in Volta
+ *
+ *   MIFRxErrStatus0
+ *     Returns the MIF Tx Error Mask 0
+ *     Used in Volta
+ *
+ *   DLSpeedStatusTx
+ *     Returns the NVLINK DL speed status for sublink Tx
+ *
+ *   DLSpeedStatusRx
+ *     Returns the NVLINK DL speed status for sublink Rx
+ *
+ *   bExcessErrorDL
+ *     Returns true for excessive error rate interrupt from DL
+ */
+typedef struct
+{
+    NvU32   TLErrlog;
+    NvU32   TLIntrEn;
+    NvU32   TLCTxErrStatus0;
+    NvU32   TLCRxErrStatus0;
+    NvU32   TLCRxErrStatus1;
+    NvU32   TLCTxErrLogEn0;
+    NvU32   TLCRxErrLogEn0;
+    NvU32   TLCRxErrLogEn1;
+    NvU32   MIFTxErrStatus0;
+    NvU32   MIFRxErrStatus0;
+    NvU32   DLSpeedStatusTx;
+    NvU32   DLSpeedStatusRx;
+    NvBool  bExcessErrorDL;
+} NVSWITCH_NVLINK_ERR_INFO;
+
+/*
+ * CTRL_NVSWITCH_GET_ERR_INFO
+ *     This command is used to query the NVLINK error information
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+/*
+ *   NVSWITCH_NVLINK_GET_ERR_INFO_PARAMS
+ *
+ *   linkMask
+ *     Returns the mask of links enabled
+ *
+ *   linkErrInfo
+ *     Returns the error information for all the links
+ */
+typedef struct
+{
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+    NVSWITCH_NVLINK_ERR_INFO linkErrInfo[NVSWITCH_NVLINK_MAX_LINKS];
+} NVSWITCH_NVLINK_GET_ERR_INFO_PARAMS;
+
+#define NVSWITCH_INBAND_DATA_SIZE 4096
+
+/*
+ * CTRL_NVSWITCH_INBAND_SEND_DATA
+ * 
+ * Control call used for sending data over inband.
+ *
+ * Parameters:
+ *
+ *    dataSize[IN]
+ *      Valid data in the buffer
+ *
+ *    linkId[IN]
+ *      Link number on which the data needs to be sent
+ *
+ *    buffer[IN]
+ *      Data which needs to be sent on the other side
+ *
+ *    dataSent [OUT]
+ *      Bytes of data which were sent to the other side
+ */
+typedef struct nvswitch_inband_send_data_params
+{
+    /* input parameters */
+    NvU32 dataSize;
+    NvU32 linkId;
+    NvU8  buffer[NVSWITCH_INBAND_DATA_SIZE];
+
+    /* output parameters */
+    NvU32 dataSent;
+} NVSWITCH_INBAND_SEND_DATA_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_INBAND_READ_DATA
+ * 
+ * Control call used for reading data received over inband
+ *
+ * Parameters:
+ *
+ *    linkId[IN]
+ *      Link number on which the data needs to be read.
+ *
+ *    dataSize[OUT]
+ *      Valid data in the buffer
+ *
+ *    buffer[OUT]
+ *      Data which needs to be read from the other side
+ */
+typedef struct nvswitch_inband_read_data_params
+{
+    /* input parameters */
+    NvU32 linkId;
+
+    /* output parameters */
+    NvU32 dataSize;
+    NvU8  buffer[NVSWITCH_INBAND_DATA_SIZE];
+} NVSWITCH_INBAND_READ_DATA_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_INBAND_FLUSH_DATA
+ * 
+ * Flushing all the pending data for the corresponding link.
+ * Messages would be stored in a queue. If flush is send all the
+ * pending messages which are there for that linkId will be deleted.
+ *
+ * Parameters:
+ *
+ *    linkMask[IN]
+ *      Mask of Links on which the data needs to be flushed.
+ */
+typedef struct nvswitch_inband_flush_data_params
+{
+    /* input parameters */
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+
+    /* output parameters */
+} NVSWITCH_INBAND_FLUSH_DATA_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_INBAND_PENDING_DATA_STATS
+ * 
+ * Control call to check which links have pending data
+ *
+ * Parameters:
+ *
+ *    linkMask[OUT]
+ *      Mask of the links which has data on it.
+ */
+typedef struct nvswitch_inband_pending_data_stats_params
+{
+    /* output parameters */
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+} NVSWITCH_INBAND_PENDING_DATA_STATS_PARAMS;
+
 #define NVSWITCH_GET_SW_INFO_COUNT_MAX 32
 
 typedef enum nvswitch_get_sw_info_index
@@ -2798,6 +3299,29 @@ typedef struct nvswitch_get_sw_info_params
     NvU32 index[NVSWITCH_GET_SW_INFO_COUNT_MAX];
     NvU32 info[NVSWITCH_GET_SW_INFO_COUNT_MAX];
 } NVSWITCH_GET_SW_INFO_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_CLEAR_COUNTERS
+ *  This command clears/resets the counters for the specified types.
+ *
+ * [in] linkMask
+ *  This parameter specifies for which links we want to clear the 
+ *  counters.
+ *
+ * [in] counterMask
+ *  This parameter specifies the input mask for desired counters to be
+ *  cleared. Note that all counters cannot be cleared.
+ *
+ *  NOTE: Bug# 2098529: On Turing all DL errors and LP counters are cleared
+ *        together. They cannot be cleared individually per error type. RM
+ *        would possibly move to a new API on Ampere and beyond
+ */  
+
+typedef struct
+{
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+    NvU32  counterMask; 
+} NVSWITCH_NVLINK_CLEAR_COUNTERS_PARAMS;
 
 /*
  * NVSWITCH_CTRL_I2C_DEVICE_INFO
@@ -3039,6 +3563,88 @@ typedef struct
     NvU8  message[NVSWITCH_CTRL_I2C_MESSAGE_LENGTH_MAX];
 } NVSWITCH_CTRL_I2C_INDEXED_PARAMS;
 
+/*
+ * Structure to store register values required to debug ALI training failures
+ *
+ * dlstatMn00
+ *     DLSTAT MN00 register value (subcode and code)
+ * dlstatUc01
+ *     DLSTAT UC01 register value
+ * dlstatLinkIntr
+ *     NV_MINION_NVLINK_LINK_INTR (subcode, code and state)
+ */
+typedef struct nvswitch_minion_ali_debug_registers
+{
+    NvU32 dlstatMn00;
+    NvU32 dlstatUc01;
+    NvU32 dlstatLinkIntr;
+} NVSWITCH_MINION_ALI_DEBUG_REGISTERS;
+
+/*
+ * CTRL_NVSWITCH_REGISTER_READ/WRITE
+ *
+ * This provides direct access to the MMIO space.
+ */
+
+typedef struct
+{
+    NvU32   engine;     // REGISTER_RW_ENGINE_*
+    NvU32   instance;   // engine instance
+    NvU32   offset;     // Register offset within device/instance
+    NvU32   val;        // out: register value read
+} NVSWITCH_REGISTER_READ;
+
+typedef struct
+{
+    NvU32   engine;     // REGISTER_RW_ENGINE_*
+    NvU32   instance;   // engine instance
+    NvBool  bcast;      // Unicast or broadcast
+    NvU32   offset;     // Register offset within engine/instance
+    NvU32   val;        // in: register value to write
+} NVSWITCH_REGISTER_WRITE;
+
+#define REGISTER_RW_ENGINE_RAW                       0x00
+
+#define REGISTER_RW_ENGINE_CLKS                      0x10
+#define REGISTER_RW_ENGINE_FUSE                      0x11
+#define REGISTER_RW_ENGINE_JTAG                      0x12
+#define REGISTER_RW_ENGINE_PMGR                      0x13
+#define REGISTER_RW_ENGINE_SAW                       0x14
+#define REGISTER_RW_ENGINE_XP3G                      0x15
+#define REGISTER_RW_ENGINE_XVE                       0x16
+#define REGISTER_RW_ENGINE_SOE                       0x17
+#define REGISTER_RW_ENGINE_SMR                       0x18
+#define REGISTER_RW_ENGINE_SE                        0x19
+#define REGISTER_RW_ENGINE_CLKS_SYS                  0x1A
+#define REGISTER_RW_ENGINE_CLKS_SYSB                 0x1B
+#define REGISTER_RW_ENGINE_CLKS_P0                   0x1C
+#define REGISTER_RW_ENGINE_XPL                       0x1D
+#define REGISTER_RW_ENGINE_XTL                       0x1E
+
+#define REGISTER_RW_ENGINE_SIOCTRL                   0x20
+#define REGISTER_RW_ENGINE_MINION                    0x21
+#define REGISTER_RW_ENGINE_NVLIPT                    0x22
+#define REGISTER_RW_ENGINE_NVLTLC                    0x23
+#define REGISTER_RW_ENGINE_NVLTLC_MULTICAST          0x24
+#define REGISTER_RW_ENGINE_DLPL                      0x25
+#define REGISTER_RW_ENGINE_NVLW                      0x26
+#define REGISTER_RW_ENGINE_NVLIPT_LNK                0x27
+#define REGISTER_RW_ENGINE_NVLIPT_LNK_MULTICAST      0x28
+#define REGISTER_RW_ENGINE_NVLDL                     0x29
+#define REGISTER_RW_ENGINE_NVLDL_MULTICAST           0x2a
+#define REGISTER_RW_ENGINE_PLL                       0x2b
+
+#define REGISTER_RW_ENGINE_NPG                       0x30
+#define REGISTER_RW_ENGINE_NPORT                     0x31
+#define REGISTER_RW_ENGINE_NPORT_MULTICAST           0x32
+
+#define REGISTER_RW_ENGINE_SWX                       0x40
+#define REGISTER_RW_ENGINE_AFS                       0x41
+#define REGISTER_RW_ENGINE_NXBAR                     0x42
+#define REGISTER_RW_ENGINE_TILE                      0x43
+#define REGISTER_RW_ENGINE_TILE_MULTICAST            0x44
+#define REGISTER_RW_ENGINE_TILEOUT                   0x45
+#define REGISTER_RW_ENGINE_TILEOUT_MULTICAST         0x46
 
 /*
  * CTRL call command list.
@@ -3087,6 +3693,8 @@ typedef struct
 #define CTRL_NVSWITCH_UNREGISTER_EVENTS                     0x25
 #define CTRL_NVSWITCH_SET_TRAINING_ERROR_INFO               0x26
 #define CTRL_NVSWITCH_GET_FATAL_ERROR_SCOPE                 0x27
+#define CTRL_NVSWITCH_SET_MC_RID_TABLE                      0x28
+#define CTRL_NVSWITCH_GET_MC_RID_TABLE                      0x29
 #define CTRL_NVSWITCH_GET_COUNTERS                          0x2A
 #define CTRL_NVSWITCH_GET_NVLINK_ECC_ERRORS                 0x2B
 #define CTRL_NVSWITCH_I2C_SMBUS_COMMAND                     0x2C
@@ -3106,13 +3714,23 @@ typedef struct
 #define CTRL_NVSWITCH_RESERVED_3                            0x3A
 #define CTRL_NVSWITCH_RESERVED_4                            0x3B
 #define CTRL_NVSWITCH_RESERVED_5                            0x3C
+#define CTRL_NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR         0x3D
+#define CTRL_NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR       0x3E
+#define CTRL_NVSWITCH_INBAND_SEND_DATA                      0x43
+#define CTRL_NVSWITCH_INBAND_READ_DATA                      0x44
+#define CTRL_NVSWITCH_INBAND_FLUSH_DATA                     0x45
+#define CTRL_NVSWITCH_INBAND_PENDING_DATA_STATS             0x46
 #define CTRL_NVSWITCH_GET_SW_INFO                           0x47
 #define CTRL_NVSWITCH_RESERVED_6                            0x48
 #define CTRL_NVSWITCH_RESERVED_7                            0x49
-/*
- * DO NOT ADD CODE AFTER THIS LINE.
- * If the command hits 0xA0, see ctrl_dev_internal_nvswitch.h to adjust the internal range.
- */
+#define CTRL_NVSWITCH_RESERVED_8                            0x4A
+#define CTRL_NVSWITCH_RESERVED_9                            0x4B
+#define CTRL_NVSWITCH_RESERVED_10                           0x4C
+#define CTRL_NVSWITCH_REGISTER_READ                         0x4D
+#define CTRL_NVSWITCH_REGISTER_WRITE                        0x4E
+#define CTRL_NVSWITCH_GET_INFOROM_VERSION                   0x4F
+#define CTRL_NVSWITCH_GET_ERR_INFO                          0x50
+#define CTRL_NVSWITCH_CLEAR_COUNTERS                        0x51
 
 #ifdef __cplusplus
 }

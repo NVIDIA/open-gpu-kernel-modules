@@ -51,7 +51,6 @@
 
 static NV_STATUS _ctxdmaConstruct(ContextDma *pContextDma, RsClient *, NvHandle, NvU32, NvU32, RsResourceRef *, NvU64, NvU64);
 static NV_STATUS _ctxdmaDestruct(ContextDma *pContextDma, NvHandle hClient);
-static void _ctxdmaDestroyBindings(RsClient *pClient, ContextDma *pContextDma, OBJGPU *pGpu);
 
 static void
 _ctxdmaDestroyFBMappings
@@ -319,7 +318,6 @@ _ctxdmaDestruct
     NvHandle    hClient
 )
 {
-    RsClient  *pClient = RES_GET_CLIENT(pContextDma);
     NV_STATUS  rmStatus = NV_OK;
     OBJGPU    *pGpu = NULL;
 
@@ -344,7 +342,8 @@ _ctxdmaDestruct
     }
 
     // Clean-up the context, first unbind from display
-    _ctxdmaDestroyBindings(pClient, pContextDma, pGpu);
+    if (ctxdmaIsBound(pContextDma))
+        dispchnUnbindCtxFromAllChannels(pGpu, pContextDma);
 
     // Handle unicast sysmem mapping mapping before _ctxdmaDestroyFBMappings()
     if (pContextDma->AddressSpace == ADDR_SYSMEM)
@@ -374,41 +373,6 @@ _ctxdmaDestruct
     return rmStatus;
 }
 
-static void
-_ctxdmaDestroyBindings
-(
-    RsClient       *pClient,
-    ContextDma     *pContextDma,
-    OBJGPU         *pGpu
-)
-{
-    NV_STATUS       status;
-    DispObject     *pDispObject;
-    DispChannel    *pDispChannel;
-    RS_ITERATOR     channelIt;
-    RsResourceRef  *pResourceRef;
-
-    if (!ctxdmaIsBound(pContextDma))
-        return;
-
-    status = dispobjGetByDevice(pClient, pContextDma->pDevice, &pDispObject);
-    if (status != NV_OK)
-        return;
-
-    pResourceRef = RES_GET_REF(pDispObject);
-
-    // Unbind the ctx dma from all disp channels
-    channelIt = clientRefIter(pClient, pResourceRef, classId(DispChannel), RS_ITERATE_CHILDREN, NV_FALSE);
-
-    while (clientRefIterNext(channelIt.pClient, &channelIt))
-    {
-        pDispChannel = dynamicCast(channelIt.pResourceRef->pResource, DispChannel);
-
-        // Make sure we are not bound. Will return an error if not bound.
-        (void)dispchnUnbindCtx(pDispChannel, pGpu, pContextDma);
-    }
-}
-
 /*!
  * NOTE: this control call may be called at high IRQL with LOCK_BYPASS on WDDM.
  */
@@ -419,8 +383,6 @@ ctxdmaCtrlCmdBindContextdma_IMPL
     NV0002_CTRL_BIND_CONTEXTDMA_PARAMS *pBindCtxDmaParams
 )
 {
-    DispChannel   *pDispChannel = NULL;
-    RsClient      *pClient      = RES_GET_CLIENT(pContextDma);
     NvHandle       hChannel     = pBindCtxDmaParams->hChannel;
 
     gpuSetThreadBcState(pContextDma->pGpu, !pContextDma->bUnicast);
@@ -437,23 +399,13 @@ ctxdmaCtrlCmdBindContextdma_IMPL
         }
     }
 
-    // Look-up channel given by client
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        dispchnGetByHandle(pClient, hChannel, &pDispChannel));
-
-    // Ensure ContextDma and DisplayChannel are on the save device
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pContextDma->pDevice == GPU_RES_GET_DEVICE(pDispChannel),
-                       NV_ERR_INVALID_DEVICE);
-
     API_GPU_FULL_POWER_SANITY_CHECK(pContextDma->pGpu, NV_TRUE, NV_FALSE);
 
     //
-    // Call the hal to alloc inst mem, write the ctxdma data, and write
+    // Call dispchn to alloc inst mem, write the ctxdma data, and write
     // the hash table entry.
     //
-    NV_CHECK_OK_OR_RETURN(LEVEL_SILENT, dispchnBindCtx(pDispChannel, pContextDma->pGpu, pContextDma));
-
-    return NV_OK;
+    return dispchnBindCtx(pContextDma->pGpu, pContextDma, hChannel);
 }
 
 /*!
@@ -466,26 +418,11 @@ ctxdmaCtrlCmdUnbindContextdma_IMPL
     NV0002_CTRL_UNBIND_CONTEXTDMA_PARAMS *pUnbindCtxDmaParams
 )
 {
-    DispChannel   *pDispChannel = NULL;
-    RsClient      *pClient      = RES_GET_CLIENT(pContextDma);
-    NvHandle       hChannel     = pUnbindCtxDmaParams->hChannel;
-
     gpuSetThreadBcState(pContextDma->pGpu, !pContextDma->bUnicast);
-
-    // Look-up channel given by client
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        dispchnGetByHandle(pClient, hChannel, &pDispChannel));
-
-    // Ensure ContextDma and DisplayChannel are on the save device
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pContextDma->pDevice == GPU_RES_GET_DEVICE(pDispChannel),
-                       NV_ERR_INVALID_DEVICE);
 
     API_GPU_FULL_POWER_SANITY_CHECK(pContextDma->pGpu, NV_TRUE, NV_FALSE);
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_SILENT,
-        dispchnUnbindCtx(pDispChannel, pContextDma->pGpu, pContextDma));
-
-    return NV_OK;
+    return dispchnUnbindCtx(pContextDma->pGpu, pContextDma, pUnbindCtxDmaParams->hChannel);
 }
 
 static NV_STATUS

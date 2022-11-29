@@ -30,14 +30,12 @@
 #include "nvBinSegment.h"
 #include "nvmisc.h"
 
-#include "displayid20.h"
 #include "edid.h"
 
 PUSH_SEGMENTS
 
 // DisplayId2 as EDID extension entry point functions
 static NVT_STATUS parseDisplayId20EDIDExtSection(DISPLAYID_2_0_SECTION *section, NVT_EDID_INFO *pEdidInfo);
-static NVT_STATUS parseDisplayId20EDIDExtDataBlocks(DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NvU8 remainSectionLength, NvU8 *pCurrentDBLength, NVT_EDID_INFO *pEdidInfo);
 
 /**
  *
@@ -70,8 +68,7 @@ getDisplayId20EDIDExtInfo(
     // The function name 
     if (computeDisplayId20SectionCheckSum(p, sizeof(EDIDV1STRUC)) != 0)
     {
-        return NVT_STATUS_ERR;
-        // ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_CHECK_SUM);
+         nvt_assert(0 && "displayid2ext invalid checksum");
     }
 
     extSection = (DISPLAYID_2_0_SECTION *)(p + 1);
@@ -105,16 +102,20 @@ parseDisplayId20EDIDExtSection(
 
     if (extSection->header.version == DISPLAYID_2_0_VERSION)
     {
-        if (((pEdidInfo->total_did2_extensions == 1) && (extSection->header.product_type == 0                         ||
+        if (((pEdidInfo->total_did2_extensions == 1) && (extSection->header.product_type == DISPLAYID_2_0_PROD_EXTENSION ||
                                                          extSection->header.product_type > DISPLAYID_2_0_PROD_HMD_AR  ||
-                                                         extSection->header.extension_count != 0)) ||
-            (pEdidInfo->total_did2_extensions > 1 && extSection->header.product_type != 0))
+                                                         extSection->header.extension_count != DISPLAYID_2_0_PROD_EXTENSION)) ||
+            (pEdidInfo->total_did2_extensions > 1 && extSection->header.product_type != DISPLAYID_2_0_PROD_EXTENSION))
         {
             nvt_assert(0); // product_type value set incorrect in Display Product Primary Use Case field
         }
 
         pEdidInfo->ext_displayid20.version = extSection->header.version;
         pEdidInfo->ext_displayid20.revision = extSection->header.revision;
+        if (pEdidInfo->total_did2_extensions == 1)
+        {
+            pEdidInfo->ext_displayid20.primary_use_case = extSection->header.product_type;
+        }
         pEdidInfo->ext_displayid20.as_edid_extension = NV_TRUE;
     }
     else
@@ -152,11 +153,10 @@ parseDisplayId20EDIDExtSection(
         }
         else
         {
-            if (parseDisplayId20EDIDExtDataBlocks(
-                            dbHeader,
-                            extSection->header.section_bytes - datablock_location,
-                            &datablock_length,
-                            pEdidInfo) != NVT_STATUS_SUCCESS)
+            if (parseDisplayId20EDIDExtDataBlocks((NvU8 *)(extSection->data + datablock_location),
+                                                  extSection->header.section_bytes - datablock_location,
+                                                  &datablock_length,
+                                                  pEdidInfo) != NVT_STATUS_SUCCESS)
                 return NVT_STATUS_ERR;
         }
 
@@ -169,39 +169,49 @@ parseDisplayId20EDIDExtSection(
 
 /*
  *  @brief DisplayId20 as EDID extension block's "Data Block" entry point functions
+ *         For validation, passed the NULL pEdidInfo, and client will check the return value
  */
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS 
+NVT_STATUS
 parseDisplayId20EDIDExtDataBlocks(
-    DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
+    NvU8 *pDataBlock,
     NvU8 RemainSectionLength,
     NvU8 *pCurrentDBLength,
     NVT_EDID_INFO *pEdidInfo)
 {
+    DISPLAYID_2_0_DATA_BLOCK_HEADER * block_header = (DISPLAYID_2_0_DATA_BLOCK_HEADER *) pDataBlock;
     NVT_STATUS              status = NVT_STATUS_SUCCESS;
     NVT_DISPLAYID_2_0_INFO *pDisplayId20Info = NULL;
-    
+
     // size sanity checking
     if ((pDataBlock == NULL || RemainSectionLength <= NVT_DISPLAYID_DATABLOCK_HEADER_LEN) ||
-        (pDataBlock->data_bytes > RemainSectionLength - NVT_DISPLAYID_DATABLOCK_HEADER_LEN))
+        (block_header->data_bytes > RemainSectionLength - NVT_DISPLAYID_DATABLOCK_HEADER_LEN))
         return NVT_STATUS_ERR;
 
-    if (pDataBlock->type < DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY)
+    if (block_header->type < DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY)
     {
         return NVT_STATUS_INVALID_PARAMETER;
     }
-    
-    pDisplayId20Info = &pEdidInfo->ext_displayid20;
 
-    *pCurrentDBLength = pDataBlock->data_bytes + NVT_DISPLAYID_DATABLOCK_HEADER_LEN;
+    if (pEdidInfo != NULL)
+    {
+        pDisplayId20Info = &(pEdidInfo->ext_displayid20);
+    }
 
-    status = parseDisplayId20DataBlock(pDataBlock, pDisplayId20Info);
+    *pCurrentDBLength = block_header->data_bytes + NVT_DISPLAYID_DATABLOCK_HEADER_LEN;
+
+    status = parseDisplayId20DataBlock(block_header, pDisplayId20Info);
+
+    if (pDisplayId20Info == NULL) return status;
     
     // TODO : All the data blocks shall sync the data from the datablock in DisplayID2_0 to pEdidInfo
     if (status == NVT_STATUS_SUCCESS && pDisplayId20Info->as_edid_extension == NV_TRUE)
     {
-        switch (pDataBlock->type)
+        switch (block_header->type)
         {
+        case DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY:
+            pDisplayId20Info->valid_data_blocks.product_id_present = NV_TRUE;
+        break;
         case DISPLAYID_2_0_BLOCK_TYPE_INTERFACE_FEATURES:
             pDisplayId20Info->valid_data_blocks.interface_feature_present = NV_TRUE;
 
@@ -234,15 +244,16 @@ parseDisplayId20EDIDExtDataBlocks(
             pDisplayId20Info->valid_data_blocks.cta_data_present = NV_TRUE;
 
             // copy all the vendor specific data block from DisplayId20 to pEdidInfo
-            // TODO: mixed CTA extension block and DID2.0 extension block is not handled
+            // NOTE: mixed CTA extension block and DID2.0 extension block are not handled
             NVMISC_MEMCPY(&pEdidInfo->hdmiLlcInfo,              &pDisplayId20Info->vendor_specific.hdmiLlc,  sizeof(NVT_HDMI_LLC_INFO));
             NVMISC_MEMCPY(&pEdidInfo->hdmiForumInfo,            &pDisplayId20Info->vendor_specific.hfvs,     sizeof(NVT_HDMI_FORUM_INFO));
             NVMISC_MEMCPY(&pEdidInfo->nvdaVsdbInfo,             &pDisplayId20Info->vendor_specific.nvVsdb,   sizeof(NVDA_VSDB_PARSED_INFO));
             NVMISC_MEMCPY(&pEdidInfo->msftVsdbInfo,             &pDisplayId20Info->vendor_specific.msftVsdb, sizeof(MSFT_VSDB_PARSED_INFO));
             NVMISC_MEMCPY(&pEdidInfo->hdr_static_metadata_info, &pDisplayId20Info->cta.hdrInfo,              sizeof(NVT_HDR_STATIC_METADATA));
             NVMISC_MEMCPY(&pEdidInfo->dv_static_metadata_info,  &pDisplayId20Info->cta.dvInfo,               sizeof(NVT_DV_STATIC_METADATA));
+            NVMISC_MEMCPY(&pEdidInfo->hdr10PlusInfo,            &pDisplayId20Info->cta.hdr10PlusInfo,        sizeof(NVT_HDR10PLUS_INFO));
 
-            // If the CTA861 extension existed already, we need to transfer the revision/basic_caps to cta embedded in DID20.
+            // If the CTA861 extension existed already, we need to synced the revision/basic_caps to CTA which is embedded in DID20
             if (pEdidInfo->ext861.revision >= NVT_CEA861_REV_B)
             {
                 pDisplayId20Info->cta.cta861_info.revision   = pEdidInfo->ext861.revision;
@@ -268,7 +279,36 @@ parseDisplayId20EDIDExtDataBlocks(
             }
 
         break;
-
+        case DISPLAYID_2_0_BLOCK_TYPE_STEREO:
+            pDisplayId20Info->valid_data_blocks.stereo_interface_present    = NV_TRUE;
+        break;
+        case DISPLAYID_2_0_BLOCK_TYPE_TILED_DISPLAY:
+            pDisplayId20Info->valid_data_blocks.tiled_display_present       = NV_TRUE;
+        break;
+        case DISPLAYID_2_0_BLOCK_TYPE_CONTAINER_ID:
+            pDisplayId20Info->valid_data_blocks.container_id_present        = NV_TRUE;
+        break;
+        case DISPLAYID_2_0_BLOCK_TYPE_TIMING_7:
+            pDisplayId20Info->valid_data_blocks.type7Timing_present         = NV_TRUE;
+        break;
+        case DISPLAYID_2_0_BLOCK_TYPE_TIMING_8:
+            pDisplayId20Info->valid_data_blocks.type8Timing_present         = NV_TRUE;
+        break;
+        case DISPLAYID_2_0_BLOCK_TYPE_TIMING_9:
+            pDisplayId20Info->valid_data_blocks.type9Timing_present         = NV_TRUE;
+        break;
+        case DISPLAYID_2_0_BLOCK_TYPE_TIMING_10:
+            pDisplayId20Info->valid_data_blocks.type10Timing_present        = NV_TRUE;
+        break;
+        case DISPLAYID_2_0_BLOCK_TYPE_RANGE_LIMITS:
+            pDisplayId20Info->valid_data_blocks.dynamic_range_limit_present = NV_TRUE;
+            break;
+        case DISPLAYID_2_0_BLOCK_TYPE_ADAPTIVE_SYNC:
+            pDisplayId20Info->valid_data_blocks.adaptive_sync_present       = NV_TRUE;  
+        break;  
+        case DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC:
+            pDisplayId20Info->valid_data_blocks.vendor_specific_present     = NV_TRUE;
+        break;
         default:
             break;
         }

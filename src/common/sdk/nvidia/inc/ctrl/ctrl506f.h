@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl506f.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV50_GPFIFO control commands and parameters */
 
@@ -76,8 +73,6 @@
  *   NV_OK
  *   NV_ERR_INVALID_ARGUMENT
  */
-
-
 
 
 #define NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL (0x506f0105) /* finn: Evaluated from "(FINN_NV50_CHANNEL_GPFIFO_GPFIFO_INTERFACE_ID << 8) | NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID" */

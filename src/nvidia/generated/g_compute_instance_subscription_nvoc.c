@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_cisubscriptionUnmapFrom(struct ComputeI
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_cisubscriptionIsDuplicate(struct ComputeInstanceSubscription *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_cisubscriptionControl_Epilogue(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ComputeInstanceSubscription_RmResource.offset), pCallContext, pParams);
 }
@@ -285,6 +289,8 @@ static void __nvoc_init_funcTable_ComputeInstanceSubscription_1(ComputeInstanceS
     pThis->__cisubscriptionPreDestruct__ = &__nvoc_thunk_RsResource_cisubscriptionPreDestruct;
 
     pThis->__cisubscriptionUnmapFrom__ = &__nvoc_thunk_RsResource_cisubscriptionUnmapFrom;
+
+    pThis->__cisubscriptionIsDuplicate__ = &__nvoc_thunk_RsResource_cisubscriptionIsDuplicate;
 
     pThis->__cisubscriptionControl_Epilogue__ = &__nvoc_thunk_RmResource_cisubscriptionControl_Epilogue;
 

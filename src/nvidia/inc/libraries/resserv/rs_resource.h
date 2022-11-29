@@ -234,6 +234,11 @@ public:
     virtual NvBool resCanCopy(RsResource *pResource);
 
     /**
+     * Returns TRUE if the resources are duplicates
+     */
+    virtual NV_STATUS resIsDuplicate(RsResource *pResource, NvHandle hMemory, NvBool *pDuplicate);
+
+    /**
      * Resource destructor
      * @param[in]   pResource Resource object to destruct
      */

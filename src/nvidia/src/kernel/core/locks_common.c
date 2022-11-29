@@ -91,7 +91,7 @@ rmLocksAcquireAll(NvU32 module)
         return NV_ERR_INVALID_LOCK_STATE;
     }
 
-    if (rmApiLockAcquire(API_LOCK_FLAGS_NONE, module) != NV_OK)
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, module) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to acquire the API lock!\n");
         osReleaseRmSema(pSys->pSema, NULL);
@@ -101,7 +101,7 @@ rmLocksAcquireAll(NvU32 module)
     if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, module) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to acquire the GPU lock!\n");
-        rmApiLockRelease();
+        rmapiLockRelease();
         osReleaseRmSema(pSys->pSema, NULL);
         return NV_ERR_INVALID_LOCK_STATE;
     }
@@ -118,7 +118,7 @@ rmLocksReleaseAll(void)
     OBJSYS    *pSys = SYS_GET_INSTANCE();
 
     rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-    rmApiLockRelease();
+    rmapiLockRelease();
     osReleaseRmSema(pSys->pSema, NULL);
 }
 
@@ -155,7 +155,7 @@ workItemLocksAcquire(NvU32 gpuInstance, NvU32 flags, NvU32 *pReleaseLocks, NvU32
             releaseFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO;
         }
 
-        status = rmApiLockAcquire(apiLockFlags, RM_LOCK_MODULES_WORKITEM);
+        status = rmapiLockAcquire(apiLockFlags, RM_LOCK_MODULES_WORKITEM);
         if (status != NV_OK)
             goto done;
 
@@ -256,7 +256,7 @@ workItemLocksRelease(NvU32 releaseLocks, NvU32 gpuMask)
     if ((releaseLocks & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW) ||
         (releaseLocks & OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RO))
     {
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     if (releaseLocks & OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA)

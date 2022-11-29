@@ -31,9 +31,6 @@
 //
 
 #include "ctrl5070common.h"
-
-
-
 #include "ctrl/ctrl5070/ctrl5070base.h"
 
 

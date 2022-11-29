@@ -29,6 +29,10 @@
 #include "core/locks.h"
 #include "rmapi/rs_utils.h"
 
+#include "virtualization/kernel_hostvgpudeviceapi.h"
+
+#include "gpu/external_device/gsync_api.h"
+
 #include "resserv/rs_client.h"
 #include "class/cl0005.h"
 
@@ -56,6 +60,16 @@ eventConstruct_IMPL
     OBJGPU *pGpu = NULL;
     RS_PRIV_LEVEL privLevel = pParams->pSecInfo->privLevel;
     NvBool bUserOsEventHandle = NV_FALSE;
+    NvHandle hParentClient = pNv0050AllocParams->hParentClient;
+
+    //
+    // Allow hParentClient being zero to imply the allocating client should be
+    // the parent client of this event.
+    //
+    if (hParentClient == NV01_NULL_OBJECT)
+    {
+        hParentClient = pRsClient->hClient;
+    }
 
     // never allow user mode/non-root clients to create ring0 callbacks as
     // we can not trust the function pointer (encoded in data).
@@ -76,12 +90,12 @@ eventConstruct_IMPL
     }
 
 #if (!NV_RM_STUB_RPC)
-    if (_eventRpcForType(pNv0050AllocParams->hParentClient, pNv0050AllocParams->hSrcResource))
+    if (_eventRpcForType(hParentClient, pNv0050AllocParams->hSrcResource))
     {
         RsResourceRef *pSrcRef;
         NV_STATUS tmpStatus;
 
-        tmpStatus = serverutilGetResourceRef(pNv0050AllocParams->hParentClient,
+        tmpStatus = serverutilGetResourceRef(hParentClient,
                                              pNv0050AllocParams->hSrcResource,
                                              &pSrcRef);
 
@@ -105,7 +119,7 @@ eventConstruct_IMPL
     // add event to client and parent object
     rmStatus = eventInit(pEvent,
                         pCallContext,
-                        pNv0050AllocParams->hParentClient,
+                        hParentClient,
                         pNv0050AllocParams->hSrcResource,
                         &ppEventNotification);
     if (rmStatus == NV_OK)
@@ -130,12 +144,13 @@ eventConstruct_IMPL
             if (IS_GSP_CLIENT(pGpu))
             {
                 NV_ASSERT_OK_OR_RETURN(
-                    serverutilGetResourceRef(pNv0050AllocParams->hParentClient,
+                    serverutilGetResourceRef(hParentClient,
                                              pNv0050AllocParams->hSrcResource,
                                              &pSourceRef));
             }
 
             if (
+                !(IS_GSP_CLIENT(pGpu) && (pSourceRef->internalClassId == classId(KernelHostVgpuDeviceApi))) &&
                 (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
                 (IS_GSP_CLIENT(pGpu) && pSourceRef->internalClassId != classId(ContextDma)) ||
                 (IS_VIRTUAL_WITH_SRIOV(pGpu) && !(pNv0050AllocParams->notifyIndex & NV01_EVENT_NONSTALL_INTR))))
@@ -299,6 +314,28 @@ NV_STATUS notifyUnregisterEvent_IMPL
                           hNotifierResource,
                           hEvent);
 
+    }
+
+    // Gsync needs special event handling (ugh).
+    //
+    GSyncApi *pGSyncApi = dynamicCast(pNotifier, GSyncApi);
+    if (pGSyncApi != NULL)
+    {
+        NvU32          eventNum;
+
+        // check all events bound to this gsync object
+        for (eventNum = 0; eventNum < NV30F1_CTRL_GSYNC_EVENT_TYPES; eventNum++)
+        {
+            if ((pGSyncApi->pEventByType[eventNum]) &&
+                (pGSyncApi->pEventByType[eventNum]->hEventClient == hEventClient) &&
+                (pGSyncApi->pEventByType[eventNum]->hEvent == hEvent))
+            {
+                unregisterEventNotification(&pGSyncApi->pEventByType[eventNum],
+                        hEventClient,
+                        hNotifierResource,
+                        hEvent);
+            }
+        }
     }
 
     return status;
@@ -619,6 +656,7 @@ _eventRpcForType(NvHandle hClient, NvHandle hObject)
     }
 
     if (objDynamicCastById(pResourceRef->pResource, classId(Subdevice)) ||
+        objDynamicCastById(pResourceRef->pResource, classId(KernelHostVgpuDeviceApi)) ||
         objDynamicCastById(pResourceRef->pResource, classId(ChannelDescendant)) ||
         objDynamicCastById(pResourceRef->pResource, classId(ContextDma)) ||
         objDynamicCastById(pResourceRef->pResource, classId(DispChannel)) ||

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -179,11 +179,16 @@ static void rm_mem_unmap_gpu_proxy(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu)
     rm_mem_clear_gpu_proxy_va(rm_mem, gpu);
 }
 
-NV_STATUS uvm_rm_mem_alloc(uvm_gpu_t *gpu, uvm_rm_mem_type_t type, NvLength size, uvm_rm_mem_t **rm_mem_out)
+
+NV_STATUS uvm_rm_mem_alloc(uvm_gpu_t *gpu,
+                           uvm_rm_mem_type_t type,
+                           NvLength size,
+                           NvU64 gpu_alignment,
+                           uvm_rm_mem_t **rm_mem_out)
 {
     NV_STATUS status = NV_OK;
     uvm_rm_mem_t *rm_mem;
-    UvmGpuAllocInfo alloc_info = {0};
+    UvmGpuAllocInfo alloc_info = { 0 };
     NvU64 gpu_va;
 
     UVM_ASSERT(gpu);
@@ -194,12 +199,7 @@ NV_STATUS uvm_rm_mem_alloc(uvm_gpu_t *gpu, uvm_rm_mem_type_t type, NvLength size
     if (rm_mem == NULL)
         return NV_ERR_NO_MEMORY;
 
-
-
-
-
-
-
+    alloc_info.alignment = gpu_alignment;
 
     if (type == UVM_RM_MEM_TYPE_SYS)
         status = uvm_rm_locked_call(nvUvmInterfaceMemoryAllocSys(gpu->rm_address_space, size, &gpu_va, &alloc_info));
@@ -274,7 +274,7 @@ void uvm_rm_mem_unmap_cpu(uvm_rm_mem_t *rm_mem)
     rm_mem_clear_cpu_va(rm_mem);
 }
 
-NV_STATUS uvm_rm_mem_map_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu)
+NV_STATUS uvm_rm_mem_map_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, NvU64 gpu_alignment)
 {
     NV_STATUS status;
     uvm_gpu_t *gpu_owner;
@@ -296,6 +296,7 @@ NV_STATUS uvm_rm_mem_map_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu)
     status = uvm_rm_locked_call(nvUvmInterfaceDupAllocation(gpu_owner->rm_address_space,
                                                             gpu_owner_va,
                                                             gpu->rm_address_space,
+                                                            gpu_alignment,
                                                             &gpu_va));
     if (status != NV_OK) {
         UVM_ERR_PRINT("nvUvmInterfaceDupAllocation() failed: %s, src GPU %s, dest GPU %s\n",
@@ -374,12 +375,16 @@ void uvm_rm_mem_free(uvm_rm_mem_t *rm_mem)
     uvm_kvfree(rm_mem);
 }
 
-NV_STATUS uvm_rm_mem_alloc_and_map_cpu(uvm_gpu_t *gpu, uvm_rm_mem_type_t type, NvLength size, uvm_rm_mem_t **rm_mem_out)
+NV_STATUS uvm_rm_mem_alloc_and_map_cpu(uvm_gpu_t *gpu,
+                                       uvm_rm_mem_type_t type,
+                                       NvLength size,
+                                       NvU64 gpu_alignment,
+                                       uvm_rm_mem_t **rm_mem_out)
 {
     uvm_rm_mem_t *rm_mem;
     NV_STATUS status;
 
-    status = uvm_rm_mem_alloc(gpu, type, size, &rm_mem);
+    status = uvm_rm_mem_alloc(gpu, type, size, gpu_alignment, &rm_mem);
     if (status != NV_OK)
         return status;
 
@@ -396,32 +401,36 @@ error:
     return status;
 }
 
-NV_STATUS uvm_rm_mem_map_all_gpus(uvm_rm_mem_t *rm_mem)
+NV_STATUS uvm_rm_mem_map_all_gpus(uvm_rm_mem_t *rm_mem, NvU64 gpu_alignment)
 {
     uvm_gpu_t *gpu;
 
     UVM_ASSERT(rm_mem);
 
     for_each_global_gpu(gpu) {
-        NV_STATUS status = uvm_rm_mem_map_gpu(rm_mem, gpu);
+        NV_STATUS status = uvm_rm_mem_map_gpu(rm_mem, gpu, gpu_alignment);
         if (status != NV_OK)
             return status;
     }
     return NV_OK;
 }
 
-NV_STATUS uvm_rm_mem_alloc_and_map_all(uvm_gpu_t *gpu, uvm_rm_mem_type_t type, NvLength size, uvm_rm_mem_t **rm_mem_out)
+NV_STATUS uvm_rm_mem_alloc_and_map_all(uvm_gpu_t *gpu,
+                                       uvm_rm_mem_type_t type,
+                                       NvLength size,
+                                       NvU64 gpu_alignment,
+                                       uvm_rm_mem_t **rm_mem_out)
 {
     uvm_rm_mem_t *rm_mem;
     NV_STATUS status;
 
     UVM_ASSERT(gpu);
 
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu, type, size, &rm_mem);
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu, type, size, gpu_alignment, &rm_mem);
     if (status != NV_OK)
         return status;
 
-    status = uvm_rm_mem_map_all_gpus(rm_mem);
+    status = uvm_rm_mem_map_all_gpus(rm_mem, gpu_alignment);
     if (status != NV_OK)
         goto error;
 

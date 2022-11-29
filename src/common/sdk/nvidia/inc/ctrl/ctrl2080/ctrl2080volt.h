@@ -32,9 +32,6 @@
 
 /* _ctrl2080volt_h_ */
 
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 #include "ctrl/ctrl2080/ctrl2080boardobj.h"
 #include "ctrl/ctrl2080/ctrl2080pmumon.h"

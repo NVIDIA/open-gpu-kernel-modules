@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl003e.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV01_MEMORY_SYSTEM control commands and parameters */
 

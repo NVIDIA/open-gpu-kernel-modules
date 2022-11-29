@@ -574,6 +574,7 @@ nvlogNowrapBufferPush
                   // Another thread has already expanded the buffer, bail out.
                   // TODO: Maybe we could store the handle and then try again?
                   portSyncSpinlockRelease(NvLogLogger.mainLock);
+                  portMemFree(pNewBuffer);
                   return NV_FALSE;
               }
 

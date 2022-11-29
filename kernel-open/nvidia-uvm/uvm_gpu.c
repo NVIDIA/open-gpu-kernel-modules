@@ -42,9 +42,6 @@
 #include "uvm_ats.h"
 #include "uvm_test.h"
 
-
-
-
 #include "uvm_linux.h"
 
 #define UVM_PROC_GPUS_PEER_DIR_NAME "peers"
@@ -95,12 +92,10 @@ static uvm_gpu_link_type_t get_gpu_link_type(UVM_LINK_TYPE link_type)
             return UVM_GPU_LINK_NVLINK_2;
         case UVM_LINK_TYPE_NVLINK_3:
             return UVM_GPU_LINK_NVLINK_3;
-
-
-
-
-
-
+        case UVM_LINK_TYPE_NVLINK_4:
+            return UVM_GPU_LINK_NVLINK_4;
+        case UVM_LINK_TYPE_C2C:
+            return UVM_GPU_LINK_C2C;
         default:
             return UVM_GPU_LINK_INVALID;
     }
@@ -356,11 +351,7 @@ static const char *uvm_gpu_virt_type_string(UVM_VIRT_MODE virtMode)
 
 static const char *uvm_gpu_link_type_string(uvm_gpu_link_type_t link_type)
 {
-
-
-
-    BUILD_BUG_ON(UVM_GPU_LINK_MAX != 5);
-
+    BUILD_BUG_ON(UVM_GPU_LINK_MAX != 7);
 
     switch (link_type) {
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_INVALID);
@@ -368,10 +359,8 @@ static const char *uvm_gpu_link_type_string(uvm_gpu_link_type_t link_type)
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_1);
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_2);
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_3);
-
-
-
-
+        UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_4);
+        UVM_ENUM_STRING_CASE(UVM_GPU_LINK_C2C);
         UVM_ENUM_STRING_DEFAULT();
     }
 }
@@ -518,12 +507,6 @@ static void gpu_info_print_common(uvm_gpu_t *gpu, struct seq_file *s)
                          mapped_cpu_pages_size / (1024u * 1024u));
 
     gpu_info_print_ce_caps(gpu, s);
-
-
-
-
-
-
 
 }
 
@@ -711,7 +694,7 @@ static NV_STATUS init_parent_procfs_dir(uvm_parent_gpu_t *parent_gpu)
 
 static void deinit_parent_procfs_dir(uvm_parent_gpu_t *parent_gpu)
 {
-    uvm_procfs_destroy_entry(parent_gpu->procfs.dir);
+    proc_remove(parent_gpu->procfs.dir);
 }
 
 static NV_STATUS init_parent_procfs_files(uvm_parent_gpu_t *parent_gpu)
@@ -739,8 +722,8 @@ static NV_STATUS init_parent_procfs_files(uvm_parent_gpu_t *parent_gpu)
 
 static void deinit_parent_procfs_files(uvm_parent_gpu_t *parent_gpu)
 {
-    uvm_procfs_destroy_entry(parent_gpu->procfs.access_counters_file);
-    uvm_procfs_destroy_entry(parent_gpu->procfs.fault_stats_file);
+    proc_remove(parent_gpu->procfs.access_counters_file);
+    proc_remove(parent_gpu->procfs.fault_stats_file);
 }
 
 static NV_STATUS init_procfs_dirs(uvm_gpu_t *gpu)
@@ -791,9 +774,9 @@ static NV_STATUS init_procfs_dirs(uvm_gpu_t *gpu)
 // The kernel waits on readers to finish before returning from those calls
 static void deinit_procfs_dirs(uvm_gpu_t *gpu)
 {
-    uvm_procfs_destroy_entry(gpu->procfs.dir_peers);
-    uvm_procfs_destroy_entry(gpu->procfs.dir_symlink);
-    uvm_procfs_destroy_entry(gpu->procfs.dir);
+    proc_remove(gpu->procfs.dir_peers);
+    proc_remove(gpu->procfs.dir_symlink);
+    proc_remove(gpu->procfs.dir);
 }
 
 static NV_STATUS init_procfs_files(uvm_gpu_t *gpu)
@@ -807,15 +790,15 @@ static NV_STATUS init_procfs_files(uvm_gpu_t *gpu)
 
 static void deinit_procfs_files(uvm_gpu_t *gpu)
 {
-    uvm_procfs_destroy_entry(gpu->procfs.info_file);
+    proc_remove(gpu->procfs.info_file);
 }
 
 static void deinit_procfs_peer_cap_files(uvm_gpu_peer_t *peer_caps)
 {
-    uvm_procfs_destroy_entry(peer_caps->procfs.peer_symlink_file[0]);
-    uvm_procfs_destroy_entry(peer_caps->procfs.peer_symlink_file[1]);
-    uvm_procfs_destroy_entry(peer_caps->procfs.peer_file[0]);
-    uvm_procfs_destroy_entry(peer_caps->procfs.peer_file[1]);
+    proc_remove(peer_caps->procfs.peer_symlink_file[0]);
+    proc_remove(peer_caps->procfs.peer_symlink_file[1]);
+    proc_remove(peer_caps->procfs.peer_file[0]);
+    proc_remove(peer_caps->procfs.peer_file[1]);
 }
 
 static NV_STATUS init_semaphore_pool(uvm_gpu_t *gpu)
@@ -1038,15 +1021,6 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
         return status;
     }
 
-
-
-
-
-
-
-
-
-
     parent_gpu->pci_dev = gpu_platform_info->pci_dev;
     parent_gpu->closest_cpu_numa_node = dev_to_node(&parent_gpu->pci_dev->dev);
     parent_gpu->dma_addressable_start = gpu_platform_info->dma_addressable_start;
@@ -1207,16 +1181,6 @@ static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
         UVM_ERR_PRINT("Creating flat mappings failed: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
         return status;
     }
-
-
-
-
-
-
-
-
-
-
 
     status = init_procfs_files(gpu);
     if (status != NV_OK) {
@@ -1393,10 +1357,6 @@ static void remove_gpus_from_gpu(uvm_gpu_t *gpu)
     // Sync all trackers in PMM
     uvm_pmm_gpu_sync(&gpu->pmm);
 
-
-
-
-
 }
 
 // Remove all references to the given GPU from its parent, since it is being
@@ -1529,13 +1489,6 @@ static void remove_gpu(uvm_gpu_t *gpu)
     // comment on discover_nvlink_peers in add_gpu.
     if (free_parent)
         destroy_nvlink_peers(gpu);
-
-
-
-
-
-
-
 
     // TODO: Bug 2844714: If the parent is not being freed, the following
     // gpu_table_lock is only needed to protect concurrent
@@ -2212,16 +2165,12 @@ static NV_STATUS init_peer_access(uvm_gpu_t *gpu0,
 {
     NV_STATUS status;
 
-
-
-
+    UVM_ASSERT(p2p_caps_params->p2pLink != UVM_LINK_TYPE_C2C);
 
     // check for peer-to-peer compatibility (PCI-E or NvLink).
     peer_caps->link_type = get_gpu_link_type(p2p_caps_params->p2pLink);
     if (peer_caps->link_type == UVM_GPU_LINK_INVALID
-
-
-
+        || peer_caps->link_type == UVM_GPU_LINK_C2C
         )
         return NV_ERR_NOT_SUPPORTED;
 
@@ -3131,41 +3080,41 @@ void uvm_gpu_dma_free_page(uvm_parent_gpu_t *parent_gpu, void *va, NvU64 dma_add
     atomic64_sub(PAGE_SIZE, &parent_gpu->mapped_cpu_pages_size);
 }
 
-NV_STATUS uvm_gpu_map_cpu_pages(uvm_gpu_t *gpu, struct page *page, size_t size, NvU64 *dma_address_out)
+NV_STATUS uvm_gpu_map_cpu_pages(uvm_parent_gpu_t *parent_gpu, struct page *page, size_t size, NvU64 *dma_address_out)
 {
     NvU64 dma_addr;
 
     UVM_ASSERT(PAGE_ALIGNED(size));
 
-    dma_addr = dma_map_page(&gpu->parent->pci_dev->dev, page, 0, size, DMA_BIDIRECTIONAL);
-    if (dma_mapping_error(&gpu->parent->pci_dev->dev, dma_addr))
+    dma_addr = dma_map_page(&parent_gpu->pci_dev->dev, page, 0, size, DMA_BIDIRECTIONAL);
+    if (dma_mapping_error(&parent_gpu->pci_dev->dev, dma_addr))
         return NV_ERR_OPERATING_SYSTEM;
 
-    if (dma_addr < gpu->parent->dma_addressable_start ||
-        dma_addr + size - 1 > gpu->parent->dma_addressable_limit) {
-        dma_unmap_page(&gpu->parent->pci_dev->dev, dma_addr, size, DMA_BIDIRECTIONAL);
+    if (dma_addr < parent_gpu->dma_addressable_start ||
+        dma_addr + size - 1 > parent_gpu->dma_addressable_limit) {
+        dma_unmap_page(&parent_gpu->pci_dev->dev, dma_addr, size, DMA_BIDIRECTIONAL);
         UVM_ERR_PRINT_RL("PCI mapped range [0x%llx, 0x%llx) not in the addressable range [0x%llx, 0x%llx), GPU %s\n",
                          dma_addr,
                          dma_addr + (NvU64)size,
-                         gpu->parent->dma_addressable_start,
-                         gpu->parent->dma_addressable_limit + 1,
-                         uvm_gpu_name(gpu));
+                         parent_gpu->dma_addressable_start,
+                         parent_gpu->dma_addressable_limit + 1,
+                         parent_gpu->name);
         return NV_ERR_INVALID_ADDRESS;
     }
 
-    atomic64_add(size, &gpu->parent->mapped_cpu_pages_size);
-    *dma_address_out = dma_addr_to_gpu_addr(gpu->parent, dma_addr);
+    atomic64_add(size, &parent_gpu->mapped_cpu_pages_size);
+    *dma_address_out = dma_addr_to_gpu_addr(parent_gpu, dma_addr);
 
     return NV_OK;
 }
 
-void uvm_gpu_unmap_cpu_pages(uvm_gpu_t *gpu, NvU64 dma_address, size_t size)
+void uvm_gpu_unmap_cpu_pages(uvm_parent_gpu_t *parent_gpu, NvU64 dma_address, size_t size)
 {
     UVM_ASSERT(PAGE_ALIGNED(size));
 
-    dma_address = gpu_addr_to_dma_addr(gpu->parent, dma_address);
-    dma_unmap_page(&gpu->parent->pci_dev->dev, dma_address, size, DMA_BIDIRECTIONAL);
-    atomic64_sub(size, &gpu->parent->mapped_cpu_pages_size);
+    dma_address = gpu_addr_to_dma_addr(parent_gpu, dma_address);
+    dma_unmap_page(&parent_gpu->pci_dev->dev, dma_address, size, DMA_BIDIRECTIONAL);
+    atomic64_sub(size, &parent_gpu->mapped_cpu_pages_size);
 }
 
 // This function implements the UvmRegisterGpu API call, as described in uvm.h.

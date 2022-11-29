@@ -72,6 +72,7 @@ struct Hdacodec {
     NV_STATUS (*__hdacodecInternalControlForward__)(struct Hdacodec *, NvU32, void *, NvU32);
     void (*__hdacodecPreDestruct__)(struct Hdacodec *);
     NV_STATUS (*__hdacodecUnmapFrom__)(struct Hdacodec *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__hdacodecIsDuplicate__)(struct Hdacodec *, NvHandle, NvBool *);
     void (*__hdacodecControl_Epilogue__)(struct Hdacodec *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__hdacodecControlLookup__)(struct Hdacodec *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__hdacodecMap__)(struct Hdacodec *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -124,6 +125,7 @@ NV_STATUS __nvoc_objCreate_Hdacodec(Hdacodec**, Dynamic*, NvU32, struct CALL_CON
 #define hdacodecInternalControlForward(pGpuResource, command, pParams, size) hdacodecInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define hdacodecPreDestruct(pResource) hdacodecPreDestruct_DISPATCH(pResource)
 #define hdacodecUnmapFrom(pResource, pParams) hdacodecUnmapFrom_DISPATCH(pResource, pParams)
+#define hdacodecIsDuplicate(pResource, hMemory, pDuplicate) hdacodecIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define hdacodecControl_Epilogue(pResource, pCallContext, pParams) hdacodecControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define hdacodecControlLookup(pResource, pParams, ppEntry) hdacodecControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define hdacodecMap(pGpuResource, pCallContext, pParams, pCpuMapping) hdacodecMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -200,6 +202,10 @@ static inline NV_STATUS hdacodecUnmapFrom_DISPATCH(struct Hdacodec *pResource, R
     return pResource->__hdacodecUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS hdacodecIsDuplicate_DISPATCH(struct Hdacodec *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__hdacodecIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void hdacodecControl_Epilogue_DISPATCH(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__hdacodecControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -217,6 +223,7 @@ static inline NvBool hdacodecAccessCallback_DISPATCH(struct Hdacodec *pResource,
 }
 
 NV_STATUS hdacodecConstruct_IMPL(struct Hdacodec *arg_pHdacodecApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_hdacodecConstruct(arg_pHdacodecApi, arg_pCallContext, arg_pParams) hdacodecConstruct_IMPL(arg_pHdacodecApi, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -203,7 +203,6 @@ intrCacheIntrFields_TU102
 )
 {
     NV_STATUS status = NV_OK;
-    OBJDISP *pDisp = GPU_GET_DISP(pGpu);
     NvU32 leafEnHi, leafEnLo;
     NvU32 uvmSharedLeafIdxStart = NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(NV_CPU_INTR_UVM_SHARED_SUBTREE_START);
     NvU32 uvmSharedLeafIdxEnd = NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(NV_CPU_INTR_UVM_SHARED_SUBTREE_LAST);
@@ -229,12 +228,21 @@ intrCacheIntrFields_TU102
     //
     for (i = NV_CPU_INTR_STALL_SUBTREE_START; i <= stallSubtreeLast; i++)
     {
-        pIntr->cpuTopEnMask |= NVBIT(i);
+        pIntr->intrTopEnMask |= NVBIT(i);
     }
 
+    OBJDISP *pDisp = GPU_GET_DISP(pGpu);
+
     // Cache client owned, shared interrupt, and display vectors for ease of use later
-    pIntr->replayableFaultIntrVector = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_REPLAYABLE_FAULT, NV_FALSE);
     pIntr->accessCntrIntrVector      = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_ACCESS_CNTR,      NV_FALSE);
+    if (!gpuIsCCFeatureEnabled(pGpu))
+    {
+        pIntr->replayableFaultIntrVector = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_REPLAYABLE_FAULT, NV_FALSE);
+    }
+    else
+    {
+        pIntr->replayableFaultIntrVector = NV_INTR_VECTOR_INVALID;
+    }
     if (pDisp != NULL)
     {
         pIntr->displayIntrVector     = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_DISP,             NV_FALSE);
@@ -249,14 +257,17 @@ intrCacheIntrFields_TU102
     // now so we don't have to check later in latency critical paths where this
     // is assumed to be true)
     //
-    if (NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(pIntr->replayableFaultIntrVector) != NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(pIntr->accessCntrIntrVector))
+    if (pIntr->replayableFaultIntrVector != NV_INTR_VECTOR_INVALID && pIntr->accessCntrIntrVector != NV_INTR_VECTOR_INVALID)
     {
-        NV_PRINTF(LEVEL_ERROR, "UVM interrupt vectors for replayable fault 0x%x "
-            "and access counter 0x%x are in different CPU_INTR_LEAF registers\n",
-            pIntr->replayableFaultIntrVector, pIntr->accessCntrIntrVector);
-        DBG_BREAKPOINT();
-        status = NV_ERR_GENERIC;
-        goto exit;
+        if (NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(pIntr->replayableFaultIntrVector) != NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(pIntr->accessCntrIntrVector))
+        {
+            NV_PRINTF(LEVEL_ERROR, "UVM interrupt vectors for replayable fault 0x%x "
+                "and access counter 0x%x are in different CPU_INTR_LEAF registers\n",
+                pIntr->replayableFaultIntrVector, pIntr->accessCntrIntrVector);
+            DBG_BREAKPOINT();
+            status = NV_ERR_GENERIC;
+            goto exit;
+        }
     }
 
     //
@@ -264,18 +275,19 @@ intrCacheIntrFields_TU102
     // don't have to check later in latency critical paths where this is assumed
     // to be true)
     //
-    if (NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(pIntr->replayableFaultIntrVector) != NV_CPU_INTR_UVM_SUBTREE_START)
+    if (NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(pIntr->accessCntrIntrVector) != NV_CPU_INTR_UVM_SUBTREE_START)
     {
         NV_PRINTF(LEVEL_ERROR, "UVM interrupt vectors for replayable fault and "
             "access counter are in an unexpected subtree. Expected = 0x%x, actual = 0x%x\n",
             NV_CPU_INTR_UVM_SUBTREE_START,
-            NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(pIntr->replayableFaultIntrVector));
+            NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(pIntr->accessCntrIntrVector));
         DBG_BREAKPOINT();
         status = NV_ERR_GENERIC;
         goto exit;
     }
 
 exit:
+
     return status;
 }
 
@@ -434,7 +446,7 @@ _intrEnableStall_TU102
     // level.
     //
     val = _intrGetUvmLeafMask_TU102(pGpu, pIntr);
-    idx = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(pIntr->replayableFaultIntrVector);
+    idx = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(pIntr->accessCntrIntrVector);
     if (val != 0)
     {
         intrWriteRegLeafEnSet_HAL(pGpu, pIntr, idx, val, pThreadState);
@@ -496,10 +508,12 @@ _intrDisableStall_TU102
     THREAD_STATE_NODE *pThreadState
 )
 {
-    NvU32 idx, val;
+    NvU32 idx;
+
+    NvU32 val;
 
     // 1. Disable the UVM interrupts that RM currently owns at INTR_LEAF level
-    idx = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(pIntr->replayableFaultIntrVector);
+    idx = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(pIntr->accessCntrIntrVector);
     val = _intrGetUvmLeafMask_TU102(pGpu, pIntr);
     if (val != 0)
     {
@@ -572,9 +586,9 @@ _intrDisableStall_TU102
 
     //
     // 3. Disable some interrupt subtrees at top level (information about which
-    // ones to disable is cached in pIntr->cpuTopEnMask)
+    // ones to disable is cached in pIntr->intrTopEnMask)
     //
-    intrWriteRegTopEnClear_HAL(pGpu, pIntr, 0, pIntr->cpuTopEnMask, pThreadState);
+    intrWriteRegTopEnClear_HAL(pGpu, pIntr, 0, pIntr->intrTopEnMask, pThreadState);
 }
 
 /*!
@@ -648,7 +662,7 @@ _intrGetUvmLeafMask_TU102
         NvBool bRmOwnsReplayableFault = !!(pKernelGmmu->uvmSharedIntrRmOwnsMask & RM_UVM_SHARED_INTR_MASK_MMU_REPLAYABLE_FAULT_NOTIFY);
         NvBool bRmOwnsAccessCntr      = !!(pKernelGmmu->uvmSharedIntrRmOwnsMask & RM_UVM_SHARED_INTR_MASK_HUB_ACCESS_COUNTER_NOTIFY);
 
-        if (bRmOwnsReplayableFault)
+        if (bRmOwnsReplayableFault && !gpuIsCCFeatureEnabled(pGpu))
         {
             val |= NVBIT(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(pIntr->replayableFaultIntrVector));
         }
@@ -831,7 +845,7 @@ intrGetPendingStallEngines_TU102
         // Add non replayable fault engine if there is something in the shadow buffer,
         // as the interrupt itself is cleared earlier.
         //
-        if (portAtomicOrS32(&pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].fatalFaultIntrPending, 0))
+        if (portAtomicOrS32(kgmmuGetFatalFaultIntrPendingState(pKernelGmmu, GPU_GFID_PF), 0))
         {
             bitVectorSet(pEngines, MC_ENGINE_IDX_NON_REPLAYABLE_FAULT);
         }

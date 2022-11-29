@@ -340,6 +340,7 @@ NV_STATUS RmExportObject(NvHandle hSrcClient, NvHandle hSrcObject,
     RmObjExportHandle hDstObject;
     NvU32             deviceInstance = NV_MAX_DEVICES;
     NvHandle          hTmpObject;
+    NvBool            bClientAsDstParent = NV_FALSE;
     NV_STATUS         status;
     RM_API           *pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
 
@@ -370,9 +371,10 @@ NV_STATUS RmExportObject(NvHandle hSrcClient, NvHandle hSrcObject,
         hTmpObject = pResourceRef->pParentRef ? pResourceRef->pParentRef->hResource : 0;
     } while (hTmpObject != 0);
 
+    // If a memory object is not parented by a device, use client as a parent.
     if ((hTmpObject == 0) || (deviceInstance >= NV_MAX_DEVICES))
     {
-        return NV_ERR_OBJECT_NOT_FOUND;
+        bClientAsDstParent = NV_TRUE;
     }
 
     status = RmRefObjExportImport();
@@ -382,9 +384,10 @@ NV_STATUS RmExportObject(NvHandle hSrcClient, NvHandle hSrcObject,
         return status;
     }
 
-    if (objExportDevice[deviceInstance].hRmDevice == 0 ||
-        serverutilValidateNewResourceHandle(hObjExportRmClient,
-                        objExportDevice[deviceInstance].hRmDevice))
+    if (!bClientAsDstParent &&
+        ((objExportDevice[deviceInstance].hRmDevice == 0) ||
+         serverutilValidateNewResourceHandle(hObjExportRmClient,
+                        objExportDevice[deviceInstance].hRmDevice)))
     {
         //
         // Device object has not been created or it got destroyed in the
@@ -465,6 +468,7 @@ NV_STATUS RmExportObject(NvHandle hSrcClient, NvHandle hSrcObject,
     // If duping under device handle fails, try subdevice handle.
     status = pRmApi->DupObject(pRmApi,
                                hObjExportRmClient,
+                               bClientAsDstParent ? hObjExportRmClient :
                                objExportDevice[deviceInstance].hRmDevice,
                                &hDstObject,
                                hSrcClient,
@@ -472,7 +476,7 @@ NV_STATUS RmExportObject(NvHandle hSrcClient, NvHandle hSrcObject,
                                0 /* flags */);
     if (status != NV_OK)
     {
-        if (status == NV_ERR_INVALID_OBJECT_PARENT)
+        if (!bClientAsDstParent && (status == NV_ERR_INVALID_OBJECT_PARENT))
         {
             NV_PRINTF(LEVEL_INFO,
                 "pRmApi->DupObject(Dev, failed due to invalid parent in %s."
@@ -584,6 +588,12 @@ NV_STATUS RmImportObject(NvHandle hDstClient, NvHandle hDstParent,
             case NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_FABRIC:
                 *pObjectType = NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_FABRIC;
                 break;
+#if defined(NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_FABRIC_MC) && \
+    defined(NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_FABRIC_MC)
+            case NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_FABRIC_MC:
+                *pObjectType = NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_TYPE_FABRIC_MC;
+                break;
+#endif
             default:
                 NV_ASSERT_OK_OR_RETURN(NV_ERR_INVALID_ARGUMENT);
         }

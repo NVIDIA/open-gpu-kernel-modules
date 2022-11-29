@@ -203,6 +203,10 @@ static void __nvoc_thunk_RsResource_diagapiPreDestruct(struct DiagApi *pResource
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DiagApi_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_diagapiIsDuplicate(struct DiagApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DiagApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_diagapiGetNotificationListPtr(struct DiagApi *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DiagApi_Notifier.offset));
 }
@@ -301,6 +305,21 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
 #endif
     },
     {               /*  [5] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdFbClearRemappedRows_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+        /*flags=*/      0x204u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x208f0515u,
+        /*paramSize=*/  sizeof(NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DiagApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "diagapiCtrlCmdFbClearRemappedRows"
+#endif
+    },
+    {               /*  [6] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -315,7 +334,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdBifPBIWriteCommand"
 #endif
     },
-    {               /*  [6] */
+    {               /*  [7] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -330,7 +349,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdBifConfigRegRead"
 #endif
     },
-    {               /*  [7] */
+    {               /*  [8] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -345,7 +364,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*func=*/       "diagapiCtrlCmdBifConfigRegWrite"
 #endif
     },
-    {               /*  [8] */
+    {               /*  [9] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -358,21 +377,6 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DiagApi[
         /*pClassInfo=*/ &(__nvoc_class_def_DiagApi.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
         /*func=*/       "diagapiCtrlCmdBifInfo"
-#endif
-    },
-    {               /*  [9] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*pFunc=*/      (void (*)(void)) NULL,
-#else
-        /*pFunc=*/      (void (*)(void)) diagapiCtrlCmdMmuGetNumHshubmmus_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
-        /*accessRight=*/0x0u,
-        /*methodId=*/   0x208f0b03u,
-        /*paramSize=*/  sizeof(NV208F_CTRL_MMU_GET_NUM_HSHUBMMUS_PARAMS),
-        /*pClassInfo=*/ &(__nvoc_class_def_DiagApi.classInfo),
-#if NV_PRINTF_STRINGS_ALLOWED
-        /*func=*/       "diagapiCtrlCmdMmuGetNumHshubmmus"
 #endif
     },
     {               /*  [10] */
@@ -492,6 +496,10 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
     pThis->__diagapiCtrlCmdFbEccSetKillPtr__ = &diagapiCtrlCmdFbEccSetKillPtr_IMPL;
 #endif
 
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+    pThis->__diagapiCtrlCmdFbClearRemappedRows__ = &diagapiCtrlCmdFbClearRemappedRows_IMPL;
+#endif
+
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__diagapiCtrlCmdGpuGetRamSvopValues__ = &diagapiCtrlCmdGpuGetRamSvopValues_IMPL;
 #endif
@@ -518,10 +526,6 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__diagapiCtrlCmdBifInfo__ = &diagapiCtrlCmdBifInfo_IMPL;
-#endif
-
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-    pThis->__diagapiCtrlCmdMmuGetNumHshubmmus__ = &diagapiCtrlCmdMmuGetNumHshubmmus_IMPL;
 #endif
 
     pThis->__nvoc_base_GpuResource.__gpuresControl__ = &__nvoc_thunk_DiagApi_gpuresControl;
@@ -569,6 +573,8 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
     pThis->__diagapiCanCopy__ = &__nvoc_thunk_RsResource_diagapiCanCopy;
 
     pThis->__diagapiPreDestruct__ = &__nvoc_thunk_RsResource_diagapiPreDestruct;
+
+    pThis->__diagapiIsDuplicate__ = &__nvoc_thunk_RsResource_diagapiIsDuplicate;
 
     pThis->__diagapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_diagapiGetNotificationListPtr;
 

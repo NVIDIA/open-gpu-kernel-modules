@@ -109,55 +109,35 @@ nvswitch_oms_inforom_flush_lr10
 );
 
 NvlStatus
-nvswitch_bbx_setup_prologue_lr10
-(
-    nvswitch_device    *device,
-    void *pInforomBbxState
-);
-
-NvlStatus
-nvswitch_bbx_setup_epilogue_lr10
-(
-    nvswitch_device    *device,
-    void *pInforomBbxState
-);
-
-NvlStatus
-nvswitch_bbx_add_data_time_lr10
-(
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
-);
-
-NvlStatus
 nvswitch_bbx_add_sxid_lr10
 (
     nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
+    NvU32 exceptionType,
+    NvU32 data0,
+    NvU32 data1,
+    NvU32 data2
 );
 
 NvlStatus
-nvswitch_bbx_add_temperature_lr10
+nvswitch_bbx_unload_lr10
 (
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
-);
-
-void
-nvswitch_bbx_set_initial_temperature_lr10
-(
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
+    nvswitch_device *device
 );
 
 NvlStatus
-nvswitch_inforom_bbx_get_sxid_lr10
+nvswitch_bbx_load_lr10
 (
     nvswitch_device *device,
-    NVSWITCH_GET_SXIDS_PARAMS *params
+    NvU64 time_ns,
+    NvU8 osType,
+    NvU32 osVersion
 );
+
+NvlStatus
+nvswitch_bbx_get_sxid_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SXIDS_PARAMS * params
+);
+
 #endif //_INFOROM_LR10_H_

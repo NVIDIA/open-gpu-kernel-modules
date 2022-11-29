@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrlc369.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* MMU_FAULT_BUFFER control commands and parameters */
 

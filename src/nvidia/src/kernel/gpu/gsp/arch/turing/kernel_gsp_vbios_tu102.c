@@ -33,6 +33,7 @@
  */
 
 #include "gpu/gsp/kernel_gsp.h"
+#include "gpu/pmu/kern_pmu.h"
 
 #include "platform/pci_exp_table.h" // PCI_EXP_ROM_*
 #include "gpu/gpu.h"
@@ -53,6 +54,38 @@ typedef struct RomImgSrc
 
     OBJGPU *pGpu;
 } RomImgSrc;
+
+/*!
+ * Equivalent to GPU_REG_RD08(pGpu, NV_PROM_DATA(offset)), but use raw OS read
+ * to avoid the 0xbadf sanity checking done by the usual register read
+ * utilities.
+ */
+static inline NvU8
+s_promRead08
+(
+    OBJGPU *pGpu,
+    NvU32 offset
+)
+{
+    return osDevReadReg008(pGpu, gpuGetDeviceMapping(pGpu, DEVICE_INDEX_GPU, 0),
+                           NV_PROM_DATA(offset));
+}
+
+/*!
+ * Equivalent to GPU_REG_RD32(pGpu, NV_PROM_DATA(offset)), but use raw OS read
+ * to avoid the 0xbadf sanity checking done by the usual register read
+ * utilities.
+ */
+static inline NvU32
+s_promRead32
+(
+    OBJGPU *pGpu,
+    NvU32 offset
+)
+{
+    return osDevReadReg032(pGpu, gpuGetDeviceMapping(pGpu, DEVICE_INDEX_GPU, 0),
+                           NV_PROM_DATA(offset));
+}
 
 /*!
  * Read unaligned data from PROM (e.g. VBIOS ROM image) using 32-bit accesses.
@@ -120,14 +153,11 @@ s_romImgReadGeneric
 
     NV_ASSERT(pSrc->pGpu != NULL);
 
-    // Offset is in NV_PROM.
-    offset = NV_PROM_DATA(offset);
-
     // Read bios image as aligned 32-bit word(s).
-    buf.word[0] = GPU_REG_RD32(pSrc->pGpu, offset);
+    buf.word[0] = s_promRead32(pSrc->pGpu, offset);
     if (bReadWord1)
     {
-        buf.word[1] = GPU_REG_RD32(pSrc->pGpu, offset + sizeof(NvU32));
+        buf.word[1] = s_promRead32(pSrc->pGpu, offset + sizeof(NvU32));
     }
 
     // Combine bytes into number.
@@ -422,6 +452,7 @@ kgspExtractVbiosFromRom_TU102
     NV_STATUS status = NV_OK;
 
     KernelGspVbiosImg *pVbiosImg = NULL;
+    KernelPmu *pKernelPmu = GPU_GET_KERNEL_PMU(pGpu);
 
     RomImgSrc src;
     NvU32 romSig;
@@ -447,6 +478,17 @@ kgspExtractVbiosFromRom_TU102
     src.baseOffset = 0;
     src.maxOffset = biosSize;
     src.pGpu = pGpu;
+
+    if (pKernelPmu != NULL)
+    {
+        status = kpmuPreOsGlobalErotGrantRequest_HAL(pGpu, pKernelPmu);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "ERoT Req/Grant for EEPROM access failed, status=%u\n",
+                    status);
+            return status;
+        }
+    }
 
     // Find ROM start
     romSig = s_romImgRead16(&src, OFFSETOF_PCI_EXP_ROM_SIG, &status);
@@ -500,13 +542,13 @@ kgspExtractVbiosFromRom_TU102
         biosSizeAligned = biosSize & (~0x3);
         for (i = 0; i < biosSizeAligned; i += 4)
         {
-            pImageDwords[i >> 2] = GPU_REG_RD32(pGpu, pciOffset + NV_PROM_DATA(i));
+            pImageDwords[i >> 2] = s_promRead32(pGpu, pciOffset + i);
         }
 
         for (; i < biosSize; i++)
         {
             // Finish for non-32-bit-aligned biosSize
-            ((NvU8 *) pImageDwords)[i] = GPU_REG_RD08(pGpu, pciOffset + NV_PROM_DATA(i));
+            ((NvU8 *) pImageDwords)[i] = s_promRead08(pGpu, pciOffset + i);
         }
 
         pVbiosImg->pImage = (NvU8 *) pImageDwords;

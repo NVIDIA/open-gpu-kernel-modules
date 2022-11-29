@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -43,15 +43,8 @@ static NvU32 get_push_end_size(uvm_channel_t *channel)
     if (uvm_channel_is_ce(channel))
         return UVM_PUSH_CE_END_SIZE;
 
-
-
-
-
     return 0;
 }
-
-
-
 
 static NV_STATUS test_push_end_size(uvm_va_space_t *va_space)
 {
@@ -65,10 +58,6 @@ static NV_STATUS test_push_end_size(uvm_va_space_t *va_space)
             uvm_push_t push;
             NvU32 push_end_size;
             uvm_channel_type_t type = i;
-
-
-
-
 
             status = uvm_push_begin(gpu->channel_manager, type, &push, "type %u\n", (unsigned)type);
             TEST_CHECK_GOTO(status == NV_OK, done);
@@ -302,7 +291,7 @@ static NV_STATUS test_push_interleaving_on_gpu(uvm_gpu_t* gpu)
     // single thread.
     uvm_thread_context_lock_disable_tracking();
 
-    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, size, &mem);
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
     host_va = (NvU32*)uvm_rm_mem_get_cpu_va(mem);
     gpu_va = uvm_rm_mem_get_gpu_va(mem, gpu, uvm_channel_is_proxy(channel));
@@ -558,10 +547,6 @@ done:
 
 static NV_STATUS test_max_pushes_on_gpu(uvm_gpu_t *gpu)
 {
-
-
-
-
 
     TEST_NV_CHECK_RET(test_max_pushes_on_gpu_and_channel_type(gpu, UVM_CHANNEL_TYPE_GPU_INTERNAL));
 

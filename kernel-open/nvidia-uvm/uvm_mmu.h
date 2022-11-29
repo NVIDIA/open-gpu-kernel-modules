@@ -37,27 +37,25 @@
 
 // Memory layout of UVM's kernel VA space.
 // The following memory regions are not to scale.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// Hopper:
+// +----------------+ 128PB
+// |                |
+// |   (not used)   |
+// |                |
+// ------------------
+// |uvm_mem_t(128GB)| (uvm_mem_va_size)
+// ------------------ 64PB + 384TB (uvm_mem_va_base)
+// |                |
+// |   (not used)   |
+// |                |
+// ------------------ 64PB + 8TB
+// |peer ident. maps|
+// |32 * 256GB = 8TB| ==> NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE
+// ------------------ 64PB
+// |                |
+// |  rm_mem(64PB)  | (rm_va_size)
+// |                |
+// +----------------+ 0 (rm_va_base)
 //
 // Pascal-Ampere:
 // +----------------+ 512TB
@@ -74,13 +72,13 @@
 // |                |
 // |   (not used)   |
 // |                |
-// ------------------ 132TB + 128GB (UVM_GPU_MAX_PHYS_MEM)
+// ------------------ 136TB + 256GB (UVM_GPU_MAX_PHYS_MEM)
 // |     vidmem     |
 // |  flat mapping  | ==> UVM_GPU_MAX_PHYS_MEM
-// |     (128GB)    |
-// ------------------ 132TB (flat_vidmem_va_base)
+// |     (256GB)    |
+// ------------------ 136TB (flat_vidmem_va_base)
 // |peer ident. maps|
-// |32 * 128GB = 4TB| ==> NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE
+// |32 * 256GB = 8TB| ==> NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE
 // ------------------ 128TB
 // |                |
 // | rm_mem(128TB)  | (rm_va_size)
@@ -105,7 +103,7 @@
 // +----------------+ 0 (rm_va_base)
 
 // Maximum memory of any GPU.
-#define UVM_GPU_MAX_PHYS_MEM (128ull * 1024 * 1024 * 1024)
+#define UVM_GPU_MAX_PHYS_MEM (256ull * 1024 * 1024 * 1024)
 
 // The size of VA that should be reserved per peer identity mapping.
 // This should be at least the maximum amount of memory of any GPU.

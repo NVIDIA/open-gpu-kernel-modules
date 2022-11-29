@@ -101,7 +101,7 @@ static void nvlink_permissions_exit(void)
         return;
     }
 
-    NV_REMOVE_PROC_ENTRY(nvlink_permissions);
+    proc_remove(nvlink_permissions);
     nvlink_permissions = NULL;
 }
 
@@ -133,7 +133,7 @@ static void nvlink_procfs_exit(void)
         return;
     }
 
-    NV_REMOVE_PROC_ENTRY(nvlink_procfs_dir);
+    proc_remove(nvlink_procfs_dir);
     nvlink_procfs_dir = NULL;
 }
 
@@ -207,10 +207,8 @@ static int nvlink_fops_release(struct inode *inode, struct file *filp)
 
     nvlink_print(NVLINK_DBG_INFO, "nvlink driver close\n");
 
-
-
-
-
+    if (private == NULL)
+        return -ENOMEM;
 
     mutex_lock(&nvlink_drvctx.lock);
 
@@ -309,9 +307,6 @@ static const struct file_operations nvlink_fops = {
     .owner           = THIS_MODULE,
     .open            = nvlink_fops_open,
     .release         = nvlink_fops_release,
-#if defined(NV_FILE_OPERATIONS_HAS_IOCTL)
-    .ioctl           = nvlink_fops_ioctl,   
-#endif    
     .unlocked_ioctl  = nvlink_fops_unlocked_ioctl,
 };
 

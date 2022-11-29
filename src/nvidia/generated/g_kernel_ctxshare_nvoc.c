@@ -335,6 +335,10 @@ static NV_STATUS __nvoc_thunk_RsResource_kctxshareapiUnmapFrom(struct KernelCtxS
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCtxShareApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_kctxshareapiIsDuplicate(struct KernelCtxShareApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCtxShareApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_kctxshareapiControl_Epilogue(struct KernelCtxShareApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCtxShareApi_RmResource.offset), pCallContext, pParams);
 }
@@ -493,6 +497,8 @@ static void __nvoc_init_funcTable_KernelCtxShareApi_1(KernelCtxShareApi *pThis) 
     pThis->__kctxshareapiPreDestruct__ = &__nvoc_thunk_RsResource_kctxshareapiPreDestruct;
 
     pThis->__kctxshareapiUnmapFrom__ = &__nvoc_thunk_RsResource_kctxshareapiUnmapFrom;
+
+    pThis->__kctxshareapiIsDuplicate__ = &__nvoc_thunk_RsResource_kctxshareapiIsDuplicate;
 
     pThis->__kctxshareapiControl_Epilogue__ = &__nvoc_thunk_RmResource_kctxshareapiControl_Epilogue;
 

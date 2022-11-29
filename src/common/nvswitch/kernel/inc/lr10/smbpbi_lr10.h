@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,10 +25,67 @@
 #define _SMBPBI_LR10_H_
 
 NvlStatus
+nvswitch_smbpbi_alloc_lr10
+(
+    nvswitch_device *device
+);
+
+NvlStatus
+nvswitch_smbpbi_post_init_hal_lr10
+(
+    nvswitch_device *device
+);
+
+void
+nvswitch_smbpbi_destroy_hal_lr10
+(
+    nvswitch_device *device
+);
+
+NvlStatus
 nvswitch_smbpbi_get_dem_num_messages_lr10
 (
     nvswitch_device *device,
     NvU8            *pMsgCount
+);
+
+NvlStatus
+nvswitch_inforom_dem_load_lr10
+(
+    nvswitch_device *device
+);
+
+NvlStatus
+nvswitch_smbpbi_dem_load_lr10
+(
+    nvswitch_device *device
+);
+
+void
+nvswitch_smbpbi_send_unload_lr10
+(
+    nvswitch_device *device
+);
+
+void
+nvswitch_smbpbi_dem_flush_lr10
+(
+    nvswitch_device *device
+);
+
+void
+nvswitch_smbpbi_log_message_lr10
+(
+    nvswitch_device *device,
+    NvU32           num,
+    NvU32           msglen,
+    NvU8            *osErrorString
+);
+
+NvlStatus
+nvswitch_smbpbi_send_init_data_lr10
+(
+    nvswitch_device *device
 );
 
 #endif //_SMBPBI_LR10_H_

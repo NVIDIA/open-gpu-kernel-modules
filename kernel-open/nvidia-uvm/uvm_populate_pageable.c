@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2021 NVIDIA Corporation
+    Copyright (c) 2018-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -54,7 +54,7 @@ NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
 {
     unsigned long vma_num_pages;
     unsigned long outer = start + length;
-    const bool is_writable = is_write_populate(vma, populate_permissions);
+    unsigned int gup_flags = is_write_populate(vma, populate_permissions) ? FOLL_WRITE : 0;
     struct mm_struct *mm = vma->vm_mm;
     unsigned long vm_flags = vma->vm_flags;
     bool uvm_managed_vma;
@@ -97,7 +97,10 @@ NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
     if (uvm_managed_vma)
         uvm_record_unlock_mmap_lock_read(mm);
 
-    ret = NV_GET_USER_PAGES_REMOTE(NULL, mm, start, vma_num_pages, is_writable, 0, pages, NULL);
+    if (touch)
+        ret = NV_PIN_USER_PAGES_REMOTE(mm, start, vma_num_pages, gup_flags, pages, NULL, NULL);
+    else
+        ret = NV_GET_USER_PAGES_REMOTE(mm, start, vma_num_pages, gup_flags, pages, NULL, NULL);
 
     if (uvm_managed_vma)
         uvm_record_lock_mmap_lock_read(mm);
@@ -114,7 +117,7 @@ NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
 
             for (i = 0; i < ret; i++) {
                 UVM_ASSERT(pages[i]);
-                put_page(pages[i]);
+                NV_UNPIN_USER_PAGE(pages[i]);
             }
         }
 
@@ -127,7 +130,7 @@ NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
 
         for (i = 0; i < vma_num_pages; i++) {
             uvm_touch_page(pages[i]);
-            put_page(pages[i]);
+            NV_UNPIN_USER_PAGE(pages[i]);
         }
     }
 

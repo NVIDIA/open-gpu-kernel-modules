@@ -30,6 +30,9 @@
 
 #include "gpu/bus/kern_bus.h"
 
+// Memory copy block size for if we need to cut up a mapping
+#define MEMORY_COPY_BLOCK_SIZE 1024 * 1024
+
 /* ------------------------ Private functions --------------------------------------- */
 
 /*!
@@ -159,6 +162,89 @@ memmgrMemSetWithTransferType
 }
 
 /*!
+ * @brief This function is used to map the appropriate memory descriptor,
+ *        copy the memory from the given buffer, and then unmap.
+ *
+ * @param[in] pMemDesc Memory descriptor of buffer to write
+ * @param[in] pBuf     Buffer allocated by caller
+ * @param[in] offset   Offset of buffer to write
+ * @param[in] size     Size in bytes of the buffer
+ * @param[in] flags    Flags
+ */
+static NV_STATUS
+memmgrMemWriteMapAndCopy
+(
+    MemoryManager     *pMemoryManager,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    void              *pBuf,
+    NvU64              offset,
+    NvU64              size,
+    NvU32              flags  
+)
+{
+    NvU8   *pDst = NULL;
+    OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
+
+    pDst = memdescMapInternal(pGpu, pMemDesc, TRANSFER_FLAGS_NONE);
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, pDst != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+
+    portMemCopy(pDst + offset, size, pBuf, size);
+    memdescUnmapInternal(pGpu, pMemDesc, flags);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief This function is used for writing data placed in a caller passed buffer
+ *        to a given memory region while only mapping regions as large as the given
+ *        block size.
+ *
+ * @param[in] pMemDesc   Memory descriptor of buffer to write
+ * @param[in] pBuf       Buffer allocated by caller
+ * @param[in] baseOffset Offset of entire buffer to write
+ * @param[in] size       Size in bytes of the buffer
+ * @param[in] flags      Flags
+ * @param[in] blockSize  Maximum size of a mapping to use
+ */
+static NV_STATUS
+memmgrMemWriteInBlocks
+(
+    MemoryManager     *pMemoryManager,
+    MEMORY_DESCRIPTOR *pMemDesc,
+    void              *pBuf,
+    NvU64              baseOffset,
+    NvU64              size,
+    NvU32              flags,
+    NvU32              blockSize
+)
+{
+    NV_STATUS  status    = NV_OK;
+    OBJGPU    *pGpu      = ENG_GET_GPU(pMemoryManager);
+    NvU64      remaining = size;
+    NvU64      offset    = 0;
+
+    while ((remaining > 0) && (status == NV_OK))
+    {
+        MEMORY_DESCRIPTOR *pSubMemDesc = NULL;
+        NvU32              mapSize     = NV_MIN(blockSize, remaining);
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_SILENT, memdescCreateSubMem(&pSubMemDesc, pMemDesc, pGpu, offset + baseOffset, mapSize));
+
+        // Set the offset to 0, as the sub descriptor already starts at the offset
+        status = memmgrMemWriteMapAndCopy(pMemoryManager, pSubMemDesc, (NvU8 *)pBuf + offset, 
+                                          0, mapSize, flags);
+                                        
+        memdescFree(pSubMemDesc);
+        memdescDestroy(pSubMemDesc);
+
+        offset += mapSize;
+        remaining -= mapSize;
+    }
+
+    return status;
+}
+
+/*!
  * @brief This function is used for writing data placed in a caller passed buffer
  *        to a given memory region using the specified memory transfer technique
  *
@@ -179,9 +265,7 @@ memmgrMemWriteWithTransferType
     NvU32             flags
 )
 {
-    OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
-    NvU8   *pDst;
-    NvU8   *pMapping = memdescGetKernelMapping(pDstInfo->pMemDesc);
+    NvU8 *pMapping = memdescGetKernelMapping(pDstInfo->pMemDesc);
 
     // Sanitize the input
     NV_ASSERT_OR_RETURN(pDstInfo != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -199,12 +283,12 @@ memmgrMemWriteWithTransferType
     switch (transferType)
     {
         case TRANSFER_TYPE_PROCESSOR:
-            pDst = memdescMapInternal(pGpu, pDstInfo->pMemDesc, TRANSFER_FLAGS_NONE);
-            NV_ASSERT_OR_RETURN(pDst != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-
-            portMemCopy(pDst + pDstInfo->offset, size, pBuf, size);
-
-            memdescUnmapInternal(pGpu, pDstInfo->pMemDesc, flags);
+            if (memmgrMemWriteMapAndCopy(pMemoryManager, pDstInfo->pMemDesc, pBuf, pDstInfo->offset, size, flags) != NV_OK)
+            {
+                // If we fail to map a block large enough for the entire transfer, split up the mapping.
+                NV_ASSERT_OK_OR_RETURN(memmgrMemWriteInBlocks(pMemoryManager, pDstInfo->pMemDesc, pBuf,
+                                                              pDstInfo->offset, size, flags, MEMORY_COPY_BLOCK_SIZE));
+            }
             break;
         case TRANSFER_TYPE_GSP_DMA:
             NV_PRINTF(LEVEL_INFO, "Add call to GSP DMA task\n");

@@ -102,8 +102,6 @@ instmemHashFunc_v03_00
 {
     NV_ASSERT_OR_RETURN(pResult, NV_ERR_INVALID_ARGUMENT);
 
-    // channel id is the range of 0-80 (as defined by the NV_PDISP_CHN_NUM_*)
-    NV_ASSERT(!(dispChannelNum >> 7));
 
      //
      // The hash function for display will be:

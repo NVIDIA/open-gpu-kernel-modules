@@ -26,23 +26,11 @@
 #include "nv-reg.h"
 #include "nv-frontend.h"
 
-#if defined(MODULE_LICENSE)
-
 MODULE_LICENSE("Dual MIT/GPL");
 
-
-
-#endif
-#if defined(MODULE_INFO)
 MODULE_INFO(supported, "external");
-#endif
-#if defined(MODULE_VERSION)
 MODULE_VERSION(NV_VERSION_STRING);
-#endif
-
-#ifdef MODULE_ALIAS_CHARDEV_MAJOR
 MODULE_ALIAS_CHARDEV_MAJOR(NV_MAJOR_DEVICE_NUMBER);
-#endif
 
 /*
  * MODULE_IMPORT_NS() is added by commit id 8651ec01daeda
@@ -50,13 +38,11 @@ MODULE_ALIAS_CHARDEV_MAJOR(NV_MAJOR_DEVICE_NUMBER);
  */
 #if defined(MODULE_IMPORT_NS)
 
-
 /*
  * DMA_BUF namespace is added by commit id 16b0314aa746
  * ("dma-buf: move dma-buf symbols into the DMA_BUF module namespace") in 5.16
  */
 MODULE_IMPORT_NS(DMA_BUF);
-
 
 #endif
 
@@ -85,9 +71,6 @@ int          nvidia_frontend_mmap(struct file *, struct vm_area_struct *);
 static struct file_operations nv_frontend_fops = {
     .owner     = THIS_MODULE,
     .poll      = nvidia_frontend_poll,
-#if defined(NV_FILE_OPERATIONS_HAS_IOCTL)
-    .ioctl     = nvidia_frontend_ioctl,
-#endif
     .unlocked_ioctl = nvidia_frontend_unlocked_ioctl,
 #if NVCPU_IS_X86_64 || NVCPU_IS_AARCH64
     .compat_ioctl = nvidia_frontend_compat_ioctl,

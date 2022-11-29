@@ -91,12 +91,17 @@ typedef struct {
     NvU32       (*setDmemAddr)                      (struct nvswitch_device *, struct FLCN *, NvU32 dst);
     NvU32       (*riscvRegRead)                     (struct nvswitch_device *, struct FLCN *, NvU32 offset);
     void        (*riscvRegWrite)                    (struct nvswitch_device *, struct FLCN *, NvU32 offset, NvU32 data);
+    NV_STATUS   (*debugBufferInit)                  (struct nvswitch_device *, struct FLCN *, NvU32 debugBufferMaxSize, NvU32 writeRegAddr, NvU32 readRegAddr);
+    NV_STATUS   (*debugBufferDestroy)               (struct nvswitch_device *, struct FLCN *);
+    NV_STATUS   (*debugBufferDisplay)               (struct nvswitch_device *, struct FLCN *);
+    NvBool      (*debugBufferIsEmpty)               (struct nvswitch_device *, struct FLCN *);
 } flcn_hal;
 
 void flcnQueueSetupHal(struct FLCN *pFlcn);
 void flcnRtosSetupHal(struct FLCN *pFlcn);
 void flcnQueueRdSetupHal(struct FLCN *pFlcn);
 
+void flcnSetupHal_LS10(struct FLCN *pFlcn);
 void flcnSetupHal_LR10(struct FLCN *pFlcn);
 
 void flcnSetupHal_v03_00(struct FLCN *pFlcn);

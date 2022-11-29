@@ -24,8 +24,6 @@
 /* this source file contains routines for setting and moving the cursor.
  * NV50 specific */
 
-
-
 #include "nvkms-cursor.h"
 #include "nvkms-types.h"
 #include "nvkms-dma.h"
@@ -76,7 +74,8 @@ NvBool nvGetCursorImageSurfaces(
                 nvEvoGetSurfaceFromHandle(pDevEvo,
                                           pOpenDevSurfaceHandles,
                                           pParams->surfaceHandle[eye],
-                                          NV_EVO_CHANNEL_MASK_CURSOR_ALL);
+                                          TRUE /* isUsedByCursorChannel */,
+                                          FALSE /* isUsedByLayerChannel */);
             if ((pSurfaceEvo == NULL) ||
                 (pSurfaceEvo->isoType != NVKMS_MEMORY_ISO)) {
                 return FALSE;
@@ -162,12 +161,8 @@ FlipCursorImage(NVDispEvoPtr pDispEvo,
 
     pFlipRequest = &pFlipParams->request;
 
-    pFlipRequest->sd[sd].head[head] = (struct NvKmsFlipCommonParams) {
-        .cursor = {
-            .image          = *pImageParams,
-            .imageSpecified = TRUE,
-        },
-    };
+    pFlipRequest->sd[sd].head[head].cursor.image = *pImageParams;
+    pFlipRequest->sd[sd].head[head].cursor.imageSpecified = TRUE;
 
     pFlipRequest->sd[sd].requestedHeadsBitMask = NVBIT(head);
 

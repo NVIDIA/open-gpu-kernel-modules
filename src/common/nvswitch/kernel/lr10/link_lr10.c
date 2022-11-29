@@ -77,10 +77,10 @@ nvswitch_setup_link_loopback_mode_lr10
         }
     }
 
-    if (device->link[link->linkNumber].ned)
+    if (device->link[link->linkNumber].nedr)
     {
         NVSWITCH_PRINT(device, ERROR,
-            "%s: Setting NED on link %d\n",
+            "%s: Setting NEDR on link %d\n",
             __FUNCTION__, link->linkNumber);
 
         // setting NEDR
@@ -92,7 +92,14 @@ nvswitch_setup_link_loopback_mode_lr10
                 "%s: SETNEDR CMD failed for link %d.\n",
                 __FUNCTION__, link->linkNumber);
         }
+    }
         
+    if (device->link[link->linkNumber].nedw)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Setting NEDW on link %d\n",
+            __FUNCTION__, link->linkNumber);
+
         // setting NEDW
         status = nvswitch_minion_send_command(device, link->linkNumber,
                     NV_MINION_NVLINK_DL_CMD_COMMAND_SETNEDW, 0);
@@ -147,7 +154,7 @@ _nvswitch_ioctrl_setup_link_plls_lr10
 
     // Request Minion to setup the NVLink clocks
     status = nvswitch_minion_send_command(device, linkId,
-                        NV_MINION_NVLINK_DL_CMD_COMMAND_TXCLKSWITCH_PLL, 0); 
+                        NV_MINION_NVLINK_DL_CMD_COMMAND_TXCLKSWITCH_PLL, 0);
     if (status != NV_OK)
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -297,8 +304,8 @@ nvswitch_init_dlpl_interrupts_lr10
     nvlink_link *link
 )
 {
-    nvswitch_device *device            = link->dev->pDevInfo;
-    NvU32            linkNumber        = link->linkNumber;
+    nvswitch_device *device = link->dev->pDevInfo;
+    NvU32 linkNumber = link->linkNumber;
     NvU32            crcShortRegkeyVal = device->regkeys.crc_bit_error_rate_short;
     NvU32            crcLongRegkeyVal  = device->regkeys.crc_bit_error_rate_long;
     NvU32            intrRegVal;
@@ -392,7 +399,7 @@ nvswitch_init_dlpl_interrupts_lr10
                                          _NVLDL_RX, _ERROR_RATE_CTRL);
 
     // Enable RX error rate short interrupt if the regkey is set
-    if (crcShortRegkeyVal != NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_OFF)
+    if (crcShortRegkeyVal != NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_DEFAULT)
     {
         shortRateMask = DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_MAN)     |
                             DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_EXP) |
@@ -404,7 +411,7 @@ nvswitch_init_dlpl_interrupts_lr10
         crcRegVal  |= crcShortRegkeyVal;
     }
     // Enable RX error rate long interrupt if the regkey is set
-    if (crcLongRegkeyVal != NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_OFF)
+    if (crcLongRegkeyVal != NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_DEFAULT)
     {
         longRateMask = DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_THRESHOLD_MAN)      |
                             DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_THRESHOLD_EXP) |
@@ -551,7 +558,15 @@ nvswitch_init_lpwr_regs_lr10
         tempRegVal);
 
     //IC Enter Threshold
-    lpEntryThreshold = 16110000;
+    if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
+    {
+        // TODO: get from bios. Refer Bug 3626523 for more info.
+        lpEntryThreshold = 16110000;
+    }
+    else
+    {
+        lpEntryThreshold = device->regkeys.lp_threshold;
+    }
 
     tempRegVal = 0;
     tempRegVal = FLD_SET_DRF_NUM(_NVLTLC_TX_LNK, _PWRM_IC_LP_ENTER_THRESHOLD, _THRESHOLD, lpEntryThreshold, tempRegVal);
@@ -1027,7 +1042,7 @@ nvswitch_corelib_set_dl_link_mode_lr10
                 NVSWITCH_PRINT(device, ERROR,
                     "%s : INITPHASE1 failed for link (%s):(%s).\n",
                     __FUNCTION__, device->name, link->linkName);
-                NVSWITCH_ASSERT_INFO(NV_ERR_NVLINK_CONFIGURATION_ERROR, 
+                NVSWITCH_ASSERT_INFO(NV_ERR_NVLINK_CONFIGURATION_ERROR,
                     NVBIT32(link->linkNumber), INITPHASE1_ERROR);
                 return NV_ERR_NVLINK_CONFIGURATION_ERROR;
             }
@@ -1539,7 +1554,7 @@ nvswitch_corelib_get_tx_mode_lr10
         *mode = NVLINK_SUBLINK_STATE_TX_OFF;
         return NVL_SUCCESS;
     }
-
+    
     data = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLDL, _NVLDL_TX, _SLSM_STATUS_TX);
 
     tx_sublink_state = DRF_VAL(_NVLDL_TX, _SLSM_STATUS_TX, _PRIMARY_STATE, data);
@@ -1761,7 +1776,7 @@ nvswitch_corelib_get_rx_mode_lr10
         *mode = NVLINK_SUBLINK_STATE_RX_OFF;
         return NVL_SUCCESS;
     }
-
+    
     data = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLDL, _NVLDL_RX, _SLSM_STATUS_RX);
 
     rx_sublink_state = DRF_VAL(_NVLDL_RX, _SLSM_STATUS_RX, _PRIMARY_STATE, data);
@@ -2015,6 +2030,314 @@ nvswitch_execute_unilateral_link_shutdown_lr10
     nvswitch_corelib_set_dl_link_mode_lr10(link, NVLINK_LINKSTATE_OFF, 0);
 }
 
+static NvU32
+_nvswitch_get_nvlink_linerate_lr10
+(
+    nvswitch_device *device,
+    NvU32            val
+)
+{
+    NvU32  lineRate = 0;
+    switch (val)
+    {
+        case NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_16G:
+            lineRate = NV_NVLIPT_LNK_CTRL_SYSTEM_LINK_CLK_CTRL_LINE_RATE_16_00000_GBPS;
+            break;
+        case NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_20G:
+            lineRate = NV_NVLIPT_LNK_CTRL_SYSTEM_LINK_CLK_CTRL_LINE_RATE_20_00000_GBPS;
+            break;
+        case NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_25G:
+            lineRate = NV_NVLIPT_LNK_CTRL_SYSTEM_LINK_CLK_CTRL_LINE_RATE_25_00000_GBPS;
+            break;
+        case NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_32G:
+            lineRate = NV_NVLIPT_LNK_CTRL_SYSTEM_LINK_CLK_CTRL_LINE_RATE_32_00000_GBPS;
+            break;
+        case NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_40G:
+            lineRate = NV_NVLIPT_LNK_CTRL_SYSTEM_LINK_CLK_CTRL_LINE_RATE_40_00000_GBPS;
+            break;
+        case NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_50G:
+            lineRate = NV_NVLIPT_LNK_CTRL_SYSTEM_LINK_CLK_CTRL_LINE_RATE_50_00000_GBPS;
+            break;
+        case NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_53_12500G:
+            lineRate = NV_NVLIPT_LNK_CTRL_SYSTEM_LINK_CLK_CTRL_LINE_RATE_53_12500_GBPS;
+            break;
+        default:
+            NVSWITCH_PRINT(device, SETUP, "%s:ERROR LINE_RATE = 0x%x requested by regkey\n",
+                       __FUNCTION__, lineRate);
+            lineRate = NV_NVLIPT_LNK_CTRL_SYSTEM_LINK_CLK_CTRL_LINE_RATE_ILLEGAL_LINE_RATE;
+    }
+    return lineRate;
+}
+
+void
+nvswitch_setup_link_system_registers_lr10
+(
+    nvswitch_device *device,
+    nvlink_link *link
+)
+{   
+    NvU32 regval = 0;
+    NvU32 fldval = 0;
+    NvU32 lineRate = 0;
+    NVLINK_CONFIG_DATA_LINKENTRY *vbios_link_entry = NULL;
+    NVSWITCH_BIOS_NVLINK_CONFIG *bios_config;
+
+    bios_config = nvswitch_get_bios_nvlink_config(device);
+    if ((bios_config == NULL) || (bios_config->bit_address == 0))
+    {
+        NVSWITCH_PRINT(device, WARN,
+            "%s: VBIOS NvLink configuration table not found\n",
+            __FUNCTION__);
+    }
+
+    //
+    // Identify the valid link entry to update. If not, proceed with the default settings
+    //
+    if ((bios_config == NULL) || (bios_config->bit_address == 0))
+    {
+        NVSWITCH_PRINT(device, SETUP,
+            "%s: No override with VBIOS - VBIOS NvLink configuration table not found\n",
+            __FUNCTION__);
+    }
+    else
+    {
+        vbios_link_entry = &bios_config->link_vbios_entry[bios_config->link_base_entry_assigned][link->linkNumber];
+    }
+
+    // LINE_RATE SYSTEM register
+    if (device->regkeys.nvlink_speed_control != NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_DEFAULT)
+    {
+        regval   = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLIPT_LNK,
+                                           _NVLIPT_LNK_CTRL_SYSTEM_LINK, _CLK_CTRL);
+        lineRate = _nvswitch_get_nvlink_linerate_lr10(device, device->regkeys.nvlink_speed_control);
+        regval   = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CLK_CTRL,
+                                    _LINE_RATE, lineRate, regval);
+        NVSWITCH_PRINT(device, SETUP, "%s: LINE_RATE = 0x%x requested by regkey\n",
+                       __FUNCTION__, lineRate);
+    }
+
+    // REFERENCE_CLOCK_MODE SYSTEM register
+    if (device->regkeys.reference_clock_mode != NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_DEFAULT)
+    {
+        regval   = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CLK_CTRL,
+                                    _REFERENCE_CLOCK_MODE, device->regkeys.reference_clock_mode, regval);
+        NVSWITCH_PRINT(device, SETUP, "%s: REFERENCE_CLOCK_MODE = 0x%x requested by regkey\n",
+                       __FUNCTION__, device->regkeys.reference_clock_mode);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CLK_CTRL, _REFERENCE_CLOCK_MODE,
+                                 DRF_VAL(_NVLINK_VBIOS,_PARAM3,_REFERENCE_CLOCK_MODE, vbios_link_entry->nvLinkparam3),
+                                 regval);
+    }
+
+    NVSWITCH_LINK_WR32_LR10(device, link->linkNumber, NVLIPT_LNK,
+                        _NVLIPT_LNK_CTRL_SYSTEM_LINK, _CLK_CTRL, regval);
+
+    // TXTRAIN SYSTEM register
+    regval = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLIPT_LNK,
+                                     _NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL);
+
+    fldval = DRF_VAL(_SWITCH_REGKEY, _TXTRAIN_CONTROL, _FOM_FORMAT,
+                     device->regkeys.txtrain_control);
+    if (fldval != NV_SWITCH_REGKEY_TXTRAIN_CONTROL_FOM_FORMAT_NOP)
+    {
+        NVSWITCH_PRINT(device, SETUP, "%s: FOM_FORMAT = 0x%x requested by regkey\n",
+                       __FUNCTION__, fldval);
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _TXTRAIN_FOM_FORMAT, fldval, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _TXTRAIN_FOM_FORMAT,
+                                    DRF_VAL(_NVLINK_VBIOS,_PARAM5,_TXTRAIN_FOM_FORMAT, vbios_link_entry->nvLinkparam5),
+                                    regval);
+    }
+
+    fldval = DRF_VAL(_SWITCH_REGKEY, _TXTRAIN_CONTROL, _OPTIMIZATION_ALGORITHM,
+                     device->regkeys.txtrain_control);
+    if (fldval != NV_SWITCH_REGKEY_TXTRAIN_CONTROL_OPTIMIZATION_ALGORITHM_NOP)
+    {
+        NVSWITCH_PRINT(device, SETUP, "%s: OPTIMIZATION_ALGORITHM = 0x%x requested by regkey\n",
+                       __FUNCTION__, fldval);
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _TXTRAIN_OPTIMIZATION_ALGORITHM, fldval, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _TXTRAIN_OPTIMIZATION_ALGORITHM,
+                                 vbios_link_entry->nvLinkparam4, regval);
+    }
+
+    fldval = DRF_VAL(_SWITCH_REGKEY, _TXTRAIN_CONTROL, _ADJUSTMENT_ALGORITHM,
+                     device->regkeys.txtrain_control);
+    if (fldval != NV_SWITCH_REGKEY_TXTRAIN_CONTROL_ADJUSTMENT_ALGORITHM_NOP)
+    {
+        NVSWITCH_PRINT(device, SETUP, "%s: ADJUSTMENT_ALGORITHM = 0x%x requested by regkey\n",
+                       __FUNCTION__, fldval);
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _TXTRAIN_ADJUSTMENT_ALGORITHM, fldval, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _TXTRAIN_ADJUSTMENT_ALGORITHM,
+                                     DRF_VAL(_NVLINK_VBIOS,_PARAM5,_TXTRAIN_ADJUSTMENT_ALGORITHM, vbios_link_entry->nvLinkparam5),
+                                     regval);
+    }
+
+    fldval = DRF_VAL(_SWITCH_REGKEY, _TXTRAIN_CONTROL, _MINIMUM_TRAIN_TIME_MANTISSA,
+                     device->regkeys.txtrain_control);
+    if (fldval != NV_SWITCH_REGKEY_TXTRAIN_CONTROL_MINIMUM_TRAIN_TIME_MANTISSA_NOP)
+    {
+        NVSWITCH_PRINT(device, SETUP, "%s: MINIMUM_TRAIN_TIME_MANTISSA = 0x%x requested by regkey\n",
+                       __FUNCTION__, fldval);
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _TXTRAIN_MINIMUM_TRAIN_TIME_MANTISSA, fldval, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _TXTRAIN_MINIMUM_TRAIN_TIME_MANTISSA,
+                                 DRF_VAL(_NVLINK_VBIOS,_PARAM6,_TXTRAIN_MINIMUM_TRAIN_TIME_MANTISSA, vbios_link_entry->nvLinkparam6),
+                                 regval);
+    }
+
+    fldval = DRF_VAL(_SWITCH_REGKEY, _TXTRAIN_CONTROL, _MINIMUM_TRAIN_TIME_EXPONENT,
+                     device->regkeys.txtrain_control);
+    if (fldval != NV_SWITCH_REGKEY_TXTRAIN_CONTROL_MINIMUM_TRAIN_TIME_EXPONENT_NOP)
+    {
+        NVSWITCH_PRINT(device, SETUP, "%s: MINIMUM_TRAIN_TIME_EXPONENT = 0x%x requested by regkey\n",
+                       __FUNCTION__, fldval);
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT, fldval, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT,
+                                 DRF_VAL(_NVLINK_VBIOS,_PARAM6,_TXTRAIN_MINIMUM_TRAIN_TIME_EXPONENT, vbios_link_entry->nvLinkparam6),
+                                 regval);
+    }
+
+    // AC vs DC mode SYSTEM register
+    if (link->ac_coupled)
+    {
+        //
+        // In NVL3.0, ACMODE is handled by MINION in the INITPHASE1 command
+        // Here we just setup the register with the proper info
+        //
+        NVSWITCH_PRINT(device, SETUP, "%s: AC_DC_MODE = 0x%x\n",
+                       __FUNCTION__, DRF_VAL(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL,
+                                                _AC_DC_MODE, regval));
+        regval = FLD_SET_DRF(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _AC_DC_MODE, _AC, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _AC_DC_MODE,
+                                    DRF_VAL(_NVLINK_VBIOS, _PARAM0, _ACDC_MODE, vbios_link_entry->nvLinkparam0),
+                                    regval);
+    }
+
+    if (device->regkeys.block_code_mode != NV_SWITCH_REGKEY_BLOCK_CODE_MODE_DEFAULT)
+    {
+        NVSWITCH_PRINT(device, SETUP, "%s: BLOCK_CODE_MODE = 0x%x requested by regkey\n",
+                       __FUNCTION__, device->regkeys.block_code_mode);
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL,
+                                 _BLOCK_CODE_MODE, device->regkeys.block_code_mode, regval);
+    }
+    else if (vbios_link_entry != NULL)
+    {
+        regval = FLD_SET_DRF_NUM(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_CHANNEL_CTRL, _BLOCK_CODE_MODE,
+                                    DRF_VAL(_NVLINK_VBIOS, _PARAM3, _CLOCK_MODE_BLOCK_CODE, vbios_link_entry->nvLinkparam3),
+                                    regval);
+    }
+
+    NVSWITCH_LINK_WR32_LR10(device, link->linkNumber, NVLIPT_LNK,
+                            _NVLIPT_LNK_CTRL_SYSTEM_LINK, _CHANNEL_CTRL, regval);
+
+    // Disable L2 (Bug 3176196)
+    regval = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_AN1_CTRL);
+    regval = FLD_SET_DRF(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_AN1_CTRL, _PWRM_L2_ENABLE, _DISABLE, regval);
+    NVSWITCH_LINK_WR32_LR10(device, link->linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_AN1_CTRL, regval);
+
+    // SW WAR: Bug 3364420
+    nvswitch_apply_recal_settings(device, link);
+
+    return;
+}
+
+void
+nvswitch_load_link_disable_settings_lr10
+(
+    nvswitch_device *device,
+    nvlink_link *link
+)
+{   
+    NvU32 val;
+    NVLINK_CONFIG_DATA_LINKENTRY *vbios_link_entry = NULL;
+    NVSWITCH_BIOS_NVLINK_CONFIG *bios_config;
+
+    bios_config = nvswitch_get_bios_nvlink_config(device);
+    if ((bios_config == NULL) || (bios_config->bit_address == 0))
+    {
+        NVSWITCH_PRINT(device, WARN,
+            "%s: VBIOS NvLink configuration table not found\n",
+            __FUNCTION__);
+    }
+
+    // SW CTRL - clear out LINK_DISABLE on driver load
+    val = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber,
+            NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SW_LINK_MODE_CTRL);
+    val = FLD_SET_DRF(_NVLIPT_LNK, _CTRL_SW_LINK_MODE_CTRL, _LINK_DISABLE,
+                      _ENABLED, val);
+    NVSWITCH_LINK_WR32_LR10(device, link->linkNumber,
+            NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SW_LINK_MODE_CTRL, val);
+
+    //
+    // SYSTEM CTRL
+    // If the SYSTEM_CTRL setting had been overidden by another entity,
+    // it should also be locked, so this write would not take effect.
+    //
+    if (bios_config != NULL)
+    {
+        vbios_link_entry = &bios_config->link_vbios_entry[bios_config->link_base_entry_assigned][link->linkNumber];
+    }
+
+    val = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber,
+            NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_MODE_CTRL);
+
+    if ((vbios_link_entry != NULL) &&
+         (FLD_TEST_DRF(_NVLINK_VBIOS,_PARAM0, _LINK, _DISABLE, vbios_link_entry->nvLinkparam0)))
+    {
+        if (!nvswitch_is_link_in_reset(device, link))
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: link #%d is not in reset, cannot set LINK_DISABLE\n",
+                __FUNCTION__, link->linkNumber);
+            return;
+        }
+        val = FLD_SET_DRF(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_MODE_CTRL, _LINK_DISABLE,
+                          _DISABLED, val);
+        NVSWITCH_LINK_WR32_LR10(device, link->linkNumber,
+                NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_MODE_CTRL, val);
+
+        // Set link to invalid and unregister from corelib
+        device->link[link->linkNumber].valid = NV_FALSE;
+        nvlink_lib_unregister_link(link);
+        nvswitch_destroy_link(link);
+
+        return;
+    }
+    else
+    {
+        val = FLD_SET_DRF(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_MODE_CTRL, _LINK_DISABLE,
+                          _ENABLED, val);
+        NVSWITCH_LINK_WR32_LR10(device, link->linkNumber,
+                NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_MODE_CTRL, val);
+    }
+
+    return;
+}
+
 void 
 nvswitch_reset_persistent_link_hw_state_lr10
 (
@@ -2036,3 +2359,13 @@ nvswitch_apply_recal_settings_lr10
     return;
 }
 
+NvlStatus
+nvswitch_launch_ALI_link_training_lr10
+(
+    nvswitch_device *device,
+    nvlink_link     *link,
+    NvBool           bSync
+)
+{
+    return NVL_ERR_NOT_IMPLEMENTED;
+}

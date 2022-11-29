@@ -264,11 +264,14 @@ scrub_exit:
     {
         void *pMap = NULL;
         NvU32 regId;
+        MEMORY_PROTECTION prot;
 
         NV_ASSERT((evictEnd - evictStart + 1) ==  actualSize);
         status = NV_ERR_NO_MEMORY;
         regId = findRegionID(pPma, evictStart);
         pMap  = pPma->pRegions[regId];
+        prot = pPma->pRegDescriptors[regId]->bProtected ? MEMORY_PROTECTION_PROTECTED :
+                                                          MEMORY_PROTECTION_UNPROTECTED;
 
         if (pMap != NULL)
         {
@@ -279,7 +282,7 @@ scrub_exit:
             // i.e., region evictStart to evictEnd is marked as 'ATTRIB_EVICTING' and will not
             // be returned to OS.
             //
-            status = _pmaEvictContiguous(pPma, pMap, evictStart, evictEnd);
+            status = _pmaEvictContiguous(pPma, pMap, evictStart, evictEnd, prot);
 
             if (status == NV_ERR_NO_MEMORY)
             {
@@ -413,6 +416,7 @@ scrub_exit:
             NvU32 regId;
             NvU64 addrBase, addrLimit;
             void *pMap = NULL;
+            MEMORY_PROTECTION prot;
 
             if (validRegionList[regionIdx] == -1)
             {
@@ -424,11 +428,13 @@ scrub_exit:
 
             addrBase = pPma->pRegDescriptors[regId]->base;
             addrLimit = pPma->pRegDescriptors[regId]->limit;
+            prot = pPma->pRegDescriptors[regId]->bProtected ? MEMORY_PROTECTION_PROTECTED :
+                                                              MEMORY_PROTECTION_UNPROTECTED;
 
             status = _pmaEvictPages(pPma, pMap,
                                     &pPages[i], (NvU32)(allocationCount - i),
                                     &pPages[0], i,
-                                    pageSize, addrBase, addrLimit);
+                                    pageSize, addrBase, addrLimit, prot);
 
             if (status != NV_ERR_NO_MEMORY)
             {

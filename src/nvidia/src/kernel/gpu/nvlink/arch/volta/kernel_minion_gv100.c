@@ -80,6 +80,74 @@ kioctrlMinionConstruct_GV100
                     break;
             }
 
+            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _CACHE_SEEDS, pKernelNvlink->minionControl))
+            {
+                case NV_REG_STR_RM_NVLINK_MINION_CONTROL_CACHE_SEEDS_ENABLE:
+                {
+                    NV_PRINTF(LEVEL_INFO,
+                              "Regkey: Minion seed caching is force enabled\n");
+                    pKernelIoctrl->setProperty(pKernelIoctrl, PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS, NV_TRUE);
+                    break;
+                }
+                case NV_REG_STR_RM_NVLINK_MINION_CONTROL_CACHE_SEEDS_DISABLE:
+                {
+                    NV_PRINTF(LEVEL_INFO,
+                              "Regkey: Minion seed caching is force disabled\n");
+                    pKernelIoctrl->setProperty(pKernelIoctrl, PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS, NV_FALSE);
+                    break;
+                }
+            }
+
+            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _ALI_TRAINING, pKernelNvlink->minionControl))
+            {
+                case NV_REG_STR_RM_NVLINK_MINION_CONTROL_ALI_TRAINING_ENABLE:
+                {
+                    NV_PRINTF(LEVEL_INFO,
+                              "Regkey: ALI training is force enabled\n");
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_FORCE_ALI_TRAINING, NV_TRUE);
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_FORCE_NON_ALI_TRAINING, NV_FALSE);
+                    break;
+                }
+                case NV_REG_STR_RM_NVLINK_MINION_CONTROL_ALI_TRAINING_DISABLE:
+                {
+                    NV_PRINTF(LEVEL_INFO,
+                              "Regkey: non-ALI training is force enabled\n");
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_FORCE_NON_ALI_TRAINING, NV_TRUE);
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_FORCE_ALI_TRAINING, NV_FALSE);
+                    break;
+                }
+                default:
+                {
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_FORCE_NON_ALI_TRAINING, NV_FALSE);
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_FORCE_ALI_TRAINING, NV_FALSE);
+                    break;
+                }
+            }
+
+            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _GFW_BOOT_DISABLE, pKernelNvlink->minionControl))
+            {
+                case NV_REG_STR_RM_NVLINK_MINION_CONTROL_GFW_BOOT_DISABLE_DISABLE:
+                {
+                    NV_PRINTF(LEVEL_INFO,
+                              "Regkey: Minion boot from GFW disabled\n");
+                    pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_GFW_BOOT, NV_FALSE);
+                    break;
+                }
+                default:
+                {
+                    if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_GFW_BOOT))
+                    {
+                       NV_PRINTF(LEVEL_INFO,
+                             "Regkey: Minion boot from GFW enabled by default\n");
+                    }
+                    else
+                    {
+                        NV_PRINTF(LEVEL_INFO,
+                          "Regkey: Minion boot from GFW disabled by default\n");
+                    }
+                    break;
+                }
+            }
         }
 
         // Flush the final minion enable setting

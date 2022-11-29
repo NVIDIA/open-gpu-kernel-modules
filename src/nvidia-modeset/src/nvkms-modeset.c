@@ -97,6 +97,56 @@
 #include "nvkms-modeset-types.h"
 #include "nvkms-modeset-workarea.h"
 #include "nvkms-attributes.h"
+#include "nvkms-headsurface-config.h"
+
+static void
+ClearProposedModeSetHwState(const NVDevEvoRec *pDevEvo,
+                            NVProposedModeSetHwState *pProposed,
+                            const NvBool committed)
+{
+    const NVDispEvoRec *pDispEvo;
+    NvU32 dispIndex;
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+        NvU32 head;
+
+        if (!committed)  {
+            /* Free new allocated RM display IDs for changed heads */
+            for (head = 0; head < pDevEvo->numHeads; head++) {
+                NVProposedModeSetHwStateOneHead *pProposedHead =
+                    &pProposed->disp[dispIndex].head[head];
+
+                if (!pProposedHead->changed ||
+                        (pProposedHead->activeRmId == 0x0)) {
+                    continue;
+                }
+                nvRmFreeDisplayId(pDispEvo, pProposedHead->activeRmId);
+            }
+        }
+
+        for (head = 0; head < pDevEvo->numHeads; head++) {
+            NVProposedModeSetHwStateOneHead *pProposedHead =
+                &pProposed->disp[dispIndex].head[head];
+            nvDPLibFreeModesetState(pProposedHead->pDpLibModesetState);
+        }
+    }
+
+    nvkms_memset(pProposed, 0 , sizeof(*pProposed));
+}
+
+/*
+ * Inherit the previous modeset state as part of this modeset if:
+ * - The requesting client is not the internal NVKMS client (i.e., this is not
+ * a console restore modeset).
+ * - There is no modeset ownership change since the last modeset.
+ */
+static NvBool
+InheritPreviousModesetState(const NVDevEvoRec *pDevEvo,
+                            const struct NvKmsPerOpenDev *pCurrentModesetOpenDev)
+{
+    return (pCurrentModesetOpenDev != pDevEvo->pNvKmsOpenDev) &&
+                !pDevEvo->modesetOwnerChanged;
+}
 
 /*!
  * Get an allowFlipLockGroup value that is not yet used by pProposed.
@@ -171,10 +221,11 @@ static NvU8 GetAvailableAllowFlipLockGroupValue(
  * \return     Return TRUE if the requested mode is valid and pTimings
  *             could be assigned.  Otherwise, return FALSE.
  */
-static NvBool
-GetHwModeTimings(const NVDispEvoRec *pDispEvo,
-                 const struct NvKmsSetModeOneHeadRequest *pRequestHead,
-                 NVHwModeTimingsEvo *pTimings)
+NvBool
+nvGetHwModeTimings(const NVDispEvoRec *pDispEvo,
+                   const struct NvKmsSetModeOneHeadRequest *pRequestHead,
+                   NVHwModeTimingsEvo *pTimings,
+                   NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl)
 {
     NVDpyEvoPtr pDpyEvo;
 
@@ -194,44 +245,27 @@ GetHwModeTimings(const NVDispEvoRec *pDispEvo,
                                     &pRequestHead->viewPortSizeIn,
                                     pRequestHead->viewPortOutSpecified ?
                                               &pRequestHead->viewPortOut : NULL,
-                                    pTimings);
+                                    pTimings,
+                                    pInfoFrameCtrl);
 }
 
-static NvBool ApplySyncptRegistration(
-    NVDevEvoRec *pDevEvo,
-    NvU32 head,
-    const struct NvKmsFlipCommonParams *pParams,
-    NVFlipEvoHwState *pFlipState)
+static NvBool IsPreSyncptSpecified(
+    const NVDevEvoRec *pDevEvo,
+    const NvU32 head,
+    const struct NvKmsFlipCommonParams *pParams)
 {
     NvU32 layer;
 
-    if (!pDevEvo->supportsSyncpts) {
-        return TRUE;
-    }
-
-    /*!
-     * Modeset path should not request pre-syncpt as it will
-     * not progress because this will update all of the Core and
-     * Window method state together, and wait for the Core
-     * completion notifier to signal. If any of the Window
-     * channels is waiting for a semaphore acquire, then this
-     * will stall the Core notifier as well since the Core and
-     * Window channels are interlocked.
-     */
     for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
         if (pParams->layer[layer].syncObjects.specified &&
             pParams->layer[layer].syncObjects.val.useSyncpt &&
             pParams->layer[layer].syncObjects.val.u.syncpts.pre.type !=
                NVKMS_SYNCPT_TYPE_NONE) {
-            nvAssert(!"Failing as pre-syncpt requested in modeset!");
-            return FALSE;
+            return TRUE;
         }
     }
 
-    return nvHandleSyncptRegistration(pDevEvo,
-                                      head,
-                                      pParams,
-                                      pFlipState);
+    return FALSE;
 }
 
 static NvBool
@@ -273,18 +307,20 @@ GetColorSpaceAndColorRange(
      * Choose current colorSpace and colorRange based on the current mode
      * timings and the requested color space and range.
      */
-    nvChooseCurrentColorSpaceAndRangeEvo(&pProposedHead->timings,
+    nvChooseCurrentColorSpaceAndRangeEvo(pProposedHead->timings.pixelDepth,
+                                         pProposedHead->timings.yuv420Mode,
+                                         pProposedHead->tf,
                                          requestedColorSpace,
                                          requestedColorRange,
-                                         &pProposedHead->colorSpace,
-                                         &pProposedHead->colorRange);
+                                         &pProposedHead->attributes.colorSpace,
+                                         &pProposedHead->attributes.colorRange);
     /*
      * When colorspace is specified in modeset request, it should
      * match the proposed colorspace.
      */
     if (pRequestHead->colorSpaceSpecified) {
         NvBool ret = FALSE;
-        switch (pProposedHead->colorSpace) {
+        switch (pProposedHead->attributes.colorSpace) {
             case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
                 ret = (pRequestHead->colorSpace ==
                         NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_RGB);
@@ -310,11 +346,27 @@ GetColorSpaceAndColorRange(
      * match the proposed color range.
      */
     if (pRequestHead->colorRangeSpecified &&
-        (pProposedHead->colorRange != pRequestHead->colorRange)) {
+        (pProposedHead->attributes.colorRange != pRequestHead->colorRange)) {
         return FALSE;
     }
 
     return TRUE;
+}
+
+/*
+ * Return whether headSurface is allowed. But, only honor the requestor's
+ * setting if they are the modeset owner. Otherwise, inherit the cached value
+ * in pDevEvo.
+ */
+NvBool nvGetAllowHeadSurfaceInNvKms(const NVDevEvoRec *pDevEvo,
+                                    const struct NvKmsPerOpenDev *pOpenDev,
+                                    const struct NvKmsSetModeRequest *pRequest)
+{
+    if (pOpenDev == pDevEvo->modesetOwner || pOpenDev == pDevEvo->pNvKmsOpenDev) {
+        return pRequest->allowHeadSurfaceInNvKms;
+    }
+
+    return pDevEvo->allowHeadSurfaceInNvKms;
 }
 
 /*!
@@ -343,8 +395,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                              const struct NvKmsPerOpenDev *pOpenDev,
                              const struct NvKmsSetModeRequest *pRequest,
                              struct NvKmsSetModeReply *pReply,
-                             NVProposedModeSetHwState *pProposed,
-                             NvBool modesetOwnerChanged)
+                             NVProposedModeSetHwState *pProposed)
 {
     NvU32 sd;
     NVDispEvoPtr pDispEvo;
@@ -360,6 +411,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
             const NVDispHeadStateEvoRec *pHeadState;
             NVProposedModeSetHwStateOneHead *pProposedHead =
                 &pProposed->disp[sd].head[head];
+            const NvU32 apiHead = nvHardwareHeadToApiHead(head);
 
             /*
              * Case of invalid hardware head is handled inside
@@ -375,27 +427,29 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
             pHeadState = &pDispEvo->headState[head];
 
             pProposedHead->timings = pHeadState->timings;
-            pProposedHead->dpyIdList = pHeadState->activeDpys;
+            pProposedHead->dpyIdList =
+                pDispEvo->apiHeadState[apiHead].activeDpys;
             pProposedHead->pConnectorEvo = pHeadState->pConnectorEvo;
             pProposedHead->activeRmId = pHeadState->activeRmId;
             pProposedHead->allowFlipLockGroup = pHeadState->allowFlipLockGroup;
             pProposedHead->modeValidationParams =
                 pHeadState->modeValidationParams;
-            pProposedHead->colorSpace = pHeadState->attributes.colorSpace;
-            pProposedHead->colorRange = pHeadState->attributes.colorRange;
+            pProposedHead->attributes =
+                pDispEvo->apiHeadState[apiHead].attributes;
             pProposedHead->changed = FALSE;
-            pProposedHead->hs10bpcHint = pHeadState->hs10bpcHint;
+            pProposedHead->hs10bpcHint =
+                pDispEvo->apiHeadState[apiHead].hs10bpcHint;
             pProposedHead->audio = pHeadState->audio;
+            pProposedHead->infoFrame =
+                pDispEvo->apiHeadState[apiHead].infoFrame;
+            pProposedHead->tf = pHeadState->tf;
         }
     }
 
     /* Update pProposed with the requested changes from the client. */
 
-    if (pOpenDev == pDevEvo->modesetOwner || pOpenDev == pDevEvo->pNvKmsOpenDev) {
-        pProposed->allowHeadSurfaceInNvKms = pRequest->allowHeadSurfaceInNvKms;
-    } else {
-        pProposed->allowHeadSurfaceInNvKms = pDevEvo->allowHeadSurfaceInNvKms;
-    }
+    pProposed->allowHeadSurfaceInNvKms =
+        nvGetAllowHeadSurfaceInNvKms(pDevEvo, pOpenDev, pRequest);
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
         const struct NvKmsSetModeOneDispRequest *pRequestDisp =
@@ -404,7 +458,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
         NvU32 head;
 
         if ((pRequest->requestedDispsBitMask & (1 << sd)) == 0) {
-            if (modesetOwnerChanged) {
+            if (!InheritPreviousModesetState(pDevEvo, pOpenDev)) {
                 shutDownAllHeads = TRUE;
             } else {
                 continue;
@@ -427,7 +481,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
 
             if ((pRequestDisp->requestedHeadsBitMask & (1 << head)) == 0 ||
                 shutDownAllHeads) {
-                if (modesetOwnerChanged) {
+                if (!InheritPreviousModesetState(pDevEvo, pOpenDev)) {
                     /*
                      * If the modeset owner is changing, implicitly shut down
                      * other heads not included in requestedHeadsBitMask.
@@ -496,12 +550,15 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
              * head so that if additional heads fail, we can report
              * more complete failure information to the client.
              */
-            if (!GetHwModeTimings(pDispEvo, pRequestHead, &pProposedHead->timings)) {
+            if (!nvGetHwModeTimings(pDispEvo, pRequestHead,
+                    &pProposedHead->timings, &pProposedHead->infoFrame.ctrl)) {
                 pReply->disp[sd].head[head].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
                 ret = FALSE;
                 continue;
             }
+            pProposedHead->infoFrame.hdTimings =
+                nvEvoIsHDQualityVideoTimings(&pProposedHead->timings);
 
             pProposedHead->allowFlipLockGroup = 0;
             pProposedHead->modeValidationParams =
@@ -518,13 +575,38 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                 continue;
             }
 
+            pProposedHead->attributes.digitalSignal =
+                nvGetDefaultDpyAttributeDigitalSignalValue(pProposedHead->pConnectorEvo);
+            if (pProposedHead->timings.hdmiFrlConfig.frlRate !=
+                    HDMI_FRL_DATA_RATE_NONE) {
+                nvAssert(pProposedHead->attributes.digitalSignal ==
+                            NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL_TMDS);
+                pProposedHead->attributes.digitalSignal =
+                    NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL_HDMI_FRL;
+            }
+
+            {
+                NVDpyEvoRec *pDpyEvo =
+                    nvGetOneArbitraryDpyEvo(pProposedHead->dpyIdList,
+                                            pDispEvo);
+
+                pProposedHead->attributes.dvc =
+                    pDpyEvo->currentAttributes.dvc;
+
+                /* Image sharpening is available when scaling is enabled. */
+                pProposedHead->attributes.imageSharpening.available =
+                    nvIsImageSharpeningAvailable(&pProposedHead->timings.viewPort);
+                pProposedHead->attributes.imageSharpening.value =
+                    pDpyEvo->currentAttributes.imageSharpening.value;
+            }
+
             /*
-             * modesetOwnerChanged implies that there was a modeset
-             * ownership change since the last modeset. If input/output lut not
-             * specified by the new modeset owner then keep them disabled by
-             * default.
+             * If InheritPreviousModesetState() returns FALSE, it implies that
+             * there was a modeset ownership change since the last modeset. If
+             * input/output lut not specified by the new modeset owner then
+             * keep them disabled by default.
              */
-            if (modesetOwnerChanged) {
+            if (!InheritPreviousModesetState(pDevEvo, pOpenDev)) {
                 pProposedHead->lut = pRequestHead->lut;
 
                 if (!pRequestHead->lut.input.specified) {
@@ -571,11 +653,20 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                 }
             }
 
-            if (!ApplySyncptRegistration(
+            /*!
+             * Modeset path should not request pre-syncpt as it will
+             * not progress because this will update all of the Core and
+             * Window method state together, and wait for the Core
+             * completion notifier to signal. If any of the Window
+             * channels is waiting for a semaphore acquire, then this
+             * will stall the Core notifier as well since the Core and
+             * Window channels are interlocked.
+             */
+            if (pDevEvo->supportsSyncpts &&
+                IsPreSyncptSpecified(
                     pDevEvo,
                     head,
-                    &pRequest->disp[sd].head[head].flip,
-                    pFlip)) {
+                    &pRequest->disp[sd].head[head].flip)) {
                 pReply->disp[sd].head[head].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_FLIP;
                 ret = FALSE;
@@ -587,8 +678,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                                         head,
                                         &pRequestHead->flip,
                                         pFlip,
-                                        FALSE /* allowVrr */,
-                                        &pProposedHead->timings.viewPort.possibleUsage)) {
+                                        FALSE /* allowVrr */)) {
                 pReply->disp[sd].head[head].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_FLIP;
                 ret = FALSE;
@@ -665,6 +755,11 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                 pProposedHead->allowFlipLockGroup = allowFlipLockGroup;
             }
         }
+    }
+
+    if (ret) {
+    } else {
+        ClearProposedModeSetHwState(pDevEvo, pProposed, FALSE /* committed */);
     }
 
     return ret;
@@ -778,9 +873,8 @@ ValidateProposedModeSetHwStateOneDispImp(NVDispEvoPtr pDispEvo,
                     &pDevEvo->gpus[0].headState[head].preallocatedUsage;
             }
 
-            guaranteedAndProposed[head] = nvUnionUsageBounds(
-                &pProposedHead->timings.viewPort.guaranteedUsage,
-                pProposedUsage);
+            nvUnionUsageBounds(&pProposedHead->timings.viewPort.guaranteedUsage,
+                               pProposedUsage, &guaranteedAndProposed[head]);
             timingsParams[head].pUsage = &guaranteedAndProposed[head];
         }
 
@@ -833,7 +927,8 @@ static NvBool DowngradeDpPixelDepth(
         if ((pProposedHead->pConnectorEvo == pConnectorEvo) &&
             nvDowngradeHwModeTimingsDpPixelDepthEvo(
                 pTimings,
-                pProposedHead->colorSpace)) {
+                pProposedHead->attributes.colorSpace,
+                pProposedHead->attributes.colorRange)) {
                 return TRUE;
         }
     }
@@ -879,7 +974,7 @@ tryAgain:
                                            head,
                                            pProposedHead->activeRmId,
                                            pProposedHead->dpyIdList,
-                                           pProposedHead->colorSpace,
+                                           pProposedHead->attributes.colorSpace,
                                            &pProposedHead->modeValidationParams,
                                            pTimings);
 
@@ -921,7 +1016,7 @@ tryAgain:
                                           head,
                                           pProposedHead->activeRmId,
                                           pProposedHead->dpyIdList,
-                                          pProposedHead->colorSpace,
+                                          pProposedHead->attributes.colorSpace,
                                           &pProposedHead->timings);
             if (pProposedHead->pDpLibModesetState == NULL) {
                 return FALSE;
@@ -932,7 +1027,35 @@ tryAgain:
     return bResult;
 }
 
+static void VBlankCallbackDeferredWork(void *dataPtr, NvU32 data32)
+{
+    NVVBlankCallbackPtr pVBlankCallbackTmp = NULL;
+    NVVBlankCallbackPtr pVBlankCallback = NULL;
+    NVDispEvoPtr pDispEvo = dataPtr;
+    NvU32 head = data32;
 
+    if (!nvHeadIsActive(pDispEvo, head)) {
+        return;
+    }
+
+    nvListForEachEntry_safe(pVBlankCallback,
+                            pVBlankCallbackTmp,
+                            &pDispEvo->headState[head].vblankCallbackList,
+                            vblankCallbackListEntry) {
+        pVBlankCallback->pCallback(pDispEvo, head, pVBlankCallback);
+    }
+}
+
+static void VBlankCallback(void *pParam1, void *pParam2)
+{
+    const NvU32 head = (NvU32)(NvUPtr)pParam2;
+
+    (void) nvkms_alloc_timer_with_ref_ptr(
+               VBlankCallbackDeferredWork,
+               pParam1, /* ref_ptr to pDispEvo */
+               head,    /* dataU32 */
+               0);      /* timeout: schedule the work immediately */
+}
 
 /*!
  * Validate the proposed configuration on the specified disp.
@@ -1002,31 +1125,6 @@ ValidateProposedModeSetHwStateOneDisp(
     }
 
     /*
-     * Check that the requested flipping state is valid.
-     */
-
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-
-        if (!pProposedDisp->head[head].changed) {
-            continue;
-        }
-
-        if (nvDpyIdListIsEmpty(pProposedDisp->head[head].dpyIdList)) {
-            continue;
-        }
-
-        if (!nvValidateFlipEvoHwState(
-                pDevEvo,
-                head,
-                &pProposedDisp->head[head].timings,
-                &pProposed->sd[pDispEvo->displayOwner].head[head].flip)) {
-            pReplyDisp->head[head].status =
-                NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_FLIP;
-            return FALSE;
-        }
-    }
-
-    /*
      * Check ViewPortIn dimensions and ensure valid h/vTaps can be assigned.
      */
     for (head = 0; head < pDevEvo->numHeads; head++) {
@@ -1054,6 +1152,28 @@ ValidateProposedModeSetHwStateOneDisp(
     }
 
     /*
+     * The pixelDepth value, which required to choose the dithering
+     * configuration, gets finalized as part of the DisplayPort bandwidth
+     * validation.
+     */
+    for (head = 0; head < pDevEvo->numHeads; head++) {
+        NVProposedModeSetHwStateOneHead *pProposedHead =
+            &pProposedDisp->head[head];
+        NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedHead->dpyIdList,
+                                    pDispEvo);
+
+        if (!pProposedHead->changed || (pDpyEvo == NULL)) {
+            continue;
+        }
+
+        nvChooseDitheringEvo(pDpyEvo->pConnectorEvo,
+                             pProposedHead->timings.pixelDepth,
+                             &pDpyEvo->requestedDithering,
+                             &pProposedHead->attributes.dithering);
+    }
+
+    /*
      * Check that the configuration passes IMP.
      */
     if (!ValidateProposedModeSetHwStateOneDispImp(pDispEvo, pProposed,
@@ -1061,6 +1181,51 @@ ValidateProposedModeSetHwStateOneDisp(
         pReplyDisp->status =
             NVKMS_SET_MODE_ONE_DISP_STATUS_FAILED_EXTENDED_GPU_CAPABILITIES_CHECK;
         return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*!
+ * Validate the proposed flip configuration on the specified sub device.
+ *
+ * \param[in]   pDispEvo       The disp to which pProposedDisp is to be applied.
+ * \param[in]   pProposed      The requested configuration.
+ * \param[out]  pProposedSd    The requested flip configuration.
+ *
+ * \return      If pProposedDisp is valid, return TRUE.  Otherwise, set the
+ *              appropriate status fields in pReplyDisp to non-SUCCESS,
+ *              and return FALSE.
+ */
+static NvBool
+ValidateProposedFlipHwStateOneSubDev(
+    const NVDevEvoRec *pDevEvo,
+    const NVProposedModeSetHwStateOneDisp *pProposedDisp,
+    NVProposedModeSetHwStateOneSubDev *pProposedSd,
+    struct NvKmsSetModeOneDispReply *pReplyDisp)
+{
+    NvU32 head;
+
+    for (head = 0; head < pDevEvo->numHeads; head++) {
+        if (!pProposedDisp->head[head].changed ||
+                nvDpyIdListIsEmpty(pProposedDisp->head[head].dpyIdList)) {
+            continue;
+        }
+
+        nvOverrideScalingUsageBounds(
+            pDevEvo,
+            head,
+            &pProposedSd->head[head].flip,
+            &pProposedDisp->head[head].timings.viewPort.possibleUsage);
+
+        if (!nvValidateFlipEvoHwState(pDevEvo,
+                                      head,
+                                      &pProposedDisp->head[head].timings,
+                                      &pProposedSd->head[head].flip)) {
+            pReplyDisp->head[head].status =
+                NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_FLIP;
+            return FALSE;
+        }
     }
 
     return TRUE;
@@ -1103,6 +1268,8 @@ ValidateProposedModeSetHwState(NVDevEvoPtr pDevEvo,
 
         NVProposedModeSetHwStateOneDisp *pProposedDisp =
             &pActual->disp[dispIndex];
+        NVProposedModeSetHwStateOneSubDev *pProposedSd =
+            &pActual->sd[pDispEvo->displayOwner];
         struct NvKmsSetModeOneDispReply *pReplyDisp;
 
         pReplyDisp = &pReply->disp[dispIndex];
@@ -1112,6 +1279,13 @@ ValidateProposedModeSetHwState(NVDevEvoPtr pDevEvo,
                                                    pProposedDisp,
                                                    pReplyDisp,
                                                    pWorkArea)) {
+            goto done;
+        }
+
+        if (!ValidateProposedFlipHwStateOneSubDev(pDevEvo,
+                                                  pProposedDisp,
+                                                  pProposedSd,
+                                                  pReplyDisp)) {
             goto done;
         }
     }
@@ -1343,6 +1517,8 @@ ApplyProposedModeSetHwStateOneHeadShutDown(
     NVDispHeadStateEvoPtr pHeadState;
     NVDpyEvoPtr pDpyEvo;
     const NvU32 sd = pDispEvo->displayOwner;
+    NvU32 apiHead = nvHardwareHeadToApiHead(head);
+    NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
 
     /*
      * If nothing changed about this head's configuration, then we
@@ -1365,7 +1541,7 @@ ApplyProposedModeSetHwStateOneHeadShutDown(
     }
 
     pHeadState = &pDispEvo->headState[head];
-    pDpyEvo = nvGetOneArbitraryDpyEvo(pHeadState->activeDpys, pDispEvo);
+    pDpyEvo = nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
 
     /*
      * Identify and disable any active core RG sync objects.
@@ -1392,9 +1568,10 @@ ApplyProposedModeSetHwStateOneHeadShutDown(
 
     pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList =
         nvAddDpyIdListToDpyIdList(
-            pHeadState->activeDpys,
+            pApiHeadState->activeDpys,
             pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList);
-    pHeadState->activeDpys = nvEmptyDpyIdList();
+    pApiHeadState->activeDpys = nvEmptyDpyIdList();
+    nvkms_memset(&pApiHeadState->timings, 0, sizeof(pApiHeadState->timings));
     pHeadState->pConnectorEvo = NULL;
 
     pHeadState->bypassComposition = FALSE;
@@ -1415,7 +1592,10 @@ ApplyProposedModeSetHwStateOneHeadShutDown(
     nvkms_memset(&pDevEvo->gpus[sd].headState[head], 0,
                  sizeof(pDevEvo->gpus[sd].headState[head]));
 
-    pDpyEvo->head = NV_INVALID_HEAD;
+    pDevEvo->gpus[sd].headState[head].cursor.cursorCompParams =
+        nvDefaultCursorCompositionParams(pDevEvo);
+
+    pDpyEvo->apiHead = NV_INVALID_HEAD;
 }
 
 static void
@@ -1507,6 +1687,8 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     NVDispHeadStateEvoPtr pHeadState;
     NVDpyEvoPtr pDpyEvo =
         nvGetOneArbitraryDpyEvo(pProposedHead->dpyIdList, pDispEvo);
+    NvU32 apiHead = nvHardwareHeadToApiHead(head);
+    NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
 
     /*
      * If nothing changed about this head's configuration, then there
@@ -1532,7 +1714,7 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
         return;
     }
 
-    pDpyEvo->head = head;
+    pDpyEvo->apiHead = apiHead;
 
     AssignSor(pWorkArea, pProposedHead->pConnectorEvo);
 
@@ -1548,10 +1730,11 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
      * Cache the list of active pDpys for this head, as well as the
      * mode timings.
      */
-    pHeadState->activeDpys = pProposedHead->dpyIdList;
+    pApiHeadState->activeDpys = pProposedHead->dpyIdList;
+    pApiHeadState->timings = pProposedHead->timings;
     pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList =
         nvAddDpyIdListToDpyIdList(
-            pHeadState->activeDpys,
+            pApiHeadState->activeDpys,
             pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList);
 
     nvAssert(pDpyEvo->pConnectorEvo == pProposedHead->pConnectorEvo);
@@ -1560,6 +1743,7 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     pHeadState->timings = pProposedHead->timings;
 
     pHeadState->audio = pProposedHead->audio;
+    pApiHeadState->infoFrame = pProposedHead->infoFrame;
 
     AssignProposedUsageOneHead(pDispEvo->pDevEvo, pProposed, head);
 
@@ -1573,19 +1757,19 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
 
     nvEvoSetTimings(pDispEvo, head, updateState);
 
-    // Set the dither type & mode
-    nvSetDitheringEvo(pDispEvo, head,
-                      pDpyEvo->requestedDithering.state,
-                      pDpyEvo->requestedDithering.depth,
-                      pDpyEvo->requestedDithering.mode,
+    nvSetDitheringEvo(pDispEvo,
+                      head,
+                      &pProposedHead->attributes.dithering,
                       updateState);
 
     nvEvoHeadSetControlOR(pDispEvo, head, updateState);
 
     /* Update hardware's current colorSpace and colorRange */
-    pHeadState->attributes.colorSpace = pProposedHead->colorSpace;
-    pHeadState->attributes.colorRange = pProposedHead->colorRange;
-    nvUpdateCurrentHardwareColorSpaceAndRangeEvo(pDispEvo, head, updateState);
+    nvUpdateCurrentHardwareColorSpaceAndRangeEvo(pDispEvo,
+                                                 head,
+                                                 pProposedHead->attributes.colorSpace,
+                                                 pProposedHead->attributes.colorRange,
+                                                 updateState);
 
     nvEvoAttachConnector(pProposedHead->pConnectorEvo,
                          head,
@@ -1597,18 +1781,15 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     nvSetImageSharpeningEvo(
         pDispEvo,
         head,
-        pDpyEvo->currentAttributes.imageSharpening.value,
+        pProposedHead->attributes.imageSharpening.value,
         updateState);
 
 
     nvSetDVCEvo(pDispEvo, head,
-                pDpyEvo->currentAttributes.dvc,
+                pProposedHead->attributes.dvc,
                 updateState);
 
-    pHeadState->attributes.digitalSignal =
-        nvGetDefaultDpyAttributeDigitalSignalValue(pDpyEvo->pConnectorEvo);
 
-    /* If required, nvHdmiFrlSetConfig() overrides attributes.digitalSignal */
     nvHdmiFrlSetConfig(pDispEvo, head);
 
     /*
@@ -1617,6 +1798,8 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
      */
     ReenableActiveCoreRGSyncObjects(pDispEvo->pDevEvo, pHeadState, head,
                                     updateState);
+
+    pApiHeadState->attributes = pProposedHead->attributes;
 }
 
 
@@ -1638,6 +1821,9 @@ ApplyProposedModeSetHwStateOneHeadPostUpdate(NVDispEvoPtr pDispEvo,
                                              *pProposedHead)
 {
     NVDispHeadStateEvoRec *pHeadState;
+    NVDpyEvoRec *pDpyEvo;
+    NvU32 apiHead = nvHardwareHeadToApiHead(head);
+    NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
 
     /*
      * If nothing changed about this head's configuration, then there
@@ -1657,11 +1843,15 @@ ApplyProposedModeSetHwStateOneHeadPostUpdate(NVDispEvoPtr pDispEvo,
      * if this head is left alone in the next NvKmsSetModeRequest.
      */
     pHeadState = &pDispEvo->headState[head];
+
+    pDpyEvo = nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
+    nvAssert(pDpyEvo != NULL);
+
     pHeadState->allowFlipLockGroup = pProposedHead->allowFlipLockGroup;
     pHeadState->modeValidationParams = pProposedHead->modeValidationParams;
-    pHeadState->hs10bpcHint = pProposedHead->hs10bpcHint;
+    pApiHeadState->hs10bpcHint = pProposedHead->hs10bpcHint;
 
-    nvUpdateInfoFrames(pDispEvo, head);
+    nvUpdateInfoFrames(pDpyEvo);
 
     /* Perform 3D vision authentication */
     nv3DVisionAuthenticationEvo(pDispEvo, head);
@@ -2279,6 +2469,7 @@ AssignReplySuccess(const NVDevEvoRec *pDevEvo,
         }
 
         for (head = 0; head < pDevEvo->numHeads; head++) {
+            const NvU32 apiHead = nvHardwareHeadToApiHead(head);
             const struct NvKmsSetModeOneHeadRequest *pRequestHead =
                 &pRequestDisp->head[head];
             struct NvKmsSetModeOneHeadReply *pReplyHead =
@@ -2299,7 +2490,7 @@ AssignReplySuccess(const NVDevEvoRec *pDevEvo,
                 pReplyHead->possibleUsage = pHeadState->timings.viewPort.possibleUsage;
                 pReplyHead->guaranteedUsage = pHeadState->timings.viewPort.guaranteedUsage;
                 pReplyHead->usingHeadSurface =
-                    (pDispEvo->pHsChannel[head] != NULL);
+                    (pDispEvo->pHsChannel[apiHead] != NULL);
                 pReplyHead->vrrEnabled =
                     (pDispEvo->headState[head].timings.vrr.type !=
                      NVKMS_DPY_VRR_TYPE_NONE);
@@ -2370,18 +2561,95 @@ static NvBool IdleAllSatelliteChannels(NVDevEvoRec *pDevEvo)
 }
 
 /*!
- * Helper function to validate the proposed mode
+ * Helper function to assign and validate the proposed mode
  */
 static NvBool
-IsProposedModeSetValid(NVDevEvoPtr pDevEvo,
-                       struct NvKmsSetModeReply *pReply,
-                       const struct NvKmsPerOpenDev *pOpenDev,
-                       NVProposedModeSetHwState *pProposed,
-                       const struct NvKmsSetModeRequest *pRequest,
-                       NVModeSetWorkArea *pWorkArea)
+AssignAndValidateProposedModeSet(NVDevEvoPtr pDevEvo,
+                                 struct NvKmsPerOpenDev *pOpenDev,
+                                 const struct NvKmsSetModeRequest *pRequest,
+                                 struct NvKmsSetModeReply *pReply,
+                                 NVProposedModeSetHwState *pProposed,
+                                 NVModeSetWorkArea *pWorkArea)
 {
-    return ValidateProposedModeSetHwState(pDevEvo, pProposed, pReply,
-                                          pWorkArea);
+    NvBool ret = FALSE;
+    struct NvKmsSetModeRequest *pPatchedRequest = nvPreallocGet(pDevEvo,
+        PREALLOC_TYPE_HS_PATCHED_MODESET_REQUEST,
+        sizeof(*pPatchedRequest));
+
+    /* clear pPatchedRequest */
+    nvkms_memset(pPatchedRequest, 0, sizeof(*pPatchedRequest));
+
+    if (!nvHsConfigInitModeset(pDevEvo, pRequest, pReply, pOpenDev,
+                               &pWorkArea->hsConfig)) {
+        goto done;
+    }
+
+tryHsAgain:
+    {
+        NvU32 patchedApiHeadsMask[NVKMS_MAX_SUBDEVICES] = { };
+
+        if (!nvHsConfigAllocResources(pDevEvo, &pWorkArea->hsConfig)) {
+            goto done;
+        }
+
+        /* copy pRequest -> pPatchedRequest */
+        *pPatchedRequest = *pRequest;
+
+        /* modify pPatchedRequest for a headsurface config */
+        if (!nvHsConfigPatchSetModeRequest(pDevEvo, &pWorkArea->hsConfig,
+                                           pOpenDev, pPatchedRequest,
+                                           patchedApiHeadsMask)) {
+
+            nvHsConfigFreeResources(pDevEvo, &pWorkArea->hsConfig);
+
+            goto done;
+        }
+
+        /* assign pProposed from pPatchedRequest */
+        if (!AssignProposedModeSetHwState(pDevEvo, pOpenDev, pPatchedRequest,
+                                          pReply, pProposed)) {
+
+            nvHsConfigClearPatchedSetModeRequest(pDevEvo,
+                                                 pOpenDev,
+                                                 pPatchedRequest,
+                                                 patchedApiHeadsMask);
+            nvHsConfigFreeResources(pDevEvo, &pWorkArea->hsConfig);
+
+            goto done;
+        }
+
+        /* validate pProposed */
+        if (!ValidateProposedModeSetHwState(pDevEvo, pProposed, pReply,
+                                            pWorkArea)) {
+
+            ClearProposedModeSetHwState(pDevEvo, pProposed, FALSE);
+            nvHsConfigClearPatchedSetModeRequest(pDevEvo,
+                                                 pOpenDev,
+                                                 pPatchedRequest,
+                                                 patchedApiHeadsMask);
+            nvHsConfigFreeResources(pDevEvo, &pWorkArea->hsConfig);
+
+            /*
+             * If the pProposed assigned from the patched modeset request
+             * failed validation, downgrade the headSurface configuration and
+             * try again.
+             */
+            if (nvHsConfigDowngrade(pDevEvo, pRequest, &pWorkArea->hsConfig)) {
+                goto tryHsAgain;
+            }
+            goto done;
+        }
+
+        nvHsConfigClearPatchedSetModeRequest(pDevEvo, pOpenDev, pPatchedRequest,
+                                             patchedApiHeadsMask);
+        ret = TRUE;
+    }
+
+done:
+    nvPreallocRelease(pDevEvo,
+        PREALLOC_TYPE_HS_PATCHED_MODESET_REQUEST);
+
+    return ret;
 }
 
 /*!
@@ -2408,7 +2676,7 @@ IsProposedModeSetValid(NVDevEvoPtr pDevEvo,
  *                 have been changed.
  */
 NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
-                        const struct NvKmsPerOpenDev *pOpenDev,
+                        struct NvKmsPerOpenDev *pOpenDev,
                         const struct NvKmsSetModeRequest *pRequest,
                         struct NvKmsSetModeReply *pReply,
                         NvBool bypassComposition,
@@ -2422,19 +2690,7 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
     NVDispEvoPtr pDispEvo;
     NvU32 dispNeedsEarlyUpdate;
     NvBool updateCoreFirst = FALSE;
-
-    /*
-     * We should shutdown unused heads and do not inherit the previous modeset
-     * state as part of this modeset if:
-     * - The requesting client is the internal NVKMS client (i.e.,
-     *   this is a console restore modeset), or
-     * - 'modesetOwnerChanged' is recorded in the device;
-     *   i.e., there was a modeset ownership change since the last
-     *   modeset.
-     */
-    const NvBool modesetOwnerChanged =
-        (pOpenDev == pDevEvo->pNvKmsOpenDev) ? TRUE :
-        pDevEvo->modesetOwnerChanged;
+    NvBool committed = FALSE;
 
     NVModeSetWorkArea *pWorkArea =
         nvPreallocGet(pDevEvo, PREALLOC_TYPE_MODE_SET_WORK_AREA,
@@ -2456,14 +2712,8 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
         goto done;
     }
 
-    if (!AssignProposedModeSetHwState(pDevEvo, pOpenDev,
-                                      pRequest, pReply, pProposed,
-                                      modesetOwnerChanged)) {
-        goto done;
-    }
-
-    if (!IsProposedModeSetValid(pDevEvo, pReply, pOpenDev, pProposed,
-                                pRequest, pWorkArea)) {
+    if (!AssignAndValidateProposedModeSet(pDevEvo, pOpenDev, pRequest, pReply,
+                                          pProposed, pWorkArea)) {
         goto done;
     }
 
@@ -2487,7 +2737,7 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
     /*
      * Disable stereo pin during console restore or modeset owner changes.
      */
-    if (modesetOwnerChanged) {
+    if (!InheritPreviousModesetState(pDevEvo, pOpenDev)) {
         NvU32 sd;
         FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
             NvU32 head;
@@ -2499,6 +2749,14 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
             }
         }
     }
+
+    /*
+     * Tear down any existing headSurface config, restoring the pre-headSurface
+     * config.  This must be done before fliplock is potentially re-enabled
+     * during nvEvoLockStatePostModeset below.
+     */
+
+    nvHsConfigStop(pDevEvo, &pWorkArea->hsConfig);
 
     nvEvoCancelPostFlipIMPTimer(pDevEvo);
 
@@ -2554,23 +2812,19 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
 
     nvEvoLockStatePostModeset(pDevEvo, doRasterLock);
 
+    /*
+     * The modeset was successful: if headSurface was used as part of this
+     * modeset, record that in the pDevEvo.
+     */
+    nvHsConfigStart(pDevEvo, &pWorkArea->hsConfig);
+
     BeginEndModeset(pDevEvo, pProposed, END_MODESET);
 
     AssignReplySuccess(pDevEvo, pRequest, pReply, pWorkArea);
 
     pDevEvo->skipConsoleRestore = FALSE;
 
-    /*
-     * If this was a pNvKmsOpenDev-initiated modeset, force the next modeset to
-     * shut down all unused heads and not to inherit any state from this
-     * modeset. That will prevent a regular client from inheriting
-     * pNvKmsOpenDev modeset state.
-     */
-    pDevEvo->modesetOwnerChanged =
-        (pOpenDev == pDevEvo->pNvKmsOpenDev) ? TRUE : FALSE;
-
-    /* fall through */
-done:
+    pDevEvo->modesetOwnerChanged = FALSE;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
         NvU32 head;
@@ -2579,50 +2833,140 @@ done:
          * In case of successful commit, update current attribute values and
          * free old display IDs.
          */
-        if (pRequest->commit && ret) {
-            NVDpyEvoRec *pDpyEvo;
+        NVDpyEvoRec *pDpyEvo;
 
-            FOR_ALL_EVO_DPYS(pDpyEvo,
-                             pWorkArea->sd[dispIndex].changedDpyIdList,
-                             pDispEvo) {
-                nvDpyUpdateCurrentAttributes(pDpyEvo);
-            }
-
-            for (head = 0; head < pDevEvo->numHeads; head++) {
-                if (pWorkArea->sd[dispIndex].head[head].oldActiveRmId != 0x0) {
-                    nvRmFreeDisplayId(
-                        pDispEvo,
-                        pWorkArea->sd[dispIndex].head[head].oldActiveRmId);
-                }
-            }
-        } else {
-            /* Otherwise, free new allocated RM display IDs for changed heads */
-            for (head = 0; head < pDevEvo->numHeads; head++) {
-                NVProposedModeSetHwStateOneHead *pProposedHead =
-                    &pProposed->disp[dispIndex].head[head];
-
-                if (!pProposedHead->changed || pProposedHead->activeRmId == 0x0) {
-                    continue;
-                }
-                nvRmFreeDisplayId(pDispEvo, pProposedHead->activeRmId);
-            }
+        FOR_ALL_EVO_DPYS(pDpyEvo,
+                         pWorkArea->sd[dispIndex].changedDpyIdList,
+                         pDispEvo) {
+            nvDpyUpdateCurrentAttributes(pDpyEvo);
         }
 
         for (head = 0; head < pDevEvo->numHeads; head++) {
-            NVProposedModeSetHwStateOneHead *pProposedHead =
-                &pProposed->disp[dispIndex].head[head];
-            nvDPLibFreeModesetState(pProposedHead->pDpLibModesetState);
+            if (pWorkArea->sd[dispIndex].head[head].oldActiveRmId != 0x0) {
+                nvRmFreeDisplayId(
+                    pDispEvo,
+                    pWorkArea->sd[dispIndex].head[head].oldActiveRmId);
+            }
         }
     }
+
+    committed = TRUE;
+
+    /* fall through */
+done:
+    ClearProposedModeSetHwState(pDevEvo, pProposed, committed);
 
     /* If all heads are shut down, allow GC6. */
     if (nvAllHeadsInactive(pDevEvo)) {
         nvRmSetGc6Allowed(pDevEvo, TRUE);
     }
 
+    /*
+     * nvHsConfigFreeResources() frees any headSurface resources no longer
+     * needed.  On a successful modeset, nvHsConfigApply() will move resources
+     * from the hsConfig to the pDevEvo, and nvHsConfigFreeResources() will be a
+     * noop.
+     */
+    nvHsConfigFreeResources(pDevEvo, &pWorkArea->hsConfig);
+
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_MODE_SET_WORK_AREA);
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_PROPOSED_MODESET_HW_STATE);
     return ret;
+}
+
+/*!
+ * Register a callback to activate when vblank is reached on a given head.
+ *
+ * \param[in,out]  pDispEvo  The display engine to register the callback on.
+ * \param[in]      head      The head to register the callback on.
+ * \param[in]      pCallback The function to call when vblank is reached on the
+ *                           provided pDispEvo+head combination.
+ * \param[in]      pUserData A pointer to caller-provided custom data.
+ *
+ * \return         Returns a pointer to a NVVBlankCallbackRec structure if the
+ *                 registration was successful.  Otherwise, return NULL.
+ */
+NVVBlankCallbackPtr nvRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                             NvU32 head,
+                                             NVVBlankCallbackProc pCallback,
+                                             void *pUserData)
+{
+    NVVBlankCallbackPtr pVBlankCallback = NULL;
+
+    pVBlankCallback = nvCalloc(1, sizeof(*pVBlankCallback));
+    if (pVBlankCallback == NULL) {
+        return NULL;
+    }
+
+    pVBlankCallback->pCallback = pCallback;
+    pVBlankCallback->pUserData = pUserData;
+
+    nvListAppend(&pVBlankCallback->vblankCallbackListEntry,
+                 &pDispEvo->headState[head].vblankCallbackList);
+
+    // If this is the first entry in the list, register the vblank callback
+    if (pDispEvo->headState[head].rmVBlankCallbackHandle == 0) {
+
+        pDispEvo->headState[head].rmVBlankCallbackHandle =
+            nvRmAddVBlankCallback(pDispEvo,
+                                  head,
+                                  VBlankCallback);
+    }
+    return pVBlankCallback;
+}
+
+NVVBlankCallbackPtr
+nvApiHeadRegisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                const NvU32 apiHead,
+                                NVVBlankCallbackProc pCallback,
+                                void *pUserData)
+{
+    /*
+     * All the hardware heads mapped on the input api head should be
+     * rasterlocked, and should trigger vblank callback exactly at same time;
+     * therefore it is sufficient to register vblank callback only with the
+     * primary hardware head.
+     */
+    const NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
+    if (head == NV_INVALID_HEAD) {
+        return NULL;
+    }
+    return nvRegisterVBlankCallback(pDispEvo, head, pCallback, pUserData);
+}
+
+/*!
+ * Un-register a vblank callback for a given head.
+ *
+ * \param[in,out]  pDispEvo  The display engine to register the callback on.
+ * \param[in]      head      The head to register the callback on.
+ * \param[in]      pCallback A pointer to the NVVBlankCallbackRec to un-register.
+ *
+ */
+void nvUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                NvU32 head,
+                                NVVBlankCallbackPtr pCallback)
+{
+    nvListDel(&pCallback->vblankCallbackListEntry);
+    nvFree(pCallback);
+
+    // If there are no more callbacks, disable the RM-level callback
+    if (nvListIsEmpty(&pDispEvo->headState[head].vblankCallbackList)) {
+        nvRmRemoveVBlankCallback(pDispEvo,
+                                 pDispEvo->headState[head].rmVBlankCallbackHandle);
+
+        pDispEvo->headState[head].rmVBlankCallbackHandle = 0;
+    }
+}
+
+void nvApiHeadUnregisterVBlankCallback(NVDispEvoPtr pDispEvo,
+                                       const NvU32 apiHead,
+                                       NVVBlankCallbackPtr pCallback)
+{
+    const NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
+    if (head == NV_INVALID_HEAD) {
+        return;
+    }
+    nvUnregisterVBlankCallback(pDispEvo, head, pCallback);
 }
 
 /*!
@@ -2654,7 +2998,7 @@ void nvShutDownHeads(NVDevEvoPtr pDevEvo, NVShutDownHeadsTestFunc pTestFunc)
             for (head = 0; head < pDevEvo->numHeads; head++) {
                 /*
                  * XXX pTestFunc isn't honored by nvSetDispModeEvo()'s
-                 * modesetOwnerChanged logic.
+                 * InheritPreviousModesetState() logic.
                  */
                 if (pTestFunc && !pTestFunc(pDispEvo, head)) {
                     continue;
@@ -2700,4 +3044,22 @@ void nvShutDownHeads(NVDevEvoPtr pDevEvo, NVShutDownHeadsTestFunc pTestFunc)
     if (pTestFunc == NULL) {
         nvAssertAllDpysAreInactive(pDevEvo);
     }
+}
+
+NvU32
+nvApiHeadAddRgLine1Callback(const NVDispEvoRec *pDispEvo,
+                            const NvU32 apiHead,
+                            NV0092_REGISTER_RG_LINE_CALLBACK_FN pCallback)
+{
+    /*
+     * All the hardware heads mapped on the input api head should be
+     * rasterlocked, and should trigger RgLine1 callback exactly at same time;
+     * therefore it is sufficient to register RgLine1 callback only with the
+     * primary hardware head.
+     */
+    const NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
+    if (head == NV_INVALID_HEAD) {
+        return FALSE;
+    }
+    return nvRmAddRgLine1Callback(pDispEvo, head, pCallback);
 }

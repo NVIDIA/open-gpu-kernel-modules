@@ -35,15 +35,9 @@
 #include "uvm_va_space.h"
 
 
-
-
-
-
-
-// The page tree has 5 levels on Pascal, and the root is never freed by a normal
-// 'put' operation which leaves a maximum of 4 levels
-#define MAX_OPERATION_DEPTH 4
-
+// The page tree has 6 levels on Hopper+ GPUs, and the root is never freed by a
+// normal 'put' operation which leaves a maximum of 5 levels.
+#define MAX_OPERATION_DEPTH 5
 
 // Wrappers for push begin handling channel_manager not being there when running
 // the page tree unit test
@@ -138,7 +132,7 @@ static NV_STATUS phys_mem_allocate_sysmem(uvm_page_tree_t *tree, NvLength size, 
 
     // Check for fake GPUs from the unit test
     if (tree->gpu->parent->pci_dev)
-        status = uvm_gpu_map_cpu_pages(tree->gpu, out->handle.page, UVM_PAGE_ALIGN_UP(size), &dma_addr);
+        status = uvm_gpu_map_cpu_pages(tree->gpu->parent, out->handle.page, UVM_PAGE_ALIGN_UP(size), &dma_addr);
     else
         dma_addr = page_to_phys(out->handle.page);
 
@@ -223,7 +217,7 @@ static void phys_mem_deallocate_sysmem(uvm_page_tree_t *tree, uvm_mmu_page_table
 
     UVM_ASSERT(ptr->addr.aperture == UVM_APERTURE_SYS);
     if (tree->gpu->parent->pci_dev)
-        uvm_gpu_unmap_cpu_pages(tree->gpu, ptr->addr.address, UVM_PAGE_ALIGN_UP(ptr->size));
+        uvm_gpu_unmap_cpu_pages(tree->gpu->parent, ptr->addr.address, UVM_PAGE_ALIGN_UP(ptr->size));
     __free_pages(ptr->handle.page, get_order(ptr->size));
 }
 
@@ -720,11 +714,7 @@ error:
 //    default    |         vidmem          ||    vidmem      |      false
 //    default    |         sysmem          ||    sysmem      |      false
 //
-
-
-
-// (1) The fallback to sysmem is always enabled.
-
+// (1) When SEV mode is enabled, the fallback path is disabled.
 //
 // In SR-IOV heavy the the page tree must be in vidmem, to prevent guest drivers
 // from updating GPU page tables without hypervisor knowledge.
@@ -753,12 +743,8 @@ static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t locatio
         if (page_table_aperture == UVM_APERTURE_DEFAULT) {
             tree->location = UVM_APERTURE_VID;
 
-
-
-
-
-            tree->location_sys_fallback = true;
-
+            // See the comment (1) above.
+            tree->location_sys_fallback = !g_uvm_global.sev_enabled;
         }
         else {
             tree->location = page_table_aperture;
@@ -1803,11 +1789,7 @@ static void destroy_identity_mapping(uvm_gpu_identity_mapping_t *mapping)
 
 bool uvm_mmu_gpu_needs_static_vidmem_mapping(uvm_gpu_t *gpu)
 {
-
-
-
     return false;
-
 }
 
 bool uvm_mmu_gpu_needs_dynamic_vidmem_mapping(uvm_gpu_t *gpu)

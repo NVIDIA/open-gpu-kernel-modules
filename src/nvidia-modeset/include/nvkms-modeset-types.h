@@ -35,8 +35,7 @@ typedef struct {
     NvU32 activeRmId;
     struct NvKmsSetLutCommonParams lut;
     NvU8 allowFlipLockGroup;
-    enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
-    enum NvKmsDpyAttributeColorRangeValue colorRange;
+    NVAttributesSetEvoRec attributes;
     struct NvKmsModeValidationParams modeValidationParams;
     NvBool changed                       : 1;
     NvBool allowGsync                    : 1;
@@ -45,6 +44,8 @@ typedef struct {
     NvU32 vrrOverrideMinRefreshRate;
     NVDPLibModesetStatePtr pDpLibModesetState;
     NVDispHeadAudioStateEvoRec audio;
+    NVDispHeadInfoFrameStateEvoRec infoFrame;
+    enum NvKmsOutputTf tf;
 } NVProposedModeSetHwStateOneHead;
 
 typedef struct {

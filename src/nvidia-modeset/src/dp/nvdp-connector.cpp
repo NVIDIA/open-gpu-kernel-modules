@@ -333,6 +333,7 @@ static void InitDpModesetParams(
             pParams->colorFormat = dpColorFormat_YCbCr422;
             break;
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_BT2020RGB:
             pParams->colorFormat = dpColorFormat_RGB;
             break;
     }

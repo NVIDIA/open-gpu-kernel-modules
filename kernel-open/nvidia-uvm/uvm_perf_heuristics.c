@@ -50,7 +50,6 @@ NV_STATUS uvm_perf_heuristics_init()
 void uvm_perf_heuristics_exit()
 {
     uvm_perf_access_counters_exit();
-    uvm_perf_prefetch_exit();
     uvm_perf_thrashing_exit();
 }
 
@@ -73,9 +72,6 @@ NV_STATUS uvm_perf_heuristics_load(uvm_va_space_t *va_space)
     NV_STATUS status;
 
     status = uvm_perf_thrashing_load(va_space);
-    if (status != NV_OK)
-        return status;
-    status = uvm_perf_prefetch_load(va_space);
     if (status != NV_OK)
         return status;
     status = uvm_perf_access_counters_load(va_space);
@@ -105,6 +101,5 @@ void uvm_perf_heuristics_unload(uvm_va_space_t *va_space)
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
     uvm_perf_access_counters_unload(va_space);
-    uvm_perf_prefetch_unload(va_space);
     uvm_perf_thrashing_unload(va_space);
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,9 +81,11 @@ struct NvKmsKapiDevice {
         NvU32 maxCursorSizeInPixels;
 
         NvU8  genericPageKind;
+        NvBool requiresVrrSemaphores;
     } caps;
 
     NvU64 supportedSurfaceMemoryFormats[NVKMS_KAPI_LAYER_MAX];
+    NvBool supportsHDR[NVKMS_KAPI_LAYER_MAX];
 
     NvU32 numHeads;
     NvU32 numLayers[NVKMS_KAPI_MAX_HEADS];
@@ -116,12 +118,6 @@ struct NvKmsKapiMemory {
 
 struct NvKmsKapiSurface {
     NvKmsSurfaceHandle hKmsHandle;
-};
-
-
-enum NvKmsKapiAllocationType {
-    NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT  = 0,
-    NVKMS_KAPI_ALLOCATION_TYPE_NOTIFIER = 1,
 };
 
 static inline void *nvKmsKapiCalloc(size_t nmem, size_t size)
