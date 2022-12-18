@@ -178,7 +178,7 @@ nvswitch_bbx_unload_ls10
     NVSWITCH_TIMEOUT           timeout;
 
     pFlcn = device->pSoe->pFlcn;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_750MSEC_IN_NS, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
 
     nvswitch_os_memset(&bbxCmd, 0, sizeof(bbxCmd));
     bbxCmd.hdr.unitId = RM_SOE_UNIT_IFR;
@@ -217,7 +217,7 @@ nvswitch_bbx_load_ls10
     NVSWITCH_TIMEOUT           timeout;
 
     pFlcn = device->pSoe->pFlcn;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_750MSEC_IN_NS, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
 
     nvswitch_os_memset(&bbxCmd, 0, sizeof(bbxCmd));
     bbxCmd.hdr.unitId = RM_SOE_UNIT_IFR;

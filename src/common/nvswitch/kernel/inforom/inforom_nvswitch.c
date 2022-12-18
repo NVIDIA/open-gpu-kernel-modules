@@ -493,7 +493,7 @@ _nvswitch_inforom_read_file
     nvswitch_os_memset(pDmaBuf, 0, transferSize);
 
     cmdSeqDesc = 0;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_750MSEC_IN_NS, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn, (PRM_FLCN_CMD)&soeCmd, NULL, NULL,
                                           SOE_RM_CMDQ_LOG_ID, &cmdSeqDesc, &timeout);
     if (status != NV_OK)
@@ -591,7 +591,8 @@ _nvswitch_inforom_write_file
     }
 
     cmdSeqDesc = 0;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_750MSEC_IN_NS, &timeout);
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn, (PRM_FLCN_CMD)&soeCmd, NULL, NULL,
                                           SOE_RM_CMDQ_LOG_ID, &cmdSeqDesc, &timeout);
     if (status != NV_OK)

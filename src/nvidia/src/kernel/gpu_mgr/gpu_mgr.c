@@ -726,6 +726,9 @@ static NvBool _gpumgrIsRmFirmwareDefaultChip(NvU32 pmcBoot42)
 
 static NvBool _gpumgrIsVgxRmFirmwareDefaultChip(NvU32 pmcBoot42)
 {
+    if (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_AD100)
+        return NV_TRUE;
+
     return NV_FALSE;
 }
 
@@ -2261,7 +2264,7 @@ gpumgrServiceInterrupts_IMPL(NvU32 gpuMask, MC_ENGINE_BITVECTOR *engineMask, NvB
         if (gpuIsGpuFullPower(pGpu))
         {
             Intr *pIntr = GPU_GET_INTR(pGpu);
-            
+
             //
             // On SLI, one OBJGPU's StateInit functions could attempt to service
             // interrupts on another OBJGPU which has not yet started StateInit.
@@ -3041,7 +3044,7 @@ gpumgrAddSystemMIGInstanceTopo_IMPL
         {
             pGpuMgr->MIGTopologyInfo[i].bValid = NV_TRUE;
             pGpuMgr->MIGTopologyInfo[i].domainBusDevice = domainBusDevice;
-            
+
             // Set MIG enablement to disabled by default
             pGpuMgr->MIGTopologyInfo[i].bMIGEnabled = NV_FALSE;
             break;
@@ -3143,9 +3146,9 @@ gpumgrIsSystemMIGEnabled_IMPL
  * @returns NV_TRUE if entry found
  *          NV_FALSE otherwise
  */
-void 
+void
 gpumgrSetSystemMIGEnabled_IMPL
-(  
+(
     NvU64 domainBusDevice,
     NvBool bMIGEnabled
 )
@@ -3261,7 +3264,7 @@ gpumgrGetGpuBridgeType(void)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
-    
+
     return pGpuMgr->gpuBridgeType;
 }
 
@@ -3283,7 +3286,7 @@ gpumgrInitPcieP2PCapsCache_IMPL(OBJGPUMGR* pGpuMgr)
 /**
 * @brief Destroy the PCIE P2P info cache
 */
-void 
+void
 gpumgrDestroyPcieP2PCapsCache_IMPL(OBJGPUMGR* pGpuMgr)
 {
     PCIEP2PCAPSINFO *pPcieCapsInfo, *pPcieCapsInfoNext;
@@ -3310,7 +3313,7 @@ gpumgrDestroyPcieP2PCapsCache_IMPL(OBJGPUMGR* pGpuMgr)
  * @param[in]   gpuMask             NvU32 value
  * @param[in]   p2pWriteCapsStatus  NvU8 value
  * @param[in]   pP2PReadCapsStatus  NvU8 value
- * 
+ *
  * @return      NV_OK or NV_ERR_NO_MEMORY
  */
 NV_STATUS
@@ -3460,7 +3463,7 @@ gpumgrGetPcieP2PCapsFromCache_IMPL
     OBJSYS    *pSys    = SYS_GET_INSTANCE();
     OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
     NvBool     bFound;
-        
+
     portSyncMutexAcquire(pGpuMgr->pcieP2PCapsInfoLock);
 
     bFound = _gpumgrGetPcieP2PCapsFromCache(gpuMask, pP2PWriteCapsStatus, pP2PReadCapsStatus);

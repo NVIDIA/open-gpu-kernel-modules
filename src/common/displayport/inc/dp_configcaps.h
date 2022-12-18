@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -245,6 +245,7 @@ namespace DisplayPort
     public:
         virtual bool             getOuiSupported() = 0;
         virtual AuxRetry::status setOuiSource(unsigned ouiId, const char * model, size_t modelNameLength, NvU8 chipRevision) = 0;
+        virtual bool             getOuiSource(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision) = 0;
         virtual bool             getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision) = 0;
     };
 

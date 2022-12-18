@@ -304,7 +304,7 @@ static _getNvlinkStatus
             }
         }
 
-        if (pLinkAndClockValues->bLinkConnectedToPeer)
+        if (nvlinkLinks[i].bConnected)
         {
             // Tag as Peer link
             bPeerLink = NV_TRUE;

@@ -385,6 +385,11 @@ namespace DisplayPort
         void pbnRequired(const ModesetInfo & modesetInfo, unsigned & base_pbn, unsigned & slots, unsigned & slots_pbn)
         {
             base_pbn = pbnForMode(modesetInfo);
+            if (bEnableFEC)
+            {
+                // IF FEC is enabled, we need to consider 3% overhead as per DP1.4 spec.
+                base_pbn = (NvU32)(divide_ceil(base_pbn * 100, 97));
+            }
             slots = slotsForPBN(base_pbn);
             slots_pbn = PBNForSlots(slots);
         }

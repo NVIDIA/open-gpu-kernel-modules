@@ -6791,6 +6791,8 @@ nvswitch_post_init_device_setup_lr10
         NVSWITCH_PRINT(device, SETUP, "Skipping INFOROM init\n");
     }
 
+    nvswitch_soe_init_l2_state(device);
+
     return NVL_SUCCESS;
 }
 

@@ -119,6 +119,7 @@
     _op(NvlStatus, nvswitch_deassert_link_reset,    (nvswitch_device *device, nvlink_link *link), _arch)  \
     _op(NvBool,    nvswitch_is_soe_supported,       (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_init_soe, (nvswitch_device *device), _arch)  \
+    _op(void,      nvswitch_soe_init_l2_state,       (nvswitch_device *device), _arch) \
     _op(NvBool,    nvswitch_is_inforom_supported,   (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_spi_supported,       (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_smbpbi_supported,   (nvswitch_device *device), _arch)  \

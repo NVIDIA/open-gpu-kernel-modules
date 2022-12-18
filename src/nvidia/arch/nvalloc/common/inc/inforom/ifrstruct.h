@@ -28,6 +28,7 @@
 
 #include "inforom/ifrecc.h"
 #include "inforom/ifrdem.h"
+#include "inforom/omsdef.h"
 
 #define INFOROM_OBD_OBJECT_V1_XX_PACKED_SIZE 128
 

@@ -791,8 +791,8 @@ static inline NvU64 kgspGetWprHeapSize_e77d51(struct OBJGPU *pGpu, struct Kernel
     return (64 * 1024 * 1024);
 }
 
-static inline NvU64 kgspGetWprHeapSize_38f3bc(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return (80 * 1024 * 1024);
+static inline NvU64 kgspGetWprHeapSize_c5ef93(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return (96 * 1024 * 1024);
 }
 
 static inline NvU64 kgspGetWprHeapSize_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {

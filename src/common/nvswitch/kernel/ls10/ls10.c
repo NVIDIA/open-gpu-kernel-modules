@@ -2841,13 +2841,20 @@ nvswitch_is_smbpbi_supported_ls10
     nvswitch_device *device
 )
 {
-    NvU64       version;
-    NvlStatus   status;
-
     if (!nvswitch_is_smbpbi_supported_lr10(device))
     {
         return NV_FALSE;
     }
+
+    //
+    // Temporary driver WAR to disable SMBPBI on the LS10 NVSwitch driver.
+    // This should be removed once 3875091 is resolved.
+    //
+    return NV_FALSE;
+
+#if 0
+    NvU64       version;
+    NvlStatus   status;
 
     status = _nvswitch_get_bios_version(device, &version);
     if (status != NVL_SUCCESS)
@@ -2867,6 +2874,7 @@ nvswitch_is_smbpbi_supported_ls10
             "SMBPBI is not supported on NVSwitch BIOS version %llx.\n", version);
         return NV_FALSE;
     }
+#endif
 }
 
 /*
@@ -4216,6 +4224,8 @@ _nvswitch_init_nport_ecc_control_ls10
     nvswitch_device *device
 )
 {
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0 
     // Set ingress ECC error limits
     NVSWITCH_ENG_WR32(device, NPORT, _BCAST, 0, _INGRESS, _ERR_NCISOC_HDR_ECC_ERROR_COUNTER,
         DRF_NUM(_INGRESS, _ERR_NCISOC_HDR_ECC_ERROR_COUNTER, _ERROR_COUNT, 0x0));
@@ -4274,6 +4284,7 @@ _nvswitch_init_nport_ecc_control_ls10
 
     NVSWITCH_ENG_WR32(device, NPORT, _BCAST, 0, _SOURCETRACK, _ERR_ECC_CTRL,
         DRF_DEF(_SOURCETRACK, _ERR_ECC_CTRL, _CREQ_TCEN0_CRUMBSTORE_ECC_ENABLE, __PROD));
+#endif // 0
 }
 
 NvlStatus
@@ -4306,6 +4317,8 @@ nvswitch_init_nport_ls10
 
     _nvswitch_init_nport_ecc_control_ls10(device);
 
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0 
     if (DRF_VAL(_SWITCH_REGKEY, _ATO_CONTROL, _DISABLE, device->regkeys.ato_control) ==
         NV_SWITCH_REGKEY_ATO_CONTROL_DISABLE_TRUE)
     {
@@ -4329,7 +4342,7 @@ nvswitch_init_nport_ls10
                 DRF_NUM(_TSTATE, _ATO_TIMER_LIMIT, _LIMIT, timeout));
         }
     }
-
+#endif // 0
     if (DRF_VAL(_SWITCH_REGKEY, _STO_CONTROL, _DISABLE, device->regkeys.sto_control) ==
         NV_SWITCH_REGKEY_STO_CONTROL_DISABLE_TRUE)
     {
@@ -4366,17 +4379,7 @@ nvswitch_init_nxbar_ls10
     nvswitch_device *device
 )
 {
-    NvlStatus status = NVL_SUCCESS;
-
-    status = nvswitch_apply_prod_nxbar_ls10(device);
-    if (status != NVL_SUCCESS)
-    {
-        NVSWITCH_PRINT(device, ERROR,
-            "%s: NXBAR PRODs failed\n",
-            __FUNCTION__);
-        return status;
-    }
-
+    NVSWITCH_PRINT(device, WARN, "%s: Function not implemented\n", __FUNCTION__);
     return NVL_SUCCESS;
 }
 

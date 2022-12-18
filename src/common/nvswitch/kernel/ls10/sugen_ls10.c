@@ -706,8 +706,8 @@ nvswitch_apply_prod_nxbar_ls10
     nvswitch_device *device
 )
 {
-    
-
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0 
     // .NXBAR PROD value application
     
     NVSWITCH_ENG_WR32(device, TILEOUT, _BCAST, 0, _NXBAR_TILEOUT, _CTRL0,
@@ -724,6 +724,7 @@ nvswitch_apply_prod_nxbar_ls10
                       DRF_DEF(_NXBAR_TILEOUT, _ERR_FATAL_INTR_EN, _INGRESS_BURST_GT_9_DATA_VC, __PROD) |
                       DRF_DEF(_NXBAR_TILEOUT, _ERR_FATAL_INTR_EN, _INGRESS_NON_BURSTY_PKT, __PROD) |
                       DRF_DEF(_NXBAR_TILEOUT, _ERR_FATAL_INTR_EN, _INGRESS_NON_STICKY_PKT, __PROD));
+#endif // 0
     
     NVSWITCH_ENG_WR32(device, TILEOUT, _BCAST, 0, _NXBAR_TILEOUT, _PRI_NXBAR_TILEOUT_CG,
                       DRF_DEF(_NXBAR_TILEOUT, _PRI_NXBAR_TILEOUT_CG, _DI_DT_SKEW_VAL, __PROD) |
@@ -742,7 +743,9 @@ nvswitch_apply_prod_nxbar_ls10
     
     NVSWITCH_ENG_WR32(device, TILEOUT, _BCAST, 0, _NXBAR_TILEOUT, _PRI_NXBAR_TILEOUT_CG1,
                       DRF_DEF(_NXBAR_TILEOUT, _PRI_NXBAR_TILEOUT_CG1, _MONITOR_CG_EN, __PROD));
-    
+
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0
     NVSWITCH_ENG_WR32(device, TILE, _BCAST, 0, _NXBAR_TILE, _CTRL0,
                       DRF_DEF(_NXBAR_TILE, _CTRL0, _MULTI_VALID_XFN_CTRL, _ENABLE) |
                       DRF_DEF(_NXBAR_TILE, _CTRL0, _PARTIAL_RAM_WR_CTRL, _ENABLE) |
@@ -760,7 +763,7 @@ nvswitch_apply_prod_nxbar_ls10
                       DRF_DEF(_NXBAR_TILE, _ERR_FATAL_INTR_EN, _INGRESS_PKT_PARITY_ERROR, __PROD) |
                       DRF_DEF(_NXBAR_TILE, _ERR_FATAL_INTR_EN, _INGRESS_REDUCTION_PKT_ERROR, __PROD) |
                       DRF_DEF(_NXBAR_TILE, _ERR_FATAL_INTR_EN, _INGRESS_SIDEBAND_PARITY_ERROR, __PROD));
-    
+#endif  // 0
     NVSWITCH_ENG_WR32(device, TILE, _BCAST, 0, _NXBAR_TILE, _PRI_NXBAR_TILE_CG,
                       DRF_DEF(_NXBAR_TILE, _PRI_NXBAR_TILE_CG, _DI_DT_SKEW_VAL, __PROD) |
                       DRF_DEF(_NXBAR_TILE, _PRI_NXBAR_TILE_CG, _HALT_CG_EN, __PROD) |
@@ -801,7 +804,8 @@ nvswitch_nvs_top_prod_ls10
     NvU32   i;
 
     // .NVS_TOP PROD application
-    
+ // Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0 
     NVSWITCH_ENG_WR32(device, CLKS_P0,  , 0, _CLOCK_NVSW_PRT, _NVLINK_UPHY0_PLL0_SLCG,
                       DRF_DEF(_CLOCK_NVSW_PRT, _NVLINK_UPHY0_PLL0_SLCG, _CFGSM, __PROD));
     
@@ -813,7 +817,7 @@ nvswitch_nvs_top_prod_ls10
     
     NVSWITCH_ENG_WR32(device, CLKS_P0,  , 3, _CLOCK_NVSW_PRT, _NVLINK_UPHY0_PLL0_SLCG,
                       DRF_DEF(_CLOCK_NVSW_PRT, _NVLINK_UPHY0_PLL0_SLCG, _CFGSM, __PROD));
-    
+#endif // 0
     NVSWITCH_ENG_WR32(device, GIN,  , 0, _CTRL, _PRI_CTRL_CG1,
                       DRF_DEF(_CTRL, _PRI_CTRL_CG1, _SLCG_CTRLPRI, __PROD) |
                       DRF_DEF(_CTRL, _PRI_CTRL_CG1, _SLCG_MSIX, __PROD));
@@ -855,16 +859,21 @@ nvswitch_nvs_top_prod_ls10
     NVSWITCH_ENG_WR32(device, PTIMER,  , 0, _PTIMER, _PRI_TMR_CG1,
                       DRF_DEF(_PTIMER, _PRI_TMR_CG1, _MONITOR_CG_EN, __PROD) |
                       DRF_DEF(_PTIMER, _PRI_TMR_CG1, _SLCG, __PROD));
-    
+
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0 
     NVSWITCH_ENG_WR32(device, SAW,  , 0, _NVLSAW, _CTRL_CLOCK_GATING,
                       DRF_DEF(_NVLSAW, _CTRL_CLOCK_GATING, _CG1_SLCG_PCIE, __PROD) |
                       DRF_DEF(_NVLSAW, _CTRL_CLOCK_GATING, _CG1_SLCG_SAW, __PROD));
-    
+#endif // 0
     NVSWITCH_ENG_WR32(device, SAW,  , 0, _NVLSAW, _GLBLLATENCYTIMERCTRL,
                       DRF_DEF(_NVLSAW, _GLBLLATENCYTIMERCTRL, _ENABLE, __PROD));
-    
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0     
     NVSWITCH_ENG_WR32(device, SAW,  , 0, _NVLSAW, _PCIE_PRI_CLOCK_GATING,
                       DRF_DEF(_NVLSAW, _PCIE_PRI_CLOCK_GATING, _CG1_SLCG, __PROD));
+#endif // 0
+
     NVSWITCH_REG_WR32(device, _PSE, _CG1,
                            DRF_DEF(_PSE, _CG1, _SLCG, __PROD));
     

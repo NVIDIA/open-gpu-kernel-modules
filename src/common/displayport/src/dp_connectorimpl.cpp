@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -188,6 +188,8 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bDisableSSC                   = dpRegkeyDatabase.bSscDisabled;
     this->bEnableFastLT                 = dpRegkeyDatabase.bFastLinkTrainingEnabled;
     this->bDscMstCapBug3143315          = dpRegkeyDatabase.bDscMstCapBug3143315;
+    this->bEnableOuiRestoring           = dpRegkeyDatabase.bEnableOuiRestoring;
+    this->bPowerDownPhyBeforeD3         = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -704,6 +706,13 @@ create:
 
     newDev->applyOUIOverrides();
 
+    if (main->isEDP() && this->bEnableOuiRestoring)
+    {
+        // Save Source OUI information for eDP.
+        hal->getOuiSource(cachedSourceOUI, &cachedSourceModelName[0],
+                          sizeof(cachedSourceModelName), cachedSourceChipRevision);
+    }
+
     fireEvents();
 }
 
@@ -1178,7 +1187,7 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                 this->isFECSupported() &&                           // If GPU supports FEC
                 pDscParams &&                                       // If client sent DSC info
                 pDscParams->bCheckWithDsc &&                        // If client wants to check with DSC
-                (dev && dev->isDSCPossible()) &&                    // Either device or it's parent supports DSC
+                (dev && dev->devDoingDscDecompression) &&           // Either device or it's parent supports DSC
                 bFecCapable &&                                      // If path up to dsc decoding device supports FEC
                 (modesetParams.modesetInfo.bitsPerComponent != 6))  // DSC doesn't support bpc = 6
             {
@@ -1239,9 +1248,13 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                             (modesetParams.colorFormat == dpColorFormat_YCbCr444 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCr444) ||
                             (modesetParams.colorFormat == dpColorFormat_YCbCr422 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCrSimple422))
                         {
-                            if (pDscParams->forceDsc == DSC_FORCE_ENABLE)
+                            if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
+                                (modesetParams.modesetInfo.mode == DSC_DUAL))
                             {
-                                // If DSC is force enabled then return failure here
+                                //
+                                // If DSC is force enabled or DSC_DUAL mode is requested, 
+                                // then return failure here
+                                //
                                 compoundQueryResult = false;
                                 pDscParams->bEnableDsc = false;
                                 return false;
@@ -1270,9 +1283,24 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                                      (NvU32*)(PPS),
                                      (NvU32*)(&bitsPerPixelX16))) != NVT_STATUS_SUCCESS)
                 {
-                    if (pDscParams->forceDsc == DSC_FORCE_ENABLE)
+                    //
+                    // If generating PPS failed 
+                    //          AND
+                    //    (DSC is force enabled
+                    //          OR
+                    //    the requested DSC mode = DUAL)
+                    //then 
+                    //    return failure here
+                    // Else 
+                    //    we will check if non DSC path is possible.
+                    //
+                    // If dsc mode = DUAL failed to generate PPS and if we pursue
+                    // non DSC path, DD will still follow 2Head1OR modeset path with 
+                    // DSC disabled, eventually leading to HW hang. Bug 3632901 
+                    //
+                    if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
+                        (modesetParams.modesetInfo.mode == DSC_DUAL))
                     {
-                        // If DSC is force enabled then return failure here
                         compoundQueryResult = false;
                         pDscParams->bEnableDsc = false;
                         return false;
@@ -2667,6 +2695,21 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     this->bFECEnable |= bEnableFEC;
     highestAssessedLC.enableFEC(this->bFECEnable);
 
+    if (main->isEDP() && this->bEnableOuiRestoring)
+    {
+        // Power-up eDP and restore eDP OUI if it's powered off now.
+        bool bPanelPowerOn;
+        main->getEdpPowerData(&bPanelPowerOn, NULL);
+        if (!bPanelPowerOn)
+        {
+            main->configurePowerState(true);
+            hal->setOuiSource(cachedSourceOUI,
+                              &cachedSourceModelName[0],
+                              6 /* string length of ieeeOuiDevId */,
+                              cachedSourceChipRevision);
+        }
+    }
+
     // if failed, we're guaranteed that assessed link rate didn't meet the mode requirements
     // isZombie() will catch this
     bLinkTrainingStatus = trainLinkOptimized(getMaxLinkConfig());
@@ -3247,6 +3290,22 @@ void ConnectorImpl::powerdownLink(bool bPowerdownPanel)
     bool bPanelPwrSts = true;
     powerOff.lanes = 0;
     // Inform Sink about Main Link Power Down.
+
+    if (linkUseMultistream() && bPowerDownPhyBeforeD3)
+    {
+        PowerDownPhyMessage powerDownPhyMsg;
+        NakData nack;
+
+        for (Device * i = enumDevices(0); i; i=enumDevices(i))
+        {
+            if (i->isPlugged() && i->isVideoSink())
+            {
+                Address devAddress = ((DeviceImpl*)i)->address;
+                powerDownPhyMsg.set(devAddress.parent(), devAddress.tail(), NV_TRUE);
+                this->messageManager->send(&powerDownPhyMsg, nack);
+            }
+        }
+    }
 
     //
     // 1> If it is eDP and the power is not on, we don't need to put it into D3 here

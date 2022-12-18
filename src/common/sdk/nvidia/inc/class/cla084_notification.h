@@ -39,7 +39,8 @@ extern "C" {
 #define NVA084_NOTIFIERS_EVENT_VGPU_PLUGIN_TASK_CRASHED         (2)
 #define NVA084_NOTIFIERS_EVENT_GUEST_DRIVER_LOADED              (3)
 #define NVA084_NOTIFIERS_EVENT_GUEST_DRIVER_UNLOADED            (4)
-#define NVA084_NOTIFIERS_MAXCOUNT                               (5)
+#define NVA084_NOTIFIERS_EVENT_PRINT_ERROR_MESSAGE              (5)
+#define NVA084_NOTIFIERS_MAXCOUNT                               (6)
 
 #define NVA084_NOTIFICATION_STATUS_IN_PROGRESS              (0x8000)
 #define NVA084_NOTIFICATION_STATUS_BAD_ARGUMENT             (0x4000)

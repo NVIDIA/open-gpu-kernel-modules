@@ -365,6 +365,57 @@ nvswitch_set_nport_tprod_state_ls10
 }
 
 /*
+ * @Brief : INIT L2 register state in SOE
+ *
+ * @param[in] device
+ * @param[in] nport
+ */
+void
+nvswitch_soe_init_l2_state_ls10
+(
+    nvswitch_device *device
+)
+{
+    FLCN            *pFlcn;
+    NvU32            cmdSeqDesc = 0;
+    NV_STATUS        status;
+    RM_FLCN_CMD_SOE  cmd;
+    NVSWITCH_TIMEOUT timeout;
+    RM_SOE_CORE_CMD_L2_STATE *pL2State;
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        NVSWITCH_PRINT(device, INFO, "%s: SOE is not supported. skipping!\n",
+                       __FUNCTION__);
+        return;
+    }
+
+    pFlcn       = device->pSoe->pFlcn;
+
+    nvswitch_os_memset(&cmd, 0, sizeof(cmd));
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = sizeof(cmd);
+
+    pL2State = &cmd.cmd.core.l2State;
+    pL2State->cmdType = RM_SOE_CORE_CMD_INIT_L2_STATE;
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      NULL,                 // pMsg
+                                      NULL,                 // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to send INIT_L2_STATE command to SOE, status 0x%x\n", 
+                       __FUNCTION__, status);
+    }
+}
+
+
+/*
  * @Brief : Init sequence for SOE FSP RISCV image
  *
  * The driver assumes SOE is already booted by FSP.

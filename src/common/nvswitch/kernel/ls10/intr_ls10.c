@@ -455,6 +455,8 @@ _nvswitch_initialize_nport_interrupts_ls10
     nvswitch_device *device
 )
 {
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0 
     NvU32 val;
 
     val =
@@ -462,6 +464,7 @@ _nvswitch_initialize_nport_interrupts_ls10
         DRF_NUM(_NPORT, _ERR_CONTROL_COMMON_NPORT, _FATALENABLE, 1) |
         DRF_NUM(_NPORT, _ERR_CONTROL_COMMON_NPORT, _NONFATALENABLE, 1);
     NVSWITCH_NPORT_BCAST_WR32_LS10(device, _NPORT, _ERR_CONTROL_COMMON_NPORT, val);
+#endif // 0
 
     _nvswitch_initialize_route_interrupts(device);
     _nvswitch_initialize_ingress_interrupts(device);
@@ -494,7 +497,10 @@ _nvswitch_initialize_nxbar_interrupts_ls10
         DRF_NUM(_NXBAR_TILE, _ERR_FATAL_INTR_EN, _INGRESS_SIDEBAND_PARITY_ERROR, 1) |
         DRF_NUM(_NXBAR_TILE, _ERR_FATAL_INTR_EN, _INGRESS_REDUCTION_PKT_ERROR, 1);
 
+// Moving this L2 register access to SOE. Refer bug #3747687
+#if 0
     NVSWITCH_BCAST_WR32_LS10(device, NXBAR, _NXBAR_TILE, _ERR_FATAL_INTR_EN, report_fatal);
+#endif // 0
 
     chip_device->intr_mask.tile.fatal = report_fatal;
     chip_device->intr_mask.tile.nonfatal = 0;
@@ -509,7 +515,10 @@ _nvswitch_initialize_nxbar_interrupts_ls10
         DRF_NUM(_NXBAR_TILEOUT, _ERR_FATAL_INTR_EN, _INGRESS_BURST_GT_9_DATA_VC, 1)  |
         DRF_NUM(_NXBAR_TILEOUT, _ERR_FATAL_INTR_EN, _EGRESS_CDT_PARITY_ERROR, 1);
 
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0
     NVSWITCH_BCAST_WR32_LS10(device, NXBAR, _NXBAR_TILEOUT, _ERR_FATAL_INTR_EN, report_fatal);
+#endif // 0
 
     chip_device->intr_mask.tileout.fatal = report_fatal;
     chip_device->intr_mask.tileout.nonfatal = 0;

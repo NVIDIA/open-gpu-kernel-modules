@@ -743,6 +743,15 @@ nvswitch_init_soe
     return device->hal.nvswitch_init_soe(device);
 }
 
+void
+nvswitch_soe_init_l2_state
+(
+    nvswitch_device *device
+)
+{
+    device->hal.nvswitch_soe_init_l2_state(device);
+}
+
 static NvlStatus
 _nvswitch_construct_soe
 (

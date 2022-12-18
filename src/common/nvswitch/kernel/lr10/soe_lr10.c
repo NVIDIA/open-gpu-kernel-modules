@@ -872,6 +872,17 @@ nvswitch_init_soe_lr10
     return status;
 }
 
+void
+nvswitch_soe_init_l2_state_lr10
+(
+    nvswitch_device *device
+)
+{
+    NVSWITCH_PRINT(device, WARN,
+        "%s: Function not implemented on lr10\n",
+        __FUNCTION__);
+}
+
 /**
  * @brief  SOE construct
  *

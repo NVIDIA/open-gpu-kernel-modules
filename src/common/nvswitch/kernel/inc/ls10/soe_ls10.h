@@ -42,5 +42,6 @@ void      nvswitch_soe_unregister_events_ls10(nvswitch_device *device);
 NvlStatus nvswitch_soe_register_event_callbacks_ls10(nvswitch_device *device);
 NvlStatus nvswitch_soe_restore_nport_state_ls10(nvswitch_device *device, NvU32 nport);
 NvlStatus nvswitch_soe_issue_nport_reset_ls10(nvswitch_device *device, NvU32 nport);
+void      nvswitch_soe_init_l2_state_ls10(nvswitch_device *device);
 
 #endif //_SOE_LS10_H_

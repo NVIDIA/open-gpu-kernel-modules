@@ -659,7 +659,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         }
         else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */ 
         {
-            pThis->__kgspGetWprHeapSize__ = &kgspGetWprHeapSize_38f3bc;
+            pThis->__kgspGetWprHeapSize__ = &kgspGetWprHeapSize_c5ef93;
         }
     }
 
