@@ -6403,8 +6403,22 @@ nvswitch_ctrl_get_fom_values_lr10
 {
     NvlStatus status;
     NvU32     statData;
+    nvlink_link *link;
 
-    NVSWITCH_ASSERT(p->linkId < nvswitch_get_num_links(device));
+    link = nvswitch_get_link(device, p->linkId);
+    if (link == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: link #%d invalid\n",
+            __FUNCTION__, p->linkId);
+        return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_link_in_reset(device, link))
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: link #%d is in reset\n",
+            __FUNCTION__, p->linkId);
+        return -NVL_ERR_INVALID_STATE;
+    }
 
     status = nvswitch_minion_get_dl_status(device, p->linkId,
                                         NV_NVLSTAT_TR16, 0, &statData);
@@ -6790,6 +6804,8 @@ nvswitch_post_init_device_setup_lr10
     {
         NVSWITCH_PRINT(device, SETUP, "Skipping INFOROM init\n");
     }
+
+    nvswitch_soe_init_l2_state(device);
 
     return NVL_SUCCESS;
 }
@@ -7374,6 +7390,52 @@ nvswitch_ctrl_inband_read_data_lr10
 }
 
 /*
+ * CTRL_NVSWITCH_GET_BOARD_PART_NUMBER
+ */
+NvlStatus
+nvswitch_ctrl_get_board_part_number_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p
+)
+{
+    struct inforom *pInforom = device->pInforom;
+    INFOROM_OBD_OBJECT_V1_XX *pOBDObj;
+    int byteIdx;
+
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    if (!pInforom->OBD.bValid)
+    {
+        NVSWITCH_PRINT(device, ERROR, "OBD data is not available\n");
+        return -NVL_ERR_GENERIC;
+    }
+
+    pOBDObj = &pInforom->OBD.object.v1;
+
+    if (sizeof(p->data) != sizeof(pOBDObj->productPartNumber)/sizeof(inforom_U008))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+                       "board part number available size %lu is not same as the request size %lu\n",
+                       sizeof(pOBDObj->productPartNumber)/sizeof(inforom_U008), sizeof(p->data));
+        return -NVL_ERR_GENERIC;
+    }
+
+    nvswitch_os_memset(p, 0, sizeof(NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR));
+
+    /* Copy board type data */
+    for (byteIdx = 0; byteIdx < NVSWITCH_BOARD_PART_NUMBER_SIZE_IN_BYTES; byteIdx++)
+    {
+        p->data[byteIdx] =(NvU8)(pOBDObj->productPartNumber[byteIdx] & 0xFF);
+    }
+
+    return NVL_SUCCESS;
+}
+
+/*
 * @brief: This function retrieves the NVLIPT public ID for a given global link idx
 * @params[in]  device        reference to current nvswitch device
 * @params[in]  linkId        link to retrieve NVLIPT public ID from
@@ -7763,6 +7825,26 @@ nvswitch_ctrl_clear_counters_lr10
     FOR_EACH_INDEX_IN_MASK_END;
 
     return status;
+}
+
+NvlStatus
+nvswitch_ctrl_set_nvlink_error_threshold_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_SET_NVLINK_ERROR_THRESHOLD_PARAMS *ret
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+static NvlStatus
+nvswitch_ctrl_get_nvlink_error_threshold_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS *ret
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
 }
 
 //

@@ -68,7 +68,7 @@ static NV_STATUS _serverFindNextAvailableClientHandleInBucket(RsServer *pServer,
  * @param[in]   pServer
  * @param[in]   hClient
  */
-static NV_STATUS _serverCreateEntryAndLockForNewClient(RsServer *pServer, NvHandle *phClient, NvBool bInternalHandle, CLIENT_ENTRY **ppClientEntry );
+static NV_STATUS _serverCreateEntryAndLockForNewClient(RsServer *pServer, NvHandle *phClient, NvBool bInternalHandle, CLIENT_ENTRY **ppClientEntry, API_SECURITY_INFO *pSecInfo);
 
 /**
  * Lock and retrieve the RsClient associated with a client handle.
@@ -521,7 +521,7 @@ serverAllocClient
     }
 #endif
 
-    status = _serverCreateEntryAndLockForNewClient(pServer, &hClient, !!(pParams->allocState & ALLOC_STATE_INTERNAL_CLIENT_HANDLE), &pClientEntry);
+    status = _serverCreateEntryAndLockForNewClient(pServer, &hClient, !!(pParams->allocState & ALLOC_STATE_INTERNAL_CLIENT_HANDLE), &pClientEntry, pParams->pSecInfo);
 
     if (status != NV_OK)
     {
@@ -776,6 +776,18 @@ serverAllocResourceUnderLock
 done:
     serverResLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pParams->pLockInfo, &releaseFlags);
     return status;
+}
+
+NvU32
+serverAllocClientHandleBase
+(
+    RsServer          *pServer,
+    NvBool             bInternalHandle,
+    API_SECURITY_INFO *pSecInfo
+)
+{
+    return bInternalHandle ? pServer->internalHandleBase :
+                             pServer->clientHandleBase;
 }
 #endif
 
@@ -2119,24 +2131,23 @@ _serverFindNextAvailableClientHandleInBucket
     return  NV_OK;
 }
 
-
 static
 NV_STATUS
 _serverCreateEntryAndLockForNewClient
 (
-    RsServer      *pServer,
-    NvHandle      *phClient,
-    NvBool         bInternalHandle,
-    CLIENT_ENTRY **ppClientEntry
+    RsServer          *pServer,
+    NvHandle          *phClient,
+    NvBool             bInternalHandle,
+    CLIENT_ENTRY     **ppClientEntry,
+    API_SECURITY_INFO *pSecInfo
 )
 {
     CLIENT_ENTRY  *pClientEntry;
     NV_STATUS      status = NV_OK;
     NvHandle       hClient = *phClient;
     CLIENT_ENTRY **ppClientNext = 0;
-    PORT_RWLOCK    *pLock=NULL;
-    NvU32 handleBase = bInternalHandle ? pServer->internalHandleBase :
-                                         pServer->clientHandleBase;
+    PORT_RWLOCK   *pLock = NULL;
+    NvU32          handleBase = serverAllocClientHandleBase(pServer, bInternalHandle, pSecInfo);
 
     if (hClient == 0)
     {

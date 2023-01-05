@@ -608,36 +608,19 @@ done:
 // Use this call when MMU faults needs to be copied
 // outisde of RM lock.
 //
-NV_STATUS NV_API_CALL rm_gpu_copy_mmu_faults_unlocked(
-    nvidia_stack_t *sp,
-    nv_state_t *nv,
-    NvU32 *faultsCopied
+static NV_STATUS _rm_gpu_copy_mmu_faults_unlocked(
+    OBJGPU *pGpu,
+    NvU32 *pFaultsCopied,
+    THREAD_STATE_NODE *pThreadState
 )
 {
-    OBJGPU       *pGpu;
-    void         *fp;
-    NV_STATUS status = NV_OK;
-
-    NV_ENTER_RM_RUNTIME(sp,fp);
-
-    pGpu = NV_GET_NV_PRIV_PGPU(nv);
-    if (pGpu == NULL || faultsCopied == NULL)
-    {
-        status = NV_ERR_OBJECT_NOT_FOUND;
-        goto done;
-    }
-
     // Non-replayable faults are copied to the client shadow buffer by GSP-RM.
     if (IS_GSP_CLIENT(pGpu))
     {
-        status = NV_ERR_NOT_SUPPORTED;
-        goto done;
+        return NV_ERR_NOT_SUPPORTED;
     }
 
-done:
-    NV_EXIT_RM_RUNTIME(sp,fp);
-
-    return status;
+    return NV_OK;
 }
 
 //
@@ -650,10 +633,12 @@ NV_STATUS rm_gpu_handle_mmu_faults(
 )
 {
     NvU32 status = NV_OK;
+    OBJGPU *pGpu;
+    void *fp;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
 
     *faultsCopied = 0;
-
-    OBJGPU *pGpu;
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
     
     if (pGpu == NULL)
@@ -661,40 +646,50 @@ NV_STATUS rm_gpu_handle_mmu_faults(
         return NV_ERR_OBJECT_NOT_FOUND;
     }
 
-    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && !IS_VIRTUAL(pGpu))
     {
+        KernelGmmu *pKernelGmmu;
+        PORT_MEM_ALLOCATOR *pIsrAllocator;
         THREAD_STATE_NODE threadState;
+        NvU8 stackAllocator[TLS_ISR_ALLOCATOR_SIZE]; // ISR allocations come from this buffer
 
-        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-        Intr *pIntr    = GPU_GET_INTR(pGpu);
-
-        NvU32 hw_put = 0;
-        NvU32 hw_get = 0;
-
+        pIsrAllocator = portMemAllocatorCreateOnExistingBlock(stackAllocator, sizeof(stackAllocator));
+        tlsIsrInit(pIsrAllocator);
         threadStateInitISRLockless(&threadState, pGpu, THREAD_STATE_FLAGS_IS_ISR_LOCKLESS);
 
-        kgmmuReadFaultBufferPutPtr_HAL(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER,
-                                    &hw_put, &threadState);
+        pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
 
-        kgmmuReadFaultBufferGetPtr_HAL(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER,
-                                    &hw_get, &threadState);
-
-        if(hw_get != hw_put)
+        if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && !IS_VIRTUAL(pGpu))
         {
-            // We have to clear the top level interrupt bit here since otherwise
-            // the bottom half will attempt to service the interrupt on the CPU
-            // side before GSP recieves the notification and services it
-            kgmmuClearNonReplayableFaultIntr(pGpu, pKernelGmmu, &threadState);
-            status = intrTriggerPrivDoorbell_HAL(pGpu, pIntr, NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_HANDLE);
+            Intr *pIntr = GPU_GET_INTR(pGpu);
 
+            if (kgmmuIsNonReplayableFaultPending_HAL(pGpu, pKernelGmmu, &threadState))
+            {
+                // We have to clear the top level interrupt bit here since otherwise
+                // the bottom half will attempt to service the interrupt on the CPU
+                // side before GSP recieves the notification and services it
+                kgmmuClearNonReplayableFaultIntr_HAL(pGpu, pKernelGmmu, &threadState);
+                status = intrTriggerPrivDoorbell_HAL(pGpu, pIntr, NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_HANDLE);
+
+            }
+        }
+        else if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+        {
+            if (kgmmuIsNonReplayableFaultPending_HAL(pGpu, pKernelGmmu, &threadState))
+            {
+                status = _rm_gpu_copy_mmu_faults_unlocked(pGpu, faultsCopied, &threadState);
+            }
+        }
+        else
+        {
+            status = _rm_gpu_copy_mmu_faults_unlocked(pGpu, faultsCopied, &threadState);
         }
 
         threadStateFreeISRLockless(&threadState, pGpu, THREAD_STATE_FLAGS_IS_ISR_LOCKLESS);
+        tlsIsrDestroy(pIsrAllocator);
+        portMemAllocatorRelease(pIsrAllocator);
     }
-    else
-    {
-        status = rm_gpu_copy_mmu_faults_unlocked(sp, nv, faultsCopied);
-    }
+
+    NV_EXIT_RM_RUNTIME(sp,fp);
     return status;
 }
 

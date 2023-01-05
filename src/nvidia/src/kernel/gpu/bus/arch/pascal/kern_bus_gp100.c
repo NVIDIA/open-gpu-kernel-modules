@@ -203,33 +203,10 @@ kbusCreateP2PMappingForNvlink_GP100
     NvU32         gpu1Instance   = gpuGetInstance(pGpu1);
     NvBool        bLoopback      = (pGpu0 == pGpu1);
     NV_STATUS     status         = NV_OK;
-    NvU32         nvlinkPeer0    = BUS_INVALID_PEER;
-    NvU32         nvlinkPeer1    = BUS_INVALID_PEER;
 
     if (peer0 == NULL || peer1 == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Get the peer ID pGpu0 should use for P2P over NVLINK to pGpu1
-    if ((status = kbusGetNvlinkP2PPeerId_HAL(pGpu0, pKernelBus0,
-                                             pGpu1, pKernelBus1,
-                                             &nvlinkPeer0)) != NV_OK)
-    {
-        return status;
-    }
-
-    // Get the peer ID pGpu1 should use for P2P over NVLINK to pGpu0
-    if ((status = kbusGetNvlinkP2PPeerId_HAL(pGpu1, pKernelBus1,
-                                             pGpu0, pKernelBus0,
-                                             &nvlinkPeer1)) != NV_OK)
-    {
-        return status;
-    }
-
-    if (nvlinkPeer0 == BUS_INVALID_PEER || nvlinkPeer1 == BUS_INVALID_PEER)
-    {
-        return NV_ERR_INVALID_REQUEST;
     }
 
     // Set the default RM mapping if peer id's are not explicitly provided
@@ -249,8 +226,26 @@ kbusCreateP2PMappingForNvlink_GP100
         }
         else
         {
-            *peer0 = nvlinkPeer0;
-            *peer1 = nvlinkPeer1;
+            // Get the peer ID pGpu0 should use for P2P over NVLINK to pGpu1
+            if ((status = kbusGetNvlinkP2PPeerId_HAL(pGpu0, pKernelBus0,
+                                                     pGpu1, pKernelBus1,
+                                                     peer0)) != NV_OK)
+            {
+                return status;
+            }
+
+            // Get the peer ID pGpu1 should use for P2P over NVLINK to pGpu0
+            if ((status = kbusGetNvlinkP2PPeerId_HAL(pGpu1, pKernelBus1,
+                                                     pGpu0, pKernelBus0,
+                                                     peer1)) != NV_OK)
+            {
+                return status;
+            }
+
+            if (*peer0 == BUS_INVALID_PEER || *peer1 == BUS_INVALID_PEER)
+            {
+                return NV_ERR_INVALID_REQUEST;
+            }
         }
 
         NV_PRINTF(LEVEL_INFO, "- P2P: Using Default RM mapping for P2P.\n");

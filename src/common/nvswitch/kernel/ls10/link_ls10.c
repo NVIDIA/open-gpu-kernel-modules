@@ -1070,17 +1070,16 @@ nvswitch_store_topology_information_ls10
 }
 
 void
-nvswitch_init_dlpl_interrupts_ls10
+nvswitch_set_error_rate_threshold_ls10
 (
-    nvlink_link *link
+    nvlink_link *link,
+    NvBool bSetDefault
 )
 {
-    nvswitch_device *device            = link->dev->pDevInfo;
-    NvU32            linkNumber        = link->linkNumber;
-    NvU32            intrRegVal;
-    NvU32            crcRegVal;
-    NvU32            shortRateMask;
-    NvU32            crcShortRegkeyVal = device->regkeys.crc_bit_error_rate_short;
+    nvswitch_device *device = link->dev->pDevInfo;
+    NvU32 linkNumber = link->linkNumber;
+    NvU32 crcShortRegkeyVal = device->regkeys.crc_bit_error_rate_short;
+    NvU32 crcRegVal;
 
     ct_assert(DRF_BASE(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_MAN)   == 
               DRF_BASE(NV_NVLDL_RX_ERROR_RATE_CTRL_SHORT_THRESHOLD_MAN));
@@ -1098,6 +1097,124 @@ nvswitch_init_dlpl_interrupts_ls10
               DRF_BASE(NV_NVLDL_RX_ERROR_RATE_CTRL_SHORT_TIMESCALE_EXP));
     ct_assert(DRF_EXTENT(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_EXP) == 
               DRF_EXTENT(NV_NVLDL_RX_ERROR_RATE_CTRL_SHORT_TIMESCALE_EXP));
+
+    crcRegVal  = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, 
+                                         _NVLDL_RX, _ERROR_RATE_CTRL);
+
+    //
+    // Case 1: When a Regkey is provided. We use it to calculate crcRegVal.
+    //
+    // Case 2: When the bSetDefault variable is set to NV_FALSE. This can happen 
+    // when any client/application like NSCQ would provide specific values for 
+    // the error threshold. In this case we use those values to calculate crcRegVal.
+    //
+    // Case 3: In all other cases, we want the default values to be used, which are
+    // provided in Bug 3365481.
+    // 
+    if(crcShortRegkeyVal != NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_DEFAULT)
+    {
+        NvU32 shortRateMask;
+        shortRateMask = DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_MAN)     |
+                            DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_EXP) |
+                            DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_MAN) |
+                            DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_EXP);
+        
+        crcRegVal  &= ~shortRateMask;
+        crcRegVal  |= crcShortRegkeyVal;
+
+
+        link->errorThreshold.bUserConfig = NV_FALSE;
+        link->errorThreshold.bInterruptTrigerred = NV_FALSE;
+    }
+    else if (!bSetDefault)
+    {
+        crcRegVal = FLD_SET_DRF_NUM(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_THRESHOLD_MAN,
+                                     link->errorThreshold.thresholdMan,
+                                     crcRegVal);
+        crcRegVal = FLD_SET_DRF_NUM(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_THRESHOLD_EXP,
+                                     link->errorThreshold.thresholdExp,
+                                     crcRegVal);
+        crcRegVal = FLD_SET_DRF_NUM(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_TIMESCALE_MAN,
+                                     link->errorThreshold.timescaleMan,
+                                     crcRegVal);
+        crcRegVal = FLD_SET_DRF_NUM(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_TIMESCALE_EXP,
+                                     link->errorThreshold.timescaleExp,
+                                     crcRegVal);        
+    }
+    else
+    {
+        //
+        // Please refer to Bug 3365481 for details about the CRC_BIT_ERROR_RATE_SHORT 
+        // default values used below.
+        //
+        link->errorThreshold.thresholdMan =
+            NV_NVLDL_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_MAN_DEFAULT;
+        link->errorThreshold.thresholdExp =
+            NV_NVLDL_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_EXP_DEFAULT;
+        link->errorThreshold.timescaleMan =
+            NV_NVLDL_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_MAN_DEFAULT;
+        link->errorThreshold.timescaleExp =
+            NV_NVLDL_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_EXP_DEFAULT;
+        link->errorThreshold.bUserConfig = NV_FALSE;
+        link->errorThreshold.bInterruptTrigerred = NV_FALSE;
+
+        crcRegVal = FLD_SET_DRF_NUM(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_THRESHOLD_MAN,
+                                     link->errorThreshold.thresholdMan,
+                                     crcRegVal);
+        crcRegVal = FLD_SET_DRF_NUM(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_THRESHOLD_EXP,
+                                     link->errorThreshold.thresholdExp,
+                                     crcRegVal);
+        crcRegVal = FLD_SET_DRF_NUM(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_TIMESCALE_MAN,
+                                     link->errorThreshold.timescaleMan,
+                                     crcRegVal);
+        crcRegVal = FLD_SET_DRF_NUM(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_TIMESCALE_EXP,
+                                     link->errorThreshold.timescaleExp,
+                                     crcRegVal);
+    }
+
+    NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, 
+                            _NVLDL_RX, _ERROR_RATE_CTRL, crcRegVal);
+}
+
+void
+nvswitch_configure_error_rate_threshold_interrupt_ls10
+(
+    nvlink_link *link,
+    NvBool bEnable
+)
+{
+    nvswitch_device *device = link->dev->pDevInfo;
+    NvU32 linkNumber = link->linkNumber;
+    NvU32 intrRegVal;
+    link->errorThreshold.bInterruptEn = bEnable;
+
+    intrRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, 
+                                         _NVLDL_TOP, _INTR_NONSTALL_EN);
+
+    if (bEnable)
+    {
+        link->errorThreshold.bInterruptTrigerred = NV_FALSE;
+        intrRegVal = FLD_SET_DRF_NUM(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_SHORT_ERROR_RATE, 1, 
+                                     intrRegVal);
+    }
+    else
+    {
+        intrRegVal = FLD_SET_DRF_NUM(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_SHORT_ERROR_RATE, 0, 
+                                     intrRegVal);
+    }
+
+    NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, 
+                            _NVLDL_TOP, _INTR_NONSTALL_EN, intrRegVal);
+}
+
+void
+nvswitch_init_dlpl_interrupts_ls10
+(
+    nvlink_link *link
+)
+{
+    nvswitch_device *device            = link->dev->pDevInfo;
+    NvU32            linkNumber        = link->linkNumber;
 
     // W1C any stale state.
     NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TOP, _INTR, 0xffffffff);
@@ -1136,44 +1253,8 @@ nvswitch_init_dlpl_interrupts_ls10
               DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _LTSSM_PROTOCOL, _DISABLE)          |
               DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _MINION_REQUEST, _DISABLE));
 
-    intrRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, 
-                                         _NVLDL_TOP, _INTR_NONSTALL_EN);
-    crcRegVal  = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, 
-                                         _NVLDL_RX, _ERROR_RATE_CTRL);
-
-    //
-    // Enable RX error rate short interrupt.
-    // Please refer to Bug 3365481 for details about the CRC_BIT_ERROR_RATE_SHORT 
-    // values used below.
-    //
-
-    // Enable RX error rate short interrupt if the regkey is set
-    if (crcShortRegkeyVal != NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_DEFAULT)
-    {
-        shortRateMask = DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_MAN)     |
-                            DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_EXP) |
-                            DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_MAN) |
-                            DRF_SHIFTMASK(NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_EXP);
-        
-        intrRegVal |= DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_SHORT_ERROR_RATE, _ENABLE);
-        crcRegVal  &= ~shortRateMask;
-        crcRegVal  |= crcShortRegkeyVal;
-    }
-    else
-    {
-        shortRateMask = DRF_SHIFTMASK(NV_NVLDL_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_MAN)     |
-                                DRF_SHIFTMASK(NV_NVLDL_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_EXP) |
-                                DRF_SHIFTMASK(NV_NVLDL_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_MAN) |
-                                DRF_SHIFTMASK(NV_NVLDL_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_EXP);
-    
-        intrRegVal |= DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_SHORT_ERROR_RATE, _ENABLE);
-        crcRegVal  &= ~shortRateMask;
-    }
-
-    NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, 
-                            _NVLDL_TOP, _INTR_NONSTALL_EN, intrRegVal);
-    NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, 
-                            _NVLDL_RX, _ERROR_RATE_CTRL, crcRegVal);
+    nvswitch_set_error_rate_threshold_ls10(link, NV_TRUE);
+    nvswitch_configure_error_rate_threshold_interrupt_ls10(link, NV_TRUE);
 }
 
 static NvU32
@@ -1318,12 +1399,12 @@ nvswitch_execute_unilateral_link_shutdown_ls10
 )
 {
     nvswitch_device *device = link->dev->pDevInfo;
-    NvlStatus        status = NVL_SUCCESS;
+    NvlStatus status = NVL_SUCCESS;
     NvU32 retry_count = 3;
     NvU32 link_state_request;
     NvU32 link_state;
-    NvU32 stat_data;
-    NvU32 link_intr_subcode;
+    NvU32 stat_data = 0;
+    NvU32 link_intr_subcode = 0;
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NVLDL, link->linkNumber))
     {

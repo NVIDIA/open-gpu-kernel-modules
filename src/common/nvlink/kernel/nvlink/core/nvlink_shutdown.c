@@ -1047,7 +1047,7 @@ nvlink_core_powerdown_floorswept_conns_to_off
         if (numConnsToShutdown != 0)
         {
             nvlink_core_powerdown_intranode_conns_from_active_to_off(connsToShutdown, numConnsToShutdown, 0);
-            nvlink_core_reset_intranode_conns(connsToShutdown, numConnsToShutdown, NVLINK_STATE_CHANGE_ASYNC);
+            nvlink_core_reset_intranode_conns(connsToShutdown, numConnsToShutdown, NVLINK_STATE_CHANGE_SYNC);
 
             for (j = 0; j < numConnsToShutdown; ++j)
             {
@@ -1055,6 +1055,9 @@ nvlink_core_powerdown_floorswept_conns_to_off
             }
         }
     }
+
+    nvlink_free(visitedConns);
+    nvlink_free(connsToShutdown);
 
     return NVL_SUCCESS;
 }

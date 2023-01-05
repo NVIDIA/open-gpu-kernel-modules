@@ -493,7 +493,7 @@ _nvswitch_inforom_read_file
     nvswitch_os_memset(pDmaBuf, 0, transferSize);
 
     cmdSeqDesc = 0;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_750MSEC_IN_NS, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn, (PRM_FLCN_CMD)&soeCmd, NULL, NULL,
                                           SOE_RM_CMDQ_LOG_ID, &cmdSeqDesc, &timeout);
     if (status != NV_OK)
@@ -591,7 +591,8 @@ _nvswitch_inforom_write_file
     }
 
     cmdSeqDesc = 0;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_750MSEC_IN_NS, &timeout);
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn, (PRM_FLCN_CMD)&soeCmd, NULL, NULL,
                                           SOE_RM_CMDQ_LOG_ID, &cmdSeqDesc, &timeout);
     if (status != NV_OK)
@@ -899,6 +900,7 @@ done:
 /*!
  *  Fill in the static identification data structure for the use by the SOE
  *  to be passed on to a BMC over the I2CS interface.
+ *  For LR10 only so no HAL is needed.
  *
  * @param[in]      device       switch device pointer
  * @param[in]      pInforom     INFOROM object pointer
@@ -916,13 +918,13 @@ nvswitch_inforom_read_static_data
 #define _INFOROM_TO_SOE_STRING_COPY(obj, irName, soeName)                                   \
 {                                                                                           \
     NvU32   _i;                                                                             \
-    ct_assert(NV_ARRAY_ELEMENTS(pInforom->obj.object.irName) <=                             \
+    ct_assert(NV_ARRAY_ELEMENTS(pInforom->obj.object.v1.irName) <=                             \
               NV_ARRAY_ELEMENTS(pData->obj.soeName));                                       \
-    for (_i = 0; _i < NV_ARRAY_ELEMENTS(pInforom->obj.object.irName); ++_i)                 \
+    for (_i = 0; _i < NV_ARRAY_ELEMENTS(pInforom->obj.object.v1.irName); ++_i)                 \
     {                                                                                       \
-        pData->obj.soeName[_i] = (NvU8)(pInforom->obj.object.irName[_i] & 0xff);            \
+        pData->obj.soeName[_i] = (NvU8)(pInforom->obj.object.v1.irName[_i] & 0xff);            \
     }                                                                                       \
-    if (NV_ARRAY_ELEMENTS(pInforom->obj.object.irName) <                                    \
+    if (NV_ARRAY_ELEMENTS(pInforom->obj.object.v1.irName) <                                    \
         NV_ARRAY_ELEMENTS(pData->obj.soeName))                                              \
     {                                                                                       \
         do                                                                                  \
@@ -935,21 +937,25 @@ nvswitch_inforom_read_static_data
 
     if (pInforom->OBD.bValid)
     {
-        pData->OBD.bValid = NV_TRUE;
-        pData->OBD.buildDate = (NvU32)pInforom->OBD.object.buildDate;
-        nvswitch_inforom_string_copy(pInforom->OBD.object.marketingName,
-                                      pData->OBD.marketingName,
-                                      NV_ARRAY_ELEMENTS(pData->OBD.marketingName));
+        /* This should be called for LR10 (i.e., version 1.xx) only */
+        if ((pInforom->OBD.object.header.version & 0xFF) == 1)
+        {
+            pData->OBD.bValid = NV_TRUE;
+            pData->OBD.buildDate = (NvU32)pInforom->OBD.object.v1.buildDate;
+            nvswitch_inforom_string_copy(pInforom->OBD.object.v1.marketingName,
+                                          pData->OBD.marketingName,
+                                          NV_ARRAY_ELEMENTS(pData->OBD.marketingName));
 
-        nvswitch_inforom_string_copy(pInforom->OBD.object.serialNumber,
-                                      pData->OBD.serialNum,
-                                      NV_ARRAY_ELEMENTS(pData->OBD.serialNum));
+            nvswitch_inforom_string_copy(pInforom->OBD.object.v1.serialNumber,
+                                          pData->OBD.serialNum,
+                                          NV_ARRAY_ELEMENTS(pData->OBD.serialNum));
 
-        //
-        // boardPartNum requires special handling, as its size exceeds that
-        // of its InfoROM representation
-        //
-        _INFOROM_TO_SOE_STRING_COPY(OBD, productPartNumber, boardPartNum);
+            //
+            // boardPartNum requires special handling, as its size exceeds that
+            // of its InfoROM representation
+            //
+            _INFOROM_TO_SOE_STRING_COPY(OBD, productPartNumber, boardPartNum);
+        }
     }
 
     if (pInforom->OEM.bValid)

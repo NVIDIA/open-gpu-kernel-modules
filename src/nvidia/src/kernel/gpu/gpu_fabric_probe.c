@@ -354,7 +354,7 @@ _gpuFabricProbeSchedule
                                  pGpuFabricProbeInfo->probeRetryDelay);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) tmrEventScheduleRel failed\n",
+        NV_PRINTF(LEVEL_ERROR, "GPU%u tmrEventScheduleRel failed\n",
                   gpuGetInstance(pGpu));
         return status;
     }
@@ -367,7 +367,7 @@ _gpuFabricProbeSchedule
         pGpuFabricProbeInfo->probeRetryDelay += pGpuFabricProbeInfo->probeRetryDelay;
     }
 
-    NV_PRINTF(LEVEL_INFO, "GPU (ID: %d) Num retried probes %lld \n",
+    NV_PRINTF(LEVEL_INFO, "GPU%u Num retried probes %lld \n",
               gpuGetInstance(pGpu), pGpuFabricProbeInfo->numProbes);
 
     return NV_OK;
@@ -394,7 +394,7 @@ _gpuFabricProbeConstructReq
     status = gpuGetGidInfo(pGpu, &pUuid, &uuidLength, flags);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Failed to update GPU UUID\n",
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Failed to update GPU UUID\n",
                   gpuGetInstance(pGpu));
         return status;
     }
@@ -410,35 +410,34 @@ _gpuFabricProbeConstructReq
     return status;
 }
 
-static NV_STATUS
-_gpuFabricProbeSend
+static void
+_gpuFabricProbeSend_WORKITEM
 (
-    OBJGPU *pGpu,
-    OBJTMR *pTmr,
-    TMR_EVENT *pEvent
+    NvU32 gpuInstance,
+    void *pArgs
 )
 {
-    NV_STATUS status;
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo =
-        (GPU_FABRIC_PROBE_INFO *)pEvent->pUserData;
+    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo = pGpu->pGpuFabricProbeInfo;
+    NV_STATUS status;
 
     if (pKernelNvlink->bIsGpuDegraded ||
         (pKernelNvlink->discoveredLinks == 0))
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "GPU (ID: %d) Degraded. Not sending probe\n",
+                  "GPU%u Degraded. Not sending probe\n",
                   gpuGetInstance(pGpu));
         _gpuFabricProbeForceCompletionError(pGpuFabricProbeInfo, NV_ERR_NOT_SUPPORTED);
-        return NV_ERR_NOT_SUPPORTED;
+        return;
     }
 
     if (pGpuFabricProbeInfo->bProbeRespRcvd)
     {
         NV_PRINTF(LEVEL_INFO,
-                  "GPU (ID: %d) Probe Resp rcvd. Not sending probe\n",
+                  "GPU%u Probe Resp rcvd. Not sending probe\n",
                   gpuGetInstance(pGpu));
-        return NV_OK;
+        return;
     }
 
     status = knvlinkSendInbandData(pGpu,
@@ -446,7 +445,7 @@ _gpuFabricProbeSend
                                   &pGpuFabricProbeInfo->sendDataParams);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Send Inband data failed\n",
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Send Inband data failed\n",
                   gpuGetInstance(pGpu));
         //
         // Deliberately ignoring return value as we want probes to be
@@ -457,10 +456,33 @@ _gpuFabricProbeSend
     status = _gpuFabricProbeSchedule(pGpuFabricProbeInfo);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Schedule Probe failed\n",
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Schedule Probe failed\n",
                   gpuGetInstance(pGpu));
         _gpuFabricProbeForceCompletionError(pGpuFabricProbeInfo, NV_ERR_OPERATING_SYSTEM);
-        return status;
+        return;
+    }
+}
+
+static NV_STATUS
+_gpuFabricProbeScheduleWq
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    TMR_EVENT *pEvent
+)
+{
+    OBJOS *pOS = GPU_GET_OS(pGpu);
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)), NV_ERR_INVALID_STATE);
+
+    status = pOS->osQueueWorkItemWithFlags(pGpu, _gpuFabricProbeSend_WORKITEM, NULL,
+                                           OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU%u OS Schedule Probe failed\n",
+                  gpuGetInstance(pGpu));
+         _gpuFabricProbeForceCompletionError(pGpu->pGpuFabricProbeInfo, NV_ERR_OPERATING_SYSTEM);
     }
 
     return status;
@@ -547,7 +569,7 @@ _gpuFabricProbeReceive
     if (pProbeRespMsg->msgHdr.requestId != pProbeReqMsg->msgHdr.requestId)
     {
         NV_PRINTF(LEVEL_INFO,
-                  "GPU (ID: %d) Probe resp invalid reqId %lld respId %lld\n",
+                  "GPU%u Probe resp invalid reqId %lld respId %lld\n",
                   gpuGetInstance(pGpu),
                   pProbeReqMsg->msgHdr.requestId,
                   pProbeRespMsg->msgHdr.requestId);
@@ -620,7 +642,6 @@ gpuFabricProbeResume
 )
 {
     OBJGPU *pGpu;
-    OBJTMR *pTmr;
     NV_STATUS status = NV_OK;
 
     if (pGpuFabricProbeInfo == NULL)
@@ -632,16 +653,14 @@ gpuFabricProbeResume
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
-    pTmr = GPU_GET_TIMER(pGpu);
-
     NV_ASSERT(pGpuFabricProbeInfo->pTmrEvent != NULL);
 
     if (!gpuFabricProbeIsReceived(pGpuFabricProbeInfo))
     {
-        status = _gpuFabricProbeSend(pGpu, pTmr, pGpuFabricProbeInfo->pTmrEvent);
+        status = _gpuFabricProbeSchedule(pGpuFabricProbeInfo);
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Resume and Sending probe request failed\n",
+            NV_PRINTF(LEVEL_ERROR, "GPU%u Resume and Sending probe request failed\n",
                       gpuGetInstance(pGpu));
         }
     }
@@ -689,11 +708,10 @@ gpuFabricProbeStart
     pGpuFabricProbeInfo->pGpu = pGpu;
 
     status = tmrEventCreate(pTmr, &pGpuFabricProbeInfo->pTmrEvent,
-                            _gpuFabricProbeSend, pGpuFabricProbeInfo,
-                            TMR_FLAGS_NONE);
+                            _gpuFabricProbeScheduleWq, NULL, TMR_FLAGS_NONE);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Timer create failure\n",
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Timer create failure\n",
                   gpuGetInstance(pGpu));
         goto fail;
     }
@@ -710,7 +728,7 @@ gpuFabricProbeStart
     status = _gpuFabricProbeConstructReq(&pProbeReqMsg->probeReq, pGpu);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Init Probe request failed\n",
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Init Probe request failed\n",
                   gpuGetInstance(pGpu));
         goto fail;
     }
@@ -720,7 +738,7 @@ gpuFabricProbeStart
                                     sizeof(pProbeReqMsg->probeReq));
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Init of Inband msg hdr failed\n",
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Init of Inband msg hdr failed\n",
                   gpuGetInstance(pGpu));
         goto fail;
     }
@@ -737,16 +755,22 @@ gpuFabricProbeStart
                                            &inbandMsgCbParams);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Registering Inband Cb failed\n",
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Registering Inband Cb failed\n",
                   gpuGetInstance(pGpu));
         goto fail;
     }
 
-    status = _gpuFabricProbeSend(pGpu, pTmr, pGpuFabricProbeInfo->pTmrEvent);
+    //
+    // Queue the probe work item directly (without timer delay).
+    // A small timer delay is likely to fire and be unable to acquire the lock
+    // (because we'll still be holding it). The timer event will be used if the
+    // probe work item needs to be rescheduled with a delay.
+    //
+    status = _gpuFabricProbeScheduleWq(pGpu, pTmr, pGpuFabricProbeInfo->pTmrEvent);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Sending probe request failed\n",
-                  gpuGetInstance(pGpu));
+        NV_PRINTF(LEVEL_ERROR, "GPU%u failed to schedule probe work item (status = 0x%x)\n",
+                  gpuGetInstance(pGpu), status);  
         goto fail;
     }
 
@@ -810,7 +834,7 @@ gpuFabricProbeIsSupported
 {
     if (pGpu->fabricProbeRetryDelay == 0)
     {
-        NV_PRINTF(LEVEL_INFO, "GPU (ID: %d) Probe handling is disabled\n",
+        NV_PRINTF(LEVEL_INFO, "GPU%u Probe handling is disabled\n",
                   gpuGetInstance(pGpu));
         return NV_FALSE;
     }

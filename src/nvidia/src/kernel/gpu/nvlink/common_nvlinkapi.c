@@ -304,7 +304,7 @@ static _getNvlinkStatus
             }
         }
 
-        if (pLinkAndClockValues->bLinkConnectedToPeer)
+        if (nvlinkLinks[i].bConnected)
         {
             // Tag as Peer link
             bPeerLink = NV_TRUE;
@@ -699,7 +699,8 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_INFO, "Nvlink is not ready yet!\n");
-                return NV_ERR_NOT_READY;
+                status = NV_ERR_NOT_READY;
+                goto done;
             }
         }
 

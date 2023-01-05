@@ -76,6 +76,32 @@ rmapiResourceDescToLegacyFlags
     }
 }
 
+NvU32
+serverAllocClientHandleBase
+(
+    RsServer          *pServer,
+    NvBool             bInternalHandle,
+    API_SECURITY_INFO *pSecInfo
+)
+{
+    NvU32 handleBase;
+    NvU32 gfid = (NvU32)((NvU64)pSecInfo->pProcessToken);
+
+    if (bInternalHandle)
+    {
+        handleBase = pServer->internalHandleBase;
+    }
+    else
+    {
+        handleBase = pServer->clientHandleBase;
+
+        if (RMCFG_FEATURE_PLATFORM_GSP && IS_GFID_VF(gfid))
+            handleBase = RS_CLIENT_GET_VF_HANDLE_BASE(gfid);
+    }
+
+    return handleBase;
+}
+
 NV_STATUS
 serverAllocApiCopyIn
 (

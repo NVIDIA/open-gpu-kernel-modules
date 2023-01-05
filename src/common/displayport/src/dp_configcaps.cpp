@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -861,6 +861,42 @@ struct DPCDHALImpl : DPCDHAL
             ouiBuffer[i] = 0;
 
         return bus.write(NV_DPCD_SOURCE_IEEE_OUI, &ouiBuffer[0], sizeof ouiBuffer);
+    }
+
+    virtual bool getOuiSource(unsigned &ouiId, char * modelName,
+                              size_t modelNameBufferSize, NvU8 & chipRevision)
+    {
+        NvU8 ouiBuffer[16];
+        int address = NV_DPCD_SOURCE_IEEE_OUI;
+
+        if (caps.revisionMajor <= 0)
+            DP_ASSERT(0 && "Something is wrong, revision major should be > 0");
+
+        // If buffer size is larger than dev_id size, the extras are not used.
+        // If buffer size is smaller, than we can only get certain bytes.
+        if (modelNameBufferSize > NV_DPCD_SOURCE_DEV_ID_STRING__SIZE)
+        {
+            modelNameBufferSize = NV_DPCD_SOURCE_DEV_ID_STRING__SIZE;
+        }
+
+        if (AuxRetry::ack != bus.read(address, &ouiBuffer[0], sizeof ouiBuffer))
+        {
+            *modelName = 0;
+            ouiId = 0;
+            chipRevision = 0;
+            return false;
+        }
+        //  The first 3 bytes are IEEE_OUI. 2 hex digits per register.
+        ouiId = ouiBuffer[0] | (ouiBuffer[1] << 8) | (ouiBuffer[2] << 16);
+
+        // Next 6 bytes are Device Identification String, copy as much as we can (limited buffer case).
+        unsigned int i;
+        for (i = 0; i < modelNameBufferSize; i++)
+            modelName[i] = ouiBuffer[3+i];
+
+        chipRevision = ouiBuffer[9];
+
+        return true;
     }
 
     virtual bool getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision)

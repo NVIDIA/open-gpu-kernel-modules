@@ -2046,6 +2046,28 @@ gpuStateInit_IMPL
             goto gpuStateInit_exit;
     }
 
+    // Set a property indicating that VF BAR0 MMU TLB Invalidation register emulation is required or not.
+    if (hypervisorIsVgxHyper())
+    {
+        if (
+            IsdADA(pGpu) ||
+           0)
+        {
+            NvU32 data32 = NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_DEFAULT;
+
+            // Registry override to change default mode, i.e, emulate VF MMU TLB Invalidation register
+            if ((osReadRegistryDword(pGpu, NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE, &data32) == NV_OK) &&
+                (data32 == NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_DISABLE))
+            {
+                pGpu->setProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE, NV_FALSE);
+            }
+        }
+        else
+        {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE, NV_FALSE);
+        }
+    }
+
     // Set a property indicating that the state initialization has been done
     pGpu->setProperty(pGpu, PDB_PROP_GPU_STATE_INITIALIZED, NV_TRUE);
 
@@ -3759,10 +3781,13 @@ NV_STATUS gpuConstructEngineTable_IMPL
     // Initialize per-GPU per-engine list of non-stall interrupt event nodes.
     for (engineIdx = 0; engineIdx < (NvU32)RM_ENGINE_TYPE_LAST; engineIdx++)
     {
-        pGpu->engineNonstallIntr[engineIdx].pEventNode = NULL;
-        pGpu->engineNonstallIntr[engineIdx].pSpinlock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
-        if (pGpu->engineNonstallIntr[engineIdx].pSpinlock == NULL)
-            return NV_ERR_INSUFFICIENT_RESOURCES;
+        NV_STATUS status = gpuEngineEventNotificationListCreate(pGpu,
+            &pGpu->engineNonstallIntrEventNotifications[engineIdx]);
+        if (status != NV_OK)
+        {
+            gpuDestroyEngineTable(pGpu);
+            return status;
+        }
     }
 
     return NV_OK;
@@ -3816,7 +3841,9 @@ NV_STATUS gpuUpdateEngineTable_IMPL
 }
 void gpuDestroyEngineTable_IMPL(OBJGPU *pGpu)
 {
-    NvU32     engineIdx      = 0;
+    for (NvU32 engineIdx = 0; engineIdx < (NvU32)RM_ENGINE_TYPE_LAST; engineIdx++)
+        gpuEngineEventNotificationListDestroy(pGpu,
+            pGpu->engineNonstallIntrEventNotifications[engineIdx]);
 
     if (pGpu->engineDB.pType)
     {
@@ -3824,16 +3851,6 @@ void gpuDestroyEngineTable_IMPL(OBJGPU *pGpu)
         portMemFree(pGpu->engineDB.pType);
         pGpu->engineDB.pType = NULL;
         pGpu->engineDB.bValid = NV_FALSE;
-    }
-
-    for (engineIdx = 0; engineIdx < (NvU32)RM_ENGINE_TYPE_LAST; engineIdx++)
-    {
-        NV_ASSERT(pGpu->engineNonstallIntr[engineIdx].pEventNode == NULL);
-
-        if (pGpu->engineNonstallIntr[engineIdx].pSpinlock != NULL)
-        {
-            portSyncSpinlockDestroy(pGpu->engineNonstallIntr[engineIdx].pSpinlock);
-        }
     }
 }
 

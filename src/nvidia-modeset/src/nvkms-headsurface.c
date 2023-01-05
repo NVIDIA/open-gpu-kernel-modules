@@ -1961,6 +1961,53 @@ static NvBool IsPreviousFrameDone(NVHsChannelEvoPtr pHsChannel)
 }
 
 /*!
+ * If the client provided a notifier surface with a real flip
+ * request while swap groups were enabled, write to that
+ * notifier with the BEGUN status and the most recent
+ * headsurface notifier timestamp to emulate what the client
+ * would observe if their notifier was used in hardware.
+ */
+static void HsUpdateClientNotifier(NVHsChannelEvoPtr pHsChannel)
+{
+    const NVDispEvoRec *pDispEvo = pHsChannel->pDispEvo;
+    const NvU32 apiHead = pHsChannel->apiHead;
+    const NvU32 sd = pDispEvo->displayOwner;
+    const NVHsDeviceEvoRec *pHsDevice = pDispEvo->pDevEvo->pHsDevice;
+    const NVHsNotifiersRec *pHsNotifiers = &pHsDevice->notifiers;
+    const NVHsNotifiersOneSdRec *pHsNotifiersOneSd = pHsNotifiers->sd[sd].ptr;
+    const NvU8 nextSlot = pHsNotifiers->sd[sd].apiHead[apiHead].nextSlot;
+    struct nvKmsParsedNotifier parsed = { };
+    NVFlipNIsoSurfaceEvoHwState *pClientNotifier =
+        &pHsChannel->flipQueue[NVKMS_MAIN_LAYER].current.completionNotifier.surface;
+
+    if (pClientNotifier->pSurfaceEvo == NULL) {
+        return;
+    }
+
+    const NvU8 prevSlot =
+        A_minus_b_with_wrap_U8(nextSlot, 1,
+                               NVKMS_HEAD_SURFACE_MAX_NOTIFIERS_PER_HEAD);
+
+    nvKmsParseNotifier(pHsNotifiers->nIsoFormat, FALSE /* overlay */,
+                       prevSlot, pHsNotifiersOneSd->notifier[apiHead], &parsed);
+
+    nvAssert(parsed.status == NVKMS_NOTIFIER_STATUS_BEGUN);
+
+    /*
+     * XXX NVKMS HEADSURFACE TODO: Get valid timestamp through other means to
+     * support this on platforms with legacy HW semaphores without valid
+     * HW notifier timestamps in the main channel.
+     */
+    nvAssert(parsed.timeStampValid);
+
+    nvKmsSetNotifier(pClientNotifier->format,
+                     FALSE /* overlay */,
+                     pClientNotifier->offsetInWords / 4,
+                     pClientNotifier->pSurfaceEvo->cpuAddress[sd],
+                     parsed.timeStamp);
+}
+
+/*!
  * Check if all flips completed for this SwapGroup.  If so, release the
  * SwapGroup.
  */
@@ -2004,8 +2051,9 @@ static void HsCheckSwapGroupFlipDone(
     }
 
     /*
-     * The SwapGroup is ready: increment nextIndex for all active heads, so that
-     * subsequent frames of headSurface render to the next buffer.
+     * The SwapGroup is ready: update client notifiers if necessary and
+     * increment nextIndex for all active heads, so that subsequent frames of
+     * headSurface render to the next buffer.
      */
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
         NvU32 apiHead;
@@ -2022,6 +2070,7 @@ static void HsCheckSwapGroupFlipDone(
                 nvAssert(pHsChannel->config.neededForSwapGroup);
                 nvAssert(IsPreviousFlipDone(pHsChannel));
 
+                HsUpdateClientNotifier(pHsChannel);
                 HsIncrementNextIndex(pHsDevice, pHsChannel);
             }
         }

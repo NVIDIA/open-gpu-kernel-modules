@@ -42,6 +42,7 @@ extern "C" {
 
 #include "gpu/gpu.h"
 #include "gpu/eng_state.h"
+#include "kernel/gpu/fifo/kernel_fifo.h"
 
 #include "ctrl/ctrl2080/ctrl2080perf.h"
 
@@ -130,18 +131,18 @@ NV_STATUS __nvoc_objCreate_OBJGPUMON(OBJGPUMON**, Dynamic*, NvU32);
 #define gpumonSetTunableState(pGpu, pEngstate, pTunableState) gpumonSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define gpumonConstructEngine(pGpu, pEngstate, arg0) gpumonConstructEngine_DISPATCH(pGpu, pEngstate, arg0)
 #define gpumonIsPresent(pGpu, pEngstate) gpumonIsPresent_DISPATCH(pGpu, pEngstate)
-void gpumonGetContextProcessInfo_GM107(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, NvU32 arg0, NvU32 *arg1, NvU32 *arg2, const char **arg3);
+void gpumonGetContextProcessInfo_GM107(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, RM_ENGINE_TYPE rmEngineTypeBegin, RM_ENGINE_TYPE rmEngineTypeEnd, NvU32 context, NvU32 *pProcID, NvU32 *pSubProcessID, const char **pSubProcessName);
 
 
 #ifdef __nvoc_objgpumon_h_disabled
-static inline void gpumonGetContextProcessInfo(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, NvU32 arg0, NvU32 *arg1, NvU32 *arg2, const char **arg3) {
+static inline void gpumonGetContextProcessInfo(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, RM_ENGINE_TYPE rmEngineTypeBegin, RM_ENGINE_TYPE rmEngineTypeEnd, NvU32 context, NvU32 *pProcID, NvU32 *pSubProcessID, const char **pSubProcessName) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUMON was disabled!");
 }
 #else //__nvoc_objgpumon_h_disabled
-#define gpumonGetContextProcessInfo(pGpu, pGpumon, arg0, arg1, arg2, arg3) gpumonGetContextProcessInfo_GM107(pGpu, pGpumon, arg0, arg1, arg2, arg3)
+#define gpumonGetContextProcessInfo(pGpu, pGpumon, rmEngineTypeBegin, rmEngineTypeEnd, context, pProcID, pSubProcessID, pSubProcessName) gpumonGetContextProcessInfo_GM107(pGpu, pGpumon, rmEngineTypeBegin, rmEngineTypeEnd, context, pProcID, pSubProcessID, pSubProcessName)
 #endif //__nvoc_objgpumon_h_disabled
 
-#define gpumonGetContextProcessInfo_HAL(pGpu, pGpumon, arg0, arg1, arg2, arg3) gpumonGetContextProcessInfo(pGpu, pGpumon, arg0, arg1, arg2, arg3)
+#define gpumonGetContextProcessInfo_HAL(pGpu, pGpumon, rmEngineTypeBegin, rmEngineTypeEnd, context, pProcID, pSubProcessID, pSubProcessName) gpumonGetContextProcessInfo(pGpu, pGpumon, rmEngineTypeBegin, rmEngineTypeEnd, context, pProcID, pSubProcessID, pSubProcessName)
 
 static inline NV_STATUS gpumonReconcileTunableState_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
     return pEngstate->__gpumonReconcileTunableState__(pGpu, pEngstate, pTunableState);

@@ -93,7 +93,9 @@ const struct
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_MST,          &dpRegkeyDatabase.bOptLinkKeptAliveMst,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,          &dpRegkeyDatabase.bOptLinkKeptAliveSst,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
-    {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL}
+    {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_ENABLE_OUI_RESTORING,             &dpRegkeyDatabase.bEnableOuiRestoring,             DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :

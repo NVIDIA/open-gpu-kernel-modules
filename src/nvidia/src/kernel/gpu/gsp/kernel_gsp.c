@@ -35,9 +35,7 @@
 #include "virtualization/vgpuconfigapi.h"
 #include "kernel/gpu/disp/kern_disp.h"
 #include "gpu/external_device/external_device.h"
-
 #include "class/cl2080.h" // NV20_SUBDEVICE_0
-
 #include "liblogdecode.h"
 #include "libelf.h"
 #include "nverror.h"
@@ -1294,6 +1292,241 @@ _kgspFreeRpcInfrastructure
 }
 
 /*!
+ * Convert init arg name to 64bit id value.
+ *
+ * @param[in]      name  String representing name of init arg
+ */
+static NvU64
+_kgspGenerateInitArgId(const char *name)
+{
+    NvU64 id = 0;
+    NvU8 c;
+    NvU32 i;
+
+    // Convert at most 8 characters from name into id.
+    for (i = 0; i < (sizeof(NvU64) / sizeof(NvU8)); ++i)
+    {
+        c = (NvU8)*name++;
+        if (c == '\0')
+        {
+            break;
+        }
+        id = (id << 8) | c;
+    }
+
+    return id;
+}
+
+/*!
+ * Free vgpu partition LIBOS task logging structures
+ */
+static void
+_kgspFreeLibosVgpuPartitionLoggingStructures
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32 gfid
+)
+{
+    libosLogDestroy(&pKernelGsp->logDecodeVgpuPartition[gfid - 1]);
+
+    // release the vgpu task log buffer memory
+    RM_LIBOS_LOG_MEM *pGspPluginVgpuTaskLog = &pKernelGsp->gspPluginVgpuTaskLogMem[gfid - 1];
+
+    if (pGspPluginVgpuTaskLog->pTaskLogBuffer != NULL)
+    {
+        memdescUnmapInternal(pGpu, pGspPluginVgpuTaskLog->pTaskLogDescriptor, TRANSFER_FLAGS_NONE);
+
+        pGspPluginVgpuTaskLog->pTaskLogBuffer = NULL;
+    }
+
+    if (pGspPluginVgpuTaskLog->pTaskLogDescriptor != NULL)
+    {
+        memdescFree(pGspPluginVgpuTaskLog->pTaskLogDescriptor);
+        memdescDestroy(pGspPluginVgpuTaskLog->pTaskLogDescriptor);
+        pGspPluginVgpuTaskLog->pTaskLogDescriptor = NULL;
+    }
+
+    // release the init task log buffer memory
+    RM_LIBOS_LOG_MEM *pGspPluginInitTaskLog = &pKernelGsp->gspPluginInitTaskLogMem[gfid - 1];
+
+    if (pGspPluginInitTaskLog->pTaskLogBuffer != NULL)
+    {
+        memdescUnmapInternal(pGpu, pGspPluginInitTaskLog->pTaskLogDescriptor, TRANSFER_FLAGS_NONE);
+
+        pGspPluginInitTaskLog->pTaskLogBuffer = NULL;
+    }
+
+    if (pGspPluginInitTaskLog->pTaskLogDescriptor != NULL)
+    {
+        memdescFree(pGspPluginInitTaskLog->pTaskLogDescriptor);
+        memdescDestroy(pGspPluginInitTaskLog->pTaskLogDescriptor);
+        pGspPluginInitTaskLog->pTaskLogDescriptor = NULL;
+    }
+}
+
+/*!
+ * Free vgpu partition LIBOS task logging structures
+ */
+NV_STATUS
+kgspFreeVgpuPartitionLogging_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32 gfid
+)
+{
+    if (gfid > MAX_PARTITIONS_WITH_GFID)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    else
+    {
+        // Make sure there is no lingering debug output.
+        kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+
+        _kgspFreeLibosVgpuPartitionLoggingStructures(pGpu, pKernelGsp, gfid);
+        return NV_OK;
+    }
+}
+
+/*!
+ * Initialize vgpu partition LIBOS task logging structures
+ */
+NV_STATUS
+kgspInitVgpuPartitionLogging_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32 gfid,
+    NvU64 initTaskLogBUffOffset,
+    NvU64 initTaskLogBUffSize,
+    NvU64 vgpuTaskLogBUffOffset,
+    NvU64 vgpuTaskLogBuffSize
+)
+{
+    NV_STATUS nvStatus = NV_OK;
+    RM_LIBOS_LOG_MEM *pGspPluginVgpuTaskLog = NULL;
+    RM_LIBOS_LOG_MEM *pGspPluginInitTaskLog = NULL;
+    char vm_string[8], sourceName[SOURCE_NAME_MAX_LENGTH];
+
+    if (gfid > MAX_PARTITIONS_WITH_GFID)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // Source name is used to generate a tag that is a unique identifier for nvlog buffers.
+    // As the source name 'GSP' is already in use, we will need a custom source name.
+    nvDbgSnprintf(sourceName, SOURCE_NAME_MAX_LENGTH, "V%02d", gfid);
+    libosLogCreateEx(&pKernelGsp->logDecodeVgpuPartition[gfid - 1], sourceName);
+
+    // Setup logging for vgpu task in vgpu partition
+    {
+        pGspPluginVgpuTaskLog = &pKernelGsp->gspPluginVgpuTaskLogMem[gfid - 1];
+        NvP64 pVa = NvP64_NULL;
+
+
+        NV_ASSERT_OK_OR_GOTO(nvStatus,
+            memdescCreate(&pGspPluginVgpuTaskLog->pTaskLogDescriptor,
+                          pGpu,
+                          vgpuTaskLogBuffSize,
+                          RM_PAGE_SIZE,
+                          NV_TRUE, ADDR_FBMEM, NV_MEMORY_CACHED,
+                          MEMDESC_FLAGS_NONE),
+            error_cleanup);
+
+
+        memdescDescribe(pGspPluginVgpuTaskLog->pTaskLogDescriptor, ADDR_FBMEM, vgpuTaskLogBUffOffset,  vgpuTaskLogBuffSize);
+
+        pVa = memdescMapInternal(pGpu, pGspPluginVgpuTaskLog->pTaskLogDescriptor, TRANSFER_FLAGS_NONE);
+
+        if (pVa != NvP64_NULL)
+        {
+            pGspPluginVgpuTaskLog->pTaskLogBuffer = pVa;
+            portMemSet(pGspPluginVgpuTaskLog->pTaskLogBuffer, 0, vgpuTaskLogBuffSize);
+
+            pGspPluginVgpuTaskLog->id8 = _kgspGenerateInitArgId("LOGVGPU");
+
+            nvDbgSnprintf(vm_string, sizeof(vm_string), "VGPU%d", gfid);
+
+            libosLogAddLogEx(&pKernelGsp->logDecodeVgpuPartition[gfid - 1],
+                pGspPluginVgpuTaskLog->pTaskLogBuffer,
+                memdescGetSize(pGspPluginVgpuTaskLog->pTaskLogDescriptor),
+                pGpu->gpuInstance,
+                (gpuGetChipArch(pGpu) >> GPU_ARCH_SHIFT),
+                gpuGetChipImpl(pGpu),
+                vm_string,
+                ".fwlogging_vgpu");
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to map memory for vgpu task log buffer for vGPU partition \n");
+            nvStatus = NV_ERR_INSUFFICIENT_RESOURCES;
+            goto error_cleanup;
+        }
+    }
+
+    // Setup logging for init task in vgpu partition
+    {
+        pGspPluginInitTaskLog = &pKernelGsp->gspPluginInitTaskLogMem[gfid - 1];
+        NvP64 pVa = NvP64_NULL;
+
+        NV_ASSERT_OK_OR_GOTO(nvStatus,
+            memdescCreate(&pGspPluginInitTaskLog->pTaskLogDescriptor,
+                          pGpu,
+                          initTaskLogBUffSize,
+                          RM_PAGE_SIZE,
+                          NV_TRUE, ADDR_FBMEM, NV_MEMORY_CACHED,
+                          MEMDESC_FLAGS_NONE),
+            error_cleanup);
+
+        memdescDescribe(pGspPluginInitTaskLog->pTaskLogDescriptor, ADDR_FBMEM, initTaskLogBUffOffset,  initTaskLogBUffSize);
+
+        pVa = memdescMapInternal(pGpu, pGspPluginInitTaskLog->pTaskLogDescriptor, TRANSFER_FLAGS_NONE);
+
+        if (pVa != NvP64_NULL)
+        {
+            pGspPluginInitTaskLog->pTaskLogBuffer = pVa;
+            portMemSet(pGspPluginInitTaskLog->pTaskLogBuffer, 0, initTaskLogBUffSize);
+
+            pGspPluginInitTaskLog->id8 = _kgspGenerateInitArgId("LOGINIT");
+
+            nvDbgSnprintf(vm_string, sizeof(vm_string), "INIT%d", gfid);
+
+            libosLogAddLogEx(&pKernelGsp->logDecodeVgpuPartition[gfid - 1],
+                pGspPluginInitTaskLog->pTaskLogBuffer,
+                memdescGetSize(pGspPluginInitTaskLog->pTaskLogDescriptor),
+                pGpu->gpuInstance,
+                (gpuGetChipArch(pGpu) >> GPU_ARCH_SHIFT),
+                gpuGetChipImpl(pGpu),
+                vm_string,
+                ".fwlogging_init");
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to map memory for init task log buffer for vGPU partition \n");
+            nvStatus = NV_ERR_INSUFFICIENT_RESOURCES;
+            goto error_cleanup;
+        }
+    }
+
+    {
+        libosLogInit(&pKernelGsp->logDecodeVgpuPartition[gfid - 1], pKernelGsp->pLogElf, pKernelGsp->logElfDataSize);
+        // nvlog buffers are now setup using the appropriate sourceName to avoid tag-value clash.
+        // Now sourceName can be modified to preserve the 'GSP-VGPUx' logging convention.
+        portStringCopy(pKernelGsp->logDecodeVgpuPartition[gfid - 1].sourceName,
+                       SOURCE_NAME_MAX_LENGTH,
+                       "GSP", SOURCE_NAME_MAX_LENGTH);
+    }
+
+error_cleanup:
+    if (nvStatus != NV_OK)
+        _kgspFreeLibosVgpuPartitionLoggingStructures(pGpu, pKernelGsp, gfid);
+
+    return nvStatus;
+}
+
+/*!
  * Free LIBOS task logging structures
  */
 static void
@@ -1340,32 +1573,6 @@ _kgspFreeLibosLoggingStructures
 }
 
 /*!
- * Convert init arg name to 64bit id value.
- *
- * @param[in]      name  String representing name of init arg
- */
-static NvU64
-_kgspGenerateInitArgId(const char *name)
-{
-    NvU64 id = 0;
-    NvU8 c;
-    NvU32 i;
-
-    // Convert at most 8 characters from name into id.
-    for (i = 0; i < (sizeof(NvU64) / sizeof(NvU8)); ++i)
-    {
-        c = (NvU8)*name++;
-        if (c == '\0')
-        {
-            break;
-        }
-        id = (id << 8) | c;
-    }
-
-    return id;
-}
-
-/*!
  * Initialize LIBOS task logging structures
  */
 static NV_STATUS
@@ -1386,10 +1593,12 @@ _kgspInitLibosLoggingStructures
     {
         {"LOGINIT", "INIT", 0x10000, ".fwlogging_init"},    // 64KB for stack traces
 #if defined(DEVELOP) || defined(DEBUG)
-        {"LOGVGPU", "VGPU", 0x40000, ".fwlogging_vgpu"},    // 256KB VGPU debug log on develop/debug builds
+        // The interrupt task is in the rm elf, so they share the same logging elf too
+        {"LOGINTR", "INTR", 0x40000, ".fwlogging_rm"},    // 256KB ISR debug log on develop/debug builds
         {"LOGRM",   "RM",   0x40000, ".fwlogging_rm"}       // 256KB RM debug log on develop/debug builds
 #else
-        {"LOGVGPU", "VGPU", 0x10000, ".fwlogging_vgpu"},    // 64KB VGPU debug log on release builds
+        // The interrupt task is in the rm elf, so they share the same logging elf too
+        {"LOGINTR", "INTR", 0x10000, ".fwlogging_rm"},    // 64KB ISR debug log on develop/debug builds
         {"LOGRM",   "RM",   0x10000, ".fwlogging_rm"}       // 64KB RM debug log on release builds
 #endif
     };
@@ -1480,6 +1689,8 @@ _kgspInitLibosLoggingStructures
             error_cleanup);
 
         pKernelGsp->pLogElf = portMemAllocNonPaged(logSize);
+        pKernelGsp->logElfDataSize = logSize;
+
         if (pKernelGsp->pLogElf == NULL)
         {
             NV_PRINTF(LEVEL_ERROR, "Failed to allocate memory for log elf");
@@ -1769,6 +1980,34 @@ kgspInitRm_IMPL
         goto done;
     }
 
+    // Prepare Scrubber ucode image if pre-scrubbed memory is insufficient
+    if (pKernelGsp->pScrubberUcode == NULL)
+    {
+        NvU64 neededSize = pKernelGsp->pWprMeta->fbSize - pKernelGsp->pWprMeta->gspFwRsvdStart;
+        NvU64 prescrubbedSize = kgspGetPrescrubbedTopFbSize(pGpu, pKernelGsp);
+
+        if (neededSize > prescrubbedSize)
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "allocating Scrubber ucode as pre-scrubbed memory (0x%llx bytes) is insufficient (0x%llx bytes needed)\n",
+                      prescrubbedSize, neededSize);
+
+            status = kgspAllocateScrubberUcodeImage(pGpu, pKernelGsp,
+                                                    &pKernelGsp->pScrubberUcode);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "failed to allocate Scrubber ucode: 0x%x\n", status);
+                goto done;
+            }
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "skipping allocating Scrubber ucode as pre-scrubbed memory (0x%llx bytes) is sufficient (0x%llx bytes needed)\n",
+                      prescrubbedSize, neededSize);
+        }
+    }
+
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspInitLogging(pGpu, pKernelGsp, pGspFw), done);
 
     // Wait for GFW_BOOT OK status
@@ -1805,8 +2044,16 @@ done:
 
     if (status != NV_OK)
     {
-        // Preserve any captured gsp-rm logs
+        KernelPmu *pKernelPmu = GPU_GET_KERNEL_PMU(pGpu);
+
+        // Preserve any captured GSP-RM logs
         libosPreserveLogs(&pKernelGsp->logDecode);
+
+        if (pKernelPmu != NULL)
+        {
+            // If PMU init fails, kgsp init will also fail
+            libosPreserveLogs(&pKernelPmu->logDecode);
+        }
     }
 
     if (gpusLockedMask != 0)
@@ -1925,6 +2172,7 @@ kgspDestruct_IMPL
     pKernelGsp->pBooterUnloadUcode = NULL;
 
     kgspFreeBootArgs_HAL(pGpu, pKernelGsp);
+
     _kgspFreeLibosLoggingStructures(pGpu, pKernelGsp);
     _kgspFreeRpcInfrastructure(pGpu, pKernelGsp);
     _kgspFreeBootBinaryImage(pGpu, pKernelGsp);
@@ -1955,6 +2203,15 @@ kgspDumpGspLogs_IMPL
     if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog)
     {
         libosExtractLogs(&pKernelGsp->logDecode, bSyncNvLog);
+    }
+
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        // Dump logs from vGPU partition
+        for (NvU32 i = 0; i < MAX_PARTITIONS_WITH_GFID; i++)
+        {
+            libosExtractLogs(&pKernelGsp->logDecodeVgpuPartition[i], bSyncNvLog);
+        }
     }
 
 }
@@ -2490,7 +2747,6 @@ _kgspFwContainerGetSection
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pSectionName != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, ppSectionData != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pSectionSize != NULL, NV_ERR_INVALID_ARGUMENT);
-
     NV_CHECK_OR_RETURN(LEVEL_ERROR, elfDataSize >= sizeof(LibosElf64Header), NV_ERR_INVALID_DATA);
 
     sectionNameLength = portStringLength(pSectionName);
@@ -2520,6 +2776,7 @@ _kgspFwContainerGetSection
 
     // Iterate through all of the section headers to find the signatures
     pElfSectionHeader = (const LibosElf64SectionHeader*) &pGspBuf[elfSectionHeaderMaxIdx + 1 - sizeof(*pElfSectionHeader)];
+
     for (idx = pElfHeader->shnum - 1; idx >= 0; idx--, pElfSectionHeader--)
     {
         NvU64 currentSectionNameMaxLength;

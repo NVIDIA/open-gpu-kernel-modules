@@ -1725,4 +1725,15 @@
 // 1 - Multicast FLA Enabled on supported GPU
 // 0 - Multicast FLA Disabled on specific GPU
 //
+//
+// TYPE Dword
+// Determines whether or not to emulate VF MMU TLB Invalidation register range
+// Encoding : 1 - Emulate register range (Default)
+//          : 0 - Do not emulate register range.
+//
+#define NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE            "RMBug3007008EmulateVfMmuTlbInvalidate"
+#define NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_ENABLE     0x00000001
+#define NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_DISABLE    0x00000000
+#define NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_DEFAULT    NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_ENABLE
+
 #endif // NVRM_REGISTRY_H

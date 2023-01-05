@@ -409,7 +409,7 @@ typedef struct NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_INFO_v21_08
 {
     NvU8       chipletType;
     NvU8       chipletIndex;
-    NvU8       numCredits;
+    NvU16      numCredits;
 } NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_INFO_v21_08;
 
 typedef NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_INFO_v21_08 NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_INFO_v;

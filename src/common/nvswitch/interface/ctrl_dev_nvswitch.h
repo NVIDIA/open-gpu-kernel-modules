@@ -99,7 +99,7 @@ typedef enum nvswitch_get_info_index
     NVSWITCH_GET_INFO_INDEX_PCI_DOMAIN = 0x300,
     NVSWITCH_GET_INFO_INDEX_PCI_BUS,
     NVSWITCH_GET_INFO_INDEX_PCI_DEVICE,
-    NVSWITCH_GET_INFO_INDEX_PCI_FUNCTION
+    NVSWITCH_GET_INFO_INDEX_PCI_FUNCTION,
     /* See enum modification guidelines at the top of this file */
 } NVSWITCH_GET_INFO_INDEX;
 
@@ -3285,6 +3285,23 @@ typedef struct nvswitch_inband_pending_data_stats_params
     NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
 } NVSWITCH_INBAND_PENDING_DATA_STATS_PARAMS;
 
+/*
+ * CTRL_NVSWITCH_GET_BOARD_PART_NUMBER
+ *
+ * Control for querying the board part number
+ *
+ * Parameters:
+ *  [out] data[]
+ *      Byte vector of the board part number.
+ */
+
+#define NVSWITCH_BOARD_PART_NUMBER_SIZE_IN_BYTES        20
+
+typedef struct nvswitch_get_board_part_number_vector
+{
+    NvU8 data[NVSWITCH_BOARD_PART_NUMBER_SIZE_IN_BYTES];
+} NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR;
+
 #define NVSWITCH_GET_SW_INFO_COUNT_MAX 32
 
 typedef enum nvswitch_get_sw_info_index
@@ -3603,6 +3620,58 @@ typedef struct
     NvU32   val;        // in: register value to write
 } NVSWITCH_REGISTER_WRITE;
 
+
+typedef struct
+{
+    NvU8 thresholdMan;
+    NvU8 thresholdExp;
+    NvU8 timescaleMan;
+    NvU8 timescaleExp;
+    NvBool bInterruptEn;
+    NvBool bInterruptTrigerred;
+    NvU32 flags;
+} NVSWITCH_NVLINK_ERROR_THRESHOLD_VALUES;
+
+#define NVSWITCH_NVLINK_ERROR_THRESHOLD_RESET   0x1
+
+/*
+ * CTRL_NVSWITCH_SET_NVLINK_ERROR_THRESHOLD
+ *
+ * Set the Nvlink Error Rate Threshold.
+ *
+ * Parameters:
+ *    linkMask [IN]
+ *      A valid link mask for which we need to set the Error Threshold
+ *
+ *    errorThreshold [IN]
+ *      Threshold values, interrupt enable/disable and flags
+ */
+
+typedef struct 
+{
+    NV_DECLARE_ALIGNED(NvU64 link_mask, 8);
+    NVSWITCH_NVLINK_ERROR_THRESHOLD_VALUES errorThreshold[NVSWITCH_NVLINK_MAX_LINKS];
+} NVSWITCH_SET_NVLINK_ERROR_THRESHOLD_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_GET_NVLINK_ERROR_THRESHOLD
+ *
+ * Control to query NVLIPT counter configuration.
+ *
+ * Parameters:
+ *    linkMask [IN]
+ *      A valid link mask for which we need to get the Error Threshold
+ *
+ *    errorThreshold [OUT]
+ *      Threshold values, interrupt enable/disable and flags
+ */
+
+typedef struct 
+{
+    NV_DECLARE_ALIGNED(NvU64 link_mask, 8);
+    NVSWITCH_NVLINK_ERROR_THRESHOLD_VALUES errorThreshold[NVSWITCH_NVLINK_MAX_LINKS];
+} NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS;
+
 #define REGISTER_RW_ENGINE_RAW                       0x00
 
 #define REGISTER_RW_ENGINE_CLKS                      0x10
@@ -3731,6 +3800,9 @@ typedef struct
 #define CTRL_NVSWITCH_GET_INFOROM_VERSION                   0x4F
 #define CTRL_NVSWITCH_GET_ERR_INFO                          0x50
 #define CTRL_NVSWITCH_CLEAR_COUNTERS                        0x51
+#define CTRL_NVSWITCH_SET_NVLINK_ERROR_THRESHOLD            0x52
+#define CTRL_NVSWITCH_GET_NVLINK_ERROR_THRESHOLD            0x53
+#define CTRL_NVSWITCH_GET_BOARD_PART_NUMBER                 0x54
 
 #ifdef __cplusplus
 }

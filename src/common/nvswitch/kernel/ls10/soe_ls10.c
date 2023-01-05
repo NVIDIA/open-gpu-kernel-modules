@@ -337,6 +337,13 @@ nvswitch_set_nport_tprod_state_ls10
     NVSWITCH_TIMEOUT    timeout;
     RM_SOE_CORE_CMD_NPORT_TPROD_STATE *nportTprodState;
 
+    if (!NVSWITCH_ENG_IS_VALID(device, NPORT, nport))
+    {
+         NVSWITCH_PRINT(device, ERROR, "%s: NPORT #%d invalid\n",
+                        __FUNCTION__, nport);
+        return -NVL_BAD_ARGS;
+    }
+
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 
     cmd.hdr.unitId = RM_SOE_UNIT_CORE;
@@ -362,6 +369,56 @@ nvswitch_set_nport_tprod_state_ls10
     }
 
     return NVL_SUCCESS;
+}
+
+/*
+ * @Brief : INIT L2 register state in SOE
+ *
+ * @param[in] device
+ * @param[in] nport
+ */
+void
+nvswitch_soe_init_l2_state_ls10
+(
+    nvswitch_device *device
+)
+{
+    FLCN            *pFlcn;
+    NvU32            cmdSeqDesc = 0;
+    NV_STATUS        status;
+    RM_FLCN_CMD_SOE  cmd;
+    NVSWITCH_TIMEOUT timeout;
+    RM_SOE_CORE_CMD_L2_STATE *pL2State;
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        NVSWITCH_PRINT(device, INFO, "%s: SOE is not supported. skipping!\n",
+                       __FUNCTION__);
+        return;
+    }
+
+    pFlcn       = device->pSoe->pFlcn;
+
+    nvswitch_os_memset(&cmd, 0, sizeof(cmd));
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = sizeof(cmd);
+
+    pL2State = &cmd.cmd.core.l2State;
+    pL2State->cmdType = RM_SOE_CORE_CMD_INIT_L2_STATE;
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      NULL,                 // pMsg
+                                      NULL,                 // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to send INIT_L2_STATE command to SOE, status 0x%x\n", 
+                       __FUNCTION__, status);
+    }
 }
 
 /*
@@ -423,6 +480,14 @@ nvswitch_init_soe_ls10
             "SOE init failed(2)\n");
         return status;
     }
+
+    //
+    // Set TRACEPC to stack mode for better ucode trace
+    // In Vulcan CR firmware, this is set to reduced mode in the SOE's manifest
+    //
+    data = flcnRiscvRegRead_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL);
+    data = FLD_SET_DRF(_PRISCV, _RISCV_TRACECTL, _MODE, _STACK, data);
+    flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL, data);
 
     // Sanity the command and message queues as a final check
     if (_nvswitch_soe_send_test_cmd(device) != NV_OK)

@@ -139,17 +139,22 @@ typedef struct
     NvU32 elfCodeSize;
     NvU32 elfDataSize;
 
+    // Bit 0 is used to check if [VGPU-GSP] mode is active in init partition
+    NvU8 driverModel;
+
     // Pad structure to exactly 256 bytes.  Can replace padding with additional
     // fields without incrementing revision.  Padding initialized to 0.
-    NvU32 padding[3];
+    NvU8 padding[11];
 
     // BL to use for verification (i.e. Booter says OK to boot)
     NvU64 verified;  // 0x0 -> unverified, 0xa0a0a0a0a0a0a0a0 -> verified
-
 } GspFwWprMeta;
 
 #define GSP_FW_WPR_META_VERIFIED  0xa0a0a0a0a0a0a0a0ULL
 #define GSP_FW_WPR_META_REVISION  1
 #define GSP_FW_WPR_META_MAGIC     0xdc3aae21371a60b3ULL
+
+// Bit 0 is used to check if [VGPU-GSP] mode is active in init partition
+#define DRIVERMODEL_VGPU 0
 
 #endif // GSP_FW_WPR_META_H_

@@ -109,6 +109,25 @@ nvswitch_inforom_ecc_get_total_errors_ls10
 }
 
 NvlStatus
+nvswitch_inforom_load_obd_ls10
+(
+    nvswitch_device *device
+)
+{
+    struct inforom *pInforom = device->pInforom;
+
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    return nvswitch_inforom_load_object(device, pInforom, "OBD",
+                                        INFOROM_OBD_OBJECT_V2_XX_FMT,
+                                        pInforom->OBD.packedObject.v2,
+                                        &pInforom->OBD.object.v2);
+}
+
+NvlStatus
 nvswitch_bbx_add_sxid_ls10
 (
     nvswitch_device *device,
@@ -178,7 +197,7 @@ nvswitch_bbx_unload_ls10
     NVSWITCH_TIMEOUT           timeout;
 
     pFlcn = device->pSoe->pFlcn;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_750MSEC_IN_NS, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
 
     nvswitch_os_memset(&bbxCmd, 0, sizeof(bbxCmd));
     bbxCmd.hdr.unitId = RM_SOE_UNIT_IFR;
@@ -217,7 +236,7 @@ nvswitch_bbx_load_ls10
     NVSWITCH_TIMEOUT           timeout;
 
     pFlcn = device->pSoe->pFlcn;
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_750MSEC_IN_NS, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_4SEC_IN_NS, &timeout);
 
     nvswitch_os_memset(&bbxCmd, 0, sizeof(bbxCmd));
     bbxCmd.hdr.unitId = RM_SOE_UNIT_IFR;
@@ -254,4 +273,3 @@ nvswitch_bbx_get_sxid_ls10
 {
     return -NVL_ERR_NOT_SUPPORTED;
 }
-

@@ -1123,6 +1123,8 @@ typedef struct tagNVT_VALID_EXTENDED_BLOCKS
     NvU32   hdr10Plus           :  1;
     NvU32   SCDB                :  1;
     NvU32   HF_EEODB            :  1;
+    NvU32   nvda_vsdb           :  1;
+    NvU32   msft_vsdb           :  1;
 } NVT_VALID_EXTENDED_BLOCKS;
 
 

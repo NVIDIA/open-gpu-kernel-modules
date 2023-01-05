@@ -291,15 +291,15 @@ kbusStateInitLockedKernel_GM107
     //
     NV_ASSERT_OK_OR_RETURN(kbusInitBar2_HAL(pGpu, pKernelBus, GPU_GFID_PF));
 
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_VIRTUAL_WITH_SRIOV(pGpu))
+    {
+        vgpuGspSetupBuffers(pGpu);
+    }
+
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
     {
         // Verify that BAR2 and the MMU actually works
         NV_ASSERT_OK_OR_RETURN(kbusVerifyBar2_HAL(pGpu, pKernelBus, NULL, NULL, 0, 0));
-    }
-
-    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_VIRTUAL_WITH_SRIOV(pGpu))
-    {
-        vgpuGspSetupBuffers(pGpu);
     }
 
     //

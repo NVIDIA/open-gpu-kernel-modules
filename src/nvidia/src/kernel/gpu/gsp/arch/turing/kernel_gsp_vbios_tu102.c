@@ -486,7 +486,7 @@ kgspExtractVbiosFromRom_TU102
         {
             NV_PRINTF(LEVEL_ERROR, "ERoT Req/Grant for EEPROM access failed, status=%u\n",
                     status);
-            return status;
+            goto out;
         }
     }
 

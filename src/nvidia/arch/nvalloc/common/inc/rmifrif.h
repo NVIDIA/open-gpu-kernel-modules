@@ -112,7 +112,6 @@ typedef struct
  * scanning of the whole of memory (e.g. when something goes wrong).
  */
 #define RM_IFR_GC6_CTX_END_OFFSET_MAX                0x1000000     // 16MB
-#define RM_IFR_GC6_CTX_END_OFFSET_MAX_WITH_GSP       0x10000000    // 256MB
 
 /*!
  * Maximum size of the context data in bytes.

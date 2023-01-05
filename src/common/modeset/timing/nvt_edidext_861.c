@@ -32,6 +32,8 @@
 
 #include "edid.h"
 
+
+
 PUSH_SEGMENTS
 
 #define EIA_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rrx1k,ip,aspect,rep,format) \
@@ -1111,10 +1113,12 @@ void parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
 
             case NVT_CEA861_NVDA_IEEE_ID:
                 parseEdidNvidiaVSDBBlock((VSDB_DATA *)(&pExt861->vsdb[i]), pNvVsdb);
+                pExt861->valid.nvda_vsdb = 1;
                 break;
 
             case NVT_CEA861_MSFT_IEEE_ID:
                 parseEdidMsftVsdbBlock((VSDB_DATA *)(&pExt861->vsdb[i]), pMsftVsdb);
+                pExt861->valid.msft_vsdb = 1;
                 break;
 
         }
@@ -1229,12 +1233,6 @@ NVT_STATUS get861ExtInfo(NvU8 *p, NvU32 size, NVT_EDID_CEA861_INFO *p861info)
 
     // make sure we have 861 extension
     if (p[0] != 0x2 || p[1] < NVT_CEA861_REV_ORIGINAL) 
-    {
-        return NVT_STATUS_ERR;
-    }
-
-    // DTD offset sanity check 
-    if (p[2] >= 1 && p[2] <= 3)
     {
         return NVT_STATUS_ERR;
     }

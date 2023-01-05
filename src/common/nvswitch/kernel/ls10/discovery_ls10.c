@@ -1317,6 +1317,30 @@ nvswitch_process_discovery_ls10
     }
 
     //
+    // Process common engine information
+    //
+
+    // Mark all entries as invalid
+    for (i = 0; i < NVSWITCH_ENGINE_ID_SIZE; i++)
+    {
+        chip_device->io.common[i].eng_name = "";
+        chip_device->io.common[i].eng_id = NVSWITCH_ENGINE_ID_SIZE; // Out of range
+        chip_device->io.common[i].eng_count = 0;
+        for (j = 0; j < NVSWITCH_ENGINE_DESCRIPTOR_UC_SIZE; j++)
+        {
+            chip_device->io.common[i].uc_addr[j] = NVSWITCH_BASE_ADDR_INVALID;
+        }
+        chip_device->io.common[i].bc_addr = NVSWITCH_BASE_ADDR_INVALID;
+        for (j = 0; j < NVSWITCH_ENGINE_DESCRIPTOR_MC_SIZE; j++)
+        {
+            chip_device->io.common[i].mc_addr[j] = NVSWITCH_BASE_ADDR_INVALID;
+        }
+        chip_device->io.common[i].mc_addr_count = 0;
+    }
+
+    NVSWITCH_LIST_LS10_ENGINES(NVSWITCH_PROCESS_COMMON)
+
+    //
     // Disable engines requested by regkey "LinkEnableMask".
     // All the links are enabled by default.
     //
@@ -1330,6 +1354,7 @@ nvswitch_process_discovery_ls10
             NVSWITCH_PRINT(device, SETUP,
                 "%s: Disable link #%d\n",
                 __FUNCTION__, i);
+            nvswitch_link_disable_interrupts_ls10(device, i);
             device->link[i].valid                  = NV_FALSE;
             chip_device->engNPORT[i].valid         = NV_FALSE;
             chip_device->engNPORT_PERFMON[i].valid = NV_FALSE;
@@ -1361,30 +1386,6 @@ nvswitch_process_discovery_ls10
             chip_device->engMINION[i].valid = NV_FALSE;
         }
     }
-
-    //
-    // Process common engine information
-    //
-
-    // Mark all entries as invalid
-    for (i = 0; i < NVSWITCH_ENGINE_ID_SIZE; i++)
-    {
-        chip_device->io.common[i].eng_name = "";
-        chip_device->io.common[i].eng_id = NVSWITCH_ENGINE_ID_SIZE; // Out of range
-        chip_device->io.common[i].eng_count = 0;
-        for (j = 0; j < NVSWITCH_ENGINE_DESCRIPTOR_UC_SIZE; j++)
-        {
-            chip_device->io.common[i].uc_addr[j] = NVSWITCH_BASE_ADDR_INVALID;
-        }
-        chip_device->io.common[i].bc_addr = NVSWITCH_BASE_ADDR_INVALID;
-        for (j = 0; j < NVSWITCH_ENGINE_DESCRIPTOR_MC_SIZE; j++)
-        {
-            chip_device->io.common[i].mc_addr[j] = NVSWITCH_BASE_ADDR_INVALID;
-        }
-        chip_device->io.common[i].mc_addr_count = 0;
-    }
-
-    NVSWITCH_LIST_LS10_ENGINES(NVSWITCH_PROCESS_COMMON)
 
     return retval;
 }

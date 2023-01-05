@@ -213,6 +213,11 @@ RmIdleChannels
                                                numChannelsPerGpu[gpuIdx]);
         pPerGpuChannels = portMemAllocNonPaged((sizeof *pPerGpuChannels) *
                                                numChannelsPerGpu[gpuIdx]);
+        NV_CHECK_OR_ELSE(LEVEL_ERROR,
+                         ((pPerGpuClients  != NULL) &&
+                          (pPerGpuDevices  != NULL) &&
+                          (pPerGpuChannels != NULL)),
+                         rmStatus = NV_ERR_NO_MEMORY; goto done);
 
         for (chanIdx = 0;
              chanIdx < numChannels && perGpuIdx < numChannelsPerGpu[gpuIdx];

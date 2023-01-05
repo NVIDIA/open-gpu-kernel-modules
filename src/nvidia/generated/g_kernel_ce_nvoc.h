@@ -673,6 +673,16 @@ NV_STATUS kceGetFaultMethodBufferSize_IMPL(OBJGPU *pGpu, NvU32 *size);
 NV_STATUS kceGetAvailableHubPceMask_IMPL(OBJGPU *pGpu, NVLINK_TOPOLOGY_PARAMS *pTopoParams);
 
 #define kceGetAvailableHubPceMask(pGpu, pTopoParams) kceGetAvailableHubPceMask_IMPL(pGpu, pTopoParams)
+void kceGetNvlinkCaps_IMPL(OBJGPU *pGpu, struct KernelCE *pKCe, NvU8 *pKCeCaps);
+
+#ifdef __nvoc_kernel_ce_h_disabled
+static inline void kceGetNvlinkCaps(OBJGPU *pGpu, struct KernelCE *pKCe, NvU8 *pKCeCaps) {
+    NV_ASSERT_FAILED_PRECOMP("KernelCE was disabled!");
+}
+#else //__nvoc_kernel_ce_h_disabled
+#define kceGetNvlinkCaps(pGpu, pKCe, pKCeCaps) kceGetNvlinkCaps_IMPL(pGpu, pKCe, pKCeCaps)
+#endif //__nvoc_kernel_ce_h_disabled
+
 NV_STATUS kceGetDeviceCaps_IMPL(OBJGPU *gpu, struct KernelCE *pKCe, RM_ENGINE_TYPE rmEngineType, NvU8 *ceCaps);
 
 #ifdef __nvoc_kernel_ce_h_disabled

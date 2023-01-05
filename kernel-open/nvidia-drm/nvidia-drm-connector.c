@@ -42,6 +42,7 @@
 
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
+#include <drm/drm_edid.h>
 
 static void nv_drm_connector_destroy(struct drm_connector *connector)
 {
@@ -98,7 +99,11 @@ __nv_drm_detect_encoder(struct NvKmsKapiDynamicDisplayParams *pDetectParams,
             break;
     }
 
+#if defined(NV_DRM_CONNECTOR_HAS_OVERRIDE_EDID)
     if (connector->override_edid) {
+#else
+    if (drm_edid_override_connector_update(connector) > 0) {
+#endif
         const struct drm_property_blob *edid = connector->edid_blob_ptr;
 
         if (edid->length <= sizeof(pDetectParams->edid.buffer)) {

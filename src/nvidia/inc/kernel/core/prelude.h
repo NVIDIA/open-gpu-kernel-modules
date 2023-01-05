@@ -81,7 +81,9 @@ typedef struct THREAD_STATE_NODE THREAD_STATE_NODE; // FW declare thread state
 #define NV_ROUNDUP(a,b)                 ((NV_CEIL(a,b))*(b))
 #define NV_ROUND_TO_QUANTA(a, quanta)   (((quanta) == 0) ? (a): ((((a) + ((quanta) >> 1)) / (quanta)) *  (quanta)))
 #define NV_FLOOR_TO_QUANTA(a, quanta)   (((a) / (quanta)) *  (quanta))
+#ifndef NV_SIZEOF32
 #define NV_SIZEOF32(x)                  (sizeof(x))
+#endif
 #define NV_ARRAY_ELEMENTS(x)            ((sizeof(x)/sizeof((x)[0])))
 #define NV_ARRAY_ELEMENTS32(x)          ((NV_SIZEOF32(x)/NV_SIZEOF32((x)[0])))
 #define NV_BYTESWAP16(a)                ((((a) & 0xff00)>>8)      |  \

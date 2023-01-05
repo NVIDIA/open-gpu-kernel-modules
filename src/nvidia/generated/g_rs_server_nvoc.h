@@ -492,6 +492,15 @@ NvBool serverShareIterNext(RS_SHARE_ITERATOR*);
 
 
 /**
+ * Return an available client handle for new client allocation
+ *
+ * @param[in] pServer This server instance
+ * @param[in] bInternalHandle Client is an RM internal client
+ * @param[in] pSecInfo Security context of this client allocation
+ */
+extern NvU32 serverAllocClientHandleBase(RsServer *pServer, NvBool bInternalHandle, API_SECURITY_INFO *pSecInfo);
+
+/**
  * Allocate a resource. Assumes top-level lock has been taken.
  *
  * It is invalid to attempt to allocate a client from a user other than the one

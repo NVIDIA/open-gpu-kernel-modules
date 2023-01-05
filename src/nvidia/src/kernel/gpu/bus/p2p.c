@@ -272,9 +272,7 @@ out:
 
                     if (tmpStatus != NV_OK)
                     {
-                        _freeMappingExtentInfo(*ppExtentInfo);
-
-                        return tmpStatus;
+                        goto cleanup;
                     }
                 }
 
@@ -292,6 +290,7 @@ out:
             NV_ASSERT(tmpStatus == NV_OK);
         }
 
+cleanup:
         _freeMappingExtentInfo(*ppExtentInfo);
     }
     return status;

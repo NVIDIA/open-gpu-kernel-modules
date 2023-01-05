@@ -216,7 +216,17 @@ kchannelConstruct_IMPL
             pKernelChannel->privilegeLevel =
                 DRF_VAL(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _PRIVILEGE, pChannelGpfifoParams->internalFlags);
         }
-        pKernelChannel->ProcessID = pChannelGpfifoParams->ProcessID;
+
+        // In GSP, all vGPU channel's will simply consider GFID as the processID
+        if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_GFID_VF(callingContextGfid))
+        {
+            pKernelChannel->ProcessID = callingContextGfid;
+        }
+        else
+        {
+            pKernelChannel->ProcessID = pChannelGpfifoParams->ProcessID;
+        }
+
         pKernelChannel->SubProcessID = pChannelGpfifoParams->SubProcessID;
     }
     else

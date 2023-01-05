@@ -119,6 +119,7 @@
     _op(NvlStatus, nvswitch_deassert_link_reset,    (nvswitch_device *device, nvlink_link *link), _arch)  \
     _op(NvBool,    nvswitch_is_soe_supported,       (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_init_soe, (nvswitch_device *device), _arch)  \
+    _op(void,      nvswitch_soe_init_l2_state,       (nvswitch_device *device), _arch) \
     _op(NvBool,    nvswitch_is_inforom_supported,   (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_spi_supported,       (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_smbpbi_supported,   (nvswitch_device *device), _arch)  \
@@ -147,6 +148,7 @@
     _op(void,      nvswitch_initialize_oms_state,   (nvswitch_device *device, INFOROM_OMS_STATE *pOmsState), _arch)  \
     _op(NvlStatus, nvswitch_oms_inforom_flush,      (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_inforom_ecc_get_total_errors,   (nvswitch_device *device, INFOROM_ECC_OBJECT *pEccGeneric, NvU64 *corCount, NvU64 *uncCount), _arch)  \
+    _op(NvlStatus, nvswitch_inforom_load_obd, (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_bbx_add_sxid, (nvswitch_device *device, NvU32 exceptionType, NvU32 data0, NvU32 data1, NvU32 data2), _arch)  \
     _op(NvlStatus, nvswitch_bbx_unload, (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_bbx_load, (nvswitch_device *device, NvU64 time_ns, NvU8 osType, NvU32 osVersion), _arch)  \
@@ -218,7 +220,10 @@
     _op(NvlStatus, nvswitch_service_minion_link, (nvswitch_device *device, NvU32 link_id), _arch) \
     _op(NvlStatus, nvswitch_ctrl_get_sw_info,  (nvswitch_device *device, NVSWITCH_GET_SW_INFO_PARAMS *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_get_err_info, (nvswitch_device *device, NVSWITCH_NVLINK_GET_ERR_INFO_PARAMS *ret), _arch) \
-    _op(NvlStatus, nvswitch_ctrl_clear_counters, (nvswitch_device *device, NVSWITCH_NVLINK_CLEAR_COUNTERS_PARAMS *ret), _arch)
+    _op(NvlStatus, nvswitch_ctrl_clear_counters, (nvswitch_device *device, NVSWITCH_NVLINK_CLEAR_COUNTERS_PARAMS *ret), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_set_nvlink_error_threshold, (nvswitch_device *device, NVSWITCH_SET_NVLINK_ERROR_THRESHOLD_PARAMS *pParams), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_get_nvlink_error_threshold, (nvswitch_device *device, NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS *pParams), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_get_board_part_number, (nvswitch_device *device, NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p), _arch)
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \
     _op(NvlStatus, nvswitch_launch_ALI, (nvswitch_device *device), _arch) \

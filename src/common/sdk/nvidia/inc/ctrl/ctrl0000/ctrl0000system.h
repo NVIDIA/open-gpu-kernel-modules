@@ -296,8 +296,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS {
 
 /* Generic types */
 #define NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC     (0xA00FF000U)
-
-
+#define NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV9A_GENERIC     (0xA00FF001U)
 
 /* processor capabilities */
 #define NV0000_CTRL_SYSTEM_CPU_CAP_MMX                 (0x00000001U)

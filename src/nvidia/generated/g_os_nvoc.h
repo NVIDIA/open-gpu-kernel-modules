@@ -749,6 +749,7 @@ NV_STATUS osTegraAllocateDisplayBandwidth(OS_GPU_INFO *pOsGpuInfo,
                                           NvU32 averageBandwidthKBPS,
                                           NvU32 floorBandwidthKBPS);
 
+NV_STATUS osGetCurrentProcessGfid(NvU32 *pGfid);
 NvBool osIsAdministrator(void);
 NvBool osAllowPriorityOverride(void);
 NV_STATUS osGetCurrentTime(NvU32 *pSec,NvU32 *puSec);

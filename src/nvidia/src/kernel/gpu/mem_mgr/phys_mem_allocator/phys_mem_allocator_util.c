@@ -675,11 +675,21 @@ pmaSelector
             }
         }
 
-        if (regionCount > 1)
+        if (regionCount > 0)
         {
             NvU32 j = regionCount;
 
-            if (flags & PMA_ALLOCATE_PREFER_SLOWEST)
+            if (flags & PMA_ALLOCATE_REVERSE_ALLOC)
+            {
+                // Find insertion point (highest memory address to lowest)
+                while ((j > 0) &&
+                    (pPma->pRegDescriptors[i]->limit > pPma->pRegDescriptors[regionList[j-1]]->limit))
+                {
+                    regionList[j] = regionList[j-1];
+                    j--;
+                }
+            }
+            else if (flags & PMA_ALLOCATE_PREFER_SLOWEST)
             {
                 // Find insertion point (slowest to fastest)
                 while ((j > 0) &&
@@ -1104,6 +1114,32 @@ pmaBuildList
                 }
 
                 bBlockValid = NV_FALSE;
+            }
+        }
+
+        // No point checking further if we are already out of memory
+        if (status == NV_ERR_NO_MEMORY)
+            break;
+
+        // Check if last frame was part of a block.
+        if (bBlockValid)
+        {
+            // Block found having required PMA page state. Store it in the list
+            pRangeCurr = (PRANGELISTTYPE) portMemAllocNonPaged(sizeof(RANGELISTTYPE));
+            if (pRangeCurr)
+            {
+                pRangeCurr->base  = addrBase + blockStart * PMA_GRANULARITY;
+                pRangeCurr->limit = addrBase + blockEnd * PMA_GRANULARITY + PMA_GRANULARITY - 1;
+                pRangeCurr->pNext = pRangeList;
+                pRangeList = pRangeCurr;
+            }
+            else
+            {
+                // Allocation failed
+                pmaFreeList(pPma, &pRangeList);
+                pRangeList = NULL;
+                status = NV_ERR_NO_MEMORY;
+                break;
             }
         }
     }

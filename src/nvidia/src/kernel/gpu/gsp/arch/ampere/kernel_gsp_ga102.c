@@ -193,6 +193,14 @@ kgspBootstrapRiscvOSEarly_GA102
     // Fb configuration is done so setup libos arg list
     kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
 
+    // Execute Scrubber if needed
+    if (pKernelGsp->pScrubberUcode != NULL)
+    {
+        NV_ASSERT_OK_OR_GOTO(status,
+                             kgspExecuteScrubberIfNeeded_HAL(pGpu, pKernelGsp),
+                             exit);
+    }
+
     RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
 
     {

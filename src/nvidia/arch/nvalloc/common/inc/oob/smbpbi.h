@@ -111,6 +111,7 @@
 #define NV_MSGBOX_CMD_ARG1_TEMP_NUM_SENSORS                              8
 #define NV_MSGBOX_CMD_ARG1_POWER_TOTAL                          0x00000000
 #define NV_MSGBOX_CMD_ARG1_SMBPBI_POWER                         0x00000001
+#define NV_MSGBOX_CMD_ARG1_POWER_FB                             0x00000002
 /* SysId info type encodings for opcode NV_MSGBOX_CMD_OPCODE_GET_SYS_ID_DATA (0x05) */
 #define NV_MSGBOX_CMD_ARG1_BOARD_PART_NUM_V1                    0x00000000
 #define NV_MSGBOX_CMD_ARG1_OEM_INFO_V1                          0x00000001
@@ -171,6 +172,8 @@
 #define NV_MSGBOX_CMD_ARG1_GET_CLOCK_FREQ_INFO_MIN              0x00000001
 #define NV_MSGBOX_CMD_ARG1_GET_CLOCK_FREQ_INFO_MAX              0x00000002
 #define NV_MSGBOX_CMD_ARG1_GET_CLOCK_FREQ_INFO_PAGE_3           0x00000003
+#define NV_MSGBOX_CMD_ARG1_GET_SUPPORTED_CLOCK_THROTTLE_REASONS 0x00000004
+#define NV_MSGBOX_CMD_ARG1_GET_CURRENT_CLOCK_THROTTLE_REASONS   0x00000005
 #define NV_MSGBOX_CMD_ARG1_REMAP_ROWS_RAW_COUNTS                0x00000000
 #define NV_MSGBOX_CMD_ARG1_REMAP_ROWS_STATE_FLAGS               0x00000001
 #define NV_MSGBOX_CMD_ARG1_REMAP_ROWS_HISTOGRAM                 0x00000002
@@ -639,6 +642,9 @@
 #define NV_MSGBOX_DATA_CAP_0_GET_FABRIC_STATE_FLAGS                          29:29
 #define NV_MSGBOX_DATA_CAP_0_GET_FABRIC_STATE_FLAGS_NOT_AVAILABLE       0x00000000
 #define NV_MSGBOX_DATA_CAP_0_GET_FABRIC_STATE_FLAGS_AVAILABLE           0x00000001
+#define NV_MSGBOX_DATA_CAP_0_POWER_FB                                        30:30
+#define NV_MSGBOX_DATA_CAP_0_POWER_FB_NOT_AVAILABLE                     0x00000000
+#define NV_MSGBOX_DATA_CAP_0_POWER_FB_AVAILABLE                         0x00000001
 
 #define NV_MSGBOX_DATA_CAP_1                                                 1
 #define NV_MSGBOX_DATA_CAP_1_BOARD_PART_NUM_V1                             0:0
@@ -731,6 +737,9 @@
 #define NV_MSGBOX_DATA_CAP_1_ECC_V6                                      30:30
 #define NV_MSGBOX_DATA_CAP_1_ECC_V6_NOT_AVAILABLE                   0x00000000
 #define NV_MSGBOX_DATA_CAP_1_ECC_V6_AVAILABLE                       0x00000001
+#define NV_MSGBOX_DATA_CAP_1_CLOCK_THROTTLE_REASON                       31:31
+#define NV_MSGBOX_DATA_CAP_1_CLOCK_THROTTLE_REASON_NOT_AVAILABLE    0x00000000
+#define NV_MSGBOX_DATA_CAP_1_CLOCK_THROTTLE_REASON_AVAILABLE        0x00000001
 
 #define NV_MSGBOX_DATA_CAP_2                                                2
 #define NV_MSGBOX_DATA_CAP_2_GPU_DRIVER                                   0:0
@@ -1056,6 +1065,21 @@
  */
 #define NV_MSGBOX_DATA_GET_CLOCK_FREQ_INFO_PAGE_3_CURRENT_PSTATE                 3:0
 #define NV_MSGBOX_DATA_GET_CLOCK_FREQ_INFO_PAGE_3_CURRENT_PSTATE_INVALID  0x0000000F
+
+/**
+ * Response to
+ * NV_MSGBOX_CMD_ARG1_GET_CLOCK_THROTTLE_REASON
+ */
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON                                   31:0
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_NONE                        0x00000000
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_POWER_CAP                0x00000001
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_SLOWDOWN                 0x00000002
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SYNC_BOOST                  0x00000004
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_THERMAL_SLOWDOWN_TLIMIT  0x00000008
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_THERMAL_SLOWDOWN_TAVG    0x00000010
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_THERMAL_SLOWDOWN_TMEM    0x00000020
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_THERMAL_SLOWDOWN         0x00000040
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_POWER_BREAK_SLOWDOWN     0x00000080
 
 /*
  * Number of Nvlink data outputs (dataOut, extData) for
@@ -2525,7 +2549,7 @@ typedef union {
             NV_MSGBOX_CMD(_GPU_PERFORMANCE_MONITORING, 0, 0)                         | \
             DRF_DEF(_MSGBOX, _CMD, _ARG1_GPM_ACTION, type)                           | \
             DRF_NUM(_MSGBOX, _CMD, _ARG1_GPM_METRIC, metric)                         | \
-            DRF_NUM(_MSGBOX, _CMD, _ARG2_GPM_PARTITION, partition)                     \
+            DRF_NUM(_MSGBOX, _CMD, _ARG2_GPM_PARTITION_INDEX, partition)                     \
         )
 
 #define NV_MSGBOX_CMD_GPM_SET_MULTIPLIER(multiplier)                                   \

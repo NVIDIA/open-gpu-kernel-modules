@@ -80,6 +80,12 @@ nvswitch_inforom_ecc_get_total_errors_ls10
 );
 
 NvlStatus
+nvswitch_inforom_load_obd_ls10
+(
+    nvswitch_device *device
+);
+
+NvlStatus
 nvswitch_bbx_add_sxid_ls10
 (
     nvswitch_device *device,

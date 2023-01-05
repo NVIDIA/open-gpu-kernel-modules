@@ -100,6 +100,7 @@ typedef struct rpc_vgx_version
 } RPC_VGX_VERSION;
 
 static RPC_VGX_VERSION rpcVgxVersion;
+static NvBool bSkipRpcVersionHandshake = NV_FALSE;
 
 void rpcSetIpVersion(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 ipVersion)
 {
@@ -671,10 +672,17 @@ NV_STATUS RmRpcSetGuestSystemInfo(OBJGPU *pGpu, OBJRPC *pRpc)
     {
         if (rpcVgxVersion.majorNum != 0)
         {
-            NV_PRINTF(LEVEL_INFO,
-                      "NVRM_RPC: Skipping RPC version handshake for instance 0x%x\n",
-                      gpuGetInstance(pGpu));
-            goto skip_ver_handshake;
+			if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH) && !bSkipRpcVersionHandshake)
+			{
+				bSkipRpcVersionHandshake = NV_TRUE;
+			}
+			else
+			{
+				NV_PRINTF(LEVEL_INFO,
+						  "NVRM_RPC: Skipping RPC version handshake for instance 0x%x\n",
+						  gpuGetInstance(pGpu));
+				goto skip_ver_handshake;
+			}
         }
         else
         {

@@ -2945,6 +2945,22 @@ typedef struct NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS {
 
 #define NV2080_CTRL_CMD_NVLINK_DIRECT_CONNECT_CHECK (0x20803041U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS_MESSAGE_ID" */
 
+/*
+ * NV2080_CTRL_CMD_NVLINK_POST_FAULT_UP
+ *
+ * This command is to trigger the next sequence after the 10 sec delay
+ *
+ * [out] linkId
+ *     Link number which the sequence should be triggered
+ */
+#define NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS_MESSAGE_ID (0x42U)
+
+typedef struct NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS {
+    NvU32 linkId;
+} NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS;
+
+#define NV2080_CTRL_CMD_NVLINK_POST_FAULT_UP (0x20803042U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS_MESSAGE_ID" */
+
 
 /* _ctrl2080nvlink_h_ */
 

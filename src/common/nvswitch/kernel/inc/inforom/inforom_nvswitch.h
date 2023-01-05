@@ -74,8 +74,15 @@ struct inforom
     struct
     {
         NvBool                      bValid;
-        NvU8                        packedObject[INFOROM_OBD_OBJECT_V1_XX_PACKED_SIZE];
-        INFOROM_OBD_OBJECT_V1_XX    object;
+        union {
+            NvU8 v1[INFOROM_OBD_OBJECT_V1_XX_PACKED_SIZE];
+            NvU8 v2[INFOROM_OBD_OBJECT_V2_XX_PACKED_SIZE];
+        } packedObject;
+        union {
+            INFOROM_OBJECT_HEADER_V1_00 header;
+            INFOROM_OBD_OBJECT_V1_XX    v1;
+            INFOROM_OBD_OBJECT_V2_XX    v2;
+        } object;
     } OBD;
 
     struct

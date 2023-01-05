@@ -53,6 +53,8 @@
 #define NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(i)      ((i)*2)
 #define NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(i)        (((i)*2) + 1)
 
+#define NV_CTRL_INTR_LEAF_IDX_TO_SUBTREE(i)            ((i)/2)
+
 //
 // Given a LEAF register index, the below macros give us the range of GPU
 // interrupt vectors that correspond to those leafs.

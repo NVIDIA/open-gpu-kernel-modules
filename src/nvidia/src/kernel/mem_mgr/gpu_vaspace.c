@@ -432,11 +432,19 @@ gvaspaceReserveSplitVaSpace_IMPL
 
     if (bServerRm || bClientRm)
     {
+        OBJVASPACE *pVAS = staticCast(pGVAS, OBJVASPACE);
+
         pGVAS->vaStartServerRMOwned = NV_MIN(pGVAS->vaLimitInternal -
                                          SPLIT_VAS_SERVER_RM_MANAGED_VA_SIZE + 1,
                                          SPLIT_VAS_SERVER_RM_MANAGED_VA_START);
+
+        if (pVAS->vasStart > pGVAS->vaStartServerRMOwned)
+        {
+            pGVAS->vaStartServerRMOwned = pVAS->vasStart + SPLIT_VAS_SERVER_RM_MANAGED_VA_START;
+        }           
+ 
         pGVAS->vaLimitServerRMOwned = pGVAS->vaStartServerRMOwned +
-                                         SPLIT_VAS_SERVER_RM_MANAGED_VA_SIZE - 1;
+                                      SPLIT_VAS_SERVER_RM_MANAGED_VA_SIZE - 1;
 
         // Base and limit + 1 should be aligned to 512MB.
         if (!NV_IS_ALIGNED(pGVAS->vaStartServerRMOwned, NVBIT64(GMMU_PD1_VADDR_BIT_LO)))

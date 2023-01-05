@@ -28,6 +28,7 @@
 
 #include "inforom/ifrecc.h"
 #include "inforom/ifrdem.h"
+#include "inforom/omsdef.h"
 
 #define INFOROM_OBD_OBJECT_V1_XX_PACKED_SIZE 128
 
@@ -48,6 +49,29 @@ struct INFOROM_OBD_OBJECT_V1_XX
 };
 #define INFOROM_OBD_OBJECT_V1_XX_FMT INFOROM_OBJECT_HEADER_V1_00_FMT "d116b"
 typedef struct INFOROM_OBD_OBJECT_V1_XX INFOROM_OBD_OBJECT_V1_XX;
+
+#define INFOROM_OBD_OBJECT_V2_XX_PACKED_SIZE 224
+
+struct INFOROM_OBD_OBJECT_V2_XX
+{
+    INFOROM_OBJECT_HEADER_V1_00 header;
+    inforom_U032 buildDate;
+    inforom_U008 marketingName[24];
+    inforom_U008 serialNumber[16];
+    inforom_U008 memoryManufacturer;
+    inforom_U008 memoryPartID[20];
+    inforom_U008 memoryDateCode[6];
+    inforom_U008 productPartNumber[20];
+    inforom_U008 boardRevision[3];
+    inforom_U008 boardType;
+    inforom_U008 board699PartNumber[20];
+    inforom_U032 productLength;
+    inforom_U032 productWidth;
+    inforom_U032 productHeight;
+    inforom_U008 reserved[89];
+};
+#define INFOROM_OBD_OBJECT_V2_XX_FMT INFOROM_OBJECT_HEADER_V1_00_FMT "d111b3d89b"
+typedef struct INFOROM_OBD_OBJECT_V2_XX INFOROM_OBD_OBJECT_V2_XX;
 
 //
 // OEM 1.0

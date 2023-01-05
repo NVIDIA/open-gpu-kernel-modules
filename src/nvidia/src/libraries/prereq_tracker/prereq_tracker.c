@@ -242,6 +242,8 @@ prereqRetract_IMPL
     PrereqListIter it;
     NV_STATUS   status = NV_OK;
 
+    NV_ASSERT_OR_RETURN(pTracker != NULL,
+                      NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pTracker->bInitialized,
                       NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN((prereqId < PREREQ_ID_VECTOR_SIZE),

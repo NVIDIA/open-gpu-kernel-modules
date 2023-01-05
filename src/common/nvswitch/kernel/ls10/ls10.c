@@ -65,7 +65,7 @@
 #include "ls10/minion_nvlink_defines_public_ls10.h"
 
 #define NVSWITCH_IFR_MIN_BIOS_VER_LS10      0x9610170000ull
-#define NVSWITCH_SMBPBI_MIN_BIOS_VER_LS10   0x9610170000ull
+#define NVSWITCH_SMBPBI_MIN_BIOS_VER_LS10   0x9610220000ull
 
 void *
 nvswitch_alloc_chipdevice_ls10
@@ -1091,8 +1091,8 @@ _nvswitch_portstat_reset_latency_counters_ls10
 /*
  *  Disable interrupts comming from NPG & NVLW blocks.
  */
-static void
-_nvswitch_link_disable_interrupts_ls10
+void
+nvswitch_link_disable_interrupts_ls10
 (
     nvswitch_device *device,
     NvU32            link
@@ -1434,7 +1434,7 @@ nvswitch_reset_and_drain_links_ls10
         //
         // Step 2.0 : Disable NPG & NVLW interrupts
         //
-        _nvswitch_link_disable_interrupts_ls10(device, link);
+        nvswitch_link_disable_interrupts_ls10(device, link);
 
         //
         // Step 3.0 :
@@ -1575,6 +1575,7 @@ nvswitch_set_nport_port_config_ls10
 )
 {
     NvU32   val;
+    NvlStatus status = NVL_SUCCESS;
 
     if (p->requesterLinkID >= NVBIT(
         DRF_SIZE(NV_NPORT_REQLINKID_REQROUTINGID) +
@@ -1624,7 +1625,7 @@ nvswitch_set_nport_port_config_ls10
 
     if (p->type == CONNECT_TRUNK_SWITCH)
     {
-        if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
+        if (!nvswitch_is_soe_supported(device))
         {
             // Set trunk specific settings (TPROD) on PRE-SILION
 
@@ -1773,7 +1774,13 @@ nvswitch_set_nport_port_config_ls10
         else
         {
             // Set trunk specific settings (TPROD) in SOE
-            // nvswitch_set_nport_tprod_state_ls10(device, p->portNum);
+            status = nvswitch_set_nport_tprod_state_ls10(device, p->portNum);
+            if (status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: Failed to set NPORT TPROD state\n",
+                    __FUNCTION__);
+            }
         }
     }
     else
@@ -1784,7 +1791,7 @@ nvswitch_set_nport_port_config_ls10
     NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _NPORT, _SRC_PORT_TYPE0, NvU64_LO32(p->trunkSrcMask));
     NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _NPORT, _SRC_PORT_TYPE1, NvU64_HI32(p->trunkSrcMask));
 
-    return NVL_SUCCESS;
+    return status;
 }
 
 /*
@@ -4216,6 +4223,8 @@ _nvswitch_init_nport_ecc_control_ls10
     nvswitch_device *device
 )
 {
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0 
     // Set ingress ECC error limits
     NVSWITCH_ENG_WR32(device, NPORT, _BCAST, 0, _INGRESS, _ERR_NCISOC_HDR_ECC_ERROR_COUNTER,
         DRF_NUM(_INGRESS, _ERR_NCISOC_HDR_ECC_ERROR_COUNTER, _ERROR_COUNT, 0x0));
@@ -4274,6 +4283,7 @@ _nvswitch_init_nport_ecc_control_ls10
 
     NVSWITCH_ENG_WR32(device, NPORT, _BCAST, 0, _SOURCETRACK, _ERR_ECC_CTRL,
         DRF_DEF(_SOURCETRACK, _ERR_ECC_CTRL, _CREQ_TCEN0_CRUMBSTORE_ECC_ENABLE, __PROD));
+#endif // 0
 }
 
 NvlStatus
@@ -4306,6 +4316,8 @@ nvswitch_init_nport_ls10
 
     _nvswitch_init_nport_ecc_control_ls10(device);
 
+// Moving this L2 register access to SOE. Refer bug #3747687 
+#if 0 
     if (DRF_VAL(_SWITCH_REGKEY, _ATO_CONTROL, _DISABLE, device->regkeys.ato_control) ==
         NV_SWITCH_REGKEY_ATO_CONTROL_DISABLE_TRUE)
     {
@@ -4329,7 +4341,7 @@ nvswitch_init_nport_ls10
                 DRF_NUM(_TSTATE, _ATO_TIMER_LIMIT, _LIMIT, timeout));
         }
     }
-
+#endif // 0
     if (DRF_VAL(_SWITCH_REGKEY, _STO_CONTROL, _DISABLE, device->regkeys.sto_control) ==
         NV_SWITCH_REGKEY_STO_CONTROL_DISABLE_TRUE)
     {
@@ -4366,17 +4378,7 @@ nvswitch_init_nxbar_ls10
     nvswitch_device *device
 )
 {
-    NvlStatus status = NVL_SUCCESS;
-
-    status = nvswitch_apply_prod_nxbar_ls10(device);
-    if (status != NVL_SUCCESS)
-    {
-        NVSWITCH_PRINT(device, ERROR,
-            "%s: NXBAR PRODs failed\n",
-            __FUNCTION__);
-        return status;
-    }
-
+    NVSWITCH_PRINT(device, WARN, "%s: Function not implemented\n", __FUNCTION__);
     return NVL_SUCCESS;
 }
 
@@ -5314,6 +5316,52 @@ nvswitch_ctrl_inband_read_data_ls10
     return nvswitch_inband_read_data(device, p->buffer, p->linkId, &p->dataSize);
 }
 
+/*
+ * CTRL_NVSWITCH_GET_BOARD_PART_NUMBER
+ */
+NvlStatus
+nvswitch_ctrl_get_board_part_number_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p
+)
+{
+    struct inforom *pInforom = device->pInforom;
+    INFOROM_OBD_OBJECT_V2_XX *pOBDObj;
+    int byteIdx;
+
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    if (!pInforom->OBD.bValid)
+    {
+        NVSWITCH_PRINT(device, ERROR, "OBD data is not available\n");
+        return -NVL_ERR_GENERIC;
+    }
+
+    pOBDObj = &pInforom->OBD.object.v2;
+
+    if (sizeof(p->data) != sizeof(pOBDObj->productPartNumber)/sizeof(inforom_U008))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+                       "board part number available size %lu is not same as the request size %lu\n",
+                       sizeof(pOBDObj->productPartNumber)/sizeof(inforom_U008), sizeof(p->data));
+        return -NVL_ERR_GENERIC;
+    }
+
+    nvswitch_os_memset(p, 0, sizeof(NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR));
+
+    /* Copy board type data */
+    for (byteIdx = 0; byteIdx < NVSWITCH_BOARD_PART_NUMBER_SIZE_IN_BYTES; byteIdx++)
+    {
+        p->data[byteIdx] =(NvU8)(pOBDObj->productPartNumber[byteIdx] & 0xFF);
+    }
+
+    return NVL_SUCCESS;
+}
+
 NvlStatus
 nvswitch_ctrl_get_nvlink_lp_counters_ls10
 (
@@ -5464,6 +5512,103 @@ nvswitch_ctrl_clear_counters_ls10
     FOR_EACH_INDEX_IN_MASK_END;
 
     return status;
+}
+
+NvlStatus
+nvswitch_ctrl_set_nvlink_error_threshold_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_SET_NVLINK_ERROR_THRESHOLD_PARAMS *pParams
+)
+{
+    nvlink_link *link;
+    NvU8 i;
+
+    FOR_EACH_INDEX_IN_MASK(64, i, pParams->link_mask)
+    {
+        link = nvswitch_get_link(device, i);
+        if (link == NULL)
+        {
+            continue;
+        }
+
+        if (pParams->errorThreshold[link->linkNumber].flags & NVSWITCH_NVLINK_ERROR_THRESHOLD_RESET)
+        {
+            link->errorThreshold.bUserConfig = NV_FALSE;
+
+            // Disable the interrupt
+            nvswitch_configure_error_rate_threshold_interrupt_ls10(link, NV_FALSE);
+
+            // Set to default value
+            nvswitch_set_error_rate_threshold_ls10(link, NV_TRUE);
+
+            // Enable the interrupt
+            nvswitch_configure_error_rate_threshold_interrupt_ls10(link, NV_TRUE);
+        }
+        else
+        {
+            link->errorThreshold.thresholdMan =
+                pParams->errorThreshold[link->linkNumber].thresholdMan;
+            link->errorThreshold.thresholdExp =
+                pParams->errorThreshold[link->linkNumber].thresholdExp;
+            link->errorThreshold.timescaleMan =
+                pParams->errorThreshold[link->linkNumber].timescaleMan;
+            link->errorThreshold.timescaleExp =
+                pParams->errorThreshold[link->linkNumber].timescaleExp;
+            link->errorThreshold.bInterruptEn =
+                pParams->errorThreshold[link->linkNumber].bInterruptEn;
+            link->errorThreshold.bUserConfig = NV_TRUE;
+
+            // Disable the interrupt
+            nvswitch_configure_error_rate_threshold_interrupt_ls10(link, NV_FALSE);
+
+            // Set the Error threshold
+            nvswitch_set_error_rate_threshold_ls10(link, NV_FALSE);
+
+            // Configure the interrupt
+            nvswitch_configure_error_rate_threshold_interrupt_ls10(link,
+                                                                   link->errorThreshold.bInterruptEn);
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus
+nvswitch_ctrl_get_nvlink_error_threshold_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS *pParams
+)
+{
+    nvlink_link *link;
+    NvU8 i;
+
+    FOR_EACH_INDEX_IN_MASK(64, i, pParams->link_mask)
+    {
+        link = nvswitch_get_link(device, i);
+        if (link == NULL)
+        {
+            continue;
+        }
+
+        pParams->errorThreshold[link->linkNumber].thresholdMan =
+            link->errorThreshold.thresholdMan;
+        pParams->errorThreshold[link->linkNumber].thresholdExp =
+            link->errorThreshold.thresholdExp;
+        pParams->errorThreshold[link->linkNumber].timescaleMan =
+            link->errorThreshold.timescaleMan;
+        pParams->errorThreshold[link->linkNumber].timescaleExp =
+            link->errorThreshold.timescaleExp;
+        pParams->errorThreshold[link->linkNumber].bInterruptEn =
+            link->errorThreshold.bInterruptEn;
+        pParams->errorThreshold[link->linkNumber].bInterruptTrigerred =
+            link->errorThreshold.bInterruptTrigerred;
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return NVL_SUCCESS;
 }
 
 NvlStatus

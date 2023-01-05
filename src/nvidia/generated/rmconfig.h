@@ -242,6 +242,7 @@
 #define RMCFG_FEATURE_RMCORE_BASE                 1  // RMCORE Base
 #define RMCFG_FEATURE_KERNEL_RM                   1  // Kernel layer of RM
 #define RMCFG_FEATURE_ORIN_PHYSICAL_RM            1  // Physical layer of RM, disabled only on Orin
+#define RMCFG_FEATURE_VGPU_GSP_PLUGIN_OFFLOAD     1  // vGPU GSP plugin offload
 #define RMCFG_FEATURE_LIBOS_3_X                   1  // Enable Libos-3.x feature
 #define RMCFG_FEATURE_NOTEBOOK                    1  // Notebook support
 #define RMCFG_FEATURE_EXTDEV                      1  // Daughter boards connected to Quadro GPUs

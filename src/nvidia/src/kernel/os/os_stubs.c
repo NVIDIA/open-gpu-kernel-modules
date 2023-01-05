@@ -314,6 +314,11 @@ void stubOsInternalReserveFreeCallback(NvU64 offset, NvU32 gpuId)
     return;
 }
 
+NV_STATUS osGetCurrentProcessGfid(NvU32 *pGfid)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
 #if !(RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_DCE) || \
     (RMCFG_FEATURE_PLATFORM_UNIX && !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY)
 NV_STATUS osTegraSocGpioGetPinState(

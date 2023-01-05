@@ -2122,7 +2122,8 @@ deviceCtrlCmdKGrGetCaps_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
-    NvBool  bCapsPopulated = NV_FALSE;
+    NvU8 *pGrCaps = NvP64_VALUE(pParams->capsTbl);
+    NvBool bCapsPopulated = NV_FALSE;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
@@ -2147,7 +2148,7 @@ deviceCtrlCmdKGrGetCaps_IMPL
         if (!bCapsPopulated)
         {
             NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-                kgraphicsGetCaps(pGpu, pKernelGraphics, pParams->capsTbl),
+                kgraphicsGetCaps(pGpu, pKernelGraphics, pGrCaps),
                 SLI_LOOP_RETURN(status););
 
             bCapsPopulated = NV_TRUE;

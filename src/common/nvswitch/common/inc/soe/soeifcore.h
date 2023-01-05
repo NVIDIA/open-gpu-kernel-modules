@@ -70,7 +70,18 @@ enum
     /*!
      * Set NPORT TPROD state
      */
-    RM_SOE_CORE_CMD_SET_NPORT_TPROD_STATE
+    RM_SOE_CORE_CMD_SET_NPORT_TPROD_STATE,
+
+    /*!
+     * Read VRs
+     * Needed to be in sync with chips_a defines
+     */
+    RM_SOE_CORE_CMD_GET_VOLTAGE_VALUES,
+
+    /*!
+     * Init PLM2 protected registers
+     */
+    RM_SOE_CORE_CMD_INIT_L2_STATE
 };
 
 // Timeout for SOE reset callback function
@@ -132,6 +143,11 @@ typedef struct
     NvU32  nport;
 } RM_SOE_CORE_CMD_NPORT_TPROD_STATE;
 
+typedef struct
+{
+    NvU8   cmdType;
+} RM_SOE_CORE_CMD_L2_STATE;
+
 typedef union
 {
     NvU8 cmdType;
@@ -141,5 +157,6 @@ typedef union
     RM_SOE_CORE_CMD_NPORT_RESET nportReset;
     RM_SOE_CORE_CMD_NPORT_STATE nportState;
     RM_SOE_CORE_CMD_NPORT_TPROD_STATE nportTprodState;
+    RM_SOE_CORE_CMD_L2_STATE l2State;
 } RM_SOE_CORE_CMD;
 #endif  // _SOECORE_H_

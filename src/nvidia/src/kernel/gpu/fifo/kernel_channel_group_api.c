@@ -57,7 +57,7 @@ kchangrpapiConstruct_IMPL
     NvHandle          hVASpace          = NV01_NULL_OBJECT;
     Device           *pDevice           = NULL;
     NvU32             gfid              = GPU_GFID_PF;
-    RsShared         *pShared;
+    RsShared         *pShared           = NULL;
     RsClient         *pClient;
     NvBool            bLockAcquired           = NV_FALSE;
     Heap             *pHeap                   = GPU_GET_HEAP(pGpu);

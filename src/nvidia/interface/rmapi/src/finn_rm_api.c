@@ -13,16 +13,22 @@
 #include "ctrl/ctrl2080/ctrl2080nvd.h"
 #include "ctrl/ctrl2080/ctrl2080perf.h"
 #include "ctrl/ctrl2080/ctrl2080rc.h"
+#include "ctrl/ctrl2080/ctrl2080ucodefuzzer.h"
 #include "ctrl/ctrl208f/ctrl208fgpu.h"
 #include "ctrl/ctrl402c.h"
 #include "ctrl/ctrl83de/ctrl83dedebug.h"
 #include "ctrl/ctrlb06f.h"
 
+#if defined(NVRM) /* Kernel Mode */
 #include <stdint.h>
 #include <stddef.h>
-#if defined(NVRM) /* Kernel Mode */
+#include "nvport/nvport.h"
+#elif defined(NV_LIBOS) /* LIBOS */
+#include <nvstdint.h>
 #include "nvport/nvport.h"
 #else /* User Mode */
+#include <stdint.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #endif
@@ -42,6 +48,9 @@
 #elif defined(NVRM) /* Kernel Mode */
 #define FINN_MALLOC(size) portMemAllocNonPaged(size)
 
+#elif defined(NV_LIBOS) /* LIBOS */
+#define FINN_MALLOC(size) portMemAllocNonPaged(size)
+
 #else /* User Mode */
 #define FINN_MALLOC(size) malloc(size)
 #endif
@@ -49,6 +58,9 @@
 // Free allocated memory.
 #if defined(FINN_FREE) /* Use override from Makefile */
 #elif defined(NVRM) /* Kernel Mode */
+#define FINN_FREE(buf) portMemFree(buf)
+
+#elif defined(NV_LIBOS) /* LIBOS */
 #define FINN_FREE(buf) portMemFree(buf)
 
 #else /* User Mode */
@@ -60,6 +72,9 @@
 #elif defined(NVRM) /* Kernel Mode */
 #define FINN_MEMZERO(buf, size) portMemSet(buf, 0, size)
 
+#elif defined(NV_LIBOS) /* LIBOS */
+#define FINN_MEMZERO(buf, size) portMemSet(buf, 0, size)
+
 #else /* User Mode */
 #define FINN_MEMZERO(buf, size) memset(buf, 0, size)
 #endif
@@ -69,6 +84,9 @@
 #elif defined(NVRM) /* Kernel Mode */
 #define FINN_MEMCPY(dst, src, size) portMemCopy(dst, size, src, size)
 
+#elif defined(NV_LIBOS) /* LIBOS */
+#define FINN_MEMCPY(dst, src, size) portMemCopy(dst, size, src, size)
+
 #else /* User Mode */
 #define FINN_MEMCPY(dst, src, size) memcpy(dst, src, size)
 #endif
@@ -76,6 +94,9 @@
 // Report an error.
 #if defined(FINN_ERROR) /* Use override from Makefile */
 #elif defined(NVRM) /* Kernel Mode */
+#define FINN_ERROR(err) /* No-op */
+
+#elif defined(NV_LIBOS) /* LIBOS */
 #define FINN_ERROR(err) /* No-op */
 
 #else /* User Mode */
@@ -252,7 +273,7 @@ struct finn_bit_pump_for_write
 // Both `sod` and `eob` are null.
 // When closed, `bp->buffer_position` contains the byte count.
 //
-static inline void finn_open_buffer_for_write(finn_bit_pump_for_write *bp, uint64_t *sod, uint64_t *eob)
+static inline void finn_open_buffer_for_write(finn_bit_pump_for_write *bp, uint64_t *sod, const uint64_t *eob)
 {
     bp->accumulator      = 0U;
     bp->buffer_position  = sod;
@@ -369,7 +390,7 @@ static inline void finn_close_buffer_for_write(finn_bit_pump_for_write *bp)
 
 static NV_STATUS FinnRmApiSerializeInternal(NvU64 interface, NvU64 message, const char *src, char **dst, size_t dst_size, NvBool seri_up);
 static NV_STATUS FinnRmApiSerializeInterface(NvU64 interface, NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
-static NV_STATUS FinnRmApiDeserializeInternal(char **src, NvLength src_size, char *dst, NvLength dst_size, NvBool deser_up);
+static NV_STATUS FinnRmApiDeserializeInternal(const char **src, NvLength src_size, char *dst, NvLength dst_size, NvBool deser_up);
 static NV_STATUS FinnRmApiDeserializeInterface(NvU64 interface, NvU64 message, finn_bit_pump_for_read *bp, char *dst, NvLength dst_size, NvBool deser_up);
 static NV_STATUS FinnNv01RootNvdSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS FinnNv01RootNvdDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV01_ROOT_NVD *dst, NvLength dst_size, NvBool deser_up);
@@ -413,6 +434,7 @@ static NvU64 FinnNv20Subdevice0PerfGetUnserializedSize(NvU64 message);
 static NV_STATUS FinnNv20Subdevice0RcSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS FinnNv20Subdevice0RcDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_0_RC *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20Subdevice0RcGetUnserializedSize(NvU64 message);
+
 static NV_STATUS FinnNv20SubdeviceDiagGpuSerializeMessage(NvU64 message, const char *src, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS FinnNv20SubdeviceDiagGpuDeserializeMessage(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV20_SUBDEVICE_DIAG_GPU *dst, NvLength dst_size, NvBool deser_up);
 static NvU64 FinnNv20SubdeviceDiagGpuGetUnserializedSize(NvU64 message);
@@ -519,12 +541,12 @@ NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message, const void *src
 
 NV_STATUS FinnRmApiDeserializeDown(NvU8 **src, NvLength src_size, void *dst, NvLength dst_size)
 {
-    return FinnRmApiDeserializeInternal((char **) src, src_size / sizeof(NvU8), (char *) dst, dst_size, NV_FALSE);
+    return FinnRmApiDeserializeInternal((const char **) src, src_size / sizeof(NvU8), (char *) dst, dst_size, NV_FALSE);
 }
 
-NV_STATUS FinnRmApiDeserializeUp(NvU8 * const *src, NvLength src_size, void *dst, NvLength dst_size)
+NV_STATUS FinnRmApiDeserializeUp(NvU8 **src, NvLength src_size, void *dst, NvLength dst_size)
 {
-    return FinnRmApiDeserializeInternal((char **) src, src_size / sizeof(NvU8), (char *) dst, dst_size, NV_TRUE);
+    return FinnRmApiDeserializeInternal((const char **) src, src_size / sizeof(NvU8), (char *) dst, dst_size, NV_TRUE);
 }
 
 
@@ -568,7 +590,7 @@ static NV_STATUS FinnRmApiSerializeInternal(NvU64 interface, NvU64 message, cons
     (*dst) += sizeof(FINN_RM_API);
 
     // Open the bit pump.
-    finn_open_buffer_for_write(&bp, (uint64_t *) *dst, (uint64_t *) dst_end);
+    finn_open_buffer_for_write(&bp, (uint64_t *) *dst, (const uint64_t *) dst_end);
 
     // Call the serializer.
     error_code = FinnRmApiSerializeInterface(interface, message, src, &bp, seri_up);
@@ -641,10 +663,10 @@ static NV_STATUS FinnRmApiSerializeInterface(NvU64 interface, NvU64 message, con
 }
 
 
-static NV_STATUS FinnRmApiDeserializeInternal(char **src, NvLength src_size, char *dst, NvLength dst_size, NvBool deser_up)
+static NV_STATUS FinnRmApiDeserializeInternal(const char **src, NvLength src_size, char *dst, NvLength dst_size, NvBool deser_up)
 {
     // Header
-    FINN_RM_API *header;
+    const FINN_RM_API *header;
 
     // End of data
     const char *src_max;
@@ -665,7 +687,7 @@ static NV_STATUS FinnRmApiDeserializeInternal(char **src, NvLength src_size, cha
     }
 
     // Header data comes first.
-    header = (FINN_RM_API *) *src;
+    header = (const FINN_RM_API *) *src;
 
     // Check the version.
     if (header->version != FINN_SERIALIZATION_VERSION)
@@ -680,11 +702,9 @@ static NV_STATUS FinnRmApiDeserializeInternal(char **src, NvLength src_size, cha
     // Check that source buffer is large enough.
     if (sizeof(FINN_RM_API) > src_size ||
         header->payloadSize > src_size ||
-        header->payloadSize < sizeof(FINN_RM_API) ||
-        *src + header->payloadSize > src_max ||
-        *src + header->payloadSize < *src)
+        header->payloadSize < sizeof(FINN_RM_API))
     {
-        *src = (char *) &header->payloadSize;
+        *src = (const char *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         return NV_ERR_BUFFER_TOO_SMALL;
     }
@@ -696,7 +716,7 @@ static NV_STATUS FinnRmApiDeserializeInternal(char **src, NvLength src_size, cha
     status = FinnRmApiDeserializeInterface(header->interface, header->message, &bp, dst, dst_size, deser_up);
 
     // Update the buffer position, error or not.
-    *(src) = (char *) bp.buffer_position;
+    *(src) = (const char *) bp.buffer_position;
 
     // Nothing more to do if there was an error.
     if (status != NV_OK)
@@ -774,12 +794,12 @@ NvU64 FinnRmApiGetSerializedSize(NvU64 interface, NvU64 message, const NvP64 src
 {
     // Bit pump with writing disabled.
     finn_bit_pump_for_write bp;
-    finn_open_buffer_for_write(&bp, (uint64_t *) 0, (uint64_t *) 0);
+    finn_open_buffer_for_write(&bp, (uint64_t *) 0, (const uint64_t *) 0);
 
     // Call the serializer with write-suppressed bit pump.
     // The size is the same in bith directions (up/down).
     // Eeturn zero on error to indicate that this API is not serialized by FINN.
-    if (FinnRmApiSerializeInterface(interface, message, (const char *) src, &bp, 0) != NV_OK)
+    if (FinnRmApiSerializeInterface(interface, message, (const char *) NvP64_VALUE(src), &bp, 0) != NV_OK)
     return 0;
 
     // Close the bit pump.
@@ -787,7 +807,7 @@ NvU64 FinnRmApiGetSerializedSize(NvU64 interface, NvU64 message, const NvP64 src
 
     // Add the header size in bytes to the amount of data serialzied.
     // `buffer_position` is the payload size (not really the buffer position).
-    return (NvU64) bp.buffer_position + sizeof(FINN_RM_API);
+    return (NvU64) NV_PTR_TO_NvP64(bp.buffer_position) + sizeof(FINN_RM_API);
 }
 
 
@@ -1777,7 +1797,7 @@ static NV_STATUS Nv0000CtrlNvdGetDumpParamsSerialize(const NV0000_CTRL_NVD_GET_D
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pBuffer)
-            FINN_FREE(src->pBuffer);
+            FINN_FREE(NvP64_VALUE(src->pBuffer));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -2057,7 +2077,7 @@ static NV_STATUS Nv0080CtrlDmaUpdatePde2ParamsSerialize(const NV0080_CTRL_DMA_UP
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pPdeBuffer)
-            FINN_FREE(src->pPdeBuffer);
+            FINN_FREE(NvP64_VALUE(src->pPdeBuffer));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -2221,7 +2241,7 @@ static NV_STATUS Nv0080CtrlFbGetCapsParamsSerialize(const NV0080_CTRL_FB_GET_CAP
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->capsTbl)
-            FINN_FREE(src->capsTbl);
+            FINN_FREE(NvP64_VALUE(src->capsTbl));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -2368,7 +2388,7 @@ static NV_STATUS Nv0080CtrlFifoGetCapsParamsSerialize(const NV0080_CTRL_FIFO_GET
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->capsTbl)
-            FINN_FREE(src->capsTbl);
+            FINN_FREE(NvP64_VALUE(src->capsTbl));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -2743,7 +2763,7 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_F
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pChannelHandleList)
-            FINN_FREE(src->pChannelHandleList);
+            FINN_FREE(NvP64_VALUE(src->pChannelHandleList));
     }
 
     // Set data-presence indicator.
@@ -2771,7 +2791,7 @@ static NV_STATUS Nv0080CtrlFifoGetChannellistParamsSerialize(const NV0080_CTRL_F
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pChannelList)
-            FINN_FREE(src->pChannelList);
+            FINN_FREE(NvP64_VALUE(src->pChannelList));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -2945,7 +2965,7 @@ static NV_STATUS Nv0080CtrlGpuGetClasslistParamsSerialize(const NV0080_CTRL_GPU_
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->classList)
-            FINN_FREE(src->classList);
+            FINN_FREE(NvP64_VALUE(src->classList));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -3080,7 +3100,7 @@ static NV_STATUS Nv0080CtrlGrGetCapsParamsSerialize(const NV0080_CTRL_GR_GET_CAP
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->capsTbl)
-            FINN_FREE(src->capsTbl);
+            FINN_FREE(NvP64_VALUE(src->capsTbl));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -3221,7 +3241,7 @@ static NV_STATUS Nv0080CtrlHostGetCapsParamsSerialize(const NV0080_CTRL_HOST_GET
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->capsTbl)
-            FINN_FREE(src->capsTbl);
+            FINN_FREE(NvP64_VALUE(src->capsTbl));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -3368,7 +3388,7 @@ static NV_STATUS Nv0080CtrlMsencGetCapsParamsSerialize(const NV0080_CTRL_MSENC_G
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->capsTbl)
-            FINN_FREE(src->capsTbl);
+            FINN_FREE(NvP64_VALUE(src->capsTbl));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -3525,7 +3545,7 @@ static NV_STATUS Nv2080CtrlCeGetCapsParamsSerialize(const NV2080_CTRL_CE_GET_CAP
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->capsTbl)
-            FINN_FREE(src->capsTbl);
+            FINN_FREE(NvP64_VALUE(src->capsTbl));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -3671,7 +3691,7 @@ static NV_STATUS Nv2080CtrlGpuGetEnginesParamsSerialize(const NV2080_CTRL_GPU_GE
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->engineList)
-            FINN_FREE(src->engineList);
+            FINN_FREE(NvP64_VALUE(src->engineList));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -3816,7 +3836,7 @@ static NV_STATUS Nv2080CtrlGpuGetEngineClasslistParamsSerialize(const NV2080_CTR
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->classList)
-            FINN_FREE(src->classList);
+            FINN_FREE(NvP64_VALUE(src->classList));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -3986,7 +4006,7 @@ static NV_STATUS Nv2080CtrlGpumonSamplesSerialize(const NV2080_CTRL_GPUMON_SAMPL
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pSamples)
-            FINN_FREE(src->pSamples);
+            FINN_FREE(NvP64_VALUE(src->pSamples));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -4212,7 +4232,7 @@ static NV_STATUS Nv2080CtrlI2cAccessParamsSerialize(const NV2080_CTRL_I2C_ACCESS
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->data)
-            FINN_FREE(src->data);
+            FINN_FREE(NvP64_VALUE(src->data));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -4398,7 +4418,7 @@ static NV_STATUS Nv2080CtrlNvdGetDumpParamsSerialize(const NV2080_CTRL_NVD_GET_D
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pBuffer)
-            FINN_FREE(src->pBuffer);
+            FINN_FREE(NvP64_VALUE(src->pBuffer));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -4558,7 +4578,7 @@ static NV_STATUS Nv2080CtrlRcReadVirtualMemParamsSerialize(const NV2080_CTRL_RC_
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->bufferPtr)
-            FINN_FREE(src->bufferPtr);
+            FINN_FREE(NvP64_VALUE(src->bufferPtr));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -4772,7 +4792,7 @@ static NV_STATUS Nv402cCtrlI2cIndexedParamsSerialize(const NV402C_CTRL_I2C_INDEX
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pMessage)
-            FINN_FREE(src->pMessage);
+            FINN_FREE(NvP64_VALUE(src->pMessage));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -5139,7 +5159,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBlockRwSerialize(const NV402C_CT
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pMessage)
-            FINN_FREE(src->pMessage);
+            FINN_FREE(NvP64_VALUE(src->pMessage));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -5501,7 +5521,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataI2cBufferRwSerialize(const NV402C_C
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pMessage)
-            FINN_FREE(src->pMessage);
+            FINN_FREE(NvP64_VALUE(src->pMessage));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -5671,7 +5691,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusBlockRwSerialize(const NV402C_
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pMessage)
-            FINN_FREE(src->pMessage);
+            FINN_FREE(NvP64_VALUE(src->pMessage));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -6123,7 +6143,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataSmbusMultibyteRegisterBlockRwSerial
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pMessage)
-            FINN_FREE(src->pMessage);
+            FINN_FREE(NvP64_VALUE(src->pMessage));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -6307,7 +6327,7 @@ static NV_STATUS Nv402cCtrlI2cTransactionDataReadEdidDdcSerialize(const NV402C_C
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pMessage)
-            FINN_FREE(src->pMessage);
+            FINN_FREE(NvP64_VALUE(src->pMessage));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -6848,7 +6868,7 @@ static NV_STATUS Nv83deCtrlDebugReadMemoryParamsSerialize(const NV83DE_CTRL_DEBU
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->buffer)
-            FINN_FREE(src->buffer);
+            FINN_FREE(NvP64_VALUE(src->buffer));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -7013,7 +7033,7 @@ static NV_STATUS Nv83deCtrlDebugWriteMemoryParamsSerialize(const NV83DE_CTRL_DEB
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->buffer)
-            FINN_FREE(src->buffer);
+            FINN_FREE(NvP64_VALUE(src->buffer));
     }
 
     goto exit; // Suppress potential not-used warning
@@ -7168,7 +7188,7 @@ static NV_STATUS Nvb06fCtrlGetEngineCtxDataParamsSerialize(const NVB06F_CTRL_GET
 
         // Free memory that was allocated during downward deserialization.
         if (seri_up && src->pEngineCtxBuff)
-            FINN_FREE(src->pEngineCtxBuff);
+            FINN_FREE(NvP64_VALUE(src->pEngineCtxBuff));
     }
 
     goto exit; // Suppress potential not-used warning
