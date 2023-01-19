@@ -367,6 +367,7 @@ kfspReadMessage
     }
 
     pPacketBuffer = portMemAllocNonPaged(kfspGetRmChannelSize_HAL(pGpu, pKernelFsp));
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pPacketBuffer != NULL, NV_ERR_NO_MEMORY);
 
     while ((packetState != MCTP_PACKET_STATE_END) && (packetState != MCTP_PACKET_STATE_SINGLE_PACKET))
     {
@@ -483,6 +484,7 @@ kfspSendPacket_IMPL
     // Pad to align size to 4-bytes boundary since EMEMC increments by DWORDS
     paddedSize = NV_ALIGN_UP(packetSize, sizeof(NvU32));
     pBuffer = portMemAllocNonPaged(paddedSize);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBuffer != NULL, NV_ERR_NO_MEMORY);
     portMemSet(pBuffer, 0, paddedSize);
     portMemCopy(pBuffer, paddedSize, pPacket, paddedSize);
 
@@ -537,6 +539,7 @@ kfspSendAndReadMessage_IMPL
     // Allocate buffer of same size as channel
     fspEmemRmChannelSize = kfspGetRmChannelSize_HAL(pGpu, pKernelFsp);
     pBuffer = portMemAllocNonPaged(fspEmemRmChannelSize);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pBuffer != NULL, NV_ERR_NO_MEMORY);
     portMemSet(pBuffer, 0, fspEmemRmChannelSize);
 
     //

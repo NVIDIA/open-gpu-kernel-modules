@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -297,6 +297,7 @@ struct KernelBus {
     NV_STATUS (*__kbusConstructEngine__)(OBJGPU *, struct KernelBus *, ENGDESCRIPTOR);
     NV_STATUS (*__kbusStatePreInitLocked__)(OBJGPU *, struct KernelBus *);
     NV_STATUS (*__kbusStateInitLocked__)(OBJGPU *, struct KernelBus *);
+    NV_STATUS (*__kbusStatePreLoad__)(OBJGPU *, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStateLoad__)(OBJGPU *, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStatePostLoad__)(OBJGPU *, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStatePreUnload__)(OBJGPU *, struct KernelBus *, NvU32);
@@ -323,6 +324,7 @@ struct KernelBus {
     NV_STATUS (*__kbusCheckFlaSupportedAndInit__)(OBJGPU *, struct KernelBus *, NvU64, NvU64);
     NV_STATUS (*__kbusDetermineFlaRangeAndAllocate__)(OBJGPU *, struct KernelBus *, NvU64, NvU64);
     NV_STATUS (*__kbusAllocateFlaVaspace__)(OBJGPU *, struct KernelBus *, NvU64, NvU64);
+    NV_STATUS (*__kbusGetFlaRange__)(OBJGPU *, struct KernelBus *, NvU64 *, NvU64 *, NvBool);
     NV_STATUS (*__kbusAllocateLegacyFlaVaspace__)(OBJGPU *, struct KernelBus *, NvU64, NvU64);
     NV_STATUS (*__kbusAllocateHostManagedFlaVaspace__)(OBJGPU *, struct KernelBus *, NvHandle, NvHandle, NvHandle, NvHandle, NvU64, NvU64, NvU32);
     void (*__kbusDestroyFla__)(OBJGPU *, struct KernelBus *);
@@ -347,7 +349,6 @@ struct KernelBus {
     void (*__kbusUnmapCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, PMEMORY_DESCRIPTOR);
     void (*__kbusTeardownCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, NvBool);
     NV_STATUS (*__kbusReconcileTunableState__)(POBJGPU, struct KernelBus *, void *);
-    NV_STATUS (*__kbusStatePreLoad__)(POBJGPU, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStatePostUnload__)(POBJGPU, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStateInitUnlocked__)(POBJGPU, struct KernelBus *);
     void (*__kbusInitMissing__)(POBJGPU, struct KernelBus *);
@@ -451,6 +452,8 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusStatePreInitLocked(pGpu, pKernelBus) kbusStatePreInitLocked_DISPATCH(pGpu, pKernelBus)
 #define kbusStatePreInitLocked_HAL(pGpu, pKernelBus) kbusStatePreInitLocked_DISPATCH(pGpu, pKernelBus)
 #define kbusStateInitLocked(pGpu, pKernelBus) kbusStateInitLocked_DISPATCH(pGpu, pKernelBus)
+#define kbusStatePreLoad(pGpu, pKernelBus, arg0) kbusStatePreLoad_DISPATCH(pGpu, pKernelBus, arg0)
+#define kbusStatePreLoad_HAL(pGpu, pKernelBus, arg0) kbusStatePreLoad_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusStateLoad(pGpu, pKernelBus, arg0) kbusStateLoad_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusStateLoad_HAL(pGpu, pKernelBus, arg0) kbusStateLoad_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusStatePostLoad(pGpu, pKernelBus, arg0) kbusStatePostLoad_DISPATCH(pGpu, pKernelBus, arg0)
@@ -505,6 +508,8 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusDetermineFlaRangeAndAllocate_HAL(pGpu, pKernelBus, base, size) kbusDetermineFlaRangeAndAllocate_DISPATCH(pGpu, pKernelBus, base, size)
 #define kbusAllocateFlaVaspace(pGpu, pKernelBus, arg0, arg1) kbusAllocateFlaVaspace_DISPATCH(pGpu, pKernelBus, arg0, arg1)
 #define kbusAllocateFlaVaspace_HAL(pGpu, pKernelBus, arg0, arg1) kbusAllocateFlaVaspace_DISPATCH(pGpu, pKernelBus, arg0, arg1)
+#define kbusGetFlaRange(pGpu, pKernelBus, arg0, arg1, arg2) kbusGetFlaRange_DISPATCH(pGpu, pKernelBus, arg0, arg1, arg2)
+#define kbusGetFlaRange_HAL(pGpu, pKernelBus, arg0, arg1, arg2) kbusGetFlaRange_DISPATCH(pGpu, pKernelBus, arg0, arg1, arg2)
 #define kbusAllocateLegacyFlaVaspace(pGpu, pKernelBus, arg0, arg1) kbusAllocateLegacyFlaVaspace_DISPATCH(pGpu, pKernelBus, arg0, arg1)
 #define kbusAllocateLegacyFlaVaspace_HAL(pGpu, pKernelBus, arg0, arg1) kbusAllocateLegacyFlaVaspace_DISPATCH(pGpu, pKernelBus, arg0, arg1)
 #define kbusAllocateHostManagedFlaVaspace(pGpu, pKernelBus, arg0, arg1, arg2, arg3, arg4, arg5, arg6) kbusAllocateHostManagedFlaVaspace_DISPATCH(pGpu, pKernelBus, arg0, arg1, arg2, arg3, arg4, arg5, arg6)
@@ -552,7 +557,6 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusTeardownCoherentCpuMapping(pGpu, pKernelBus, arg0) kbusTeardownCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusTeardownCoherentCpuMapping_HAL(pGpu, pKernelBus, arg0) kbusTeardownCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusReconcileTunableState(pGpu, pEngstate, pTunableState) kbusReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kbusStatePreLoad(pGpu, pEngstate, arg0) kbusStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kbusStatePostUnload(pGpu, pEngstate, arg0) kbusStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kbusStateInitUnlocked(pGpu, pEngstate) kbusStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kbusInitMissing(pGpu, pEngstate) kbusInitMissing_DISPATCH(pGpu, pEngstate)
@@ -1601,6 +1605,14 @@ static inline NV_STATUS kbusStateInitLocked_DISPATCH(OBJGPU *pGpu, struct Kernel
     return pKernelBus->__kbusStateInitLocked__(pGpu, pKernelBus);
 }
 
+static inline NV_STATUS kbusStatePreLoad_56cd7a(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kbusStatePreLoad_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0) {
+    return pKernelBus->__kbusStatePreLoad__(pGpu, pKernelBus, arg0);
+}
+
 NV_STATUS kbusStateLoad_GM107(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0);
 
 static inline NV_STATUS kbusStateLoad_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0) {
@@ -1837,6 +1849,18 @@ static inline NV_STATUS kbusAllocateFlaVaspace_DISPATCH(OBJGPU *pGpu, struct Ker
     return pKernelBus->__kbusAllocateFlaVaspace__(pGpu, pKernelBus, arg0, arg1);
 }
 
+NV_STATUS kbusGetFlaRange_GA100(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 *arg0, NvU64 *arg1, NvBool arg2);
+
+NV_STATUS kbusGetFlaRange_GH100(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 *arg0, NvU64 *arg1, NvBool arg2);
+
+static inline NV_STATUS kbusGetFlaRange_395e98(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 *arg0, NvU64 *arg1, NvBool arg2) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kbusGetFlaRange_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 *arg0, NvU64 *arg1, NvBool arg2) {
+    return pKernelBus->__kbusGetFlaRange__(pGpu, pKernelBus, arg0, arg1, arg2);
+}
+
 NV_STATUS kbusAllocateLegacyFlaVaspace_GA100(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 arg0, NvU64 arg1);
 
 static inline NV_STATUS kbusAllocateLegacyFlaVaspace_395e98(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU64 arg0, NvU64 arg1) {
@@ -2067,10 +2091,6 @@ static inline void kbusTeardownCoherentCpuMapping_DISPATCH(OBJGPU *pGpu, struct 
 
 static inline NV_STATUS kbusReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, void *pTunableState) {
     return pEngstate->__kbusReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kbusStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, NvU32 arg0) {
-    return pEngstate->__kbusStatePreLoad__(pGpu, pEngstate, arg0);
 }
 
 static inline NV_STATUS kbusStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, NvU32 arg0) {

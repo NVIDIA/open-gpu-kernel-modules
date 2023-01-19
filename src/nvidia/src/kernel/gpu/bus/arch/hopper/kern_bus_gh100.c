@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1595,3 +1595,36 @@ kbusSetupUnbindFla_GH100
     return status;
 }
 
+NV_STATUS
+kbusGetFlaRange_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU64     *ucFlaBase,
+    NvU64     *ucFlaSize,
+    NvBool     bIsConntectedToNvswitch
+)
+{
+    if (!GPU_IS_NVSWITCH_DETECTED(pGpu))
+    {
+        *ucFlaSize = gpuGetFlaVasSize_HAL(pGpu, NV_FALSE);
+        *ucFlaBase = pGpu->gpuInstance * (*ucFlaSize);
+    }
+    else
+    {
+        FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+        NvU64           ucFlaLimit;
+
+        if (pFabricVAS == NULL)
+            return NV_ERR_INVALID_STATE;
+
+        ucFlaLimit = fabricvaspaceGetUCFlaLimit(pFabricVAS);
+        if (ucFlaLimit == 0)
+            return NV_ERR_INVALID_STATE;
+
+        *ucFlaBase = fabricvaspaceGetUCFlaStart(pFabricVAS);
+        *ucFlaSize = ucFlaLimit - *ucFlaBase + 1;
+    }
+
+    return NV_OK;
+}

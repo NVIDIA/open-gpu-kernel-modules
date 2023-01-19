@@ -131,16 +131,19 @@ static int __nv_drm_put_back_post_fence_fd(
     const struct NvKmsKapiLayerReplyConfig *layer_reply_config)
 {
     int fd = layer_reply_config->postSyncptFd;
+    int ret = 0;
 
     if ((fd >= 0) && (plane_state->fd_user_ptr != NULL)) {
-        if (put_user(fd, plane_state->fd_user_ptr)) {
-            return -EFAULT;
+        ret = copy_to_user(plane_state->fd_user_ptr, &fd, sizeof(fd));
+        if (ret != 0) {
+            return ret;
         }
 
         /*! set back to Null and let set_property specify it again */
         plane_state->fd_user_ptr = NULL;
     }
-    return 0;
+
+    return ret;
 }
 
 static int __nv_drm_get_syncpt_data(

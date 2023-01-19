@@ -28,6 +28,7 @@
 #include "ls10/therm_ls10.h"
 #include "error_nvswitch.h"
 #include "soe/soeiftherm.h"
+#include "rmflcncmdif_nvswitch.h"
 
 #include "nvswitch/ls10/dev_therm.h"
 
@@ -354,5 +355,102 @@ nvswitch_monitor_thermal_alert_ls10
 )
 {
     return;
+}
+
+/*
+ * @brief Callback function to recieve thermal messages from SOE.
+ */
+void
+nvswitch_therm_soe_callback_ls10
+(
+    nvswitch_device *device,
+    RM_FLCN_MSG *pGenMsg,
+    void *pParams,
+    NvU32 seqDesc,
+    NV_STATUS status
+)
+{
+    RM_SOE_THERM_MSG_SLOWDOWN_STATUS slowdown_status;
+    RM_SOE_THERM_MSG_SHUTDOWN_STATUS shutdown_status;
+    RM_FLCN_MSG_SOE *pMsg = (RM_FLCN_MSG_SOE *)pGenMsg;
+    NvU32 temperature;
+    NvU32 threshold;
+
+    switch (pMsg->msg.soeTherm.msgType)
+    {
+        case RM_SOE_THERM_MSG_ID_SLOWDOWN_STATUS:
+        {
+            slowdown_status = pMsg->msg.soeTherm.slowdown;
+            if (slowdown_status.bSlowdown)
+            {
+                if (slowdown_status.source.bTsense) // TSENSE_THERM_ALERT
+                {
+                    temperature = RM_SOE_NV_TEMP_TO_CELSIUS_TRUNCED(slowdown_status.maxTemperature);
+                    threshold   = RM_SOE_NV_TEMP_TO_CELSIUS_TRUNCED(slowdown_status.warnThreshold);
+
+                    NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_START,
+                        "NVSWITCH Temperature %dC | TSENSE WARN Threshold %dC\n",
+                        temperature, threshold);
+
+                    NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_START,
+                        "Thermal Slowdown Engaged | Temp higher than WARN Threshold\n");
+                }
+
+                NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_START,
+                    "Thermal Slowdown Engaged | Links Thermal Mode %s\n", (slowdown_status.bLinksL1Status ? "ON" : "OFF"));
+
+                if (slowdown_status.source.bPmgr) // PMGR_THERM_ALERT
+                {
+                    NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_START,
+                        "Thermal Slowdown Engaged | PMGR WARN Threshold reached\n");
+                }
+            }
+            else // REVERT_SLOWDOWN
+            {
+                temperature = RM_SOE_NV_TEMP_TO_CELSIUS_TRUNCED(slowdown_status.maxTemperature);
+                threshold   = RM_SOE_NV_TEMP_TO_CELSIUS_TRUNCED(slowdown_status.warnThreshold);
+
+                NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_END,
+                    "NVSWITCH Temperature %dC | TSENSE WARN Threshold %dC\n",
+                    temperature, threshold);
+
+                NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_END,
+                    "Thermal Slowdown Disengaged | Links Thermal Mode %s\n", (slowdown_status.bLinksL1Status ? "ON" : "OFF"));
+
+                NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_END,
+                    "Thermal slowdown Disengaged\n");
+            }
+            break;
+        }
+
+        case RM_SOE_THERM_MSG_ID_SHUTDOWN_STATUS:
+        {
+            shutdown_status = pMsg->msg.soeTherm.shutdown;
+            if (shutdown_status.source.bTsense) // TSENSE_THERM_SHUTDOWN
+            {
+                temperature = RM_SOE_NV_TEMP_TO_CELSIUS_TRUNCED(shutdown_status.maxTemperature);
+                threshold   = RM_SOE_NV_TEMP_TO_CELSIUS_TRUNCED(shutdown_status.overtThreshold);
+
+                NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_SHUTDOWN,
+                    "NVSWITCH Temperature %dC | OVERT Threshold %dC\n",
+                    temperature, threshold);
+
+                NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_SHUTDOWN,
+                    "TSENSE OVERT Threshold reached. Shutting Down\n");
+            }
+
+            if (shutdown_status.source.bPmgr) // PMGR_THERM_SHUTDOWN
+            {
+                NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_HOST_THERMAL_EVENT_START,
+                    "PMGR OVERT Threshold reached. Shutting Down\n");
+            }
+            break;
+        }
+        default:
+        {
+            NVSWITCH_PRINT(device, ERROR, "%s Unknown message Id\n", __FUNCTION__);
+            NVSWITCH_ASSERT(0);
+        }
+    }
 }
 

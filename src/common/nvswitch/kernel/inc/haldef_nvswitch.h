@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -239,6 +239,7 @@
     _op(NvlStatus, nvswitch_ctrl_get_rb_stall_busy, (nvswitch_device *device, NVSWITCH_GET_RB_STALL_BUSY *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_get_multicast_id_error_vector, (nvswitch_device *device, NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_clear_multicast_id_error_vector, (nvswitch_device *device, NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR *p), _arch) \
+    _op(NvlStatus, nvswitch_reset_and_train_link, (nvswitch_device *device, nvlink_link *link), _arch) \
 
 //
 // Declare HAL function pointer table

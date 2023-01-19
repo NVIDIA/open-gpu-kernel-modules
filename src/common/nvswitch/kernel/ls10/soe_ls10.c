@@ -31,7 +31,6 @@
 #include "common_nvswitch.h"
 #include "ls10/ls10.h"
 #include "ls10/soe_ls10.h"
-#include "lr10/soe_lr10.h"
 
 #include "nvswitch/ls10/dev_soe_ip.h"
 #include "nvswitch/ls10/dev_soe_ip_addendum.h"
@@ -555,7 +554,7 @@ nvswitch_soe_register_event_callbacks_ls10
                  device, pFlcn,
                  RM_SOE_UNIT_THERM,
                  NULL,
-                 nvswitch_therm_soe_callback_lr10,
+                 nvswitch_therm_soe_callback_ls10,
                  NULL,
                  &pSoe->thermEvtDesc);
     if (status != NV_OK)

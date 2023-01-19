@@ -54,9 +54,6 @@ static void DpyGetDynamicDfpProperties(
     NVDpyEvoPtr pDpyEvo,
     const NvBool disableACPIBrightnessHotkeys);
 
-static NVEvoPassiveDpDongleType
-DpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
-                          NvU32 *passiveDpDongleMaxPclkKHz);
 static void
 CreateParsedEdidFromNVT_TIMING(NVT_TIMING *pTimings,
                                NvU8 bpc,
@@ -676,53 +673,37 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
             nvkms_memset(&pDpyEvo->hdmi.srcCaps, 0, sizeof(pDpyEvo->hdmi.srcCaps));
             nvkms_memset(&pDpyEvo->hdmi.sinkCaps, 0, sizeof(pDpyEvo->hdmi.sinkCaps));
 
-            if (pDevEvo->hal->caps.supportsHDMIFRL) {
+            if (nvHdmiDpySupportsFrl(pDpyEvo)) {
                 /*
-                 * This function is called multiple times for each pDpyEvo:
-                 * - Once when the dpy is created
-                 * - Once when the dpy is connected
-                 * - Once when the dpy is disconnected
-                 * In the first and third cases, we don't yet have an EDID so
-                 * we don't know if the sink supports HDMI FRL.  Assume it
-                 * doesn't, since if we try to set a mode anyway there won't be
-                 * a sink to do link training with.
+                 * An SOR needs to be assigned temporarily to do FRL training.
+                 *
+                 * Since the only other SORs in use at the moment (if any) are
+                 * those driving heads, we don't need to exclude RM from
+                 * selecting any SOR, so an sorExcludeMask of 0 is appropriate.
                  */
-                if (pDpyEvo->parsedEdid.valid &&
-                    pDpyEvo->parsedEdid.info.hdmiForumInfo.max_FRL_Rate) {
+                if (nvAssignSOREvo(pConnectorEvo, 0) &&
+                    nvHdmiFrlAssessLink(pDpyEvo)) {
                     /*
-                     * An SOR needs to be assigned temporarily to do FRL
-                     * training.
-                     * Since the only other SORs in use at the moment (if any)
-                     * are those driving heads, we don't need to exclude RM
-                     * from selecting any SOR, so an sorExcludeMask of 0 is
-                     * appropriate.
+                     * Note that although we "assessed" the link above, the
+                     * maximum pixel clock set here doesn't take that into
+                     * account -- it's the maximum the GPU hardware is capable
+                     * of on the most capable link, mostly for reporting
+                     * purposes.
+                     *
+                     * The calculation for if a given mode can fit in the
+                     * assessed FRL configuration is complex and depends on
+                     * things like the amount of blanking, rather than a simple
+                     * pclk cutoff.  So, we query the hdmi library when
+                     * validating each individual mode, when we know actual
+                     * timings.
                      */
-                    if (nvAssignSOREvo(pConnectorEvo, 0)) {
-                        if (nvHdmiFrlAssessLink(pDpyEvo)) {
 
-                            /*
-                             * Note that although we "assessed" the link above,
-                             * the maximum pixel clock set here doesn't take
-                             * that into account -- it's the maximum the GPU
-                             * hardware is capable of on the most capable link,
-                             * mostly for reporting purposes.
-                             *
-                             * The calculation for if a given mode can fit in
-                             * the assessed FRL configuration is complex and
-                             * depends on things like the amount of blanking,
-                             * rather than a simple pclk cutoff.  So, we query
-                             * the hdmi library when validating each individual
-                             * mode, when we know actual timings.
-                             */
-                            pDpyEvo->maxPixelClockKHz =
-                                /*
-                                 * This comes from the Windows display driver:
-                                 * (4 lanes * 12Gb per lane *
-                                 *  FRL encoding i.e 16/18) / 1K
-                                 */
-                                ((4 * 12 * 1000 * 1000 * 16) / 18);
-                        }
-                    }
+                    /*
+                     * This comes from the Windows display driver: (4 lanes *
+                     * 12Gb per lane * FRL encoding i.e 16/18) / 1K
+                     */
+                    pDpyEvo->maxPixelClockKHz =
+                        ((4 * 12 * 1000 * 1000 * 16) / 18);
                 }
             }
         } else {
@@ -754,8 +735,8 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
      * restrictive than the one described above.  Check whether one of
      * these dongles is in use, and override the limit accordingly.
      */
-    passiveDpDongleType = DpyGetPassiveDpDongleType(pDpyEvo,
-        &passiveDpDongleMaxPclkKHz);
+    passiveDpDongleType =
+        nvDpyGetPassiveDpDongleType(pDpyEvo, &passiveDpDongleMaxPclkKHz);
 
     if (passiveDpDongleType != NV_EVO_PASSIVE_DP_DONGLE_UNUSED) {
         pDpyEvo->maxPixelClockKHz = NV_MIN(passiveDpDongleMaxPclkKHz,
@@ -832,9 +813,9 @@ static NvBool IsConnectorTMDS(NVConnectorEvoPtr pConnectorEvo)
  * Query RM for the passive Displayport dongle type; this can influence
  * the maximum pixel clock allowed on that display.
  */
-static NVEvoPassiveDpDongleType
-DpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
-                          NvU32 *passiveDpDongleMaxPclkKHz)
+NVEvoPassiveDpDongleType
+nvDpyGetPassiveDpDongleType(const NVDpyEvoRec *pDpyEvo,
+                            NvU32 *passiveDpDongleMaxPclkKHz)
 {
     NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS params = { 0 };
     NvU32 ret;

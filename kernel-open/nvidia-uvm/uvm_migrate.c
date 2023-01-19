@@ -795,7 +795,7 @@ static NV_STATUS semaphore_release(NvU64 semaphore_address,
     return semaphore_release_from_gpu(gpu, semaphore_pool, semaphore_address, semaphore_payload, tracker_ptr);
 }
 
-NV_STATUS uvm_migrate_init()
+NV_STATUS uvm_migrate_init(void)
 {
     NV_STATUS status = uvm_migrate_pageable_init();
     if (status != NV_OK)
@@ -821,7 +821,7 @@ NV_STATUS uvm_migrate_init()
     return NV_OK;
 }
 
-void uvm_migrate_exit()
+void uvm_migrate_exit(void)
 {
     uvm_migrate_pageable_exit();
 }

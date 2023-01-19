@@ -2,6 +2,12 @@
 
 ## Release 525 Entries
 
+### [525.85.05] 2023-01-19
+
+#### Fixed
+
+- Fix build problems with Clang 15.0, [#377](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/377) by @ptr1337
+
 ### [525.78.01] 2023-01-05
 
 ### [525.60.13] 2022-12-05

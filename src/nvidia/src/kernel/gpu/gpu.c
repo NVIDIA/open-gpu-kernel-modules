@@ -2181,13 +2181,15 @@ gpuStateLoad_IMPL
         return status;
     }
 
-    // It is a no-op on baremetal and inside non SRIOV guest.
-    rmStatus = gpuCreateDefaultClientShare_HAL(pGpu);
-    if (rmStatus != NV_OK)
+    if (!(flags & GPU_STATE_FLAGS_PRESERVING))
     {
-        return rmStatus;
+        // It is a no-op on baremetal and inside non SRIOV guest.
+        rmStatus = gpuCreateDefaultClientShare_HAL(pGpu);
+        if (rmStatus != NV_OK)
+        {
+            return rmStatus;
+        }
     }
-
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
 
     rmStatus = gpuStatePreLoad(pGpu, flags);
@@ -2823,7 +2825,8 @@ gpuStateUnload_IMPL
     rmStatus = gpuStatePostUnload(pGpu, flags);
     NV_ASSERT_OK(rmStatus);
 
-    gpuDestroyDefaultClientShare_HAL(pGpu);
+    if(!(flags & GPU_STATE_FLAGS_PRESERVING))
+       gpuDestroyDefaultClientShare_HAL(pGpu);
 
     // De-init SRIOV
     gpuDeinitSriov_HAL(pGpu);

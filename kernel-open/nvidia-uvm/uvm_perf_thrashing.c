@@ -1943,7 +1943,7 @@ NV_STATUS uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *g
     return NV_OK;
 }
 
-NV_STATUS uvm_perf_thrashing_init()
+NV_STATUS uvm_perf_thrashing_init(void)
 {
     NV_STATUS status;
 
@@ -2002,7 +2002,7 @@ error:
     return status;
 }
 
-void uvm_perf_thrashing_exit()
+void uvm_perf_thrashing_exit(void)
 {
     cpu_thrashing_stats_exit();
 

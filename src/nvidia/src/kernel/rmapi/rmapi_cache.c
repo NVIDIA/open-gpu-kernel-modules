@@ -125,7 +125,7 @@ NvBool rmapiCmdIsCacheable(NvU32 cmd, NvBool bAllowInternal)
     return rmapiControlIsCacheable(flags, accessRight, bAllowInternal);
 }
 
-NV_STATUS rmapiControlCacheInit()
+NV_STATUS rmapiControlCacheInit(void)
 {
 #if defined(DEBUG)
     RmapiControlCache.mode = NV0000_CTRL_SYSTEM_RMCTRL_CACHE_MODE_CTRL_MODE_VERIFY_ONLY;

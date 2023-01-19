@@ -334,7 +334,7 @@ bool __uvm_check_all_unlocked(uvm_thread_context_lock_t *uvm_context)
     return false;
 }
 
-bool __uvm_thread_check_all_unlocked()
+bool __uvm_thread_check_all_unlocked(void)
 {
     return __uvm_check_all_unlocked(uvm_thread_context_lock_get());
 }

@@ -6611,12 +6611,12 @@ _nvswitch_service_nvlw_fatal_ls10
     status[5] = _nvswitch_service_nvlipt_link_fatal_ls10(device, instance);
 
 
-    if (status[0] != NVL_SUCCESS &&
-        status[1] != NVL_SUCCESS &&
-        status[2] != NVL_SUCCESS &&
-        status[3] != NVL_SUCCESS &&
-        status[4] != NVL_SUCCESS &&
-        status[5] != NVL_SUCCESS)
+    if (status[0] != NVL_SUCCESS && status[0] != -NVL_NOT_FOUND &&
+        status[1] != NVL_SUCCESS && status[1] != -NVL_NOT_FOUND &&
+        status[2] != NVL_SUCCESS && status[2] != -NVL_NOT_FOUND &&
+        status[3] != NVL_SUCCESS && status[3] != -NVL_NOT_FOUND &&
+        status[4] != NVL_SUCCESS && status[4] != -NVL_NOT_FOUND &&
+        status[5] != NVL_SUCCESS && status[5] != -NVL_NOT_FOUND)
     {
         return -NVL_MORE_PROCESSING_REQUIRED;
     }

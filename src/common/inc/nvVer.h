@@ -3,7 +3,7 @@
 #define NV_COMPANY_NAME_STRING_SHORT    "NVIDIA"
 #define NV_COMPANY_NAME_STRING_FULL     "NVIDIA Corporation"
 #define NV_COMPANY_NAME_STRING          NV_COMPANY_NAME_STRING_FULL
-#define NV_COPYRIGHT_YEAR               "2022"
+#define NV_COPYRIGHT_YEAR               "2023"
 #define NV_COPYRIGHT                    "(C) " NV_COPYRIGHT_YEAR " NVIDIA Corporation. All rights reserved."  // Please do not use the non-ascii copyright symbol for (C).
 
 #if defined(NV_LINUX) || defined(NV_BSD) || defined(NV_SUNOS) || defined(NV_VMWARE) || defined(NV_QNX) || defined(NV_INTEGRITY) || \

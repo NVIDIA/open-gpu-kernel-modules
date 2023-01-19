@@ -59,7 +59,7 @@ enum {
 // nvDbgBreakpointEnabled - Returns true if triggering a breakpoint is allowed
 //
 NvBool osDbgBreakpointEnabled(void);
-NvBool nvDbgBreakpointEnabled()
+NvBool nvDbgBreakpointEnabled(void)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     if (pSys != NULL)

@@ -149,7 +149,7 @@ struct KernelHostVgpuDeviceApi {
     NV_STATUS (*__kernelhostvgpudeviceapiMap__)(struct KernelHostVgpuDeviceApi *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__kernelhostvgpudeviceapiAccessCallback__)(struct KernelHostVgpuDeviceApi *, struct RsClient *, void *, RsAccessRight);
     struct KernelHostVgpuDeviceShr *pShared;
-    NvU32 notifyActions[6];
+    NvU32 notifyActions[7];
 };
 
 #ifndef __NVOC_CLASS_KernelHostVgpuDeviceApi_TYPEDEF__

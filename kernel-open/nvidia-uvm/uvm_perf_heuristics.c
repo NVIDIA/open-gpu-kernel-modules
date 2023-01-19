@@ -28,7 +28,7 @@
 #include "uvm_gpu_access_counters.h"
 #include "uvm_va_space.h"
 
-NV_STATUS uvm_perf_heuristics_init()
+NV_STATUS uvm_perf_heuristics_init(void)
 {
     NV_STATUS status;
 
@@ -47,7 +47,7 @@ NV_STATUS uvm_perf_heuristics_init()
     return NV_OK;
 }
 
-void uvm_perf_heuristics_exit()
+void uvm_perf_heuristics_exit(void)
 {
     uvm_perf_access_counters_exit();
     uvm_perf_thrashing_exit();

@@ -27,6 +27,226 @@
 #include "ctrl/ctrl0000/ctrl0000system.h"
 
 /*
+ * Definitions for the static  params table.
+ */
+
+/*!
+ *  Layout of SysDev 2x data used for static config
+ */
+#define NVPCF_SYSDEV_STATIC_TABLE_VERSION_2X                              (0x20)
+#define NVPCF_SYSDEV_STATIC_TABLE_HEADER_2X_SIZE_03                      (0x03U)
+#define NVPCF_SYSDEV_STATIC_TABLE_HEADER_2X_FMT_SIZE_03                   ("3b")
+#define NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_SIZE_01                      (0x01U)
+#define NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_FMT_SIZE_01                   ("1b")
+
+/*!
+ * Static system dev header table, unpacked
+ */
+typedef struct
+{
+    /*
+     * System device Table Version.
+     */
+    NvU32   version;
+
+    /*
+     * Size of device Table Header in bytes .
+     */
+    NvU32   headerSize;
+
+    /*
+     * Size of common entry in bytes.
+     */
+    NvU32   commonSize;
+} SYSDEV_STATIC_TABLE_HEADER_2X;
+
+/*!
+ * Static system dev common entry
+ */
+typedef struct
+{
+    NvU32   param0;
+} SYSDEV_STATIC_TABLE_COMMON_2X;
+
+#define NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_CPU_TYPE                  3:0
+#define NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_CPU_TYPE_INTEL   (0x00000000)
+#define NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_CPU_TYPE_AMD     (0x00000001)
+#define NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_CPU_TYPE_NVIDIA  (0x00000002)
+#define NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_GPU_TYPE                  7:4
+#define NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_PARAM0_GPU_TYPE_NVIDIA  (0x00000000)
+
+/*!
+ * Layout of Controller 2x data used for static config
+ */
+#define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_20                          (0x20)
+#define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_21                          (0x21)
+#define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_22                          (0x22)
+#define NVPCF_CONTROLLER_STATIC_TABLE_VERSION_23                          (0x23)
+
+// format for 2.0 and 2.1
+#define NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V20_SIZE_05                 (0x05U)
+#define NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V20_FMT_SIZE_05              ("5b")
+#define NVPCF_CONTROLLER_STATIC_TABLE_COMMON_V20_SIZE_02                 (0x02U)
+#define NVPCF_CONTROLLER_STATIC_TABLE_COMMON_V20_FMT_SIZE_02              ("1w")
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_SIZE_0F                  (0x0FU)
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FMT_SIZE_0F           ("1b1w3d")
+
+/*!
+ * Static system controller header table v2.0/2.1, unpacked
+ */
+typedef struct
+{
+    /*
+     * System controller Table Version.
+     */
+    NvU32   version;
+
+    /*
+     * Size of controller Table Header in bytes .
+     */
+    NvU32   headerSize;
+
+    /*
+     * Size of controller Table Common/Global Entry in bytes.
+     */
+    NvU32   commonSize;
+
+    /*
+     * Size of controller Table Entry in bytes.
+     */
+    NvU32   entrySize;
+
+    /*
+     * Number of controller Entries
+     */
+    NvU32   entryCount;
+} CONTROLLER_STATIC_TABLE_HEADER_V20;
+
+/*!
+ * Static system controller common/global entry v2.0/2.1, unpacked
+ */
+typedef struct
+{
+    /*
+     * Base sampling period in ms
+     */
+    NvU32  samplingPeriodms;
+} CONTROLLER_STATIC_TABLE_COMMON_V20;
+
+/*!
+ * Static system controller entry v2.0/2.1, unpacked
+ */
+typedef struct
+{
+    /*
+     * System controller entry type specific flag  (Flags0).
+     */
+    NvU32   flags0;
+
+    /*
+     * Sampling Multiplier.
+     */
+    NvU32  samplingMulti;
+
+    /*
+     * System controller entry filter parameters.
+     */
+    NvU32  filterParams;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param0).
+     */
+    NvU32  param0;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param1).
+     */
+    NvU32  param1;
+
+} CONTROLLER_STATIC_TABLE_ENTRY_V20;
+
+// FLAGS0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FLAGS0_CLASS                         3:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FLAGS0_CLASS_DISABLED       (0x00000000)
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FLAGS0_CLASS_PPAB           (0x00000001)
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FLAGS0_CLASS_CTGP           (0x00000002)
+
+// Filter
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FILTER_TYPE                         7:0
+
+// filterType = EWMA
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FILTERPARAM_EWMA_WEIGHT            15:8
+// filterType = MAX, others
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FILTERPARAM_WINDOW_SIZE            15:8
+
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FILTER_RESERVED                   31:16
+
+// Param0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_PARAM0_QBOOST_INCREASE_GAIN        15:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_PARAM0_QBOOST_DECREASE_GAIN       31:16
+
+// Param1
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_PARAM1_QBOOST_DC_SUPPORT            0:0
+
+// format for 2.2
+#define NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V22_SIZE_04                 (0x04U)
+#define NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V22_FMT_SIZE_04              ("4b")
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_SIZE_05                  (0x05U)
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FMT_SIZE_05             ("1b1d")
+
+/*!
+ * Static system controller header table v2.2, unpacked
+ */
+typedef struct
+{
+    /*
+     * System controller Table Version.
+     */
+    NvU32   version;
+
+    /*
+     * Size of controller Table Header in bytes .
+     */
+    NvU32   headerSize;
+
+    /*
+     * Size of controller Table Entry in bytes.
+     */
+    NvU32   entrySize;
+
+    /*
+     * Number of controller Entries
+     */
+    NvU32   entryCount;
+} CONTROLLER_STATIC_TABLE_HEADER_V22;
+
+/*!
+ * Static system controller entry v2.2, unpacked
+ */
+typedef struct
+{
+    /*
+     * System controller entry type specific flag  (Flags0).
+     */
+    NvU32   flags0;
+
+    /*
+     * System controller entry Usage-Specific Parameter (Param0).
+     */
+    NvU32  param0;
+
+} CONTROLLER_STATIC_TABLE_ENTRY_V22;
+
+// FLAGS0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FLAGS0_CLASS                        3:0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FLAGS0_CLASS_DISABLED      (0x00000000)
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FLAGS0_CLASS_PPAB          (0x00000001)
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FLAGS0_CLASS_CTGP          (0x00000002)
+
+// Param0
+#define NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_PARAM0_QBOOST_DC_SUPPORT            0:0
+
+/*
  * Definitions for the dynamic params table.
  */
 #define NVPCF0100_CTRL_DYNAMIC_TABLE_1X_VERSION                           (0x10)
@@ -70,8 +290,14 @@ typedef struct
 /*!
  * Config DSM NVPCF 2x version specific defines
  */
+
+/*
+ * Definitions for the dynamic params table.
+ */
 #define NVPCF_DYNAMIC_PARAMS_20_VERSION                                   (0x20)
 #define NVPCF_DYNAMIC_PARAMS_21_VERSION                                   (0x21)
+#define NVPCF_DYNAMIC_PARAMS_22_VERSION                                   (0x22)
+#define NVPCF_DYNAMIC_PARAMS_23_VERSION                                   (0x23)
 #define NVPCF_DYNAMIC_PARAMS_2X_HEADER_SIZE_05                           (0x05U)
 #define NVPCF_DYNAMIC_PARAMS_2X_HEADER_FMT_SIZE_05                        ("5b")
 #define NVPCF_DYNAMIC_PARAMS_2X_COMMON_SIZE_10                           (0x10U)

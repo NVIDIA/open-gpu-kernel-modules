@@ -34,7 +34,7 @@ static int uvm_debug_prints = UVM_IS_DEBUG() || UVM_IS_DEVELOP();
 module_param(uvm_debug_prints, int, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(uvm_debug_prints, "Enable uvm debug prints.");
 
-bool uvm_debug_prints_enabled()
+bool uvm_debug_prints_enabled(void)
 {
     return uvm_debug_prints != 0;
 }

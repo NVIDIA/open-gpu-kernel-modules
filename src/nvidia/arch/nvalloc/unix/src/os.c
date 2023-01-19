@@ -88,12 +88,12 @@ struct OS_RM_CAPS
     nv_cap_t **caps;
 };
 
-NvBool osIsRaisedIRQL()
+NvBool osIsRaisedIRQL(void)
 {
     return (!os_semaphore_may_sleep());
 }
 
-NvBool osIsISR()
+NvBool osIsISR(void)
 {
     return os_is_isr();
 }
@@ -1783,7 +1783,7 @@ NV_STATUS osPackageRegistry(
     return RmPackageRegistry(nv, pRegTable, pSize);
 }
 
-NvU32 osGetCpuCount()
+NvU32 osGetCpuCount(void)
 {
     return os_get_cpu_count();   // Total number of logical CPUs.
 }
@@ -1834,7 +1834,7 @@ void osGetTimeoutParams(OBJGPU *pGpu, NvU32 *pTimeoutUs, NvU32 *pScale, NvU32 *p
     return;
 }
 
-void osFlushLog()
+void osFlushLog(void)
 {
     // Not implemented
 }
@@ -2671,7 +2671,7 @@ NV_STATUS osGpuLocksQueueRelease(OBJGPU *pGpu, NvU32 dpcGpuLocksRelease)
     return NV_SEMA_RELEASE_FAILED;
 }
 
-void osSyncWithRmDestroy()
+void osSyncWithRmDestroy(void)
 {
 }
 
@@ -3511,7 +3511,7 @@ osGetGpuRailVoltageInfo
  * @return pointer to the security token.
  */
 PSECURITY_TOKEN
-osGetSecurityToken()
+osGetSecurityToken(void)
 {
     NV_STATUS rmStatus;
     TOKEN_USER *pTokenUser;
@@ -4177,7 +4177,7 @@ osWaitForIbmnpuRsync
 }
 
 NvU32
-osGetPageSize()
+osGetPageSize(void)
 {
     return os_page_size;
 }

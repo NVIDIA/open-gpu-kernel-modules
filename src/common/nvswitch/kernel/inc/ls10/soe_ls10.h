@@ -39,6 +39,8 @@ void nvswitch_cci_soe_callback_ls10(nvswitch_device *device, RM_FLCN_MSG *pGenMs
                                     void *pParams, NvU32 seqDesc, NV_STATUS status);
 NvlStatus nvswitch_set_nport_tprod_state_ls10(nvswitch_device *device, NvU32 nport);
 void      nvswitch_soe_unregister_events_ls10(nvswitch_device *device);
+void      nvswitch_therm_soe_callback_ls10(nvswitch_device *device, union RM_FLCN_MSG *pMsg,
+                                           void *pParams, NvU32 seqDesc, NV_STATUS status);
 NvlStatus nvswitch_soe_register_event_callbacks_ls10(nvswitch_device *device);
 NvlStatus nvswitch_soe_restore_nport_state_ls10(nvswitch_device *device, NvU32 nport);
 NvlStatus nvswitch_soe_issue_nport_reset_ls10(nvswitch_device *device, NvU32 nport);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -993,6 +993,7 @@ void      nvswitch_service_minion_all_links_ls10(nvswitch_device *device);
 NvBool    nvswitch_is_inforom_supported_ls10(nvswitch_device *device);
 void      nvswitch_set_error_rate_threshold_ls10(nvlink_link *link, NvBool bIsDefault);
 void      nvswitch_configure_error_rate_threshold_interrupt_ls10(nvlink_link *link, NvBool bEnable);
+NvlStatus nvswitch_reset_and_train_link_ls10(nvswitch_device *device, nvlink_link *link);
 
 #endif //_LS10_H_
 

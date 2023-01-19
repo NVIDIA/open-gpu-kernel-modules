@@ -1242,3 +1242,12 @@ kbusIsGpuP2pAlive_IMPL
 {
     return (pKernelBus->totalP2pObjectsAliveRefCount > 0);
 }
+
+/**
+ * @brief  Setup VF BAR2 during hibernate resume
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ * @param[in] flags
+ */
+

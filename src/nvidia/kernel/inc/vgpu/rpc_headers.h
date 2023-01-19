@@ -135,6 +135,7 @@
 #define NV_VGPU_MSG_RESULT_RPC_UNKNOWN_RM_ERROR          0xFF100005 /* RW--V */
 #define NV_VGPU_MSG_RESULT_RPC_UNKNOWN_VMIOP_ERROR       0xFF100006 /* RW--V */
 #define NV_VGPU_MSG_RESULT_RPC_RESERVED_HANDLE           0xFF100007 /* RW--V */
+#define NV_VGPU_MSG_RESULT_RPC_CUDA_PROFILING_DISABLED   0xFF100008 /* RW--V */
 /* RPC-specific code in result for incomplete request */
 #define NV_VGPU_MSG_RESULT_RPC_PENDING                   0xFFFFFFFF /* RW--V */
 /* shared union field */

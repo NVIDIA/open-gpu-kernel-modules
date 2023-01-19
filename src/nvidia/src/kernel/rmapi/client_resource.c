@@ -69,6 +69,26 @@
 #include "gpu/gsp/kernel_gsp.h"
 #include "power/gpu_boost_mgr.h"
 
+#define CONFIG_2X_BUFF_SIZE_MIN                                             (2)
+
+//
+// Controller Table v2.2 has removed some params, set them using these
+// default values instead
+//
+// EWMA retention weight (232/256) results in tau being 10x the sampling period
+//
+#define CONTROLLER_GRP_DEFAULT_BASE_SAMPLING_PERIOD_MS                    (100)
+#define CONTROLLER_GRP_DEFAULT_SAMPLING_MULTIPLIER                          (1)
+#define CONTROLLER_GRP_DEFAULT_EWMA_WEIGHT                                (232)
+#define CONTROLLER_GRP_DEFAULT_INCREASE_GAIN_UFXP4_12                    (3686)
+#define CONTROLLER_GRP_DEFAULT_DECREASE_GAIN_UFXP4_12                    (4096)
+
+/*!
+ * Define the filter types.
+ */
+#define NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_EMWA                           (0)
+#define NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_MOVING_MAX                     (1)
+
 NV_STATUS
 cliresConstruct_IMPL
 (
@@ -1899,6 +1919,580 @@ cliresCtrlCmdGpuAcctGetAccountingPids_IMPL
 }
 
 
+/*!
+ * Helper to build config data from unpacked table data,
+ * static config v2.0/2.1.
+ *
+ * @param[in]  pEntry          Unpacked data from static table
+ * @param[out] pParams         Structure to fill parsed info
+ *
+ */
+static void
+_controllerBuildConfig_StaticTable_v20
+(
+    CONTROLLER_STATIC_TABLE_ENTRY_V20 *pEntry,
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    pParams->samplingMulti   =
+        (NvU16)pEntry->samplingMulti;
+    pParams->filterType      =
+        (NvU8)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V20, _FILTER, _TYPE,
+                      pEntry->filterParams);
+    pParams->filterReserved  =
+        (NvU16)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V20, _FILTER, _RESERVED,
+                       pEntry->filterParams);
+
+    // Get the filter param based on filter type
+    switch (pParams->filterType)
+    {
+        case NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_EMWA:
+        {
+            pParams->filterParam.weight =
+                (NvU8)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V20, _FILTERPARAM, _EWMA_WEIGHT,
+                              pEntry->filterParams);
+            break;
+        }
+
+        case NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_MOVING_MAX:
+        default:
+        {
+            pParams->filterParam.windowSize =
+                (NvU8)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V20, _FILTERPARAM, _WINDOW_SIZE,
+                              pEntry->filterParams);
+            break;
+        }
+    }
+}
+
+/*!
+ * Helper to build Qboost's config data from unpacked table data,
+ * static config v2.0/2.1.
+ *
+ * @param[in]  pEntry          Unpacked data from static table
+ * @param[out] pParams         Structure to fill parsed info
+ *
+ */
+static void
+_controllerBuildQboostConfig_StaticTable_v20
+(
+    CONTROLLER_STATIC_TABLE_ENTRY_V20 *pEntry,
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+
+    pParams->bIsBoostController = NV_TRUE;
+
+    // Type-specific param0
+    pParams->incRatio =
+        (NvUFXP4_12)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V20, _PARAM0, _QBOOST_INCREASE_GAIN,
+            pEntry->param0);
+    pParams->decRatio =
+        (NvUFXP4_12)DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V20, _PARAM0, _QBOOST_DECREASE_GAIN,
+            pEntry->param0);
+
+    // Type-specific param1
+    pParams->bSupportBatt =
+        (NvBool)(DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V20, _PARAM1, _QBOOST_DC_SUPPORT,
+            pEntry->param1));
+
+}
+
+/*!
+ * Helper to build config data from unpacked table data,
+ * static config v2.2.
+ *
+ * @param[in]  pEntry          Unpacked data from static table
+ * @param[out] pParams         Structure to fill parsed info
+ *
+ */
+static void
+_controllerBuildConfig_StaticTable_v22
+(
+    CONTROLLER_STATIC_TABLE_ENTRY_V22 *pEntry,
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    pParams->samplingMulti          = CONTROLLER_GRP_DEFAULT_SAMPLING_MULTIPLIER;
+    pParams->filterType             = NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_EMWA;
+    pParams->filterParam.weight     = CONTROLLER_GRP_DEFAULT_EWMA_WEIGHT;
+}
+
+/*!
+ * Helper to build Qboost's config data from unpacked table data,
+ * static config v2.2.
+ *
+ * @param[in]  pEntry          Unpacked data from static table
+ * @param[out] pParams         Structure to fill parsed info
+ *
+ */
+static void
+_controllerBuildQboostConfig_StaticTable_v22
+(
+    CONTROLLER_STATIC_TABLE_ENTRY_V22 *pEntry,
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    pParams->bIsBoostController = NV_TRUE;
+
+    // Use increase gain of 90%, decrease gain of 100%
+    pParams->incRatio = CONTROLLER_GRP_DEFAULT_INCREASE_GAIN_UFXP4_12;
+    pParams->decRatio = CONTROLLER_GRP_DEFAULT_DECREASE_GAIN_UFXP4_12;
+
+    // Type-specific param0
+    pParams->bSupportBatt =
+        (NvBool)(DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V22, _PARAM0, _QBOOST_DC_SUPPORT,
+            pEntry->param0));
+}
+
+/*!
+ * Helper to build CTGP controller's config data from unpacked table data,
+ * static config 2x version.  Re-uses struct types from normal Qboost
+ * controller.
+ *
+ * @param[out] pParams         Structure to fill parsed info
+ *
+ */
+static void
+_controllerBuildCtgpConfig_StaticTable_2x
+(
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    //
+    // Sampling period only really only affects the delay in handling
+    // CTGP changes, so just set sampling period multiplier to 1
+    //
+    // Force EWMA filter type with weight 0, since currently the reading
+    // and filtering of CPU power is still done
+    //
+    pParams->samplingMulti       = CONTROLLER_GRP_DEFAULT_SAMPLING_MULTIPLIER;
+    pParams->filterType          = NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_EMWA;
+    pParams->filterParam.weight  = 0;
+
+    // Inform apps that there is no Dynamic Boost support
+    pParams->bIsBoostController = NV_FALSE;
+    pParams->incRatio = 0;
+    pParams->decRatio = 0;
+    pParams->bSupportBatt = NV_FALSE;
+}
+
+/*!
+ * Attempts to parse the static controller table, as v2.0 or v2.1.
+ *
+ * @param[in]  pData                 Pointer to start (header) of the table
+ * @param[in]  dataSize              Size of entire table, including header
+ * @param[out] pEntryCount           Number of controller entries found
+ * @param[out] pParams               Structure to fill parsed info
+ *
+ * @return NV_OK
+ *     Table was successfully parsed; caller should remember to free object array
+ * @return NV_ERR_NOT_SUPPORTED
+ *     Failed to detect correct table version, no output
+ * @return Other errors
+ *     NV_ERR_INVALID_DATA or errors propogated up from functions called
+ */
+static NV_STATUS
+_controllerParseStaticTable_v20
+(
+    NvU8 *pData,
+    NvU32 dataSize,
+    NvU8 *pEntryCount,
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    const char *pHeaderFmt = NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V20_FMT_SIZE_05;
+    const char *pCommonFmt = NVPCF_CONTROLLER_STATIC_TABLE_COMMON_V20_FMT_SIZE_02;
+    const char *pEntryFmt  = NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FMT_SIZE_0F;
+    NvU32 loop               = 0;
+    NV_STATUS   status     = NV_OK;
+
+    CONTROLLER_STATIC_TABLE_HEADER_V20 header = { 0 };
+    CONTROLLER_STATIC_TABLE_COMMON_V20 common = { 0 };
+
+    // Check if we can safely parse the header
+    if (dataSize < NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V20_SIZE_05)
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        goto _controllerParseStaticTable_v20_exit;
+    }
+
+    // Unpack the table header
+    configReadStructure(pData, &header, 0, pHeaderFmt);
+
+    switch (header.version)
+    {
+        case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_20:
+        case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_21:
+        {
+            NvU32 expectedSize;
+
+            // check rest of header
+            if ((header.headerSize != NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V20_SIZE_05)
+                || (header.commonSize != NVPCF_CONTROLLER_STATIC_TABLE_COMMON_V20_SIZE_02)
+                || (header.entrySize != NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_SIZE_0F))
+            {
+                status = NV_ERR_INVALID_DATA;
+                goto _controllerParseStaticTable_v20_exit;
+            }
+
+            // must have at least one entry
+            if (header.entryCount == 0)
+            {
+                status = NV_ERR_INVALID_DATA;
+                goto _controllerParseStaticTable_v20_exit;
+            }
+
+            // check data size
+            expectedSize = header.headerSize + header.commonSize
+                + (header.entryCount * header.entrySize);
+            if (expectedSize != dataSize)
+            {
+                status = NV_ERR_INVALID_DATA;
+                goto _controllerParseStaticTable_v20_exit;
+            }
+            break;
+        }
+        default:
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+            goto _controllerParseStaticTable_v20_exit;
+        }
+    }
+
+    // Unpack the common data, base sampling period cannot be 0
+    configReadStructure(pData, &common, header.headerSize, pCommonFmt);
+
+    if (common.samplingPeriodms == 0)
+    {
+        status = NV_ERR_INVALID_DATA;
+        goto _controllerParseStaticTable_v20_exit;
+    }
+    pParams->samplingPeriodmS = (NvU16)common.samplingPeriodms;
+
+    // Parse each entry
+    for (loop = 0; loop < header.entryCount; loop++)
+    {
+        CONTROLLER_STATIC_TABLE_ENTRY_V20 entry = { 0 };
+
+        NvU32 offset = header.headerSize + header.commonSize +
+            (loop * NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_SIZE_0F);
+
+        // Unpack the controller entry
+        configReadStructure(pData, &entry, offset, pEntryFmt);
+
+        switch (DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V20, _FLAGS0, _CLASS,
+            entry.flags0))
+        {
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FLAGS0_CLASS_PPAB:
+            {
+                _controllerBuildConfig_StaticTable_v20(&entry, pParams);
+                _controllerBuildQboostConfig_StaticTable_v20(&entry, pParams);
+				break;
+			}
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FLAGS0_CLASS_CTGP:
+            {
+                _controllerBuildCtgpConfig_StaticTable_2x(pParams);
+                break;
+            }
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FLAGS0_CLASS_DISABLED:
+            default:
+            {
+            }
+        }
+    }
+
+    pParams->version = (NvU8)header.version;
+    *pEntryCount = (NvU8)header.entryCount;
+
+_controllerParseStaticTable_v20_exit:
+    return status;
+}
+
+/*!
+ * Attempts to parse the static controller table, as v2.2.
+ *
+ * @param[in]  pData                 Pointer to start (header) of the table
+ * @param[in]  dataSize              Size of entire table, including header
+ * @param[out] pEntryCount           Number of controller entries found
+ * @param[out] pParams               Structure to fill parsed info
+ *
+ * @return NV_OK
+ *     Table was successfully parsed; caller should remember to free object array
+ * @return NV_ERR_NOT_SUPPORTED
+ *     Failed to detect correct table version, no output
+ * @return Other errors
+ *     NV_ERR_INVALID_DATA or errors propogated up from functions called
+ */
+static NV_STATUS
+_controllerParseStaticTable_v22
+(
+    NvU8 *pData,
+    NvU32 dataSize,
+    NvU8 *pEntryCount,
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    const char *pHeaderFmt = NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V22_FMT_SIZE_04;
+    const char *pEntryFmt  = NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FMT_SIZE_05;
+    NV_STATUS   status     = NV_OK;
+    NvU32 loop               = 0;
+
+    CONTROLLER_STATIC_TABLE_HEADER_V22 header = { 0 };
+
+    // Check if we can safely parse the header
+    if (dataSize < NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V22_SIZE_04)
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        goto _controllerParseStaticTable_v22_exit;
+    }
+
+    // Unpack the table header
+    configReadStructure(pData, &header, 0, pHeaderFmt);
+
+    switch (header.version)
+    {
+        case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_23:
+        case NVPCF_CONTROLLER_STATIC_TABLE_VERSION_22:
+        {
+            NvU32 expectedSize;
+
+            // check rest of header
+            if ((header.headerSize != NVPCF_CONTROLLER_STATIC_TABLE_HEADER_V22_SIZE_04)
+                || (header.entrySize != NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_SIZE_05))
+            {
+                status = NV_ERR_INVALID_DATA;
+                goto _controllerParseStaticTable_v22_exit;
+            }
+
+            // must have at least one entry
+            if (header.entryCount == 0)
+            {
+                status = NV_ERR_INVALID_DATA;
+                goto _controllerParseStaticTable_v22_exit;
+            }
+
+            // check data size
+            expectedSize = header.headerSize + (header.entryCount * header.entrySize);
+            if (expectedSize != dataSize)
+            {
+                status = NV_ERR_INVALID_DATA;
+                goto _controllerParseStaticTable_v22_exit;
+            }
+
+            break;
+        }
+        default:
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+            goto _controllerParseStaticTable_v22_exit;
+        }
+    }
+
+    // Parse each entry
+    for (loop = 0; loop < header.entryCount; loop++)
+    {
+        CONTROLLER_STATIC_TABLE_ENTRY_V22 entry = { 0 };
+
+        NvU32 offset = header.headerSize +
+            (loop * NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_SIZE_05);
+
+        // Unpack the controller entry
+        configReadStructure(pData, &entry, offset, pEntryFmt);
+
+        switch (DRF_VAL(PCF_CONTROLLER_STATIC_TABLE_ENTRY_V22, _FLAGS0, _CLASS,
+            entry.flags0))
+        {
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FLAGS0_CLASS_PPAB:
+            {
+                _controllerBuildConfig_StaticTable_v22(&entry, pParams);
+                _controllerBuildQboostConfig_StaticTable_v22(&entry, pParams);
+                break;
+            }
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FLAGS0_CLASS_CTGP:
+            {
+                _controllerBuildCtgpConfig_StaticTable_2x(pParams);
+                break;
+            }
+            case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V22_FLAGS0_CLASS_DISABLED:
+            default:
+            {
+            }
+        }
+    }
+
+    pParams->version    = (NvU8)header.version;
+    pParams->samplingPeriodmS = CONTROLLER_GRP_DEFAULT_BASE_SAMPLING_PERIOD_MS;
+    *pEntryCount = (NvU8)header.entryCount;
+
+_controllerParseStaticTable_v22_exit:
+    return status;
+}
+
+static NV_STATUS
+_sysDeviceParseStaticTable_2x
+(
+    NvU8 *pData,
+    NvU32 *dataSize,
+    NvU32 *controllerTableOffset,
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    NV_STATUS                       status              = NV_OK;
+    NvU32                           deviceTableOffset   = 0;
+    SYSDEV_STATIC_TABLE_HEADER_2X   sysdevHeader        = { 0 };
+	SYSDEV_STATIC_TABLE_COMMON_2X   common              = { 0 };
+    const char                     *pSzSysDevHeaderFmt  =
+        NVPCF_SYSDEV_STATIC_TABLE_HEADER_2X_FMT_SIZE_03;
+	const char                     *pSzCommonFmt        =
+        NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_FMT_SIZE_01;
+
+    // Unpack the table header
+    configReadStructure(pData, &sysdevHeader, deviceTableOffset, pSzSysDevHeaderFmt);
+
+    // Check the header version and sizes
+    if ((sysdevHeader.version != NVPCF_SYSDEV_STATIC_TABLE_VERSION_2X) ||
+        (sysdevHeader.headerSize != NVPCF_SYSDEV_STATIC_TABLE_HEADER_2X_SIZE_03) ||
+        (sysdevHeader.commonSize != NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_SIZE_01))
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVPCF: %s: Unsupported header\n",
+            __FUNCTION__);
+
+        status = NV_ERR_INVALID_DATA;
+        goto _sysDeviceParseStaticTable_2x_exit;
+    }
+
+    // Update controller table pointer based on sysdev header data
+    *controllerTableOffset = deviceTableOffset + sysdevHeader.headerSize + sysdevHeader.commonSize;
+
+    configReadStructure(pData,
+                        &common,
+                        deviceTableOffset + sysdevHeader.headerSize,
+                        pSzCommonFmt);
+
+	pParams->cpuType = (DRF_VAL(PCF_SYSDEV_STATIC_TABLE_COMMON_2X, _PARAM0, _CPU_TYPE,
+                       common.param0));
+
+    pParams->gpuType = (DRF_VAL(PCF_SYSDEV_STATIC_TABLE_COMMON_2X, _PARAM0, _GPU_TYPE,
+                       common.param0));
+
+_sysDeviceParseStaticTable_2x_exit:
+    return status;
+}
+
+static NV_STATUS
+_controllerParseStaticTable_2x
+(
+    NvU8 *pData,
+    NvU32 dataSize,
+    NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
+)
+{
+    NvU32       controllerTableOffset   = 0;
+    NvU8        entryCount              = 0;
+    NV_STATUS   status                  = NV_OK;
+
+    // Make sure we can safely parse the sysdev header
+    if (dataSize < NVPCF_SYSDEV_STATIC_TABLE_HEADER_2X_SIZE_03)
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        goto _controllerParseStaticTable_exit;
+    }
+
+    _sysDeviceParseStaticTable_2x(pData, &dataSize, &controllerTableOffset, pParams);
+
+    // Make sure data size is at least the controller table offset
+    if (dataSize < controllerTableOffset)
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        goto _controllerParseStaticTable_exit;
+    }
+
+    pData    += controllerTableOffset;
+    dataSize -= controllerTableOffset;
+
+    status = _controllerParseStaticTable_v22(pData,
+                                            dataSize,
+                                            &entryCount,
+                                            pParams);
+    if (status == NV_ERR_NOT_SUPPORTED)
+    {
+        status = _controllerParseStaticTable_v20(pData,
+                                                dataSize,
+                                                &entryCount,
+                                                pParams);
+    }
+
+    if (status != NV_OK)
+    {
+        goto _controllerParseStaticTable_exit;
+    }
+
+_controllerParseStaticTable_exit:
+    return status;
+}
+
+/*!
+ * Helper function to validate the config static data that can be
+ * received from various sources, using one byte two's complement
+ * checksum. And match is against the last byte the original
+ * checksum byte is stored in the data.
+ *
+ * @param[in/out]  pData              NvU8           data buffer pointer
+ * @param[in]      pDataSize          NvU32          pointer to the data size in bytes
+ *
+ * @return NV_OK
+ *     Checksum successfully matched.
+ *
+ * @return NV_ERR_INVALID_POINTER
+ *     Invalid input data buffer pointer. *
+ * @return NV_ERR_INVALID_DATA
+ *     Checksum failure or wrong data size.
+ */
+static NV_STATUS
+_validateConfigStaticTable_2x
+(
+    NvU8    *pData,
+    NvU16   *pDataSize
+)
+{
+    NV_STATUS  status    = NV_OK;
+    NvU8       checkSum;
+    NvU8       idx;
+
+    NV_ASSERT_OR_RETURN(pData     != NULL, NV_ERR_INVALID_POINTER);
+    NV_ASSERT_OR_RETURN(pDataSize != NULL, NV_ERR_INVALID_POINTER);
+
+    //
+    // Check data size length for static2x data. Must be min 2 bytes
+    // (CONFIG_2X_BUFF_SIZE_MIN) including 1 byte for checksum. The
+    // max allowed for static2x is CONFIG_2X_BUFF_SIZE_MAX.
+    //
+    if ((*pDataSize < CONFIG_2X_BUFF_SIZE_MIN) ||
+        (*pDataSize > NVPCF0100_CTRL_CONFIG_2X_BUFF_SIZE_MAX))
+    {
+        status = NV_ERR_INVALID_DATA;
+        goto validateConfigStaticTable_2x_exit;
+    }
+
+    checkSum = 0;
+    for (idx = 0; idx < (*pDataSize - 1); idx++)
+    {
+        checkSum += pData[idx];
+    }
+    checkSum = (~checkSum) + 1;
+
+    // Match with the original checksum
+    if (checkSum != pData[*pDataSize - 1])
+    {
+        status = NV_ERR_INVALID_DATA;
+        goto validateConfigStaticTable_2x_exit;
+    }
+
+validateConfigStaticTable_2x_exit:
+    return status;
+}
+
 NV_STATUS
 cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
 (
@@ -2026,7 +2620,7 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
 
             portMemSet(&header, 0, sizeof(header));
 
-            header.version    = NVPCF_DYNAMIC_PARAMS_20_VERSION;
+            header.version    = pParams->version;
             header.headerSize = NVPCF_DYNAMIC_PARAMS_2X_HEADER_SIZE_05;
             header.commonSize = NVPCF_DYNAMIC_PARAMS_2X_COMMON_SIZE_10;
             header.entrySize  = NVPCF_DYNAMIC_PARAMS_2X_ENTRY_SIZE_1C;
@@ -2072,6 +2666,12 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
 
             // Unpack the header part
             configReadStructure(pData, (void *)&headerOut, 0, pSzHeaderFmt);
+
+            if (headerOut.version != pParams->version)
+            {
+                status = NV_ERR_INVALID_DATA;
+                goto nvpcf2xGetDynamicParams_exit;
+            }
 
             if ((headerOut.headerSize != NVPCF_DYNAMIC_PARAMS_2X_HEADER_SIZE_05) ||
                 (headerOut.commonSize != NVPCF_DYNAMIC_PARAMS_2X_COMMON_SIZE_10) ||
@@ -2127,7 +2727,50 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
 
 nvpcf2xGetDynamicParams_exit:
             portMemFree(pData);
+
             break;
+        }
+        case NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_STATIC_CASE:
+        {
+            NvU8 *pData = NULL;
+            NvU16 dataSize =  NVPCF0100_CTRL_CONFIG_2X_BUFF_SIZE_MAX;
+
+            pData = portMemAllocNonPaged(dataSize);
+
+            if ((rc = pOS->osCallACPI_DSM(pGpu,
+                            ACPI_DSM_FUNCTION_NVPCF_2X,
+                            NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_STATIC_CONFIG_TABLES,
+                            (NvU32 *)pData,
+                            &dataSize)) != NV_OK)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                "Unable to retrieve NVPCF Static data. Possibly not supported by SBIOS"
+                "rc = %x\n", rc);
+                status =  NV_ERR_NOT_SUPPORTED;
+                goto nvpcf2xGetStaticParams_exit;
+            }
+
+            status = _validateConfigStaticTable_2x(pData, &dataSize);
+            if (NV_OK != status)
+            {
+                NV_PRINTF(LEVEL_WARNING, "Config Static Data checksum failed\n");
+                status =  NV_ERR_NOT_SUPPORTED;
+                goto nvpcf2xGetStaticParams_exit;
+            }
+
+            // Subtract 1 byte for the checksum
+            dataSize--;
+
+            status = _controllerParseStaticTable_2x(pData, dataSize, pParams);
+            if (NV_OK != status)
+            {
+                status =  NV_ERR_NOT_SUPPORTED;
+            }
+
+nvpcf2xGetStaticParams_exit:
+            portMemFree(pData);
+            break;
+
         }
         default:
         {

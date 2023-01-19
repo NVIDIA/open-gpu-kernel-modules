@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -565,6 +565,7 @@ NvlStatus nvswitch_launch_ALI(nvswitch_device *device);
 NvlStatus nvswitch_launch_ALI_link_training(nvswitch_device *device, nvlink_link *link, NvBool bSync);
 NvlStatus nvswitch_inband_read_data(nvswitch_device *device, NvU8 *dest, NvU32 linkId, NvU32 *dataSize);
 void      nvswitch_filter_messages(nvswitch_device *device, NvU32 linkId);
+NvlStatus nvswitch_reset_and_train_link(nvswitch_device *device, nvlink_link *link);
 NvlStatus nvswitch_set_training_mode(nvswitch_device *device);
 NvBool    nvswitch_is_link_in_reset(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_apply_recal_settings(nvswitch_device *device, nvlink_link *link);

@@ -1718,7 +1718,7 @@ bool uvm_va_space_has_access_counter_migrations(uvm_va_space_t *va_space)
     return atomic_read(&va_space_access_counters->params.enable_mimc_migrations);
 }
 
-NV_STATUS uvm_perf_access_counters_init()
+NV_STATUS uvm_perf_access_counters_init(void)
 {
     uvm_perf_module_init("perf_access_counters",
                          UVM_PERF_MODULE_TYPE_ACCESS_COUNTERS,
@@ -1729,7 +1729,7 @@ NV_STATUS uvm_perf_access_counters_init()
     return NV_OK;
 }
 
-void uvm_perf_access_counters_exit()
+void uvm_perf_access_counters_exit(void)
 {
 }
 

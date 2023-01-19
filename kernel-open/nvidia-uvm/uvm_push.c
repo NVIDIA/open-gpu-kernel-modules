@@ -289,12 +289,12 @@ NV_STATUS __uvm_push_begin_acquire_on_reserved_channel_with_info(uvm_channel_t *
     return status;
 }
 
-bool uvm_push_info_is_tracking_descriptions()
+bool uvm_push_info_is_tracking_descriptions(void)
 {
     return uvm_debug_enable_push_desc != 0;
 }
 
-bool uvm_push_info_is_tracking_acquires()
+bool uvm_push_info_is_tracking_acquires(void)
 {
     return uvm_debug_enable_push_acquire_info != 0;
 }

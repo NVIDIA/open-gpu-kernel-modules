@@ -704,6 +704,7 @@ _kbifInitRegistryOverrides
         NV_PRINTF(LEVEL_INFO, "allow peermapping reg key = %d\n", data32);
         pKernelBif->peerMappingOverride = !!data32;
     }
+
 }
 
 /*!

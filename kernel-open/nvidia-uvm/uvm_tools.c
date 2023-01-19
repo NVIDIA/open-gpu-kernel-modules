@@ -2204,7 +2204,7 @@ NV_STATUS uvm_api_tools_get_processor_uuid_table(UVM_TOOLS_GET_PROCESSOR_UUID_TA
     return NV_OK;
 }
 
-void uvm_tools_flush_events()
+void uvm_tools_flush_events(void)
 {
     tools_schedule_completed_events();
 

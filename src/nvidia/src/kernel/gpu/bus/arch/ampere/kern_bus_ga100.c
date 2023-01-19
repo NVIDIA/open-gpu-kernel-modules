@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1347,4 +1347,31 @@ kbusSetupUnbindFla_GA100
     pKernelBus->bFlaEnabled      = NV_FALSE;
 
     return status;
+}
+
+NV_STATUS
+kbusGetFlaRange_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    NvU64     *ucFlaBase,
+    NvU64     *ucFlaSize,
+    NvBool     bIsConntectedToNvswitch
+)
+{
+    if (gpuIsSriovEnabled(pGpu) && bIsConntectedToNvswitch)
+    {
+        if (pKernelBus->flaInfo.bFlaRangeRegistered)
+        {
+            *ucFlaBase = pKernelBus->flaInfo.base;
+            *ucFlaSize = pKernelBus->flaInfo.size;
+        }
+    }
+    else // direct connected system
+    {
+        *ucFlaSize = gpuGetFlaVasSize_HAL(pGpu, NV_FALSE);
+        *ucFlaBase = pGpu->gpuInstance * (*ucFlaSize);
+    }
+
+    return NV_OK;
 }

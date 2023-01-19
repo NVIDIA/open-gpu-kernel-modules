@@ -1001,7 +1001,7 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
     return status;
 }
 
-NV_STATUS uvm_migrate_pageable_init()
+NV_STATUS uvm_migrate_pageable_init(void)
 {
     g_uvm_migrate_vma_state_cache = NV_KMEM_CACHE_CREATE("migrate_vma_state_t", migrate_vma_state_t);
     if (!g_uvm_migrate_vma_state_cache)
@@ -1010,7 +1010,7 @@ NV_STATUS uvm_migrate_pageable_init()
     return NV_OK;
 }
 
-void uvm_migrate_pageable_exit()
+void uvm_migrate_pageable_exit(void)
 {
     kmem_cache_destroy_safe(&g_uvm_migrate_vma_state_cache);
 }

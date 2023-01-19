@@ -315,15 +315,17 @@ portSyncRwLockReleaseWrite
     os_release_rwlock_write(pRwLock->rwlock);
 }
 
-NvBool portSyncExSafeToSleep()
+NvBool portSyncExSafeToSleep(void)
 {
     return os_semaphore_may_sleep();
 }
-NvBool portSyncExSafeToWake()
+
+NvBool portSyncExSafeToWake(void)
 {
     return NV_TRUE;
 }
-NvU64 portSyncExGetInterruptLevel()
+
+NvU64 portSyncExGetInterruptLevel(void)
 {
     return !os_semaphore_may_sleep();
 }

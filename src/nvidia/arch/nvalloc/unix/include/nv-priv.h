@@ -30,8 +30,6 @@
 #include <gpu/disp/kern_disp_max.h>
 #include <gpu/disp/kern_disp_type.h>
 
-#include <efi-console.h>
-
 #define NV_PRIV_REG_WR08(b,o,d)   (*((volatile NvV8*)&(b)->Reg008[(o)/1])=(NvV8)(d))
 #define NV_PRIV_REG_WR16(b,o,d)   (*((volatile NvV16*)&(b)->Reg016[(o)/2])=(NvV16)(d))
 #define NV_PRIV_REG_WR32(b,o,d)   (*((volatile NvV32*)&(b)->Reg032[(o)/4])=(NvV32)(d))
@@ -330,8 +328,6 @@ typedef struct
     NvU32 pmc_boot_0;
 
     nv_vga_t vga;
-
-    nv_efi_t efi;
 
     NvU32 flags;
     NvU32 status;
