@@ -53,6 +53,8 @@ extern "C" {
 
 #include "nvmisc.h"
 
+#include "nvidia-push-init.h"
+
 #include "timing/nvtiming.h"
 #include "timing/nvt_dsc_pps.h"
 #include "hdmipacket/nvhdmi_frlInterface.h" // HDMI_{SRC,SINK}_CAPS
@@ -100,6 +102,9 @@ extern "C" {
 #define NVKMS_BLOCK_LINEAR_LOG_GOB_WIDTH    6U    /*    64 bytes (2^6) */
 #define NVKMS_BLOCK_LINEAR_GOB_WIDTH        ((NvU32)1 << NVKMS_BLOCK_LINEAR_LOG_GOB_WIDTH)
 
+#define NVKMS_BLOCK_LINEAR_LOG_GOB_HEIGHT   3U    /*    8 rows (2^3) */
+#define NVKMS_BLOCK_LINEAR_GOB_HEIGHT       ((NvU32)1 << NVKMS_BLOCK_LINEAR_LOG_GOB_HEIGHT)
+
 #define NV_INVALID_OR                      0xFFFFFFFF
 
 #define NVKMS_RM_HEAP_ID                    0xDCBA
@@ -120,6 +125,7 @@ extern "C" {
 typedef struct _NVEvoApiHandlesRec *NVEvoApiHandlesPtr;
 typedef struct _NVEvoSubDeviceRec *NVSubDeviceEvoPtr;
 typedef struct _NVEvoDevRec *NVDevEvoPtr;
+typedef struct _NVDIFRStateEvoRec *NVDIFRStateEvoPtr;
 typedef struct _NVDmaBufferEvoRec *NVDmaBufferEvoPtr;
 typedef struct _NVEvoChannel *NVEvoChannelPtr;
 typedef struct _NVEvoHeadControl *NVEvoHeadControlPtr;
@@ -134,6 +140,7 @@ typedef struct _NVVblankSyncObjectRec *NVVblankSyncObjectPtr;
 typedef struct _NVDispHeadStateEvoRec *NVDispHeadStateEvoPtr;
 typedef struct _NVDispEvoRec *NVDispEvoPtr;
 typedef struct _NVParsedEdidEvoRec *NVParsedEdidEvoPtr;
+typedef struct _NVVBlankCallbackRec *NVVBlankCallbackPtr;
 typedef struct _NVDpyEvoRec *NVDpyEvoPtr;
 typedef struct _NVLutSurfaceEvo *NVLutSurfaceEvoPtr;
 typedef struct _NVFrameLockEvo *NVFrameLockEvoPtr;
@@ -276,6 +283,7 @@ typedef struct {
     NvBool csc0MatricesPresent;
     NvBool cscLUTsPresent;
     NvBool csc1MatricesPresent;
+    NvBool tmoPresent;
     NVEvoScalerCaps scalerCaps;
 } NVEvoWindowCaps;
 #define NV_EVO_NUM_WINDOW_CAPS 32
@@ -473,6 +481,12 @@ typedef struct _NVEvoChannel {
     NVEvoChannelCaps caps;
 
     NVEvoSyncpt postSyncpt;
+
+    struct {
+        NvBool enabled;
+        NvU32 srcMaxLum;
+        NvU32 targetMaxLums[NVKMS_MAX_SUBDEVICES];
+    } tmoParams;
 } NVEvoChannel;
 
 typedef enum {
@@ -550,8 +564,10 @@ typedef struct {
             NvU32 releaseValue;
         } semaphores;
         struct {
-            NvU32 preCtxDma;
+            NvBool isPreSyncptSpecified;
+            NvU32 preSyncpt;
             NvU32 preValue;
+
             NvU32 postCtxDma;
             NvU32 postValue;
         } syncpts;
@@ -599,6 +615,33 @@ typedef struct {
     struct NvKmsRRParams rrParams;
 
     struct NvKmsCompositionParams composition;
+
+    NVFlipLutHwState tmoLut;
+    struct {
+        struct NvKmsHDRStaticMetadata val;
+        NvBool enabled;
+    } hdrStaticMetadata;
+
+    enum NvKmsInputColorSpace colorspace;
+
+    struct {
+        NvBool specified;
+
+        /*
+         * Maximum vertical downscale factor (scaled by 1024)
+         *
+         * For example, if the downscale factor is 1.5, then maxVDownscaleFactor
+         * would be 1.5 x 1024 = 1536.
+         */
+        NvU16 vertical;
+
+        /*
+         * Maximum horizontal downscale factor (scaled by 1024)
+         *
+         * See the example above for vertical.
+         */
+        NvU16 horizontal;
+    } maxDownscaleFactors;
 } NVFlipChannelEvoHwState;
 
 typedef struct {
@@ -607,15 +650,28 @@ typedef struct {
     NVFlipChannelEvoHwState layer[NVKMS_MAX_LAYERS_PER_HEAD];
     struct NvKmsUsageBounds usage;
     NvBool disableMidFrameAndDWCFWatermark;
+    enum NvKmsOutputTf tf;
+
+    NvBool skipLayerPendingFlips[NVKMS_MAX_LAYERS_PER_HEAD];
+
     struct {
-        NvBool viewPortPointIn  : 1;
-        NvBool cursorSurface    : 1;
-        NvBool cursorPosition   : 1;
+        NvBool viewPortPointIn   : 1;
+        NvBool cursorSurface     : 1;
+        NvBool cursorPosition    : 1;
+        NvBool tf                : 1;
+        NvBool hdrStaticMetadata : 1;
 
         NvBool layerPosition[NVKMS_MAX_LAYERS_PER_HEAD];
+        NvBool layerSyncObjects[NVKMS_MAX_LAYERS_PER_HEAD];
         NvBool layer[NVKMS_MAX_LAYERS_PER_HEAD];
     } dirty;
 } NVFlipEvoHwState;
+
+enum NvKmsHDROutputState {
+    NVKMS_HDR_OUTPUT_STATE_SDR                  = 0,
+    NVKMS_HDR_OUTPUT_STATE_HDR                  = 1,
+    NVKMS_HDR_OUTPUT_STATE_TRANSITIONING_TO_SDR = 2,
+};
 
 /*!
  * State requested through the NVKMS API.  This may differ from
@@ -769,7 +825,6 @@ typedef struct {
 
 typedef struct {
     NvBool supportsDP13                    :1;
-    NvBool supportsInbandStereoSignaling   :1;
     NvBool supportsHDMI20                  :1;
     NvBool inputLutAppliesToBase           :1;
     NvU8   validNIsoFormatMask;
@@ -825,6 +880,12 @@ typedef struct _NVEvoSubDeviceRec {
 
 } NVEvoSubDeviceRec;
 
+enum NvKmsLUTState {
+    NvKmsLUTStateUninitialized = 0,
+    NvKmsLUTStateIdentity      = 1,
+    NvKmsLUTStatePQ            = 2,
+};
+
 /* Device-specific EVO state (subdevice- and channel-independent) */
 typedef struct _NVEvoDevRec {
 
@@ -841,6 +902,10 @@ typedef struct _NVEvoDevRec {
     NvU32               deviceHandle;
     struct NvKmsPerOpenDev *pNvKmsOpenDev;
 
+    struct {
+        NvPushDeviceRec device;
+        NvU32 handlePool[NV_PUSH_DEVICE_HANDLE_POOL_NUM];
+    } nvPush;
 
     /* SLI Info */
     struct {
@@ -861,6 +926,7 @@ typedef struct _NVEvoDevRec {
 
     NvU32               displayHandle;
 
+
     /*!
      * modesetOwner points to the pOpenDev of the client that called
      * NVKMS_IOCTL_GRAB_OWNERSHIP.
@@ -868,9 +934,8 @@ typedef struct _NVEvoDevRec {
     const struct NvKmsPerOpenDev *modesetOwner;
 
     /*!
-     * The first modeset after a modeset ownership transition should not inherit
-     * state from the previous modeset that we don't want inherited: LUTs or
-     * heads not specified in the new modeset request.
+     * Indicates whether modeset ownership is changed since
+     * last modeset.
      */
     NvBool modesetOwnerChanged;
 
@@ -928,6 +993,7 @@ typedef struct _NVEvoDevRec {
     NVEvoCapsRec        caps;
 
     NVEvoCoreChannelDmaRec coreChannelDma;
+    NvU32               nvkmsGpuVASpace;
 
     NvBool              mobile                   : 1;
     NvBool              usesTegraDevice          : 1;
@@ -998,8 +1064,6 @@ typedef struct _NVEvoDevRec {
      */
     NvBool              isHeadSurfaceSupported : 1;
 
-    NvU32               validResamplingMethodMask;
-
     nvkms_timer_handle_t *postFlipIMPTimer;
     nvkms_timer_handle_t *consoleRestoreTimer;
 
@@ -1060,7 +1124,7 @@ typedef struct _NVEvoDevRec {
     NVHsDeviceEvoPtr pHsDevice;
 
     /* The current headSurface configuration. */
-    NVHsStateOneHeadAllDisps headSurfaceAllDisps[NVKMS_MAX_HEADS_PER_DISP];
+    NVHsStateOneHeadAllDisps apiHeadSurfaceAllDisps[NVKMS_MAX_HEADS_PER_DISP];
 
     struct NVDevPreallocRec prealloc;
 
@@ -1092,12 +1156,26 @@ typedef struct _NVEvoDevRec {
             } disp[NVKMS_MAX_SUBDEVICES];
         } head[NVKMS_MAX_HEADS_PER_DISP];
         NVLutSurfaceEvoPtr defaultLut;
+        enum NvKmsLUTState defaultBaseLUTState[NVKMS_MAX_SUBDEVICES];
+        enum NvKmsLUTState defaultOutputLUTState[NVKMS_MAX_SUBDEVICES];
     } lut;
 
     /*! stores pre-syncpts */
     NVEvoSyncpt *preSyncptTable;
     NvBool *pAllSyncptUsedInCurrentFlip;
 
+    /* DIFR prefetch event handling. */
+    NVOS10_EVENT_KERNEL_CALLBACK_EX difrPrefetchCallback;
+    NvU32 difrPrefetchEventHandler;
+
+    /* DIFR runtime state. */
+    NVDIFRStateEvoPtr pDifrState;
+
+    NvU32 numApiHeads;
+
+    struct {
+        NvU32 numLayers;
+    } apiHead[NVKMS_MAX_HEADS_PER_DISP];
 } NVDevEvoRec;
 
 /*
@@ -1140,6 +1218,13 @@ typedef struct _NVHwModeViewPortEvo {
     // validate usage bound change requests.
     struct NvKmsUsageBounds guaranteedUsage;
 } NVHwModeViewPortEvo;
+
+static inline NvBool nvIsImageSharpeningAvailable(
+        const NVHwModeViewPortEvo *pViewPort)
+{
+    return (pViewPort->out.width != pViewPort->in.width) ||
+           (pViewPort->out.height != pViewPort->in.height);
+}
 
 enum nvKmsPixelDepth {
     NVKMS_PIXEL_DEPTH_18_444,
@@ -1237,8 +1322,6 @@ typedef struct _NVHwModeTimingsEvo {
 
     NVHwModeViewPortEvo viewPort;
 
-    NVT_VIDEO_INFOFRAME_CTRL infoFrameCtrl;
-
     struct {
         enum NvKmsStereoMode mode;
         NvBool isAegis;
@@ -1324,6 +1407,22 @@ static inline struct NvKmsRect nvEvoViewPortOutClientView(
     return viewPortOut;
 }
 
+/*
+ * The ELD contains a subset of the digital display device's EDID
+ * information related to audio capabilities. The GPU driver sends the
+ * ELD to hardware and the audio driver reads it by issuing the ELD
+ * command verb.
+ */
+
+#define NV_MAX_AUDIO_DEVICE_ENTRIES \
+    (NV0073_CTRL_DFP_ELD_AUDIO_CAPS_DEVICE_ENTRY_3 + 1)
+
+typedef enum {
+    NV_ELD_PRE_MODESET = 0,
+    NV_ELD_POST_MODESET,
+    NV_ELD_POWER_ON_RESET,
+} NvEldCase;
+
 /* OR indices are per OR-type.  The maximum OR index for each type
  * on each GPU is:
  *
@@ -1390,6 +1489,8 @@ typedef struct _NVConnectorEvoRec {
         NvBool ycbcr422Capable;
         NvBool ycbcr444Capable;
     } colorSpaceCaps;
+
+    NvEldCase audioDevEldCase[NV_MAX_AUDIO_DEVICE_ENTRIES];
 } NVConnectorEvoRec;
 
 static inline NvU32 nvConnectorGetAttachedHeadMaskEvo(
@@ -1431,6 +1532,12 @@ static inline NvU32 nvEvoConnectorGetPrimaryOr(
                 BIT_IDX_32(LOWESTBIT(pConnectorEvo->or.mask)));
 }
 
+typedef struct _NVDpyAttributeCurrentDitheringConfigRec {
+    NvBool enabled;
+    enum NvKmsDpyAttributeCurrentDitheringDepthValue depth;
+    enum NvKmsDpyAttributeCurrentDitheringModeValue mode;
+} NVDpyAttributeCurrentDitheringConfig;
+
 typedef struct __NVAttributesSetEvoRec {
 
 #define NV_EVO_DVC_MIN (-1024)
@@ -1447,7 +1554,7 @@ typedef struct __NVAttributesSetEvoRec {
      *
      * Since YUV444 mode only allows limited color range, changes to the
      * current color space may trigger changes to the current color
-     * range (see nvSetColorSpaceAndRangeEvo()).
+     * range (see nvChooseCurrentColorSpaceAndRangeEvo()).
      *
      * For SW YUV420 mode, these values are ignored in
      * HEAD_SET_PROCAMP and applied in the headSurface composite shader.
@@ -1455,11 +1562,7 @@ typedef struct __NVAttributesSetEvoRec {
     enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
     enum NvKmsDpyAttributeColorRangeValue colorRange;
 
-    struct {
-        NvBool enabled;
-        enum NvKmsDpyAttributeCurrentDitheringDepthValue depth;
-        enum NvKmsDpyAttributeCurrentDitheringModeValue mode;
-    } dithering;
+    NVDpyAttributeCurrentDitheringConfig dithering;
 
 #define NV_EVO_IMAGE_SHARPENING_MIN 0
 #define NV_EVO_IMAGE_SHARPENING_MAX 255
@@ -1506,15 +1609,15 @@ typedef struct _NVDispHeadAudioStateEvoRec {
     NvBool enabled         : 1;
 } NVDispHeadAudioStateEvoRec;
 
+typedef struct _NVDispHeadInfoFrameStateEvoRec {
+    NVT_VIDEO_INFOFRAME_CTRL ctrl;
+    NvBool hdTimings;
+} NVDispHeadInfoFrameStateEvoRec;
+
 /*
  * This structure stores information about the active per-head display state.
  */
 typedef struct _NVDispHeadStateEvoRec {
-
-    NVAttributesSetEvoRec attributes;
-
-    NVEvoScalerTaps hTaps;
-    NVEvoScalerTaps vTaps;
 
     /*! Cached, to preserve across modesets. */
     struct NvKmsModeValidationParams modeValidationParams;
@@ -1533,7 +1636,6 @@ typedef struct _NVDispHeadStateEvoRec {
      * This is intended to be used by console restore to avoid bug 2168873.
      */
     NvBool bypassComposition        : 1;
-    NvBool hs10bpcHint              : 1;
 
     struct {
         NVT_COLOR_FORMAT colorFormat;
@@ -1554,7 +1656,6 @@ typedef struct _NVDispHeadStateEvoRec {
 
     NVHwModeTimingsEvo timings;
     NVConnectorEvoRec *pConnectorEvo; /* NULL if the head is not active */
-    NVDpyIdList activeDpys;    /* empty if the head is not active */
 
     /*
      * Each head can have up to NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD
@@ -1567,7 +1668,51 @@ typedef struct _NVDispHeadStateEvoRec {
     NvU8 numVblankSyncObjectsCreated;
     NVVblankSyncObjectRec vblankSyncObjects[NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD];
     NVDispHeadAudioStateEvoRec audio;
+
+    NvU32 rmVBlankCallbackHandle;
+    NVListRec vblankCallbackList;
+
+    enum NvKmsOutputTf tf;
+
+    struct {
+        enum NvKmsHDROutputState outputState;
+        struct NvKmsHDRStaticMetadata staticMetadata;
+        nvkms_timer_handle_t *sdrTransitionTimer;
+    } hdr;
+
+    /*
+     * The api head can be mapped onto the N harware heads, a frame presented
+     * by the api head gets split horizontally into N tiles, 'tilePosition'
+     * describe the tile presented by this hardware head.
+     */
+    NvU8 tilePosition;
 } NVDispHeadStateEvoRec;
+
+typedef struct _NVDispApiHeadStateEvoRec {
+    /*
+     * The mask of hardware heads mapped onto this api head,
+     * set to zero if the api head is not active.
+     */
+    NvU32 hwHeadsMask;
+
+    NVDpyIdList activeDpys; /* Empty if the head is not active */
+    NVAttributesSetEvoRec attributes;
+
+    /*
+     * Hardware timings which are split across hardware heads.
+     *
+     * XXX[2Heads1OR] The api-head state does not require to track full
+     * hardware timings. Replace 'timings' by minimal per api-head hardware
+     * timings information used in code.
+     */
+    NVHwModeTimingsEvo timings;
+
+    struct NvKmsPoint viewPortPointIn;
+
+    NVDispHeadInfoFrameStateEvoRec infoFrame;
+
+    NvBool hs10bpcHint : 1;
+} NVDispApiHeadStateEvoRec;
 
 typedef struct _NVDispEvoRec {
     NvU8       gpuLogIndex;
@@ -1578,6 +1723,7 @@ typedef struct _NVDispEvoRec {
     NVOS10_EVENT_KERNEL_CALLBACK_EX rmDPIRQCallback;
 
     NVDispHeadStateEvoRec headState[NVKMS_MAX_HEADS_PER_DISP];
+    NVDispApiHeadStateEvoRec apiHeadState[NVKMS_MAX_HEADS_PER_DISP];
 
     NVDpyIdList vbiosDpyConfig[NVKMS_MAX_HEADS_PER_DISP];
 
@@ -1639,8 +1785,10 @@ typedef struct _NVDispEvoRec {
 
     } framelock;
 
+    /* NVDevEvoRec::pHsChannel[] is indexed by the api heads */
     NVHsChannelEvoPtr pHsChannel[NVKMS_MAX_HEADS_PER_DISP];
 
+    /* NVDevEvoRec::pSwapGroup[] is indexed by the api heads */
     NVSwapGroupPtr pSwapGroup[NVKMS_MAX_HEADS_PER_DISP];
 
     /*!
@@ -1662,6 +1810,43 @@ typedef struct _NVDispEvoRec {
     struct nvkms_backlight_device *backlightDevice;
 } NVDispEvoRec;
 
+/*
+ * XXX[2Head1OR] Remove nvHardwareHeadToApiHead(), before implementing logic to
+ * map multiple hardware heads onto the single api head.
+ */
+static inline NvU32 nvHardwareHeadToApiHead(const NvU32 head)
+{
+    return head;
+}
+
+
+static inline NvU32 GetNextHwHead(NvU32 hwHeadsMask, const NvU32 prevHwHead)
+{
+    if ((hwHeadsMask == 0x0) ||
+            ((prevHwHead != NV_INVALID_HEAD) &&
+             ((hwHeadsMask &= ~((1 << (prevHwHead + 1)) -1 )) == 0x0))) {
+        return NV_INVALID_HEAD;
+    }
+    return BIT_IDX_32(LOWESTBIT(hwHeadsMask));
+}
+
+#define FOR_EACH_EVO_HW_HEAD_IN_MASK(__hwHeadsMask, __hwHead)           \
+    for ((__hwHead)  = GetNextHwHead((__hwHeadsMask), NV_INVALID_HEAD); \
+         (__hwHead) != NV_INVALID_HEAD;                                 \
+         (__hwHead)  = GetNextHwHead((__hwHeadsMask), (__hwHead)))
+
+#define FOR_EACH_EVO_HW_HEAD(__pDispEvo, __apiHead, __hwHead)                          \
+    FOR_EACH_EVO_HW_HEAD_IN_MASK((__pDispEvo)->apiHeadState[(__apiHead)].hwHeadsMask,  \
+                                 (__hwHead))
+
+static inline NvU32 nvGetPrimaryHwHead(const NVDispEvoRec *pDispEvo,
+                                       const NvU32 apiHead)
+{
+    return (apiHead != NV_INVALID_HEAD) ?
+        GetNextHwHead(pDispEvo->apiHeadState[apiHead].hwHeadsMask,
+                NV_INVALID_HEAD) : NV_INVALID_HEAD;
+}
+
 typedef enum {
     NV_EVO_PASSIVE_DP_DONGLE_UNUSED,
     NV_EVO_PASSIVE_DP_DONGLE_DP2DVI,
@@ -1682,14 +1867,29 @@ typedef struct _NVParsedEdidEvoRec {
     char                 serialNumberString[NVT_EDID_LDD_PAYLOAD_SIZE+1];
 } NVParsedEdidEvoRec;
 
+typedef void (*NVVBlankCallbackProc)(NVDispEvoRec *pDispEvo,
+                                     const NvU32 head,
+                                     NVVBlankCallbackPtr pCallbackData);
+
+typedef struct _NVVBlankCallbackRec {
+    NVListRec vblankCallbackListEntry;
+    NVVBlankCallbackProc pCallback;
+    void *pUserData;
+} NVVBlankCallbackRec;
+
+typedef struct _NVDpyAttributeRequestedDitheringConfigRec {
+    enum NvKmsDpyAttributeRequestedDitheringValue state;
+    enum NvKmsDpyAttributeRequestedDitheringDepthValue depth;
+    enum NvKmsDpyAttributeRequestedDitheringModeValue mode;
+} NVDpyAttributeRequestedDitheringConfig;
+
 typedef struct _NVDpyEvoRec {
     NVListRec dpyListEntry;
     NVDpyId  id;
 
     char name[NVKMS_DPY_NAME_SIZE];
 
-    /* The hardware head to use with this dpy. */
-    NvU32 head;
+    NvU32 apiHead;
 
     struct _NVDispEvoRec *pDispEvo;
     NVConnectorEvoPtr pConnectorEvo;
@@ -1714,11 +1914,7 @@ typedef struct _NVDpyEvoRec {
     NVEdidRec edid;
     NVParsedEdidEvoRec parsedEdid;
 
-    struct {
-        enum NvKmsDpyAttributeRequestedDitheringValue state;
-        enum NvKmsDpyAttributeRequestedDitheringDepthValue depth;
-        enum NvKmsDpyAttributeRequestedDitheringModeValue mode;
-    } requestedDithering;
+    NVDpyAttributeRequestedDitheringConfig requestedDithering;
 
     enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace;
     enum NvKmsDpyAttributeColorRangeValue requestedColorRange;
@@ -1740,6 +1936,15 @@ typedef struct _NVDpyEvoRec {
             NvU8 buffer[NVKMS_GUID_SIZE];
             char str[NVKMS_GUID_STRING_SIZE];
         } guid;
+
+        /*
+         * When the DP serializer is in MST mode, this field is used to uniquely
+         * identify each MST DPY that's connected to the DP serializer.
+         *
+         * This field is only valid for DP serializer DPYs, and pDpLibDevice
+         * must be NULL in this case.
+         */
+        NvU8 serializerStreamIndex;
     } dp;
 
     struct {
@@ -1907,7 +2112,7 @@ static inline NvBool nvDpyUsesDPLib(const NVDpyEvoRec *pDpyEvo)
  */
 static inline NvBool nvDpyEvoIsActive(const NVDpyEvoRec *pDpyEvo)
 {
-    return (pDpyEvo->head != NV_INVALID_HEAD);
+    return (pDpyEvo->apiHead != NV_INVALID_HEAD);
 }
 
 /*
@@ -1930,6 +2135,13 @@ static inline NvBool nvHeadIsActive(const NVDispEvoRec *pDispEvo,
 {
     return (head < ARRAY_LEN(pDispEvo->headState)) &&
            (pDispEvo->headState[head].pConnectorEvo != NULL);
+}
+
+static inline NvBool nvApiHeadIsActive(const NVDispEvoRec *pDispEvo,
+                                       const NvU32 apiHead)
+{
+    return (apiHead < ARRAY_LEN(pDispEvo->apiHeadState)) &&
+           (!nvDpyIdListIsEmpty(pDispEvo->apiHeadState[apiHead].activeDpys));
 }
 
 /*!
@@ -1972,13 +2184,14 @@ static inline NvBool nvAllHeadsInactive(const NVDevEvoRec *pDevEvo)
 static inline NVDpyIdList nvActiveDpysOnDispEvo(const NVDispEvoRec *pDispEvo)
 {
     NVDpyIdList dpyIdList = nvEmptyDpyIdList();
-    NvU32 head;
+    NvU32 apiHead;
 
-    for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
-        const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+    for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        const NVDispApiHeadStateEvoRec *pApiHeadState =
+            &pDispEvo->apiHeadState[apiHead];
 
         dpyIdList = nvAddDpyIdListToDpyIdList(dpyIdList,
-                                              pHeadState->activeDpys);
+                                              pApiHeadState->activeDpys);
     }
 
     return dpyIdList;
@@ -2018,6 +2231,8 @@ typedef struct _NVLutSurfaceEvo {
     NvU32 size;
 
     NvU32 dispCtxDma;
+
+    NvU32 allocRefCnt; /* Only used for dynamically allocated LUTs */
 
     void  *subDeviceAddress[NVKMS_MAX_SUBDEVICES];
 } NVLutSurfaceEvoRec;
@@ -2109,6 +2324,7 @@ enum NvHsMapPermissions {
 
 #define NVKMS_SURFACE_MEMORY_FORMATS_RGB_PACKED8BPP ( \
     NVBIT64(NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) | \
+    NVBIT64(NvKmsSurfaceMemoryFormatRF16GF16BF16XF16) | \
     NVBIT64(NvKmsSurfaceMemoryFormatR16G16B16A16))
 
 #define NVKMS_SURFACE_MEMORY_FORMATS_YUV_PACKED422 ( \
@@ -2186,6 +2402,12 @@ struct _NVSurfaceEvoRec {
     NvU32 log2GobsPerBlockY;
 
     /*
+     * GPU virtual address of the surface, in NVKMS's VA space for use by
+     * headSurface.
+     */
+    NvU64 gpuAddress;
+
+    /*
      * HeadSurface needs a CPU mapping of surfaces containing semaphores.
      */
     void *cpuAddress[NVKMS_MAX_SUBDEVICES];
@@ -2252,6 +2474,14 @@ struct _NVSurfaceEvoRec {
     NvBool procFsFlag;
 #endif
 
+    /*
+     * Disallow DIFR if display caching is forbidden. This will be set for
+     * CPU accessible surfaces.
+     */
+    NvBool noDisplayCaching;
+
+    /* Keep track of prefetched surfaces. */
+    NvU32 difrLastPrefetchPass;
 };
 
 typedef struct _NVDeferredRequestFifoRec {
@@ -2504,11 +2734,15 @@ typedef const struct _nv_evo_hal {
     void (*AccelerateChannel)(NVDevEvoPtr pDevEvo,
                               NVEvoChannelPtr pChannel,
                               const NvU32 sd,
+                              const NvBool trashPendingMethods,
+                              const NvBool unblockMethodsInExecutation,
                               NvU32 *pOldAccelerators);
 
     void (*ResetChannelAccelerators)(NVDevEvoPtr pDevEvo,
                                      NVEvoChannelPtr pChannel,
                                      const NvU32 sd,
+                                     const NvBool trashPendingMethods,
+                                     const NvBool unblockMethodsInExecutation,
                                      NvU32 oldAccelerators);
 
     NvBool (*AllocRmCtrlObject) (NVDevEvoPtr);
@@ -2586,6 +2820,7 @@ typedef const struct _nv_evo_hal {
         NvU32 supportedDitheringModes;
         size_t impStructSize;
         NVEvoScalerTaps minScalerTaps;
+        NvU64 xEmulatedSurfaceMemoryFormats;
     } caps;
 } NVEvoHAL, *NVEvoHALPtr;
 

@@ -207,6 +207,10 @@ static void __nvoc_thunk_RsResource_faultbufPreDestruct(struct MmuFaultBuffer *p
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_faultbufIsDuplicate(struct MmuFaultBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MmuFaultBuffer_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_faultbufGetNotificationListPtr(struct MmuFaultBuffer *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_MmuFaultBuffer_Notifier.offset));
 }
@@ -403,6 +407,8 @@ static void __nvoc_init_funcTable_MmuFaultBuffer_1(MmuFaultBuffer *pThis) {
     pThis->__faultbufCanCopy__ = &__nvoc_thunk_RsResource_faultbufCanCopy;
 
     pThis->__faultbufPreDestruct__ = &__nvoc_thunk_RsResource_faultbufPreDestruct;
+
+    pThis->__faultbufIsDuplicate__ = &__nvoc_thunk_RsResource_faultbufIsDuplicate;
 
     pThis->__faultbufGetNotificationListPtr__ = &__nvoc_thunk_Notifier_faultbufGetNotificationListPtr;
 

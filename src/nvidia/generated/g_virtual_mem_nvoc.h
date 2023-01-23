@@ -72,11 +72,13 @@ struct VirtualMemory {
     NV_STATUS (*__virtmemControlFilter__)(struct VirtualMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__virtmemAddAdditionalDependants__)(struct RsClient *, struct VirtualMemory *, RsResourceRef *);
     NvU32 (*__virtmemGetRefCount__)(struct VirtualMemory *);
-    NV_STATUS (*__virtmemControl_Prologue__)(struct VirtualMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__virtmemCanCopy__)(struct VirtualMemory *);
-    NV_STATUS (*__virtmemIsReady__)(struct VirtualMemory *);
+    NvBool (*__virtmemIsGpuMapAllowed__)(struct VirtualMemory *, struct OBJGPU *);
+    NV_STATUS (*__virtmemControl_Prologue__)(struct VirtualMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__virtmemIsReady__)(struct VirtualMemory *, NvBool);
     NV_STATUS (*__virtmemCheckCopyPermissions__)(struct VirtualMemory *, struct OBJGPU *, NvHandle);
     void (*__virtmemPreDestruct__)(struct VirtualMemory *);
+    NV_STATUS (*__virtmemIsDuplicate__)(struct VirtualMemory *, NvHandle, NvBool *);
     void (*__virtmemControl_Epilogue__)(struct VirtualMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__virtmemControlLookup__)(struct VirtualMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__virtmemMap__)(struct VirtualMemory *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -130,11 +132,13 @@ NV_STATUS __nvoc_objCreate_VirtualMemory(VirtualMemory**, Dynamic*, NvU32, CALL_
 #define virtmemControlFilter(pResource, pCallContext, pParams) virtmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define virtmemAddAdditionalDependants(pClient, pResource, pReference) virtmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define virtmemGetRefCount(pResource) virtmemGetRefCount_DISPATCH(pResource)
-#define virtmemControl_Prologue(pResource, pCallContext, pParams) virtmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define virtmemCanCopy(pStandardMemory) virtmemCanCopy_DISPATCH(pStandardMemory)
-#define virtmemIsReady(pMemory) virtmemIsReady_DISPATCH(pMemory)
+#define virtmemIsGpuMapAllowed(pMemory, pGpu) virtmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define virtmemControl_Prologue(pResource, pCallContext, pParams) virtmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define virtmemIsReady(pMemory, bCopyConstructorContext) virtmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define virtmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) virtmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define virtmemPreDestruct(pResource) virtmemPreDestruct_DISPATCH(pResource)
+#define virtmemIsDuplicate(pMemory, hMemory, pDuplicate) virtmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define virtmemControl_Epilogue(pResource, pCallContext, pParams) virtmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define virtmemControlLookup(pResource, pParams, ppEntry) virtmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define virtmemMap(pMemory, pCallContext, pParams, pCpuMapping) virtmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
@@ -191,16 +195,20 @@ static inline NvU32 virtmemGetRefCount_DISPATCH(struct VirtualMemory *pResource)
     return pResource->__virtmemGetRefCount__(pResource);
 }
 
-static inline NV_STATUS virtmemControl_Prologue_DISPATCH(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__virtmemControl_Prologue__(pResource, pCallContext, pParams);
-}
-
 static inline NvBool virtmemCanCopy_DISPATCH(struct VirtualMemory *pStandardMemory) {
     return pStandardMemory->__virtmemCanCopy__(pStandardMemory);
 }
 
-static inline NV_STATUS virtmemIsReady_DISPATCH(struct VirtualMemory *pMemory) {
-    return pMemory->__virtmemIsReady__(pMemory);
+static inline NvBool virtmemIsGpuMapAllowed_DISPATCH(struct VirtualMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__virtmemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS virtmemControl_Prologue_DISPATCH(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__virtmemControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS virtmemIsReady_DISPATCH(struct VirtualMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__virtmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS virtmemCheckCopyPermissions_DISPATCH(struct VirtualMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -209,6 +217,10 @@ static inline NV_STATUS virtmemCheckCopyPermissions_DISPATCH(struct VirtualMemor
 
 static inline void virtmemPreDestruct_DISPATCH(struct VirtualMemory *pResource) {
     pResource->__virtmemPreDestruct__(pResource);
+}
+
+static inline NV_STATUS virtmemIsDuplicate_DISPATCH(struct VirtualMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__virtmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline void virtmemControl_Epilogue_DISPATCH(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -228,10 +240,13 @@ static inline NvBool virtmemAccessCallback_DISPATCH(struct VirtualMemory *pResou
 }
 
 NV_STATUS virtmemConstruct_IMPL(struct VirtualMemory *arg_pVirtualMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_virtmemConstruct(arg_pVirtualMemory, arg_pCallContext, arg_pParams) virtmemConstruct_IMPL(arg_pVirtualMemory, arg_pCallContext, arg_pParams)
 void virtmemDestruct_IMPL(struct VirtualMemory *pVirtualMemory);
+
 #define __nvoc_virtmemDestruct(pVirtualMemory) virtmemDestruct_IMPL(pVirtualMemory)
 NV_STATUS virtmemReserveMempool_IMPL(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg0, NvHandle hDevice, NvU64 size, NvU32 pageSizeMask);
+
 #ifdef __nvoc_virtual_mem_h_disabled
 static inline NV_STATUS virtmemReserveMempool(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg0, NvHandle hDevice, NvU64 size, NvU32 pageSizeMask) {
     NV_ASSERT_FAILED_PRECOMP("VirtualMemory was disabled!");
@@ -242,6 +257,7 @@ static inline NV_STATUS virtmemReserveMempool(struct VirtualMemory *pVirtualMemo
 #endif //__nvoc_virtual_mem_h_disabled
 
 NvBool virtmemMatchesVASpace_IMPL(struct VirtualMemory *pVirtualMemory, NvHandle hClient, NvHandle hVASpace);
+
 #ifdef __nvoc_virtual_mem_h_disabled
 static inline NvBool virtmemMatchesVASpace(struct VirtualMemory *pVirtualMemory, NvHandle hClient, NvHandle hVASpace) {
     NV_ASSERT_FAILED_PRECOMP("VirtualMemory was disabled!");
@@ -252,8 +268,10 @@ static inline NvBool virtmemMatchesVASpace(struct VirtualMemory *pVirtualMemory,
 #endif //__nvoc_virtual_mem_h_disabled
 
 NV_STATUS virtmemGetByHandleAndDevice_IMPL(struct RsClient *pClient, NvHandle hMemory, NvHandle hDevice, struct VirtualMemory **ppVirtualMemory);
+
 #define virtmemGetByHandleAndDevice(pClient, hMemory, hDevice, ppVirtualMemory) virtmemGetByHandleAndDevice_IMPL(pClient, hMemory, hDevice, ppVirtualMemory)
 void virtmemGetAddressAndSize_IMPL(struct VirtualMemory *arg0, NvU64 *pVAddr, NvU64 *pSize);
+
 #define virtmemGetAddressAndSize(arg0, pVAddr, pSize) virtmemGetAddressAndSize_IMPL(arg0, pVAddr, pSize)
 #undef PRIVATE_FIELD
 

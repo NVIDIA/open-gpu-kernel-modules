@@ -39,8 +39,6 @@ extern "C" {
 #ifndef _KERNELSCHEDMGR_H_
 #define _KERNELSCHEDMGR_H_
 
-typedef enum __SCHED_POLICY SCHED_POLICY;
-
 /* -------------------------------- Includes -------------------------------- */
 
 #include "core/core.h"
@@ -50,16 +48,8 @@ typedef enum __SCHED_POLICY SCHED_POLICY;
 
 /* ------------------------------- Datatypes  --------------------------------*/
 
-enum __SCHED_POLICY
-{
-    SCHED_POLICY_DEFAULT = 0,
-    SCHED_POLICY_VGPU_RELATIVE,
-    SCHED_POLICY_PGPU_SHARE,
-    SCHED_POLICY_WDDM_COMPATIBILITY,
-    SCHED_POLICY_GFN_LSTT,
-    SCHED_POLICY_CHANNEL_INTERLEAVED,
-    SCHED_POLICY_CHANNEL_INTERLEAVED_WDDM,
-};
+#define SCHED_POLICY_DEFAULT 0
+typedef NvU32 SCHED_POLICY;
 
 /*!
  * Class of scheduling manager for all the runlists.
@@ -115,6 +105,7 @@ static inline NvU32 kschedmgrGetSchedPolicy(struct KernelSchedMgr *pKernelSchedM
 }
 
 void kschedmgrConstructPolicy_IMPL(struct KernelSchedMgr *pKernelSchedMgr, struct OBJGPU *pGpu);
+
 #ifdef __nvoc_kernel_sched_mgr_h_disabled
 static inline void kschedmgrConstructPolicy(struct KernelSchedMgr *pKernelSchedMgr, struct OBJGPU *pGpu) {
     NV_ASSERT_FAILED_PRECOMP("KernelSchedMgr was disabled!");

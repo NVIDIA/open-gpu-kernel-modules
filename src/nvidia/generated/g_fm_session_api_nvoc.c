@@ -170,6 +170,10 @@ static NV_STATUS __nvoc_thunk_RsResource_fmsessionapiUnmapFrom(struct FmSessionA
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_fmsessionapiIsDuplicate(struct FmSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_FmSessionApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_fmsessionapiGetNotificationListPtr(struct FmSessionApi *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_FmSessionApi_Notifier.offset));
 }
@@ -320,6 +324,8 @@ static void __nvoc_init_funcTable_FmSessionApi_1(FmSessionApi *pThis) {
     pThis->__fmsessionapiPreDestruct__ = &__nvoc_thunk_RsResource_fmsessionapiPreDestruct;
 
     pThis->__fmsessionapiUnmapFrom__ = &__nvoc_thunk_RsResource_fmsessionapiUnmapFrom;
+
+    pThis->__fmsessionapiIsDuplicate__ = &__nvoc_thunk_RsResource_fmsessionapiIsDuplicate;
 
     pThis->__fmsessionapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_fmsessionapiGetNotificationListPtr;
 

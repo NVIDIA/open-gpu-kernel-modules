@@ -80,6 +80,7 @@ struct MIGMonitorSession {
     NV_STATUS (*__migmonitorsessionMapTo__)(struct MIGMonitorSession *, RS_RES_MAP_TO_PARAMS *);
     void (*__migmonitorsessionPreDestruct__)(struct MIGMonitorSession *);
     NV_STATUS (*__migmonitorsessionUnmapFrom__)(struct MIGMonitorSession *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__migmonitorsessionIsDuplicate__)(struct MIGMonitorSession *, NvHandle, NvBool *);
     void (*__migmonitorsessionControl_Epilogue__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__migmonitorsessionControlLookup__)(struct MIGMonitorSession *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__migmonitorsessionMap__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -129,6 +130,7 @@ NV_STATUS __nvoc_objCreate_MIGMonitorSession(MIGMonitorSession**, Dynamic*, NvU3
 #define migmonitorsessionMapTo(pResource, pParams) migmonitorsessionMapTo_DISPATCH(pResource, pParams)
 #define migmonitorsessionPreDestruct(pResource) migmonitorsessionPreDestruct_DISPATCH(pResource)
 #define migmonitorsessionUnmapFrom(pResource, pParams) migmonitorsessionUnmapFrom_DISPATCH(pResource, pParams)
+#define migmonitorsessionIsDuplicate(pResource, hMemory, pDuplicate) migmonitorsessionIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define migmonitorsessionControl_Epilogue(pResource, pCallContext, pParams) migmonitorsessionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define migmonitorsessionControlLookup(pResource, pParams, ppEntry) migmonitorsessionControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define migmonitorsessionMap(pResource, pCallContext, pParams, pCpuMapping) migmonitorsessionMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -189,6 +191,10 @@ static inline NV_STATUS migmonitorsessionUnmapFrom_DISPATCH(struct MIGMonitorSes
     return pResource->__migmonitorsessionUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS migmonitorsessionIsDuplicate_DISPATCH(struct MIGMonitorSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__migmonitorsessionIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void migmonitorsessionControl_Epilogue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__migmonitorsessionControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -206,8 +212,10 @@ static inline NvBool migmonitorsessionAccessCallback_DISPATCH(struct MIGMonitorS
 }
 
 NV_STATUS migmonitorsessionConstruct_IMPL(struct MIGMonitorSession *arg_pMIGMonitorSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_migmonitorsessionConstruct(arg_pMIGMonitorSession, arg_pCallContext, arg_pParams) migmonitorsessionConstruct_IMPL(arg_pMIGMonitorSession, arg_pCallContext, arg_pParams)
 void migmonitorsessionDestruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession);
+
 #define __nvoc_migmonitorsessionDestruct(pMIGMonitorSession) migmonitorsessionDestruct_IMPL(pMIGMonitorSession)
 #undef PRIVATE_FIELD
 

@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_thirdpartyp2pUnmapFrom(struct ThirdPart
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ThirdPartyP2P_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_thirdpartyp2pIsDuplicate(struct ThirdPartyP2P *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ThirdPartyP2P_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_thirdpartyp2pControl_Epilogue(struct ThirdPartyP2P *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ThirdPartyP2P_RmResource.offset), pCallContext, pParams);
 }
@@ -359,6 +363,8 @@ static void __nvoc_init_funcTable_ThirdPartyP2P_1(ThirdPartyP2P *pThis) {
     pThis->__thirdpartyp2pPreDestruct__ = &__nvoc_thunk_RsResource_thirdpartyp2pPreDestruct;
 
     pThis->__thirdpartyp2pUnmapFrom__ = &__nvoc_thunk_RsResource_thirdpartyp2pUnmapFrom;
+
+    pThis->__thirdpartyp2pIsDuplicate__ = &__nvoc_thunk_RsResource_thirdpartyp2pIsDuplicate;
 
     pThis->__thirdpartyp2pControl_Epilogue__ = &__nvoc_thunk_RmResource_thirdpartyp2pControl_Epilogue;
 

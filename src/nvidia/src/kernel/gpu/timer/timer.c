@@ -191,11 +191,8 @@ tmrDestruct_IMPL(OBJTMR  *pTmr)
         pTmr->pTmrSwrlLock = NULL;
     }
 
-    if (pTmr->pGrTickFreqRefcnt != NULL)
-    {
-        objDelete(pTmr->pGrTickFreqRefcnt);
-        pTmr->pGrTickFreqRefcnt = NULL;
-    }
+    objDelete(pTmr->pGrTickFreqRefcnt);
+    pTmr->pGrTickFreqRefcnt = NULL;
 
     osDestroy1HzCallbacks(pTmr);
 }
@@ -238,7 +235,8 @@ NV_STATUS tmrEventCreate_IMPL
     (*ppEventPublic)->pUserData = pUserData;
     (*ppEventPublic)->flags     = flags;
 
-    if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS))
+    if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS) ||
+        (flags & TMR_FLAG_USE_OS_TIMER))
     {
         status = tmrEventCreateOSTimer_HAL(pTmr, *ppEventPublic);
         if (status != NV_OK)
@@ -341,7 +339,8 @@ void tmrEventCancel_IMPL
 
     pEvent->bInUse = NV_FALSE;
 
-    if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS))
+    if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS) ||
+        (pEventPublic->flags & TMR_FLAG_USE_OS_TIMER))
     {
         NV_STATUS status = NV_OK;
         status = tmrEventCancelOSTimer_HAL(pTmr, pEventPublic);
@@ -399,7 +398,8 @@ void tmrEventDestroy_IMPL
     if (pEvent != NULL)
     {
         NV_ASSERT(!pEvent->bLegacy);
-        if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS))
+        if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS) ||
+            (pEventPublic->flags & TMR_FLAG_USE_OS_TIMER))
         {
             // OS timer destroying will cancel the timer
             tmrEventDestroyOSTimer_HAL(pTmr, pEventPublic);
@@ -552,7 +552,8 @@ NV_STATUS tmrEventScheduleRel_IMPL
     if (rmStatus != NV_OK)
         return rmStatus;
 
-    if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS))
+    if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS) ||
+        (pEvent->flags & TMR_FLAG_USE_OS_TIMER))
     {
         /*HR timer scheduled in relative mode*/
         /*TBD : This condition needs to be moved to OS timer handling functions */
@@ -560,7 +561,7 @@ NV_STATUS tmrEventScheduleRel_IMPL
     }
     else
     {
-        AbsTime = currentTime + RelTime;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(currentTime, RelTime, &AbsTime), NV_ERR_INVALID_ARGUMENT);
     }
 
     return tmrEventScheduleAbs(pTmr, pEvent, AbsTime);
@@ -588,7 +589,7 @@ NV_STATUS tmrScheduleCallbackRel_IMPL
     if (rmStatus != NV_OK)
         return rmStatus;
 
-    AbsTime = currentTime + RelTime;
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(currentTime, RelTime, &AbsTime), NV_ERR_INVALID_ARGUMENT);
 
     return tmrScheduleCallbackAbs(pTmr, Proc, Object, AbsTime, Flags, ChId);
 }
@@ -837,7 +838,8 @@ NV_STATUS tmrEventScheduleAbs_IMPL
     NV_STATUS      rmStatus = NV_OK;
     PTMR_EVENT_PVT pEvent = (PTMR_EVENT_PVT)pEventPublic;
 
-    if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS))
+    if (pTmr->getProperty(pTmr, PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS) ||
+        (pEventPublic->flags & TMR_FLAG_USE_OS_TIMER))
     {
         NV_CHECK_OK(rmStatus, LEVEL_ERROR,
             tmrEventScheduleAbsOSTimer_HAL(pTmr, pEventPublic, Time));

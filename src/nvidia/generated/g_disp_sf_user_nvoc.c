@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_dispsfUnmapFrom(struct DispSfUser *pRes
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispSfUser_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_dispsfIsDuplicate(struct DispSfUser *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispSfUser_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_dispsfControl_Epilogue(struct DispSfUser *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispSfUser_RmResource.offset), pCallContext, pParams);
 }
@@ -256,6 +260,8 @@ static void __nvoc_init_funcTable_DispSfUser_1(DispSfUser *pThis) {
     pThis->__dispsfPreDestruct__ = &__nvoc_thunk_RsResource_dispsfPreDestruct;
 
     pThis->__dispsfUnmapFrom__ = &__nvoc_thunk_RsResource_dispsfUnmapFrom;
+
+    pThis->__dispsfIsDuplicate__ = &__nvoc_thunk_RsResource_dispsfIsDuplicate;
 
     pThis->__dispsfControl_Epilogue__ = &__nvoc_thunk_RmResource_dispsfControl_Epilogue;
 

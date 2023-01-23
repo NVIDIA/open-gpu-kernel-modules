@@ -170,6 +170,10 @@ static NV_STATUS __nvoc_thunk_OBJVASPACE_fabricvaspaceSetPteInfo(struct FABRIC_V
     return vaspaceSetPteInfo((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset), pGpu, pParams);
 }
 
+static NV_STATUS __nvoc_thunk_OBJVASPACE_fabricvaspaceFreeV2(struct FABRIC_VASPACE *pVAS, NvU64 vAddr, NvU64 *pSize) {
+    return vaspaceFreeV2((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset), vAddr, pSize);
+}
+
 static NV_STATUS __nvoc_thunk_OBJVASPACE_fabricvaspaceGetPasid(struct FABRIC_VASPACE *pVAS, NvU32 *pPasid) {
     return vaspaceGetPasid((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset), pPasid);
 }
@@ -287,6 +291,8 @@ static void __nvoc_init_funcTable_FABRIC_VASPACE_1(FABRIC_VASPACE *pThis) {
     pThis->__fabricvaspaceIncAllocRefCnt__ = &__nvoc_thunk_OBJVASPACE_fabricvaspaceIncAllocRefCnt;
 
     pThis->__fabricvaspaceSetPteInfo__ = &__nvoc_thunk_OBJVASPACE_fabricvaspaceSetPteInfo;
+
+    pThis->__fabricvaspaceFreeV2__ = &__nvoc_thunk_OBJVASPACE_fabricvaspaceFreeV2;
 
     pThis->__fabricvaspaceGetPasid__ = &__nvoc_thunk_OBJVASPACE_fabricvaspaceGetPasid;
 

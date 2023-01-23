@@ -203,6 +203,10 @@ static void __nvoc_thunk_RsResource_chandesPreDestruct(struct ChannelDescendant 
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_chandesIsDuplicate(struct ChannelDescendant *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_chandesGetNotificationListPtr(struct ChannelDescendant *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ChannelDescendant_Notifier.offset));
 }
@@ -326,6 +330,8 @@ static void __nvoc_init_funcTable_ChannelDescendant_1(ChannelDescendant *pThis, 
     pThis->__chandesCanCopy__ = &__nvoc_thunk_RsResource_chandesCanCopy;
 
     pThis->__chandesPreDestruct__ = &__nvoc_thunk_RsResource_chandesPreDestruct;
+
+    pThis->__chandesIsDuplicate__ = &__nvoc_thunk_RsResource_chandesIsDuplicate;
 
     pThis->__chandesGetNotificationListPtr__ = &__nvoc_thunk_Notifier_chandesGetNotificationListPtr;
 

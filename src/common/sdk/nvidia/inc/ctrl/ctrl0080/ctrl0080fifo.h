@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0080/ctrl0080fifo.finn
 //
 
-
-
-
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
 /* NV01_DEVICE_XX/NV03_DEVICE fifo control commands and parameters */
@@ -195,7 +192,7 @@ typedef struct NV0080_CTRL_FIFO_CHANNEL {
 #define NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS_MESSAGE_ID (0x5U)
 
 typedef struct NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS {
-    NvU32    fifoStartChannelListSize;
+    NvU32    fifoStartChannelListCount;
     NvHandle channelHandle[8];
     NV_DECLARE_ALIGNED(NvP64 fifoStartChannelList, 8);
 } NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS;

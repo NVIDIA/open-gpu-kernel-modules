@@ -467,6 +467,27 @@ clientValidate_IMPL
     return NV_OK;
 }
 
+RS_PRIV_LEVEL
+clientGetCachedPrivilege_IMPL
+(
+    RsClient *pClient
+)
+{
+    // Non-functional, base class stubs
+    return RS_PRIV_LEVEL_USER;
+}
+
+NvBool
+clientIsAdmin_IMPL
+(
+    RsClient *pClient,
+    RS_PRIV_LEVEL privLevel
+)
+{
+    // Non-functional, base class stubs
+    return NV_FALSE;
+}
+
 NV_STATUS
 clientAllocResource_IMPL
 (

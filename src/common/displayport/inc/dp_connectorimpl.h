@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -88,6 +88,11 @@ namespace DisplayPort
 
         Timer * timer;                          // OS provided timer services
         Connector::EventSink * sink;            // Event Sink
+
+        // Cached Source OUI for restoring eDP OUI when powering up
+        unsigned cachedSourceOUI;
+        char     cachedSourceModelName[NV_DPCD_SOURCE_DEV_ID_STRING__SIZE + 1];
+        NvU8     cachedSourceChipRevision;
 
         unsigned ouiId;                                             // Sink ouiId
         char modelName[NV_DPCD_SOURCE_DEV_ID_STRING__SIZE + 1];     // Device Model-name
@@ -294,6 +299,8 @@ namespace DisplayPort
         bool        bEnableFastLT;
         NvU32       maxLinkRateFromRegkey;
 
+        bool        bEnableOuiRestoring;
+
         //
         // Latency(ms) to apply between link-train and FEC enable for bug
         // 2561206.
@@ -316,19 +323,17 @@ namespace DisplayPort
         bool        bDscMstCapBug3143315;
 
         //
-        // Enable DSC Pass through support in driver based on regkey.
-        //
-        bool        bDscMstEnablePassThrough;
-
-        // Reduce number of 2H1OR LTs which fixes bug 3534707
-        bool        bDscOptimizeLTBug3534707;
-
-        //
         // Synaptics branch device doesn't support Virtual Peer Devices so DSC
         // capability of downstream device should be decided based on device's own
         // and its parent's DSC capability
         //
         bool        bDscCapBasedOnParent;
+
+        //
+        // MST device connnected to dock may issue IRQ for link lost.
+        // Send PowerDown path msg to suppress that.
+        //
+        bool        bPowerDownPhyBeforeD3;
 
         void sharedInit();
         ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Connector::EventSink * sink);

@@ -54,7 +54,7 @@ subdeviceCtrlCmdTimerCancel_IMPL
     OBJGPU *pGpu;
     OBJTMR *pTmr;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     if (pSubdevice == NULL)
     {
@@ -202,7 +202,7 @@ subdeviceCtrlCmdTimerSchedule_IMPL
     }
     else
     {
-        LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
     }
 
     return timerSchedule(pSubdevice, pParams);
@@ -238,7 +238,7 @@ subdeviceCtrlCmdTimerGetTime_IMPL
     }
     else
     {
-        LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
     }
 
     tmrGetCurrentTime(pTmr, &pParams->time_nsec);
@@ -262,7 +262,7 @@ subdeviceCtrlCmdTimerGetRegisterOffset_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     return gpuGetRegBaseOffset_HAL(pGpu, NV_REG_BASE_TIMER, &pTimerRegOffsetParams->tmr_offset);
 }
@@ -290,7 +290,7 @@ subdeviceCtrlCmdTimerGetGpuCpuTimeCorrelationInfo_IMPL
     NvU8 i;
     NvU32 sec, usec;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     NV_ASSERT_OR_RETURN((pParams->sampleCount <=
                        NV2080_CTRL_TIMER_GPU_CPU_TIME_MAX_SAMPLES),
@@ -442,7 +442,7 @@ subdeviceCtrlCmdTimerSetGrTickFreq_IMPL
     OBJREFCNT *pRefcnt;
     NvHandle hSubDevice;
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     if (pSubdevice == NULL || pTmr == NULL)
     {

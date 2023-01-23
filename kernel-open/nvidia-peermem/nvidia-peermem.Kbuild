@@ -30,8 +30,18 @@ NVIDIA_PEERMEM_CFLAGS += -UDEBUG -U_DEBUG -DNDEBUG -DNV_BUILD_MODULE_INSTANCES=0
 # MOFED's Module.symvers is needed for the build
 # to find the additional ib_* symbols.
 #
+# Also, MOFED doesn't use kbuild ARCH names.
+# So adapt OFA_ARCH to match MOFED's conventions.
+#
+ifeq ($(ARCH), arm64)
+    OFA_ARCH := aarch64
+else ifeq ($(ARCH), powerpc)
+    OFA_ARCH := ppc64le
+else
+    OFA_ARCH := $(ARCH)
+endif
 OFA_DIR := /usr/src/ofa_kernel
-OFA_CANDIDATES = $(OFA_DIR)/$(ARCH)/$(KERNELRELEASE) $(OFA_DIR)/$(KERNELRELEASE) $(OFA_DIR)/default /var/lib/dkms/mlnx-ofed-kernel
+OFA_CANDIDATES = $(OFA_DIR)/$(OFA_ARCH)/$(KERNELRELEASE) $(OFA_DIR)/$(KERNELRELEASE) $(OFA_DIR)/default /var/lib/dkms/mlnx-ofed-kernel
 MLNX_OFED_KERNEL := $(shell for d in $(OFA_CANDIDATES); do \
                               if [ -d "$$d" ]; then \
                                 echo "$$d"; \

@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0080/ctrl0080bif.finn
 //
 
-
-
-
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
 /*
@@ -116,6 +113,26 @@ typedef struct NV0080_CTRL_BIF_SET_ASPM_FEATURE_PARAMS {
 #define NV0080_CTRL_BIF_ASPM_FEATURE_DT_L1                 1:1
 #define NV0080_CTRL_BIF_ASPM_FEATURE_DT_L1_ENABLED   0x000000001
 #define NV0080_CTRL_BIF_ASPM_FEATURE_DT_L1_DISABLED  0x000000000
+
+/*
+ * NV0080_CTRL_BIF_ASPM_CYA_UPDATE
+ *
+ * bL0sEnable
+ * bL1Enable
+ *    ASPM CYA update by client
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ */
+
+#define NV0080_CTRL_CMD_BIF_ASPM_CYA_UPDATE          (0x800105) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_BIF_INTERFACE_ID << 8) | NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS_MESSAGE_ID" */
+
+#define NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS_MESSAGE_ID (0x5U)
+
+typedef struct NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS {
+    NvBool bL0sEnable;
+    NvBool bL1Enable;
+} NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS;
 
 /* _ctrl0080bif_h_ */
 

@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl90cc/ctrl90ccbase.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* GF100_PROFILER control commands and parameters */
 

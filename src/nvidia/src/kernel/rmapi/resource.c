@@ -238,16 +238,6 @@ rmresControl_Prologue_IMPL
     if (pGpu == NULL)
         return NV_OK;
 
-    if (rmapiControlIsCacheable(pParams->pCookie->ctrlFlags, IS_GSP_CLIENT(pGpu)))
-    {
-        void* cached = rmapiControlCacheGet(pParams->hClient, pParams->hObject, pParams->cmd);
-        if (cached)
-        {
-            portMemCopy(pParams->pParams, pParams->paramsSize, cached, pParams->paramsSize);
-            return NV_WARN_NOTHING_TO_DO;
-        }
-    }
-
     if ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)) ||
         (IS_GSP_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL)))
     {
@@ -293,19 +283,4 @@ rmresControl_Epilogue_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
-    OBJGPU *pGpu = gpumgrGetGpu(pResource->rpcGpuInstance);
-
-    if (pGpu == NULL)
-        return;
-
-    if (rmapiControlIsCacheable(pParams->pCookie->ctrlFlags, IS_GSP_CLIENT(pGpu)))
-    {
-        void* cached = rmapiControlCacheGet(pParams->hClient, pParams->hObject, pParams->cmd);
-        if (!cached)
-        {
-            NV_PRINTF(LEVEL_INFO, "rmControl: caching cmd 0x%x params\n", pParams->cmd);
-            NV_ASSERT_OK(rmapiControlCacheSet(pParams->hClient, pParams->hObject, pParams->cmd,
-                NvP64_VALUE(pParams->pParams), pParams->paramsSize));
-        }
-    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2016-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -205,11 +205,20 @@ static inline struct nv_drm_plane *to_nv_plane(struct drm_plane *plane)
 struct nv_drm_plane_state {
     struct drm_plane_state base;
     s32 __user *fd_user_ptr;
+    enum NvKmsInputColorSpace input_colorspace;
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    struct drm_property_blob *hdr_output_metadata;
+#endif
 };
 
 static inline struct nv_drm_plane_state *to_nv_drm_plane_state(struct drm_plane_state *state)
 {
     return container_of(state, struct nv_drm_plane_state, base);
+}
+
+static inline const struct nv_drm_plane_state *to_nv_drm_plane_state_const(const struct drm_plane_state *state)
+{
+    return container_of(state, const struct nv_drm_plane_state, base);
 }
 
 static inline struct nv_drm_crtc *to_nv_crtc(struct drm_crtc *crtc)

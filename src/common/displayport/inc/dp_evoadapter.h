@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -143,8 +143,13 @@ namespace DisplayPort
         bool _hasMultistream;
         bool _isPC2Disabled;
         bool _isEDP;
-        bool _isDP1_2Supported;
-        bool _isDP1_4Supported;
+
+        //
+        // Bit mask for GPU supported DP versions.
+        // Defines the same as NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS.dpVersionsSupported
+        //
+        NvU32 _gpuSupportedDpVersions;
+
         bool _isStreamCloningEnabled;
         bool _needForceRmEdid;
         bool _skipPowerdownEDPPanelWhenHeadDetach;
@@ -198,14 +203,11 @@ namespace DisplayPort
             return _isPC2Disabled;
         }
 
-        virtual bool isDP1_2Supported()
+        virtual NvU32 getGpuDpSupportedVersions()
         {
-            return _isDP1_2Supported;
+            return _gpuSupportedDpVersions;
         }
-        virtual bool isDP1_4Supported()
-        {
-            return _isDP1_4Supported;
-        }
+
         virtual bool isFECSupported()
         {
             return _isFECSupported;

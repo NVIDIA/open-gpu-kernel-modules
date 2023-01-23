@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -217,7 +217,7 @@ NvU32 getEdidVersion(NvU8 *pEdid, NvU32 *pVer)
 
         *pVer = (((NvU32) p->bVersionNumber) << 8) + ((NvU32) p->bRevisionNumber);
     }
-    else if ((pEdid[0] & 0xF0) == 0x20 && (pEdid[0] & 0x0F) >=0)
+    else if ((pEdid[0] & 0xF0) == 0x20)
         *pVer = (((NvU32) (pEdid[0] & 0XF0) << 4) + (NvU32) (pEdid[0] & 0X0F)) ;  // DisplayID version 2.x
     else
         return NVT_STATUS_ERR;          // un-recongnized EDID version
@@ -432,10 +432,9 @@ void parseEdidStandardTimingDescriptor(NvU16 timing, NVT_EDID_INFO *pInfo, NvU32
         NVT_SNPRINTF((char *)pT->etc.name, 40, "EDID-STD(DMT):%dx%dx%dHz", (int)width, (int)height, (int)rr);
         pT->etc.name[39] = '\0';
     }
-    else if (pInfo->version >= NVT_EDID_VER_1_4)
+    // EDID1.4 and above defaults to CVT, instead of GTF. GTF is deprecated as of 1.4.
+    else if ((pInfo->version >= NVT_EDID_VER_1_4) && (NvTiming_CalcCVT(width, height, rr, NVT_PROGRESSIVE, pT) == NVT_STATUS_SUCCESS))
     {
-        // EDID1.4 and above defaults to CVT, instead of GTF. GTF is deprecated as of 1.4.
-        NvTiming_CalcCVT(width, height, rr, NVT_PROGRESSIVE, pT);
         pT->etc.status = NVT_STATUS_EDID_STDn(count);
         NVT_SNPRINTF((char *)pT->etc.name, 40, "EDID-STD(CVT):%dx%dx%dHz", (int)width, (int)height, (int)rr);
         pT->etc.name[39] = '\0';
@@ -443,10 +442,12 @@ void parseEdidStandardTimingDescriptor(NvU16 timing, NVT_EDID_INFO *pInfo, NvU32
     else
     {
         // if the mode is not found in DMT, use GTF timing
-        NvTiming_CalcGTF(width, height, rr, NVT_PROGRESSIVE, pT);
+        if (NvTiming_CalcGTF(width, height, rr, NVT_PROGRESSIVE, pT) == NVT_STATUS_SUCCESS)
+        {
+            NVT_SNPRINTF((char *)pT->etc.name, 40, "EDID-STD(GTF):%dx%dx%dHz", (int)width, (int)height, (int)rr);
+            pT->etc.name[39] = '\0';
+        }
         pT->etc.status = NVT_STATUS_EDID_STDn(count);
-        NVT_SNPRINTF((char *)pT->etc.name, 40, "EDID-STD(GTF):%dx%dx%dHz", (int)width, (int)height, (int)rr);
-        pT->etc.name[39] = '\0';
     }
 }
 
@@ -1055,7 +1056,10 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
                 parseCea861HdrStaticMetadataDataBlock(p861Info, pInfo, FROM_CTA861_EXTENSION);
 
                 // parse Dolby Vision related information from the DV vendor specific video data block
-                parseCea861DvStaticMetadataDataBlock(p861Info, &pInfo->dv_static_metadata_info);
+                parseCea861DvStaticMetadataDataBlock(p861Info, pInfo, FROM_CTA861_EXTENSION);
+
+                // parse HDR10+ related information from the HDR10+ LLC Vendor Specific Video Data Block
+                parseCea861Hdr10PlusDataBlock(p861Info, pInfo, FROM_CTA861_EXTENSION);
 
                 // Timings are listed (or shall) be listed in priority order
                 // So read SVD, yuv420 SVDs first before reading detailed timings
@@ -1955,7 +1959,15 @@ NVT_STATUS NvTiming_GetEDIDBasedASPRTiming( NvU16 width, NvU16 height, NvU16 rr,
     return NVT_STATUS_ERR;
 }
 
-// check whether EDID is valid
+/**
+ *
+ * @brief check EDID raw data is valid or not, and it will return the err flags if it existed
+ * @param pEdid  : this is a pointer to EDID data
+ * @param length : read length of EDID 
+ * @param bIsTrongValidation : true - added more check
+ *                             false- only header and checksum and size check
+ * 
+ */
 CODE_SEGMENT(PAGE_DD_CODE)
 NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongValidation)
 {
@@ -2120,8 +2132,369 @@ NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongVal
                     break;
             }
         }
+    }
 
+    return ret;
+}
 
+/**
+ *
+ * @brief sanity check EDID binary frequently used data block is valid or not, 
+ *        and it will return error checkpoint flag if it existed
+ * @param pEdid  : this is a pointer to EDID raw data
+ * @param length : read length of EDID
+ * 
+ */
+CODE_SEGMENT(PAGE_DD_CODE)
+NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
+{
+    NvU32                               i, j, version, extnCount;
+    EDIDV1STRUC                         *p = (EDIDV1STRUC *)pEdid;
+    EDID_LONG_DISPLAY_DESCRIPTOR        *pLdd;
+    NvU8                                *pExt;
+    DETAILEDTIMINGDESCRIPTOR            *pDTD;
+    // For CTA861
+    NvU8                                ctaDTD_Offset;
+    NvU8                                *pData_collection;    
+    NvU32                               ctaBlockTag, ctaPayload, vic;
+    // For DisplayID
+    DIDEXTENSION                        *pDisplayid;
+    NvU8                                did_section_length = 0x79;
+    NvU8                                did2ExtCount = 0;
+    DISPLAYID_2_0_DATA_BLOCK_HEADER     *pDID2Header;
+    DISPLAYID_DATA_BLOCK_HEADER         *pHeader;
+    NvU8                                block_length = 0;
+    NvBool                              bAllZero = NV_TRUE;
+    NvU32 ret = 0;
+
+    // check the EDID base size to avoid accessing beyond the EDID buffer, do not proceed with
+    // further validation.
+    if (length < sizeof(EDIDV1STRUC))
+        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_SIZE);
+
+    // check the EDID version and signature
+    if (getEdidVersion(pEdid, &version) != NVT_STATUS_SUCCESS)
+        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_HEADER);
+
+    // check block 0 checksum value
+    if (!isChecksumValid(pEdid))
+        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_CHECKSUM);
+
+    if (p->bVersionNumber != 0x01 || p->bRevisionNumber > 0x04)
+    {
+        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_VERSION);
+    }
+ 
+    // 18bytes in DTD or Display Descriptor check
+    for (i = 0; i < NVT_EDID_MAX_LONG_DISPLAY_DESCRIPTOR; i++)
+    {
+        if (*((NvU16 *)&p->DetailedTimingDesc[i]) != 0)
+        {
+            // This block is not a Display Descriptor.
+            // It must be a valid timing definition
+            // validate the block by passing NULL as the NVTIMING parameter to parseEdidDetailedTimingDescriptor
+            if (parseEdidDetailedTimingDescriptor((NvU8 *)&p->DetailedTimingDesc[i], NULL) != NVT_STATUS_SUCCESS)
+            {
+                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_DTD);
+            }
+            else
+            {
+                // check the max image size in monitor and its DTD defines value
+                if (p->bMaxHorizImageSize != 0 && p->bMaxVertImageSize != 0)
+                {
+                    DETAILEDTIMINGDESCRIPTOR *pDTD = (DETAILEDTIMINGDESCRIPTOR *)&p->DetailedTimingDesc[i];
+                    NvU16 hDTDImageSize =  (pDTD->bDTHorizVertImage & 0xF0) << 4 | pDTD->bDTHorizontalImage;
+                    NvU16 vDTDImageSize =  (pDTD->bDTHorizVertImage & 0x0F) << 8 | pDTD->bDTVerticalImage;
+
+                    if ((hDTDImageSize/10) > p->bMaxHorizImageSize || (vDTDImageSize/10) > p->bMaxVertImageSize)
+                    {
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_DTD);
+                    }
+                }
+            }
+        }
+        else
+        {        
+            pLdd = (EDID_LONG_DISPLAY_DESCRIPTOR *)&p->DetailedTimingDesc[i];
+
+            // This block is a display descriptor, validate
+            if (((EDID_LONG_DISPLAY_DESCRIPTOR *)&p->DetailedTimingDesc[i])->rsvd != 0  ||  // (00 00 00)h indicates Display Descriptor
+                (pLdd->tag >= 0x11 && pLdd->tag <= 0xF6))                                   // Reserved : Do Not Use
+                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_DESCRIPTOR);
+
+            if (pLdd->tag == NVT_EDID_DISPLAY_DESCRIPTOR_DRL && (version == 0x103 || (version == 0x104 && (p->bFeatureSupport & 1))))
+            {
+                EDID_MONITOR_RANGE_LIMIT *pRangeLimit = (EDID_MONITOR_RANGE_LIMIT *)pLdd->data;
+                NvU8    max_v_rate_offset, min_v_rate_offset, max_h_rate_offset, min_h_rate_offset;
+
+                // add 255Hz offsets as needed before doing the check, use descriptor->rsvd2
+                nvt_assert(!(pLdd->rsvd2 & 0xF0));                    
+
+                max_v_rate_offset = pLdd->rsvd2 & NVT_PVT_EDID_RANGE_OFFSET_VER_MAX ? NVT_PVT_EDID_RANGE_OFFSET_AMOUNT : 0;
+                min_v_rate_offset = pLdd->rsvd2 & NVT_PVT_EDID_RANGE_OFFSET_VER_MIN ? NVT_PVT_EDID_RANGE_OFFSET_AMOUNT : 0;
+                max_h_rate_offset = pLdd->rsvd2 & NVT_PVT_EDID_RANGE_OFFSET_HOR_MAX ? NVT_PVT_EDID_RANGE_OFFSET_AMOUNT : 0;
+                min_h_rate_offset = pLdd->rsvd2 & NVT_PVT_EDID_RANGE_OFFSET_HOR_MIN ? NVT_PVT_EDID_RANGE_OFFSET_AMOUNT : 0;
+
+                if ((pRangeLimit->minVRate + min_v_rate_offset) > (pRangeLimit->maxVRate + max_v_rate_offset) ||
+                    (pRangeLimit->minHRate + min_h_rate_offset) > (pRangeLimit->maxHRate + max_h_rate_offset) ||
+                    pRangeLimit->maxVRate == 0 ||
+                    pRangeLimit->maxHRate == 0)
+                {
+                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_RANGE_LIMIT);
+                }                    
+            }
+        }
+    }
+
+    // extension and size check
+    if ((NvU32)(p->bExtensionFlag + 1) * sizeof(EDIDV1STRUC) > length)
+    {   
+        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXTENSION_COUNT);
+    }
+
+    // validate extension blocks
+    for (j = 1; j <= p->bExtensionFlag; j++)
+    {
+        pExt = pEdid + sizeof(EDIDV1STRUC) * j;
+
+        // check for 861 extension
+        switch (*pExt)
+        {
+            case NVT_EDID_EXTENSION_CTA:
+                ctaDTD_Offset = ((EIA861EXTENSION *)pExt)->offset;
+                // first sanity check on the extension block
+                if (get861ExtInfo(pExt, sizeof(EIA861EXTENSION), NULL) != NVT_STATUS_SUCCESS ||
+                    ((EIA861EXTENSION *)pExt)->revision < NVT_CEA861_REV_B)
+                {
+                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_BASIC);
+                }
+
+                // 0 indicated there is no DTD and data collection in this block
+                if (ctaDTD_Offset == 0)
+                {
+                    if(!isChecksumValid(pExt))
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_CHECKSUM);
+                    continue;
+                }
+
+                // validate SVD block
+                ctaBlockTag = NVT_CEA861_GET_SHORT_DESCRIPTOR_TAG(((EIA861EXTENSION *)pExt)->data[0]);
+                pData_collection = ((EIA861EXTENSION *)pExt)->data;
+                
+                while ((ctaDTD_Offset - 4) > 0 && pData_collection != &pExt[ctaDTD_Offset] &&
+                        ctaBlockTag > NVT_CEA861_TAG_RSVD && ctaBlockTag <= NVT_CEA861_TAG_EXTENDED_FLAG)
+                {
+                    ctaBlockTag = NVT_CEA861_GET_SHORT_DESCRIPTOR_TAG(*pData_collection);
+                    ctaPayload = NVT_CEA861_GET_SHORT_DESCRIPTOR_SIZE(*pData_collection);
+
+                    if (parseCta861DataBlockInfo(pData_collection, (NvU32)ctaDTD_Offset - 4, NULL) == NVT_STATUS_SUCCESS)
+                    {
+                        pData_collection++;
+                        if (ctaBlockTag == NVT_CEA861_TAG_VIDEO)
+                        {
+                            for (i=0; i < ctaPayload; i++)
+                            {
+                                vic = NVT_GET_CTA_8BIT_VIC(*pData_collection);
+                                if (vic == 0 || vic > 255 || (vic >= 128 && vic <=192))
+                                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_SVD);
+                                pData_collection++;
+                            }
+                        }
+                        else if (ctaBlockTag == NVT_CEA861_TAG_EXTENDED_FLAG)
+                        {
+                            if (*pData_collection == NVT_CEA861_EXT_TAG_HF_EEODB)
+                            {
+                                if ((p->bVersionNumber != 0x01) || (p->bRevisionNumber != 0x03))
+                                {
+                                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_INVALID_DATA_BLOCK);
+                                    pData_collection += ctaPayload;
+                                }
+                                else
+                                {
+                                    ret &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXTENSION_COUNT);
+                                    extnCount = *(++pData_collection);
+                                    // check the EDID extension count value again because EDID extension block count
+                                    // value in EEODB override it and source shall ignore extension flag > 1 value
+                                    if ((extnCount + 1) != (length / (sizeof(EDIDV1STRUC))))
+                                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXTENSION_COUNT);
+                                    pData_collection++;
+                                }
+                            }
+                            else
+                                pData_collection += ctaPayload;
+                        }
+                        else if (ctaBlockTag == NVT_CEA861_TAG_RSVD || ctaBlockTag == NVT_CEA861_TAG_RSVD1)
+                        {
+                            ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_TAG);
+                            pData_collection += ctaPayload;
+                        }
+                        else
+                            pData_collection += ctaPayload;
+                    }
+                    else
+                    {
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_INVALID_DATA_BLOCK);
+                        pData_collection += ctaPayload;
+                    }
+                }
+
+                // validate DTD blocks
+                pDTD = (DETAILEDTIMINGDESCRIPTOR *)&pExt[((EIA861EXTENSION *)pExt)->offset];
+                while (pDTD->wDTPixelClock != 0 && (NvU8 *)pDTD - pExt < (int)sizeof(EIA861EXTENSION))
+                {
+                    if (parseEdidDetailedTimingDescriptor((NvU8 *)pDTD, NULL) != NVT_STATUS_SUCCESS)
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DTD);
+                    else
+                    {
+                        // check the max image size and 
+                        if (p->bMaxHorizImageSize != 0 && p->bMaxVertImageSize != 0)
+                        {
+                            NvU16 hDTDImageSize =  (pDTD->bDTHorizVertImage & 0xF0) << 4 | pDTD->bDTHorizontalImage;
+                            NvU16 vDTDImageSize =  (pDTD->bDTHorizVertImage & 0x0F) << 8 | pDTD->bDTVerticalImage;
+
+                            if ((hDTDImageSize/10) > (p->bMaxHorizImageSize) || (vDTDImageSize/10) > p->bMaxVertImageSize)
+                                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_DTD);
+                        }
+                    }
+                    pDTD++;
+                }
+
+                if(!isChecksumValid(pExt))
+                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_CHECKSUM);
+            break;                
+            case NVT_EDID_EXTENSION_DISPLAYID:
+                pDisplayid = ((DIDEXTENSION *)pExt);
+                if (pDisplayid->ext_count != 0)
+                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID_EXTCOUNT);
+
+                if (pDisplayid->length != 0x79)
+                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID_SEC_SIZE);
+
+                if (!isChecksumValid(pExt))
+                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID_CHECKSUM);
+
+                // check the DID2 data blocks
+                if ((pDisplayid->struct_version & 0xF0) >> 4 == 2)
+                {
+                    if ((pDisplayid->struct_version & 0xFF) == 0x21)
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID_VERSION);
+                    
+                    did2ExtCount++;
+
+                    if (pDisplayid->use_case == 0 && did2ExtCount == 1) 
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID2_USE_CASE);
+
+                    // check the DisplayId2 valid timing
+                    pDID2Header = (DISPLAYID_2_0_DATA_BLOCK_HEADER*)pDisplayid->data;
+                    pData_collection = pDisplayid->data;
+
+                    // Sanity check every data blocks
+                    while (((pDID2Header->type >= DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY &&
+                            pDID2Header->type <= DISPLAYID_2_0_BLOCK_TYPE_ARVR_LAYER)  ||
+                            pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC ||
+                            pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA) && pDID2Header->data_bytes != 0 &&
+                            (pData_collection - pExt < (int)sizeof(DIDEXTENSION)))
+                    {
+                        if (parseDisplayId20EDIDExtDataBlocks(pData_collection, did_section_length, &block_length, NULL) ==  NVT_STATUS_ERR)
+                        {
+                            if (pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_TIMING_7)
+                                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID2_TYPE7);
+
+                            if (pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_RANGE_LIMITS)
+                                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_RANGE_LIMIT);                                
+
+                            if (pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_ADAPTIVE_SYNC)
+                                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID2_ADAPTIVE_SYNC);
+                            // add more data blocks tag here to evaluate
+                        }
+                        pData_collection += block_length;
+                        pDID2Header = (DISPLAYID_2_0_DATA_BLOCK_HEADER*)pData_collection;
+                    }
+
+                    // compare the remain 0 value are correct or not before meet checksum byte
+                    for (i = 0; i <= (NvU32)(&pDisplayid->data[NVT_DID_MAX_EXT_PAYLOAD-1] - pData_collection); i++)
+                    {
+                        if (pData_collection[i] != 0)
+                        {
+                            bAllZero = NV_FALSE;
+                            break;
+                        }
+                    }
+
+                    // if the first tag failed, ignore all the tags afterward then
+                    if (!bAllZero && 
+                        (pDID2Header->type < DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY || 
+                        (pDID2Header->type > DISPLAYID_2_0_BLOCK_TYPE_ARVR_LAYER   && 
+                        pDID2Header->type != DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC  &&
+                        pDID2Header->type != DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA))       &&
+                        (pData_collection - pExt < (int)sizeof(DIDEXTENSION)))
+                    {
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID2_TAG);
+                        continue;
+                    }
+                } 
+                else if ((pDisplayid->struct_version & 0xFF) == 0x12 || (pDisplayid->struct_version & 0xFF) == 0x13)
+                {
+                    if ((pDisplayid->struct_version & 0xFF) == 0x13)
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID_VERSION);
+
+                    pHeader = (DISPLAYID_DATA_BLOCK_HEADER*)pDisplayid->data;
+                    pData_collection = pDisplayid->data;
+
+                    // Sanity check every data blocks
+                    while ((pHeader->type <= NVT_DISPLAYID_BLOCK_TYPE_TILEDDISPLAY ||
+                            pHeader->type == NVT_DISPLAYID_BLOCK_TYPE_CTA_DATA     ||
+                            pHeader->type == NVT_DISPLAYID_BLOCK_TYPE_VENDOR_SPEC) && pHeader->data_bytes != 0 &&
+                        (pData_collection - pExt < (int)sizeof(DIDEXTENSION)))
+                    {
+                        if (parseDisplayIdBlock(pData_collection, did_section_length, &block_length, NULL) == NVT_STATUS_ERR)
+                        {
+                            if (pHeader->type == NVT_DISPLAYID_BLOCK_TYPE_TIMING_1)
+                                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID13_TYPE1);
+
+                            if (pHeader->type == NVT_DISPLAYID_BLOCK_TYPE_RANGE_LIMITS)
+                                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_RANGE_LIMIT);
+                            
+                            // add more data blocks tag here to evaluate
+                        }
+                        pData_collection += block_length;
+                        pHeader = (DISPLAYID_DATA_BLOCK_HEADER*)pData_collection;
+                    }
+
+                    // compare the remain 0 value are correct or not before meet checksum byte
+                    for (i = 0; i <= (NvU32)(&pDisplayid->data[NVT_DID_MAX_EXT_PAYLOAD-1] - pData_collection); i++)
+                    {
+                        if (pData_collection[i] != 0)
+                        {
+                            bAllZero = NV_FALSE;
+                            break;
+                        }
+                    }
+
+                    // if the first tag failed, ignore all the tags afterward then
+                    if (!bAllZero                                             &&
+                        pHeader->type > NVT_DISPLAYID_BLOCK_TYPE_TILEDDISPLAY &&
+                        pHeader->type != NVT_DISPLAYID_BLOCK_TYPE_CTA_DATA    &&
+                        pHeader->type != NVT_DISPLAYID_BLOCK_TYPE_VENDOR_SPEC &&                          
+                        (pData_collection - pExt < (int)sizeof(DIDEXTENSION)))
+                    {
+                        ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID13_TAG);
+                        continue;
+                    }
+                }
+                else
+                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID_VERSION);
+            break;
+            default:
+                // the useful extension only CTA (0x02) and DisplayID (0x70)
+                if ( *pExt != NVT_EDID_EXTENSION_VTB && *pExt != NVT_EDID_EXTENSION_DI   &&
+                    *pExt != NVT_EDID_EXTENSION_LS  && *pExt != NVT_EDID_EXTENSION_DPVL &&
+                    *pExt != NVT_EDID_EXTENSION_BM  && *pExt != NVT_EDID_EXTENSION_OEM )
+                {
+                    ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXTENSION_TAG);
+                }
+            break;
+        }
     }
 
     return ret;
@@ -2335,6 +2708,8 @@ CODE_SEGMENT(PAGE_DD_CODE)
 NvBool assignNextAvailableTiming(NVT_EDID_INFO *pInfo,
                                  const NVT_TIMING *pTiming)
 {
+    if (pInfo == NULL) return NV_TRUE;
+
     // Don't write past the end of
     // pInfo->timing[NVT_EDID_MAX_TOTAL_TIMING]
     if (pInfo->total_timings >= COUNT(pInfo->timing)) {
@@ -2386,7 +2761,7 @@ NvU32 NvTiming_CalculateEDIDCRC32(NvU8* pEDIDBuffer, NvU32 edidsize)
     return calculateCRC32(pEDIDBuffer, edidsize);
 }
 
-//Calculates EDID's CRC after purging 'Week of Manufacture', 'Year of Manufacture',
+//Calculates EDID/DisplayID2 CRC after purging 'Week of Manufacture', 'Year of Manufacture',
 //'Product ID String' & 'Serial Number' from EDID
 CODE_SEGMENT(PAGE_DD_CODE)
 NvU32 NvTiming_CalculateCommonEDIDCRC32(NvU8* pEDIDBuffer, NvU32 edidVersion)
@@ -2403,30 +2778,64 @@ NvU32 NvTiming_CalculateCommonEDIDCRC32(NvU8* pEDIDBuffer, NvU32 edidVersion)
     // Transfer over the original EDID buffer
     NVMISC_MEMCPY(CommonEDIDBuffer, pEDIDBuffer, 256);
 
-    // Wipe out the Serial Number, Week of Manufacture, and Year of Manufacture or Model Year
-    NVMISC_MEMSET(CommonEDIDBuffer + 0x0C, 0, 6);
-
-    // Wipe out the checksums
-    CommonEDIDBuffer[0x7F] = 0;
-    CommonEDIDBuffer[0xFF] = 0;
-
-    // We also need to zero out any "EDID Other Monitor Descriptors" (https://en.wikipedia.org/wiki/Extended_display_identification_data)
-    for (edidBufferIndex = 54; edidBufferIndex <= 108; edidBufferIndex += 18)
+    if ((pEDIDBuffer[0] & 0xF0) == 0x20)
     {
-        if (CommonEDIDBuffer[edidBufferIndex] == 0 && CommonEDIDBuffer[edidBufferIndex+1] == 0)
+        /*
+        typedef struct DisplayId2Struct
         {
-            // Wipe this block out. It contains OEM-specific details that contain things like serial numbers
-            NVMISC_MEMSET(CommonEDIDBuffer + edidBufferIndex, 0, 18);
-        }
-    }
+            NvU8   bVersion;                   // 0x00
+            NvU8   bSectionBytes;              // 0x01 - section length, exclusive the five mandatory bytes.
+            NvU8   bwPrimaryUseCase;           // 0x02
+            NvU8   bExtensionCount;            // 0x03
+            // 0x20 DisplayId2 Standalone always exists Product Identification data block
+            NvU8   bProductIdtag;              // 0x04
+            NvU8   bPIDRevision;               // 0x05
+            NvU8   bPayloadByte;               // 0x06
+            NvU8   bManuId[3];                 // 0x07-0x09
+            NvU16  wProductId;                 // 0x0A-0x0B
+            NvU32  dwSerialNum;                // 0x0C-0x0F
+            NvU16  wWeekandYear;               // 0x10-0x11
+            NvU8   SizeOfProductNameString;    // 0x12
+        } DISPLAY_ID2_FIXED_FORMAT;
+        */
 
-    // Check what size we should do the compare against
-    if ( edidVersion > NVT_EDID_VER_1_4 )
-    {
+        // Wipe out the Serial Number, Week of Manufacture, and Year of Manufacture or Model Year
+        NVMISC_MEMSET(CommonEDIDBuffer + 0x0C, 0, 6);
+        
+        // Wipe out the checksums
+        CommonEDIDBuffer[CommonEDIDBuffer[1]+5/*mandatory bytes*/-1] = 0;
+        CommonEDIDBuffer[0xFF] = 0;
+
+        // zero out any Produc Name in Prodcut Identification data block
+        if (CommonEDIDBuffer[0x12] != 0)
+        {
+            NVMISC_MEMSET(CommonEDIDBuffer + 0x13, 0, CommonEDIDBuffer[0x12]);
+            CommonEDIDBuffer[0x12] = 0;
+        }
+
+        // displayId2 standalone uses 256 length sections
         commonEDIDBufferSize = 256;
     }
-    else
+    else 
     {
+        // Wipe out the Serial Number, Week of Manufacture, and Year of Manufacture or Model Year
+        NVMISC_MEMSET(CommonEDIDBuffer + 0x0C, 0, 6);
+
+        // Wipe out the checksums
+        CommonEDIDBuffer[0x7F] = 0;
+        CommonEDIDBuffer[0xFF] = 0;
+
+        // We also need to zero out any "EDID Other Monitor Descriptors" (http://en.wikipedia.org/wiki/Extended_display_identification_data)
+        for (edidBufferIndex = 54; edidBufferIndex <= 108; edidBufferIndex += 18)
+        {
+            if (CommonEDIDBuffer[edidBufferIndex] == 0 && CommonEDIDBuffer[edidBufferIndex+1] == 0)
+            {
+                // Wipe this block out. It contains OEM-specific details that contain things like serial numbers
+                NVMISC_MEMSET(CommonEDIDBuffer + edidBufferIndex, 0, 18);
+            }
+        }
+
+        // Check what size we should do the compare against
         commonEDIDBufferSize = 128;
     }
 

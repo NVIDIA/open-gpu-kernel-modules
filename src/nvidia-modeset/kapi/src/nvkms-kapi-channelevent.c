@@ -39,7 +39,7 @@ struct NvKmsKapiChannelEvent {
 
     struct NvKmsKapiPrivAllocateChannelEventParams nvKmsParams;
 
-    NvHandle hCallback;
+    NvHandle hCallbacks[NVKMS_KAPI_MAX_EVENT_CHANNELS];
     NVOS10_EVENT_KERNEL_CALLBACK_EX rmCallback;
 };
 
@@ -48,6 +48,34 @@ static void ChannelEventHandler(void *arg1, void *arg2, NvHandle hEvent,
 {
     struct NvKmsKapiChannelEvent *cb = arg1;
     cb->proc(cb->data, 0);
+}
+
+void nvKmsKapiFreeChannelEvent
+(
+    struct NvKmsKapiDevice *device,
+    struct NvKmsKapiChannelEvent *cb
+)
+{
+    int i;
+
+    if (device == NULL || cb == NULL) {
+        return;
+    }
+
+    for (i = 0; i < NVKMS_KAPI_MAX_EVENT_CHANNELS; ++i) {
+        if (!cb->hCallbacks[i]) {
+            continue;
+        }
+
+        nvRmApiFree(device->hRmClient,
+                    device->hRmClient,
+                    cb->hCallbacks[i]);
+
+        nvFreeUnixRmHandle(&device->handleAllocator,
+                           cb->hCallbacks[i]);
+    }
+
+    nvKmsKapiFree(cb);
 }
 
 struct NvKmsKapiChannelEvent* nvKmsKapiAllocateChannelEvent
@@ -59,11 +87,8 @@ struct NvKmsKapiChannelEvent* nvKmsKapiAllocateChannelEvent
     NvU64 nvKmsParamsSize
 )
 {
-    int status;
-    NvU32 ret;
-
+    int status, i;
     struct NvKmsKapiChannelEvent *cb = NULL;
-    NV0005_ALLOC_PARAMETERS eventParams = { };
 
     if (device == NULL || proc == NULL) {
         goto fail;
@@ -101,50 +126,45 @@ struct NvKmsKapiChannelEvent* nvKmsKapiAllocateChannelEvent
     cb->rmCallback.func = ChannelEventHandler;
     cb->rmCallback.arg = cb;
 
-    cb->hCallback = nvGenerateUnixRmHandle(&device->handleAllocator);
-    if (cb->hCallback == 0x0) {
-        nvKmsKapiLogDeviceDebug(device,
-                                "Failed to allocate event callback handle");
-        goto fail;
-    }
+    for (i = 0; i < NVKMS_KAPI_MAX_EVENT_CHANNELS; ++i) {
+        NV0005_ALLOC_PARAMETERS eventParams = { };
+        NvU32 ret;
 
-    eventParams.hParentClient = cb->nvKmsParams.hClient;
-    eventParams.hClass = NV01_EVENT_KERNEL_CALLBACK_EX;
-    eventParams.notifyIndex = 0;
-    eventParams.data = NV_PTR_TO_NvP64(&cb->rmCallback);
+        if (!cb->nvKmsParams.hChannels[i]) {
+            continue;
+        }
 
-    ret = nvRmApiAlloc(device->hRmClient,
-                       cb->nvKmsParams.hChannel,
-                       cb->hCallback,
-                       NV01_EVENT_KERNEL_CALLBACK_EX,
-                       &eventParams);
-    if (ret != NVOS_STATUS_SUCCESS) {
-        nvKmsKapiLogDeviceDebug(device, "Failed to allocate event callback");
-        nvFreeUnixRmHandle(&device->handleAllocator, cb->hCallback);
-        goto fail;
+        cb->hCallbacks[i] = nvGenerateUnixRmHandle(&device->handleAllocator);
+        if (cb->hCallbacks[i] == 0x0) {
+            nvKmsKapiLogDeviceDebug(device,
+                                    "Failed to allocate event callback handle for channel 0x%x",
+                                    cb->nvKmsParams.hChannels[i]);
+            goto fail;
+        }
+
+        eventParams.hParentClient = cb->nvKmsParams.hClient;
+        eventParams.hClass = NV01_EVENT_KERNEL_CALLBACK_EX;
+        eventParams.notifyIndex = 0;
+        eventParams.data = NV_PTR_TO_NvP64(&cb->rmCallback);
+
+        ret = nvRmApiAlloc(device->hRmClient,
+                           cb->nvKmsParams.hChannels[i],
+                           cb->hCallbacks[i],
+                           NV01_EVENT_KERNEL_CALLBACK_EX,
+                           &eventParams);
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvKmsKapiLogDeviceDebug(device,
+                                    "Failed to allocate event callback for channel 0x%x",
+                                    cb->nvKmsParams.hChannels[i]);
+            nvFreeUnixRmHandle(&device->handleAllocator, cb->hCallbacks[i]);
+            cb->hCallbacks[i] = 0;
+            goto fail;
+        }
     }
 
     return cb;
+
 fail:
-    nvKmsKapiFree(cb);
+    nvKmsKapiFreeChannelEvent(device, cb);
     return NULL;
-}
-
-void nvKmsKapiFreeChannelEvent
-(
-    struct NvKmsKapiDevice *device,
-    struct NvKmsKapiChannelEvent *cb
-)
-{
-    if (device == NULL || cb == NULL) {
-        return;
-    }
-
-    nvRmApiFree(device->hRmClient,
-                device->hRmClient,
-                cb->hCallback);
-
-    nvFreeUnixRmHandle(&device->handleAllocator, cb->hCallback);
-
-    nvKmsKapiFree(cb);
 }

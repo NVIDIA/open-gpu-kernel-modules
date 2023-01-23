@@ -402,10 +402,11 @@ _pmaCleanupNumaReusePages
 NV_STATUS
 _pmaEvictContiguous
 (
-    PMA  *pPma,
-    void *pMap,
-    NvU64 evictStart,
-    NvU64 evictEnd
+    PMA              *pPma,
+    void             *pMap,
+    NvU64             evictStart,
+    NvU64             evictEnd,
+    MEMORY_PROTECTION prot
 )
 {
     NV_STATUS status;
@@ -429,7 +430,7 @@ _pmaEvictContiguous
         PSCRUB_NODE pPmaScrubList = NULL;
         portSyncMutexRelease(pPma->pAllocLock);
 
-        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd);
+        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd, prot);
 
         portSyncMutexAcquire(pPma->pAllocLock);
 
@@ -477,7 +478,7 @@ scrub_exit:
     }
     else
     {
-        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd);
+        status = pPma->evictRangeCb(pPma->evictCtxPtr, evictStart, evictEnd, prot);
         NV_PRINTF(LEVEL_INFO, "evictRangeCb returned with status %llx\n", (NvU64)status);
     }
 
@@ -512,15 +513,16 @@ exit:
 NV_STATUS
 _pmaEvictPages
 (
-    PMA   *pPma,
-    void  *pMap,
-    NvU64 *evictPages,
-    NvU64  evictPageCount,
-    NvU64 *allocPages,
-    NvU64  allocPageCount,
-    NvU32  pageSize,
-    NvU64  physBegin,
-    NvU64  physEnd
+    PMA              *pPma,
+    void             *pMap,
+    NvU64            *evictPages,
+    NvU64             evictPageCount,
+    NvU64            *allocPages,
+    NvU64             allocPageCount,
+    NvU32             pageSize,
+    NvU64             physBegin,
+    NvU64             physEnd,
+    MEMORY_PROTECTION prot
 )
 {
     NvU64 i;
@@ -550,7 +552,7 @@ _pmaEvictPages
 
         portSyncMutexRelease(pPma->pAllocLock);
         status = pPma->evictPagesCb(pPma->evictCtxPtr, pageSize, evictPages,
-                            (NvU32)evictPageCount, physBegin, physEnd);
+                            (NvU32)evictPageCount, physBegin, physEnd, prot);
         portSyncMutexAcquire(pPma->pAllocLock);
 
         NV_PRINTF(LEVEL_INFO, "evictPagesCb returned with status %llx\n", (NvU64)status);
@@ -584,7 +586,7 @@ scrub_exit:
     else
     {
         status = pPma->evictPagesCb(pPma->evictCtxPtr, pageSize, evictPages,
-                                (NvU32)evictPageCount, physBegin, physEnd);
+                                (NvU32)evictPageCount, physBegin, physEnd, prot);
         NV_PRINTF(LEVEL_INFO, "evictPagesCb returned with status %llx\n", (NvU64)status);
     }
 
@@ -673,11 +675,21 @@ pmaSelector
             }
         }
 
-        if (regionCount > 1)
+        if (regionCount > 0)
         {
             NvU32 j = regionCount;
 
-            if (flags & PMA_ALLOCATE_PREFER_SLOWEST)
+            if (flags & PMA_ALLOCATE_REVERSE_ALLOC)
+            {
+                // Find insertion point (highest memory address to lowest)
+                while ((j > 0) &&
+                    (pPma->pRegDescriptors[i]->limit > pPma->pRegDescriptors[regionList[j-1]]->limit))
+                {
+                    regionList[j] = regionList[j-1];
+                    j--;
+                }
+            }
+            else if (flags & PMA_ALLOCATE_PREFER_SLOWEST)
             {
                 // Find insertion point (slowest to fastest)
                 while ((j > 0) &&
@@ -1102,6 +1114,32 @@ pmaBuildList
                 }
 
                 bBlockValid = NV_FALSE;
+            }
+        }
+
+        // No point checking further if we are already out of memory
+        if (status == NV_ERR_NO_MEMORY)
+            break;
+
+        // Check if last frame was part of a block.
+        if (bBlockValid)
+        {
+            // Block found having required PMA page state. Store it in the list
+            pRangeCurr = (PRANGELISTTYPE) portMemAllocNonPaged(sizeof(RANGELISTTYPE));
+            if (pRangeCurr)
+            {
+                pRangeCurr->base  = addrBase + blockStart * PMA_GRANULARITY;
+                pRangeCurr->limit = addrBase + blockEnd * PMA_GRANULARITY + PMA_GRANULARITY - 1;
+                pRangeCurr->pNext = pRangeList;
+                pRangeList = pRangeCurr;
+            }
+            else
+            {
+                // Allocation failed
+                pmaFreeList(pPma, &pRangeList);
+                pRangeList = NULL;
+                status = NV_ERR_NO_MEMORY;
+                break;
             }
         }
     }

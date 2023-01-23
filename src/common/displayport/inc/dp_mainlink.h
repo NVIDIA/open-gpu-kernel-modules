@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -129,7 +129,7 @@ namespace DisplayPort
         virtual NvU32 getSorIndex() = 0;
         virtual bool isInbandStereoSignalingSupported() = 0;
 
- 
+
         virtual bool isEDP() = 0;
         virtual bool supportMSAOverMST() = 0;
         virtual bool isForceRmEdidRequired() = 0;
@@ -175,8 +175,8 @@ namespace DisplayPort
         virtual bool hasIncreasedWatermarkLimits() = 0;
         virtual bool hasMultistream() = 0;
         virtual bool isPC2Disabled() = 0;
-        virtual bool isDP1_2Supported() = 0;
-        virtual bool isDP1_4Supported() = 0;
+        virtual NvU32 getGpuDpSupportedVersions() = 0;
+
         virtual bool isStreamCloningEnabled() = 0;
         virtual NvU32 maxLinkRateSupported() = 0;
         virtual bool isLttprSupported() = 0;

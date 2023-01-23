@@ -61,9 +61,12 @@
 #include "class/clc56f.h"   // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc56fsw.h" // AMPERE_CHANNEL_GPFIFO_A
 #include "class/clc572.h"   // PHYSICAL_CHANNEL_GPFIFO
+#include "class/clc86f.h"   // HOPPER_CHANNEL_GPFIFO_A
+#include "class/clc86fsw.h" // HOPPER_CHANNEL_GPFIFO_A
 
 #include "ctrl/ctrl906f.h"
 #include "ctrl/ctrlc46f.h"
+#include "ctrl/ctrlc86f.h"
 
 #include "Nvcm.h"
 #include "libraries/resserv/resserv.h"
@@ -79,15 +82,15 @@ static NV_STATUS _kchannelAllocHalData(OBJGPU *pGpu, KernelChannel *pKernelChann
 static void      _kchannelFreeHalData(OBJGPU *pGpu, KernelChannel *pKernelChannel);
 static NV_STATUS _kchannelAllocOrDescribeInstMem(
     KernelChannel  *pKernelChannel,
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams);
+    NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams);
 static NV_STATUS _kchannelDescribeMemDescsFromParams(
     OBJGPU *pGpu,
     KernelChannel *pKernelChannel,
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams);
+    NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams);
 static NV_STATUS _kchannelDescribeMemDescsHeavySriov(OBJGPU *pGpu, KernelChannel *pKernelChannel);
 static NV_STATUS _kchannelSendChannelAllocRpc(
     KernelChannel *pKernelChannel,
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams,
+    NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams,
     KernelChannelGroup *pKernelChannelGroup,
     NvBool bFullSriov);
 
@@ -135,18 +138,20 @@ kchannelConstruct_IMPL
     RM_API                 *pRmApi           = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
     NvHandle                hClient          = pRsClient->hClient;
     NvHandle                hParent          = pResourceRef->pParentRef->hResource;
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams = pParams->pAllocParams;
+    NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams = pParams->pAllocParams;
     RsResourceRef          *pChanGrpRef      = NULL;
     KernelChannelGroupApi  *pKernelChannelGroupApi = NULL;
     NvHandle                hKernelCtxShare  = pChannelGpfifoParams->hContextShare;
     NvBool                  bTsgAllocated    = NV_FALSE;
     NvHandle                hChanGrp         = NV01_NULL_OBJECT;
     RsResourceRef          *pDeviceRef       = NULL;
+    RsResourceRef          *pVASpaceRef      = NULL;
+    KernelGraphicsContext  *pKernelGraphicsContext = NULL;
     NvBool                  bMIGInUse;
     KernelChannelGroup     *pKernelChannelGroup = NULL;
     NvU32                   chID             = ~0;
     NvU32                   flags            = pChannelGpfifoParams->flags;
-    NvU32                   globalEngineType = NV2080_ENGINE_TYPE_NULL;
+    RM_ENGINE_TYPE          globalRmEngineType = RM_ENGINE_TYPE_NULL;
     NvU32                   verifFlags2      = 0;
     NvBool                  bChidAllocated   = NV_FALSE;
     NvBool                  bLockAcquired    = NV_FALSE;
@@ -156,7 +161,6 @@ kchannelConstruct_IMPL
     NvBool                  bRpcAllocated    = NV_FALSE;
     NvBool                  bFullSriov       = IS_VIRTUAL_WITH_SRIOV(pGpu) && !gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
     NvBool                  bAddedToGroup    = NV_FALSE;
-    NvU64                   errContextMemDescFlags = 0;
     NvU32                   callingContextGfid;
 
     // We only support physical channels.
@@ -166,13 +170,12 @@ kchannelConstruct_IMPL
     pKernelChannel->refCount = 1;
     pKernelChannel->bIsContextBound = NV_FALSE;
     pKernelChannel->nextObjectClassID = 0;
-    pKernelChannel->hVASpace = pChannelGpfifoParams->hVASpace;
     pKernelChannel->subctxId = 0;
     pKernelChannel->bSkipCtxBufferAlloc = FLD_TEST_DRF(OS04, _FLAGS,
                                                        _SKIP_CTXBUFFER_ALLOC, _TRUE, flags);
     pKernelChannel->cid = portAtomicIncrementU32(&pSys->currentCid);
     pKernelChannel->runqueue = DRF_VAL(OS04, _FLAGS, _GROUP_CHANNEL_RUNQUEUE, flags);
-    pKernelChannel->engineType = NV2080_ENGINE_TYPE_NULL;
+    pKernelChannel->engineType = RM_ENGINE_TYPE_NULL;
     pChannelGpfifoParams->cid = pKernelChannel->cid;
     NV_ASSERT_OK_OR_GOTO(status, refFindAncestorOfType(pResourceRef, classId(Device), &pDeviceRef), cleanup);
     NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &callingContextGfid));
@@ -215,7 +218,17 @@ kchannelConstruct_IMPL
             pKernelChannel->privilegeLevel =
                 DRF_VAL(_KERNELCHANNEL, _ALLOC_INTERNALFLAGS, _PRIVILEGE, pChannelGpfifoParams->internalFlags);
         }
-        pKernelChannel->ProcessID = pChannelGpfifoParams->ProcessID;
+
+        // In GSP, all vGPU channel's will simply consider GFID as the processID
+        if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && IS_GFID_VF(callingContextGfid))
+        {
+            pKernelChannel->ProcessID = callingContextGfid;
+        }
+        else
+        {
+            pKernelChannel->ProcessID = pChannelGpfifoParams->ProcessID;
+        }
+
         pKernelChannel->SubProcessID = pChannelGpfifoParams->SubProcessID;
     }
     else
@@ -241,7 +254,7 @@ kchannelConstruct_IMPL
     }
 
     // Context share and vaspace handles can't be active at the same time.
-    if ((hKernelCtxShare != NV01_NULL_OBJECT) && (pKernelChannel->hVASpace != NV01_NULL_OBJECT))
+    if ((hKernelCtxShare != NV01_NULL_OBJECT) && (pChannelGpfifoParams->hVASpace != NV01_NULL_OBJECT))
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Both context share and vaspace handles can't be valid at the same time\n");
@@ -305,7 +318,7 @@ kchannelConstruct_IMPL
             goto cleanup;
         }
 
-        tsgParams.hVASpace = pKernelChannel->hVASpace;
+        tsgParams.hVASpace = pChannelGpfifoParams->hVASpace;
         tsgParams.engineType = pChannelGpfifoParams->engineType;
         // vGpu plugin context flag should only be set if context is plugin
         if (gpuIsSriovEnabled(pGpu))
@@ -357,7 +370,7 @@ kchannelConstruct_IMPL
         pKernelChannelGroup = pKernelChannelGroupApi->pKernelChannelGroup;
 
         // TSG channel should specify a context share object, rather than vaspace directly
-        if (pKernelChannel->hVASpace != NV01_NULL_OBJECT)
+        if (pChannelGpfifoParams->hVASpace != NV01_NULL_OBJECT)
         {
             NV_PRINTF(LEVEL_ERROR,
                       "TSG channels can't use an explicit vaspace\n");
@@ -524,58 +537,7 @@ kchannelConstruct_IMPL
             pKernelChannel->eccErrorContextType,
             pChannelGpfifoParams->internalFlags);
     }
-    else if (RMCFG_FEATURE_PLATFORM_GSP)
-    {
-        pKernelChannel->errorContextType = DRF_VAL(_KERNELCHANNEL_ALLOC,
-            _INTERNALFLAGS, _ERROR_NOTIFIER_TYPE,
-            pChannelGpfifoParams->internalFlags);
-        pKernelChannel->eccErrorContextType = DRF_VAL(_KERNELCHANNEL_ALLOC,
-            _INTERNALFLAGS, _ECC_ERROR_NOTIFIER_TYPE,
-            pChannelGpfifoParams->internalFlags);
 
-        errContextMemDescFlags = MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
-        if (gpuIsSriovEnabled(pGpu) &&
-            IS_GFID_VF(callingContextGfid) &&
-            !pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bIsCallingContextVgpuPlugin)
-        {
-            errContextMemDescFlags |= MEMDESC_FLAGS_GUEST_ALLOCATED;
-        }
-
-        if (pKernelChannel->errorContextType != ERROR_NOTIFIER_TYPE_NONE)
-        {
-            NV_ASSERT_OK_OR_GOTO(status,
-                memdescCreate(&pKernelChannel->pErrContextMemDesc,
-                              pGpu,
-                              pChannelGpfifoParams->errorNotifierMem.size,
-                              1 /* Alignment */,
-                              NV_TRUE /* PhysicallyContiguous */,
-                              ADDR_UNKNOWN,
-                              NV_MEMORY_UNCACHED,
-                              errContextMemDescFlags),
-                cleanup);
-            memdescDescribe(pKernelChannel->pErrContextMemDesc,
-                            pChannelGpfifoParams->errorNotifierMem.addressSpace,
-                            pChannelGpfifoParams->errorNotifierMem.base,
-                            pChannelGpfifoParams->errorNotifierMem.size);
-        }
-        if (pKernelChannel->eccErrorContextType != ERROR_NOTIFIER_TYPE_NONE)
-        {
-            NV_ASSERT_OK_OR_GOTO(status,
-                memdescCreate(&pKernelChannel->pEccErrContextMemDesc,
-                              pGpu,
-                              pChannelGpfifoParams->eccErrorNotifierMem.size,
-                              1 /* Alignment */,
-                              NV_TRUE /* PhysicallyContiguous */,
-                              ADDR_UNKNOWN,
-                              NV_MEMORY_UNCACHED,
-                              errContextMemDescFlags),
-                cleanup);
-            memdescDescribe(pKernelChannel->pEccErrContextMemDesc,
-                pChannelGpfifoParams->eccErrorNotifierMem.addressSpace,
-                pChannelGpfifoParams->eccErrorNotifierMem.base,
-                pChannelGpfifoParams->eccErrorNotifierMem.size);
-        }
-    }
     //
     // The error context types should be set on all RM configurations
     // (GSP/baremetal/CPU-GSP client)
@@ -584,34 +546,59 @@ kchannelConstruct_IMPL
     NV_ASSERT(pKernelChannel->eccErrorContextType !=
               ERROR_NOTIFIER_TYPE_UNKNOWN);
 
-    // Get KernelCtxShare (supplied or legacy)
-    if (hKernelCtxShare)
+
+    if ((pKernelChannelGroup->chanCount != 0) &&
+        (( pKernelChannelGroup->bLegacyMode && (hKernelCtxShare != NV01_NULL_OBJECT)) ||
+         (!pKernelChannelGroup->bLegacyMode && (hKernelCtxShare == NV01_NULL_OBJECT))))
     {
         //
-        // Get object pointers from supplied hKernelCtxShare.
-        // If hKernelCtxShare is nonzero, the ChannelGroup is not internal either,
-        // so it should have the same parent as hParent.
+        // Check if this channnel allocation specifying (or not) a user
+        // allocated context share matches with previous channel allocations (if
+        // any) in this group specifiying (or not) a user allocated context
+        // share.
         //
-        NV_ASSERT_OR_ELSE(!pKernelChannelGroup->bLegacyMode,
-                          status = NV_ERR_INVALID_STATE;
-                          goto cleanup);
+        // A channel group cannot have a mix of channels with some of them
+        // specifying a user allocated context share and some having RM
+        // allocated context share.
+        //
+        NV_PRINTF(LEVEL_NOTICE,
+            "All channels in a channel group must specify a CONTEXT_SHARE if any one of them specifies it\n");
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto cleanup;
+    }
 
+    // Get KernelCtxShare (supplied or legacy)
+    if (hKernelCtxShare != NV01_NULL_OBJECT)
+    {
+        // Get object pointers from supplied hKernelCtxShare.
         NV_ASSERT_OK_OR_GOTO(status,
-                             clientGetResourceRefByType(pRsClient, hKernelCtxShare, classId(KernelCtxShareApi), &pKernelCtxShareRef),
-                             cleanup);
+            clientGetResourceRefByType(pRsClient,
+                                       hKernelCtxShare,
+                                       classId(KernelCtxShareApi),
+                                       &pKernelCtxShareRef),
+            cleanup);
 
-        // Check that the parent matches
-        NV_ASSERT_OR_ELSE((pKernelCtxShareRef->pParentRef) && (pKernelCtxShareRef->pParentRef->hResource == hParent),
-            status = NV_ERR_INVALID_OBJECT_PARENT; goto cleanup);
+        //
+        // If hKernelCtxShare is nonzero, the ChannelGroup is not internal
+        // either, so it should have the same parent as hParent.
+        //
+        NV_ASSERT_OR_ELSE(
+            pKernelCtxShareRef->pParentRef != NULL &&
+                pKernelCtxShareRef->pParentRef->hResource == hParent,
+            status = NV_ERR_INVALID_OBJECT_PARENT;
+            goto cleanup);
     }
     else
     {
         NvU32 subctxFlag;
         NvHandle hLegacyKernelCtxShare;
 
-        // Set this ChannelGroup to legacy mode and get the KernelCtxShare from it.
         if (!pKernelChannelGroup->bLegacyMode)
         {
+            //
+            // Set this ChannelGroup to legacy mode and get the KernelCtxShare
+            // from it.
+            //
             NV_ASSERT_OK_OR_GOTO(status,
                 kchangrpapiSetLegacyMode(pKernelChannelGroupApi,
                                          pGpu, pKernelFifo, hClient),
@@ -623,12 +610,13 @@ kchannelConstruct_IMPL
                            NV_CTXSHARE_ALLOCATION_FLAGS_SUBCONTEXT_SYNC) ?
                               pKernelChannelGroupApi->hLegacykCtxShareSync :
                               pKernelChannelGroupApi->hLegacykCtxShareAsync;
+
         NV_ASSERT_OK_OR_GOTO(status,
-                             clientGetResourceRefByType(pRsClient,
-                                                        hLegacyKernelCtxShare,
-                                                        classId(KernelCtxShareApi),
-                                                        &pKernelCtxShareRef),
-                             cleanup);
+            clientGetResourceRefByType(pRsClient,
+                                       hLegacyKernelCtxShare,
+                                       classId(KernelCtxShareApi),
+                                       &pKernelCtxShareRef),
+            cleanup);
     }
 
     pKernelChannel->pKernelCtxShareApi = dynamicCast(pKernelCtxShareRef->pResource, KernelCtxShareApi);
@@ -640,17 +628,17 @@ kchannelConstruct_IMPL
     if (kfifoIsPerRunlistChramSupportedInHw(pKernelFifo))
     {
         // TSG should always have a valid engine Id.
-        if (!NV2080_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType))
+        if (!RM_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType))
         {
             NV_ASSERT(
-                NV2080_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType));
+                RM_ENGINE_TYPE_IS_VALID(pKernelChannelGroup->engineType));
             status = NV_ERR_INVALID_STATE;
             goto cleanup;
         }
 
         if (NV2080_ENGINE_TYPE_IS_VALID(pChannelGpfifoParams->engineType))
         {
-            globalEngineType = pChannelGpfifoParams->engineType;
+            globalRmEngineType = gpuGetRmEngineType(pChannelGpfifoParams->engineType);
             // Convert it to global engine id if MIG is enabled
             if (bMIGInUse)
             {
@@ -666,17 +654,19 @@ kchannelConstruct_IMPL
                     status,
                     LEVEL_ERROR,
                     kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                                      pChannelGpfifoParams->engineType,
-                                                      &globalEngineType),
+                                                      globalRmEngineType,
+                                                      &globalRmEngineType),
                     cleanup);
             }
 
             // Throw an error if TSG engine Id does NOT match with channel engine Id
-            if (globalEngineType != pKernelChannelGroup->engineType)
+            if (globalRmEngineType != pKernelChannelGroup->engineType)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                    "Engine type of channel = 0x%x not compatible with engine type of TSG = 0x%x\n",
+                    "Engine type of channel = 0x%x (0x%x) not compatible with engine type of TSG = 0x%x (0x%x)\n",
+                    gpuGetNv2080EngineType(pChannelGpfifoParams->engineType),
                     pChannelGpfifoParams->engineType,
+                    gpuGetNv2080EngineType(pKernelChannelGroup->engineType),
                     pKernelChannelGroup->engineType);
 
                 status = NV_ERR_INVALID_ARGUMENT;
@@ -692,7 +682,7 @@ kchannelConstruct_IMPL
     pKernelChannel->runlistId = kfifoGetDefaultRunlist_HAL(pGpu, pKernelFifo, pKernelChannel->engineType);
 
     // Set TLS state and BAR0 window if we are working with Gr
-    if (bMIGInUse && NV2080_ENGINE_TYPE_IS_GR(pKernelChannel->engineType))
+    if (bMIGInUse && RM_ENGINE_TYPE_IS_GR(pKernelChannel->engineType))
     {
         NV_ASSERT_OK(kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, pRsClient->hClient,
                                                      &pKernelChannel->partitionRef));
@@ -706,7 +696,7 @@ kchannelConstruct_IMPL
 
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "Error in Allocating channel id %d for hClient %d hKernelChannel %d \n",
+            NV_PRINTF(LEVEL_ERROR, "Error in Allocating channel id 0x%x for hClient 0x%x hKernelChannel 0x%x \n",
                                    chID, hClient, pResourceRef->hResource);
             DBG_BREAKPOINT();
             goto cleanup;
@@ -741,7 +731,7 @@ kchannelConstruct_IMPL
 
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "Error in Allocating channel id %d for hClient %d hKernelChannel %d \n",
+            NV_PRINTF(LEVEL_ERROR, "Error in Allocating channel id 0x%x for hClient 0x%x hKernelChannel 0x%x \n",
                       chID, hClient, pResourceRef->hResource);
             chID = ~0;
             DBG_BREAKPOINT();
@@ -862,11 +852,9 @@ kchannelConstruct_IMPL
     }
 
     // We depend on VASpace if it was provided
-    if (pKernelChannel->hVASpace != NV01_NULL_OBJECT)
+    if (pChannelGpfifoParams->hVASpace != NV01_NULL_OBJECT)
     {
-        RsResourceRef *pVASpaceRef = NULL;
-
-        NV_ASSERT_OK_OR_GOTO(status, clientGetResourceRef(pRsClient, pKernelChannel->hVASpace, &pVASpaceRef), cleanup);
+        NV_ASSERT_OK_OR_GOTO(status, clientGetResourceRef(pRsClient, pChannelGpfifoParams->hVASpace, &pVASpaceRef), cleanup);
         NV_ASSERT_OR_ELSE(pVASpaceRef != NULL, status = NV_ERR_INVALID_OBJECT; goto cleanup);
 
         NV_ASSERT_OK_OR_GOTO(status, refAddDependant(pVASpaceRef, pResourceRef), cleanup);
@@ -887,8 +875,6 @@ kchannelConstruct_IMPL
     pKernelChannel->hKernelGraphicsContext = pKernelChannelGroupApi->hKernelGraphicsContext;
     if (pKernelChannel->hKernelGraphicsContext != NV01_NULL_OBJECT)
     {
-        KernelGraphicsContext *pKernelGraphicsContext;
-
         NV_ASSERT_OK_OR_GOTO(status,
             kgrctxFromKernelChannel(pKernelChannel, &pKernelGraphicsContext),
             cleanup);
@@ -905,6 +891,9 @@ kchannelConstruct_IMPL
             _kchannelNotifyOfChid(pGpu, pKernelChannel, pRsClient),
             cleanup);
     }
+
+    // Cache the hVASpace for this channel in the KernelChannel object
+    pKernelChannel->hVASpace = pKernelChannel->pKernelCtxShareApi->hVASpace;
 
 cleanup:
     if (bLockAcquired)
@@ -927,6 +916,24 @@ cleanup:
         if (bNotifyActionsSetup)
         {
             _kchannelCleanupNotifyActions(pKernelChannel);
+        }
+
+        // Remove any dependencies we may have added; we don't want our destructor called when freeing anything below
+        if (pKernelGraphicsContext != NULL)
+        {
+            refRemoveDependant(RES_GET_REF(pKernelGraphicsContext), pResourceRef);
+        }
+        if (pKernelChannel->pKernelCtxShareApi != NULL)
+        {
+            refRemoveDependant(RES_GET_REF(pKernelChannel->pKernelCtxShareApi), pResourceRef);
+        }
+        if (pVASpaceRef != NULL)
+        {
+            refRemoveDependant(pVASpaceRef, pResourceRef);
+        }
+        if (bTsgAllocated)
+        {
+            refRemoveDependant(pChanGrpRef, pResourceRef);
         }
 
         if (bAddedToGroup)
@@ -1405,6 +1412,16 @@ CliGetChannelClassInfo
             pClassInfo->classType          = CHANNEL_CLASS_TYPE_GPFIFO;
             break;
         }
+        case HOPPER_CHANNEL_GPFIFO_A:
+        {
+            pClassInfo->notifiersMaxCount  = NVC86F_NOTIFIERS_MAXCOUNT;
+            pClassInfo->eventActionDisable = NVC86F_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
+            pClassInfo->eventActionSingle  = NVC86F_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE;
+            pClassInfo->eventActionRepeat  = NVC86F_CTRL_EVENT_SET_NOTIFICATION_ACTION_REPEAT;
+            pClassInfo->rcNotifierIndex    = NVC86F_NOTIFIERS_RC;
+            pClassInfo->classType          = CHANNEL_CLASS_TYPE_GPFIFO;
+            break;
+        }
 
         //
         // Does not make sense. Call with the class type from the client not the
@@ -1549,7 +1566,7 @@ kchannelNotifyRc_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelChannel);
-    NvU32 engineID = NV2080_ENGINE_TYPE_NULL;
+    RM_ENGINE_TYPE rmEngineType = RM_ENGINE_TYPE_NULL;
     NV_STATUS rmStatus = NV_OK;
 
     if (IS_GFID_VF(kchannelGetGfid(pKernelChannel)))
@@ -1567,14 +1584,14 @@ kchannelNotifyRc_IMPL
         return NV_OK;
     }
 
-    if (NV2080_ENGINE_TYPE_IS_VALID(kchannelGetEngineType(pKernelChannel)))
+    if (RM_ENGINE_TYPE_IS_VALID(kchannelGetEngineType(pKernelChannel)))
     {
-        engineID = kchannelGetEngineType(pKernelChannel);
+        rmEngineType = kchannelGetEngineType(pKernelChannel);
     }
     rmStatus = krcErrorSetNotifier(pGpu, GPU_GET_KERNEL_RC(pGpu),
                                    pKernelChannel,
                                    ROBUST_CHANNEL_PREEMPTIVE_REMOVAL,
-                                   engineID,
+                                   rmEngineType,
                                    RC_NOTIFIER_SCOPE_CHANNEL);
     if (rmStatus != NV_OK)
     {
@@ -1868,7 +1885,7 @@ kchannelIsSchedulable_IMPL
 )
 {
     OBJGVASPACE *pGVAS = NULL;
-    NvU32        engineId = 0;
+    NvU32        engineDesc = 0;
     NvU32        gfId;
 
     gfId = kchannelGetGfid(pKernelChannel);
@@ -1888,9 +1905,9 @@ kchannelIsSchedulable_IMPL
     //
     NV_ASSERT_OR_RETURN(pGVAS != NULL || IS_MODS_AMODEL(pGpu), NV_FALSE);
 
-    NV_ASSERT_OR_RETURN(kchannelGetEngine_HAL(pGpu, pKernelChannel, &engineId) == NV_OK, NV_FALSE);
+    NV_ASSERT_OR_RETURN(kchannelGetEngine_HAL(pGpu, pKernelChannel, &engineDesc) == NV_OK, NV_FALSE);
 
-    if (pGVAS != NULL && gvaspaceIsExternallyOwned(pGVAS) && IS_GR(engineId) && !pKernelChannel->bIsContextBound)
+    if (pGVAS != NULL && gvaspaceIsExternallyOwned(pGVAS) && IS_GR(engineDesc) && !pKernelChannel->bIsContextBound)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Cannot schedule externally-owned channel with unbound allocations :0x%x!\n",
@@ -1955,7 +1972,7 @@ static NvU32
 _kchannelgetVerifFlags
 (
     OBJGPU                                    *pGpu,
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS    *pChannelGpfifoParams
+    NV_CHANNEL_ALLOC_PARAMS    *pChannelGpfifoParams
 )
 {
     NvU32 verifFlags = 0;
@@ -1968,7 +1985,7 @@ static NV_STATUS
 _kchannelAllocOrDescribeInstMem
 (
     KernelChannel  *pKernelChannel,
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams
+    NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams
 )
 {
     OBJGPU                *pGpu        = GPU_RES_GET_GPU(pKernelChannel);
@@ -2096,7 +2113,7 @@ _kchannelDescribeMemDescsFromParams
 (
     OBJGPU                                 *pGpu,
     KernelChannel                          *pKernelChannel,
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams
+    NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams
 )
 {
     NV_STATUS               status         = NV_OK;
@@ -2125,7 +2142,8 @@ _kchannelDescribeMemDescsFromParams
     // Create memory descriptor for the instance memory
     status = memdescCreate(&pInstanceBlock->pInstanceBlockDesc, pGpu,
                            pChannelGpfifoParams->instanceMem.size, 1 , NV_TRUE,
-                           ADDR_UNKNOWN, pChannelGpfifoParams->instanceMem.cacheAttrib,
+                           pChannelGpfifoParams->instanceMem.addressSpace,
+                           pChannelGpfifoParams->instanceMem.cacheAttrib,
                            MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
 
     if (status != NV_OK)
@@ -2142,7 +2160,8 @@ _kchannelDescribeMemDescsFromParams
     // Create memory descriptor for the ramfc
     status = memdescCreate(&pInstanceBlock->pRamfcDesc, pGpu,
                            pChannelGpfifoParams->ramfcMem.size, 1 , NV_TRUE,
-                           ADDR_UNKNOWN, pChannelGpfifoParams->ramfcMem.cacheAttrib,
+                           pChannelGpfifoParams->ramfcMem.addressSpace,
+                           pChannelGpfifoParams->ramfcMem.cacheAttrib,
                            MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
 
     if (status != NV_OK)
@@ -2158,7 +2177,8 @@ _kchannelDescribeMemDescsFromParams
     // Create userd memory descriptor
     status = memdescCreate(&pKernelChannel->pUserdSubDeviceMemDesc[subDevInst], pGpu,
                            pChannelGpfifoParams->userdMem.size, 1 , NV_TRUE,
-                           ADDR_UNKNOWN, pChannelGpfifoParams->userdMem.cacheAttrib,
+                           pChannelGpfifoParams->userdMem.addressSpace,
+                           pChannelGpfifoParams->userdMem.cacheAttrib,
                            MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
 
     if (status != NV_OK)
@@ -2201,7 +2221,7 @@ _kchannelDescribeMemDescsFromParams
                                pChannelGpfifoParams->mthdbufMem.size,
                                1,
                                NV_TRUE,
-                               ADDR_UNKNOWN,
+                               pChannelGpfifoParams->mthdbufMem.addressSpace,
                                pChannelGpfifoParams->mthdbufMem.cacheAttrib,
                                MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
 
@@ -2324,7 +2344,7 @@ _kchannelDescribeMemDescsHeavySriov
 
     status = memdescCreate(&pInstanceBlock->pInstanceBlockDesc, pGpu,
                            memInfoParams.chMemInfo.inst.size, 1 , NV_TRUE,
-                           ADDR_UNKNOWN, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
+                           apert, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE);
 
     if (status != NV_OK)
     {
@@ -2356,13 +2376,13 @@ static NV_STATUS
 _kchannelSendChannelAllocRpc
 (
     KernelChannel *pKernelChannel,
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pChannelGpfifoParams,
+    NV_CHANNEL_ALLOC_PARAMS *pChannelGpfifoParams,
     KernelChannelGroup *pKernelChannelGroup,
     NvBool bFullSriov
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelChannel);
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS *pRpcParams;
+    NV_CHANNEL_ALLOC_PARAMS *pRpcParams;
     NV_STATUS status = NV_OK;
 
     pRpcParams = portMemAllocNonPaged(sizeof(*pRpcParams));
@@ -2524,7 +2544,7 @@ cleanup:
 NV_STATUS kchannelBindToRunlist_IMPL
 (
     KernelChannel *pKernelChannel,
-    NvU32          localEngineType,
+    RM_ENGINE_TYPE localRmEngineType,
     ENGDESCRIPTOR  engineDesc
 )
 {
@@ -2551,7 +2571,7 @@ NV_STATUS kchannelBindToRunlist_IMPL
     {
         NVA06F_CTRL_BIND_PARAMS params;
 
-        params.engineType = localEngineType;
+        params.engineType = gpuGetNv2080EngineType(localRmEngineType);
 
         NV_RM_RPC_CONTROL(pGpu,
                           RES_GET_CLIENT_HANDLE(pKernelChannel),
@@ -2657,6 +2677,7 @@ kchannelCtrlCmdGetClassEngineid_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelChannel);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NV_STATUS status = NV_OK;
+    RM_ENGINE_TYPE rmEngineType;
 
     //
     // MODS uses hObject 0 to figure out if this call is supported or not.
@@ -2689,13 +2710,15 @@ kchannelCtrlCmdGetClassEngineid_IMPL
         kchannelGetClassEngineID_HAL(pGpu, pKernelChannel, pParams->hObject,
                                  &pParams->classEngineID,
                                  &pParams->classID,
-                                 &pParams->engineID));
+                                 &rmEngineType));
+
+    pParams->engineID = gpuGetNv2080EngineType(rmEngineType);
 
     if (IS_MIG_IN_USE(pGpu) &&
-        kmigmgrIsEnginePartitionable(pGpu, pKernelMIGManager, pParams->engineID))
+        kmigmgrIsEnginePartitionable(pGpu, pKernelMIGManager, rmEngineType))
     {
         MIG_INSTANCE_REF ref;
-        NvU32 localEngineType;
+        RM_ENGINE_TYPE localRmEngineType;
 
         NV_ASSERT_OK_OR_RETURN(
             kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
@@ -2704,12 +2727,13 @@ kchannelCtrlCmdGetClassEngineid_IMPL
 
         NV_ASSERT_OK_OR_RETURN(
             kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref,
-                                              pParams->engineID,
-                                              &localEngineType));
+                                              rmEngineType,
+                                              &localRmEngineType));
 
-        NV_PRINTF(LEVEL_INFO, "Overriding global engine type 0x%x to local engine type 0x%x due to MIG\n",
-                  pParams->engineID, localEngineType);
-        pParams->engineID = localEngineType;
+        NV_PRINTF(LEVEL_INFO, "Overriding global engine type 0x%x to local engine type 0x%x (0x%x) due to MIG\n",
+                  pParams->engineID, gpuGetNv2080EngineType(localRmEngineType), localRmEngineType);
+
+        pParams->engineID = gpuGetNv2080EngineType(localRmEngineType);
     }
 
     return status;
@@ -2897,8 +2921,8 @@ kchannelCtrlCmdBind_IMPL
     NVA06F_CTRL_BIND_PARAMS *pParams
 )
 {
-    NvU32 globalEngineType;
-    NvU32 localEngineType;
+    RM_ENGINE_TYPE globalRmEngineType;
+    RM_ENGINE_TYPE localRmEngineType;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelChannel);
     NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelChannel);
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
@@ -2921,7 +2945,7 @@ kchannelCtrlCmdBind_IMPL
                   pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->grpID);
     }
 
-    localEngineType = globalEngineType = pParams->engineType;
+    localRmEngineType = globalRmEngineType = gpuGetRmEngineType(pParams->engineType);
 
     if (bMIGInUse)
     {
@@ -2932,22 +2956,22 @@ kchannelCtrlCmdBind_IMPL
             kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref, localEngineType,
-                                              &globalEngineType));
+            kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref, localRmEngineType,
+                                              &globalRmEngineType));
 
     }
 
     NV_PRINTF(LEVEL_INFO, "Binding Channel %d to Engine %d\n",
-              kchannelGetDebugTag(pKernelChannel), globalEngineType);
+              kchannelGetDebugTag(pKernelChannel), globalRmEngineType);
 
-    // Translate globalEnginetype -> enginedesc
+    // Translate globalRmEngineType -> enginedesc
     NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
-        gpuXlateClientEngineIdToEngDesc(pGpu, globalEngineType, &engineDesc));
+        gpuXlateClientEngineIdToEngDesc(pGpu, globalRmEngineType, &engineDesc));
 
     if (rmStatus == NV_OK)
     {
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
-            kchannelBindToRunlist(pKernelChannel, localEngineType, engineDesc));
+            kchannelBindToRunlist(pKernelChannel, localRmEngineType, engineDesc));
     }
 
     return rmStatus;
@@ -3011,7 +3035,9 @@ kchannelCtrlCmdGpfifoGetWorkSubmitToken_IMPL
     CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
     RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
     NvBool bIsMIGEnabled        = IS_MIG_ENABLED(pGpu);
-    NvBool bIsModsVgpu          = IS_VIRTUAL(pGpu) && NV_IS_MODS;
+
+    NvBool bIsModsVgpu          = NV_FALSE;
+
     NvBool bIsVgpuRpcNeeded     = bIsModsVgpu || (IS_VIRTUAL(pGpu) &&
                                   !(IS_VIRTUAL_WITH_SRIOV(pGpu) && !bIsMIGEnabled &&
                                     kfifoIsPerRunlistChramEnabled(pKernelFifo)));
@@ -3038,8 +3064,12 @@ kchannelCtrlCmdGpfifoGetWorkSubmitToken_IMPL
         // GSP FW is not able to perform the notification, nor is MODS vGPU host,
         // so it still needs to be handled by the client/guest outside the RPC.
         //
-        if (rmStatus != NV_OK ||
-           (IS_VIRTUAL(pGpu) && !NV_IS_MODS))
+        if (rmStatus != NV_OK)
+        {
+            return rmStatus;
+        }
+
+        if (IS_VIRTUAL(pGpu))
         {
             return rmStatus;
         }
@@ -3072,11 +3102,6 @@ kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex_IMPL
 {
     NV_STATUS   rmStatus    = NV_OK;
     OBJGPU     *pGpu        = GPU_RES_GET_GPU(pKernelChannel);
-    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
-    NvBool bIsMIGEnabled    = IS_MIG_ENABLED(pGpu);
-    NvBool bIsVgpuRpcNeeded = IS_VIRTUAL(pGpu) &&
-                              !(IS_VIRTUAL_WITH_SRIOV(pGpu) && !bIsMIGEnabled &&
-                                kfifoIsPerRunlistChramEnabled(pKernelFifo));
 
     //
     // vGPU:
@@ -3089,7 +3114,12 @@ kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex_IMPL
     //
     // Notification is done in CPU-RM, so RPC is not made to FW-RM.
     //
-    if (!NV_IS_MODS && bIsVgpuRpcNeeded)
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    NvBool bIsMIGEnabled    = IS_MIG_ENABLED(pGpu);
+    NvBool bIsVgpuRpcNeeded = IS_VIRTUAL(pGpu) &&
+                              !(IS_VIRTUAL_WITH_SRIOV(pGpu) && !bIsMIGEnabled &&
+                                kfifoIsPerRunlistChramEnabled(pKernelFifo));
+    if (bIsVgpuRpcNeeded)
     {
         CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
@@ -3370,52 +3400,23 @@ _kchannelClearVAList
     NvBool           bUnmap
 )
 {
-    VA_LISTIter it;
-    NV_STATUS status;
-
     //
     // Subcontext handling
     // We need to unmap the mappings on all the subcontext, since the this call will be made only on one of the TSG channels.
     //
-    it = mapIterAll(pVaList);
-    while (mapIterNext(&it))
+    if (bUnmap)
     {
-        OBJVASPACE *pVAS = (OBJVASPACE *) NvP64_VALUE(mapKey(pVaList, it.pValue));
-        VA_INFO *pVaInfo;
-        NvU64 vaddr = 0, vaddrCached = 0;
+        OBJVASPACE *pVas;
+        NvU64 vAddr;
 
-        if (pVAS == NULL)
+        FOR_EACH_IN_VADDR_LIST(pVaList, pVas, vAddr)
         {
-            // Ignore the special node
-            continue;
+            dmaUnmapBuffer_HAL(pGpu, GPU_GET_DMA(pGpu), pVas, vAddr);
         }
-
-        pVaInfo     = (VA_INFO *)it.pValue;
-        vaddrCached =  pVaInfo->vAddr;
-
-        pVaInfo->refCnt = 1;
-
-        status = vaListRemoveVa(pVaList, pVAS);
-        NV_ASSERT(status == NV_OK);
-
-        status = vaListFindVa(pVaList, pVAS, &vaddr);
-        if (status != NV_OK)
-        {
-            if (status == NV_ERR_OBJECT_NOT_FOUND)
-                status = NV_OK;
-            else
-            {
-                NV_PRINTF(LEVEL_ERROR, "vaListFindVa failed with unexpected status = 0x%x\n", status);
-                NV_ASSERT(0);
-            }
-            it = mapIterAll(pVaList);
-
-            if (bUnmap)
-            {
-                dmaUnmapBuffer_HAL(pGpu, GPU_GET_DMA(pGpu), pVAS, vaddrCached);
-            }
-        }
+        FOR_EACH_IN_VADDR_LIST_END(pVaList, pVas, vAddr);
     }
+
+    vaListClear(pVaList);
 
     return NV_OK;
 }
@@ -3428,7 +3429,7 @@ _kchannelClearVAList
  *
  * @param[in] pGpu
  * @param[in] pKernelChannel
- * @param[in] engine
+ * @param[in] engDesc
  * @param[in] pMemDesc                the new memdesc to assign, or NULL to clear
  *
  * Returns: status
@@ -3438,7 +3439,7 @@ kchannelSetEngineContextMemDesc_IMPL
 (
     OBJGPU             *pGpu,
     KernelChannel      *pKernelChannel,
-    NvU32               engine,
+    NvU32               engDesc,
     MEMORY_DESCRIPTOR  *pMemDesc
 )
 {
@@ -3447,12 +3448,12 @@ kchannelSetEngineContextMemDesc_IMPL
     KernelChannelGroup *pKernelChannelGroup = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup;
 
     NV_PRINTF(LEVEL_INFO,
-              "ChID %x engine 0x%x pMemDesc %p\n",
-              kchannelGetDebugTag(pKernelChannel), engine, pMemDesc);
+              "ChID %x engDesc 0x%x pMemDesc %p\n",
+              kchannelGetDebugTag(pKernelChannel), engDesc, pMemDesc);
 
-    NV_ASSERT_OR_RETURN(engine != ENG_FIFO, NV_ERR_INVALID_PARAMETER);
+    NV_ASSERT_OR_RETURN(engDesc != ENG_FIFO, NV_ERR_INVALID_PARAMETER);
 
-    if (IS_GR(engine))
+    if (IS_GR(engDesc))
     {
         NV_ASSERT_OK_OR_RETURN(kchannelCheckBcStateCurrent(pGpu, pKernelChannel));
     }
@@ -3470,7 +3471,7 @@ kchannelSetEngineContextMemDesc_IMPL
 
     if (pEngCtxDesc != NULL)
     {
-        // Cleanup for the engine context that existed before
+        // Cleanup for the engDesc context that existed before
         if (pEngCtxDesc->pMemDesc != NULL)
         {
             memdescFree(pEngCtxDesc->pMemDesc);
@@ -3493,7 +3494,7 @@ kchannelSetEngineContextMemDesc_IMPL
         // Other cases where this is exercised are special cases like golden image init where ctx buffers are swapped,
         // control calls which force ctx buffer unmap, re-initializing of virtual ctxs, evicting a ctx, fifoStateDestroy etc.
         //
-        if(IS_GR(engine))
+        if(IS_GR(engDesc))
         {
             status = kchangrpFreeGrSubcontextHdrs_HAL(pGpu, pKernelChannelGroup);
         }
@@ -3531,7 +3532,7 @@ kchannelSetEngineContextMemDesc_IMPL
 
     // Assign the memdesc (or NULL)
     pEngCtxDesc->pMemDesc = pMemDesc;
-    pEngCtxDesc->engDesc = engine;
+    pEngCtxDesc->engDesc = engDesc;
 
     SLI_LOOP_END
 
@@ -3544,7 +3545,7 @@ fail:
  *
  * @param[in] pGpu
  * @param[in] pKernelChannel
- * @param[in] engine
+ * @param[in] engDesc
  *
  * Returns: status
  */
@@ -3553,19 +3554,19 @@ kchannelUnmapEngineCtxBuf_IMPL
 (
     OBJGPU             *pGpu,
     KernelChannel      *pKernelChannel,
-    NvU32               engine
+    NvU32               engDesc
 )
 {
     NV_STATUS status = NV_OK;
     ENGINE_CTX_DESCRIPTOR *pEngCtxDesc;
 
     NV_PRINTF(LEVEL_INFO,
-              "ChID %x engine 0x%x\n",
-              kchannelGetDebugTag(pKernelChannel), engine);
+              "ChID %x engDesc 0x%x\n",
+              kchannelGetDebugTag(pKernelChannel), engDesc);
 
-    NV_ASSERT_OR_RETURN(engine != ENG_FIFO, NV_ERR_INVALID_PARAMETER);
+    NV_ASSERT_OR_RETURN(engDesc != ENG_FIFO, NV_ERR_INVALID_PARAMETER);
 
-    if (IS_GR(engine))
+    if (IS_GR(engDesc))
     {
         NV_ASSERT_OK_OR_RETURN(kchannelCheckBcStateCurrent(pGpu, pKernelChannel));
     }
@@ -3635,7 +3636,7 @@ kchannelMapEngineCtxBuf_IMPL
 (
     OBJGPU      *pGpu,
     KernelChannel *pKernelChannel,
-    NvU32        engine
+    NvU32        engDesc
 )
 {
     OBJVASPACE            *pVAS           = NULL;
@@ -3646,17 +3647,17 @@ kchannelMapEngineCtxBuf_IMPL
     OBJGVASPACE           *pGVAS;
     KernelFifo            *pKernelFifo    = GPU_GET_KERNEL_FIFO(pGpu);
 
-    NV_ASSERT_OR_RETURN(engine != ENG_FIFO, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(engDesc != ENG_FIFO, NV_ERR_INVALID_ARGUMENT);
 
-    if (IS_GR(engine))
+    if (IS_GR(engDesc))
     {
         NV_ASSERT_OK_OR_RETURN(kchannelCheckBcStateCurrent(pGpu, pKernelChannel));
     }
 
-    NV_PRINTF(LEVEL_INFO, "ChID %d engine %s (0x%x) \n",
+    NV_PRINTF(LEVEL_INFO, "ChID %d engDesc %s (0x%x) \n",
               kchannelGetDebugTag(pKernelChannel),
-              kfifoGetEngineName_HAL(GPU_GET_KERNEL_FIFO(pGpu), ENGINE_INFO_TYPE_ENG_DESC, engine),
-              engine);
+              kfifoGetEngineName_HAL(GPU_GET_KERNEL_FIFO(pGpu), ENGINE_INFO_TYPE_ENG_DESC, engDesc),
+              engDesc);
 
     pVAS = pKernelChannel->pVAS;
     pGVAS = dynamicCast(pVAS, OBJGVASPACE);
@@ -3692,15 +3693,15 @@ kchannelMapEngineCtxBuf_IMPL
             goto fail;
         }
 
-        kfifoGetCtxBufferMapFlags_HAL(pGpu, pKernelFifo, engine, &flags);
+        kfifoGetCtxBufferMapFlags_HAL(pGpu, pKernelFifo, engDesc, &flags);
 
         status = dmaMapBuffer_HAL(pGpu, GPU_GET_DMA(pGpu), pVAS, pTempMemDesc, &addr,
             flags, DMA_UPDATE_VASPACE_FLAGS_NONE);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "Could not map context buffer for engine 0x%x\n",
-                      engine);
+                      "Could not map context buffer for engDesc 0x%x\n",
+                      engDesc);
             goto fail;
         }
         else
@@ -3750,6 +3751,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     Memory *pMemory;
     ContextDma *pContextDma;
     NvU32 addressSpace;
+    NvU64 notificationBufferSize;
     NV_STATUS status;
 
     hNotifier = pKernelChannel->hErrorContext;
@@ -3757,6 +3759,13 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     // Clobbering error notifier index is illegal
     NV_CHECK_OR_RETURN(LEVEL_INFO, index != NV_CHANNELGPFIFO_NOTIFICATION_TYPE_ERROR,
                      NV_ERR_INVALID_ARGUMENT);
+
+    // Check for integer overflows
+    if (((index + 1) < index) ||
+        !portSafeMulU64(index + 1, sizeof(NvNotification), &notificationBufferSize))
+    {
+        return NV_ERR_OUT_OF_RANGE;
+    }
 
     status = deviceGetByInstance(pClient, gpuGetDeviceInstance(pGpu), &pDevice);
     if (status != NV_OK)
@@ -3766,7 +3775,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     {
         addressSpace = memdescGetAddressSpace(pMemory->pMemDesc);
 
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pMemory->Length >= ((index + 1) * sizeof(NvNotification)),
+        NV_CHECK_OR_RETURN(LEVEL_INFO, pMemory->Length >= notificationBufferSize,
                          NV_ERR_OUT_OF_RANGE);
         switch (addressSpace)
         {
@@ -3784,7 +3793,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
                                          &pDmaMappingInfo),
                     NV_ERR_GENERIC);
 
-                NV_CHECK_OR_RETURN(LEVEL_INFO, pDmaMappingInfo->pMemDesc->Size >= ((index + 1) * sizeof(NvNotification)),
+                NV_CHECK_OR_RETURN(LEVEL_INFO, pDmaMappingInfo->pMemDesc->Size >= notificationBufferSize,
                                  NV_ERR_OUT_OF_RANGE);
                 break;
             }
@@ -3799,7 +3808,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
     }
     else if (NV_OK == ctxdmaGetByHandle(pClient, hNotifier, &pContextDma))
     {
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pContextDma->Limit >= (((index + 1) * sizeof(NvNotification)) - 1),
+        NV_CHECK_OR_RETURN(LEVEL_INFO, pContextDma->Limit >= (notificationBufferSize - 1),
                          NV_ERR_OUT_OF_RANGE);
     }
     else

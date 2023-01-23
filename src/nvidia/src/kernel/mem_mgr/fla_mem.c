@@ -368,10 +368,7 @@ delete_memory:
     memDestructCommon(pMemory);
 
 done_fbmem:
-    if (pMemDesc != NULL)
-    {
-        memdescDestroy(pMemDesc);
-    }
+    memdescDestroy(pMemDesc);
 
     // free the duped memory
     if (!bLoopback &&  pAllocParams->hExportHandle)

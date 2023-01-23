@@ -35,10 +35,6 @@
 // This is the storage required by a semaphore release.
 #define UVM_PUSH_CE_END_SIZE 24
 
-
-
-
-
 // The max amount of inline push data is limited by how much space can be jumped
 // over with a single NOOP method.
 #define UVM_PUSH_INLINE_DATA_MAX_SIZE (UVM_METHOD_COUNT_MAX * UVM_METHOD_SIZE)
@@ -52,11 +48,21 @@ typedef enum
     // By default all operations include a membar sys after any transfer and
     // before a semaphore operation.
     // This flag indicates that next operation should use no membar at all.
+    //
+    // For end of push semaphore release, this flag indicates that the push
+    // itself does not need a membar to be used (membar sys is the default). A
+    // membar may still be used, if needed to order the semaphore release
+    // write. See comments in uvm_channel_end_push().
     UVM_PUSH_FLAG_NEXT_MEMBAR_NONE,
 
     // By default all operations include a membar sys after any transfer and
     // before a semaphore operation.
     // This flag indicates that next operation should use a membar gpu instead.
+    //
+    // For end of push semaphore release, this flag indicates that the push
+    // itself only needs a membar gpu (the default is membar sys). A membar sys
+    // may still be used, if needed to order the semaphore release write. See
+    // comments in uvm_channel_end_push().
     UVM_PUSH_FLAG_NEXT_MEMBAR_GPU,
 
     UVM_PUSH_FLAG_COUNT,
@@ -190,6 +196,15 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
                                                         int line,
                                                         const char *format, ...);
 
+// Internal helper for uvm_push_begin_on_reserved channel
+__attribute__ ((format(printf, 7, 8)))
+NV_STATUS __uvm_push_begin_acquire_on_reserved_channel_with_info(uvm_channel_t *channel,
+                                                                 uvm_tracker_t *tracker,
+                                                                 uvm_push_t *push,
+                                                                 const char *filename,
+                                                                 const char *function,
+                                                                 int line,
+                                                                 const char *format, ...);
 // Begin a push on a channel of channel_type type
 // Picks the first available channel. If all channels of the given type are
 // busy, spin waits for one to become available.
@@ -197,20 +212,22 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
 // Notably requires a description of the push to be provided. This is currently
 // unused, but will be in the future for tracking push history.
 //
-// Locking: on success acquires the concurrent push semaphore until uvm_push_end()
+// Locking: on success acquires the concurrent push semaphore until
+//          uvm_push_end()
 #define uvm_push_begin(manager, type, push, format, ...)                      \
     __uvm_push_begin_acquire_with_info((manager), (type), NULL, NULL, (push), \
         __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
 
-// Begin a push on a channel of channel_type type with dependencies in the tracker
-// This is equivalent to starting a push and acquiring the tracker, but in the
-// future it will have the ability to pick the channel to do a push on in a
-// smarter way based on its dependencies.
+// Begin a push on a channel of channel_type type with dependencies in the
+// tracker. This is equivalent to starting a push and acquiring the tracker, but
+// in the future it will have the ability to pick the channel to do a push on in
+// a smarter way based on its dependencies.
 //
 // Same as for uvm_push_acquire_tracker(), the tracker can be NULL. In this case
 // this will be equivalent to just uvm_push_begin().
 //
-// Locking: on success acquires the concurrent push semaphore until uvm_push_end()
+// Locking: on success acquires the concurrent push semaphore until
+//          uvm_push_end()
 #define uvm_push_begin_acquire(manager, type, tracker, push, format, ...)          \
     __uvm_push_begin_acquire_with_info((manager), (type), NULL, (tracker), (push), \
         __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
@@ -231,9 +248,18 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
 // Begin a push on a specific channel
 // If the channel is busy, spin wait for it to become available.
 //
-// Locking: on success acquires the concurrent push semaphore until uvm_push_end()
+// Locking: on success acquires the concurrent push semaphore until
+//          uvm_push_end()
 #define uvm_push_begin_on_channel(channel, push, format, ...)                 \
     __uvm_push_begin_acquire_on_channel_with_info((channel), NULL, (push),    \
+        __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
+
+// Begin a push on a specific pre-reserved channel
+//
+// Locking: on success acquires the concurrent push semaphore until
+//          uvm_push_end()
+#define uvm_push_begin_on_reserved_channel(channel, push, format, ...)              \
+    __uvm_push_begin_acquire_on_reserved_channel_with_info((channel), NULL, (push), \
         __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
 
 // Same as uvm_push_begin_on_channel except it also acquires the input tracker

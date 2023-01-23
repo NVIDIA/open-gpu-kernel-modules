@@ -23,6 +23,8 @@
 #ifndef _NV_GMMU_FMT_H_
 #define _NV_GMMU_FMT_H_
 
+#include <ctrl/ctrl90f1.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -174,11 +176,6 @@ typedef struct GMMU_COMPR_INFO      GMMU_COMPR_INFO;
 #define GMMU_FMT_MAX_ENTRY_SIZE 16
 
 /*!
- * Maximum number of page levels across the supported formats.
- */
-#define GMMU_FMT_MAX_LEVELS 6
-
-/*!
  * Default version specifier for API args to indicate no preference.
  * This is not a real version number and not part of the
  * enumeration array below.
@@ -197,9 +194,14 @@ typedef struct GMMU_COMPR_INFO      GMMU_COMPR_INFO;
 #define GMMU_FMT_VERSION_2        2
 
 /*!
+ * 6-level (57b VA) format supported on Hopper+.
+ */
+#define GMMU_FMT_VERSION_3        3
+
+/*!
  * Maximum number of MMU versions supported.
  */
-#define GMMU_FMT_MAX_VERSION_COUNT 2
+#define GMMU_FMT_MAX_VERSION_COUNT 3
 
 /*!
  * Array of format version numbers for enumeration utility.

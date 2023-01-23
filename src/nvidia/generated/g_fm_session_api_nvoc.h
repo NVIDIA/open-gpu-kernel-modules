@@ -99,6 +99,7 @@ struct FmSessionApi {
     void (*__fmsessionapiAddAdditionalDependants__)(struct RsClient *, struct FmSessionApi *, RsResourceRef *);
     void (*__fmsessionapiPreDestruct__)(struct FmSessionApi *);
     NV_STATUS (*__fmsessionapiUnmapFrom__)(struct FmSessionApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__fmsessionapiIsDuplicate__)(struct FmSessionApi *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__fmsessionapiGetNotificationListPtr__)(struct FmSessionApi *);
     void (*__fmsessionapiControl_Epilogue__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__fmsessionapiGetNotificationShare__)(struct FmSessionApi *);
@@ -155,6 +156,7 @@ NV_STATUS __nvoc_objCreate_FmSessionApi(FmSessionApi**, Dynamic*, NvU32, struct 
 #define fmsessionapiAddAdditionalDependants(pClient, pResource, pReference) fmsessionapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define fmsessionapiPreDestruct(pResource) fmsessionapiPreDestruct_DISPATCH(pResource)
 #define fmsessionapiUnmapFrom(pResource, pParams) fmsessionapiUnmapFrom_DISPATCH(pResource, pParams)
+#define fmsessionapiIsDuplicate(pResource, hMemory, pDuplicate) fmsessionapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define fmsessionapiGetNotificationListPtr(pNotifier) fmsessionapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define fmsessionapiControl_Epilogue(pResource, pCallContext, pParams) fmsessionapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define fmsessionapiGetNotificationShare(pNotifier) fmsessionapiGetNotificationShare_DISPATCH(pNotifier)
@@ -241,6 +243,10 @@ static inline NV_STATUS fmsessionapiUnmapFrom_DISPATCH(struct FmSessionApi *pRes
     return pResource->__fmsessionapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS fmsessionapiIsDuplicate_DISPATCH(struct FmSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__fmsessionapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *fmsessionapiGetNotificationListPtr_DISPATCH(struct FmSessionApi *pNotifier) {
     return pNotifier->__fmsessionapiGetNotificationListPtr__(pNotifier);
 }
@@ -266,8 +272,10 @@ static inline NV_STATUS fmsessionapiGetOrAllocNotifShare_DISPATCH(struct FmSessi
 }
 
 NV_STATUS fmsessionapiConstruct_IMPL(struct FmSessionApi *arg_pFmSessionApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_fmsessionapiConstruct(arg_pFmSessionApi, arg_pCallContext, arg_pParams) fmsessionapiConstruct_IMPL(arg_pFmSessionApi, arg_pCallContext, arg_pParams)
 void fmsessionapiDestruct_IMPL(struct FmSessionApi *pFmSessionApi);
+
 #define __nvoc_fmsessionapiDestruct(pFmSessionApi) fmsessionapiDestruct_IMPL(pFmSessionApi)
 #undef PRIVATE_FIELD
 

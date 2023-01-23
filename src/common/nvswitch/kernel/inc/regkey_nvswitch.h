@@ -230,15 +230,6 @@
 #define NV_SWITCH_REGKEY_SOE_DISABLE_YES        0x1
 
 /*
- * NV_SWITCH_REGKEY_SOE_BOOT_CORE - Selects SOE core
- *
- * Public: Available in release drivers
- */
-#define NV_SWITCH_REGKEY_SOE_BOOT_CORE          "SoeBootCore"
-#define NV_SWITCH_REGKEY_SOE_BOOT_CORE_FALCON   0x0
-#define NV_SWITCH_REGKEY_SOE_BOOT_CORE_DEFAULT  0x2
-
-/*
  * NV_SWITCH_REGKEY_ENABLE_PM
  *
  * Used to optionally send the ENABLE_PM command to MINION on link training
@@ -332,6 +323,8 @@
 #define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_40G                0x0F
 #define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_50G                0x10
 #define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_53_12500G          0x11
+#define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_100_00000G         0x12
+#define NV_SWITCH_REGKEY_SPEED_CONTROL_SPEED_106_25000G         0x13
 
 /*
  * Enable/Disable periodic flush to inforom. Default is disabled.
@@ -409,11 +402,18 @@
  *
  * When the regkey is set to FALCON, the Nvswitch driver will run MINION on Falcon core.
  *
+ * If set to RISCV, the MINION will run on RISCV core in Non-Manifest Mode.
+ * If set to RISCV_MANIFEST, the MINION will run on RISCV core in Manifest Mode.
+ *
+ * In the default option, RISCV_BCR_CTRL register will be used to get the default core.
+ *
  * Private: Debug use only
  */
 #define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET                "MinionSetUcodeTarget"
 #define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET_DEFAULT        0x0
 #define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET_FALCON         0x1
+#define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET_RISCV          0x2
+#define NV_SWITCH_REGKEY_MINION_SET_UCODE_TARGET_RISCV_MANIFEST 0x3
 
 /*
  * NV_SWITCH_REGKEY_MINION_SET_SIMMODE - Selects simmode settings to send to MINION
@@ -500,13 +500,14 @@
 /*
  * NV_SWITCH_REGKEY_LINK_TRAINING_SELECT - Select the Link training to be done
  *
- * This regkey will
+ * For LS10, links can be trained via non-ALI or ALI training. This regkey will
  * allow for overriding System Defaults and can force either training method
  * when desired.
  */
-
 #define NV_SWITCH_REGKEY_LINK_TRAINING_SELECT           "LinkTrainingMode"
 #define NV_SWITCH_REGKEY_LINK_TRAINING_SELECT_DEFAULT   0x0
+#define NV_SWITCH_REGKEY_LINK_TRAINING_SELECT_NON_ALI   0x1
+#define NV_SWITCH_REGKEY_LINK_TRAINING_SELECT_ALI       0x2
 /*
  * NV_SWITCH_REGKEY_I2C_ACCESS_CONTROL - Enable access to all I2C Ports/Devices
  *
@@ -518,12 +519,22 @@
 #define NV_SWITCH_REGKEY_I2C_ACCESS_CONTROL_DISABLE        0x0
 
 /*
+ * NV_SWITCH_REGKEY_FORCE_KERNEL_I2C - Used to force Kernel I2C path
+ *
+ * Private: Debug use only
+ */
+#define NV_SWITCH_REGKEY_FORCE_KERNEL_I2C                "ForceKernelI2c"
+#define NV_SWITCH_REGKEY_FORCE_KERNEL_I2C_DEFAULT        0x0
+#define NV_SWITCH_REGKEY_FORCE_KERNEL_I2C_ENABLE         0x1
+#define NV_SWITCH_REGKEY_FORCE_KERNEL_I2C_DISABLE        0x0
+
+/*
  * NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT - Configure the CRC bit error rate for the short interrupt
  * 
  * Public: Available in release drivers
  */
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT                  "CRCBitErrorRateShort"
-#define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_OFF              0x0
+#define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_DEFAULT          0x0
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_MAN    2:0
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_THRESHOLD_EXP    3:3
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_SHORT_TIMESCALE_MAN    6:4
@@ -535,7 +546,7 @@
  * Public: Available in release drivers
  */
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG                       "CRCBitErrorRateLong"
-#define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_OFF                   0x000
+#define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_DEFAULT               0x000
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_BUG_3365481_CASE_1    0x803
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_BUG_3365481_CASE_2    0x703
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_BUG_3365481_CASE_5    0x34D
@@ -544,5 +555,69 @@
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_THRESHOLD_EXP         3:3
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_TIMESCALE_MAN         6:4
 #define NV_SWITCH_REGKEY_CRC_BIT_ERROR_RATE_LONG_TIMESCALE_EXP         12:8
+
+/*
+ * NV_SWITCH_REGKEY_SET_LP_THRESHOLD - Sets the LP Threshold Value
+ *
+ * Private: Debug use only
+ */
+#define NV_SWITCH_REGKEY_SET_LP_THRESHOLD                "LPThreshold"
+#define NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT        0x0
+
+/*
+ * NV_SWITCH_REGKEY_MINION_INTERRUPTS - Enable/disable MINION interrupts
+ * 
+ * Used for bug #3572329.  To be removed once fmodel conflict is resolved.
+ *
+ * Public: Available in release drivers
+ */
+#define NV_SWITCH_REGKEY_MINION_INTERRUPTS               "MINIONIntr"
+#define NV_SWITCH_REGKEY_MINION_INTERRUPTS_DEFAULT       0x0
+#define NV_SWITCH_REGKEY_MINION_INTERRUPTS_ENABLE        0x1
+#define NV_SWITCH_REGKEY_MINION_INTERRUPTS_DISABLE       0x2
+
+/*
+ * NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET - surpresses error prints/notifs
+ *
+ * When set, Heartbeat timeout, Short Error Rate and Fault Up interrupts won't be
+ * logged
+ *
+ * Public: Available in release drivers
+ */
+
+#define NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET    "SurpressLinkErrorsForGpuReset"
+#define NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET_DISABLE   0x0
+#define NV_SWITCH_REGKEY_SURPRESS_LINK_ERRORS_FOR_GPU_RESET_ENABLE    0x1
+
+/*
+ * NV_SWITCH_REGKEY_BLOCK_CODE_MODE - Indicates the Forward Error Correction Mode
+ *
+ * Forward Error Correction Mode (Pre-HS).
+ * DEFAULT = System Default
+ * OFF = 0x0
+ * ECC96_ENABLED = 0x1
+ * ECC88_ENABLED = 0x2
+ */
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE                   "BlockCodeMode"
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE_DEFAULT           0x0
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE_OFF               0x0
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE_ECC96_ENABLED     0x1
+#define NV_SWITCH_REGKEY_BLOCK_CODE_MODE_ECC88_ENABLED     0x2
+
+/*
+ * NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE - Indicates the reference clock mode for 
+ * the system w.r.t. this link.
+ *
+ * DEFAULT = System Default
+ * COMMON = Common reference clock. Spread Spectrum (SS) may or may not be enabled.
+ * NON_COMMON_NO_SS = Non-common reference clock without SS enabled.
+ * NON_COMMON_SS = Non-common reference clock with SS enabled.
+ */
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE                   "ReferenceClockMode"
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_DEFAULT           0x0
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_COMMON            0x0
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_RESERVED          0x1
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_NON_COMMON_NO_SS  0x2
+#define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_NON_COMMON_SS     0x3
 
 #endif //_REGKEY_NVSWITCH_H_

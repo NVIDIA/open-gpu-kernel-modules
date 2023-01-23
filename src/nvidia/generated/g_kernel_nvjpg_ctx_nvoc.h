@@ -83,6 +83,7 @@ struct NvjpgContext {
     NV_STATUS (*__nvjpgctxUnregisterEvent__)(struct NvjpgContext *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__nvjpgctxCanCopy__)(struct NvjpgContext *);
     void (*__nvjpgctxPreDestruct__)(struct NvjpgContext *);
+    NV_STATUS (*__nvjpgctxIsDuplicate__)(struct NvjpgContext *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__nvjpgctxGetNotificationListPtr__)(struct NvjpgContext *);
     struct NotifShare *(*__nvjpgctxGetNotificationShare__)(struct NvjpgContext *);
     NV_STATUS (*__nvjpgctxMap__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -142,11 +143,13 @@ NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct 
 #define nvjpgctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) nvjpgctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define nvjpgctxCanCopy(pResource) nvjpgctxCanCopy_DISPATCH(pResource)
 #define nvjpgctxPreDestruct(pResource) nvjpgctxPreDestruct_DISPATCH(pResource)
+#define nvjpgctxIsDuplicate(pResource, hMemory, pDuplicate) nvjpgctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define nvjpgctxGetNotificationListPtr(pNotifier) nvjpgctxGetNotificationListPtr_DISPATCH(pNotifier)
 #define nvjpgctxGetNotificationShare(pNotifier) nvjpgctxGetNotificationShare_DISPATCH(pNotifier)
 #define nvjpgctxMap(pGpuResource, pCallContext, pParams, pCpuMapping) nvjpgctxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define nvjpgctxGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) nvjpgctxGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NV_STATUS nvjpgctxConstructHal_KERNEL(struct NvjpgContext *pNvjpgContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 
 #ifdef __nvoc_kernel_nvjpg_ctx_h_disabled
 static inline NV_STATUS nvjpgctxConstructHal(struct NvjpgContext *pNvjpgContext, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -160,6 +163,7 @@ static inline NV_STATUS nvjpgctxConstructHal(struct NvjpgContext *pNvjpgContext,
 #define nvjpgctxConstructHal_HAL(pNvjpgContext, pCallContext, pParams) nvjpgctxConstructHal(pNvjpgContext, pCallContext, pParams)
 
 void nvjpgctxDestructHal_KERNEL(struct NvjpgContext *pNvjpgContext);
+
 
 #ifdef __nvoc_kernel_nvjpg_ctx_h_disabled
 static inline void nvjpgctxDestructHal(struct NvjpgContext *pNvjpgContext) {
@@ -269,6 +273,10 @@ static inline NvBool nvjpgctxCanCopy_DISPATCH(struct NvjpgContext *pResource) {
 
 static inline void nvjpgctxPreDestruct_DISPATCH(struct NvjpgContext *pResource) {
     pResource->__nvjpgctxPreDestruct__(pResource);
+}
+
+static inline NV_STATUS nvjpgctxIsDuplicate_DISPATCH(struct NvjpgContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__nvjpgctxIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline PEVENTNOTIFICATION *nvjpgctxGetNotificationListPtr_DISPATCH(struct NvjpgContext *pNotifier) {

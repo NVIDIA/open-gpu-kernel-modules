@@ -75,6 +75,7 @@ struct GpuManagementApi {
     NV_STATUS (*__gpumgmtapiMapTo__)(struct GpuManagementApi *, RS_RES_MAP_TO_PARAMS *);
     void (*__gpumgmtapiPreDestruct__)(struct GpuManagementApi *);
     NV_STATUS (*__gpumgmtapiUnmapFrom__)(struct GpuManagementApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__gpumgmtapiIsDuplicate__)(struct GpuManagementApi *, NvHandle, NvBool *);
     void (*__gpumgmtapiControl_Epilogue__)(struct GpuManagementApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__gpumgmtapiControlLookup__)(struct GpuManagementApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__gpumgmtapiMap__)(struct GpuManagementApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -124,6 +125,7 @@ NV_STATUS __nvoc_objCreate_GpuManagementApi(GpuManagementApi**, Dynamic*, NvU32,
 #define gpumgmtapiMapTo(pResource, pParams) gpumgmtapiMapTo_DISPATCH(pResource, pParams)
 #define gpumgmtapiPreDestruct(pResource) gpumgmtapiPreDestruct_DISPATCH(pResource)
 #define gpumgmtapiUnmapFrom(pResource, pParams) gpumgmtapiUnmapFrom_DISPATCH(pResource, pParams)
+#define gpumgmtapiIsDuplicate(pResource, hMemory, pDuplicate) gpumgmtapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define gpumgmtapiControl_Epilogue(pResource, pCallContext, pParams) gpumgmtapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define gpumgmtapiControlLookup(pResource, pParams, ppEntry) gpumgmtapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define gpumgmtapiMap(pResource, pCallContext, pParams, pCpuMapping) gpumgmtapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -190,6 +192,10 @@ static inline NV_STATUS gpumgmtapiUnmapFrom_DISPATCH(struct GpuManagementApi *pR
     return pResource->__gpumgmtapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS gpumgmtapiIsDuplicate_DISPATCH(struct GpuManagementApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__gpumgmtapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void gpumgmtapiControl_Epilogue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__gpumgmtapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -207,8 +213,10 @@ static inline NvBool gpumgmtapiAccessCallback_DISPATCH(struct GpuManagementApi *
 }
 
 NV_STATUS gpumgmtapiConstruct_IMPL(struct GpuManagementApi *arg_pGpuMgmt, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_gpumgmtapiConstruct(arg_pGpuMgmt, arg_pCallContext, arg_pParams) gpumgmtapiConstruct_IMPL(arg_pGpuMgmt, arg_pCallContext, arg_pParams)
 void gpumgmtapiDestruct_IMPL(struct GpuManagementApi *pGpuMgmt);
+
 #define __nvoc_gpumgmtapiDestruct(pGpuMgmt) gpumgmtapiDestruct_IMPL(pGpuMgmt)
 #undef PRIVATE_FIELD
 

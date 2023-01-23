@@ -150,9 +150,7 @@ typedef struct NvSyncPointFenceRec {
 |*                                                                           *|
  \***************************************************************************/
 
-#if !defined(XAPIGEN)   /* NvOffset is XAPIGEN builtin type, so skip typedef */
 typedef NvU64           NvOffset; /* GPU address                             */
-#endif
 
 #define NvOffset_HI32(n)  ((NvU32)(((NvU64)(n)) >> 32))
 #define NvOffset_LO32(n)  ((NvU32)((NvU64)(n)))

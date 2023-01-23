@@ -110,5 +110,4 @@ extern NVHDMIPKT_RESULT hdmiClearFRLConfigDummy(NVHDMIPKT_CLASS    *pThis,
                                                 NvU32               subDevice,
                                                 NvU32               displayId);
 
-
 #endif //_NVHDMIPKT_COMMON_H_

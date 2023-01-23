@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl30f1.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV30_GSYNC_CTRL control commands and parameters */
 

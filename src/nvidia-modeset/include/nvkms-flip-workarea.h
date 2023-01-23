@@ -41,9 +41,6 @@ struct NvKmsFlipWorkArea {
 
             NVFlipEvoHwState newState;
             NVFlipEvoHwState oldState;
-
-            NvU32 oldAccelerators;
-            NvBool accelerated;
         } head[NVKMS_MAX_HEADS_PER_DISP];
     } sd[NVKMS_MAX_SUBDEVICES];
 };

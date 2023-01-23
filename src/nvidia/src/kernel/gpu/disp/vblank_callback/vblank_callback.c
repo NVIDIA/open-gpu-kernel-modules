@@ -136,16 +136,21 @@ vblcbCtrlSetVBlankNotification_IMPL
     NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION_PARAMS *pParams
 )
 {
-    NV_STATUS status = NV_ERR_INVALID_ARGUMENT;
+    OBJGPU        *pGpu           = GPU_RES_GET_GPU(pVblankCallback);
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    KernelHead    *pKernelHead    = KDISP_GET_HEAD(pKernelDisplay, pVblankCallback->LogicalHead);
+    NV_STATUS      status         = NV_ERR_INVALID_ARGUMENT;
     if (pVblankCallback->CallBack.Proc != NULL)
     {
         if (pParams->bSetVBlankNotifyEnable)
         {
             pVblankCallback->CallBack.bIsVblankNotifyEnable = NV_TRUE;
+            kheadAddVblankCallback(pGpu, pKernelHead, &pVblankCallback->CallBack);
         }
         else
         {
             pVblankCallback->CallBack.bIsVblankNotifyEnable = NV_FALSE;
+            kheadDeleteVblankCallback(pGpu, pKernelHead, &pVblankCallback->CallBack);
         }
         status = NV_OK;
     }

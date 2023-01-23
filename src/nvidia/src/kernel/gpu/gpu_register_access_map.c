@@ -28,6 +28,7 @@
 #include "lib/base_utils.h"
 #include "lib/zlib/inflate.h"
 #include "nvRmReg.h"
+#include "virtualization/hypervisor/hypervisor.h"
 
 /**
  * @brief Changes the user-space permissions for a given register address range
@@ -173,6 +174,15 @@ gpuGetUserRegisterAccessPermissions_IMPL(OBJGPU *pGpu, NvU32 offset)
 
 static NvBool _getIsProfilingPrivileged(OBJGPU *pGpu)
 {
+    // On a vGPU Host, RmProfilingAdminOnly is always set to 1
+    if (hypervisorIsVgxHyper())
+    {
+        //
+        // Setting the value at this point to make the behavior same for
+        // debug/develop/release drivers on vGPU host.
+        //
+        return NV_TRUE;
+    }
 #if defined(DEBUG) || defined(DEVELOP)
     return NV_FALSE;
 #else

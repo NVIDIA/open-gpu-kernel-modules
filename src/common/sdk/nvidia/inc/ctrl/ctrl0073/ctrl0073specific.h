@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,9 +29,6 @@
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file: ctrl/ctrl0073/ctrl0073specific.finn
 //
-
-
-
 
 #include "ctrl/ctrl0073/ctrl0073base.h"
 
@@ -577,7 +574,48 @@ typedef struct NV0073_CTRL_SPECIFIC_ACPI_ID_MAPPING {
     NvU32 dodIndex;
 } NV0073_CTRL_SPECIFIC_ACPI_ID_MAPPING;
 
+/*
+ * NV0073_CTRL_CMD_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT
+ *
+ * This call will return the Display Port Attachment value
+ * per displayID as defined by Nvidia that is directly
+ * associated with the ACPI 3.0 _DOD entry's Display Port
+ * Attachment field.  This should help clients map the
+ * _DOD ACPI ID to each displayID. Note, that some systems
+ * do not have a standard in place for this field.  On those
+ * systems, the RM will return NV_ERR_NOT_SUPPORTED.
+ *
+ * Note that this "Display Port" attachment field has nothing
+ * to do with DisplayPort/DP.  It's an unfortunate name inside
+ * the ACPI 3.0 spec that coincides with the name of DisplayPort.
+ *
+ *
+ * Possible status values returned are:
+ * NV_OK
+ * NV_ERR_INVALID_PARAM_STRUCT
+ * NV_ERR_NOT_SUPPORTED
+ *
+*/
 
+#define NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS_MESSAGE_ID (0x85U)
+
+typedef struct NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 dispPortAttachment;
+} NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS;
+
+
+#define NV0073_CTRL_CMD_SPECIFIC_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT (0x730285U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS_MESSAGE_ID" */
+
+// defines for dispPortAttachment
+#define NV0073_DISPLAY_PORT_ATTACHMENT_ANALOG                         (0x00000000U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_LVDS                           (0x00000001U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_DP_A                           (0x00000002U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_DP_B                           (0x00000003U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_DP_C                           (0x00000004U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_DP_D                           (0x00000005U)
+#define NV0073_DISPLAY_PORT_ATTACHMENT_UNKNOWN                        (0xFFFFFFFFU)
 
 /*
  * NV0073_CTRL_CMD_SPECIFIC_SET_ACPI_ID_MAPPING
@@ -1789,5 +1827,83 @@ typedef struct NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS {
     NvU32 targetHeadIndex;
     NvU32 infoframeIndex;
 } NV0073_CTRL_SPECIFIC_RELEASE_SHARED_GENERIC_PACKET_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_DISP_I2C_READ_WRITE
+ *
+ * This command is used to do I2C R/W to slave on display i2c instance.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   i2cPort
+ *      This parameter specifies the I2C CCB port ID.
+ *   i2cSlaveAddress
+ *      This parameter specifies the I2C slave address.
+ *   readWriteFlag
+ *      This parameter specifies whether its read/write operation.
+ *   readWriteLen
+ *      This parameter specifies the length of the read/write buffer
+ *   readBuffer
+ *      This parameter reads the data from slave address and copies to this
+ *      buffer
+ *   writeBuffer
+ *      This parameter specifies this buffer data that would be written to
+ *      slave address
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV0073_CTRL_CMD_SPECIFIC_DISP_I2C_READ_WRITE     (0x7302acU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN 128U
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS_MESSAGE_ID (0xACU)
+
+typedef struct NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 i2cPort;
+    NvU32 i2cSlaveAddress;
+    NvU32 readWriteFlag;
+    NvU32 readWriteLen;
+    NvU8  readBuffer[NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN];
+    NvU8  writeBuffer[NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_BUF_LEN];
+} NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_READ_MODE                   (0x00000001)
+#define NV0073_CTRL_SPECIFIC_DISP_I2C_WRITE_MODE                  (0x00000000)
+
+/*
+ * NV0073_CTRL_CMD_GET_VALID_HEAD_WINDOW_ASSIGNMENT
+ *
+ * This command returns the valid window head assignment mask
+ *
+ * windowHeadMask [out]
+ *   This out parameter is an array which holds the head mask for
+ *   each window. The Nth element in the array would be a bitmask
+ *   of which heads can possibly drive window N.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_GENERIC
+ */
+#define NV0073_CTRL_CMD_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT (0x7302ad) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_MAX_WINDOWS                          32U
+#define NV0073_CTRL_SPECIFIC_FLEXIBLE_HEAD_WINDOW_ASSIGNMENT      (0xFFU)
+
+#define NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS_MESSAGE_ID (0xADU)
+
+typedef struct NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU8  windowHeadMask[NV0073_CTRL_SPECIFIC_MAX_WINDOWS];
+} NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS;
 
 /* _ctrl0073specific_h_ */

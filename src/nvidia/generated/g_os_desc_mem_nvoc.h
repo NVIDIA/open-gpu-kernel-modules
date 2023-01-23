@@ -66,9 +66,11 @@ struct OsDescMemory {
     NvU32 (*__osdescGetRefCount__)(struct OsDescMemory *);
     NV_STATUS (*__osdescMapTo__)(struct OsDescMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__osdescControl_Prologue__)(struct OsDescMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__osdescIsReady__)(struct OsDescMemory *);
+    NvBool (*__osdescIsGpuMapAllowed__)(struct OsDescMemory *, struct OBJGPU *);
+    NV_STATUS (*__osdescIsReady__)(struct OsDescMemory *, NvBool);
     NV_STATUS (*__osdescCheckCopyPermissions__)(struct OsDescMemory *, struct OBJGPU *, NvHandle);
     void (*__osdescPreDestruct__)(struct OsDescMemory *);
+    NV_STATUS (*__osdescIsDuplicate__)(struct OsDescMemory *, NvHandle, NvBool *);
     NV_STATUS (*__osdescUnmapFrom__)(struct OsDescMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__osdescControl_Epilogue__)(struct OsDescMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__osdescControlLookup__)(struct OsDescMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -117,9 +119,11 @@ NV_STATUS __nvoc_objCreate_OsDescMemory(OsDescMemory**, Dynamic*, NvU32, CALL_CO
 #define osdescGetRefCount(pResource) osdescGetRefCount_DISPATCH(pResource)
 #define osdescMapTo(pResource, pParams) osdescMapTo_DISPATCH(pResource, pParams)
 #define osdescControl_Prologue(pResource, pCallContext, pParams) osdescControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define osdescIsReady(pMemory) osdescIsReady_DISPATCH(pMemory)
+#define osdescIsGpuMapAllowed(pMemory, pGpu) osdescIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define osdescIsReady(pMemory, bCopyConstructorContext) osdescIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define osdescCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) osdescCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define osdescPreDestruct(pResource) osdescPreDestruct_DISPATCH(pResource)
+#define osdescIsDuplicate(pMemory, hMemory, pDuplicate) osdescIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define osdescUnmapFrom(pResource, pParams) osdescUnmapFrom_DISPATCH(pResource, pParams)
 #define osdescControl_Epilogue(pResource, pCallContext, pParams) osdescControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define osdescControlLookup(pResource, pParams, ppEntry) osdescControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -179,8 +183,12 @@ static inline NV_STATUS osdescControl_Prologue_DISPATCH(struct OsDescMemory *pRe
     return pResource->__osdescControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS osdescIsReady_DISPATCH(struct OsDescMemory *pMemory) {
-    return pMemory->__osdescIsReady__(pMemory);
+static inline NvBool osdescIsGpuMapAllowed_DISPATCH(struct OsDescMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__osdescIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS osdescIsReady_DISPATCH(struct OsDescMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__osdescIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS osdescCheckCopyPermissions_DISPATCH(struct OsDescMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -189,6 +197,10 @@ static inline NV_STATUS osdescCheckCopyPermissions_DISPATCH(struct OsDescMemory 
 
 static inline void osdescPreDestruct_DISPATCH(struct OsDescMemory *pResource) {
     pResource->__osdescPreDestruct__(pResource);
+}
+
+static inline NV_STATUS osdescIsDuplicate_DISPATCH(struct OsDescMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__osdescIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS osdescUnmapFrom_DISPATCH(struct OsDescMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -212,6 +224,7 @@ static inline NvBool osdescAccessCallback_DISPATCH(struct OsDescMemory *pResourc
 }
 
 NV_STATUS osdescConstruct_IMPL(struct OsDescMemory *arg_pOsDescMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_osdescConstruct(arg_pOsDescMemory, arg_pCallContext, arg_pParams) osdescConstruct_IMPL(arg_pOsDescMemory, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

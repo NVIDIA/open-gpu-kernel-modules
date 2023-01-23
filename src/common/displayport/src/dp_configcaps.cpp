@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,8 +40,6 @@ struct DPCDHALImpl : DPCDHAL
     AuxRetry  bus;
     Timer    * timer;
     bool      dpcdOffline;
-    bool      gpuDP1_2Supported;
-    bool      gpuDP1_4Supported;
     bool      bGrantsPostLtRequest;
     bool      pc2Disabled;
     bool      uprequestEnable;
@@ -53,6 +51,8 @@ struct DPCDHALImpl : DPCDHAL
     NvU32     overrideDpcdMaxLinkRate;
     NvU32     overrideDpcdRev;
     NvU32     overrideDpcdMaxLaneCount;
+
+    NvU32     gpuDPSupportedVersions;
 
     struct _LegacyPort: public LegacyPort
     {
@@ -226,8 +226,6 @@ struct DPCDHALImpl : DPCDHAL
     DPCDHALImpl(AuxBus * bus, Timer * timer)
     : bus(bus),
     timer(timer),
-    gpuDP1_2Supported(false),
-    gpuDP1_4Supported(false),
     bGrantsPostLtRequest(false),
     uprequestEnable(false),
     upstreamIsSource(false),
@@ -235,7 +233,8 @@ struct DPCDHALImpl : DPCDHAL
     bGpuFECSupported(false),
     bBypassILREdpRevCheck(false),
     overrideDpcdMaxLinkRate(0),
-    overrideDpcdRev(0)
+    overrideDpcdRev(0),
+    gpuDPSupportedVersions(0)
     {
         // start with default caps.
         populateFakeDpcd();
@@ -390,8 +389,9 @@ struct DPCDHALImpl : DPCDHAL
         {
             DP_ASSERT(0 && "A DPRX with DPCD Rev. 1.4 (or higher) must have Extended Receiver Capability field.");
         }
-
-        caps.supportsESI = (isAtLeastVersion(1,2) && gpuDP1_2Supported);     // Support ESI register space only when GPU support DP1.2MST
+        // Support ESI register space only when GPU support DP1.2MST
+        caps.supportsESI = (isAtLeastVersion(1,2) &&
+                            FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED, _DP1_2, _YES, gpuDPSupportedVersions));
 
         if (caps.eDpRevision >= NV_DPCD_EDP_REV_VAL_1_4 || this->bBypassILREdpRevCheck)
         {
@@ -454,7 +454,9 @@ struct DPCDHALImpl : DPCDHAL
             DP_ASSERT(0 && "A DPRX with DPCD Rev. 1.1 (or higher) must have enhanced framing capability.");
         }
 
-        if (isAtLeastVersion(1,2) && gpuDP1_2Supported && caps.bPostLtAdjustmentSupport)
+        if (isAtLeastVersion(1,2) &&
+            FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED, _DP1_2, _YES, gpuDPSupportedVersions) &&
+            caps.bPostLtAdjustmentSupport)
         {
             // Source grants post Link training adjustment support
             bGrantsPostLtRequest = true;
@@ -861,6 +863,42 @@ struct DPCDHALImpl : DPCDHAL
         return bus.write(NV_DPCD_SOURCE_IEEE_OUI, &ouiBuffer[0], sizeof ouiBuffer);
     }
 
+    virtual bool getOuiSource(unsigned &ouiId, char * modelName,
+                              size_t modelNameBufferSize, NvU8 & chipRevision)
+    {
+        NvU8 ouiBuffer[16];
+        int address = NV_DPCD_SOURCE_IEEE_OUI;
+
+        if (caps.revisionMajor <= 0)
+            DP_ASSERT(0 && "Something is wrong, revision major should be > 0");
+
+        // If buffer size is larger than dev_id size, the extras are not used.
+        // If buffer size is smaller, than we can only get certain bytes.
+        if (modelNameBufferSize > NV_DPCD_SOURCE_DEV_ID_STRING__SIZE)
+        {
+            modelNameBufferSize = NV_DPCD_SOURCE_DEV_ID_STRING__SIZE;
+        }
+
+        if (AuxRetry::ack != bus.read(address, &ouiBuffer[0], sizeof ouiBuffer))
+        {
+            *modelName = 0;
+            ouiId = 0;
+            chipRevision = 0;
+            return false;
+        }
+        //  The first 3 bytes are IEEE_OUI. 2 hex digits per register.
+        ouiId = ouiBuffer[0] | (ouiBuffer[1] << 8) | (ouiBuffer[2] << 16);
+
+        // Next 6 bytes are Device Identification String, copy as much as we can (limited buffer case).
+        unsigned int i;
+        for (i = 0; i < modelNameBufferSize; i++)
+            modelName[i] = ouiBuffer[3+i];
+
+        chipRevision = ouiBuffer[9];
+
+        return true;
+    }
+
     virtual bool getOuiSink(unsigned &ouiId, char * modelName, size_t modelNameBufferSize, NvU8 & chipRevision)
     {
         NvU8 ouiBuffer[16];
@@ -1033,6 +1071,9 @@ struct DPCDHALImpl : DPCDHAL
                                 caps.pconCaps.maxBpc = 8;
                                 break;
                         }
+
+                        NvU8    pConColorConvCaps   = basicCaps[infoByte0+3];
+                        caps.pconCaps.bConv444To420Supported = FLD_TEST_DRF(_DPCD, _DETAILED_CAP, _CONV_YCBCR444_TO_YCBCR420_SUPPORTED, _YES, pConColorConvCaps);
                         break;
                     }
                 case NV_DPCD_DETAILED_CAP_INFO_DWNSTRM_PORT_TX_TYPE_OTHERS_NO_EDID:
@@ -1231,7 +1272,8 @@ struct DPCDHALImpl : DPCDHAL
         // If the upstream DPTX and downstream DPRX both support TPS4,
         // TPS4 shall be used instead of POST_LT_ADJ_REQ.
         //
-        NvBool bTps4Supported = gpuDP1_4Supported && caps.bSupportsTPS4;
+        NvBool bTps4Supported = FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED, _DP1_4, _YES, gpuDPSupportedVersions) &&
+                                caps.bSupportsTPS4;
         return bGrantsPostLtRequest && !bTps4Supported;
     }
 
@@ -2559,13 +2601,16 @@ struct DPCDHALImpl : DPCDHAL
         return caps.supportsMultistream;
     }
 
-    void setGpuDPSupportedVersions(bool supportDp1_2, bool supportDp1_4)
+    void setGpuDPSupportedVersions(NvU32 _gpuDPSupportedVersions)
     {
-        if (supportDp1_4)
-            DP_ASSERT(supportDp1_2 && "GPU supports DP1.4 should also support DP1.2!");
+        bool bSupportDp1_2 = FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED, _DP1_2, _YES, gpuDPSupportedVersions);
+        bool bSupportDp1_4 = FLD_TEST_DRF(0073_CTRL_CMD_DP, _GET_CAPS_DP_VERSIONS_SUPPORTED, _DP1_4, _YES, gpuDPSupportedVersions);
+        if (bSupportDp1_4)
+        {
+            DP_ASSERT(bSupportDp1_2 && "GPU supports DP1.4 should also support DP1.2!");
+        }
 
-        gpuDP1_2Supported = supportDp1_2;
-        gpuDP1_4Supported = supportDp1_4;
+        gpuDPSupportedVersions = _gpuDPSupportedVersions;
     }
 
     void setGpuFECSupported(bool bSupportFEC)

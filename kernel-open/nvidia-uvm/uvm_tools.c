@@ -218,7 +218,7 @@ static void uvm_put_user_pages_dirty(struct page **pages, NvU64 page_count)
 
     for (i = 0; i < page_count; i++) {
         set_page_dirty(pages[i]);
-        put_page(pages[i]);
+        NV_UNPIN_USER_PAGE(pages[i]);
     }
 }
 
@@ -262,7 +262,7 @@ static NV_STATUS map_user_pages(NvU64 user_va, NvU64 size, void **addr, struct p
     }
 
     nv_mmap_read_lock(current->mm);
-    ret = NV_GET_USER_PAGES(user_va, num_pages, 1, 0, *pages, vmas);
+    ret = NV_PIN_USER_PAGES(user_va, num_pages, FOLL_WRITE, *pages, vmas);
     nv_mmap_read_unlock(current->mm);
     if (ret != num_pages) {
         status = NV_ERR_INVALID_ARGUMENT;
@@ -1114,6 +1114,19 @@ void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
     info->tag                 = buffer_entry->tag;
 
     uvm_tools_broadcast_event(&entry);
+}
+
+void uvm_tools_test_hmm_split_invalidate(uvm_va_space_t *va_space)
+{
+    UvmEventEntry entry;
+
+    if (!va_space->tools.enabled)
+        return;
+
+    entry.testEventData.splitInvalidate.eventType = UvmEventTypeTestHmmSplitInvalidate;
+    uvm_down_read(&va_space->tools.lock);
+    uvm_tools_record_event(va_space, &entry);
+    uvm_up_read(&va_space->tools.lock);
 }
 
 // This function is used as a begin marker to group all migrations within a VA
@@ -2101,8 +2114,7 @@ exit:
 
     uvm_global_mask_release(retained_global_gpus);
 
-    if (mm)
-        uvm_va_space_mm_or_current_release(va_space, mm);
+    uvm_va_space_mm_or_current_release(va_space, mm);
 
     uvm_kvfree(global_gpus);
     uvm_kvfree(retained_global_gpus);
@@ -2192,7 +2204,7 @@ NV_STATUS uvm_api_tools_get_processor_uuid_table(UVM_TOOLS_GET_PROCESSOR_UUID_TA
     return NV_OK;
 }
 
-void uvm_tools_flush_events()
+void uvm_tools_flush_events(void)
 {
     tools_schedule_completed_events();
 

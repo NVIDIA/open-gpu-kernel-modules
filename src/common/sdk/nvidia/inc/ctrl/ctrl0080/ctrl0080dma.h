@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0080/ctrl0080dma.finn
 //
 
-
-
-
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
 /* NV01_DEVICE_XX/NV03_DEVICE dma control commands and parameters */
@@ -699,7 +696,7 @@ typedef struct NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS {
     NvU32    flags;
     NV_DECLARE_ALIGNED(NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS ptParams[NV0080_CTRL_DMA_UPDATE_PDE_2_PT_IDX__SIZE], 8);
     NvHandle hVASpace;
-    NV_DECLARE_ALIGNED(NvP64 pPdeBuffer, 8); // NV_MMU_VER2_PDE__SIZE
+    NV_DECLARE_ALIGNED(NvP64 pPdeBuffer, 8); // NV_MMU_VER2_DUAL_PDE__SIZE
     NvU32    subDeviceId; // ID+1, 0 for BC
 } NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS;
 

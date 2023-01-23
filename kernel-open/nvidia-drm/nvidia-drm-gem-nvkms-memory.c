@@ -95,7 +95,7 @@ static vm_fault_t __nv_drm_gem_nvkms_handle_vma_fault(
         pfn >>= PAGE_SHIFT;
         pfn += page_offset;
     } else {
-        BUG_ON(page_offset > nv_nvkms_memory->pages_count);
+        BUG_ON(page_offset >= nv_nvkms_memory->pages_count);
         pfn = page_to_pfn(nv_nvkms_memory->pages[page_offset]);
     }
 
@@ -285,11 +285,13 @@ int nv_drm_dumb_create(
     if (nv_dev->hasVideoMemory) {
         pMemory = nvKms->allocateVideoMemory(nv_dev->pDevice,
                                              NvKmsSurfaceMemoryLayoutPitch,
+                                             NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
                                              args->size,
                                              &compressible);
     } else {
         pMemory = nvKms->allocateSystemMemory(nv_dev->pDevice,
                                               NvKmsSurfaceMemoryLayoutPitch,
+                                              NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT,
                                               args->size,
                                               &compressible);
     }
@@ -441,6 +443,7 @@ int nv_drm_gem_alloc_nvkms_memory_ioctl(struct drm_device *dev,
     struct nv_drm_gem_nvkms_memory *nv_nvkms_memory = NULL;
     struct NvKmsKapiMemory *pMemory;
     enum NvKmsSurfaceMemoryLayout layout;
+    enum NvKmsKapiAllocationType type;
     int ret = 0;
 
     if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
@@ -449,6 +452,7 @@ int nv_drm_gem_alloc_nvkms_memory_ioctl(struct drm_device *dev,
     }
 
     if (p->__pad != 0) {
+        ret = -EINVAL;
         NV_DRM_DEV_LOG_ERR(nv_dev, "non-zero value in padding field");
         goto failed;
     }
@@ -461,15 +465,19 @@ int nv_drm_gem_alloc_nvkms_memory_ioctl(struct drm_device *dev,
 
     layout = p->block_linear ?
         NvKmsSurfaceMemoryLayoutBlockLinear : NvKmsSurfaceMemoryLayoutPitch;
+    type = (p->flags & NV_GEM_ALLOC_NO_SCANOUT) ?
+        NVKMS_KAPI_ALLOCATION_TYPE_OFFSCREEN : NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT;
 
     if (nv_dev->hasVideoMemory) {
         pMemory = nvKms->allocateVideoMemory(nv_dev->pDevice,
                                              layout,
+                                             type,
                                              p->memory_size,
                                              &p->compressible);
     } else {
         pMemory = nvKms->allocateSystemMemory(nv_dev->pDevice,
                                               layout,
+                                              type,
                                               p->memory_size,
                                               &p->compressible);
     }

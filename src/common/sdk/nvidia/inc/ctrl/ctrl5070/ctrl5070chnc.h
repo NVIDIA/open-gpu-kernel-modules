@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl5070/ctrl5070chnc.finn
 //
 
-
-
-
 #include "ctrl/ctrl5070/ctrl5070base.h"
 #include "ctrl5070common.h"
 #include "nvdisptypes.h"

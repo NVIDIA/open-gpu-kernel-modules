@@ -37,8 +37,10 @@
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 
 #include "gpu/gpu.h" // COMPUTE_BRANDING_TYPE
+#include "gpu/gpu_acpi_data.h" // ACPI_METHOD_DATA
 #include "vgpu/rpc_headers.h" // MAX_GPC_COUNT
 #include "platform/chipset/chipset.h" // BUSINFO
+#include "gpu/nvbitmask.h" // NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX
 
 typedef struct GspSMInfo_t
 {
@@ -68,7 +70,7 @@ typedef struct GspStaticConfigInfo_t
     NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS sriovCaps;
     NvU32 sriovMaxGfid;
 
-    NvU64 engineCaps;
+    NvU32 engineCaps[NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX];
 
     GspSMInfo SM_info;
 
@@ -95,6 +97,7 @@ typedef struct GspStaticConfigInfo_t
     NvBool bGeforceSmb;
     NvBool bIsTitan;
     NvBool bIsTesla;
+    NvBool bIsMobile;
 
     NvU64 bar1PdeBase;
     NvU64 bar2PdeBase;
@@ -121,6 +124,8 @@ typedef struct GspStaticConfigInfo_t
 
     // Subdevice handle for internal RMAPI control.
     NvHandle hInternalSubdevice;
+
+    NvBool bAtsSupported;
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -133,12 +138,21 @@ typedef struct GspSystemInfo
     NvU64 simAccessBufPhysAddr;
     NvU64 pcieAtomicsOpMask;
     NvU64 consoleMemSize;
+    NvU64 maxUserVa;
     NvU32 pciConfigMirrorBase;
     NvU32 pciConfigMirrorSize;
     NvU8 oorArch;
     NvU64 clPdbProperties;
     NvU32 Chipset;
+    NvBool bGpuBehindBridge;
+    NvBool bUpstreamL0sUnsupported;
+    NvBool bUpstreamL1Unsupported;
+    NvBool bUpstreamL1PorSupported;
+    NvBool bUpstreamL1PorMobileOnly;
+    NvU8   upstreamAddressValid;
     BUSINFO FHBBusInfo;
+    BUSINFO chipsetIDInfo;
+    ACPI_METHOD_DATA acpiMethodData;
 } GspSystemInfo;
 
 

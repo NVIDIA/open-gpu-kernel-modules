@@ -195,6 +195,11 @@ extern NVLOG_LOGGER NvLogLogger;
 #define NVLOG_BUFFER_FLAGS_FORMAT_LIBOS_LOG              1
 #define NVLOG_BUFFER_FLAGS_FORMAT_MEMTRACK               2
 
+// Never deallocate this buffer until RM is unloaded
+#define NVLOG_BUFFER_FLAGS_PRESERVE                     11:11
+#define NVLOG_BUFFER_FLAGS_PRESERVE_NO                  0
+#define NVLOG_BUFFER_FLAGS_PRESERVE_YES                 1
+
 // Buffer GPU index
 #define NVLOG_BUFFER_FLAGS_GPU_INSTANCE              31:24
 

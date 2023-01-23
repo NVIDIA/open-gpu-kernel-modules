@@ -128,6 +128,7 @@ static inline NV_STATUS kctxshareInit_56cd7a(struct KernelCtxShare *pKernelCtxSh
     return NV_OK;
 }
 
+
 #ifdef __nvoc_kernel_ctxshare_h_disabled
 static inline NV_STATUS kctxshareInit(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, PEMEMBLOCK pBlock) {
     NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
@@ -143,6 +144,7 @@ static inline NV_STATUS kctxshareDestroy_56cd7a(struct KernelCtxShare *pKernelCt
     return NV_OK;
 }
 
+
 #ifdef __nvoc_kernel_ctxshare_h_disabled
 static inline NV_STATUS kctxshareDestroy(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvBool bRelease) {
     NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
@@ -155,8 +157,10 @@ static inline NV_STATUS kctxshareDestroy(struct KernelCtxShare *pKernelCtxShare,
 #define kctxshareDestroy_HAL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease) kctxshareDestroy(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease)
 
 NV_STATUS kctxshareConstruct_IMPL(struct KernelCtxShare *arg_pKernelCtxShare);
+
 #define __nvoc_kctxshareConstruct(arg_pKernelCtxShare) kctxshareConstruct_IMPL(arg_pKernelCtxShare)
 NV_STATUS kctxshareInitCommon_IMPL(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, NvU32 Flags, NvU32 *pSubctxId, struct KernelChannelGroupApi *pKernelChannelGroupApi);
+
 #ifdef __nvoc_kernel_ctxshare_h_disabled
 static inline NV_STATUS kctxshareInitCommon(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, NvU32 Flags, NvU32 *pSubctxId, struct KernelChannelGroupApi *pKernelChannelGroupApi) {
     NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
@@ -167,6 +171,7 @@ static inline NV_STATUS kctxshareInitCommon(struct KernelCtxShare *pKernelCtxSha
 #endif //__nvoc_kernel_ctxshare_h_disabled
 
 NV_STATUS kctxshareDestroyCommon_IMPL(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi);
+
 #ifdef __nvoc_kernel_ctxshare_h_disabled
 static inline NV_STATUS kctxshareDestroyCommon(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct KernelChannelGroupApi *pKernelChannelGroupApi) {
     NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
@@ -177,6 +182,7 @@ static inline NV_STATUS kctxshareDestroyCommon(struct KernelCtxShare *pKernelCtx
 #endif //__nvoc_kernel_ctxshare_h_disabled
 
 void kctxshareDestruct_IMPL(struct KernelCtxShare *pKernelCtxShare);
+
 #define __nvoc_kctxshareDestruct(pKernelCtxShare) kctxshareDestruct_IMPL(pKernelCtxShare)
 #undef PRIVATE_FIELD
 
@@ -216,11 +222,13 @@ struct KernelCtxShareApi {
     NV_STATUS (*__kctxshareapiInternalControlForward__)(struct KernelCtxShareApi *, NvU32, void *, NvU32);
     void (*__kctxshareapiPreDestruct__)(struct KernelCtxShareApi *);
     NV_STATUS (*__kctxshareapiUnmapFrom__)(struct KernelCtxShareApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__kctxshareapiIsDuplicate__)(struct KernelCtxShareApi *, NvHandle, NvBool *);
     void (*__kctxshareapiControl_Epilogue__)(struct KernelCtxShareApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kctxshareapiControlLookup__)(struct KernelCtxShareApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__kctxshareapiMap__)(struct KernelCtxShareApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__kctxshareapiAccessCallback__)(struct KernelCtxShareApi *, struct RsClient *, void *, RsAccessRight);
     struct KernelCtxShare *pShareData;
+    NvHandle hVASpace;
 };
 
 #ifndef __NVOC_CLASS_KernelCtxShareApi_TYPEDEF__
@@ -272,6 +280,7 @@ NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU3
 #define kctxshareapiInternalControlForward(pGpuResource, command, pParams, size) kctxshareapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define kctxshareapiPreDestruct(pResource) kctxshareapiPreDestruct_DISPATCH(pResource)
 #define kctxshareapiUnmapFrom(pResource, pParams) kctxshareapiUnmapFrom_DISPATCH(pResource, pParams)
+#define kctxshareapiIsDuplicate(pResource, hMemory, pDuplicate) kctxshareapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kctxshareapiControl_Epilogue(pResource, pCallContext, pParams) kctxshareapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kctxshareapiControlLookup(pResource, pParams, ppEntry) kctxshareapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define kctxshareapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kctxshareapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -368,6 +377,10 @@ static inline NV_STATUS kctxshareapiUnmapFrom_DISPATCH(struct KernelCtxShareApi 
     return pResource->__kctxshareapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS kctxshareapiIsDuplicate_DISPATCH(struct KernelCtxShareApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__kctxshareapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void kctxshareapiControl_Epilogue_DISPATCH(struct KernelCtxShareApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__kctxshareapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -385,8 +398,10 @@ static inline NvBool kctxshareapiAccessCallback_DISPATCH(struct KernelCtxShareAp
 }
 
 NV_STATUS kctxshareapiConstruct_IMPL(struct KernelCtxShareApi *arg_pKernelCtxShareApi, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_kctxshareapiConstruct(arg_pKernelCtxShareApi, arg_pCallContext, arg_pParams) kctxshareapiConstruct_IMPL(arg_pKernelCtxShareApi, arg_pCallContext, arg_pParams)
 NV_STATUS kctxshareapiCopyConstruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 #ifdef __nvoc_kernel_ctxshare_h_disabled
 static inline NV_STATUS kctxshareapiCopyConstruct(struct KernelCtxShareApi *pKernelCtxShareApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     NV_ASSERT_FAILED_PRECOMP("KernelCtxShareApi was disabled!");
@@ -397,6 +412,7 @@ static inline NV_STATUS kctxshareapiCopyConstruct(struct KernelCtxShareApi *pKer
 #endif //__nvoc_kernel_ctxshare_h_disabled
 
 void kctxshareapiDestruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi);
+
 #define __nvoc_kctxshareapiDestruct(pKernelCtxShareApi) kctxshareapiDestruct_IMPL(pKernelCtxShareApi)
 #undef PRIVATE_FIELD
 

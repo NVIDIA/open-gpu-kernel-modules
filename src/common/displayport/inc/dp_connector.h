@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -203,6 +203,8 @@ namespace DisplayPort
 
         virtual bool getSDPExtnForColorimetrySupported() = 0;
 
+        virtual bool getPanelFwRevision(NvU16 *revision) = 0;
+
         virtual bool getIgnoreMSACap() = 0;
 
         virtual AuxRetry::status setIgnoreMSAEnable(bool msaTimingParamIgnoreEn) = 0;
@@ -259,6 +261,10 @@ namespace DisplayPort
         // If the sink support MSA override in MST environment.
         virtual bool isMSAOverMSTCapable() = 0;
         virtual bool isFakedMuxDevice() = 0;
+
+        virtual bool setPanelReplayConfig(panelReplayConfig prcfg) = 0;
+        virtual bool isPanelReplaySupported() = 0;
+        virtual bool getPanelReplayStatus(PanelReplayStatus *pPrStatus) = 0;
 
     protected:
             virtual ~Device() {}

@@ -223,6 +223,7 @@ static inline NvBool dceclientIsPresent_DISPATCH(POBJGPU pGpu, struct OBJDCECLIE
 }
 
 NV_STATUS dceclientInitRpcInfra_IMPL(struct OBJGPU *arg0, struct OBJDCECLIENTRM *arg1);
+
 #ifdef __nvoc_dce_client_h_disabled
 static inline NV_STATUS dceclientInitRpcInfra(struct OBJGPU *arg0, struct OBJDCECLIENTRM *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
@@ -233,6 +234,7 @@ static inline NV_STATUS dceclientInitRpcInfra(struct OBJGPU *arg0, struct OBJDCE
 #endif //__nvoc_dce_client_h_disabled
 
 void dceclientDeinitRpcInfra_IMPL(struct OBJDCECLIENTRM *arg0);
+
 #ifdef __nvoc_dce_client_h_disabled
 static inline void dceclientDeinitRpcInfra(struct OBJDCECLIENTRM *arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
@@ -242,6 +244,7 @@ static inline void dceclientDeinitRpcInfra(struct OBJDCECLIENTRM *arg0) {
 #endif //__nvoc_dce_client_h_disabled
 
 NV_STATUS dceclientDceRmInit_IMPL(struct OBJGPU *arg0, struct OBJDCECLIENTRM *arg1, NvBool arg2);
+
 #ifdef __nvoc_dce_client_h_disabled
 static inline NV_STATUS dceclientDceRmInit(struct OBJGPU *arg0, struct OBJDCECLIENTRM *arg1, NvBool arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");
@@ -252,6 +255,7 @@ static inline NV_STATUS dceclientDceRmInit(struct OBJGPU *arg0, struct OBJDCECLI
 #endif //__nvoc_dce_client_h_disabled
 
 NV_STATUS dceclientSendRpc_IMPL(struct OBJDCECLIENTRM *arg0, void *arg1, NvU32 arg2);
+
 #ifdef __nvoc_dce_client_h_disabled
 static inline NV_STATUS dceclientSendRpc(struct OBJDCECLIENTRM *arg0, void *arg1, NvU32 arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJDCECLIENTRM was disabled!");

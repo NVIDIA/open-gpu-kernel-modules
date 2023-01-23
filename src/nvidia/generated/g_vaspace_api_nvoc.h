@@ -90,6 +90,7 @@ struct VaSpaceApi {
     NV_STATUS (*__vaspaceapiInternalControlForward__)(struct VaSpaceApi *, NvU32, void *, NvU32);
     void (*__vaspaceapiPreDestruct__)(struct VaSpaceApi *);
     NV_STATUS (*__vaspaceapiUnmapFrom__)(struct VaSpaceApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__vaspaceapiIsDuplicate__)(struct VaSpaceApi *, NvHandle, NvBool *);
     void (*__vaspaceapiControl_Epilogue__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vaspaceapiControlLookup__)(struct VaSpaceApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__vaspaceapiMap__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -149,6 +150,7 @@ NV_STATUS __nvoc_objCreate_VaSpaceApi(VaSpaceApi**, Dynamic*, NvU32, struct CALL
 #define vaspaceapiInternalControlForward(pGpuResource, command, pParams, size) vaspaceapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define vaspaceapiPreDestruct(pResource) vaspaceapiPreDestruct_DISPATCH(pResource)
 #define vaspaceapiUnmapFrom(pResource, pParams) vaspaceapiUnmapFrom_DISPATCH(pResource, pParams)
+#define vaspaceapiIsDuplicate(pResource, hMemory, pDuplicate) vaspaceapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define vaspaceapiControl_Epilogue(pResource, pCallContext, pParams) vaspaceapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vaspaceapiControlLookup(pResource, pParams, ppEntry) vaspaceapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define vaspaceapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) vaspaceapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -257,6 +259,10 @@ static inline NV_STATUS vaspaceapiUnmapFrom_DISPATCH(struct VaSpaceApi *pResourc
     return pResource->__vaspaceapiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS vaspaceapiIsDuplicate_DISPATCH(struct VaSpaceApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__vaspaceapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void vaspaceapiControl_Epilogue_DISPATCH(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__vaspaceapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -274,8 +280,10 @@ static inline NvBool vaspaceapiAccessCallback_DISPATCH(struct VaSpaceApi *pResou
 }
 
 NV_STATUS vaspaceapiConstruct_IMPL(struct VaSpaceApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_vaspaceapiConstruct(arg_pResource, arg_pCallContext, arg_pParams) vaspaceapiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 NV_STATUS vaspaceapiCopyConstruct_IMPL(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
 #ifdef __nvoc_vaspace_api_h_disabled
 static inline NV_STATUS vaspaceapiCopyConstruct(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     NV_ASSERT_FAILED_PRECOMP("VaSpaceApi was disabled!");
@@ -286,6 +294,7 @@ static inline NV_STATUS vaspaceapiCopyConstruct(struct VaSpaceApi *pResource, st
 #endif //__nvoc_vaspace_api_h_disabled
 
 void vaspaceapiDestruct_IMPL(struct VaSpaceApi *pResource);
+
 #define __nvoc_vaspaceapiDestruct(pResource) vaspaceapiDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 

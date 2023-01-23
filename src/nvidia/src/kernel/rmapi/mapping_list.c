@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -151,7 +151,7 @@ intermapCreateDmaMapping
     portMemSet(pDmaMapping, 0, sizeof(CLI_DMA_MAPPING_INFO));
     pDmaMapping->hDevice            = hDevice;
     pDmaMapping->DmaOffset          = 0;
-    pDmaMapping->pP2PInfo           = NULL;
+    pDmaMapping->bP2P               = NV_FALSE;
     pDmaMapping->Flags              = flags; // NV0S46_*
     pDmaMapping->addressTranslation = VAS_ADDRESS_TRANSLATION(pVAS);
 

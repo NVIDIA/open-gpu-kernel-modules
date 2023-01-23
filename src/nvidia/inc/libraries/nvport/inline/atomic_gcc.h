@@ -93,6 +93,12 @@ portAtomicTimerBarrier(void)
 
 #if PORT_COMPILER_HAS_INTRINSIC_ATOMICS && !defined(NV_MODS) && !NVOS_IS_LIBOS
 
+PORT_ATOMIC_INLINE void
+portAtomicInit(void)
+{
+
+}
+
 PORT_ATOMIC_INLINE NvS32
 portAtomicAddS32
 (

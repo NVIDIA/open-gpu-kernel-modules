@@ -97,20 +97,13 @@
 #define UVM_SUBCHANNEL_C56F UVM_SUBCHANNEL_HOST
 #define UVM_SUBCHANNEL_C6B5 UVM_SUBCHANNEL_CE
 
-
-
-
-
+#define UVM_SUBCHANNEL_C86F UVM_SUBCHANNEL_HOST
+#define UVM_SUBCHANNEL_C8B5 UVM_SUBCHANNEL_CE
 
 // Channel for UVM SW methods. This is defined in nv_uvm_types.h. RM does not
 // care about the specific number as long as it's bigger than the largest HW
 // value. For example, Kepler reserves subchannels 5-7 for software objects.
 #define UVM_SUBCHANNEL_C076 UVM_SW_OBJ_SUBCHANNEL
-
-
-
-
-
 
 #define UVM_METHOD_SIZE 4
 #define UVM_METHOD_COUNT_MAX HWMASK(B06F, DMA, INCR_COUNT)

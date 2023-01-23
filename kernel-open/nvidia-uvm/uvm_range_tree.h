@@ -73,11 +73,6 @@ static void uvm_range_tree_remove(uvm_range_tree_t *tree, uvm_range_tree_node_t 
 // lesser or equal to node->end.
 void uvm_range_tree_shrink_node(uvm_range_tree_t *tree, uvm_range_tree_node_t *node, NvU64 new_start, NvU64 new_end);
 
-// Adjust start and end to be the largest contiguous interval surrounding addr
-// between *startp and *endp and without overlapping an existing tree node.
-// This function assumes there is no node that includes addr.
-void uvm_range_tree_adjust_interval(uvm_range_tree_t *tree, NvU64 addr, NvU64 *startp, NvU64 *endp);
-
 // Splits an existing node into two pieces, with the new node always after the
 // existing node. The caller must set new->start before calling this function.
 // existing should not be modified by the caller. On return, existing will
@@ -100,6 +95,16 @@ uvm_range_tree_node_t *uvm_range_tree_merge_next(uvm_range_tree_t *tree, uvm_ran
 // Returns the node containing addr, if any
 uvm_range_tree_node_t *uvm_range_tree_find(uvm_range_tree_t *tree, NvU64 addr);
 
+// Find the largest hole containing addr but not containing any nodes. If addr
+// is contained by a node, NV_ERR_UVM_ADDRESS_IN_USE is returned.
+//
+// start and end may be NULL.
+NV_STATUS uvm_range_tree_find_hole(uvm_range_tree_t *tree, NvU64 addr, NvU64 *start, NvU64 *end);
+
+// Like uvm_range_tree_find_hole, but start and end are in/out parameters that
+// clamp the range.
+NV_STATUS uvm_range_tree_find_hole_in(uvm_range_tree_t *tree, NvU64 addr, NvU64 *start, NvU64 *end);
+
 // Returns the prev/next node in address order, or NULL if none exists
 static uvm_range_tree_node_t *uvm_range_tree_prev(uvm_range_tree_t *tree, uvm_range_tree_node_t *node)
 {
@@ -118,17 +123,6 @@ static uvm_range_tree_node_t *uvm_range_tree_next(uvm_range_tree_t *tree, uvm_ra
 // Returns the first node in the range [start, end], if any
 uvm_range_tree_node_t *uvm_range_tree_iter_first(uvm_range_tree_t *tree, NvU64 start, NvU64 end);
 
-// Return true if the range tree is empty.
-static bool uvm_range_tree_empty(uvm_range_tree_t *tree)
-{
-    return list_empty(&tree->head);
-}
-
-static NvU64 uvm_range_tree_node_size(uvm_range_tree_node_t *node)
-{
-    return node->end - node->start + 1;
-}
-
 // Returns the node following the provided node in address order, if that node's
 // start <= the provided end.
 static uvm_range_tree_node_t *uvm_range_tree_iter_next(uvm_range_tree_t *tree, uvm_range_tree_node_t *node, NvU64 end)
@@ -137,6 +131,25 @@ static uvm_range_tree_node_t *uvm_range_tree_iter_next(uvm_range_tree_t *tree, u
     if (next && next->start <= end)
         return next;
     return NULL;
+}
+
+// Return true if the range tree is empty.
+static bool uvm_range_tree_empty(uvm_range_tree_t *tree)
+{
+    return list_empty(&tree->head);
+}
+
+// Return the last node in the tree, or NULL if none exists
+static uvm_range_tree_node_t *uvm_range_tree_last(uvm_range_tree_t *tree)
+{
+    if (list_empty(&tree->head))
+        return NULL;
+    return list_last_entry(&tree->head, uvm_range_tree_node_t, list);
+}
+
+static NvU64 uvm_range_tree_node_size(uvm_range_tree_node_t *node)
+{
+    return node->end - node->start + 1;
 }
 
 #define uvm_range_tree_for_each(node, tree) list_for_each_entry((node), &(tree)->head, list)

@@ -43,6 +43,10 @@ void *_portMemAllocatorAlloc(PORT_MEM_ALLOCATOR *pAlloc, NvLength length);
 /** @brief Wrapper around pAlloc->_portFree() that tracks the allocation */
 void _portMemAllocatorFree(PORT_MEM_ALLOCATOR *pAlloc, void *pMem);
 
+#if PORT_MEM_TRACK_USE_LIMIT
+/** @brief Initialize per VF tracking limit **/
+void portMemInitializeAllocatorTrackingLimit(NvU32 pid, NvU64 heapSize, NvBool bLimitEnabled);
+#endif
 
 typedef struct PORT_MEM_COUNTER
 {
@@ -146,7 +150,7 @@ PORT_MEM_ALLOCATOR *portMemExAllocatorCreateLockedOnExistingBlock_CallerInfo(voi
 #endif // CALLERINFO
 
 
-#if PORT_MEM_TRACK_USE_FENCEPOSTS || PORT_MEM_TRACK_USE_ALLOCLIST || PORT_MEM_TRACK_USE_CALLERINFO
+#if PORT_MEM_TRACK_USE_FENCEPOSTS || PORT_MEM_TRACK_USE_ALLOCLIST || PORT_MEM_TRACK_USE_CALLERINFO || PORT_MEM_TRACK_USE_LIMIT
 typedef struct PORT_MEM_HEADER
 {
 #if PORT_MEM_TRACK_USE_CALLERINFO
@@ -157,6 +161,10 @@ typedef struct PORT_MEM_HEADER
 #endif
 #if PORT_MEM_TRACK_USE_FENCEPOSTS
                                     PORT_MEM_FENCE_HEAD fence;
+#endif
+#if PORT_MEM_TRACK_USE_LIMIT
+                                    NvU64 blockSize;
+                                    NvU32 pid;
 #endif
 } PORT_MEM_HEADER;
 
@@ -312,7 +320,7 @@ typedef struct
 #else // PORT_MEM_TRACK_USE_CALLERINFO
 
 #define PORT_MEM_CALLERINFO_PARAM
-#define PORT_MEM_CALLERINFO_TYPE_PARAM
+#define PORT_MEM_CALLERINFO_TYPE_PARAM void
 #define PORT_MEM_CALLERINFO_COMMA_PARAM
 #define PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 #define PORT_MEM_CALLINFO_FUNC(f)             f

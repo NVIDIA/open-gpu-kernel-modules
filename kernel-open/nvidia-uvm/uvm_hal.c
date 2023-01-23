@@ -41,19 +41,14 @@
 #include "clc6b5.h"
 #include "clc56f.h"
 #include "clc7b5.h"
-
-
-
-
+#include "clc86f.h"
+#include "clc8b5.h"
 
 #define CE_OP_COUNT (sizeof(uvm_ce_hal_t) / sizeof(void *))
 #define HOST_OP_COUNT (sizeof(uvm_host_hal_t) / sizeof(void *))
 #define ARCH_OP_COUNT (sizeof(uvm_arch_hal_t) / sizeof(void *))
 #define FAULT_BUFFER_OP_COUNT (sizeof(uvm_fault_buffer_hal_t) / sizeof(void *))
 #define ACCESS_COUNTER_BUFFER_OP_COUNT (sizeof(uvm_access_counter_buffer_hal_t) / sizeof(void *))
-
-
-
 
 // Table for copy engine functions.
 // Each entry is associated with a copy engine class through the 'class' field.
@@ -133,22 +128,20 @@ static uvm_hal_class_ops_t ce_table[] =
             .memset_validate = uvm_hal_ce_memset_validate_stub,
         },
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    {
+        .id = HOPPER_DMA_COPY_A,
+        .parent_id = AMPERE_DMA_COPY_B,
+        .u.ce_ops = {
+            .semaphore_release = uvm_hal_hopper_ce_semaphore_release,
+            .semaphore_timestamp = uvm_hal_hopper_ce_semaphore_timestamp,
+            .semaphore_reduction_inc = uvm_hal_hopper_ce_semaphore_reduction_inc,
+            .offset_out = uvm_hal_hopper_ce_offset_out,
+            .offset_in_out = uvm_hal_hopper_ce_offset_in_out,
+            .memset_1 = uvm_hal_hopper_ce_memset_1,
+            .memset_4 = uvm_hal_hopper_ce_memset_4,
+            .memset_8 = uvm_hal_hopper_ce_memset_8,
+        },
+    },
 };
 
 // Table for GPFIFO functions.  Same idea as the copy engine table.
@@ -171,6 +164,8 @@ static uvm_hal_class_ops_t host_table[] =
             .semaphore_release = uvm_hal_maxwell_host_semaphore_release,
             .semaphore_timestamp = uvm_hal_maxwell_host_semaphore_timestamp,
             .set_gpfifo_entry = uvm_hal_maxwell_host_set_gpfifo_entry,
+            .set_gpfifo_noop = uvm_hal_maxwell_host_set_gpfifo_noop,
+            .set_gpfifo_pushbuffer_segment_base = uvm_hal_maxwell_host_set_gpfifo_pushbuffer_segment_base_unsupported,
             .write_gpu_put = uvm_hal_maxwell_host_write_gpu_put,
             .tlb_invalidate_all = uvm_hal_maxwell_host_tlb_invalidate_all_a16f,
             .tlb_invalidate_va = uvm_hal_maxwell_host_tlb_invalidate_va,
@@ -249,23 +244,23 @@ static uvm_hal_class_ops_t host_table[] =
             .tlb_invalidate_test = uvm_hal_ampere_host_tlb_invalidate_test,
         }
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    {
+        .id = HOPPER_CHANNEL_GPFIFO_A,
+        .parent_id = AMPERE_CHANNEL_GPFIFO_A,
+        .u.host_ops = {
+            .method_validate = uvm_hal_method_validate_stub,
+            .sw_method_validate = uvm_hal_method_validate_stub,
+            .semaphore_acquire = uvm_hal_hopper_host_semaphore_acquire,
+            .semaphore_release = uvm_hal_hopper_host_semaphore_release,
+            .semaphore_timestamp = uvm_hal_hopper_host_semaphore_timestamp,
+            .tlb_invalidate_all = uvm_hal_hopper_host_tlb_invalidate_all,
+            .tlb_invalidate_va = uvm_hal_hopper_host_tlb_invalidate_va,
+            .tlb_invalidate_test = uvm_hal_hopper_host_tlb_invalidate_test,
+            .cancel_faults_va = uvm_hal_hopper_cancel_faults_va,
+            .set_gpfifo_entry = uvm_hal_hopper_host_set_gpfifo_entry,
+            .set_gpfifo_pushbuffer_segment_base = uvm_hal_hopper_host_set_gpfifo_pushbuffer_segment_base,
+        }
+    },
 };
 
 static uvm_hal_class_ops_t arch_table[] =
@@ -326,43 +321,23 @@ static uvm_hal_class_ops_t arch_table[] =
             .mmu_client_id_to_utlb_id = uvm_hal_ampere_mmu_client_id_to_utlb_id,
         },
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100,
+        .u.arch_ops = {
+            .init_properties = uvm_hal_ada_arch_init_properties,
+        },
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
+        .u.arch_ops = {
+            .init_properties = uvm_hal_hopper_arch_init_properties,
+            .mmu_mode_hal = uvm_hal_mmu_mode_hopper,
+            .mmu_engine_id_to_type = uvm_hal_hopper_mmu_engine_id_to_type,
+            .mmu_client_id_to_utlb_id = uvm_hal_hopper_mmu_client_id_to_utlb_id,
+        },
+    },
 };
 
 static uvm_hal_class_ops_t fault_buffer_table[] =
@@ -430,33 +405,18 @@ static uvm_hal_class_ops_t fault_buffer_table[] =
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
         .u.fault_buffer_ops = {}
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100,
+        .u.fault_buffer_ops = {}
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
+        .u.fault_buffer_ops = {
+            .get_ve_id = uvm_hal_hopper_fault_buffer_get_ve_id,
+        }
+    },
 };
 
 static uvm_hal_class_ops_t access_counter_buffer_table[] =
@@ -509,104 +469,17 @@ static uvm_hal_class_ops_t access_counter_buffer_table[] =
         .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100,
         .u.access_counter_buffer_ops = {}
     },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100,
+        .u.access_counter_buffer_ops = {}
+    },
+    {
+        .id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GH100,
+        .parent_id = NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_AD100,
+        .u.access_counter_buffer_ops = {}
+    },
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 static inline uvm_hal_class_ops_t *ops_find_by_id(uvm_hal_class_ops_t *table, NvU32 row_count, NvU32 id)
 {
@@ -711,17 +584,6 @@ NV_STATUS uvm_hal_init_table(void)
         return status;
     }
 
-
-
-
-
-
-
-
-
-
-
-
     return NV_OK;
 }
 
@@ -771,16 +633,6 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
     }
 
     parent_gpu->access_counter_buffer_hal = &class_ops->u.access_counter_buffer_ops;
-
-
-
-
-
-
-
-
-
-
 
     return NV_OK;
 }

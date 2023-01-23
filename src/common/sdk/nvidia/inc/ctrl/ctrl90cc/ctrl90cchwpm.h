@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl90cc/ctrl90cchwpm.finn
 //
 
-
-
-
 #include "ctrl/ctrl90cc/ctrl90ccbase.h"
 
 /* GF100_PROFILER HWPM control commands and parameters */

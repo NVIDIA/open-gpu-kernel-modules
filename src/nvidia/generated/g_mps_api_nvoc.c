@@ -140,6 +140,10 @@ static NV_STATUS __nvoc_thunk_RsResource_mpsApiUnmapFrom(struct MpsApi *pResourc
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_mpsApiIsDuplicate(struct MpsApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_mpsApiControl_Epilogue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
 }
@@ -222,6 +226,8 @@ static void __nvoc_init_funcTable_MpsApi_1(MpsApi *pThis) {
     pThis->__mpsApiPreDestruct__ = &__nvoc_thunk_RsResource_mpsApiPreDestruct;
 
     pThis->__mpsApiUnmapFrom__ = &__nvoc_thunk_RsResource_mpsApiUnmapFrom;
+
+    pThis->__mpsApiIsDuplicate__ = &__nvoc_thunk_RsResource_mpsApiIsDuplicate;
 
     pThis->__mpsApiControl_Epilogue__ = &__nvoc_thunk_RmResource_mpsApiControl_Epilogue;
 

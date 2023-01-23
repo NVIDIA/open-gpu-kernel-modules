@@ -24,10 +24,13 @@
 #include "common_nvswitch.h"
 #include "lr10/lr10.h"
 #include "lr10/inforom_lr10.h"
+#include "lr10/therm_lr10.h"
 #include "inforom/ifrstruct.h"
 #include "nvswitch/lr10/dev_nvlsaw_ip.h"
 #include "nvswitch/lr10/dev_nvlsaw_ip_addendum.h"
 #include "nvswitch/lr10/dev_pmgr.h"
+#include "nvVer.h"
+#include "regkey_nvswitch.h"
 
 //
 // TODO: Split individual object hals to their own respective files
@@ -745,74 +748,65 @@ nvswitch_oms_set_device_disable_lr10
 }
 
 NvlStatus
-nvswitch_bbx_setup_prologue_lr10
+nvswitch_inforom_load_obd_lr10
 (
-    nvswitch_device    *device,
-    void               *pInforomBbxState
+    nvswitch_device *device
 )
 {
-    return -NVL_ERR_NOT_SUPPORTED;
-}
+    struct inforom *pInforom = device->pInforom;
 
-NvlStatus
-nvswitch_bbx_setup_epilogue_lr10
-(
-    nvswitch_device    *device,
-    void *pInforomBbxState
-)
-{
-    return -NVL_ERR_NOT_SUPPORTED;
-}
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
 
-NvlStatus
-nvswitch_bbx_add_data_time_lr10
-(
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
-)
-{
-    return -NVL_ERR_NOT_SUPPORTED;
+    return nvswitch_inforom_load_object(device, pInforom, "OBD",
+                                        INFOROM_OBD_OBJECT_V1_XX_FMT,
+                                        pInforom->OBD.packedObject.v1,
+                                        &pInforom->OBD.object.v1);
 }
 
 NvlStatus
 nvswitch_bbx_add_sxid_lr10
 (
     nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
+    NvU32 exceptionType,
+    NvU32 data0,
+    NvU32 data1,
+    NvU32 data2
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
 }
 
 NvlStatus
-nvswitch_bbx_add_temperature_lr10
+nvswitch_bbx_unload_lr10
 (
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
+    nvswitch_device *device
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
-}
-void
-nvswitch_bbx_set_initial_temperature_lr10
-(
-    nvswitch_device *device,
-    void *pInforomBbxState,
-    void *pInforomBbxData
-)
-{
-    return;
 }
 
 NvlStatus
-nvswitch_inforom_bbx_get_sxid_lr10
+nvswitch_bbx_load_lr10
 (
     nvswitch_device *device,
-    NVSWITCH_GET_SXIDS_PARAMS *params
+    NvU64 time_ns,
+    NvU8 osType,
+    NvU32 osVersion
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
 }
+
+NvlStatus
+nvswitch_bbx_get_sxid_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SXIDS_PARAMS * params
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+

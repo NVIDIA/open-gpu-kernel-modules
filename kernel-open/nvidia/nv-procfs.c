@@ -201,8 +201,6 @@ nv_procfs_read_power(
     const char *dynamic_power_status;
     const char *gc6_support;
     const char *gcoff_support;
-    NvU32 limitRated, limitCurr;
-    NV_STATUS status;
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
     {
@@ -220,20 +218,7 @@ nv_procfs_read_power(
     seq_printf(s, " Video Memory Self Refresh: %s\n", gc6_support);
 
     gcoff_support = rm_get_gpu_gcx_support(sp, nv, NV_FALSE);
-    seq_printf(s, " Video Memory Off:          %s\n\n", gcoff_support);
-
-    seq_printf(s, "Power Limits:\n");
-    status = rm_get_clientnvpcf_power_limits(sp, nv, &limitRated, &limitCurr);
-    if (status != NV_OK)
-    {
-        seq_printf(s, " Default:                   N/A milliwatts\n");
-        seq_printf(s, " GPU Boost:                 N/A milliwatts\n");
-    }
-    else
-    {
-        seq_printf(s, " Default:                   %u milliwatts\n", limitRated);
-        seq_printf(s, " GPU Boost:                 %u milliwatts\n", limitCurr);
-    }
+    seq_printf(s, " Video Memory Off:          %s\n", gcoff_support);
 
     nv_kmem_cache_free_stack(sp);
     return 0;
@@ -288,13 +273,12 @@ nv_procfs_open_file(
     nv_procfs_private_t *nvpp = NULL;
     nvidia_stack_t *sp = NULL;
 
-    NV_KMALLOC(nvpp, sizeof(nv_procfs_private_t));
+    NV_KZALLOC(nvpp, sizeof(nv_procfs_private_t));
     if (nvpp == NULL)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate procfs private!\n");
         return -ENOMEM;
     }
-    memset(nvpp, 0, sizeof(*nvpp));
 
     NV_INIT_MUTEX(&nvpp->sp_lock);
 
@@ -1384,7 +1368,7 @@ int nv_procfs_init(void)
     return 0;
 #if defined(CONFIG_PROC_FS)
 failed:
-    nv_procfs_unregister_all(proc_nvidia, proc_nvidia);
+    proc_remove(proc_nvidia);
     return -ENOMEM;
 #endif
 }
@@ -1392,7 +1376,7 @@ failed:
 void nv_procfs_exit(void)
 {
 #if defined(CONFIG_PROC_FS)
-    nv_procfs_unregister_all(proc_nvidia, proc_nvidia);
+    proc_remove(proc_nvidia);
 #endif
 }
 
@@ -1463,7 +1447,7 @@ int nv_procfs_add_gpu(nv_linux_state_t *nvl)
 failed:
     if (proc_nvidia_gpu)
     {
-        nv_procfs_unregister_all(proc_nvidia_gpu, proc_nvidia_gpu);
+        proc_remove(proc_nvidia_gpu);
     }
     return -1;
 #endif
@@ -1472,6 +1456,6 @@ failed:
 void nv_procfs_remove_gpu(nv_linux_state_t *nvl)
 {
 #if defined(CONFIG_PROC_FS)
-    nv_procfs_unregister_all(nvl->proc_dir, nvl->proc_dir);
+    proc_remove(nvl->proc_dir);
 #endif
 }

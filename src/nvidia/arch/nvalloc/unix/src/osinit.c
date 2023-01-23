@@ -55,11 +55,13 @@
 #include <platform/chipset/chipset.h>
 #include <kernel/gpu/rc/kernel_rc.h>
 #include <kernel/gpu/fifo/kernel_fifo.h>
-#include <nvSha256.h>
+#include <nv-firmware-chip-family-select.h>
 #include <gpu/gsp/kernel_gsp.h>
-#include <logdecode.h>
+#include "liblogdecode.h"
+#include <gpu/fsp/kern_fsp.h>
 
 #include <mem_mgr/virt_mem_mgr.h>
+#include <virtualization/kernel_vgpu_mgr.h>
 
 #include <rmosxfac.h>
 #include <gpu_mgr/gpu_mgr.h>
@@ -71,6 +73,7 @@
 
 #include <platform/chipset/pci_pbi.h>
 
+#include "platform/nbsi/nbsi_read.h"
 #include "gpu_mgr/gpu_db.h"
 #include <class/cl0080.h>
 #include <class/cl0073.h>
@@ -118,7 +121,6 @@ typedef enum
    /* rm firmware errors */
    RM_INIT_FIRMWARE_POLICY_FAILED      = 0x60,
    RM_INIT_FIRMWARE_FETCH_FAILED,
-   RM_INIT_FIRMWARE_VALIDATION_FAILED,
    RM_INIT_FIRMWARE_INIT_FAILED,
 
    RM_INIT_MAX_FAILURES
@@ -362,10 +364,6 @@ osHandleGpuLost
     pmc_boot_0 = NV_PRIV_REG_RD32(nv->regs->map_u, NV_PMC_BOOT_0);
     if (pmc_boot_0 != nvp->pmc_boot_0)
     {
-        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        NV2080_CTRL_GPU_GET_OEM_BOARD_INFO_PARAMS *pBoardInfoParams;
-        NV_STATUS status;
-
         //
         // This doesn't support PEX Reset and Recovery yet.
         // This will help to prevent accessing registers of a GPU
@@ -376,24 +374,11 @@ osHandleGpuLost
 
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "GPU has fallen off the bus.\n");
 
-        pBoardInfoParams = portMemAllocNonPaged(sizeof(*pBoardInfoParams));
-        if (pBoardInfoParams != NULL)
+        if (pGpu->boardInfo != NULL && pGpu->boardInfo->serialNumber[0] != '\0')
         {
-            portMemSet(pBoardInfoParams, 0, sizeof(*pBoardInfoParams));
-
-            status = pRmApi->Control(pRmApi, nv->rmapi.hClient,
-                                     nv->rmapi.hSubDevice,
-                                     NV2080_CTRL_CMD_GPU_GET_OEM_BOARD_INFO,
-                                     pBoardInfoParams,
-                                     sizeof(*pBoardInfoParams));
-            if (status == NV_OK)
-            {
-                NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
-                              "GPU serial number is %s.\n",
-                              pBoardInfoParams->serialNumber);
-            }
-
-            portMemFree(pBoardInfoParams);
+            NV_DEV_PRINTF(NV_DBG_ERRORS, nv,
+                          "GPU serial number is %s.\n",
+                          pGpu->boardInfo->serialNumber);
         }
 
         gpuSetDisconnectedProperties(pGpu);
@@ -654,6 +639,15 @@ osInitNvMapping(
     sysApplyLockingPolicy(pSys);
 
     pGpu->busInfo.IntLine = nv->interrupt_line;
+
+    //
+    // Set the DMA address size as soon as we have the HAL to call to
+    // determine the precise number of physical address bits supported
+    // by the architecture. DMA allocations should not be made before
+    // this point.
+    //
+    nv_set_dma_address_size(nv, gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM));
+
     pGpu->dmaStartAddress = (RmPhysAddr)nv_get_dma_start_address(nv);
     if (nv->fb != NULL)
     {
@@ -740,15 +734,6 @@ osTeardownScalability(
     OBJCL *pCl = SYS_GET_CL(pSys);
 
     return clTeardownPcie(pGpu, pCl);
-}
-
-static inline void
-RmSetDeviceDmaAddressSize(
-    nv_state_t *nv,
-    NvU8 numDmaAddressBits
-)
-{
-    nv_set_dma_address_size(nv, numDmaAddressBits);
 }
 
 static void
@@ -899,8 +884,6 @@ RmInitNvDevice(
         RM_SET_ERROR(*status, RM_INIT_GPU_PRE_INIT_FAILED);
         return;
     }
-
-    RmSetDeviceDmaAddressSize(nv, gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM));
 
     os_disable_console_access();
 
@@ -1105,7 +1088,10 @@ RmSetupRegisters(
                 nv->fb->cpu_address, nv->fb->size);
     }
 
-    nv_os_map_kernel_space(nv, nv->regs);
+    {
+        nv_os_map_kernel_space(nv, nv->regs);
+    }
+
     if (nv->regs->map == NULL)
     {
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "Failed to map regs registers!!\n");
@@ -1160,7 +1146,7 @@ NvBool RmInitPrivateState(
 
     NV_SET_NV_PRIV(pNv, NULL);
 
-    if (!NV_IS_SOC_DISPLAY_DEVICE(pNv))
+    if (!NV_IS_SOC_DISPLAY_DEVICE(pNv) && !NV_IS_SOC_IGPU_DEVICE(pNv))
     {
         pNv->regs->map_u = os_map_kernel_space(pNv->regs->cpu_address,
                                                os_page_size,
@@ -1201,11 +1187,13 @@ NvBool RmInitPrivateState(
     pNv->iovaspace_id = nv_requires_dma_remap(pNv) ? gpuId :
                                                      NV_IOVA_DOMAIN_NONE;
 
+    kvgpumgrAttachGpu(pNv->gpu_id);
+
     //
     // Set up a reasonable default DMA address size, based on the minimum
     // possible on currently supported GPUs.
     //
-    RmSetDeviceDmaAddressSize(pNv, NV_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
+    nv_set_dma_address_size(pNv, NV_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
 
     os_mem_set(nvp, 0, sizeof(*nvp));
     nvp->status = NV_ERR_INVALID_STATE;
@@ -1225,8 +1213,6 @@ void RmClearPrivateState(
     void *pVbiosCopy = NULL;
     void *pRegistryCopy = NULL;
     NvU32 vbiosSize;
-    NvU32 *pEfiDisplayCache;
-    NvU32 efiDisplayCacheSize;
     nv_i2c_adapter_entry_t i2c_adapters[MAX_I2C_ADAPTERS];
     nv_dynamic_power_t dynamicPowerCopy;
     NvU32 x = 0;
@@ -1246,8 +1232,6 @@ void RmClearPrivateState(
     pVbiosCopy = nvp->pVbiosCopy;
     vbiosSize = nvp->vbiosSize;
     pRegistryCopy = nvp->pRegistry;
-    pEfiDisplayCache = nvp->efi.display.pCache;
-    efiDisplayCacheSize = nvp->efi.display.cacheSize;
     dynamicPowerCopy = nvp->dynamic_power;
     pmc_boot_0 = nvp->pmc_boot_0;
     pmc_boot_42 = nvp->pmc_boot_42;
@@ -1263,8 +1247,6 @@ void RmClearPrivateState(
     nvp->pVbiosCopy = pVbiosCopy;
     nvp->vbiosSize = vbiosSize;
     nvp->pRegistry = pRegistryCopy;
-    nvp->efi.display.pCache = pEfiDisplayCache;
-    nvp->efi.display.cacheSize = efiDisplayCacheSize;
     nvp->dynamic_power = dynamicPowerCopy;
     nvp->pmc_boot_0 = pmc_boot_0;
     nvp->pmc_boot_42 = pmc_boot_42;
@@ -1285,12 +1267,13 @@ void RmFreePrivateState(
 
     gpumgrUnregisterGpuId(pNv->gpu_id);
 
+    kvgpumgrDetachGpu(pNv->gpu_id);
+
     RmDestroyRegistry(pNv);
 
     if (nvp != NULL)
     {
         portMemFree(nvp->pVbiosCopy);
-        portMemFree(nvp->efi.display.pCache);
         os_free_mem(nvp);
     }
 
@@ -1464,78 +1447,6 @@ fail:
     return NV_FALSE;
 }
 
-static NvBool verifyGspFirmware(
-    const void *pGspFwBuf,
-    NvU32 gspFwBufSize
-)
-{
-    //
-    // This array will be populated with a sha256 hash of the GSP-RM firmware
-    // binary in a post-compile step.  We really want this array to be 'const',
-    // but adding that qualifier here makes the compiler perform undesirable
-    // optimization assuming the array is always going to be zero.  The
-    // .gspfwhash-rodata section is marked readonly when it is populated with
-    // the real hash in lieu of 'const'.
-    //
-    static NvU8 __attribute__((section(".gspfwhash-rodata")))
-        expectedFwHash[NV_SHA256_DIGEST_SIZE] = {};
-    NvU32 i;
-    NvBool bHashCheck = NV_FALSE;
-
-    //
-    // To allow for simple incremental build workflow, we will only
-    // perform the firmware hash check if the expected hash has been
-    // embedded into the kernel binary.
-    //
-    for (i = 0; i < NV_SHA256_DIGEST_SIZE; i++)
-    {
-        if (expectedFwHash[i] != 0)
-        {
-            bHashCheck = NV_TRUE;
-            break;
-        }
-    }
-
-    if (bHashCheck)
-    {
-        NvU8 gspFwHash[NV_SHA256_DIGEST_SIZE];
-
-        nv_sha256(pGspFwBuf, gspFwBufSize, gspFwHash);
-
-        #define NvU64_BIG_ENDIAN(buf) \
-            ((NvU64)(buf)[0] << 56) | ((NvU64)(buf)[1] << 48) | \
-            ((NvU64)(buf)[2] << 40) | ((NvU64)(buf)[3] << 32) | \
-            ((NvU64)(buf)[4] << 24) | ((NvU64)(buf)[5] << 16) | \
-            ((NvU64)(buf)[6] <<  8) | ((NvU64)(buf)[7] << 0)
-
-        if (portMemCmp(expectedFwHash, gspFwHash, NV_SHA256_DIGEST_SIZE) != 0)
-        {
-            NV_PRINTF(LEVEL_ERROR, "GSP firmware validation failed: hash mismatch\n");
-            NV_PRINTF(LEVEL_ERROR, "Expected GSP firmware hash: %016llx%016llx%016llx%016llx\n",
-                NvU64_BIG_ENDIAN(&expectedFwHash[0]),  NvU64_BIG_ENDIAN(&expectedFwHash[8]),
-                NvU64_BIG_ENDIAN(&expectedFwHash[16]), NvU64_BIG_ENDIAN(&expectedFwHash[24]));
-            NV_PRINTF(LEVEL_ERROR, "Got GSP firmware hash:      %016llx%016llx%016llx%016llx\n",
-                NvU64_BIG_ENDIAN(&gspFwHash[0]),  NvU64_BIG_ENDIAN(&gspFwHash[8]),
-                NvU64_BIG_ENDIAN(&gspFwHash[16]), NvU64_BIG_ENDIAN(&gspFwHash[24]));
-            NV_PRINTF(LEVEL_ERROR, "The GSP firmware version must exactly match the RM (nv-kernel.o) build.\n");
-            NV_PRINTF(LEVEL_ERROR, "Most likely cause of this error is an out of band update to one of the components\n");
-
-            return NV_FALSE;
-        }
-        else
-        {
-            NV_PRINTF(LEVEL_NOTICE, "GSP firmware hash: %016llx%016llx%016llx%016llx\n",
-                NvU64_BIG_ENDIAN(&gspFwHash[0]),  NvU64_BIG_ENDIAN(&gspFwHash[8]),
-                NvU64_BIG_ENDIAN(&gspFwHash[16]), NvU64_BIG_ENDIAN(&gspFwHash[24]));
-        }
-    }
-    else
-    {
-        NV_PRINTF(LEVEL_NOTICE, "GSP firmware hash not found.\n");
-    }
-    return NV_TRUE;
-}
-
 NvBool RmInitAdapter(
     nv_state_t *nv
 )
@@ -1599,9 +1510,16 @@ NvBool RmInitAdapter(
     //
     if (nv->request_firmware)
     {
-        RmSetDeviceDmaAddressSize(nv, NV_GSP_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
+        NvU32 gpuArch = (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, nvp->pmc_boot_42) <<
+                         GPU_ARCH_SHIFT);
+        NvU32 gpuImpl = DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, nvp->pmc_boot_42);
 
-        gspFwHandle = nv_get_firmware(nv, NV_FIRMWARE_GSP,
+        nv_firmware_chip_family_t chipFamily = nv_firmware_get_chip_family(gpuArch, gpuImpl);
+
+        nv_set_dma_address_size(nv, NV_GSP_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
+
+        gspFwHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_GSP,
+                                      chipFamily,
                                       &gspFw.pBuf,
                                       &gspFw.size);
         if (gspFwHandle == NULL &&
@@ -1612,21 +1530,16 @@ NvBool RmInitAdapter(
         }
         else if (gspFwHandle != NULL)
         {
-            if (!verifyGspFirmware(gspFw.pBuf, gspFw.size))
-            {
-                RM_SET_ERROR(status, RM_INIT_FIRMWARE_VALIDATION_FAILED);
-                goto shutdown;
-            }
-
 #if LIBOS_LOG_DECODE_ENABLE
             if (nv->enable_firmware_logs)
             {
-                gspFwLogHandle = nv_get_firmware(nv, NV_FIRMWARE_GSP_LOG,
+                gspFwLogHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_GSP_LOG,
+                                                 chipFamily,
                                                  &gspFw.pLogElf,
                                                  &gspFw.logElfSize);
                 if (gspFwLogHandle == NULL)
                 {
-                    NV_PRINTF(LEVEL_ERROR, "Failed to load gsp_log.bin, no GSP-RM logs will be printed (non-fatal)\n");
+                    NV_PRINTF(LEVEL_ERROR, "Failed to load gsp_log_*.bin, no GSP-RM logs will be printed (non-fatal)\n");
                 }
             }
 #endif
@@ -1672,7 +1585,20 @@ NvBool RmInitAdapter(
         goto shutdown;
     }
 
+    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    if ((pKernelFsp != NULL) && !IS_GSP_CLIENT(pGpu) && !IS_VIRTUAL(pGpu))
+    {
+        status.rmStatus = kfspSendBootCommands_HAL(pGpu, pKernelFsp);
+        if (status.rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "FSP boot command failed.\n");
+            goto shutdown;
+        }
+    }
+
     RmSetConsolePreservationParams(pGpu);
+
+    RmInitAcpiMethods(pOS, pSys, pGpu);
 
     //
     // If GSP fw RM support is enabled then start the GSP microcode
@@ -1715,17 +1641,11 @@ NvBool RmInitAdapter(
 
     populateDeviceAttributes(pGpu, nv);
 
-    RmInitAcpiMethods(pOS, pSys, pGpu);
-
-    status.rmStatus = RmInitX86Emu(pGpu);
-    if (status.rmStatus != NV_OK)
-    {
-        RM_SET_ERROR(status, RM_INIT_VBIOS_X86EMU_FAILED);
-        NV_PRINTF(LEVEL_ERROR,
-                  "RmInitX86Emu failed, bailing out of RmInitAdapter\n");
-        goto shutdown;
-    }
     initVendorSpecificRegistry(pGpu, nv->pci_info.device_id);
+    if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu))
+    {
+        initNbsiTable(pGpu);
+    }
 
     // finally, initialize the device
     RmInitNvDevice(devicereference, &status);
@@ -1814,6 +1734,15 @@ NvBool RmInitAdapter(
         goto shutdown;
     }
 
+    status.rmStatus = RmInitX86Emu(pGpu);
+    if (status.rmStatus != NV_OK)
+    {
+        RM_SET_ERROR(status, RM_INIT_VBIOS_X86EMU_FAILED);
+        NV_PRINTF(LEVEL_ERROR,
+                  "RmInitX86Emu failed, bailing out of RmInitAdapter\n");
+        goto shutdown;
+    }
+
     // i2c only on master device??
     RmI2cAddGpuPorts(nv);
     nvp->flags |= NV_INIT_FLAG_PUBLIC_I2C;
@@ -1847,7 +1776,7 @@ NvBool RmInitAdapter(
     RmInitS0ixPowerManagement(nv);
     RmInitDeferredDynamicPowerManagement(nv);
 
-    if (!NV_IS_SOC_DISPLAY_DEVICE(nv))
+    if (!NV_IS_SOC_DISPLAY_DEVICE(nv) && !NV_IS_SOC_IGPU_DEVICE(nv))
     {
         status.rmStatus = RmRegisterGpudb(pGpu);
         if (status.rmStatus != NV_OK)
@@ -1866,10 +1795,10 @@ NvBool RmInitAdapter(
             if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_NONE) == NV_OK)
             {
                 //
-                // As we have already acquired the API Lock here, we are
-                // calling RmSystemEvent directly instead of rm_system_event.
+                // As we have already acquired the API Lock here, we are calling
+                // RmPowerSourceChangeEvent directly instead of rm_power_source_change_event.
                 //
-                RmSystemEvent(nv, NV_SYSTEM_ACPI_BATTERY_POWER_EVENT, !ac_plugged);
+                RmPowerSourceChangeEvent(nv, !ac_plugged);
 
                 // UNLOCK: release GPU lock
                 rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
@@ -1883,7 +1812,8 @@ NvBool RmInitAdapter(
         // OpenRM with a special registry key, if not on a Data Center GPU.
         const GspStaticConfigInfo *pSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
 
-        if (pSCI->computeBranding != COMPUTE_BRANDING_TYPE_TESLA)
+        if (pSCI->computeBranding != COMPUTE_BRANDING_TYPE_TESLA &&
+            ((pGpu->idInfo.PCIDeviceID >> 16) & 0xffff) != NV_PCI_DEVID_DEVICE_PG189_SKU600)
         {
             NvU32 data = NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DEFAULT;
             RmReadRegistryDword(nv, NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS, &data);
@@ -1953,6 +1883,8 @@ void RmShutdownAdapter(
         if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
         {
             RmDestroyDeferredDynamicPowerManagement(nv);
+
+            freeNbsiTable(pGpu);
 
             gpuFreeEventHandle(pGpu);
 

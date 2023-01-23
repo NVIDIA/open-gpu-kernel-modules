@@ -139,10 +139,13 @@ NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT**, Dynamic*, NvU32, Dynamic * arg
     __nvoc_objCreate_OBJREFCNT((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback)
 
 NV_STATUS refcntConstruct_IMPL(POBJREFCNT arg_pRefcnt, Dynamic *arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback *arg_pStateChangeCallback, RefcntResetCallback *arg_pResetCallback);
+
 #define __nvoc_refcntConstruct(arg_pRefcnt, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback) refcntConstruct_IMPL(arg_pRefcnt, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback)
 void refcntDestruct_IMPL(POBJREFCNT pRefcnt);
+
 #define __nvoc_refcntDestruct(pRefcnt) refcntDestruct_IMPL(pRefcnt)
 NV_STATUS refcntRequestReference_IMPL(POBJREFCNT pRefcnt, NvU64 arg0, NvU32 arg1, NvBool arg2);
+
 #ifdef __nvoc_ref_count_h_disabled
 static inline NV_STATUS refcntRequestReference(POBJREFCNT pRefcnt, NvU64 arg0, NvU32 arg1, NvBool arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJREFCNT was disabled!");
@@ -153,6 +156,7 @@ static inline NV_STATUS refcntRequestReference(POBJREFCNT pRefcnt, NvU64 arg0, N
 #endif //__nvoc_ref_count_h_disabled
 
 NV_STATUS refcntReleaseReferences_IMPL(POBJREFCNT pRefcnt, NvU64 arg0, NvBool arg1);
+
 #ifdef __nvoc_ref_count_h_disabled
 static inline NV_STATUS refcntReleaseReferences(POBJREFCNT pRefcnt, NvU64 arg0, NvBool arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJREFCNT was disabled!");
@@ -163,6 +167,7 @@ static inline NV_STATUS refcntReleaseReferences(POBJREFCNT pRefcnt, NvU64 arg0, 
 #endif //__nvoc_ref_count_h_disabled
 
 NV_STATUS refcntReset_IMPL(POBJREFCNT pRefcnt, NvBool arg0);
+
 #ifdef __nvoc_ref_count_h_disabled
 static inline NV_STATUS refcntReset(POBJREFCNT pRefcnt, NvBool arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJREFCNT was disabled!");

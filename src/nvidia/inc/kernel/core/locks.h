@@ -110,8 +110,6 @@ typedef struct
 // Attempt acquire even if it potentially violates the locking order
 // But do not block in a way that could cause a deadlock
 #define GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE                NVBIT(2)
-// Old name alias
-#define GPUS_LOCK_FLAGS_COND_ACQUIRE                    GPU_LOCK_FLAGS_COND_ACQUIRE
 
 //
 // RM Lock Related Functions
@@ -189,17 +187,9 @@ void       rmIntrMaskLockRelease(OBJGPU *pGpu, NvU64 oldIrql);
 #define rmInitLockMetering()
 #define rmDestroyLockMetering()
 
-//
-// RM API lock definitions are handled by the rmapi module. Providing legacy
-// rmApiLockXxx interface for temporary compatibility. CORERM-1370
-//
 #include "rmapi/rmapi.h"
 
 #define API_LOCK_FLAGS_NONE                             RMAPI_LOCK_FLAGS_NONE
 #define API_LOCK_FLAGS_COND_ACQUIRE                     RMAPI_LOCK_FLAGS_COND_ACQUIRE
-
-#define rmApiLockAcquire(flags, module)                 (rmapiLockAcquire(flags, module))
-static NV_INLINE NV_STATUS rmApiLockRelease(void)       {rmapiLockRelease(); return NV_OK;}
-#define rmApiLockIsOwner()                              (rmapiLockIsOwner())
 
 #endif // LOCKS_H

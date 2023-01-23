@@ -37,7 +37,6 @@
  */
 const NvU32 P9_L1D_CACHE_DEFAULT_BLOCK_SIZE = 0x80;
 
-#if defined(NV_OF_GET_PROPERTY_PRESENT)
 static NvU32 nv_ibm_get_cpu_l1d_cache_block_size(void)
 {
     const __be32 *block_size_prop;
@@ -60,12 +59,6 @@ static NvU32 nv_ibm_get_cpu_l1d_cache_block_size(void)
 
     return be32_to_cpu(*block_size_prop);
 }
-#else
-static NvU32 nv_ibm_get_cpu_l1d_cache_block_size(void)
-{
-    return P9_L1D_CACHE_DEFAULT_BLOCK_SIZE;
-}
-#endif
 
 /*
  * GPU device memory can be exposed to the kernel as NUMA node memory via the

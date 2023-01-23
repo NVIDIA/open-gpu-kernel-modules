@@ -21,7 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *                                                                          *
 *         VirtMemAllocator Object Function Definitions.                    *
 *                                                                          *
@@ -30,7 +30,7 @@
 #include "core/core.h"
 #include "core/hal.h"
 #include "core/info_block.h"
-#include "nvRmReg.h"
+#include "nvrm_registry.h"
 #include "os/os.h"
 #include "vgpu/rpc.h"
 #include "gpu/gpu.h"
@@ -72,6 +72,13 @@ static NV_STATUS
 dmaInitRegistryOverrides(OBJGPU *pGpu, VirtMemAllocator *pDma)
 {
     NV_STATUS rmStatus = NV_OK;
+    NvU32     data32;
+
+    if (osReadRegistryDword(pGpu, NV_REG_ENABLE_MEMORY_MAPPER_API, &data32) == NV_OK &&
+        data32 == NV_REG_ENABLE_MEMORY_MAPPER_API_TRUE)
+    {
+        pDma->bMemoryMapperApiEnabled = NV_TRUE;
+    }
 
     return rmStatus;
 }

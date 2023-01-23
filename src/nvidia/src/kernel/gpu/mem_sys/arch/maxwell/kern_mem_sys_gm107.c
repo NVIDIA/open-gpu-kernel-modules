@@ -232,7 +232,7 @@ kmemsysInitFlushSysmemBuffer_GM107
         //
         status = memdescCreate(&pKernelMemorySystem->pSysmemFlushBufferMemDesc,
                                pGpu, RM_PAGE_SIZE,
-                               (1 << NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT),
+                               (1 << kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)),
                                NV_TRUE,
                                ADDR_SYSMEM,
                                NV_MEMORY_UNCACHED,
@@ -267,7 +267,7 @@ kmemsysInitFlushSysmemBuffer_GM107
         if (!bTryAgain)
         {
             GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08,
-                               NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT));
+                               NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)));
 
             return NV_OK;
         }
@@ -277,7 +277,7 @@ kmemsysInitFlushSysmemBuffer_GM107
 
         status = memdescCreate(&pKernelMemorySystem->pSysmemFlushBufferMemDesc,
                                pGpu, RM_PAGE_SIZE,
-                               (1 << NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT),
+                               (1 << kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)),
                                NV_TRUE,
                                ADDR_SYSMEM,
                                NV_MEMORY_UNCACHED,
@@ -345,10 +345,6 @@ kmemsysInitFlushSysmemBuffer_GM107
             // MODS on DGX-2 is hitting this. Make it non-fatal for now with
             // the proper WAR implementation tracked in bug 2403630.
             //
-            if (RMCFG_FEATURE_PLATFORM_MODS)
-            {
-                bMakeItFatal = NV_FALSE;
-            }
 
             //
             // Windows on greater than 2 TB systems is hitting this. Making it
@@ -369,7 +365,7 @@ kmemsysInitFlushSysmemBuffer_GM107
 
     NV_ASSERT(pKernelMemorySystem->sysmemFlushBuffer != 0);
     GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08,
-                       NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT));
+                       NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)));
 
     return NV_OK;
 }
@@ -398,7 +394,7 @@ kmemsysProgramSysmemFlushBuffer_GM107
     // A: Because on power management resume, this value should be restored too.
     //
     GPU_FLD_WR_DRF_NUM(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08,
-                       NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT));
+                       NvU64_LO32(pKernelMemorySystem->sysmemFlushBuffer >> kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem)));
 }
 
 /*!
@@ -417,4 +413,14 @@ kmemsysAssertSysmemFlushBufferValid_GM107
 )
 {
     NV_ASSERT(GPU_REG_RD_DRF(pGpu, _PFB, _NISO_FLUSH_SYSMEM_ADDR, _ADR_39_08) != 0);
+}
+
+NvU32
+kmemsysGetFlushSysmemBufferAddrShift_GM107
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    return NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT;
 }

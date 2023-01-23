@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl5070/ctrl5070base.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* NV5070_DISPLAY control commands and parameters */
 

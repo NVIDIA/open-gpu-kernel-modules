@@ -159,12 +159,16 @@ static NvBool __nvoc_thunk_StandardMemory_vmrangeCanCopy(struct VirtualMemoryRan
     return stdmemCanCopy((struct StandardMemory *)(((unsigned char *)pStandardMemory) + __nvoc_rtti_VirtualMemoryRange_StandardMemory.offset));
 }
 
+static NvBool __nvoc_thunk_Memory_vmrangeIsGpuMapAllowed(struct VirtualMemoryRange *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemoryRange_Memory.offset), pGpu);
+}
+
 static NV_STATUS __nvoc_thunk_RmResource_vmrangeControl_Prologue(struct VirtualMemoryRange *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemoryRange_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_vmrangeIsReady(struct VirtualMemoryRange *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemoryRange_Memory.offset));
+static NV_STATUS __nvoc_thunk_Memory_vmrangeIsReady(struct VirtualMemoryRange *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemoryRange_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_VirtualMemory_vmrangeUnmapFrom(struct VirtualMemoryRange *pVirtualMemory, struct RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -173,6 +177,10 @@ static NV_STATUS __nvoc_thunk_VirtualMemory_vmrangeUnmapFrom(struct VirtualMemor
 
 static NV_STATUS __nvoc_thunk_Memory_vmrangeCheckCopyPermissions(struct VirtualMemoryRange *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
     return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemoryRange_Memory.offset), pDstGpu, hDstClientNvBool);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_vmrangeIsDuplicate(struct VirtualMemoryRange *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemoryRange_Memory.offset), hMemory, pDuplicate);
 }
 
 static void __nvoc_thunk_RsResource_vmrangePreDestruct(struct VirtualMemoryRange *pResource) {
@@ -257,6 +265,8 @@ static void __nvoc_init_funcTable_VirtualMemoryRange_1(VirtualMemoryRange *pThis
 
     pThis->__vmrangeCanCopy__ = &__nvoc_thunk_StandardMemory_vmrangeCanCopy;
 
+    pThis->__vmrangeIsGpuMapAllowed__ = &__nvoc_thunk_Memory_vmrangeIsGpuMapAllowed;
+
     pThis->__vmrangeControl_Prologue__ = &__nvoc_thunk_RmResource_vmrangeControl_Prologue;
 
     pThis->__vmrangeIsReady__ = &__nvoc_thunk_Memory_vmrangeIsReady;
@@ -264,6 +274,8 @@ static void __nvoc_init_funcTable_VirtualMemoryRange_1(VirtualMemoryRange *pThis
     pThis->__vmrangeUnmapFrom__ = &__nvoc_thunk_VirtualMemory_vmrangeUnmapFrom;
 
     pThis->__vmrangeCheckCopyPermissions__ = &__nvoc_thunk_Memory_vmrangeCheckCopyPermissions;
+
+    pThis->__vmrangeIsDuplicate__ = &__nvoc_thunk_Memory_vmrangeIsDuplicate;
 
     pThis->__vmrangePreDestruct__ = &__nvoc_thunk_RsResource_vmrangePreDestruct;
 

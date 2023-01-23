@@ -330,6 +330,10 @@
 #define NV_DPCD14_FEC_ERROR_COUNT_FEC_ERROR_COUNT_VALID_NO                          (0x00000000) /* R-XUV */
 #define NV_DPCD14_FEC_ERROR_COUNT_FEC_ERROR_COUNT_VALID_YES                         (0x00000001) /* R-XUV */
 
+// Field definitions for FW/SW Revision
+#define NV_DPCD14_FW_SW_REVISION_MAJOR                                              (0x0000040A) /* R-XUR */
+#define NV_DPCD14_FW_SW_REVISION_MINOR                                              (0x0000040B) /* R-XUR */
+
 // Field definition for 0x0200E (LANE_ALIGN_STATUS_UPDATED_ESI), used only when DP2.0+ 128b/132b is enabled.
 #define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI                                              (0x0000200E) /* R-XUR */
 #define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_DPRX_EQ_INTERLANE_ALIGN_DONE               2:2  /* R-XUF */

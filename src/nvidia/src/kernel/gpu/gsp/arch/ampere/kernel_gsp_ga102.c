@@ -193,6 +193,14 @@ kgspBootstrapRiscvOSEarly_GA102
     // Fb configuration is done so setup libos arg list
     kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
 
+    // Execute Scrubber if needed
+    if (pKernelGsp->pScrubberUcode != NULL)
+    {
+        NV_ASSERT_OK_OR_GOTO(status,
+                             kgspExecuteScrubberIfNeeded_HAL(pGpu, pKernelGsp),
+                             exit);
+    }
+
     RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
 
     {
@@ -323,6 +331,8 @@ kgspExecuteSequencerCommand_GA102
             {
                 KernelFalcon *pKernelSec2Falcon = staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
 
+                pKernelGsp->bLibosLogsPollingEnabled = NV_FALSE;
+
                 NV_ASSERT_OK_OR_RETURN(_kgspResetIntoRiscv(pGpu, pKernelGsp));
                 kgspProgramLibosBootArgsAddr_HAL(pGpu, pKernelGsp);
 
@@ -342,6 +352,8 @@ kgspExecuteSequencerCommand_GA102
                     DBG_BREAKPOINT();
                     return NV_ERR_TIMEOUT;
                 }
+
+                pKernelGsp->bLibosLogsPollingEnabled = NV_TRUE;
             }
 
             // Program FALCON_OS

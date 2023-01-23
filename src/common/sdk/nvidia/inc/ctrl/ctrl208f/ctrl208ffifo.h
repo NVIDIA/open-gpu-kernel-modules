@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl208f/ctrl208ffifo.finn
 //
 
-
-
-
 #include "ctrl/ctrl208f/ctrl208fbase.h"
 
 /*

@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrl000f.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 
 #define NV000F_CTRL_CMD(cat,idx)          NVXXXX_CTRL_CMD(0x000f, NV000F_CTRL_##cat, idx)

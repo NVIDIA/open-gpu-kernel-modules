@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl5070/ctrl5070system.finn
 //
 
-
-
-
 #include "ctrl/ctrl5070/ctrl5070base.h"
 #include "ctrl/ctrl5070/ctrl5070common.h" // NV5070_CTRL_CMD_MAX_HEADS
 

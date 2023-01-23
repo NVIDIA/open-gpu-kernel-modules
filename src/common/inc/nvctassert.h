@@ -83,7 +83,7 @@
  * e.g. msvc compiler:
  *      error C2118: negative subscript or subscript is too large
  * e.g. gcc 2.95.3:
- *      size of array `_compile_time_assertion_failed_in_line_555' is negative
+ *      size of array '_compile_time_assertion_failed_in_line_555' is negative
  *
  * In case the condition 'b' is not constant, the msvc compiler throws
  * an error:

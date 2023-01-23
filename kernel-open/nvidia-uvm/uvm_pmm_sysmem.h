@@ -181,6 +181,9 @@ size_t uvm_pmm_sysmem_mappings_dma_to_virt(uvm_pmm_sysmem_mappings_t *sysmem_map
 #if UVM_CPU_CHUNK_SIZES == PAGE_SIZE
 #define UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE() 1
 typedef struct page uvm_cpu_chunk_t;
+
+#define UVM_CPU_CHUNK_PAGE_INDEX(chunk, page_index) (page_index)
+
 #else
 #define UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE() 0
 typedef struct uvm_cpu_chunk_struct uvm_cpu_chunk_t;
@@ -224,13 +227,10 @@ struct uvm_cpu_chunk_struct
     // parent.
     nv_kref_t refcount;
 
-    // Size of the chunk at the time of its creation.
-    // For chunks, which are the result of a split, this
-    // value will be the size of the chunk prior to the
-    // split.
-    // For chunks resulting from page allocations (physical),
+    // Size of the chunk.
+    // For chunks resulting from page allocations (physical chunks),
     // this value is the size of the physical allocation.
-    size_t log2_phys_size : order_base_2(UVM_CHUNK_SIZE_MASK_SIZE);
+    size_t log2_size : order_base_2(UVM_CHUNK_SIZE_MASK_SIZE);
 
     struct {
         // Per-GPU array of DMA mapping addresses for the chunk.
@@ -252,6 +252,8 @@ struct uvm_cpu_chunk_struct
     // for logical chunks this will be NULL;
     unsigned long *dirty_bitmap;
 };
+
+#define UVM_CPU_CHUNK_PAGE_INDEX(chunk, page_index) (chunk->region.first)
 #endif // UVM_CPU_CHUNK_SIZES == PAGE_SIZE
 
 // Return the set of allowed CPU chunk allocation sizes.
@@ -302,22 +304,6 @@ void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *
 // NULL is returned.
 uvm_cpu_chunk_t *uvm_cpu_chunk_get_chunk_for_page(uvm_va_block_t *block, uvm_page_index_t page_index);
 
-// Return the physical size of the CPU chunk.
-// The physical size of the CPU chunk is the size of the physical CPU
-// memory backing the CPU chunk. It is set at CPU chunk allocation time
-static uvm_chunk_size_t uvm_cpu_chunk_get_phys_size(uvm_cpu_chunk_t *chunk)
-{
-#if UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
-    return (uvm_chunk_size_t)PAGE_SIZE;
-#else
-    return ((uvm_chunk_size_t)1) << chunk->log2_phys_size;
-#endif
-}
-
-// Return the size of the CPU chunk. While the physical size of the CPU
-// chunk reflects the size of the physical memory backing the chunk, this
-// size is the effective size of the chunk and changes as result of CPU
-// chunk splits.
 uvm_chunk_size_t uvm_cpu_chunk_get_size(uvm_cpu_chunk_t *chunk);
 
 // Return the number of base system pages covered by the CPU chunk.
@@ -370,35 +356,27 @@ NvU64 uvm_cpu_chunk_get_gpu_mapping_addr(uvm_va_block_t *block,
 // new_size has to be one of the supported CPU chunk allocation sizes and has to
 // be smaller than the current size of chunk.
 //
-// On success, NV_OK is returned. All new chunks will have chunk as parent and
-// chunk's size will have been updated to new_size.
-//
-// Note that due to the way CPU chunks are managed and split, the number of
-// newly created chunks will be (size_of(chunk) / new_size) - 1.
-//
-// On failure NV_ERR_NO_MEMORY will be returned. chunk's size will not be
-// modified.
-NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_chunk_size_t new_size);
+// On success, NV_OK is returned. On failure NV_ERR_NO_MEMORY will be returned.
+NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block,
+                              uvm_cpu_chunk_t *chunk,
+                              uvm_chunk_size_t new_size,
+                              uvm_page_index_t page_index,
+                              uvm_cpu_chunk_t **new_chunks);
 
-// Merge chunk's parent to the highest possible CPU chunk size fully contained
-// within the parent's owning VA block.
+// Merge chunks to merge_size.
 //
-// The size to which chunks are merged is determined by finding the largest
-// size from the set of allowed CPU chunk sizes that satisfies both criteria
-// below:
-//    * The VA range of the parent chunk resulting from the merge has to be
-//      fully contained within the VA block.
-//    * The start and end VA addresses of the parent based on its physical
-//      size have to be aligned to the merge size.
+// All input chunks must have the same parent and size. If not,
+// NV_ERR_INVALID_ARGUMENT is returned.
 //
-// It is possible that a merge cannot be done if chunk does not have a parent
-// (it is a physical chunk), chunk's owning VA block is not the same as
-// its parent's owning VA block, or there is no chunk size that satisfied both
-// the above criteria.
+// If a merge cannot be done, NV_WARN_NOTHING_TO_DO is returned.
 //
-// Return a pointer to the merged chunk. If a merge could not be done, return
-// NULL.
-uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk);
+// On success, NV_OK is returned and merged_chunk is set to point to the
+// merged chunk.
+NV_STATUS uvm_cpu_chunk_merge(uvm_va_block_t *va_block,
+                              uvm_cpu_chunk_t **chunks,
+                              size_t num_merge_chunks,
+                              uvm_chunk_size_t merge_size,
+                              uvm_cpu_chunk_t **merged_chunk);
 
 // Mark the CPU sub-page page_index in the CPU chunk as dirty.
 // page_index has to be a page withing the chunk's region.
@@ -414,14 +392,22 @@ bool uvm_cpu_chunk_is_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
 
 #else // UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
 
-static NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_chunk_size_t new_size)
+static NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block,
+                                     uvm_cpu_chunk_t *chunk,
+                                     uvm_chunk_size_t new_size,
+                                     uvm_page_index_t page_index,
+                                     uvm_cpu_chunk_t **new_chunks)
 {
     return NV_OK;
 }
 
-static uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk)
+static NV_STATUS uvm_cpu_chunk_merge(uvm_va_block_t *va_block,
+                                     uvm_cpu_chunk_t **chunk,
+                                     size_t num_merge_chunks,
+                                     uvm_chunk_size_t merge_size,
+                                     uvm_cpu_chunk_t **merged_chunk)
 {
-    return NULL;
+    return NV_WARN_NOTHING_TO_DO;
 }
 
 static void uvm_cpu_chunk_mark_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)

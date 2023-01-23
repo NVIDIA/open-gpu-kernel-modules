@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,6 +60,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "___",    _VENDOR_NAME_ENTRY("Targa")                             },
     { "@@@",    _VENDOR_NAME_ENTRY("Sangyo")                            },
 
+    { "AAA",    _VENDOR_NAME_ENTRY("Avolites Ltd")                      },
     { "AAC",    _VENDOR_NAME_ENTRY("Acer")                              },
     { "ABC",    _VENDOR_NAME_ENTRY("AboCom System Inc")                 },
     { "ABP",    _VENDOR_NAME_ENTRY("Advanced System Products")          },
@@ -109,6 +110,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "ATT",    _VENDOR_NAME_ENTRY("AT&T")                              },
     { "ATX",    _VENDOR_NAME_ENTRY("Athenix")                           },
     { "AUO",    _VENDOR_NAME_ENTRY("AU Optronics Corporation")          },
+    { "AUS",    _VENDOR_NAME_ENTRY("Asustek Computer Inc")              },
     { "AVI",    _VENDOR_NAME_ENTRY("AIR")                               },
     { "AVO",    _VENDOR_NAME_ENTRY("Avocent Corporation")               },
     { "AZU",    _VENDOR_NAME_ENTRY("Azura")                             },
@@ -118,6 +120,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "BCD",    _VENDOR_NAME_ENTRY("Dr. Seufert GmbH")                  },
     { "BEO",    _VENDOR_NAME_ENTRY("Bang & Olufsen")                    },
     { "BGT",    _VENDOR_NAME_ENTRY("Budzetron")                         },
+    { "BIG",    _VENDOR_NAME_ENTRY("Bigscreen, Inc.")                   },
     { "BMM",    _VENDOR_NAME_ENTRY("MAG Technology")                    },
     { "BNQ",    _VENDOR_NAME_ENTRY("BenQ")                              },
     { "BOE",    _VENDOR_NAME_ENTRY("BOE Technology Group Co., Ltd")     },
@@ -136,6 +139,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "CLO",    _VENDOR_NAME_ENTRY("Clone Computers/Analogy")           },
     { "CLT",    _VENDOR_NAME_ENTRY("automated computer control systems")},
     { "CMD",    _VENDOR_NAME_ENTRY("CMD Technology")                    },
+    { "CMN",    _VENDOR_NAME_ENTRY("Chimei innolux corp.")              },
     { "CMO",    _VENDOR_NAME_ENTRY("Chi Mei Optoelectronics corp.")     },
     { "CNI",    _VENDOR_NAME_ENTRY("Connect International")             },
     { "CNT",    _VENDOR_NAME_ENTRY("CNet Technology")                   },
@@ -248,6 +252,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "HEI",    _VENDOR_NAME_ENTRY("Hyundai")                           },
     { "HIT",    _VENDOR_NAME_ENTRY("Hitachi/HINT")                      },
     { "HMX",    _VENDOR_NAME_ENTRY("HUMAX Co., Ltd.")                   },
+    { "HPN",    _VENDOR_NAME_ENTRY("HP Inc.")                           },
     { "HSD",    _VENDOR_NAME_ENTRY("HannStar Display Corp")             },
     { "HSL",    _VENDOR_NAME_ENTRY("Hansol")                            },
     { "HTC",    _VENDOR_NAME_ENTRY("Hitachi")                           },
@@ -272,6 +277,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "IMA",    _VENDOR_NAME_ENTRY("Imagraph")                          },
     { "IMC",    _VENDOR_NAME_ENTRY("IMC Networks")                      },
     { "IMP",    _VENDOR_NAME_ENTRY("Impression")                        },
+    { "IMX",    _VENDOR_NAME_ENTRY("Arpara Technology Co., Ltd.")       },
     { "INF",    _VENDOR_NAME_ENTRY("Inframetrics")                      },
     { "INL",    _VENDOR_NAME_ENTRY("InnoLux Display Corporation")       },
     { "INP",    _VENDOR_NAME_ENTRY("Interphase")                        },
@@ -311,6 +317,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "LCS",    _VENDOR_NAME_ENTRY("Longshine Electronics")             },
     { "LEF",    _VENDOR_NAME_ENTRY("Leaf Systems")                      },
     { "LEN",    _VENDOR_NAME_ENTRY("Lenovo Group Limited")              },
+    { "LGD",    _VENDOR_NAME_ENTRY("LG Display")                        },
     { "LGE",    _VENDOR_NAME_ENTRY("LG Electronics")                    },
     { "LKM",    _VENDOR_NAME_ENTRY("Likom/LKM")                         },
     { "LNK",    _VENDOR_NAME_ENTRY("Link Technologies")                 },
@@ -345,6 +352,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "MMX",    _VENDOR_NAME_ENTRY("MAG Technology")                    },
     { "MOR",    _VENDOR_NAME_ENTRY("Morse Technology")                  },
     { "MSI",    _VENDOR_NAME_ENTRY("Microstep")                         },
+    { "MST",    _VENDOR_NAME_ENTRY("MS Telematica")                     },
     { "MSV",    _VENDOR_NAME_ENTRY("Mosgi")                             },
     { "MTC",    _VENDOR_NAME_ENTRY("Mitac")                             },
     { "MTI",    _VENDOR_NAME_ENTRY("Morse Technology")                  },

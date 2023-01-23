@@ -283,4 +283,7 @@ static inline NvBool nvIsUpdateStateEmpty(const NVDevEvoRec *pDevEvo,
     return TRUE;
 }
 
+NvBool nvEvoPollForEmptyChannel(NVEvoChannelPtr pChannel, NvU32 sd,
+                                NvU64 *pStartTime, const NvU32 timeout);
+
 #endif /* __NVKMS_DMA_H__ */

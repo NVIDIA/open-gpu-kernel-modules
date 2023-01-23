@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -396,12 +396,13 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_dup_allocation(nvidia_stack_t *sp,
                                                   gpuAddressSpaceHandle srcVaSpace,
                                                   NvU64 srcAddress,
                                                   gpuAddressSpaceHandle dstVaSpace,
+                                                  NvU64 dstVaAlignment,
                                                   NvU64 *dstAddress)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsDupAllocation(srcVaSpace, srcAddress, dstVaSpace, dstAddress);
+    rmStatus = nvGpuOpsDupAllocation(srcVaSpace, srcAddress, dstVaSpace, dstVaAlignment, dstAddress);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }

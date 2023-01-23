@@ -30,22 +30,16 @@
 
 NV_STATUS kceStateLoad_GP100(OBJGPU *pGpu, KernelCE *pKCe, NvU32 flags)
 {
-    if (!IS_VIRTUAL(pGpu) && !pGpu->bIsKCeMapInitialized)
+    KernelCE *pKCeShim;
+
+    // Mark first CE to load as the owner
+    if (kceFindShimOwner(pGpu, pKCe, &pKCeShim) != NV_OK)
+        pKCe->bShimOwner = NV_TRUE;
+
+    if (!IS_VIRTUAL(pGpu) && pKCe->bShimOwner)
     {
         NV_ASSERT_OK_OR_RETURN(kceTopLevelPceLceMappingsUpdate(pGpu, pKCe));
-        pGpu->bIsKCeMapInitialized = NV_TRUE;
     }
-
-    return NV_OK;
-}
-
-NV_STATUS kceStateUnload_GP100(OBJGPU *pGpu, KernelCE *pKCe, NvU32 flags)
-{
-    // Apply mappings again at resume, bug 3456067
-    pGpu->bIsKCeMapInitialized = NV_FALSE;
-
-    // On vgpu, sync with the mappings of PF at resume
-    pGpu->bIsCeMapInitialized = NV_FALSE;
 
     return NV_OK;
 }
@@ -167,16 +161,19 @@ kceGetNvlinkMaxTopoForTable_GP100
     NvU32  currentTopoIdx = 0;
     NvBool bCachedIdxExists, bCurrentIdxExists;
     NvU32  currentExposeCeMask, cachedExposeCeMask;
-    NVLINK_TOPOLOGY_PARAMS cachedTopo;
+    NvBool result = NV_FALSE;
+    NVLINK_TOPOLOGY_PARAMS *pCachedTopo = portMemAllocNonPaged(sizeof(*pCachedTopo));
+
+    NV_ASSERT_OR_RETURN(pCachedTopo != NULL, result);
 
     //
     // If exposeCeMask from current config is a subset of the cached topology,
     // then use the cached topology data.
     // We do this to ensure that we don't revoke CEs that we have exposed prevously.
     //
-    gpumgrGetSystemNvlinkTopo(gpuGetDBDF(pGpu), &cachedTopo);
+    gpumgrGetSystemNvlinkTopo(gpuGetDBDF(pGpu), pCachedTopo);
 
-    bCachedIdxExists = kceGetAutoConfigTableEntry_HAL(pGpu, pKCe, &cachedTopo,
+    bCachedIdxExists = kceGetAutoConfigTableEntry_HAL(pGpu, pKCe, pCachedTopo,
                         pAutoConfigTable, autoConfigNumEntries, &cachedTopoIdx,
                         &cachedExposeCeMask);
 
@@ -225,8 +222,13 @@ kceGetNvlinkMaxTopoForTable_GP100
     else
     {
         // Neither are in table
-        return NV_FALSE;
+        result = NV_FALSE;
+        goto done;
     }
 
-    return NV_TRUE;
+    result = NV_TRUE;
+
+done:
+    portMemFree(pCachedTopo);
+    return result;
 }

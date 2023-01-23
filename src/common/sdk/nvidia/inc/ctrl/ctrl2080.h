@@ -40,6 +40,8 @@
 #include "ctrl2080/ctrl2080mc.h"
 #include "ctrl2080/ctrl2080fifo.h"
 #include "ctrl2080/ctrl2080fb.h"
+
+
 #include "ctrl2080/ctrl2080gr.h"
 #include "ctrl2080/ctrl2080bus.h"
 #include "ctrl2080/ctrl2080thermal.h"
@@ -74,8 +76,7 @@
 
 #include "ctrl2080/ctrl2080grmgr.h"
 #include "ctrl2080/ctrl2080ucodefuzzer.h"
-
-
+#include "ctrl2080/ctrl2080vgpumgrinternal.h"
 #include "ctrl2080/ctrl2080hshub.h"
 /* include appropriate os-specific command header */
 

@@ -115,6 +115,8 @@ void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
                                         const uvm_access_counter_buffer_entry_t *buffer_entry,
                                         bool on_managed);
 
+void uvm_tools_test_hmm_split_invalidate(uvm_va_space_t *va_space);
+
 // schedules completed events and then waits from the to be dispatched
 void uvm_tools_flush_events(void);
 

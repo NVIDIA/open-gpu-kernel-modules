@@ -187,6 +187,7 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM**, Dynamic*, NvU32);
 #define uvmIsPresent(pGpu, pEngstate) uvmIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS uvmInitializeAccessCntrBuffer_IMPL(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmInitializeAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -199,6 +200,7 @@ static inline NV_STATUS uvmInitializeAccessCntrBuffer(OBJGPU *pGpu, struct OBJUV
 #define uvmInitializeAccessCntrBuffer_HAL(pGpu, pUvm) uvmInitializeAccessCntrBuffer(pGpu, pUvm)
 
 NV_STATUS uvmTerminateAccessCntrBuffer_IMPL(OBJGPU *pGpu, struct OBJUVM *pUvm);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmTerminateAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm) {
@@ -213,6 +215,7 @@ static inline NV_STATUS uvmTerminateAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM
 
 NV_STATUS uvmInitAccessCntrBuffer_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmInitAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -225,6 +228,7 @@ static inline NV_STATUS uvmInitAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUv
 #define uvmInitAccessCntrBuffer_HAL(pGpu, pUvm) uvmInitAccessCntrBuffer(pGpu, pUvm)
 
 NV_STATUS uvmDestroyAccessCntrBuffer_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmDestroyAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm) {
@@ -241,6 +245,7 @@ static inline NV_STATUS uvmAccessCntrBufferUnregister_ac1694(OBJGPU *arg0, struc
     return NV_OK;
 }
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmAccessCntrBufferUnregister(OBJGPU *arg0, struct OBJUVM *arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -256,6 +261,7 @@ static inline NV_STATUS uvmAccessCntrBufferRegister_ac1694(OBJGPU *arg0, struct 
     return NV_OK;
 }
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmAccessCntrBufferRegister(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 arg2, RmPhysAddr *arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -268,6 +274,7 @@ static inline NV_STATUS uvmAccessCntrBufferRegister(OBJGPU *arg0, struct OBJUVM 
 #define uvmAccessCntrBufferRegister_HAL(arg0, arg1, arg2, arg3) uvmAccessCntrBufferRegister(arg0, arg1, arg2, arg3)
 
 NV_STATUS uvmUnloadAccessCntrBuffer_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmUnloadAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm) {
@@ -282,6 +289,7 @@ static inline NV_STATUS uvmUnloadAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *p
 
 NV_STATUS uvmSetupAccessCntrBuffer_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmSetupAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -294,6 +302,7 @@ static inline NV_STATUS uvmSetupAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pU
 #define uvmSetupAccessCntrBuffer_HAL(pGpu, pUvm) uvmSetupAccessCntrBuffer(pGpu, pUvm)
 
 NV_STATUS uvmReadAccessCntrBufferPutPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 *arg0);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmReadAccessCntrBufferPutPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 *arg0) {
@@ -308,6 +317,7 @@ static inline NV_STATUS uvmReadAccessCntrBufferPutPtr(OBJGPU *pGpu, struct OBJUV
 
 NV_STATUS uvmReadAccessCntrBufferGetPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 *arg0);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmReadAccessCntrBufferGetPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 *arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -320,6 +330,7 @@ static inline NV_STATUS uvmReadAccessCntrBufferGetPtr(OBJGPU *pGpu, struct OBJUV
 #define uvmReadAccessCntrBufferGetPtr_HAL(pGpu, pUvm, arg0) uvmReadAccessCntrBufferGetPtr(pGpu, pUvm, arg0)
 
 NV_STATUS uvmReadAccessCntrBufferFullPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvBool *arg0);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmReadAccessCntrBufferFullPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvBool *arg0) {
@@ -334,6 +345,7 @@ static inline NV_STATUS uvmReadAccessCntrBufferFullPtr(OBJGPU *pGpu, struct OBJU
 
 NV_STATUS uvmResetAccessCntrBuffer_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmResetAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -346,6 +358,7 @@ static inline NV_STATUS uvmResetAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *pU
 #define uvmResetAccessCntrBuffer_HAL(pGpu, pUvm, arg0) uvmResetAccessCntrBuffer(pGpu, pUvm, arg0)
 
 NV_STATUS uvmAccessCntrSetGranularity_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, ACCESS_CNTR_TYPE arg0, NvU32 arg1);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmAccessCntrSetGranularity(OBJGPU *pGpu, struct OBJUVM *pUvm, ACCESS_CNTR_TYPE arg0, NvU32 arg1) {
@@ -360,6 +373,7 @@ static inline NV_STATUS uvmAccessCntrSetGranularity(OBJGPU *pGpu, struct OBJUVM 
 
 NV_STATUS uvmAccessCntrSetThreshold_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmAccessCntrSetThreshold(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -372,6 +386,7 @@ static inline NV_STATUS uvmAccessCntrSetThreshold(OBJGPU *pGpu, struct OBJUVM *p
 #define uvmAccessCntrSetThreshold_HAL(pGpu, pUvm, arg0) uvmAccessCntrSetThreshold(pGpu, pUvm, arg0)
 
 NV_STATUS uvmAccessCntrSetCounterLimit_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0, NvU32 arg1);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmAccessCntrSetCounterLimit(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0, NvU32 arg1) {
@@ -386,6 +401,7 @@ static inline NV_STATUS uvmAccessCntrSetCounterLimit(OBJGPU *pGpu, struct OBJUVM
 
 NV_STATUS uvmWriteAccessCntrBufferGetPtr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmWriteAccessCntrBufferGetPtr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -398,6 +414,7 @@ static inline NV_STATUS uvmWriteAccessCntrBufferGetPtr(OBJGPU *pGpu, struct OBJU
 #define uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, arg0) uvmWriteAccessCntrBufferGetPtr(pGpu, pUvm, arg0)
 
 NV_STATUS uvmEnableAccessCntr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvBool arg0);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmEnableAccessCntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvBool arg0) {
@@ -412,6 +429,7 @@ static inline NV_STATUS uvmEnableAccessCntr(OBJGPU *pGpu, struct OBJUVM *pUvm, N
 
 NV_STATUS uvmDisableAccessCntr_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvBool arg0);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmDisableAccessCntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvBool arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -424,6 +442,7 @@ static inline NV_STATUS uvmDisableAccessCntr(OBJGPU *pGpu, struct OBJUVM *pUvm, 
 #define uvmDisableAccessCntr_HAL(pGpu, pUvm, arg0) uvmDisableAccessCntr(pGpu, pUvm, arg0)
 
 NV_STATUS uvmEnableAccessCntrIntr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmEnableAccessCntrIntr(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0) {
@@ -438,6 +457,7 @@ static inline NV_STATUS uvmEnableAccessCntrIntr(OBJGPU *pGpu, struct OBJUVM *pUv
 
 NV_STATUS uvmDisableAccessCntrIntr_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmDisableAccessCntrIntr(OBJGPU *pGpu, struct OBJUVM *pUvm) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -450,6 +470,7 @@ static inline NV_STATUS uvmDisableAccessCntrIntr(OBJGPU *pGpu, struct OBJUVM *pU
 #define uvmDisableAccessCntrIntr_HAL(pGpu, pUvm) uvmDisableAccessCntrIntr(pGpu, pUvm)
 
 NV_STATUS uvmGetAccessCntrRegisterMappings_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvP64 *arg0, NvP64 *arg1, NvP64 *arg2, NvP64 *arg3, NvP64 *arg4, NvP64 *arg5, NvU32 *arg6);
+
 
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmGetAccessCntrRegisterMappings(OBJGPU *pGpu, struct OBJUVM *pUvm, NvP64 *arg0, NvP64 *arg1, NvP64 *arg2, NvP64 *arg3, NvP64 *arg4, NvP64 *arg5, NvU32 *arg6) {
@@ -464,6 +485,7 @@ static inline NV_STATUS uvmGetAccessCntrRegisterMappings(OBJGPU *pGpu, struct OB
 
 NV_STATUS uvmAccessCntrService_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NV_STATUS uvmAccessCntrService(OBJGPU *pGpu, struct OBJUVM *pUvm) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -477,6 +499,7 @@ static inline NV_STATUS uvmAccessCntrService(OBJGPU *pGpu, struct OBJUVM *pUvm) 
 
 NvU32 uvmGetAccessCounterBufferSize_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
+
 #ifdef __nvoc_uvm_h_disabled
 static inline NvU32 uvmGetAccessCounterBufferSize(OBJGPU *pGpu, struct OBJUVM *pUvm) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
@@ -488,55 +511,59 @@ static inline NvU32 uvmGetAccessCounterBufferSize(OBJGPU *pGpu, struct OBJUVM *p
 
 #define uvmGetAccessCounterBufferSize_HAL(pGpu, pUvm) uvmGetAccessCounterBufferSize(pGpu, pUvm)
 
-void uvmWriteAccessCntrBufferHiReg_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0);
+void uvmProgramWriteAccessCntrBufferAddress_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU64 addr);
+
 
 #ifdef __nvoc_uvm_h_disabled
-static inline void uvmWriteAccessCntrBufferHiReg(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0) {
+static inline void uvmProgramWriteAccessCntrBufferAddress(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU64 addr) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmWriteAccessCntrBufferHiReg(pGpu, pUvm, arg0) uvmWriteAccessCntrBufferHiReg_TU102(pGpu, pUvm, arg0)
+#define uvmProgramWriteAccessCntrBufferAddress(pGpu, pUvm, addr) uvmProgramWriteAccessCntrBufferAddress_TU102(pGpu, pUvm, addr)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmWriteAccessCntrBufferHiReg_HAL(pGpu, pUvm, arg0) uvmWriteAccessCntrBufferHiReg(pGpu, pUvm, arg0)
+#define uvmProgramWriteAccessCntrBufferAddress_HAL(pGpu, pUvm, addr) uvmProgramWriteAccessCntrBufferAddress(pGpu, pUvm, addr)
 
-void uvmWriteAccessCntrBufferLoReg_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0);
+void uvmProgramAccessCntrBufferEnabled_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm, NvBool bEn);
+
 
 #ifdef __nvoc_uvm_h_disabled
-static inline void uvmWriteAccessCntrBufferLoReg(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 arg0) {
+static inline void uvmProgramAccessCntrBufferEnabled(OBJGPU *pGpu, struct OBJUVM *pUvm, NvBool bEn) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmWriteAccessCntrBufferLoReg(pGpu, pUvm, arg0) uvmWriteAccessCntrBufferLoReg_TU102(pGpu, pUvm, arg0)
+#define uvmProgramAccessCntrBufferEnabled(pGpu, pUvm, bEn) uvmProgramAccessCntrBufferEnabled_TU102(pGpu, pUvm, bEn)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmWriteAccessCntrBufferLoReg_HAL(pGpu, pUvm, arg0) uvmWriteAccessCntrBufferLoReg(pGpu, pUvm, arg0)
+#define uvmProgramAccessCntrBufferEnabled_HAL(pGpu, pUvm, bEn) uvmProgramAccessCntrBufferEnabled(pGpu, pUvm, bEn)
 
-NvU32 uvmReadAccessCntrBufferLoReg_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
+NvBool uvmIsAccessCntrBufferEnabled_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
+
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NvU32 uvmReadAccessCntrBufferLoReg(OBJGPU *pGpu, struct OBJUVM *pUvm) {
+static inline NvBool uvmIsAccessCntrBufferEnabled(OBJGPU *pGpu, struct OBJUVM *pUvm) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
-    return 0;
+    return NV_FALSE;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmReadAccessCntrBufferLoReg(pGpu, pUvm) uvmReadAccessCntrBufferLoReg_TU102(pGpu, pUvm)
+#define uvmIsAccessCntrBufferEnabled(pGpu, pUvm) uvmIsAccessCntrBufferEnabled_TU102(pGpu, pUvm)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmReadAccessCntrBufferLoReg_HAL(pGpu, pUvm) uvmReadAccessCntrBufferLoReg(pGpu, pUvm)
+#define uvmIsAccessCntrBufferEnabled_HAL(pGpu, pUvm) uvmIsAccessCntrBufferEnabled(pGpu, pUvm)
 
-NvU32 uvmReadAccessCntrBufferInfoReg_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
+NvBool uvmIsAccessCntrBufferPushed_TU102(OBJGPU *pGpu, struct OBJUVM *pUvm);
+
 
 #ifdef __nvoc_uvm_h_disabled
-static inline NvU32 uvmReadAccessCntrBufferInfoReg(OBJGPU *pGpu, struct OBJUVM *pUvm) {
+static inline NvBool uvmIsAccessCntrBufferPushed(OBJGPU *pGpu, struct OBJUVM *pUvm) {
     NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
-    return 0;
+    return NV_FALSE;
 }
 #else //__nvoc_uvm_h_disabled
-#define uvmReadAccessCntrBufferInfoReg(pGpu, pUvm) uvmReadAccessCntrBufferInfoReg_TU102(pGpu, pUvm)
+#define uvmIsAccessCntrBufferPushed(pGpu, pUvm) uvmIsAccessCntrBufferPushed_TU102(pGpu, pUvm)
 #endif //__nvoc_uvm_h_disabled
 
-#define uvmReadAccessCntrBufferInfoReg_HAL(pGpu, pUvm) uvmReadAccessCntrBufferInfoReg(pGpu, pUvm)
+#define uvmIsAccessCntrBufferPushed_HAL(pGpu, pUvm) uvmIsAccessCntrBufferPushed(pGpu, pUvm)
 
 void uvmStateDestroy_IMPL(OBJGPU *pGpu, struct OBJUVM *pUvm);
 
@@ -550,9 +577,9 @@ static inline NV_STATUS uvmStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJUV
     return pUvm->__uvmStateInitUnlocked__(pGpu, pUvm);
 }
 
-void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[155]);
+void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[163]);
 
-static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[155]) {
+static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[163]) {
     pUvm->__uvmRegisterIntrService__(arg0, pUvm, arg1);
 }
 

@@ -39,6 +39,11 @@ extern "C" {
 #include "gpu/gpu.h"
 #include "nvoc/utility.h"
 
+/*!
+ * RM internal class representing USERMODE_A classes. We inherit Memory here instead of GpuResource
+ * because GpuResource can only map regmem, whereas for HOPPER+, we will need to map sysmem with an
+ * effective address space of fbmem if the user requests the GMMU/BAR1 mapping for the VF pages.
+ */
 #ifdef NVOC_USERMODE_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
@@ -53,6 +58,7 @@ struct UserModeApi {
     struct RmResource *__nvoc_pbase_RmResource;
     struct Memory *__nvoc_pbase_Memory;
     struct UserModeApi *__nvoc_pbase_UserModeApi;
+    NV_STATUS (*__usrmodeConstructHal__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
     NvBool (*__usrmodeCanCopy__)(struct UserModeApi *);
     NV_STATUS (*__usrmodeCheckMemInterUnmap__)(struct UserModeApi *, NvBool);
     NV_STATUS (*__usrmodeControl__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -66,9 +72,11 @@ struct UserModeApi {
     NvU32 (*__usrmodeGetRefCount__)(struct UserModeApi *);
     NV_STATUS (*__usrmodeMapTo__)(struct UserModeApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__usrmodeControl_Prologue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__usrmodeIsReady__)(struct UserModeApi *);
+    NvBool (*__usrmodeIsGpuMapAllowed__)(struct UserModeApi *, struct OBJGPU *);
+    NV_STATUS (*__usrmodeIsReady__)(struct UserModeApi *, NvBool);
     NV_STATUS (*__usrmodeCheckCopyPermissions__)(struct UserModeApi *, struct OBJGPU *, NvHandle);
     void (*__usrmodePreDestruct__)(struct UserModeApi *);
+    NV_STATUS (*__usrmodeIsDuplicate__)(struct UserModeApi *, NvHandle, NvBool *);
     NV_STATUS (*__usrmodeUnmapFrom__)(struct UserModeApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__usrmodeControl_Epilogue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__usrmodeControlLookup__)(struct UserModeApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -104,6 +112,8 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
 #define __objCreate_UserModeApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_UserModeApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
+#define usrmodeConstructHal(pUserModeApi, pCallContext, pParams) usrmodeConstructHal_DISPATCH(pUserModeApi, pCallContext, pParams)
+#define usrmodeConstructHal_HAL(pUserModeApi, pCallContext, pParams) usrmodeConstructHal_DISPATCH(pUserModeApi, pCallContext, pParams)
 #define usrmodeCanCopy(pUserModeApi) usrmodeCanCopy_DISPATCH(pUserModeApi)
 #define usrmodeCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) usrmodeCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define usrmodeControl(pMemory, pCallContext, pParams) usrmodeControl_DISPATCH(pMemory, pCallContext, pParams)
@@ -117,9 +127,11 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
 #define usrmodeGetRefCount(pResource) usrmodeGetRefCount_DISPATCH(pResource)
 #define usrmodeMapTo(pResource, pParams) usrmodeMapTo_DISPATCH(pResource, pParams)
 #define usrmodeControl_Prologue(pResource, pCallContext, pParams) usrmodeControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define usrmodeIsReady(pMemory) usrmodeIsReady_DISPATCH(pMemory)
+#define usrmodeIsGpuMapAllowed(pMemory, pGpu) usrmodeIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define usrmodeIsReady(pMemory, bCopyConstructorContext) usrmodeIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define usrmodeCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) usrmodeCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define usrmodePreDestruct(pResource) usrmodePreDestruct_DISPATCH(pResource)
+#define usrmodeIsDuplicate(pMemory, hMemory, pDuplicate) usrmodeIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define usrmodeUnmapFrom(pResource, pParams) usrmodeUnmapFrom_DISPATCH(pResource, pParams)
 #define usrmodeControl_Epilogue(pResource, pCallContext, pParams) usrmodeControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define usrmodeControlLookup(pResource, pParams, ppEntry) usrmodeControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -127,16 +139,11 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
 #define usrmodeAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) usrmodeAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NV_STATUS usrmodeConstructHal_GV100(struct UserModeApi *pUserModeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
-#ifdef __nvoc_usermode_api_h_disabled
-static inline NV_STATUS usrmodeConstructHal(struct UserModeApi *pUserModeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("UserModeApi was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_usermode_api_h_disabled
-#define usrmodeConstructHal(pUserModeApi, pCallContext, pParams) usrmodeConstructHal_GV100(pUserModeApi, pCallContext, pParams)
-#endif //__nvoc_usermode_api_h_disabled
+NV_STATUS usrmodeConstructHal_GH100(struct UserModeApi *pUserModeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
-#define usrmodeConstructHal_HAL(pUserModeApi, pCallContext, pParams) usrmodeConstructHal(pUserModeApi, pCallContext, pParams)
+static inline NV_STATUS usrmodeConstructHal_DISPATCH(struct UserModeApi *pUserModeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    return pUserModeApi->__usrmodeConstructHal__(pUserModeApi, pCallContext, pParams);
+}
 
 NvBool usrmodeCanCopy_IMPL(struct UserModeApi *pUserModeApi);
 
@@ -192,8 +199,12 @@ static inline NV_STATUS usrmodeControl_Prologue_DISPATCH(struct UserModeApi *pRe
     return pResource->__usrmodeControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS usrmodeIsReady_DISPATCH(struct UserModeApi *pMemory) {
-    return pMemory->__usrmodeIsReady__(pMemory);
+static inline NvBool usrmodeIsGpuMapAllowed_DISPATCH(struct UserModeApi *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__usrmodeIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS usrmodeIsReady_DISPATCH(struct UserModeApi *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__usrmodeIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS usrmodeCheckCopyPermissions_DISPATCH(struct UserModeApi *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -202,6 +213,10 @@ static inline NV_STATUS usrmodeCheckCopyPermissions_DISPATCH(struct UserModeApi 
 
 static inline void usrmodePreDestruct_DISPATCH(struct UserModeApi *pResource) {
     pResource->__usrmodePreDestruct__(pResource);
+}
+
+static inline NV_STATUS usrmodeIsDuplicate_DISPATCH(struct UserModeApi *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__usrmodeIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS usrmodeUnmapFrom_DISPATCH(struct UserModeApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -225,6 +240,7 @@ static inline NvBool usrmodeAccessCallback_DISPATCH(struct UserModeApi *pResourc
 }
 
 NV_STATUS usrmodeConstruct_IMPL(struct UserModeApi *arg_pUserModeApi, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_usrmodeConstruct(arg_pUserModeApi, arg_pCallContext, arg_pParams) usrmodeConstruct_IMPL(arg_pUserModeApi, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

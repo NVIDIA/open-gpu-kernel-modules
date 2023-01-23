@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,7 +41,6 @@
 #include "os-interface.h"
 
 #include "inc/sync_unix_kernel_os_def.h"
-#include "inc/sync_rwlock_def.h"
 
 NV_STATUS
 portSyncSpinlockInitialize
@@ -221,15 +220,112 @@ portSyncSemaphoreRelease
 }
 
 
-NvBool portSyncExSafeToSleep()
+NV_STATUS
+portSyncRwLockInitialize
+(
+    PORT_RWLOCK *pRwLock
+)
+{
+    if (pRwLock == NULL)
+    {
+        return NV_ERR_INVALID_POINTER;
+    }
+    pRwLock->pAllocator = NULL;
+    pRwLock->rwlock = os_alloc_rwlock();
+    return (pRwLock->rwlock != NULL) ? NV_OK : NV_ERR_NO_MEMORY;
+}
+
+void
+portSyncRwLockDestroy
+(
+    PORT_RWLOCK *pRwLock
+)
+{
+    PORT_ASSERT_CHECKED(pRwLock != NULL);
+    os_free_rwlock(pRwLock->rwlock);
+    if (pRwLock->pAllocator != NULL)
+    {
+        PORT_FREE(pRwLock->pAllocator, pRwLock);
+    }
+}
+
+void
+portSyncRwLockAcquireRead
+(
+    PORT_RWLOCK *pRwLock
+)
+{
+    NV_STATUS status;
+    PORT_ASSERT_CHECKED(pRwLock != NULL);
+    PORT_ASSERT_CHECKED(portSyncExSafeToSleep());
+    status = os_acquire_rwlock_read(pRwLock->rwlock);
+    PORT_ASSERT(status == NV_OK);
+}
+
+NvBool
+portSyncRwLockAcquireReadConditional
+(
+    PORT_RWLOCK *pRwLock
+)
+{
+    PORT_ASSERT_CHECKED(pRwLock != NULL);
+    return os_cond_acquire_rwlock_read(pRwLock->rwlock) == NV_OK;
+}
+
+void
+portSyncRwLockAcquireWrite
+(
+    PORT_RWLOCK *pRwLock
+)
+{
+    NV_STATUS status;
+    PORT_ASSERT_CHECKED(pRwLock != NULL);
+    PORT_ASSERT_CHECKED(portSyncExSafeToSleep());
+    status = os_acquire_rwlock_write(pRwLock->rwlock);
+    PORT_ASSERT(status == NV_OK);
+}
+
+NvBool
+portSyncRwLockAcquireWriteConditional
+(
+    PORT_RWLOCK *pRwLock
+)
+{
+    PORT_ASSERT_CHECKED(pRwLock != NULL);
+    return os_cond_acquire_rwlock_write(pRwLock->rwlock) == NV_OK;
+}
+
+void
+portSyncRwLockReleaseRead
+(
+    PORT_RWLOCK *pRwLock
+)
+{
+    PORT_ASSERT_CHECKED(pRwLock != NULL);
+    os_release_rwlock_read(pRwLock->rwlock);
+}
+
+void
+portSyncRwLockReleaseWrite
+(
+    PORT_RWLOCK *pRwLock
+)
+{
+    PORT_ASSERT_CHECKED(pRwLock != NULL);
+    os_release_rwlock_write(pRwLock->rwlock);
+}
+
+NvBool portSyncExSafeToSleep(void)
 {
     return os_semaphore_may_sleep();
 }
-NvBool portSyncExSafeToWake()
+
+NvBool portSyncExSafeToWake(void)
 {
     return NV_TRUE;
 }
-NvU64 portSyncExGetInterruptLevel()
+
+NvU64 portSyncExGetInterruptLevel(void)
 {
     return !os_semaphore_may_sleep();
 }
@@ -238,5 +334,6 @@ NvU64 portSyncExGetInterruptLevel()
 #define PORT_SYNC_COMMON_DEFINE_SPINLOCK
 #define PORT_SYNC_COMMON_DEFINE_MUTEX
 #define PORT_SYNC_COMMON_DEFINE_SEMAPHORE
+#define PORT_SYNC_COMMON_DEFINE_RWLOCK
 #define PORT_SYNC_COMMON_DEFINE_SYNC_INIT
 #include "sync_common.h"

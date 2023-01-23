@@ -33,13 +33,11 @@
 int           nvlink_core_init           (void);
 void          nvlink_core_exit           (void);
 
-
 /*
  * Functions defined in nvswitch_linux.c
  */
 int           nvswitch_init        (void);
 void          nvswitch_exit        (void);
-
 
 #if defined(NVCPU_AARCH64)
 /*

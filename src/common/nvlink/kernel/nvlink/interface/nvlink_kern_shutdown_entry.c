@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2019-2020 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #include "nvlink.h"
 #include "nvlink_export.h"
@@ -304,10 +303,10 @@ nvlink_lib_powerdown_links_from_active_to_off
     nvlink_intranode_conn **conns    = NULL;
     nvlink_intranode_conn  *conn     = NULL;
     NvU32                   numConns = 0;
-    NvU32                   i;
+    NvU32                   i,j;
     NvU32                   lockLinkCount = 0;
     nvlink_link           **lockLinks = NULL;
-
+    NvBool                  bIsAlreadyPresent = NV_FALSE;
 
     if ((links == NULL) || (numLinks == 0))
     {
@@ -424,8 +423,51 @@ nvlink_lib_powerdown_links_from_active_to_off
             continue;
         }
 
-        conns[numConns] = conn;
-        numConns++;
+        //
+        // If device is using ALI based link training, it is possible
+        // for links to be still transitioning to active when a request to shutdown
+        // is made. Ensure that all connections transiton successfully to HS or fault
+        // before continuining to shutdown
+        //
+        if(links[0]->dev->enableALI)
+        {
+
+            status = nvlink_core_check_intranode_conn_state(conn, NVLINK_LINKSTATE_ACTIVE_PENDING);
+
+            if (status == NVL_SUCCESS)
+            {
+                status = nvlink_core_poll_link_state(conn->end0,
+                                             NVLINK_LINKSTATE_HS,
+                                             NVLINK_TRANSITION_ACTIVE_PENDING);
+
+                if (status != NVL_SUCCESS &&
+                    nvlink_core_check_intranode_conn_state(conn, NVLINK_LINKSTATE_FAULT) != NVL_SUCCESS)
+                {
+                    NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                        "%s: Connection between %s: %s and %s: %s is not ready for shutdown (link state is no in HS or FAULT). Soldiering on...\n",
+                        __FUNCTION__, conn->end0->dev->deviceName, conn->end0->linkName,
+                        conn->end1->dev->deviceName, conn->end1->linkName));
+                }
+            }
+        }
+
+        bIsAlreadyPresent = NV_FALSE;
+        // Check if the the connection is already included in the list
+        for (j = 0; j < numConns; j++)
+        {
+            if (conns[j] == conn)
+            {
+                bIsAlreadyPresent = NV_TRUE;
+                break;
+            }
+        }
+
+        // If this is a new connection, add it to the list
+        if (!bIsAlreadyPresent)
+        {
+            conns[numConns] = conn;
+            numConns++;
+        }
     }
 
     //
@@ -775,3 +817,109 @@ nvlink_lib_reset_links_end:
 
     return status;
 }
+
+
+NvlStatus
+nvlink_lib_powerdown_floorswept_links_to_off
+(
+    nvlink_device *dev
+)
+{
+    NvlStatus                status    = NVL_SUCCESS;
+    nvlink_link             *link      = NULL;
+    nvlink_link            **lockLinks = NULL;
+    NvU32                    lockLinkCount = 0;
+
+    if (dev == NULL)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Bad device pointer specified.\n",
+            __FUNCTION__));
+
+        return NVL_ERR_GENERIC;
+    }
+
+    lockLinks = (nvlink_link **)nvlink_malloc(
+                            sizeof(nvlink_link *) * NVLINK_MAX_SYSTEM_LINK_NUM);
+    if (lockLinks == NULL)
+    {
+        return NVL_NO_MEM;
+    }
+
+    // Acquire the top-level lock
+    status = nvlink_lib_top_lock_acquire();
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire top-level lock\n",
+            __FUNCTION__));
+        goto nvlink_core_powerdown_floorswept_conns_to_off_end;
+    }
+
+    //
+    // If the device has less than or equal links in the IP then
+    // can be active, then skip floorsweeping
+    //
+    if (dev->numActiveLinksPerIoctrl >= dev->numLinksPerIoctrl)
+    {
+        nvlink_lib_top_lock_release();
+        goto nvlink_core_powerdown_floorswept_conns_to_off_end;
+    }
+
+    //
+    // Top-level lock is now acquired. Proceed to traversing the device
+    // and link lists and connection lists
+    //
+
+    // Get the array of link endpoints whose lock needs to be acquired
+    FOR_EACH_LINK_REGISTERED(link, dev, node)
+    {
+        if(link == NULL)
+        {
+            continue;
+        }
+
+        lockLinks[lockLinkCount] = link;
+        lockLinkCount++;
+    }
+
+    // Acquire the per-link locks for all links captured
+    status = nvlink_lib_link_locks_acquire(lockLinks, lockLinkCount);
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire per-link locks\n",
+            __FUNCTION__));
+
+        // Release the top-level lock
+        nvlink_lib_top_lock_release();
+
+        goto nvlink_core_powerdown_floorswept_conns_to_off_end;
+    }
+
+    //
+    // All the required per-link locks are successfully acquired
+    // The connection list traversal is also complete now
+    // Release the top level-lock
+    //
+    nvlink_lib_top_lock_release();
+
+    status = nvlink_core_powerdown_floorswept_conns_to_off(lockLinks, lockLinkCount, dev->numIoctrls,
+                        dev->numLinksPerIoctrl, dev->numActiveLinksPerIoctrl);
+
+    if (status == NVL_BAD_ARGS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
+            "%s: Bad args passed in for floorsweeping. Chip might not support the feature\n",
+            __FUNCTION__));
+    }
+
+nvlink_core_powerdown_floorswept_conns_to_off_end:
+    if (lockLinks != NULL)
+    {
+        nvlink_free((void *)lockLinks);
+    }
+
+    return status;
+}
+

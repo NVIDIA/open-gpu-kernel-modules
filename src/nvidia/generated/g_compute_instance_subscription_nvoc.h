@@ -83,6 +83,7 @@ struct ComputeInstanceSubscription {
     NV_STATUS (*__cisubscriptionInternalControlForward__)(struct ComputeInstanceSubscription *, NvU32, void *, NvU32);
     void (*__cisubscriptionPreDestruct__)(struct ComputeInstanceSubscription *);
     NV_STATUS (*__cisubscriptionUnmapFrom__)(struct ComputeInstanceSubscription *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__cisubscriptionIsDuplicate__)(struct ComputeInstanceSubscription *, NvHandle, NvBool *);
     void (*__cisubscriptionControl_Epilogue__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__cisubscriptionControlLookup__)(struct ComputeInstanceSubscription *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__cisubscriptionMap__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -138,6 +139,7 @@ NV_STATUS __nvoc_objCreate_ComputeInstanceSubscription(ComputeInstanceSubscripti
 #define cisubscriptionInternalControlForward(pGpuResource, command, pParams, size) cisubscriptionInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define cisubscriptionPreDestruct(pResource) cisubscriptionPreDestruct_DISPATCH(pResource)
 #define cisubscriptionUnmapFrom(pResource, pParams) cisubscriptionUnmapFrom_DISPATCH(pResource, pParams)
+#define cisubscriptionIsDuplicate(pResource, hMemory, pDuplicate) cisubscriptionIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define cisubscriptionControl_Epilogue(pResource, pCallContext, pParams) cisubscriptionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define cisubscriptionControlLookup(pResource, pParams, ppEntry) cisubscriptionControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define cisubscriptionMap(pGpuResource, pCallContext, pParams, pCpuMapping) cisubscriptionMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -222,6 +224,10 @@ static inline NV_STATUS cisubscriptionUnmapFrom_DISPATCH(struct ComputeInstanceS
     return pResource->__cisubscriptionUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS cisubscriptionIsDuplicate_DISPATCH(struct ComputeInstanceSubscription *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__cisubscriptionIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void cisubscriptionControl_Epilogue_DISPATCH(struct ComputeInstanceSubscription *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__cisubscriptionControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -239,10 +245,13 @@ static inline NvBool cisubscriptionAccessCallback_DISPATCH(struct ComputeInstanc
 }
 
 NV_STATUS cisubscriptionGetComputeInstanceSubscription_IMPL(struct RsClient *arg0, NvHandle arg1, struct ComputeInstanceSubscription **arg2);
+
 #define cisubscriptionGetComputeInstanceSubscription(arg0, arg1, arg2) cisubscriptionGetComputeInstanceSubscription_IMPL(arg0, arg1, arg2)
 NV_STATUS cisubscriptionConstruct_IMPL(struct ComputeInstanceSubscription *arg_pComputeInstanceSubscription, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_cisubscriptionConstruct(arg_pComputeInstanceSubscription, arg_pCallContext, arg_pParams) cisubscriptionConstruct_IMPL(arg_pComputeInstanceSubscription, arg_pCallContext, arg_pParams)
 NV_STATUS cisubscriptionCopyConstruct_IMPL(struct ComputeInstanceSubscription *arg0, CALL_CONTEXT *arg1, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg2);
+
 #ifdef __nvoc_compute_instance_subscription_h_disabled
 static inline NV_STATUS cisubscriptionCopyConstruct(struct ComputeInstanceSubscription *arg0, CALL_CONTEXT *arg1, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg2) {
     NV_ASSERT_FAILED_PRECOMP("ComputeInstanceSubscription was disabled!");
@@ -253,6 +262,7 @@ static inline NV_STATUS cisubscriptionCopyConstruct(struct ComputeInstanceSubscr
 #endif //__nvoc_compute_instance_subscription_h_disabled
 
 void cisubscriptionDestruct_IMPL(struct ComputeInstanceSubscription *arg0);
+
 #define __nvoc_cisubscriptionDestruct(arg0) cisubscriptionDestruct_IMPL(arg0)
 #undef PRIVATE_FIELD
 

@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl9067.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* Subcontext control commands and parameters */
 #define NV9067_CTRL_CMD(cat,idx)          NVXXXX_CTRL_CMD(0x9067, NV9067_CTRL_##cat, idx)
@@ -136,8 +133,6 @@ typedef struct NV9067_CTRL_TPC_PARTITION_TABLE_PARAMS {
  *     RM will throw an error if any value more than this value is specified
  *
  */
-
-
 
 #define NV9067_CTRL_CMD_GET_CWD_WATERMARK       (0x90670201) /* finn: Evaluated from "(FINN_FERMI_CONTEXT_SHARE_A_CWD_WATERMARK_INTERFACE_ID << 8) | 0x1" */
 

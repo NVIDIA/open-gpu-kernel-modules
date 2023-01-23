@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl0080/ctrl0080host.finn
 //
 
-
-
-
 #include "ctrl/ctrl0080/ctrl0080base.h"
 
 /* NV01_DEVICE_XX/NV03_DEVICE host control commands and parameters */

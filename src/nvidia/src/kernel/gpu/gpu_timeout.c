@@ -363,8 +363,11 @@ _checkTimeout
 
         if (current >= pTimeout->timeout)
         {
-            NV_PRINTF(LEVEL_ERROR, "ptmr elapsed %llx >= %llx\n",
-                      current, pTimeout->timeout);
+            if (!(pTimeout->flags & GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG))
+            {
+                NV_PRINTF(LEVEL_ERROR, "ptmr elapsed %llx >= %llx\n",
+                          current, pTimeout->timeout);
+            }
             status =  NV_ERR_TIMEOUT;
         }
     }
@@ -382,7 +385,10 @@ _checkTimeout
 
         if (pTimeout->timeout == 0)
         {
-            NV_PRINTF(LEVEL_INFO, "ptmr timeout == 0\n");
+            if (!(pTimeout->flags & GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG))
+            {
+                NV_PRINTF(LEVEL_INFO, "ptmr timeout == 0\n");
+            }
             status =  NV_ERR_TIMEOUT;
         }
     }

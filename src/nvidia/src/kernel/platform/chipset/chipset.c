@@ -22,7 +22,7 @@
  */
 
 
-/***************************** HW State Rotuines ***************************\
+/***************************** HW State Routines ***************************\
 *         Core Logic Object Function Definitions.                           *
 \***************************************************************************/
 
@@ -132,6 +132,9 @@ clInitMappingPciBusDevice_IMPL
     NvU8 device;
     NvU16 vendorID, deviceID;
     NvBool bFoundDevice = NV_FALSE;
+
+    if (IsT194(pGpu))
+        return NV0000_CTRL_GPU_INVALID_ID;
 
     // do we already know our domain/bus/device?
     if (gpuGetDBDF(pGpu) == 0)
@@ -783,6 +786,7 @@ void clSyncWithGsp_IMPL(OBJCL *pCl, GspSystemInfo *pGSI)
     CL_SYNC_PDB(PDB_PROP_CL_DISABLE_IOMAP_WC);
     CL_SYNC_PDB(PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE);
     CL_SYNC_PDB(PDB_PROP_CL_IS_EXTERNAL_GPU);
+    CL_SYNC_PDB(PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR);
 
 #undef CL_SYNC_PDB
 
@@ -790,5 +794,6 @@ void clSyncWithGsp_IMPL(OBJCL *pCl, GspSystemInfo *pGSI)
 
     pGSI->Chipset = pCl->Chipset;
     pGSI->FHBBusInfo = pCl->FHBBusInfo;
+    pGSI->chipsetIDInfo = pCl->chipsetIDInfo;
 
 }

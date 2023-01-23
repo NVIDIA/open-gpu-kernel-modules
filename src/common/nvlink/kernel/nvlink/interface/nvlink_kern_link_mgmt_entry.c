@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2019-2020 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #include "nvlink.h"
 #include "nvlink_export.h"
@@ -320,4 +319,135 @@ nvlink_lib_get_link_master
     return status;
 }
 
+/**
+ * Set whether the link is using ALI for training.
+ * 
+ * @param[in]  link       NVLink Link pointer
+ * @param[in]  enableALI  Boolean for whether the link is using
+ *                        ALI to train the link
+ *
+ * return NvlSuccess if setting the variable was successful.
+ */
+NvlStatus
+nvlink_lib_link_set_training_mode
+(
+    nvlink_link  *link,
+    NvBool        enableALI
+)
+{
+    NvlStatus status = NVL_SUCCESS;
+    if (link == NULL)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Bad link pointer specified.\n",
+            __FUNCTION__));
+        return NVL_ERR_GENERIC;
+    }
+
+    // Acquire the top-level lock
+    status = nvlink_lib_top_lock_acquire();
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire top-level lock\n",
+            __FUNCTION__));
+
+        return status;
+    }
+
+
+    // Acquire the per-link lock
+    status = nvlink_lib_link_locks_acquire(&link, 1);
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire per-link locks\n",
+            __FUNCTION__));
+
+        // Release the top-level lock
+        nvlink_lib_top_lock_release();
+
+        return status;
+    }
+
+    //
+    // All the required per-link locks are successfully acquired
+    // The connection list traversal is also complete now
+    // Release the top level-lock
+    //
+    nvlink_lib_top_lock_release();
+
+    // TODO: Add Setter for per-link enableALI state variable
+
+    // Release the per-link lock
+    nvlink_lib_link_locks_release(&link, 1);
+
+    return status;
+}
+
+/**
+ * Get whether the link is using ALI for training.
+ *
+ * @param[in]  link     NVLink Link pointer
+ * @param[out] usingAli Boolean on whether ALI training is being used
+ *
+ * return NVL_SUCCESS if getting the variable is successful
+ */
+NvlStatus
+nvlink_lib_is_link_using_ALI
+(
+    nvlink_link  *link,
+    NvBool       *usingALI
+)
+{
+    NvlStatus status = NVL_SUCCESS;
+    usingALI         = NV_FALSE;
+    
+    if (link == NULL)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Bad link pointer specified.\n",
+            __FUNCTION__));
+        return NVL_ERR_GENERIC;
+    }
+
+    // Acquire the top-level lock
+    status = nvlink_lib_top_lock_acquire();
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire top-level lock\n",
+            __FUNCTION__));
+
+        return status;
+    }
+
+    // Acquire the per-link lock
+    status = nvlink_lib_link_locks_acquire(&link, 1);
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire per-link locks\n",
+            __FUNCTION__));
+
+        // Release the top-level lock
+        nvlink_lib_top_lock_release();
+
+        return status;
+    }
+
+    //
+    // All the required per-link locks are successfully acquired
+    // The connection list traversal is also complete now
+    // Release the top level-lock
+    //
+    nvlink_lib_top_lock_release();
+
+    // TODO: Add Getter for per-link enableALI state variable
+
+    // Release the per-link lock
+    nvlink_lib_link_locks_release(&link, 1);
+
+    return status;
+}
 

@@ -40,12 +40,13 @@ _nvswitch_dump_error_entry
     if ((error_entry != NULL) &&
         (error_entry->error_src == NVSWITCH_ERROR_SRC_HW))
     {
-        NVSWITCH_PRINT_SXID(device, error_entry->error_type,
+        NVSWITCH_PRINT_SXID_NO_BBX(device, error_entry->error_type,
             "Severity %d Engine instance %02d Sub-engine instance %02d\n",
             error_entry->severity, error_entry->instance, error_entry->subinstance);
 
-        NVSWITCH_PRINT_SXID(device, error_entry->error_type,
-            "Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
+        NVSWITCH_PRINT_SXID_NO_BBX(device, error_entry->error_type,
+            "Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
+            error_entry->data.raw.flags,
             error_entry->data.raw.data[0], error_entry->data.raw.data[1],
             error_entry->data.raw.data[2], error_entry->data.raw.data[3],
             error_entry->data.raw.data[4], error_entry->data.raw.data[5],
@@ -61,7 +62,7 @@ _nvswitch_dump_error_entry
             (error_entry->data.raw.data[15] != 0))
 
         {
-            NVSWITCH_PRINT_SXID(device, error_entry->error_type,
+            NVSWITCH_PRINT_SXID_NO_BBX(device, error_entry->error_type,
                 "Data {0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x}\n",
                 error_entry->data.raw.data[ 8], error_entry->data.raw.data[ 9],
                 error_entry->data.raw.data[10], error_entry->data.raw.data[11],
@@ -394,10 +395,20 @@ nvswitch_translate_hw_error
     {
         return NVSWITCH_ERR_HW_SOE;
     }
+    else if ((type >= NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE) &&
+             (type < NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_LAST))
+    {
+        return NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE;
+    }
+    else if ((type >= NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE) &&
+             (type < NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_LAST))
+    {
+        return NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE;
+    }
     else
     {
         // Update this assert after adding a new translation entry above
-        ct_assert(NVSWITCH_ERR_HW_SOE_LAST == (NVSWITCH_ERR_LAST - 1));
+        ct_assert(NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_LAST == (NVSWITCH_ERR_LAST - 1));
 
         NVSWITCH_PRINT(NULL, ERROR,
             "%s: Undefined error type\n", __FUNCTION__);

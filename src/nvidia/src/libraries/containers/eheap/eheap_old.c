@@ -1189,7 +1189,7 @@ eheapTraverse
     NvU64 firstBlockBegin, firstBlockEnd; // we'll never call the traversal fn twice on the same (sub)extent.
 
     pBlock = (direction > 0) ? pHeap->pBlockList : pHeap->pBlockList->prev;
-    NV_ASSERT(pBlock);
+    NV_ASSERT_OR_RETURN(pBlock != NULL, NV_ERR_INVALID_STATE);
 
     //
     // Cursor invalidates mean we can't compare with 'pHeap->pBlockList'.
@@ -1238,7 +1238,7 @@ eheapTraverse
 
         }
 
-        NV_ASSERT(pBlock); // 1. list is circular, 2. cursorOffset should always be found unless the list is badly malformed.
+        NV_ASSERT_OR_RETURN(pBlock != NULL, NV_ERR_INVALID_STATE); // 1. list is circular, 2. cursorOffset should always be found unless the list is badly malformed.
 
         //
         // Back to first block?  Defined as being at a block for which the

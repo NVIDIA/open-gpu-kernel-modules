@@ -58,7 +58,7 @@ mmuWalkModifyLevelInstance
     NV_ASSERT_OR_RETURN(NULL != pLevel, NV_ERR_INVALID_ARGUMENT);
 
     // Lookup level instance.
-    btreeSearch(vaBase, (NODE**)&pLevelInst, &pLevel->pInstances->node);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, btreeSearch(vaBase, (NODE**)&pLevelInst, &pLevel->pInstances->node));
     NV_ASSERT_OR_RETURN(NULL != pLevelInst, NV_ERR_INVALID_ARGUMENT);
 
     // Temp old memory.
@@ -128,7 +128,7 @@ mmuWalkModifyLevelInstance
         const NvU32             entryIndex = mmuFmtVirtAddrToEntryIndex(pParent->pFmt, vaBase);
 
         // Lookup parent instance.
-        btreeSearch(vaBase, (NODE**)&pParentInst, &pParent->pInstances->node);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, btreeSearch(vaBase, (NODE**)&pParentInst, &pParent->pInstances->node));
         NV_ASSERT(NULL != pParentInst);
 
         // Collect sub-level memory.
@@ -145,7 +145,7 @@ mmuWalkModifyLevelInstance
             else
             {
                 MMU_WALK_LEVEL_INST *pOtherInst = NULL;
-                btreeSearch(vaBase, (NODE**)&pOtherInst, &pSubLevel->pInstances->node);
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, btreeSearch(vaBase, (NODE**)&pOtherInst, &pSubLevel->pInstances->node));
                 if (NULL != pOtherInst)
                 {
                     pSubMemDescs[i] = pOtherInst->pMemDesc;

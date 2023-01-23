@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -141,7 +141,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     // If a GPU is DP1.2 or DP1.4 supported then set these capalibilities.
     // This is used for accessing DP1.2/DP1.4 specific register space & features
     //
-    hal->setGpuDPSupportedVersions(main->isDP1_2Supported(), main->isDP1_4Supported());
+    hal->setGpuDPSupportedVersions(main->getGpuDpSupportedVersions());
 
     // Set if GPU supports FEC. Check panel FEC caps only if GPU supports it.
     hal->setGpuFECSupported(main->isFECSupported());
@@ -188,8 +188,8 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bDisableSSC                   = dpRegkeyDatabase.bSscDisabled;
     this->bEnableFastLT                 = dpRegkeyDatabase.bFastLinkTrainingEnabled;
     this->bDscMstCapBug3143315          = dpRegkeyDatabase.bDscMstCapBug3143315;
-    this->bDscMstEnablePassThrough      = dpRegkeyDatabase.bDscMstEnablePassThrough;
-    this->bDscOptimizeLTBug3534707      = dpRegkeyDatabase.bDscOptimizeLTBug3534707;
+    this->bEnableOuiRestoring           = dpRegkeyDatabase.bEnableOuiRestoring;
+    this->bPowerDownPhyBeforeD3         = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -633,27 +633,56 @@ create:
         newDev->queryGUID2();
     }
 
-    // Read panel DSC support only if GPU supports DSC
-    bool bGpuDscSupported;
-    main->getDscCaps(&bGpuDscSupported);
-    if (bGpuDscSupported)
+    if (!linkAwaitingTransition)
     {
-        if (newDev->getDSCSupport())
-        {
-            // Read and parse DSC caps only if panel supports DSC
-            newDev->readAndParseDSCCaps();
+        //
+        // When link is awaiting SST<->MST transition, DSC caps read from downstream
+        // DSC branch device might be wrong. DSC Caps exposed by DSC MST branch depends
+        // on the current link state. If it is in SST mode ie MST_EN (0x111[bit 0]) is 0 and
+        // panel connected behind it supports DSC, then branch will expose the DSC caps
+        // of the panel connected down stream rather than it's own. This is because source
+        // will have no other way to read the caps of the downstream panel. In fact when
+        // MST_EN = 0 and UP_REQ_EN (0x111 [bit 1]) = 1 source can read the caps of the
+        // downstream panel using REMOTE_DPCD_READ but branch device's behavior depends
+        // only on MST_EN bit. Similarly in SST, if the panel connected downstream to branch
+        // does not support DSC, DSC MST branch will expose it's own DSC caps.
+        // During boot since VBIOS drives display in SST mode and when driver takes over,
+        // linkAwaitingTransition will be true. DpLib does link assessment and topology
+        // discovery by setting UP_REQ_EN to true while still keeping MST_EN to false.
+        // This is to ensure we detach the head and active modeset groups that are in SST mode
+        // before switching the link to MST mode. When processNewDevice is called at this
+        // point to create new devices we should not read DSC caps due to above mentioned reason.
+        // As long as linkIsAwaitingTransition is true, Dplib will not report new Devices to
+        // to client since isPendingNewDevice() will be false even though DPlib discovered
+        // new devices. After Dplib completes topology discovery, DD initiates notifyDetachBegin/End
+        // to remove active groups from the link and notifyDetachEnd calls assessLink
+        // where we toggle the link state. Only after this we should read DSC caps in this case.
+        // Following this assesslink calls fireEvents() which will report
+        // the new devies to clients and client will have the correct DSC caps.
+        //
+        bool bGpuDscSupported;
 
-            // Read and Parse Branch Specific DSC Caps
-            if (!newDev->isVideoSink() && !newDev->isAudioSink())
+        // Check GPU DSC Support
+        main->getDscCaps(&bGpuDscSupported);
+        if (bGpuDscSupported)
+        {
+            if (newDev->getDSCSupport())
             {
-                newDev->readAndParseBranchSpecificDSCCaps();
-            }
-        }
+                // Read and parse DSC caps only if panel supports DSC
+                newDev->readAndParseDSCCaps();
 
-        if (!processedEdid.WARFlags.bIgnoreDscCap)
-        {
-            // Check if DSC is possible for the device and if so, set DSC Decompression device.
-            newDev->setDscDecompressionDevice(this->bDscCapBasedOnParent);
+                // Read and Parse Branch Specific DSC Caps
+                if (!newDev->isVideoSink() && !newDev->isAudioSink())
+                {
+                    newDev->readAndParseBranchSpecificDSCCaps();
+                }
+            }
+
+            if (!processedEdid.WARFlags.bIgnoreDscCap)
+            {
+                // Check if DSC is possible for the device and if so, set DSC Decompression device.
+                newDev->setDscDecompressionDevice(this->bDscCapBasedOnParent);
+            }
         }
     }
 
@@ -673,6 +702,15 @@ create:
     else
     {
         newDev->bMSAOverMSTCapable = false;
+    }
+
+    newDev->applyOUIOverrides();
+
+    if (main->isEDP() && this->bEnableOuiRestoring)
+    {
+        // Save Source OUI information for eDP.
+        hal->getOuiSource(cachedSourceOUI, &cachedSourceModelName[0],
+                          sizeof(cachedSourceModelName), cachedSourceChipRevision);
     }
 
     fireEvents();
@@ -1149,7 +1187,7 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                 this->isFECSupported() &&                           // If GPU supports FEC
                 pDscParams &&                                       // If client sent DSC info
                 pDscParams->bCheckWithDsc &&                        // If client wants to check with DSC
-                (dev && dev->isDSCPossible()) &&                    // Either device or it's parent supports DSC
+                (dev && dev->devDoingDscDecompression) &&           // Either device or it's parent supports DSC
                 bFecCapable &&                                      // If path up to dsc decoding device supports FEC
                 (modesetParams.modesetInfo.bitsPerComponent != 6))  // DSC doesn't support bpc = 6
             {
@@ -1194,6 +1232,44 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                     DP_LOG(("Current version is 1.1"));
                 }
 
+                if ((dev->devDoingDscDecompression == dev) && dev->parent)
+                {
+                    if (dev->parent->bDscPassThroughColorFormatWar)
+                    {
+                        //
+                        // Bug 3692417
+                        // Color format should only depend on device doing DSC decompression when DSC is enabled according to DP Spec.
+                        // But when Synaptics VMM5320 is the parent of the device doing DSC decompression, if a certain color
+                        // format is not supported by Synaptics Virtual Peer Device decoder(parent), even though it is pass through mode
+                        // and panel supports the color format, panel cannot light up. Once Synaptics fixes this issue, we will modify
+                        // the WAR to be applied only before the firmware version that fixes it.
+                        //
+                        if ((modesetParams.colorFormat == dpColorFormat_RGB      && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bRgb) ||
+                            (modesetParams.colorFormat == dpColorFormat_YCbCr444 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCr444) ||
+                            (modesetParams.colorFormat == dpColorFormat_YCbCr422 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCrSimple422))
+                        {
+                            if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
+                                (modesetParams.modesetInfo.mode == DSC_DUAL))
+                            {
+                                //
+                                // If DSC is force enabled or DSC_DUAL mode is requested, 
+                                // then return failure here
+                                //
+                                compoundQueryResult = false;
+                                pDscParams->bEnableDsc = false;
+                                return false;
+                            }
+                            else
+                            {
+                                // We should check if mode is possible without DSC.
+                                pDscParams->bEnableDsc = false;
+                                lc.enableFEC(false);
+                                goto nonDscDpIMP;
+                            }
+                        }
+                    }
+                }
+
                 availableBandwidthBitsPerSecond = lc.minRate * 8 * lc.lanes;
 
                 warData.dpData.linkRateHz = lc.peakRate;
@@ -1207,9 +1283,24 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                                      (NvU32*)(PPS),
                                      (NvU32*)(&bitsPerPixelX16))) != NVT_STATUS_SUCCESS)
                 {
-                    if (pDscParams->forceDsc == DSC_FORCE_ENABLE)
+                    //
+                    // If generating PPS failed 
+                    //          AND
+                    //    (DSC is force enabled
+                    //          OR
+                    //    the requested DSC mode = DUAL)
+                    //then 
+                    //    return failure here
+                    // Else 
+                    //    we will check if non DSC path is possible.
+                    //
+                    // If dsc mode = DUAL failed to generate PPS and if we pursue
+                    // non DSC path, DD will still follow 2Head1OR modeset path with 
+                    // DSC disabled, eventually leading to HW hang. Bug 3632901 
+                    //
+                    if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
+                        (modesetParams.modesetInfo.mode == DSC_DUAL))
                     {
-                        // If DSC is force enabled then return failure here
                         compoundQueryResult = false;
                         pDscParams->bEnableDsc = false;
                         return false;
@@ -2485,17 +2576,18 @@ bool ConnectorImpl::setDeviceDscState(Device * dev, bool bEnableDsc)
 bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Group of panels we're attaching to this head
                                       const DpModesetParams       &modesetParams)
 {
-    unsigned twoChannelAudioHz    = modesetParams.modesetInfo.twoChannelAudioHz;
-    unsigned eightChannelAudioHz  = modesetParams.modesetInfo.eightChannelAudioHz;
-    NvU64    pixelClockHz         = modesetParams.modesetInfo.pixelClockHz;
-    unsigned rasterWidth          = modesetParams.modesetInfo.rasterWidth;
-    unsigned rasterHeight         = modesetParams.modesetInfo.rasterHeight;
-    unsigned rasterBlankStartX    = modesetParams.modesetInfo.rasterBlankStartX;
-    unsigned rasterBlankEndX      = modesetParams.modesetInfo.rasterBlankEndX;
-    unsigned depth                = modesetParams.modesetInfo.depth;
-    bool     bLinkTrainingStatus  = true;
-    bool     bEnableDsc           = modesetParams.modesetInfo.bEnableDsc;
+    unsigned twoChannelAudioHz         = modesetParams.modesetInfo.twoChannelAudioHz;
+    unsigned eightChannelAudioHz       = modesetParams.modesetInfo.eightChannelAudioHz;
+    NvU64    pixelClockHz              = modesetParams.modesetInfo.pixelClockHz;
+    unsigned rasterWidth               = modesetParams.modesetInfo.rasterWidth;
+    unsigned rasterHeight              = modesetParams.modesetInfo.rasterHeight;
+    unsigned rasterBlankStartX         = modesetParams.modesetInfo.rasterBlankStartX;
+    unsigned rasterBlankEndX           = modesetParams.modesetInfo.rasterBlankEndX;
+    unsigned depth                     = modesetParams.modesetInfo.depth;
+    bool     bLinkTrainingStatus       = true;
+    bool     bEnableDsc                = modesetParams.modesetInfo.bEnableDsc;
     bool     bEnableFEC;
+    bool     bEnablePassThroughForPCON = modesetParams.modesetInfo.bEnablePassThroughForPCON;
 
     if(preferredLinkConfig.isValid())
     {
@@ -2550,7 +2642,6 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     }
 
     GroupImpl* targetImpl = (GroupImpl*)target;
-    targetImpl->bIsCurrentModesetGroup = true;
 
     if (bEnableDsc)
     {
@@ -2604,6 +2695,21 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     this->bFECEnable |= bEnableFEC;
     highestAssessedLC.enableFEC(this->bFECEnable);
 
+    if (main->isEDP() && this->bEnableOuiRestoring)
+    {
+        // Power-up eDP and restore eDP OUI if it's powered off now.
+        bool bPanelPowerOn;
+        main->getEdpPowerData(&bPanelPowerOn, NULL);
+        if (!bPanelPowerOn)
+        {
+            main->configurePowerState(true);
+            hal->setOuiSource(cachedSourceOUI,
+                              &cachedSourceModelName[0],
+                              6 /* string length of ieeeOuiDevId */,
+                              cachedSourceChipRevision);
+        }
+    }
+
     // if failed, we're guaranteed that assessed link rate didn't meet the mode requirements
     // isZombie() will catch this
     bLinkTrainingStatus = trainLinkOptimized(getMaxLinkConfig());
@@ -2614,7 +2720,14 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     {
         for (Device * dev = target->enumDevices(0); dev; dev = target->enumDevices(dev))
         {
-            if(!setDeviceDscState(dev, bEnableDsc))
+            if (bPConConnected)
+            {
+                if (!(((DeviceImpl *)dev)->setDscEnableDPToHDMIPCON(bEnableDsc, bEnablePassThroughForPCON)))
+                {
+                    DP_ASSERT(!"DP-CONN> Failed to configure DSC on DP to HDMI PCON!");
+                }
+            }
+            else if(!setDeviceDscState(dev, bEnableDsc))
             {
                 DP_ASSERT(!"DP-CONN> Failed to configure DSC on Sink!");
             }
@@ -2667,7 +2780,6 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
     NV_DPTRACE_INFO(NOTIFY_ATTACH_BEGIN_STATUS, bLinkTrainingStatus);
 
     bFromResumeToNAB = false;
-    targetImpl->bIsCurrentModesetGroup = false;
     return bLinkTrainingStatus;
 }
 
@@ -3179,6 +3291,22 @@ void ConnectorImpl::powerdownLink(bool bPowerdownPanel)
     powerOff.lanes = 0;
     // Inform Sink about Main Link Power Down.
 
+    if (linkUseMultistream() && bPowerDownPhyBeforeD3)
+    {
+        PowerDownPhyMessage powerDownPhyMsg;
+        NakData nack;
+
+        for (Device * i = enumDevices(0); i; i=enumDevices(i))
+        {
+            if (i->isPlugged() && i->isVideoSink())
+            {
+                Address devAddress = ((DeviceImpl*)i)->address;
+                powerDownPhyMsg.set(devAddress.parent(), devAddress.tail(), NV_TRUE);
+                this->messageManager->send(&powerDownPhyMsg, nack);
+            }
+        }
+    }
+
     //
     // 1> If it is eDP and the power is not on, we don't need to put it into D3 here
     // 2> If FEC is enabled then we have to put panel in D3 after powering down mainlink
@@ -3283,6 +3411,7 @@ bool ConnectorImpl::trainSingleHeadMultipleSSTLinkNotAlive(GroupImpl *pGroupAtta
 void ConnectorImpl::assessLink(LinkTrainingType trainType)
 {
     this->bSkipLt = false;  // Assesslink should never skip LT, so let's reset it in case it was set.
+    bool bLinkStateToggle = false;
 
     if (bSkipAssessLinkForPCon)
     {
@@ -3409,6 +3538,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             linkState = hal->getSupportsMultistream() ?
                 DP_TRANSPORT_MODE_MULTI_STREAM : DP_TRANSPORT_MODE_SINGLE_STREAM;
             linkAwaitingTransition = false;
+            bLinkStateToggle = true;
         }
         else
         {
@@ -3516,6 +3646,30 @@ done:
     if (bIsFlushModeEnabled)
     {
         disableFlush();
+    }
+
+    if (bLinkStateToggle)
+    {
+        DP_LOG(("DP> Link state toggled, reading DSC caps now"));
+        // Read panel DSC support only if GPU supports DSC
+        bool bGpuDscSupported;
+        main->getDscCaps(&bGpuDscSupported);
+        if (bGpuDscSupported)
+        {
+            for (Device * i = enumDevices(0); i; i=enumDevices(i))
+            {
+                DeviceImpl * dev = (DeviceImpl *)i;
+                if(dev->getDSCSupport())
+                {
+                    // Read and parse DSC caps only if panel and GPU supports DSC
+                    dev->readAndParseDSCCaps();
+                }
+                if (!(dev->processedEdid.WARFlags.bIgnoreDscCap))
+                {
+                    dev->setDscDecompressionDevice(this->bDscCapBasedOnParent);
+                }
+            }
+        }
     }
 }
 
@@ -3902,36 +4056,21 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
     GroupImpl * groupAttached = 0;
     for (ListElement * e = activeGroups.begin(); e != activeGroups.end(); e = e->next)
     {
-        DP_ASSERT(bIsUefiSystem);
+        DP_ASSERT(bIsUefiSystem || linkUseMultistream() || (!groupAttached && "Multiple attached heads"));
         groupAttached = (GroupImpl * )e;
 
-        if (bDscOptimizeLTBug3534707)
+        if ((groupAttached->dscModeRequest == DSC_DUAL) && (groupAttached->dscModeActive != DSC_DUAL))
         {
-            if ((groupAttached->dscModeRequest == DSC_DUAL) && (groupAttached->dscModeActive != DSC_DUAL))
-            {
-                //
-                // If current modeset group requires 2Head1OR and
-                //  - group is not active yet (first modeset on the group)
-                //  - group is active but not in 2Head1OR mode (last modeset on the group did not require 2Head1OR)
-                // then re-train the link
-                // This is because for 2Head1OR mode, we need to set some LT parametes for slave SOR after
-                // successful LT on primary SOR without which 2Head1OR modeset will lead to HW hang.
-                //
-                bTwoHeadOneOrLinkRetrain = true;
-                break;
-            }
-        }
-        else
-        {
-            if (groupAttached->lastModesetInfo.mode == DSC_DUAL && groupAttached->bIsCurrentModesetGroup)
-            {
-                //
-                // If current modeset group requires 2Head1OR mode, we should retrain link.
-                //   For SST, there will be only one group per connector.
-                //   For MST, we need to re-run LT in case the current modeset group requires DSC_DUAL.
-                bTwoHeadOneOrLinkRetrain = true;
-                break;
-            }
+            //
+            // If current modeset group requires 2Head1OR and
+            //  - group is not active yet (first modeset on the group)
+            //  - group is active but not in 2Head1OR mode (last modeset on the group did not require 2Head1OR)
+            // then re-train the link
+            // This is because for 2Head1OR mode, we need to set some LT parametes for slave SOR after
+            // successful LT on primary SOR without which 2Head1OR modeset will lead to HW hang.
+            //
+            bTwoHeadOneOrLinkRetrain = true;
+            break;
         }
     }
 
@@ -4033,8 +4172,7 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             if ((activeLinkConfig == lowestSelected) &&
                 (!isLinkInD3()) &&
                 (!isLinkLost()) &&
-                ((!bDscOptimizeLTBug3534707 && !this->bFECEnable) ||
-                 (bDscOptimizeLTBug3534707  && (this->bFECEnable == activeLinkConfig.bEnableFEC))) &&
+                (this->bFECEnable == activeLinkConfig.bEnableFEC) &&
                 !bTwoHeadOneOrLinkRetrain)
             {
                 if (bSkipRedundantLt || main->isInternalPanelDynamicMuxCapable())
@@ -5599,7 +5737,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
         if (hal->getSupportsMultistream() && main->hasMultistream())
         {
             bool bDeleteFirmwareVC = false;
-            const DP_REGKEY_DATABASE& dpRegkeyDatabase = main->getRegkeyDatabase();
+
             DP_LOG(("DP> Multistream panel detected, building message manager"));
 
             //
@@ -5608,7 +5746,6 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             //
             messageManager = new MessageManager(hal, timer);
             messageManager->registerReceiver(&ResStatus);
-            messageManager->applyRegkeyOverrides(dpRegkeyDatabase);
 
             //
             // Create a discovery manager to initiate detection
@@ -6141,6 +6278,13 @@ void ConnectorImpl::notifyShortPulse()
                     }
                 }
             }
+        }
+
+        // If DPCD access is not available, skip trying to restore link configuration.
+        hal->updateDPCDOffline();
+        if (hal->isDpcdOffline())
+        {
+            return;
         }
 
         DP_LOG(("DP> Link not alive, Try to restore link configuration"));

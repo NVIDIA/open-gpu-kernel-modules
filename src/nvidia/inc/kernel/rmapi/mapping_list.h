@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,6 @@
 #include "os/os.h"
 #include "rmapi/resource.h"
 
-struct P2PApi;
 typedef struct VirtualMemory VirtualMemory;
 typedef struct Memory Memory;
 
@@ -59,7 +58,7 @@ struct _def_client_dma_mapping_info
     NvU64                 FbApertureLen[NV_MAX_SUBDEVICES]; // GPU aperture mapped lengths
     MEMORY_DESCRIPTOR    *pMemDesc;                         // Subregion to be mapped
     NvU32                 Flags;
-    struct P2PApi        *pP2PInfo;
+    NvBool                bP2P;
     NvU32                 gpuMask;
     ADDRESS_TRANSLATION   addressTranslation;
     MEMORY_DESCRIPTOR    *pBar1P2PVirtMemDesc;              // The peer GPU mapped BAR1 region

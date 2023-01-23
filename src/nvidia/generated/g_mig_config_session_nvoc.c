@@ -140,6 +140,10 @@ static NV_STATUS __nvoc_thunk_RsResource_migconfigsessionUnmapFrom(struct MIGCon
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_migconfigsessionIsDuplicate(struct MIGConfigSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_migconfigsessionControl_Epilogue(struct MIGConfigSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RmResource.offset), pCallContext, pParams);
 }
@@ -222,6 +226,8 @@ static void __nvoc_init_funcTable_MIGConfigSession_1(MIGConfigSession *pThis) {
     pThis->__migconfigsessionPreDestruct__ = &__nvoc_thunk_RsResource_migconfigsessionPreDestruct;
 
     pThis->__migconfigsessionUnmapFrom__ = &__nvoc_thunk_RsResource_migconfigsessionUnmapFrom;
+
+    pThis->__migconfigsessionIsDuplicate__ = &__nvoc_thunk_RsResource_migconfigsessionIsDuplicate;
 
     pThis->__migconfigsessionControl_Epilogue__ = &__nvoc_thunk_RmResource_migconfigsessionControl_Epilogue;
 

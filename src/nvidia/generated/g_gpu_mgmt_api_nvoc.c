@@ -140,6 +140,10 @@ static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiUnmapFrom(struct GpuManagemen
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_gpumgmtapiIsDuplicate(struct GpuManagementApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_gpumgmtapiControl_Epilogue(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuManagementApi_RmResource.offset), pCallContext, pParams);
 }
@@ -250,6 +254,8 @@ static void __nvoc_init_funcTable_GpuManagementApi_1(GpuManagementApi *pThis) {
     pThis->__gpumgmtapiPreDestruct__ = &__nvoc_thunk_RsResource_gpumgmtapiPreDestruct;
 
     pThis->__gpumgmtapiUnmapFrom__ = &__nvoc_thunk_RsResource_gpumgmtapiUnmapFrom;
+
+    pThis->__gpumgmtapiIsDuplicate__ = &__nvoc_thunk_RsResource_gpumgmtapiIsDuplicate;
 
     pThis->__gpumgmtapiControl_Epilogue__ = &__nvoc_thunk_RmResource_gpumgmtapiControl_Epilogue;
 

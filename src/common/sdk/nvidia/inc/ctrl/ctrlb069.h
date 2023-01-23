@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrlb069.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 /* MAXWELL_FAULT_BUFFER_A control commands and parameters */
 

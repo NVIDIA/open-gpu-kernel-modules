@@ -93,9 +93,6 @@ static bool __will_generate_flip_event(struct drm_crtc *crtc,
         to_nv_crtc_state(new_crtc_state);
     struct drm_plane_state *old_plane_state = NULL;
     struct drm_plane *plane = NULL;
-    struct drm_plane *primary_plane = crtc->primary;
-    bool primary_event = false;
-    bool overlay_event = false;
     int i;
 
     if (!old_crtc_state->active  && !new_crtc_state->active) {
@@ -134,16 +131,19 @@ static int __nv_drm_put_back_post_fence_fd(
     const struct NvKmsKapiLayerReplyConfig *layer_reply_config)
 {
     int fd = layer_reply_config->postSyncptFd;
+    int ret = 0;
 
     if ((fd >= 0) && (plane_state->fd_user_ptr != NULL)) {
-        if (put_user(fd, plane_state->fd_user_ptr)) {
-            return -EFAULT;
+        ret = copy_to_user(plane_state->fd_user_ptr, &fd, sizeof(fd));
+        if (ret != 0) {
+            return ret;
         }
 
         /*! set back to Null and let set_property specify it again */
         plane_state->fd_user_ptr = NULL;
     }
-    return 0;
+
+    return ret;
 }
 
 static int __nv_drm_get_syncpt_data(
@@ -274,6 +274,9 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
 
                 nv_new_crtc_state->nv_flip = NULL;
             }
+#if defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
+            requested_config->headRequestedConfig[nv_crtc->head].modeSetConfig.vrrEnabled = new_crtc_state->vrr_enabled;
+#endif
         }
     }
 

@@ -30,6 +30,16 @@ extern "C" {
 
 #include "nvkms-types.h"
 
+NvBool nvSetTmoLutSurfacesEvo(NVDevEvoPtr pDevEvo,
+                              NVFlipEvoHwState *pFlipState,
+                              NvU32 head);
+void nvRefTmoLutSurfacesEvo(NVDevEvoPtr pDevEvo,
+                            NVFlipEvoHwState *pFlipState,
+                            NvU32 head);
+void nvUnrefTmoLutSurfacesEvo(NVDevEvoPtr pDevEvo,
+                              NVFlipEvoHwState *pFlipState,
+                              NvU32 head);
+
 NvBool nvAllocLutSurfacesEvo(NVDevEvoPtr pDevEvo);
 
 void nvFreeLutSurfacesEvo(NVDevEvoPtr pDevEvo);

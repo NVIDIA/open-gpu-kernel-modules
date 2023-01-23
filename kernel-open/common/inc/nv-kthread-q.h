@@ -115,11 +115,6 @@ struct nv_kthread_q_item
     void *function_args;
 };
 
-#if defined(NV_KTHREAD_CREATE_ON_NODE_PRESENT)
-    #define NV_KTHREAD_Q_SUPPORTS_AFFINITY() 1
-#else
-    #define NV_KTHREAD_Q_SUPPORTS_AFFINITY() 0
-#endif
 
 #ifndef NUMA_NO_NODE
 #define NUMA_NO_NODE (-1)
@@ -142,17 +137,11 @@ struct nv_kthread_q_item
 //
 // A short prefix of the qname arg will show up in []'s, via the ps(1) utility.
 //
-// The kernel thread stack is preferably allocated on the specified NUMA node if
-// NUMA-affinity (NV_KTHREAD_Q_SUPPORTS_AFFINITY() == 1) is supported, but
-// fallback to another node is possible because kernel allocators do not
+// The kernel thread stack is preferably allocated on the specified NUMA node, 
+// but fallback to another node is possible because kernel allocators do not
 // guarantee affinity. Note that NUMA-affinity applies only to
 // the kthread stack. This API does not do anything about limiting the CPU
 // affinity of the kthread. That is left to the caller.
-//
-// On kernels, which do not support NUMA-aware kthread stack allocations
-// (NV_KTHTREAD_Q_SUPPORTS_AFFINITY() == 0), the API will return -ENOTSUPP
-// if the value supplied for 'preferred_node' is anything other than
-// NV_KTHREAD_NO_NODE.
 //
 // Reusing a queue: once a queue is initialized, it must be safely shut down
 // (see "Stopping the queue(s)", below), before it can be reused. So, for

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,12 @@
 
 #include "rmflcncmdif_nvswitch.h"
 #include "common_nvswitch.h"
+
+//
+// Yield the CPU temporarily after openWrite() in _flcnQueueCmdWrite_IMPL()
+// fails this many times in a row.
+//
+#define FLCN_QUEUE_CMD_WRITE_SLEEP_TRIES    1024
 
 /*!
  * @file   flcnqueue_nvswitch.c
@@ -437,6 +443,7 @@ _flcnQueueCmdWrite_IMPL
     PFLCNQUEUE          pQueue;
     PFALCON_QUEUE_INFO  pQueueInfo = pFlcn->pQueueInfo;
     NvBool              bKeepPolling;
+    NvU32               nTries = 0;
 
     NVSWITCH_ASSERT(pTimeout != NULL);
     NVSWITCH_ASSERT(pQueueInfo != NULL);
@@ -464,6 +471,17 @@ _flcnQueueCmdWrite_IMPL
                     __FUNCTION__, pQueue->queueLogId);
                return NV_ERR_FLCN_ERROR;
             }
+
+            if (++nTries < 4)
+            {
+                NVSWITCH_PRINT(device, INFO,
+                    "%s: queue is too full to write data (write-size=0x%x).\n",
+                    __FUNCTION__, pCmd->cmdGen.hdr.size);
+            }
+            else if ((nTries % FLCN_QUEUE_CMD_WRITE_SLEEP_TRIES) == 0)
+            {
+                nvswitch_os_sleep(1);
+            }
         }
         else
         {
@@ -474,28 +492,26 @@ _flcnQueueCmdWrite_IMPL
 
     if (status == NV_ERR_INSUFFICIENT_RESOURCES)
     {
+#if defined(DEBUG)
+        RM_FLCN_CMD         FlcnCmd;
+        NV_STATUS           dumpStatus;
+
+        dumpStatus = flcnRtosDumpCmdQueue_nvswitch(device, pFlcn, queueLogId, &FlcnCmd);
+        if (dumpStatus != NV_OK)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: Dumping Falcon Command queue completed with status 0x%x \n",
+                __FUNCTION__ , dumpStatus);
+        }
+#endif  // DEBUG
+
         NVSWITCH_PRINT(device, ERROR,
-            "%s: Timeout while waiting for space (queueLogId=0x%x).\n",
-            __FUNCTION__, pQueue->queueLogId);
+            "%s: Timeout after %d tries while waiting for space (queueLogId=0x%x).\n"
+            "Command queue:\n",
+            __FUNCTION__, nTries, pQueue->queueLogId);
+
         return NV_ERR_TIMEOUT;
     }
-
-    //
-    // if failed to write Command due to no space,
-    // dump the queue contents if debug flag is on
-    //
-#if defined(DEBUG)
-    if (status == NV_ERR_INSUFFICIENT_RESOURCES)
-    {
-        RM_FLCN_CMD         FlcnCmd;
-        NV_STATUS           dumpstatus;
-
-        dumpstatus = flcnRtosDumpCmdQueue_nvswitch(device, pFlcn, queueLogId, &FlcnCmd);
-        NVSWITCH_PRINT(device, ERROR,
-            "%s: Dumping Falcon Command queue completed with status =0x%x \n",
-            __FUNCTION__ , dumpstatus );
-    }
-#endif
 
     if (status != NV_OK)
     {
@@ -516,7 +532,7 @@ _flcnQueueCmdWrite_IMPL
     status = pQueue->close(device, pFlcn, pQueue, NV_TRUE);
     if (status == NV_OK)
     {
-        NVSWITCH_PRINT(device, INFO,
+        NVSWITCH_PRINT(device, MMIO,
             "%s: command queued (unit-id=0x%x).\n",
             __FUNCTION__, pCmd->cmdGen.hdr.unitId);
     }
@@ -1405,29 +1421,14 @@ _flcnQueueCmdPostNonBlocking_IMPL
     }
 
     // Falcon must be in a ready state before commands may be submitted.
-    if (!pFlcn->bOSReady)
+    status = soeWaitForInitAck_HAL(device,  (PSOE)pFlcn->pFlcnable);
+    if (status != NV_OK)
     {
-        if (pFlcn->engineTag != ENG_TAG_SOE) {
-            NVSWITCH_PRINT(device, ERROR,
-                "%s: FLCN not ready for command processing\n",
-                __FUNCTION__);
-            return NV_ERR_INVALID_STATE;
-        }
-        else
-        {
-            SOE *pSoe = (PSOE)pFlcn->pFlcnable;
-
-            status = soeWaitForInitAck(device, pSoe);
-
-            if (status != NV_OK || !pFlcn->bOSReady)
-            {
-                NVSWITCH_PRINT(device, ERROR,
-                    "%s: SOE not ready for command processing\n",
-                    __FUNCTION__);
-                NVSWITCH_ASSERT(0);
-                return status;
-            }
-        }
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: SOE not ready for command processing\n",
+            __FUNCTION__);
+        NVSWITCH_ASSERT(0);
+        return status;
     }
 
     // Sanity check the command input.
@@ -1578,7 +1579,7 @@ _flcnQueueCmdValidate
  * @return  NV_ERR_TIMEOUT
  *      A timeout occurred before the command completed.
  */
-NV_STATUS
+static NV_STATUS
 _flcnQueueCmdWait_IMPL
 (
     nvswitch_device *device,
@@ -1643,4 +1644,3 @@ flcnQueueSetupHal
     pHal->queueCmdPostNonBlocking = _flcnQueueCmdPostNonBlocking_IMPL;
     pHal->queueCmdWait            = _flcnQueueCmdWait_IMPL;
 }
-

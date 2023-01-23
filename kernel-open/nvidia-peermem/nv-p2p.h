@@ -177,11 +177,7 @@ struct nvidia_p2p_page_table {
  *   This means the pages underlying the range of GPU virtual memory
  *   will persist until explicitly freed by nvidia_p2p_put_pages().
  *   Persistent GPU memory mappings are not supported on PowerPC,
-
-
-
  *   MIG-enabled devices and vGPU.
-
  * @param[in]     data
  *   A non-NULL opaque pointer to private data to be passed to the
  *   callback function.

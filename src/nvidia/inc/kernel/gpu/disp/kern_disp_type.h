@@ -29,6 +29,7 @@
 *  Defines display type enums that can be used in the KernelDisplay object.
 *
 ******************************************************************************/
+#define NV_PDISP_CHN_NUM_ANY 0x7F
 
 typedef enum
 {
@@ -39,6 +40,7 @@ typedef enum
     dispChnClass_Ovly,
     dispChnClass_Winim,
     dispChnClass_Win,
+    dispChnClass_Any,
     dispChnClass_Supported
 } DISPCHNCLASS;
 
@@ -48,5 +50,19 @@ enum DISPLAY_ICC_BW_CLIENT
     DISPLAY_ICC_BW_CLIENT_EXT,  // DD or MODS
     NUM_DISPLAY_ICC_BW_CLIENTS
 };
+
+typedef enum
+{
+    dispMemoryTarget_physNVM,
+    dispMemoryTarget_physPCI,
+    dispMemoryTarget_physPCICoherent
+} DISPMEMORYTARGET;
+
+typedef struct
+{
+    NvU64               addr;
+    DISPMEMORYTARGET    memTarget;
+    NvBool              valid;
+} VGAADDRDESC;
 
 #endif // #ifndef KERN_DISP_TYPE_H

@@ -38,6 +38,10 @@
 #error "ATOMIC module must be present for memory tracking"
 #endif
 
+#if PORT_MEM_TRACK_USE_LIMIT
+#include "os/os.h"
+#define PORT_MEM_LIMIT_MAX_PIDS 32
+#endif
 
 struct PORT_MEM_ALLOCATOR_IMPL
 {
@@ -60,6 +64,11 @@ struct PORT_MEM_ALLOCATOR_IMPL
 
 // Simple implementation of a spinlock that is going to be used where sync module is not included.
 #if !PORT_IS_MODULE_SUPPORTED(sync)
+
+#if NVCPU_IS_RISCV64
+#error "Sync module should be enabled for RISC-V builds"
+#endif
+
 typedef volatile NvU32 PORT_SPINLOCK;
 static NvLength portSyncSpinlockSize = sizeof(PORT_SPINLOCK);
 static NV_STATUS portSyncSpinlockInitialize(PORT_SPINLOCK *pSpinlock)
@@ -378,7 +387,7 @@ typedef struct PORT_MEM_LOG_ENTRY
 #define PORT_MEM_LOG_ENTRIES 4096
 
 static void
-_portMemLogInit()
+_portMemLogInit(void)
 {
     NVLOG_BUFFER_HANDLE hBuffer;
     nvlogAllocBuffer(PORT_MEM_LOG_ENTRIES * sizeof(PORT_MEM_LOG_ENTRY),
@@ -387,7 +396,7 @@ _portMemLogInit()
 }
 
 static void
-_portMemLogDestroy()
+_portMemLogDestroy(void)
 {
     NVLOG_BUFFER_HANDLE hBuffer;
     nvlogGetBufferHandleFromTag(PORT_MEM_TRACK_LOG_TAG, &hBuffer);
@@ -485,7 +494,88 @@ static struct PORT_MEM_GLOBALS
     } alloc;
     NvU32 initCount;
     NvU32 totalAllocators;
+#if PORT_MEM_TRACK_USE_LIMIT
+    NvBool bLimitEnabled;
+    NvU64 limitPid[PORT_MEM_LIMIT_MAX_PIDS];
+    NvU64 counterPid[PORT_MEM_LIMIT_MAX_PIDS];
+#endif
 } portMemGlobals;
+
+//
+// Per-process heap limiting implementation
+//
+#if PORT_MEM_TRACK_USE_LIMIT
+static NV_INLINE void
+_portMemLimitInc(NvU32 pid, void *pMem, NvU64 size)
+{
+    if (portMemGlobals.bLimitEnabled)
+    {
+        PORT_MEM_HEADER *pMemHeader = PORT_MEM_SUB_HEADER_PTR(pMem);
+        pMemHeader->pid = pid;
+
+        if ((pid > 0) && (pid <= PORT_MEM_LIMIT_MAX_PIDS))
+        {
+            NvU32 pidIdx = pid - 1;
+            pMemHeader->blockSize = size;
+            portAtomicAddSize(&portMemGlobals.counterPid[pidIdx], size);
+        }
+    }
+}
+
+static NV_INLINE void
+_portMemLimitDec(void *pMem)
+{
+    if (portMemGlobals.bLimitEnabled)
+    {
+        PORT_MEM_HEADER *pMemHeader = PORT_MEM_SUB_HEADER_PTR(pMem);
+        NvU32 pid = pMemHeader->pid;
+
+        if ((pid > 0) && (pid <= PORT_MEM_LIMIT_MAX_PIDS))
+        {
+            NvU32 pidIdx = pid - 1;
+            if (portMemGlobals.counterPid[pidIdx] < pMemHeader->blockSize)
+            {
+                // TODO: How do we protect against double frees?
+                PORT_MEM_PRINT_ERROR("memory free error: counter underflow\n");
+                PORT_BREAKPOINT_CHECKED();
+            }
+            else
+            {
+                portAtomicSubSize(&portMemGlobals.counterPid[pidIdx], pMemHeader->blockSize);
+            }
+        }
+    }
+}
+
+static NV_INLINE NvBool
+_portMemLimitExceeded(NvU32 pid, NvU64 size)
+{
+    NvBool bExceeded = NV_FALSE;
+
+    if (portMemGlobals.bLimitEnabled)
+    {
+        if ((pid > 0) && (pid <= PORT_MEM_LIMIT_MAX_PIDS))
+        {
+            NvU32 pidIdx = pid - 1;
+            if ((size + portMemGlobals.counterPid[pidIdx]) > portMemGlobals.limitPid[pidIdx])
+            {
+                PORT_MEM_PRINT_ERROR("memory allocation denied; PID %d exceeded per-process heap limit of 0x%llx\n",
+                                      pid, portMemGlobals.limitPid[pidIdx]);
+                bExceeded = NV_TRUE;
+            }
+        }
+    }
+    return bExceeded;
+}
+
+#define PORT_MEM_LIMIT_INC(pid, pMem, size) _portMemLimitInc(pid, pMem, size)
+#define PORT_MEM_LIMIT_DEC(pMem)            _portMemLimitDec(pMem)
+#define PORT_MEM_LIMIT_EXCEEDED(pid, size)  _portMemLimitExceeded(pid, size)
+#else
+#define PORT_MEM_LIMIT_INC(pid, pMem, size)
+#define PORT_MEM_LIMIT_DEC(pMem)
+#define PORT_MEM_LIMIT_EXCEEDED(pid, size)  (NV_FALSE)
+#endif // PORT_MEM_TRACK_USE_LIMIT
 
 static NV_INLINE PORT_MEM_ALLOCATOR_TRACKING *
 _portMemGetTracking
@@ -515,6 +605,13 @@ portMemInitialize(void)
     PORT_MEM_COUNTER_INIT(&portMemGlobals.mainTracking.counter);
     PORT_MEM_LIST_INIT(&portMemGlobals.mainTracking);
     PORT_MEM_LOCK_INIT(portMemGlobals.trackingLock);
+
+#if PORT_MEM_TRACK_USE_LIMIT
+    // Initialize process heap limit to max int (i.e. no limit)
+    portMemGlobals.bLimitEnabled = NV_FALSE;
+    portMemSet(&portMemGlobals.limitPid, NV_U8_MAX, sizeof(portMemGlobals.limitPid));
+    portMemSet(&portMemGlobals.counterPid, 0, sizeof(portMemGlobals.counterPid));
+#endif
 
     portMemGlobals.alloc.paged._portAlloc      = _portMemAllocatorAllocPagedWrapper;
     portMemGlobals.alloc.nonPaged._portAlloc   = _portMemAllocatorAllocNonPagedWrapper;
@@ -586,6 +683,9 @@ portMemAllocPaged
     PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 )
 {
+#if defined(__COVERITY__)
+    return __coverity_alloc__(length);
+#endif
     PORT_MEM_ALLOCATOR *pAlloc = portMemAllocatorGetGlobalPaged();
     return _portMemAllocatorAlloc(pAlloc, length PORT_MEM_CALLERINFO_COMMA_PARAM);
 }
@@ -597,6 +697,9 @@ portMemAllocNonPaged
     PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 )
 {
+#if defined(__COVERITY__)
+    return __coverity_alloc__(length);
+#endif
     PORT_MEM_ALLOCATOR *pAlloc = portMemAllocatorGetGlobalNonPaged();
     return _portMemAllocatorAlloc(pAlloc, length PORT_MEM_CALLERINFO_COMMA_PARAM);
 }
@@ -750,6 +853,16 @@ portMemInitializeAllocatorTracking
     portAtomicIncrementU32(&portMemGlobals.totalAllocators);
 }
 
+#if PORT_MEM_TRACK_USE_LIMIT
+void
+portMemInitializeAllocatorTrackingLimit(NvU32 pid, NvU64 limit, NvBool bLimitEnabled)
+{
+    NvU32 pidIdx = pid - 1;
+    portMemGlobals.limitPid[pidIdx] = limit;
+    portMemGlobals.bLimitEnabled = bLimitEnabled;
+}
+#endif
+
 void *
 _portMemAllocatorAlloc
 (
@@ -758,12 +871,31 @@ _portMemAllocatorAlloc
     PORT_MEM_CALLERINFO_COMMA_TYPE_PARAM
 )
 {
+#if PORT_MEM_TRACK_USE_LIMIT
+    NvU32 pid = 0;
+#endif
     void *pMem = NULL;
     if (pAlloc == NULL)
     {
         PORT_BREAKPOINT_CHECKED();
         return NULL;
     }
+
+#if PORT_MEM_TRACK_USE_LIMIT
+    if (portMemGlobals.bLimitEnabled)
+    {
+        if (osGetCurrentProcessGfid(&pid) != NV_OK)
+        {
+            PORT_BREAKPOINT_CHECKED();
+            return NULL;
+        }
+    }
+#endif
+
+    // Check if per-process memory limit will be exhausted by this allocation
+    if (PORT_MEM_LIMIT_EXCEEDED(pid, length))
+        return NULL;
+
     if (length > 0)
     {
         NvLength paddedLength;
@@ -788,6 +920,7 @@ _portMemAllocatorAlloc
         pMem = PORT_MEM_ADD_HEADER_PTR(pMem);
         _portMemTrackAlloc(_portMemGetTracking(pAlloc), pMem, length
                            PORT_MEM_CALLERINFO_COMMA_PARAM);
+        PORT_MEM_LIMIT_INC(pid, pMem, length);
     }
     return pMem;
 }
@@ -805,6 +938,7 @@ _portMemAllocatorFree
     }
     if (pMem != NULL)
     {
+        PORT_MEM_LIMIT_DEC(pMem);
         _portMemTrackFree(_portMemGetTracking(pAlloc), pMem);
         pMem = PORT_MEM_SUB_HEADER_PTR(pMem);
         pAlloc->_portFree(pAlloc, pMem);

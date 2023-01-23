@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl00f8.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 
 #define NV00F8_CTRL_CMD(cat,idx)       NVXXXX_CTRL_CMD(0x00f8, NV00F8_CTRL_##cat, idx)
@@ -67,15 +64,33 @@
  *
  *  allocFlags [OUT]
  *    Flags passed during the allocation.
+ *
+ *  physAttrs [OUT]
+ *    Physical attributes associated with memory allocation.
+ *    For flexible mappings, it is not possible to retrieve this information,
+ *    behavior is undefined (returns all zeros).
  */
 #define NV00F8_CTRL_CMD_GET_INFO (0xf80101U) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_GET_INFO_PARAMS_MESSAGE_ID" */
+
+/*
+ * addressSpace
+ *     Same as NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE.
+ *
+ * compressionCoverage
+ *     Same as NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE.
+ */
+typedef struct NV_PHYSICAL_MEMORY_ATTRS {
+    NvU32 addressSpace;
+    NvU32 compressionCoverage;
+} NV_PHYSICAL_MEMORY_ATTRS;
 
 #define NV00F8_CTRL_GET_INFO_PARAMS_MESSAGE_ID (0x1U)
 
 typedef struct NV00F8_CTRL_GET_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 size, 8);
-    NvU32 pageSize;
-    NvU32 allocFlags;
+    NvU32                    pageSize;
+    NvU32                    allocFlags;
+    NV_PHYSICAL_MEMORY_ATTRS physAttrs;
 } NV00F8_CTRL_GET_INFO_PARAMS;
 
 /*
@@ -110,5 +125,94 @@ typedef struct NV00F8_CTRL_DESCRIBE_PARAMS {
     NvU32 pfnArray[NV00F8_CTRL_DESCRIBE_PFN_ARRAY_SIZE];
     NvU32 numPfns;
 } NV00F8_CTRL_DESCRIBE_PARAMS;
+
+/*
+ *  hMemory [IN]
+ *    Physical memory handle to be attached.
+ *
+ *  offset [IN]
+ *    Offset into the fabric object.
+ *    Must be physical memory pagesize aligned (at least).
+ *
+ *  mapOffSet [IN]
+ *    Offset into the physical memory descriptor.
+ *    Must be physical memory pagesize aligned.
+ *
+ *  mapLength [IN]
+ *    Length of physical memory handle to be mapped.
+ *    Must be physical memory pagesize aligned and less than or equal to
+ *    fabric alloc size.
+ */
+typedef struct NV00F8_CTRL_ATTACH_MEM_INFO {
+    NvHandle hMemory;
+    NV_DECLARE_ALIGNED(NvU64 offset, 8);
+    NV_DECLARE_ALIGNED(NvU64 mapOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 mapLength, 8);
+} NV00F8_CTRL_ATTACH_MEM_INFO;
+
+/*
+ * NV00F8_CTRL_CMD_ATTACH_MEM
+ *
+ * Attaches physical memory info to the fabric object.
+ *
+ *  memInfos [IN]
+ *    Memory infos to be attached.
+ *
+ *  numMemInfos [IN]
+ *    Number of memory infos to be attached.
+ *
+ *  flags [IN]
+ *    For future use only. Must be zero for now.
+ *
+ *  numAttached [OUT]
+ *    Successful attach count (returns a valid value on error too)
+ *
+ *  Restrictions:
+ *  a. Physical memory with 2MB pagesize is allowed
+ *  b. Only vidmem physical memory handle can be attached
+ *  c. Supported only for flexible fabric objects.
+ */
+#define NV00F8_CTRL_CMD_ATTACH_MEM      (0xf80103) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_ATTACH_MEM_PARAMS_MESSAGE_ID" */
+
+#define NV00F8_MAX_ATTACHABLE_MEM_INFOS 64
+
+#define NV00F8_CTRL_ATTACH_MEM_PARAMS_MESSAGE_ID (0x3U)
+
+typedef struct NV00F8_CTRL_ATTACH_MEM_PARAMS {
+    NV_DECLARE_ALIGNED(NV00F8_CTRL_ATTACH_MEM_INFO memInfos[NV00F8_MAX_ATTACHABLE_MEM_INFOS], 8);
+    NvU16 numMemInfos;
+    NvU32 flags;
+    NvU16 numAttached;
+} NV00F8_CTRL_ATTACH_MEM_PARAMS;
+
+/*
+ * NV00F8_CTRL_CMD_DETACH_MEM
+ *
+ * Detaches physical memory handle from the fabric object.
+ *
+ *  offsets [IN]
+ *    Offsets at which memory was attached.
+ *
+ *  numOffsets [IN]
+ *    Number of offsets to be detached.
+ *
+ *  flags [IN]
+ *    For future use only. Must be zero for now.
+ *
+ *  numDetached [OUT]
+ *    Successful detach count (returns a valid value on error too)
+ */
+#define NV00F8_CTRL_CMD_DETACH_MEM    (0xf80104) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_DETACH_MEM_PARAMS_MESSAGE_ID" */
+
+#define NV00F8_MAX_DETACHABLE_OFFSETS 64
+
+#define NV00F8_CTRL_DETACH_MEM_PARAMS_MESSAGE_ID (0x4U)
+
+typedef struct NV00F8_CTRL_DETACH_MEM_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 offsets[NV00F8_MAX_DETACHABLE_OFFSETS], 8);
+    NvU16 numOffsets;
+    NvU32 flags;
+    NvU16 numDetached;
+} NV00F8_CTRL_DETACH_MEM_PARAMS;
 
 /* _ctrl00f8_h_ */

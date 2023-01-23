@@ -132,6 +132,11 @@ nvidia_vma_access(
     pageIndex = ((addr - vma->vm_start) >> PAGE_SHIFT);
     pageOffset = (addr & ~PAGE_MASK);
 
+    if (length < 0)
+    {
+        return -EINVAL;
+    }
+
     if (!mmap_context->valid)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: VM: invalid mmap context\n");
@@ -210,8 +215,12 @@ static vm_fault_t nvidia_fault(
 
     NvU64 page;
     NvU64 num_pages = NV_VMA_SIZE(vma) >> PAGE_SHIFT;
-    NvU64 pfn_start =
-        (nvlfp->mmap_context.mmap_start >> PAGE_SHIFT) + vma->vm_pgoff;
+    NvU64 pfn_start = (nvlfp->mmap_context.mmap_start >> PAGE_SHIFT);
+
+    if (vma->vm_pgoff != 0)
+    {
+        return VM_FAULT_SIGBUS;
+    }
 
     // Mapping revocation is only supported for GPU mappings.
     if (NV_IS_CTL_DEVICE(nv))
@@ -319,6 +328,7 @@ int nv_encode_caching(
             break;
 #if defined(NV_PGPROT_WRITE_COMBINED) && \
     defined(NV_PGPROT_WRITE_COMBINED_DEVICE)
+        case NV_MEMORY_DEFAULT:
         case NV_MEMORY_WRITECOMBINED:
             if (NV_ALLOW_WRITE_COMBINING(memory_type))
             {
@@ -430,7 +440,7 @@ static int nvidia_mmap_numa(
     const nv_alloc_mapping_context_t *mmap_context)
 {
     NvU64 start, addr;
-    unsigned int pages;
+    NvU64 pages;
     NvU64 i;
 
     pages = NV_VMA_SIZE(vma) >> PAGE_SHIFT;
@@ -483,6 +493,11 @@ int nvidia_mmap_helper(
         return -EINVAL;
     }
 
+    if (vma->vm_pgoff != 0)
+    {
+        return -EINVAL;
+    }
+
     NV_PRINT_VMA(NV_DBG_MEMINFO, vma);
 
     status = nv_check_gpu_state(nv);
@@ -509,6 +524,11 @@ int nvidia_mmap_helper(
         NvU64 access_start = mmap_context->access_start;
         NvU64 access_len = mmap_context->access_size;
 
+        // validate the size
+        if (NV_VMA_SIZE(vma) != mmap_length)
+        {
+            return -ENXIO;
+        }
         if (IS_REG_OFFSET(nv, access_start, access_len))
         {
             if (nv_encode_caching(&vma->vm_page_prot, NV_MEMORY_UNCACHED,
@@ -530,7 +550,7 @@ int nvidia_mmap_helper(
             else
             {
                 if (nv_encode_caching(&vma->vm_page_prot,
-                        rm_disable_iomap_wc() ? NV_MEMORY_UNCACHED : NV_MEMORY_WRITECOMBINED, 
+                        rm_disable_iomap_wc() ? NV_MEMORY_UNCACHED : mmap_context->caching, 
                         NV_MEMORY_TYPE_FRAMEBUFFER))
                 {
                     if (nv_encode_caching(&vma->vm_page_prot,
@@ -679,13 +699,11 @@ int nvidia_mmap(
         return -EINVAL;
     }
 
-    down(&nvlfp->fops_sp_lock[NV_FOPS_STACK_INDEX_MMAP]);
-
-    sp = nvlfp->fops_sp[NV_FOPS_STACK_INDEX_MMAP];
+    sp = nv_nvlfp_get_sp(nvlfp, NV_FOPS_STACK_INDEX_MMAP);
 
     status = nvidia_mmap_helper(nv, nvlfp, sp, vma, NULL);
 
-    up(&nvlfp->fops_sp_lock[NV_FOPS_STACK_INDEX_MMAP]);
+    nv_nvlfp_put_sp(nvlfp, NV_FOPS_STACK_INDEX_MMAP);
 
     return status;
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -102,5 +102,17 @@ NV_STATUS uvm_perf_thrashing_load(uvm_va_space_t *va_space);
 NV_STATUS uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu);
 void uvm_perf_thrashing_stop(uvm_va_space_t *va_space);
 void uvm_perf_thrashing_unload(uvm_va_space_t *va_space);
+
+// Destroy the thrashing detection struct for the given block.
+void uvm_perf_thrashing_info_destroy(uvm_va_block_t *va_block);
+
+// Unmap remote mappings from all processors on the pinned pages
+// described by region and block_thrashing->pinned pages.
+// va_block_context must not be NULL and va_block_context->policy must be valid.
+// See the comments for uvm_va_block_check_policy_is_valid() in uvm_va_block.h.
+// Locking: the va_block lock must be held.
+NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_block,
+                                                           uvm_va_block_context_t *va_block_context,
+                                                           uvm_va_block_region_t region);
 
 #endif

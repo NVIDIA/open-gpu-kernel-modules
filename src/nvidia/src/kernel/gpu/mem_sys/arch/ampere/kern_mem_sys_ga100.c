@@ -51,7 +51,7 @@ kmemsysProgramSysmemFlushBuffer_GA100
 
     NV_ASSERT(pKernelMemorySystem->sysmemFlushBuffer != 0);
 
-    alignedSysmemFlushBufferAddr = pKernelMemorySystem->sysmemFlushBuffer >> NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT;
+    alignedSysmemFlushBufferAddr = pKernelMemorySystem->sysmemFlushBuffer >> kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem);
     alignedSysmemFlushBufferAddrHi = DRF_VAL(_PFB, _NISO_FLUSH_SYSMEM_ADDR_HI, _ADR_63_40,
                                             NvU64_HI32(alignedSysmemFlushBufferAddr));
 
@@ -99,7 +99,7 @@ kmemsysInitFlushSysmemBuffer_GA100
         //
         status = memdescCreate(&pKernelMemorySystem->pSysmemFlushBufferMemDesc,
                                pGpu, RM_PAGE_SIZE,
-                               (1 << NV_PFB_NISO_FLUSH_SYSMEM_ADDR_SHIFT),
+                               1 << kmemsysGetFlushSysmemBufferAddrShift_HAL(pGpu, pKernelMemorySystem),
                                NV_TRUE,
                                ADDR_SYSMEM,
                                NV_MEMORY_UNCACHED,

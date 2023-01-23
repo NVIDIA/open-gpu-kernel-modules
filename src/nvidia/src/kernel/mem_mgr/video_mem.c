@@ -164,12 +164,9 @@ _vidmemPmaAllocate
 
     // Get the page size returned by RM.
     pageSize = stdmemQueryPageSize(pMemoryManager, pAllocRequest->hClient, pAllocData);
+    NV_ASSERT_OR_RETURN(pageSize != 0, NV_ERR_INVALID_STATE);
 
-    if (pageSize == 0)
-    {
-        status = NV_ERR_INVALID_STATE;
-    }
-    else if (pageSize == RM_PAGE_SIZE)
+    if (pageSize == RM_PAGE_SIZE)
     {
         //
         // TODO Remove this after the suballocator is in place
@@ -211,6 +208,12 @@ _vidmemPmaAllocate
     if (pAllocData->flags & NVOS32_ALLOC_FLAGS_PROTECTED)
     {
         allocOptions.flags |= PMA_ALLOCATE_PROTECTED_REGION;
+    }
+
+    // Check memory alloc direction.
+    if (pAllocData->flags & NVOS32_ALLOC_FLAGS_FORCE_REVERSE_ALLOC)
+    {
+        allocOptions.flags |= PMA_ALLOCATE_REVERSE_ALLOC;
     }
 
     // Fixed address allocations.
@@ -547,7 +550,7 @@ vidmemConstruct_IMPL
 
     // Scrub-on-free is not supported by heap. Make sure clients don't get unscrubbed allocations
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
-        !memmgrIsScrubOnFreeEnabled(pMemoryManager) || RMCFG_FEATURE_PLATFORM_MODS || bIsPmaAlloc || bSubheap,
+        !memmgrIsScrubOnFreeEnabled(pMemoryManager) || bIsPmaAlloc || bSubheap,
         NV_ERR_INVALID_STATE);
 
     // Get the allocation from PMA if enabled.
@@ -1095,6 +1098,15 @@ vidmemAllocResources
     if (bIsPmaOwned)
     {
         pFbAllocInfo->offset = pMemDesc->_pteArray[0];
+
+        if (pMemoryManager->bEnableDynamicGranularityPageArrays == NV_TRUE)
+        {
+            //
+            // set pagearray granularity if dynamic memdesc pagesize is enabled
+            // this ensures consistency in calculation of page count
+            //
+            pMemDesc->pageArrayGranularity = pAllocRequest->pPmaAllocInfo[subdeviceInst]->pageSize;
+        }
 
         if (bContig)
         {

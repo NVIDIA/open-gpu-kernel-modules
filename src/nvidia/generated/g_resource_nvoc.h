@@ -166,6 +166,7 @@ NV_STATUS __nvoc_objCreate_RmResourceCommon(RmResourceCommon**, Dynamic*, NvU32)
     __nvoc_objCreate_RmResourceCommon((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS rmrescmnConstruct_IMPL(struct RmResourceCommon *arg_pResourceCommmon);
+
 #define __nvoc_rmrescmnConstruct(arg_pResourceCommmon) rmrescmnConstruct_IMPL(arg_pResourceCommmon)
 #undef PRIVATE_FIELD
 
@@ -203,6 +204,7 @@ struct RmResource {
     NvBool (*__rmresCanCopy__)(struct RmResource *);
     void (*__rmresPreDestruct__)(struct RmResource *);
     NV_STATUS (*__rmresUnmapFrom__)(struct RmResource *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__rmresIsDuplicate__)(struct RmResource *, NvHandle, NvBool *);
     NV_STATUS (*__rmresControlLookup__)(struct RmResource *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__rmresMap__)(struct RmResource *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvU32 rpcGpuInstance;
@@ -253,6 +255,7 @@ NV_STATUS __nvoc_objCreate_RmResource(RmResource**, Dynamic*, NvU32, struct CALL
 #define rmresCanCopy(pResource) rmresCanCopy_DISPATCH(pResource)
 #define rmresPreDestruct(pResource) rmresPreDestruct_DISPATCH(pResource)
 #define rmresUnmapFrom(pResource, pParams) rmresUnmapFrom_DISPATCH(pResource, pParams)
+#define rmresIsDuplicate(pResource, hMemory, pDuplicate) rmresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define rmresControlLookup(pResource, pParams, ppEntry) rmresControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define rmresMap(pResource, pCallContext, pParams, pCpuMapping) rmresMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 NvBool rmresAccessCallback_IMPL(struct RmResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);
@@ -333,6 +336,10 @@ static inline NV_STATUS rmresUnmapFrom_DISPATCH(struct RmResource *pResource, RS
     return pResource->__rmresUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS rmresIsDuplicate_DISPATCH(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__rmresIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline NV_STATUS rmresControlLookup_DISPATCH(struct RmResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
     return pResource->__rmresControlLookup__(pResource, pParams, ppEntry);
 }
@@ -342,6 +349,7 @@ static inline NV_STATUS rmresMap_DISPATCH(struct RmResource *pResource, struct C
 }
 
 NV_STATUS rmresConstruct_IMPL(struct RmResource *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_rmresConstruct(arg_pResource, arg_pCallContext, arg_pParams) rmresConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

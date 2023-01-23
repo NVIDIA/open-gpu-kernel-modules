@@ -31,6 +31,9 @@ extern "C" {
 #endif
 
 void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo);
+NVEvoPassiveDpDongleType nvDpyGetPassiveDpDongleType(
+    const NVDpyEvoRec *pDpyEvo,
+    NvU32 *passiveDpDongleMaxPclkKHz);
 void nvDpySetValidSyncsEvo(const NVDpyEvoRec *pDpyEvo,
                            struct NvKmsModeValidationValidSyncs *pValidSyncs);
 NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,
@@ -39,13 +42,10 @@ NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,
 void nvFreeDpyEvo(NVDispEvoPtr pDispEvo, NVDpyEvoPtr pDpyEvo);
 NVConnectorEvoPtr nvGetConnectorFromDisp(NVDispEvoPtr pDispEvo, NVDpyId dpyId);
 
-void nvUpdateInfoFrames(const NVDispEvoRec *pDispEvo, const NvU32 head);
+void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo);
 
 NvBool nvDpyRequiresDualLinkEvo(const NVDpyEvoRec *pDpyEvo,
                                 const NVHwModeTimingsEvo *pTimings);
-
-NVHwModeTimingsEvoPtr
-nvGetCurrentModeTimingsForDpyEvo(const NVDpyEvoRec *pDpyEvo);
 
 NVDpyEvoPtr nvGetDpyEvoFromDispEvo(const NVDispEvoRec *pDispEvo, NVDpyId dpyId);
 

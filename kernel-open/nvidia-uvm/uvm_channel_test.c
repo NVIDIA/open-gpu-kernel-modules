@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -60,7 +60,7 @@ static NV_STATUS test_ordering(uvm_va_space_t *va_space)
     gpu = uvm_va_space_find_first_gpu(va_space);
     TEST_CHECK_RET(gpu != NULL);
 
-    status = uvm_rm_mem_alloc_and_map_all(gpu, UVM_RM_MEM_TYPE_SYS, buffer_size, &mem);
+    status = uvm_rm_mem_alloc_and_map_all(gpu, UVM_RM_MEM_TYPE_SYS, buffer_size, 0, &mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
 
     host_mem = (NvU32*)uvm_rm_mem_get_cpu_va(mem);
@@ -149,6 +149,37 @@ done:
     uvm_rm_mem_free(mem);
 
     return status;
+}
+
+static NV_STATUS test_unexpected_completed_values(uvm_va_space_t *va_space)
+{
+    NV_STATUS status;
+    uvm_gpu_t *gpu;
+
+    for_each_va_space_gpu(gpu, va_space) {
+        uvm_channel_t *channel;
+        NvU64 completed_value;
+
+        // The GPU channel manager is destroyed and then re-created after
+        // the test, so this test requires exclusive access to the GPU.
+        TEST_CHECK_RET(uvm_gpu_retained_count(gpu) == 1);
+
+        channel = &gpu->channel_manager->channel_pools[0].channels[0];
+        completed_value = uvm_channel_update_completed_value(channel);
+        uvm_gpu_semaphore_set_payload(&channel->tracking_sem.semaphore, (NvU32)completed_value + 1);
+
+        TEST_CHECK_RET(uvm_global_get_status() == NV_OK);
+        uvm_channel_update_progress_all(channel);
+        TEST_CHECK_RET(uvm_global_reset_fatal_error() == NV_ERR_INVALID_STATE);
+
+        uvm_channel_manager_destroy(gpu->channel_manager);
+        // Destruction will hit the error again, so clear one more time.
+        uvm_global_reset_fatal_error();
+
+        TEST_NV_CHECK_RET(uvm_channel_manager_create(gpu, &gpu->channel_manager));
+    }
+
+    return NV_OK;
 }
 
 static NV_STATUS uvm_test_rc_for_gpu(uvm_gpu_t *gpu)
@@ -274,7 +305,6 @@ static NV_STATUS test_rc(uvm_va_space_t *va_space)
 
     return NV_OK;
 }
-
 
 typedef struct
 {
@@ -450,12 +480,14 @@ static NV_STATUS stress_test_all_gpus_in_va(uvm_va_space_t *va_space,
         status = uvm_rm_mem_alloc_and_map_all(gpu,
                                               UVM_RM_MEM_TYPE_SYS,
                                               MAX_COUNTER_REPEAT_COUNT * sizeof(NvU32),
+                                              0,
                                               &stream->counter_mem);
         TEST_CHECK_GOTO(status == NV_OK, done);
 
         status = uvm_rm_mem_alloc_and_map_all(gpu,
                                               UVM_RM_MEM_TYPE_SYS,
                                               TEST_SNAPSHOT_SIZE(iterations_per_stream),
+                                              0,
                                               &stream->counter_snapshots_mem);
         TEST_CHECK_GOTO(status == NV_OK, done);
 
@@ -464,6 +496,7 @@ static NV_STATUS stress_test_all_gpus_in_va(uvm_va_space_t *va_space,
         status = uvm_rm_mem_alloc_and_map_all(gpu,
                                               UVM_RM_MEM_TYPE_SYS,
                                               TEST_SNAPSHOT_SIZE(iterations_per_stream),
+                                              0,
                                               &stream->other_stream_counter_snapshots_mem);
         TEST_CHECK_GOTO(status == NV_OK, done);
 
@@ -534,6 +567,7 @@ static NV_STATUS stress_test_all_gpus_in_va(uvm_va_space_t *va_space,
                              stream->counter_snapshots_mem,
                              i,
                              stream->queued_counter_repeat);
+
             // Set a random number [2, MAX_COUNTER_REPEAT_COUNT] of counters
             stream->queued_counter_repeat = uvm_test_rng_range_32(&rng, 2, MAX_COUNTER_REPEAT_COUNT);
             set_counter(&stream->push,
@@ -638,61 +672,215 @@ done:
     return status;
 }
 
+NV_STATUS test_write_ctrl_gpfifo_noop(uvm_va_space_t *va_space)
+{
+    uvm_gpu_t *gpu;
 
+    for_each_va_space_gpu(gpu, va_space) {
+        uvm_channel_manager_t *manager = gpu->channel_manager;
+        uvm_channel_pool_t *pool;
 
+        uvm_for_each_pool(pool, manager) {
+            uvm_channel_t *channel;
 
+            uvm_for_each_channel_in_pool(channel, pool) {
+                NvU32 i;
 
+                if (uvm_channel_is_proxy(channel))
+                    continue;
 
+                // We submit 8x the channel's GPFIFO entries to force a few
+                // complete loops in the GPFIFO circular buffer.
+                for (i = 0; i < 8 * channel->num_gpfifo_entries; i++) {
+                    NvU64 entry;
+                    gpu->parent->host_hal->set_gpfifo_noop(&entry);
+                    TEST_NV_CHECK_RET(uvm_channel_write_ctrl_gpfifo(channel, entry));
+                }
+            }
+        }
+    }
 
+    return NV_OK;
+}
 
+NV_STATUS test_write_ctrl_gpfifo_and_pushes(uvm_va_space_t *va_space)
+{
+    uvm_gpu_t *gpu;
 
+    for_each_va_space_gpu(gpu, va_space) {
+        uvm_channel_manager_t *manager = gpu->channel_manager;
+        uvm_channel_pool_t *pool;
 
+        uvm_for_each_pool(pool, manager) {
+            uvm_channel_t *channel;
 
+            uvm_for_each_channel_in_pool(channel, pool) {
+                NvU32 i;
+                uvm_push_t push;
 
+                if (uvm_channel_is_proxy(channel))
+                    continue;
 
+                // We submit 8x the channel's GPFIFO entries to force a few
+                // complete loops in the GPFIFO circular buffer.
+                for (i = 0; i < 8 * channel->num_gpfifo_entries; i++) {
+                    if (i % 2 == 0) {
+                        NvU64 entry;
+                        gpu->parent->host_hal->set_gpfifo_noop(&entry);
+                        TEST_NV_CHECK_RET(uvm_channel_write_ctrl_gpfifo(channel, entry));
+                    }
+                    else {
+                        TEST_NV_CHECK_RET(uvm_push_begin_on_channel(channel, &push, "gpfifo ctrl and push test"));
+                        uvm_push_end(&push);
+                    }
+                }
 
+                TEST_NV_CHECK_RET(uvm_push_wait(&push));
+            }
+        }
+    }
 
+    return NV_OK;
+}
 
+static NvU32 get_available_gpfifo_entries(uvm_channel_t *channel)
+{
+    NvU32 pending_entries;
 
+    uvm_channel_pool_lock(channel->pool);
 
+    if (channel->cpu_put >= channel->gpu_get)
+        pending_entries = channel->cpu_put - channel->gpu_get;
+    else
+        pending_entries = channel->cpu_put + channel->num_gpfifo_entries - channel->gpu_get;
 
+    uvm_channel_pool_unlock(channel->pool);
 
+    return channel->num_gpfifo_entries - pending_entries - 1;
+}
 
+NV_STATUS test_write_ctrl_gpfifo_tight(uvm_va_space_t *va_space)
+{
+    NV_STATUS status = NV_OK;
+    uvm_gpu_t *gpu;
+    uvm_channel_t *channel;
+    uvm_rm_mem_t *mem;
+    NvU32 *cpu_ptr;
+    NvU64 gpu_va;
+    NvU32 i;
+    NvU64 entry;
+    uvm_push_t push;
 
+    for_each_va_space_gpu(gpu, va_space) {
+        uvm_channel_manager_t *manager = gpu->channel_manager;
+        gpu = manager->gpu;
 
+        TEST_NV_CHECK_RET(uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, sizeof(*cpu_ptr), 0, &mem));
+        cpu_ptr = uvm_rm_mem_get_cpu_va(mem);
+        gpu_va = uvm_rm_mem_get_gpu_uvm_va(mem, gpu);
 
+        *cpu_ptr = 0;
 
+        // This semaphore acquire takes 1 GPFIFO entries.
+        TEST_NV_CHECK_GOTO(uvm_push_begin(manager, UVM_CHANNEL_TYPE_GPU_TO_GPU, &push, "gpfifo ctrl tight test acq"),
+                           error);
 
+        channel = push.channel;
+        UVM_ASSERT(!uvm_channel_is_proxy(channel));
 
+        gpu->parent->host_hal->semaphore_acquire(&push, gpu_va, 1);
+        uvm_push_end(&push);
 
+        // Populate the remaining GPFIFO entries, leaving 2 slots available.
+        // 2 available entries + 1 semaphore acquire (above) + 1 spare entry to
+        // indicate a terminal condition for the GPFIFO ringbuffer, therefore we
+        // push num_gpfifo_entries-4.
+        for (i = 0; i < channel->num_gpfifo_entries - 4; i++) {
+            TEST_NV_CHECK_GOTO(uvm_push_begin_on_channel(channel, &push, "gpfifo ctrl tight test populate"), error);
+            uvm_push_end(&push);
+        }
 
+        TEST_CHECK_GOTO(get_available_gpfifo_entries(channel) == 2, error);
 
+        // We should have room for the control GPFIFO and the subsequent
+        // semaphore release.
+        gpu->parent->host_hal->set_gpfifo_noop(&entry);
+        TEST_NV_CHECK_GOTO(uvm_channel_write_ctrl_gpfifo(channel, entry), error);
 
+        // Release the semaphore.
+        UVM_WRITE_ONCE(*cpu_ptr, 1);
 
+        TEST_NV_CHECK_GOTO(uvm_push_wait(&push), error);
 
+        uvm_rm_mem_free(mem);
+    }
 
+    return NV_OK;
 
+error:
+    uvm_rm_mem_free(mem);
 
+    return status;
+}
 
+// This test is inspired by the test_rc (above).
+// The test recreates the GPU's channel manager forcing its pushbuffer to be
+// mapped on a non-zero 1TB segment. This exercises work submission from
+// pushbuffers whose VAs are greater than 1TB.
+static NV_STATUS test_channel_pushbuffer_extension_base(uvm_va_space_t *va_space)
+{
+    uvm_gpu_t *gpu;
+    NV_STATUS status = NV_OK;
 
+    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
+    for_each_va_space_gpu(gpu, va_space) {
+        uvm_channel_manager_t *manager;
+        uvm_channel_pool_t *pool;
 
+        if (!uvm_gpu_has_pushbuffer_segments(gpu))
+            continue;
 
+        // The GPU channel manager pushbuffer is destroyed and then re-created
+        // after testing a non-zero pushbuffer extension base, so this test
+        // requires exclusive access to the GPU.
+        TEST_CHECK_RET(uvm_gpu_retained_count(gpu) == 1);
 
+        gpu->uvm_test_force_upper_pushbuffer_segment = 1;
+        uvm_channel_manager_destroy(gpu->channel_manager);
+        TEST_NV_CHECK_GOTO(uvm_channel_manager_create(gpu, &gpu->channel_manager), error);
+        gpu->uvm_test_force_upper_pushbuffer_segment = 0;
 
+        manager = gpu->channel_manager;
+        TEST_CHECK_GOTO(uvm_pushbuffer_get_gpu_va_base(manager->pushbuffer) >= (1ull << 40), error);
 
+        // Submit a few pushes with the recently allocated
+        // channel_manager->pushbuffer.
+        uvm_for_each_pool(pool, manager) {
+            uvm_channel_t *channel;
 
+            uvm_for_each_channel_in_pool(channel, pool) {
+                NvU32 i;
+                uvm_push_t push;
 
+                for (i = 0; i < channel->num_gpfifo_entries; i++) {
+                    TEST_NV_CHECK_GOTO(uvm_push_begin_on_channel(channel, &push, "pushbuffer extension push test"),
+                                       error);
+                    uvm_push_end(&push);
+                }
 
+                TEST_NV_CHECK_GOTO(uvm_push_wait(&push), error);
+            }
+        }
+    }
 
+    return NV_OK;
 
+error:
+    gpu->uvm_test_force_upper_pushbuffer_segment = 0;
 
-
-
-
-
-
-
+    return status;
+}
 
 NV_STATUS uvm_test_channel_sanity(UVM_TEST_CHANNEL_SANITY_PARAMS *params, struct file *filp)
 {
@@ -706,11 +894,31 @@ NV_STATUS uvm_test_channel_sanity(UVM_TEST_CHANNEL_SANITY_PARAMS *params, struct
     if (status != NV_OK)
         goto done;
 
+    status = test_write_ctrl_gpfifo_noop(va_space);
+    if (status != NV_OK)
+        goto done;
 
+    status = test_write_ctrl_gpfifo_and_pushes(va_space);
+    if (status != NV_OK)
+        goto done;
 
+    status = test_write_ctrl_gpfifo_tight(va_space);
+    if (status != NV_OK)
+        goto done;
 
+    // The following tests have side effects, they reset the GPU's
+    // channel_manager.
+    status = test_channel_pushbuffer_extension_base(va_space);
+    if (status != NV_OK)
+        goto done;
 
-
+    g_uvm_global.disable_fatal_error_assert = true;
+    uvm_release_asserts_set_global_error_for_tests = true;
+    status = test_unexpected_completed_values(va_space);
+    uvm_release_asserts_set_global_error_for_tests = false;
+    g_uvm_global.disable_fatal_error_assert = false;
+    if (status != NV_OK)
+        goto done;
 
     if (g_uvm_global.num_simulated_devices == 0) {
         status = test_rc(va_space);

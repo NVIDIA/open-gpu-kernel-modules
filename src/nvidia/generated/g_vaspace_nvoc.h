@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -169,7 +169,7 @@ typedef enum
 #define VASPACE_FLAGS_RESTRICTED_RM_INTERNAL_VALIMITS             NVBIT(3)
 #define VASPACE_FLAGS_MINIMIZE_PTETABLE_SIZE                      NVBIT(4)
 #define VASPACE_FLAGS_RETRY_PTE_ALLOC_IN_SYS                      NVBIT(5)
-// unused                                                         NVBIT(6)
+#define VASPACE_FLAGS_REQUIRE_FIXED_OFFSET                        NVBIT(6)
 #define VASPACE_FLAGS_BAR_BAR1                                    NVBIT(7)
 #define VASPACE_FLAGS_BAR_BAR2                                    NVBIT(8)
 #define VASPACE_FLAGS_BAR_IFB                                     NVBIT(9)
@@ -270,6 +270,7 @@ struct OBJVASPACE {
     NV_STATUS (*__vaspaceGetPageTableInfo__)(struct OBJVASPACE *, NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS *);
     NV_STATUS (*__vaspaceGetPteInfo__)(struct OBJVASPACE *, struct OBJGPU *, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *, RmPhysAddr *);
     NV_STATUS (*__vaspaceSetPteInfo__)(struct OBJVASPACE *, struct OBJGPU *, NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS *);
+    NV_STATUS (*__vaspaceFreeV2__)(struct OBJVASPACE *, NvU64, NvU64 *);
     NvU32 gpuMask;
     ADDRESS_TRANSLATION addressTranslation;
     NvU32 refCnt;
@@ -335,6 +336,7 @@ NV_STATUS __nvoc_objCreate_OBJVASPACE(OBJVASPACE**, Dynamic*, NvU32);
 #define vaspaceGetPageTableInfo(pVAS, pParams) vaspaceGetPageTableInfo_DISPATCH(pVAS, pParams)
 #define vaspaceGetPteInfo(pVAS, pGpu, pParams, pPhysAddr) vaspaceGetPteInfo_DISPATCH(pVAS, pGpu, pParams, pPhysAddr)
 #define vaspaceSetPteInfo(pVAS, pGpu, pParams) vaspaceSetPteInfo_DISPATCH(pVAS, pGpu, pParams)
+#define vaspaceFreeV2(pVAS, vAddr, pSize) vaspaceFreeV2_DISPATCH(pVAS, vAddr, pSize)
 static inline NV_STATUS vaspaceConstruct__DISPATCH(struct OBJVASPACE *pVAS, NvU32 classId, NvU32 vaspaceId, NvU64 vaStart, NvU64 vaLimit, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 flags) {
     return pVAS->__vaspaceConstruct___(pVAS, classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags);
 }
@@ -555,7 +557,17 @@ static inline NV_STATUS vaspaceSetPteInfo_DISPATCH(struct OBJVASPACE *pVAS, stru
     return pVAS->__vaspaceSetPteInfo__(pVAS, pGpu, pParams);
 }
 
+static inline NV_STATUS vaspaceFreeV2_b7902c(struct OBJVASPACE *pVAS, NvU64 vAddr, NvU64 *pSize) {
+    NV_ASSERT_PRECOMP(((NvBool)(0 != 0)));
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS vaspaceFreeV2_DISPATCH(struct OBJVASPACE *pVAS, NvU64 vAddr, NvU64 *pSize) {
+    return pVAS->__vaspaceFreeV2__(pVAS, vAddr, pSize);
+}
+
 void vaspaceIncRefCnt_IMPL(struct OBJVASPACE *pVAS);
+
 #ifdef __nvoc_vaspace_h_disabled
 static inline void vaspaceIncRefCnt(struct OBJVASPACE *pVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
@@ -565,6 +577,7 @@ static inline void vaspaceIncRefCnt(struct OBJVASPACE *pVAS) {
 #endif //__nvoc_vaspace_h_disabled
 
 void vaspaceDecRefCnt_IMPL(struct OBJVASPACE *pVAS);
+
 #ifdef __nvoc_vaspace_h_disabled
 static inline void vaspaceDecRefCnt(struct OBJVASPACE *pVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");
@@ -574,8 +587,10 @@ static inline void vaspaceDecRefCnt(struct OBJVASPACE *pVAS) {
 #endif //__nvoc_vaspace_h_disabled
 
 NV_STATUS vaspaceGetByHandleOrDeviceDefault_IMPL(struct RsClient *pClient, NvHandle hDeviceOrSubDevice, NvHandle hVASpace, struct OBJVASPACE **ppVAS);
+
 #define vaspaceGetByHandleOrDeviceDefault(pClient, hDeviceOrSubDevice, hVASpace, ppVAS) vaspaceGetByHandleOrDeviceDefault_IMPL(pClient, hDeviceOrSubDevice, hVASpace, ppVAS)
 NV_STATUS vaspaceFillAllocParams_IMPL(struct OBJVASPACE *pVAS, const FB_ALLOC_INFO *pAllocInfo, NvU64 *pSize, NvU64 *pAlign, NvU64 *pRangeLo, NvU64 *pRangeHi, NvU64 *pPageSizeLockMask, VAS_ALLOC_FLAGS *pFlags);
+
 #ifdef __nvoc_vaspace_h_disabled
 static inline NV_STATUS vaspaceFillAllocParams(struct OBJVASPACE *pVAS, const FB_ALLOC_INFO *pAllocInfo, NvU64 *pSize, NvU64 *pAlign, NvU64 *pRangeLo, NvU64 *pRangeHi, NvU64 *pPageSizeLockMask, VAS_ALLOC_FLAGS *pFlags) {
     NV_ASSERT_FAILED_PRECOMP("OBJVASPACE was disabled!");

@@ -570,7 +570,12 @@ NV_STATUS semaphoreFillGPUVATimestamp
     if (status != NV_OK)
         return status;
 
-    semaphoreGPUVA = SemaphoreGPUVABase + (Index * sizeof(NvGpuSemaphore));
+    if (!portSafeAddU64(SemaphoreGPUVABase,
+                        (NvU64) (Index * sizeof(NvGpuSemaphore)),
+                        &semaphoreGPUVA))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     bFound = CliGetDmaMappingInfo(hClient,
                                   RES_GET_HANDLE(pDevice),

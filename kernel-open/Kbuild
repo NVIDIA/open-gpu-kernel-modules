@@ -72,7 +72,7 @@ EXTRA_CFLAGS += -I$(src)/common/inc
 EXTRA_CFLAGS += -I$(src)
 EXTRA_CFLAGS += -Wall -MD $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
 EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"515.65.01\"
+EXTRA_CFLAGS += -DNV_VERSION_STRING=\"525.85.05\"
 
 EXTRA_CFLAGS += -Wno-unused-function
 
@@ -203,9 +203,114 @@ $(obj)/conftest/patches.h: $(NV_CONFTEST_SCRIPT)
 	@mkdir -p $(obj)/conftest
 	@$(NV_CONFTEST_CMD) patch_check > $@
 
-$(obj)/conftest/headers.h: $(NV_CONFTEST_SCRIPT)
-	@mkdir -p $(obj)/conftest
-	@$(NV_CONFTEST_CMD) test_kernel_headers '$(NV_CONFTEST_CFLAGS)' > $@
+
+# Each of these headers is checked for presence with a test #include; a
+# corresponding #define will be generated in conftest/headers.h.
+NV_HEADER_PRESENCE_TESTS = \
+ asm/system.h \
+ drm/drmP.h \
+ drm/drm_auth.h \
+ drm/drm_gem.h \
+ drm/drm_crtc.h \
+ drm/drm_atomic.h \
+ drm/drm_atomic_helper.h \
+ drm/drm_encoder.h \
+ drm/drm_atomic_uapi.h \
+ drm/drm_drv.h \
+ drm/drm_framebuffer.h \
+ drm/drm_connector.h \
+ drm/drm_probe_helper.h \
+ drm/drm_blend.h \
+ drm/drm_fourcc.h \
+ drm/drm_prime.h \
+ drm/drm_plane.h \
+ drm/drm_vblank.h \
+ drm/drm_file.h \
+ drm/drm_ioctl.h \
+ drm/drm_device.h \
+ drm/drm_mode_config.h \
+ drm/drm_modeset_lock.h \
+ dt-bindings/interconnect/tegra_icc_id.h \
+ generated/autoconf.h \
+ generated/compile.h \
+ generated/utsrelease.h \
+ linux/efi.h \
+ linux/kconfig.h \
+ linux/platform/tegra/mc_utils.h \
+ linux/semaphore.h \
+ linux/printk.h \
+ linux/ratelimit.h \
+ linux/prio_tree.h \
+ linux/log2.h \
+ linux/of.h \
+ linux/bug.h \
+ linux/sched.h \
+ linux/sched/mm.h \
+ linux/sched/signal.h \
+ linux/sched/task.h \
+ linux/sched/task_stack.h \
+ xen/ioemu.h \
+ linux/fence.h \
+ linux/dma-resv.h \
+ soc/tegra/chip-id.h \
+ soc/tegra/fuse.h \
+ soc/tegra/tegra_bpmp.h \
+ video/nv_internal.h \
+ linux/platform/tegra/dce/dce-client-ipc.h \
+ linux/nvhost.h \
+ linux/nvhost_t194.h \
+ asm/book3s/64/hash-64k.h \
+ asm/set_memory.h \
+ asm/prom.h \
+ asm/powernv.h \
+ linux/atomic.h \
+ asm/barrier.h \
+ asm/opal-api.h \
+ sound/hdaudio.h \
+ asm/pgtable_types.h \
+ linux/stringhash.h \
+ linux/dma-map-ops.h \
+ rdma/peer_mem.h \
+ sound/hda_codec.h \
+ linux/dma-buf.h \
+ linux/time.h \
+ linux/platform_device.h \
+ linux/mutex.h \
+ linux/reset.h \
+ linux/of_platform.h \
+ linux/of_device.h \
+ linux/of_gpio.h \
+ linux/gpio.h \
+ linux/gpio/consumer.h \
+ linux/interconnect.h \
+ linux/pm_runtime.h \
+ linux/clk.h \
+ linux/clk-provider.h \
+ linux/ioasid.h \
+ linux/stdarg.h \
+ linux/iosys-map.h \
+ asm/coco.h \
+ linux/vfio_pci_core.h \
+ soc/tegra/bpmp-abi.h \
+ soc/tegra/bpmp.h
+
+# Filename to store the define for the header in $(1); this is only consumed by
+# the rule below that concatenates all of these together.
+NV_HEADER_PRESENCE_PART = $(addprefix $(obj)/conftest/header_presence/,$(addsuffix .part,$(1)))
+
+# Define a rule to check the header $(1).
+define NV_HEADER_PRESENCE_CHECK
+ $$(call NV_HEADER_PRESENCE_PART,$(1)): $$(NV_CONFTEST_SCRIPT) $(obj)/conftest/uts_release
+	@mkdir -p $$(dir $$@)
+	@$$(NV_CONFTEST_CMD) test_kernel_header '$$(NV_CONFTEST_CFLAGS)' '$(1)' > $$@
+endef
+
+# Evaluate the rule above for each header in the list.
+$(foreach header,$(NV_HEADER_PRESENCE_TESTS),$(eval $(call NV_HEADER_PRESENCE_CHECK,$(header))))
+
+# Concatenate all of the parts into headers.h.
+$(obj)/conftest/headers.h: $(call NV_HEADER_PRESENCE_PART,$(NV_HEADER_PRESENCE_TESTS))
+	@cat $^ > $@
 
 clean-dirs := $(obj)/conftest
 

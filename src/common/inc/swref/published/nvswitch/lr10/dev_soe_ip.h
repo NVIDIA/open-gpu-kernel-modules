@@ -284,7 +284,7 @@
 #define NV_SOE_FALCON_MAILBOX1                                                                          0x0044     /* RW-4R */
 #define NV_SOE_FALCON_MAILBOX1_DATA                                                                     31:0           /* RWIVF */
 #define NV_SOE_FALCON_MAILBOX1_DATA_INIT                                                                0x00000000     /* RWI-V */
-// check if all of these should be added
+
 #define NV_SOE_FALCON_CPUCTL                                                                            0x0100     /* RW-4R */
 #define NV_SOE_FALCON_CPUCTL_IINVAL                                                                     0:0            /* -WXVF */
 #define NV_SOE_FALCON_CPUCTL_IINVAL_TRUE                                                                0x00000001     /* -W--V */

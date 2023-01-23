@@ -87,6 +87,7 @@ struct KernelCeContext {
     NV_STATUS (*__kcectxUnregisterEvent__)(struct KernelCeContext *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__kcectxCanCopy__)(struct KernelCeContext *);
     void (*__kcectxPreDestruct__)(struct KernelCeContext *);
+    NV_STATUS (*__kcectxIsDuplicate__)(struct KernelCeContext *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__kcectxGetNotificationListPtr__)(struct KernelCeContext *);
     struct NotifShare *(*__kcectxGetNotificationShare__)(struct KernelCeContext *);
     NV_STATUS (*__kcectxMap__)(struct KernelCeContext *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -146,6 +147,7 @@ NV_STATUS __nvoc_objCreate_KernelCeContext(KernelCeContext**, Dynamic*, NvU32, C
 #define kcectxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) kcectxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define kcectxCanCopy(pResource) kcectxCanCopy_DISPATCH(pResource)
 #define kcectxPreDestruct(pResource) kcectxPreDestruct_DISPATCH(pResource)
+#define kcectxIsDuplicate(pResource, hMemory, pDuplicate) kcectxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kcectxGetNotificationListPtr(pNotifier) kcectxGetNotificationListPtr_DISPATCH(pNotifier)
 #define kcectxGetNotificationShare(pNotifier) kcectxGetNotificationShare_DISPATCH(pNotifier)
 #define kcectxMap(pGpuResource, pCallContext, pParams, pCpuMapping) kcectxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -250,6 +252,10 @@ static inline void kcectxPreDestruct_DISPATCH(struct KernelCeContext *pResource)
     pResource->__kcectxPreDestruct__(pResource);
 }
 
+static inline NV_STATUS kcectxIsDuplicate_DISPATCH(struct KernelCeContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__kcectxIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *kcectxGetNotificationListPtr_DISPATCH(struct KernelCeContext *pNotifier) {
     return pNotifier->__kcectxGetNotificationListPtr__(pNotifier);
 }
@@ -267,8 +273,10 @@ static inline NV_STATUS kcectxGetOrAllocNotifShare_DISPATCH(struct KernelCeConte
 }
 
 NV_STATUS kcectxConstruct_IMPL(struct KernelCeContext *arg_pKCeContext, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_kcectxConstruct(arg_pKCeContext, arg_pCallContext, arg_pParams) kcectxConstruct_IMPL(arg_pKCeContext, arg_pCallContext, arg_pParams)
 void kcectxDestruct_IMPL(struct KernelCeContext *pKCeContext);
+
 #define __nvoc_kcectxDestruct(pKCeContext) kcectxDestruct_IMPL(pKCeContext)
 #undef PRIVATE_FIELD
 

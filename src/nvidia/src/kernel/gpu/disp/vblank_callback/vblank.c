@@ -415,7 +415,7 @@ kheadProcessVblankCallbacks_IMPL
     VBLANKCALLBACK  **ppPrev    = NULL;
     NvBool            done      = NV_FALSE;
     NvBool            removed   = NV_FALSE;
-    NvBool            queueDPC  = NV_FALSE;
+    NvBool            bQueueDpc = NV_FALSE;
     NvU32             newstate;
     NvU32             Count     = 0;
     NvU64             time      = 0;
@@ -504,7 +504,7 @@ kheadProcessVblankCallbacks_IMPL
                                         pCallback->Param1,
                                         pCallback->Param2,
                                         pCallback->Status);
-                        queueDPC = NV_TRUE;
+                        bQueueDpc = NV_TRUE;
                     }
                     else
                     {
@@ -548,7 +548,7 @@ kheadProcessVblankCallbacks_IMPL
                                                 pCallback->Param1,
                                                 pCallback->Param2,
                                                 pCallback->Status);
-                                queueDPC = NV_TRUE;
+                                bQueueDpc = NV_TRUE;
                             }
                             else
                             {
@@ -562,7 +562,7 @@ kheadProcessVblankCallbacks_IMPL
                                                 pCallback->Param1,
                                                 pCallback->Param2,
                                                 pCallback->Status);
-                                queueDPC = NV_TRUE;
+                                bQueueDpc = NV_TRUE;
                             }
                         }
 
@@ -630,8 +630,9 @@ kheadProcessVblankCallbacks_IMPL
         }
     }
 
-    if (queueDPC)
+    if (bQueueDpc)
     {
+        osQueueDpc(pGpu);
     }
 
     // After all of that, if the callback lists are null and the vblank is ENABLED, move it to AVAILABLE now.

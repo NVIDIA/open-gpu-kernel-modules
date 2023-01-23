@@ -150,6 +150,15 @@ static void FlipBaseToNull(NVDevEvoPtr pDevEvo)
                 pRequestHead->layer[layer].compositionParams.specified = TRUE;
                 pRequestHead->layer[layer].completionNotifier.specified = TRUE;
                 pRequestHead->layer[layer].syncObjects.specified = TRUE;
+
+                // Disable HDR
+                pRequestHead->tf.val = NVKMS_OUTPUT_TF_NONE;
+                pRequestHead->tf.specified = TRUE;
+                pRequestHead->layer[layer].hdr.enabled = FALSE;
+                pRequestHead->layer[layer].hdr.specified = TRUE;
+                pRequestHead->layer[layer].colorspace.val =
+                    NVKMS_INPUT_COLORSPACE_NONE;
+                pRequestHead->layer[layer].colorspace.specified = TRUE;
             }
 
             pRequest->commit = TRUE;
@@ -757,7 +766,7 @@ NvBool nvEvoRestoreConsole(NVDevEvoPtr pDevEvo, const NvBool allowMST)
 
             FOR_ALL_EVO_DPYS(pDpyEvo, candidateDpys, pDispEvo) {
                 NvBool isTiledDisplayFound = FALSE;
-                TiledDisplayInfo tiledDisplayInfo = { 0 };
+                TiledDisplayInfo tiledDisplayInfo = { };
                 NvBool isTiledDisplayEnable = FALSE;
                 const NVT_DISPLAYID_INFO *pDpyDisplayIdInfo =
                     pDpyEvo->parsedEdid.valid ?

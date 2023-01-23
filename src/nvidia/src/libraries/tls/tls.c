@@ -146,7 +146,7 @@ NvU32 osGetMaximumCoreCount(void);
 
 
 
-NV_STATUS tlsInitialize()
+NV_STATUS tlsInitialize(void)
 {
     NV_STATUS status;
 
@@ -204,7 +204,7 @@ done:
     return status;
 }
 
-void tlsShutdown()
+void tlsShutdown(void)
 {
     if (portAtomicDecrementU32(&tlsDatabase.initCount) != 0)
     {
@@ -301,7 +301,7 @@ PORT_MEM_ALLOCATOR *tlsIsrAllocatorGet(void)
     return _tlsIsrAllocatorGet();
 }
 
-NvU64 tlsEntryAlloc()
+NvU64 tlsEntryAlloc(void)
 {
     NV_ASSERT_OR_RETURN(tlsDatabase.initCount > 0, TLS_ERROR_VAL);
     return portAtomicExIncrementU64(&tlsDatabase.lastEntryId);
@@ -415,7 +415,7 @@ NvU32 tlsEntryUnreference(NvU64 entryId)
 
 
 static ThreadEntry *
-_tlsThreadEntryGet()
+_tlsThreadEntryGet(void)
 {
     ThreadEntry *pThreadEntry;
 
@@ -435,7 +435,7 @@ _tlsThreadEntryGet()
 
 
 static ThreadEntry *
-_tlsThreadEntryGetOrAlloc()
+_tlsThreadEntryGetOrAlloc(void)
 {
     ThreadEntry* pThreadEntry = NULL;
 
@@ -537,7 +537,7 @@ static PORT_MEM_ALLOCATOR *_tlsAllocatorGet(void)
 
 #if TLS_ISR_CAN_USE_LOCK
 
-static NV_STATUS _tlsIsrEntriesInit()
+static NV_STATUS _tlsIsrEntriesInit(void)
 {
     tlsDatabase.pIsrLock = portSyncSpinlockCreate(tlsDatabase.pAllocator);
     if (tlsDatabase.pLock == NULL)
@@ -547,7 +547,7 @@ static NV_STATUS _tlsIsrEntriesInit()
     mapInitIntrusive(&tlsDatabase.isrEntries);
     return NV_OK;
 }
-static void _tlsIsrEntriesDestroy()
+static void _tlsIsrEntriesDestroy(void)
 {
     if (tlsDatabase.pIsrLock)
         portSyncSpinlockDestroy(tlsDatabase.pIsrLock);
@@ -583,12 +583,12 @@ static ThreadEntry *_tlsIsrEntriesFind(NvU64 approxSp)
 
 #else // Lockless
 
-static NV_STATUS _tlsIsrEntriesInit()
+static NV_STATUS _tlsIsrEntriesInit(void)
 {
     portMemSet(tlsDatabase.isrEntries, 0, sizeof(tlsDatabase.isrEntries));
     return NV_OK;
 }
-static void _tlsIsrEntriesDestroy()
+static void _tlsIsrEntriesDestroy(void)
 {
     portMemSet(tlsDatabase.isrEntries, 0, sizeof(tlsDatabase.isrEntries));
 }
@@ -644,7 +644,7 @@ static ThreadEntry *_tlsIsrEntriesFind(NvU64 approxSp)
 
 
 
-static NvBool _tlsIsIsr()
+static NvBool _tlsIsIsr(void)
 {
 #if defined (TLS_ISR_UNIT_TEST)
     // In unit tests we simulate ISR tests in different ways, so tests define this

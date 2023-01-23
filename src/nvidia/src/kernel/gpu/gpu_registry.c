@@ -27,8 +27,10 @@
 #include "gpu/gpu_timeout.h"
 #include "gpu/gpu_access.h"
 #include "core/thread_state.h"
-
+#include "nvdevid.h"
 #include "nvrm_registry.h"
+
+#include "virtualization/hypervisor/hypervisor.h"
 
 static void _gpuInitGlobalSurfaceOverride(OBJGPU *pGpu);
 
@@ -99,6 +101,39 @@ gpuInitRegistryOverrides_KERNEL
         }
     }
 
+    if (pGpu->bSriovCapable)
+    {
+        if (osReadRegistryDword(pGpu, NV_REG_STR_RM_SET_SRIOV_MODE, &data32) == NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "Overriding SRIOV Mode to %u\n",
+                      (data32 == NV_REG_STR_RM_SET_SRIOV_MODE_ENABLED));
+
+            pGpu->bSriovEnabled = (data32 == NV_REG_STR_RM_SET_SRIOV_MODE_ENABLED);
+        }
+        else
+        {
+            if (hypervisorIsVgxHyper() && !RMCFG_FEATURE_PLATFORM_GSP)
+            {
+                if (!IsTURING(pGpu))
+                {
+                    pGpu->bSriovEnabled = NV_TRUE;
+
+                    //
+                    // Set the registry key for GSP-RM to consume without having
+                    // to evaluate hypervisor support
+                    //
+                    osWriteRegistryDword(pGpu, NV_REG_STR_RM_SET_SRIOV_MODE,
+                                               NV_REG_STR_RM_SET_SRIOV_MODE_ENABLED);
+                }
+            }
+        }
+    }
+
+    if (pGpu->bSriovEnabled && (IS_GSP_CLIENT(pGpu) || RMCFG_FEATURE_PLATFORM_GSP))
+    {
+        pGpu->bVgpuGspPluginOffloadEnabled = NV_TRUE;
+    }
+
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_RM_ALLOCATED_CTX_BUFFER, &data32) == NV_OK)
     {
         pGpu->bClientRmAllocatedCtxBuffer = (data32 == NV_REG_STR_RM_CLIENT_RM_ALLOCATED_CTX_BUFFER_ENABLED);
@@ -110,7 +145,7 @@ gpuInitRegistryOverrides_KERNEL
     {
         pGpu->bClientRmAllocatedCtxBuffer = NV_TRUE;
     }
-    else if ( NV_IS_MODS || !(pGpu->bSriovEnabled || IS_VIRTUAL(pGpu)) )
+    else if ( RMCFG_FEATURE_MODS_FEATURES || !(pGpu->bSriovEnabled || IS_VIRTUAL(pGpu)) )
     {
         // TODO : enable this feature on mods
         pGpu->bClientRmAllocatedCtxBuffer = NV_FALSE;
@@ -132,6 +167,12 @@ gpuInitRegistryOverrides_KERNEL
         NV_PRINTF(LEVEL_INFO, "Split VAS mgmt between Server/Client RM %u\n",
                   pGpu->bSplitVasManagementServerClientRm);
     }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_FABRIC_PROBE, &pGpu->fabricProbeRegKeyOverride) == NV_OK)
+    {
+        pGpu->fabricProbeRegKeyOverride |= DRF_NUM(_REG_STR, _RM_GPU_FABRIC_PROBE, _OVERRIDE, 1);
+    }
+
 
     return NV_OK;
 }

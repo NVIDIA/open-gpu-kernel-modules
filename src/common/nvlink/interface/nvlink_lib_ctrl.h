@@ -1,25 +1,24 @@
-/*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
- * SPDX-License-Identifier: MIT
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+/*******************************************************************************
+    Copyright (c) 2016-2022 NVidia Corporation
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be
+        included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+*******************************************************************************/
 
 #ifndef _NVLINK_LIB_CTRL_H_
 #define _NVLINK_LIB_CTRL_H_
@@ -30,7 +29,7 @@
 /* List of supported capability type */
 #define NVLINK_CAP_FABRIC_MANAGEMENT 0
 
-/*
+/* 
  * Max supported capabilities count
  *
  */
@@ -62,9 +61,9 @@
 
 /*
  * Total number of nvlink endpoints core library can have
- *  This is mapped to NVLINK_MAX_SYSTEM_LINK_NUM in drivers/nvlink/interface/nvlink.h
+ *  This is mapped to NVLINK_MAX_SYSTEM_LINK_NUM in drivers/nvlink/interface/nvlink.h 
  */
-#define NVLINK_MAX_NVLINK_ENDPOINTS 312
+#define NVLINK_MAX_NVLINK_ENDPOINTS 624
 
 #define NVLINK_VERSION_STRING_LENGTH    64
 
@@ -90,7 +89,7 @@ typedef struct
 typedef struct
 {
     NvU16               nodeId;
-    NvU32               linkIndex;
+    NvU16               linkIndex;
     nvlink_pci_dev_info pciInfo;
 } nvlink_endpoint;
 
@@ -110,13 +109,15 @@ typedef struct
     NvU16               numLinks;
     NvU32               devType;
     NV_DECLARE_ALIGNED(NvU64 enabledLinkMask, 8);
+    NvBool              bEnableAli;
+    /* See struct definition modification guidelines at the top of this file */
 } nvlink_detailed_dev_info;
 
 /* detailed information about a remote nvlink connection endpoint */
 typedef struct
 {
     NvU16               nodeId;
-    NvU32               linkIndex;
+    NvU16               linkIndex;
     nvlink_pci_dev_info pciInfo;
     NvU8                devUuid[NVLINK_UUID_LEN];
     NvU32               devType;
@@ -188,9 +189,9 @@ typedef enum
 /* link and sublink state of an nvlink endpoint */
 typedef struct
 {
-    NvU32 linkMode;
-    NvU32 txSubLinkMode;
-    NvU32 rxSubLinkMode;
+    NvU8 linkMode;
+    NvU8 txSubLinkMode;
+    NvU8 rxSubLinkMode;
 } nvlink_link_state;
 
 /*
@@ -353,7 +354,7 @@ typedef struct
  */
 typedef struct
 {
-    NvU32  linkIndex;
+    NvU16  linkIndex;
     NvBool initStatus;
 } nvlink_link_init_status;
 
@@ -502,7 +503,7 @@ typedef struct
  */
 typedef struct
 {
-    NvU32 linkIndex;
+    NvU16 linkIndex;
     NV_DECLARE_ALIGNED(NvU64 tokenValue, 8);
 } nvlink_token_info;
 
@@ -586,6 +587,7 @@ typedef enum
     nvlink_train_conn_to_off,
     nvlink_train_conn_active_to_swcfg,
     nvlink_train_conn_swcfg_to_off,
+    /* See enum modification guidelines at the top of this file */
 } nvlink_conn_train_type;
 
 typedef struct
@@ -1075,7 +1077,7 @@ typedef struct
 } nvlink_initphase5;
 
 /*
- * CTRL_NVLINK_GET_DEVICE_LINKS_STATE
+ * CTRL_NVLINK_GET_DEVICE_LINK_STATES
  *
  * Returns the link state of all enabled links on a given device.
  *
@@ -1108,6 +1110,11 @@ typedef struct
     nvlink_link_state      endStates[NVLINK_MAX_NVLINK_ENDPOINTS];
     NvU32                  endStatesCount;
 } nvlink_get_device_link_states;
+
+/* 
+ * Note: Verify that new parameter structs for IOCTLs satisfy 
+ *       sizing restrictions for all OSs they could be used in.
+ */ 
 
 #define CTRL_NVLINK_CHECK_VERSION                            0x01
 #define CTRL_NVLINK_SET_NODE_ID                              0x02

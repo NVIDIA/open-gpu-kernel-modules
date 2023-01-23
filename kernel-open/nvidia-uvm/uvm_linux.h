@@ -88,15 +88,11 @@
 
 #include "nv-kthread-q.h"
 
-
-    #if NV_KTHREAD_Q_SUPPORTS_AFFINITY() == 1 && defined(NV_CPUMASK_OF_NODE_PRESENT)
+    #if defined(NV_CPUMASK_OF_NODE_PRESENT)
         #define UVM_THREAD_AFFINITY_SUPPORTED() 1
     #else
         #define UVM_THREAD_AFFINITY_SUPPORTED() 0
     #endif
-
-
-
 
 // The ARM arch lacks support for cpumask_of_node() until kernel 4.7. It was
 // added via commit1a2db300348b ("arm64, numa: Add NUMA support for arm64
@@ -112,15 +108,11 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #endif
 }
 
-
     #if defined(CONFIG_HMM_MIRROR) && defined(CONFIG_DEVICE_PRIVATE) && defined(NV_MAKE_DEVICE_EXCLUSIVE_RANGE_PRESENT)
         #define UVM_IS_CONFIG_HMM() 1
     #else
         #define UVM_IS_CONFIG_HMM() 0
     #endif
-
-
-
 
 // Various issues prevent us from using mmu_notifiers in older kernels. These
 // include:
@@ -137,24 +129,15 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 //
 // The callback was added in commit 0f0a327fa12cd55de5e7f8c05a70ac3d047f405e,
 // v3.19 (2014-11-13).
-
     #if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE)
         #define UVM_CAN_USE_MMU_NOTIFIERS() 1
     #else
         #define UVM_CAN_USE_MMU_NOTIFIERS() 0
     #endif
 
-
-
-
-
-
-
-
-
 // See bug 1707453 for further details about setting the minimum kernel version.
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
-#  error This driver does not support kernels older than 2.6.32!
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
+#  error This driver does not support kernels older than 3.10!
 #endif
 
 #if !defined(VM_RESERVED)
@@ -233,10 +216,6 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #endif
 
 #define NV_UVM_GFP_FLAGS (GFP_KERNEL)
-
-#if !defined(NV_ADDRESS_SPACE_INIT_ONCE_PRESENT)
-    void address_space_init_once(struct address_space *mapping);
-#endif
 
 // Develop builds define DEBUG but enable optimization
 #if defined(DEBUG) && !defined(NVIDIA_UVM_DEVELOP)
@@ -369,23 +348,6 @@ static inline NvU64 NV_GETTIME(void)
              (bit) = find_next_zero_bit((addr), (size), (bit) + 1))
 #endif
 
-// bitmap_clear was added in 2.6.33 via commit c1a2a962a2ad103846e7950b4591471fabecece7
-#if !defined(NV_BITMAP_CLEAR_PRESENT)
-    static inline void bitmap_clear(unsigned long *map, unsigned int start, int len)
-    {
-        unsigned int index = start;
-        for_each_set_bit_from(index, map, start + len)
-            __clear_bit(index, map);
-    }
-
-    static inline void bitmap_set(unsigned long *map, unsigned int start, int len)
-    {
-        unsigned int index = start;
-        for_each_clear_bit_from(index, map, start + len)
-            __set_bit(index, map);
-    }
-#endif
-
 // Added in 2.6.24
 #ifndef ACCESS_ONCE
   #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
@@ -456,17 +418,6 @@ static inline NvU64 NV_GETTIME(void)
     #define PAGE_ALIGNED(addr) (((addr) & (PAGE_SIZE - 1)) == 0)
 #endif
 
-// Added in 2.6.37 via commit e1ca7788dec6773b1a2bce51b7141948f2b8bccf
-#if !defined(NV_VZALLOC_PRESENT)
-    static inline void *vzalloc(unsigned long size)
-    {
-        void *p = vmalloc(size);
-        if (p)
-            memset(p, 0, size);
-        return p;
-    }
-#endif
-
 // Changed in 3.17 via commit 743162013d40ca612b4cb53d3a200dff2d9ab26e
 #if (NV_WAIT_ON_BIT_LOCK_ARGUMENT_COUNT == 3)
     #define UVM_WAIT_ON_BIT_LOCK(word, bit, mode) \
@@ -522,27 +473,11 @@ static bool radix_tree_empty(struct radix_tree_root *tree)
 #endif
 #endif
 
-#if !defined(NV_USLEEP_RANGE_PRESENT)
-static void __sched usleep_range(unsigned long min, unsigned long max)
-{
-    unsigned min_msec = min / 1000;
-    unsigned max_msec = max / 1000;
-
-    if (min_msec != 0)
-        msleep(min_msec);
-    else if (max_msec != 0)
-        msleep(max_msec);
-    else
-        msleep(1);
-}
-#endif
-
 typedef struct
 {
     struct mem_cgroup *new_memcg;
     struct mem_cgroup *old_memcg;
 } uvm_memcg_context_t;
-
 
     // cgroup support requires set_active_memcg(). set_active_memcg() is an
     // inline function that requires int_active_memcg per-cpu symbol when called
@@ -585,29 +520,13 @@ typedef struct
         }
     #endif // NV_IS_EXPORT_SYMBOL_PRESENT_int_active_memcg
 
+#if defined(NVCPU_X86) || defined(NVCPU_X86_64)
+  #include <asm/pgtable_types.h>
+#endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#if !defined(PAGE_KERNEL_NOENC)
+  #define PAGE_KERNEL_NOENC PAGE_KERNEL
+#endif
 
 // Commit 1dff8083a024650c75a9c961c38082473ceae8cf (v4.7).
 //

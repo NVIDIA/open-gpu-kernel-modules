@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -46,6 +46,21 @@
 // wait for a GPFIFO entry to free up.
 //
 
+#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_DEFAULT 1024
+#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MIN 32
+#define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MAX (1024 * 1024)
+
+// Semaphore payloads cannot advance too much between calls to
+// uvm_gpu_tracking_semaphore_update_completed_value(). In practice the jumps
+// are bound by gpfifo sizing as we have to update the completed value to
+// reclaim gpfifo entries. Set a limit based on the max gpfifo entries we could
+// ever see.
+//
+// Logically this define belongs to uvm_gpu_semaphore.h but it depends on the
+// channel GPFIFO sizing defined here so it's easiest to just have it here as
+// uvm_channel.h includes uvm_gpu_semaphore.h.
+#define UVM_GPU_SEMAPHORE_MAX_JUMP (2 * UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MAX)
+
 // Channel types
 typedef enum
 {
@@ -68,18 +83,7 @@ typedef enum
 
     // ^^^^^^
     // Channel types backed by a CE.
-
-
-
-
-
-
-
-
-
-
     UVM_CHANNEL_TYPE_COUNT = UVM_CHANNEL_TYPE_CE_COUNT,
-
 } uvm_channel_type_t;
 
 typedef enum
@@ -97,33 +101,42 @@ typedef enum
     // There is a single proxy pool and channel per GPU.
     UVM_CHANNEL_POOL_TYPE_CE_PROXY = (1 << 1),
 
-
-
-
-
-
-
-
     UVM_CHANNEL_POOL_TYPE_COUNT = 2,
-
 
     // A mask used to select pools of any type.
     UVM_CHANNEL_POOL_TYPE_MASK  = ((1U << UVM_CHANNEL_POOL_TYPE_COUNT) - 1)
 } uvm_channel_pool_type_t;
 
+typedef enum
+{
+    // Push-based GPFIFO entry
+    UVM_GPFIFO_ENTRY_TYPE_NORMAL,
+
+    // Control GPFIFO entry, i.e., the LENGTH field is zero, not associated with
+    // a push.
+    UVM_GPFIFO_ENTRY_TYPE_CONTROL
+} uvm_gpfifo_entry_type_t;
+
 struct uvm_gpfifo_entry_struct
 {
-    // Offset of the pushbuffer in the pushbuffer allocation used by this entry
+    uvm_gpfifo_entry_type_t type;
+
+    // Channel tracking semaphore value that indicates completion of
+    // this entry.
+    NvU64 tracking_semaphore_value;
+
+    // The following fields are only valid when type is
+    // UVM_GPFIFO_ENTRY_TYPE_NORMAL.
+
+    // Offset of the pushbuffer in the pushbuffer allocation used by
+    // this entry.
     NvU32 pushbuffer_offset;
 
-    // Size of the pushbuffer used for this entry
+    // Size of the pushbuffer used for this entry.
     NvU32 pushbuffer_size;
 
     // List node used by the pushbuffer tracking
     struct list_head pending_list_node;
-
-    // Channel tracking semaphore value that indicates completion of this entry
-    NvU64 tracking_semaphore_value;
 
     // Push info for the pending push that used this GPFIFO entry
     uvm_push_info_t *push_info;
@@ -150,7 +163,11 @@ typedef struct
     uvm_channel_pool_type_t pool_type;
 
     // Lock protecting the state of channels in the pool
-    uvm_spinlock_t lock;
+    union {
+        uvm_spinlock_t spinlock;
+        uvm_mutex_t mutex;
+    };
+
 } uvm_channel_pool_t;
 
 struct uvm_channel_struct
@@ -178,10 +195,10 @@ struct uvm_channel_struct
     // for completion.
     NvU32 gpu_get;
 
-    // Number of currently on-going pushes on this channel
-    // A new push is only allowed to begin on the channel if there is a free
-    // GPFIFO entry for it.
-    NvU32 current_pushes_count;
+    // Number of currently on-going gpfifo entries on this channel
+    // A new push or control GPFIFO is only allowed to begin on the channel if
+    // there is a free GPFIFO entry for it.
+    NvU32 current_gpfifo_count;
 
     // Array of uvm_push_info_t for all pending pushes on the channel
     uvm_push_info_t *push_infos;
@@ -196,30 +213,10 @@ struct uvm_channel_struct
     // been marked as completed.
     struct list_head available_push_infos;
 
-    // GPU tracking semaphore tracking the work in the channel
+    // GPU tracking semaphore tracking the work in the channel.
     // Each push on the channel increments the semaphore, see
     // uvm_channel_end_push().
     uvm_gpu_tracking_semaphore_t tracking_sem;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // RM channel information
     union
@@ -316,10 +313,20 @@ struct uvm_channel_manager_struct
 // Create a channel manager for the GPU
 NV_STATUS uvm_channel_manager_create(uvm_gpu_t *gpu, uvm_channel_manager_t **manager_out);
 
+void uvm_channel_pool_lock(uvm_channel_pool_t *pool);
+void uvm_channel_pool_unlock(uvm_channel_pool_t *pool);
+void uvm_channel_pool_assert_locked(uvm_channel_pool_t *pool);
+
+static bool uvm_channel_pool_is_proxy(uvm_channel_pool_t *pool)
+{
+    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+
+    return pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE_PROXY;
+}
+
 static bool uvm_channel_is_proxy(uvm_channel_t *channel)
 {
-    UVM_ASSERT(channel->pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
-    return channel->pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE_PROXY;
+    return uvm_channel_pool_is_proxy(channel->pool);
 }
 
 static bool uvm_channel_is_ce(uvm_channel_t *channel)
@@ -327,14 +334,6 @@ static bool uvm_channel_is_ce(uvm_channel_t *channel)
     UVM_ASSERT(channel->pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
     return (channel->pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE) || uvm_channel_is_proxy(channel);
 }
-
-
-
-
-
-
-
-
 
 // Proxy channels are used to push page tree related methods, so their channel
 // type is UVM_CHANNEL_TYPE_MEMOPS.
@@ -422,8 +421,8 @@ NV_STATUS uvm_channel_reserve_gpu_to_gpu(uvm_channel_manager_t *channel_manager,
                                          uvm_gpu_t *dst_gpu,
                                          uvm_channel_t **channel_out);
 
-// Reserve a specific channel for a push
-NV_STATUS uvm_channel_reserve(uvm_channel_t *channel);
+// Reserve a specific channel for a push or for a control GPFIFO entry.
+NV_STATUS uvm_channel_reserve(uvm_channel_t *channel, NvU32 num_gpfifo_entries);
 
 // Set optimal CE for P2P transfers between manager->gpu and peer
 void uvm_channel_manager_set_p2p_ce(uvm_channel_manager_t *manager, uvm_gpu_t *peer, NvU32 optimal_ce);
@@ -435,6 +434,17 @@ NV_STATUS uvm_channel_begin_push(uvm_channel_t *channel, uvm_push_t *push);
 // End a push
 // Should be used by uvm_push_end() only.
 void uvm_channel_end_push(uvm_push_t *push);
+
+// Write/send a control GPFIFO to channel. This is not supported by proxy
+// channels.
+// Ordering guarantees:
+// Input: Control GPFIFO entries are guaranteed to be processed by ESCHED after
+// all prior GPFIFO entries and pushbuffers have been fetched, but not
+// necessarily completed.
+// Output ordering: A caller can wait for this control entry to complete with
+// uvm_channel_manager_wait(), or by waiting for any later push in the same
+// channel to complete.
+NV_STATUS uvm_channel_write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_entry_value);
 
 const char *uvm_channel_type_to_string(uvm_channel_type_t channel_type);
 const char *uvm_channel_pool_type_to_string(uvm_channel_pool_type_t channel_pool_type);

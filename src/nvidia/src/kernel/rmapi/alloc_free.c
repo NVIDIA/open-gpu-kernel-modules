@@ -32,6 +32,8 @@
 #include "gpu/disp/disp_channel.h"
 #include "nvsecurityinfo.h"
 
+#include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+
 #include "gpu/device/device.h"
 
 #include "class/cl0005.h" // NV01_EVENT
@@ -72,6 +74,32 @@ rmapiResourceDescToLegacyFlags
         *pFreeFlags = (pResDesc->flags & RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE) ? RM_LOCK_FLAGS_NONE : RM_LOCK_FLAGS_NO_GPUS_LOCK;
         *pFreeFlags |= (pResDesc->flags & RS_FLAGS_ACQUIRE_GPU_GROUP_LOCK_ON_FREE) ? RM_LOCK_FLAGS_GPU_GROUP_LOCK : 0;
     }
+}
+
+NvU32
+serverAllocClientHandleBase
+(
+    RsServer          *pServer,
+    NvBool             bInternalHandle,
+    API_SECURITY_INFO *pSecInfo
+)
+{
+    NvU32 handleBase;
+    NvU32 gfid = (NvU32)((NvU64)pSecInfo->pProcessToken);
+
+    if (bInternalHandle)
+    {
+        handleBase = pServer->internalHandleBase;
+    }
+    else
+    {
+        handleBase = pServer->clientHandleBase;
+
+        if (RMCFG_FEATURE_PLATFORM_GSP && IS_GFID_VF(gfid))
+            handleBase = RS_CLIENT_GET_VF_HANDLE_BASE(gfid);
+    }
+
+    return handleBase;
 }
 
 NV_STATUS
@@ -250,7 +278,7 @@ serverTopLock_Prologue
             if (access == LOCK_ACCESS_READ)
                 flags |= RMAPI_LOCK_FLAGS_READ;
 
-            if ((status = rmApiLockAcquire(flags, RM_LOCK_MODULES_CLIENT)) != NV_OK)
+            if ((status = rmapiLockAcquire(flags, RM_LOCK_MODULES_CLIENT)) != NV_OK)
             {
                 return status;
             }
@@ -259,7 +287,7 @@ serverTopLock_Prologue
         }
         else
         {
-            if (!rmApiLockIsOwner())
+            if (!rmapiLockIsOwner())
             {
                 NV_ASSERT(0);
                 return NV_ERR_INVALID_LOCK_STATE;
@@ -283,7 +311,7 @@ serverTopLock_Epilogue
 
     if (*pReleaseFlags & RM_LOCK_RELEASE_API_LOCK)
     {
-        rmApiLockRelease();
+        rmapiLockRelease();
         pLockInfo->state &= ~RM_LOCK_STATES_API_LOCK_ACQUIRED;
         *pReleaseFlags &= ~RM_LOCK_RELEASE_API_LOCK;
     }
@@ -369,9 +397,21 @@ serverResLock_Prologue
 
         if (pGpuResource == NULL)
         {
-            NV_ASSERT(0);
-            status = NV_ERR_INVALID_OBJECT_PARENT;
-            goto done;
+            //
+            // If parent is not a GpuResource, we might still be a NV0080_DEVICE
+            // so check and handle that case before reporting an error..
+            //
+            CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+            if (pCallContext != NULL && pCallContext->pResourceRef != NULL)
+            {
+                pGpuResource = dynamicCast(pCallContext->pResourceRef->pResource, GpuResource);
+            }
+            if (pGpuResource == NULL)
+            {
+                NV_ASSERT_FAILED("Attempting to lock per-GPU lock for a non-GpuResource");
+                status = NV_ERR_INVALID_OBJECT_PARENT;
+                goto done;
+            }
         }
 
         pParentGpu = GPU_RES_GET_GPU(pGpuResource);
@@ -973,8 +1013,6 @@ rmapiFreeResourcePrologue
 
     NV_ASSERT_OR_RETURN(pResourceRef, NV_ERR_INVALID_OBJECT_HANDLE);
 
-    rmapiControlCacheFreeObject(pRmFreeParams->hClient, pRmFreeParams->hResource);
-
     //
     // Use gpuGetByRef instead of GpuResource because gpuGetByRef will work even
     // if resource isn't a GpuResource (e.g.: Memory which can be allocated
@@ -1070,7 +1108,7 @@ rmapiAllocWithSecInfo
     rmapiInitLockInfo(pRmApi, hClient, pLockInfo);
 
     // RS-TODO: Fix calls that use RMAPI_GPU_LOCK_INTERNAL without holding the API lock
-    if (pRmApi->bGpuLockInternal && !rmApiLockIsOwner())
+    if (pRmApi->bGpuLockInternal && !rmapiLockIsOwner())
     {
         NV_PRINTF(LEVEL_ERROR, "RMAPI_GPU_LOCK_INTERNAL alloc requested without holding the RMAPI lock\n");
         pLockInfo->flags |= RM_LOCK_FLAGS_NO_API_LOCK;
@@ -1097,9 +1135,6 @@ rmapiAllocWithSecInfo
 
     NV_PRINTF(LEVEL_INFO, "client:0x%x parent:0x%x object:0x%x class:0x%x\n",
               hClient, hParent, *phObject, hClass);
-
-    NVRM_TRACE_API('ALOC', hParent, *phObject, hClass);
-    NVRM_TRACE(pAllocParams);
 
     status = _rmAlloc(hClient,
                       hParent,
@@ -1128,7 +1163,6 @@ rmapiAllocWithSecInfo
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "allocation complete\n");
-        NVRM_TRACE('aloc');
     }
     else
     {
@@ -1137,8 +1171,6 @@ rmapiAllocWithSecInfo
         NV_PRINTF(LEVEL_WARNING,
                   "client:0x%x parent:0x%x object:0x%x class:0x%x\n", hClient,
                   hParent, *phObject, hClass);
-
-        NVRM_TRACE_ERROR('aloc', status);
     }
 
     portMemFree(pLockInfo);
@@ -1216,6 +1248,16 @@ resservResourceFactory
     if (pResource == NULL)
         return NV_ERR_INSUFFICIENT_RESOURCES;
 
+    if (pResDesc->internalClassId == classId(Subdevice) || pResDesc->internalClassId == classId(Device))
+    {
+        pGpu = GPU_RES_GET_GPU(dynamicCast(pDynamic, GpuResource));
+
+        if (pGpu && !IS_MIG_IN_USE(pGpu))
+        {
+            rmapiControlCacheSetGpuInstForObject(pParams->hClient, pParams->hResource, pGpu->gpuInstance);
+        }
+    }
+
     *ppResource = pResource;
 
     return status;
@@ -1282,8 +1324,6 @@ rmapiFreeWithSecInfo
     NV_PRINTF(LEVEL_INFO, "Nv01Free: client:0x%x object:0x%x\n", hClient,
               hObject);
 
-    NVRM_TRACE_API('FREE', hClient, hObject, 0);
-
     status = rmapiPrologue(pRmApi, &rmApiContext);
 
     if (status != NV_OK)
@@ -1293,7 +1333,7 @@ rmapiFreeWithSecInfo
     rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
 
     // RS-TODO: Fix calls that use RMAPI_GPU_LOCK_INTERNAL without holding the API lock
-    if (pRmApi->bGpuLockInternal && !rmApiLockIsOwner())
+    if (pRmApi->bGpuLockInternal && !rmapiLockIsOwner())
     {
         NV_PRINTF(LEVEL_ERROR, "RMAPI_GPU_LOCK_INTERNAL free requested without holding the RMAPI lock\n");
         lockInfo.flags |= RM_LOCK_FLAGS_NO_API_LOCK;
@@ -1307,6 +1347,8 @@ rmapiFreeWithSecInfo
     freeParams.freeFlags = flags;
     freeParams.pSecInfo = pSecInfo;
 
+    rmapiControlCacheFreeObjectEntry(hClient, hObject);
+
     status = serverFreeResourceTree(&g_resServ, &freeParams);
 
     rmapiEpilogue(pRmApi, &rmApiContext);
@@ -1314,7 +1356,6 @@ rmapiFreeWithSecInfo
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "Nv01Free: free complete\n");
-        NVRM_TRACE('free');
     }
     else
     {
@@ -1323,7 +1364,6 @@ rmapiFreeWithSecInfo
                   nvstatusToString(status), status);
         NV_PRINTF(LEVEL_WARNING, "Nv01Free:  client:0x%x object:0x%x\n",
                   hClient, hObject);
-        NVRM_TRACE_ERROR('free', status);
     }
 
     return status;
@@ -1377,6 +1417,7 @@ rmapiFreeClientListWithSecInfo
     NV_STATUS          status;
     OBJSYS            *pSys = SYS_GET_INSTANCE();
     NvU32              lockState = 0;
+    NvU32              i;
 
     NV_PRINTF(LEVEL_INFO, "Nv01FreeClientList: numClients: %d\n", numClients);
 
@@ -1388,6 +1429,9 @@ rmapiFreeClientListWithSecInfo
 
     if (pRmApi->bGpuLockInternal)
         lockState |= RM_LOCK_STATES_ALLOW_RECURSIVE_LOCKS;
+
+    for (i = 0; i < numClients; ++i)
+        rmapiControlCacheFreeClientEntry(phClientList[i]);
 
     status = serverFreeClientList(&g_resServ, phClientList, numClients, lockState, pSecInfo);
 

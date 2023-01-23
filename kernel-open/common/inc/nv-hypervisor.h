@@ -27,15 +27,13 @@
 #include <nv-kernel-interface-api.h>
 
 // Enums for supported hypervisor types.
-// New hypervisor type should be added before OS_HYPERVISOR_CUSTOM_FORCED
+// New hypervisor type should be added before OS_HYPERVISOR_UNKNOWN
 typedef enum _HYPERVISOR_TYPE
 {
     OS_HYPERVISOR_XEN = 0,
     OS_HYPERVISOR_VMWARE,
     OS_HYPERVISOR_HYPERV,
     OS_HYPERVISOR_KVM,
-    OS_HYPERVISOR_PARALLELS,
-    OS_HYPERVISOR_CUSTOM_FORCED,
     OS_HYPERVISOR_UNKNOWN
 } HYPERVISOR_TYPE;
 

@@ -34,9 +34,6 @@
 #include "nvstatus.h"
 #include "nvCpuUuid.h"
 
-#ifndef __KERNEL__
-
-#endif
 
 /*******************************************************************************
     UVM stream types
@@ -359,9 +356,10 @@ typedef enum
     UvmEventNumTypes,
 
     // ---- Private event types for uvm tests
-    UvmEventTestTypesFirst                 = 63,
+    UvmEventTestTypesFirst                 = 62,
 
-    UvmEventTypeTestAccessCounter          = UvmEventTestTypesFirst,
+    UvmEventTypeTestHmmSplitInvalidate     = UvmEventTestTypesFirst,
+    UvmEventTypeTestAccessCounter          = UvmEventTestTypesFirst + 1,
 
     UvmEventTestTypesLast                  = UvmEventTypeTestAccessCounter,
 
@@ -387,6 +385,7 @@ typedef enum
 #define UVM_EVENT_ENABLE_MAP_REMOTE                   ((NvU64)1 << UvmEventTypeMapRemote)
 #define UVM_EVENT_ENABLE_EVICTION                     ((NvU64)1 << UvmEventTypeEviction)
 #define UVM_EVENT_ENABLE_TEST_ACCESS_COUNTER          ((NvU64)1 << UvmEventTypeTestAccessCounter)
+#define UVM_EVENT_ENABLE_TEST_HMM_SPLIT_INVALIDATE    ((NvU64)1 << UvmEventTypeTestHmmSplitInvalidate)
 
 //------------------------------------------------------------------------------
 // Information associated with a memory violation event
@@ -977,6 +976,11 @@ typedef struct
     NvU64 instancePtr;
 } UvmEventTestAccessCounterInfo;
 
+typedef struct
+{
+    NvU8 eventType;
+} UvmEventTestSplitInvalidateInfo;
+
 //------------------------------------------------------------------------------
 // Entry added in the event queue buffer when an enabled event occurs. For
 // compatibility with all tools ensure that this structure is 64 bit aligned.
@@ -1010,6 +1014,7 @@ typedef struct
             NvU8 eventType;
 
             UvmEventTestAccessCounterInfo accessCounter;
+            UvmEventTestSplitInvalidateInfo splitInvalidate;
         } testEventData;
     };
 } UvmEventEntry;

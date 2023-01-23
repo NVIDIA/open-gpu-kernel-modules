@@ -25,6 +25,9 @@
 #define _cla06fsubch_h_
 
 #define NVA06F_SUBCHANNEL_2D                            3
+#define NVA06F_SUBCHANNEL_3D                            0
+#define NVA06F_SUBCHANNEL_COMPUTE                       1
 #define NVA06F_SUBCHANNEL_COPY_ENGINE                   4
+#define NVA06F_SUBCHANNEL_I2M                           2
 
 #endif // _cla06fsubch_h_

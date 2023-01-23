@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiUnmapFrom(struct KernelChann
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiIsDuplicate(struct KernelChannelGroupApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_kchangrpapiControl_Epilogue(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RmResource.offset), pCallContext, pParams);
 }
@@ -368,12 +372,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [12] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2200u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x142200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2200u)
-        /*flags=*/      0x2200u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x142200u)
+        /*flags=*/      0x142200u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xa06c010au,
         /*paramSize=*/  sizeof(NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS),
@@ -507,7 +511,7 @@ static void __nvoc_init_funcTable_KernelChannelGroupApi_1(KernelChannelGroupApi 
     pThis->__kchangrpapiCtrlCmdProgramVidmemPromote__ = &kchangrpapiCtrlCmdProgramVidmemPromote_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2200u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x142200u)
     pThis->__kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers__ = &kchangrpapiCtrlCmdInternalPromoteFaultMethodBuffers_IMPL;
 #endif
 
@@ -574,6 +578,8 @@ static void __nvoc_init_funcTable_KernelChannelGroupApi_1(KernelChannelGroupApi 
     pThis->__kchangrpapiPreDestruct__ = &__nvoc_thunk_RsResource_kchangrpapiPreDestruct;
 
     pThis->__kchangrpapiUnmapFrom__ = &__nvoc_thunk_RsResource_kchangrpapiUnmapFrom;
+
+    pThis->__kchangrpapiIsDuplicate__ = &__nvoc_thunk_RsResource_kchangrpapiIsDuplicate;
 
     pThis->__kchangrpapiControl_Epilogue__ = &__nvoc_thunk_RmResource_kchangrpapiControl_Epilogue;
 

@@ -100,7 +100,7 @@ nvswitch_procfs_device_remove
         return;
     }
 
-    nv_procfs_unregister_all(nvswitch_dev->procfs_dir, nvswitch_dev->procfs_dir);
+    proc_remove(nvswitch_dev->procfs_dir);
     nvswitch_dev->procfs_dir = NULL;
 }
 
@@ -155,7 +155,7 @@ nvswitch_procfs_exit
         return;
     }
 
-    nv_procfs_unregister_all(nvswitch_procfs_dir, nvswitch_procfs_dir);
+    proc_remove(nvswitch_procfs_dir);
     nvswitch_procfs_dir = NULL;
 }
 

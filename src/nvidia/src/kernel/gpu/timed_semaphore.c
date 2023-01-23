@@ -116,35 +116,17 @@ _9074TimedSemRelease
     NV_STATUS status;
     NV_STATUS overallStatus = NV_OK;
 
-    status = semaphoreFillGPUVATimestamp(pGpu,
-                                         hClient,
-                                         pObject->pKernelChannel->hVASpace,
-                                         semaphoreGPUVA,
-                                         releaseValue,
-                                         0, /* Index */
-                                         NV_TRUE,
-                                         time);
+    status = tsemaRelease_HAL(pGpu,
+                              semaphoreGPUVA,
+                              notifierGPUVA,
+                              pObject->pKernelChannel->hVASpace,
+                              releaseValue,
+                              notifierStatus,
+                              hClient);
+
+    // timedSemaphoreRelease_HAL will print errors on its own
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Semaphore fill failed, error 0x%x\n", status);
-
-        if (overallStatus == NV_OK)
-            overallStatus = status;
-    }
-
-    status = notifyFillNotifierGPUVATimestamp(pGpu,
-                                              hClient,
-                                              pObject->pKernelChannel->hVASpace,
-                                              notifierGPUVA,
-                                              0, /* Info32 */
-                                              0, /* Info16 */
-                                              notifierStatus,
-                                              0, /* Index */
-                                              time);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Notifier fill failed, error 0x%x\n", status);
-
         if (overallStatus == NV_OK)
             overallStatus = status;
     }
@@ -642,3 +624,57 @@ NV_STATUS tsemaGetSwMethods_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+tsemaRelease_KERNEL
+(
+    OBJGPU *pGpu,
+    NvU64 semaphoreVA,
+    NvU64 notifierVA,
+    NvU32 hVASpace,
+    NvU32 releaseValue,
+    NvU32 completionStatus,
+    NvHandle hClient
+)
+{
+    OBJTMR   *pTmr = GPU_GET_TIMER(pGpu);
+    NvU64     currentTime;
+    NV_STATUS status;
+    NV_STATUS overallStatus = NV_OK;
+
+    tmrGetCurrentTime(pTmr, &currentTime);
+
+    status = semaphoreFillGPUVATimestamp(pGpu,
+                                         hClient,
+                                         hVASpace,
+                                         semaphoreVA,
+                                         releaseValue,
+                                         0, /* Index */
+                                         NV_TRUE,
+                                         currentTime);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Semaphore fill failed, error 0x%x\n", status);
+
+        if (overallStatus == NV_OK)
+            overallStatus = status;
+    }
+
+    status = notifyFillNotifierGPUVATimestamp(pGpu,
+                                              hClient,
+                                              hVASpace,
+                                              notifierVA,
+                                              0, /* Info32 */
+                                              0, /* Info16 */
+                                              completionStatus,
+                                              0, /* Index */
+                                              currentTime);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Notifier fill failed, error 0x%x\n", status);
+
+        if (overallStatus == NV_OK)
+            overallStatus = status;
+    }
+
+    return overallStatus;
+}

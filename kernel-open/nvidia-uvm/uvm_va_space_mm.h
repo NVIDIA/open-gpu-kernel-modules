@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2021 NVIDIA Corporation
+    Copyright (c) 2018-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -95,8 +95,8 @@ bool uvm_va_space_mm_enabled(uvm_va_space_t *va_space);
 NV_STATUS uvm_va_space_mm_register(uvm_va_space_t *va_space);
 
 // De-associate the mm from the va_space. This function won't return until all
-// in-flight retainers have called uvm_va_space_mm_release(). Subsequent calls
-// to uvm_va_space_mm_retain() will return NULL.
+// in-flight retainers have called uvm_va_space_mm_release().
+// uvm_va_space_mm_retain() and friends must not be called after this returns.
 //
 // This function may invoke uvm_va_space_mm_shutdown() so the caller must not
 // hold either mmap_lock or the VA space lock. Since this API must provide the
@@ -128,10 +128,12 @@ struct mm_struct *uvm_va_space_mm_retain(uvm_va_space_t *va_space);
 // uvm_va_space_mm_or_current_retain().
 //
 // If a non-NULL mm is returned, the guarantees described by
-// uvm_va_space_mm_retain() apply. If uvm_va_space_mm_enabled() is false the
-// caller is responsible for validating that the returned mm matches the desired
-// mm before performing an operation such as vm_insert_page(). See
-// uvm_va_range_vma_check().
+// uvm_va_space_mm_retain() apply. Unlike uvm_va_space_mm_retain() however,
+// mm_users is guaranteed to be greater than 0 until
+// uvm_va_space_mm_or_current_release().
+// If uvm_va_space_mm_enabled() is false, the caller is responsible for
+// validating that the returned mm matches the desired mm before performing an
+// operation such as vm_insert_page(). See uvm_va_range_vma_check().
 //
 // This should not be called from a kernel thread.
 struct mm_struct *uvm_va_space_mm_or_current_retain(uvm_va_space_t *va_space);
@@ -162,7 +164,9 @@ void uvm_va_space_mm_release(uvm_va_space_t *va_space);
 
 // Counterpart to uvm_va_space_mm_or_current_retain(). Must be called from the
 // same thread which called uvm_va_space_mm_or_current_retain(). mm may be NULL,
-// in which case this is a no-op.
+// in which case this is a no-op. This function may invoke
+// uvm_va_space_mm_shutdown() so the caller must not hold either mmap_lock or
+// the VA space lock.
 void uvm_va_space_mm_or_current_release(uvm_va_space_t *va_space, struct mm_struct *mm);
 
 static void uvm_va_space_mm_release_unlock(uvm_va_space_t *va_space, struct mm_struct *mm)
@@ -175,12 +179,15 @@ static void uvm_va_space_mm_release_unlock(uvm_va_space_t *va_space, struct mm_s
 
 static void uvm_va_space_mm_or_current_release_unlock(uvm_va_space_t *va_space, struct mm_struct *mm)
 {
-    if (mm)
+    if (mm) {
         uvm_up_read_mmap_lock(mm);
-    uvm_va_space_mm_or_current_release(va_space, mm);
+        uvm_va_space_mm_or_current_release(va_space, mm);
+    }
 }
 
 NV_STATUS uvm_test_va_space_mm_retain(UVM_TEST_VA_SPACE_MM_RETAIN_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_va_space_mm_delay_shutdown(UVM_TEST_VA_SPACE_MM_DELAY_SHUTDOWN_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_va_space_mm_or_current_retain(UVM_TEST_VA_SPACE_MM_OR_CURRENT_RETAIN_PARAMS *params,
+                                                 struct file *filp);
 
 #endif // __UVM_VA_SPACE_MM_H__

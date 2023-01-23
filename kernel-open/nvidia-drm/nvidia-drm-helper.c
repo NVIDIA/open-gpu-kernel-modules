@@ -41,6 +41,19 @@
 #include <drm/drm_atomic_uapi.h>
 #endif
 
+/*
+ * The inclusion of drm_framebuffer.h was removed from drm_crtc.h by commit
+ * 720cf96d8fecde29b72e1101f8a567a0ce99594f ("drm: Drop drm_framebuffer.h from
+ * drm_crtc.h") in linux-next, expected in v5.19-rc7.
+ *
+ * We only need drm_framebuffer.h for drm_framebuffer_put(), and it is always
+ * present (v4.9+) when drm_framebuffer_{put,get}() is present (v4.12+), so it
+ * is safe to unconditionally include it when drm_framebuffer_get() is present.
+ */
+#if defined(NV_DRM_FRAMEBUFFER_GET_PRESENT)
+#include <drm/drm_framebuffer.h>
+#endif
+
 static void __nv_drm_framebuffer_put(struct drm_framebuffer *fb)
 {
 #if defined(NV_DRM_FRAMEBUFFER_GET_PRESENT)

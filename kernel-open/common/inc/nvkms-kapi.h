@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -149,6 +149,7 @@ struct NvKmsKapiDeviceResourcesInfo {
     } caps;
 
     NvU64 supportedSurfaceMemoryFormats[NVKMS_KAPI_LAYER_MAX];
+    NvBool supportsHDR[NVKMS_KAPI_LAYER_MAX];
 };
 
 #define NVKMS_KAPI_LAYER_MASK(layerType) (1 << (layerType))
@@ -218,6 +219,11 @@ struct NvKmsKapiLayerConfig {
     struct NvKmsRRParams rrParams;
     struct NvKmsKapiSyncpt syncptParams;
 
+    struct NvKmsHDRStaticMetadata hdrMetadata;
+    NvBool hdrMetadataSpecified;
+
+    enum NvKmsOutputTf tf;
+
     NvU8 minPresentInterval;
     NvBool tearing;
 
@@ -226,6 +232,8 @@ struct NvKmsKapiLayerConfig {
 
     NvS16 dstX, dstY;
     NvU16 dstWidth, dstHeight;
+
+    enum NvKmsInputColorSpace inputColorSpace;
 };
 
 struct NvKmsKapiLayerRequestedConfig {
@@ -277,6 +285,8 @@ struct NvKmsKapiHeadModeSetConfig {
     NvKmsKapiDisplay displays[NVKMS_KAPI_MAX_CLONE_DISPLAYS];
 
     struct NvKmsKapiDisplayMode mode;
+
+    NvBool vrrEnabled;
 };
 
 struct NvKmsKapiHeadRequestedConfig {
@@ -368,6 +378,9 @@ struct NvKmsKapiDynamicDisplayParams {
     /* [OUT] Connection status */
     NvU32 connected;
 
+    /* [OUT] VRR status */
+    NvBool vrrSupported;
+
     /* [IN/OUT] EDID of connected monitor/ Input to override EDID */
     struct {
         NvU16  bufferSize;
@@ -414,6 +427,12 @@ struct NvKmsKapiCreateSurfaceParams {
      *      explicit_layout is NV_TRUE and layout is
      *      NvKmsSurfaceMemoryLayoutBlockLinear */
     NvU8 log2GobsPerBlockY;
+};
+
+enum NvKmsKapiAllocationType {
+    NVKMS_KAPI_ALLOCATION_TYPE_SCANOUT = 0,
+    NVKMS_KAPI_ALLOCATION_TYPE_NOTIFIER = 1,
+    NVKMS_KAPI_ALLOCATION_TYPE_OFFSCREEN = 2,
 };
 
 struct NvKmsKapiFunctionsTable {
@@ -477,6 +496,38 @@ struct NvKmsKapiFunctionsTable {
      * \param [in]  device  A device returned by allocateDevice().
      */
     void (*releaseOwnership)(struct NvKmsKapiDevice *device);
+
+    /*!
+     * Grant modeset permissions for a display to fd. Only one (dispIndex, head,
+     * display) is currently supported.
+     *
+     * \param [in]  fd         fd from opening /dev/nvidia-modeset.
+     *
+     * \param [in]  device     A device returned by allocateDevice().
+     *
+     * \param [in]  head       head of display.
+     *
+     * \param [in]  display    The display to grant.
+     *
+     * \return NV_TRUE on success, NV_FALSE on failure.
+     */
+    NvBool (*grantPermissions)
+    (
+        NvS32 fd,
+        struct NvKmsKapiDevice *device,
+        NvU32 head,
+        NvKmsKapiDisplay display
+    );
+
+    /*!
+     * Revoke modeset permissions previously granted. This currently applies for all
+     * previous grant requests for this device.
+     *
+     * \param [in]  device                  A device returned by allocateDevice().
+     *
+     * \return NV_TRUE on success, NV_FALSE on failure.
+     */
+    NvBool (*revokePermissions)(struct NvKmsKapiDevice *device);
 
     /*!
      * Registers for notification, via
@@ -609,6 +660,8 @@ struct NvKmsKapiFunctionsTable {
      * \param [in] device  A device allocated using allocateDevice().
      *
      * \param [in] layout  BlockLinear or Pitch.
+     * 
+     * \param [in] type    Allocation type.
      *
      * \param [in] size    Size, in bytes, of the memory to allocate.
      *
@@ -624,6 +677,7 @@ struct NvKmsKapiFunctionsTable {
     (
         struct NvKmsKapiDevice *device,
         enum NvKmsSurfaceMemoryLayout layout,
+        enum NvKmsKapiAllocationType type,
         NvU64 size,
         NvU8 *compressible
     );
@@ -637,6 +691,8 @@ struct NvKmsKapiFunctionsTable {
      * \param [in] device  A device allocated using allocateDevice().
      *
      * \param [in] layout  BlockLinear or Pitch.
+     * 
+     * \param [in] type    Allocation type.
      *
      * \param [in] size    Size, in bytes, of the memory to allocate.
      *
@@ -652,6 +708,7 @@ struct NvKmsKapiFunctionsTable {
     (
         struct NvKmsKapiDevice *device,
         enum NvKmsSurfaceMemoryLayout layout,
+        enum NvKmsKapiAllocationType type,
         NvU64 size,
         NvU8 *compressible
     );

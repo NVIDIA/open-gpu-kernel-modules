@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,36 +35,7 @@ extern "C" {
 #define _P2P_API_H_
 
 #include "core/core.h"
-#include "gpu/mem_mgr/heap.h"
 #include "rmapi/client.h"
-#include "rmapi/mapping_list.h"
-#include "gpu/mem_mgr/mem_desc.h"
-#include "platform/p2p/p2p_caps.h"
-
-
-struct Subdevice;
-
-#ifndef __NVOC_CLASS_Subdevice_TYPEDEF__
-#define __NVOC_CLASS_Subdevice_TYPEDEF__
-typedef struct Subdevice Subdevice;
-#endif /* __NVOC_CLASS_Subdevice_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_Subdevice
-#define __nvoc_class_id_Subdevice 0x4b01b3
-#endif /* __nvoc_class_id_Subdevice */
-
-
-
-struct _def_client_p2p_dma_mapping_info
-{
-    PCLI_DMA_MAPPING_INFO    pPeer1Info;
-    PCLI_DMA_MAPPING_INFO    pPeer2Info;
-};
-
-typedef struct _def_client_p2p_dma_mapping_info CLI_P2P_DMA_MAPPING_INFO, *PCLI_P2P_DMA_MAPPING_INFO;
-
-MAKE_MAP(CLI_P2P_DMA_MAPPING_INFO_MAP, CLI_P2P_DMA_MAPPING_INFO);
-
 
 //
 // Definitions for P2PApi.attributes.
@@ -108,17 +79,18 @@ struct P2PApi {
     NV_STATUS (*__p2papiMapTo__)(struct P2PApi *, RS_RES_MAP_TO_PARAMS *);
     void (*__p2papiPreDestruct__)(struct P2PApi *);
     NV_STATUS (*__p2papiUnmapFrom__)(struct P2PApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__p2papiIsDuplicate__)(struct P2PApi *, NvHandle, NvBool *);
     void (*__p2papiControl_Epilogue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__p2papiControlLookup__)(struct P2PApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__p2papiMap__)(struct P2PApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__p2papiAccessCallback__)(struct P2PApi *, struct RsClient *, void *, RsAccessRight);
-    NODE Node;
-    struct Subdevice *peer1;
-    struct Subdevice *peer2;
+    struct OBJGPU *peer1;
+    struct OBJGPU *peer2;
+    NvU32 localGfid;
+    NvU32 remoteGfid;
     NvU32 peerId1;
     NvU32 peerId2;
     NvU32 attributes;
-    CLI_P2P_DMA_MAPPING_INFO_MAP dmaMappingMap;
 };
 
 #ifndef __NVOC_CLASS_P2PApi_TYPEDEF__
@@ -163,6 +135,7 @@ NV_STATUS __nvoc_objCreate_P2PApi(P2PApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define p2papiMapTo(pResource, pParams) p2papiMapTo_DISPATCH(pResource, pParams)
 #define p2papiPreDestruct(pResource) p2papiPreDestruct_DISPATCH(pResource)
 #define p2papiUnmapFrom(pResource, pParams) p2papiUnmapFrom_DISPATCH(pResource, pParams)
+#define p2papiIsDuplicate(pResource, hMemory, pDuplicate) p2papiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define p2papiControl_Epilogue(pResource, pCallContext, pParams) p2papiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiControlLookup(pResource, pParams, ppEntry) p2papiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define p2papiMap(pResource, pCallContext, pParams, pCpuMapping) p2papiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -223,6 +196,10 @@ static inline NV_STATUS p2papiUnmapFrom_DISPATCH(struct P2PApi *pResource, RS_RE
     return pResource->__p2papiUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS p2papiIsDuplicate_DISPATCH(struct P2PApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__p2papiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void p2papiControl_Epilogue_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__p2papiControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -240,35 +217,13 @@ static inline NvBool p2papiAccessCallback_DISPATCH(struct P2PApi *pResource, str
 }
 
 NV_STATUS p2papiConstruct_IMPL(struct P2PApi *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_p2papiConstruct(arg_pResource, arg_pCallContext, arg_pParams) p2papiConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 void p2papiDestruct_IMPL(struct P2PApi *pResource);
+
 #define __nvoc_p2papiDestruct(pResource) p2papiDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 
-
-typedef struct P2PApi *PCLI_P2P_INFO; // RS-TODO: Delete
-MAKE_LIST(PCLI_P2P_INFO_LIST, PCLI_P2P_INFO);
-
-// Add a dma mapping info to the p2p object that maps the peer GPUs
-NV_STATUS           CliAddP2PDmaMappingInfo      (NvHandle, NvHandle, NvU32, NvHandle, NvU32, PCLI_DMA_MAPPING_INFO);
-
-// Free the CliP2PList of a given client
-NV_STATUS           CliFreeP2PList               (NvHandle);
-
-// Free the p2p infos of a subdevice
-NV_STATUS           CliFreeSubDeviceP2PList      (struct Subdevice *, CALL_CONTEXT *);
-
-// Unmap the dma mappings associated with a p2p object and free the p2p pDmaMappingList
-NV_STATUS           CliFreeP2PDmaMappingList     (NvHandle, PCLI_P2P_INFO);
-
-// Delete the dma mapping info from the p2p object when the memory is no longer peer mapped
-NV_STATUS           CliDelP2PDmaMappingInfo      (NvHandle, PCLI_DMA_MAPPING_INFO);
-
-// Delete the dma mapping info from the p2p object when the memory is no longer peer mapped
-NV_STATUS           CliUpdateP2PDmaMappingInList      (NvHandle, PCLI_DMA_MAPPING_INFO, NvU64);
-
-// Remove the P2P mapping corresponding to the P2P info passed in
-NV_STATUS           CliInvalidateP2PInfo         (NvHandle, PCLI_P2P_INFO);
 
 #endif // _P2P_API_H_
 

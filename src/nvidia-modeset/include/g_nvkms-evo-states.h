@@ -38,3 +38,4 @@ void nvEvoStateStartNoLock(NVEvoSubDevPtr);
 #endif
 
 #endif /* __EVO_STATE_H__ */
+

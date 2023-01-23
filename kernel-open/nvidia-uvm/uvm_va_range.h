@@ -141,7 +141,7 @@ typedef struct
     // process is sharing the UVM file descriptor.
     uvm_vma_wrapper_t *vma_wrapper;
 
-    // UVM managed allocations only use this policy and never use the policy
+    // Managed allocations only use this policy and never use the policy
     // stored in the va_block for HMM allocations.
     uvm_va_policy_t policy;
 
@@ -850,24 +850,6 @@ NV_STATUS uvm_va_range_unset_read_duplication(uvm_va_range_t *va_range, struct m
 // Create and destroy vma wrappers
 uvm_vma_wrapper_t *uvm_vma_wrapper_alloc(struct vm_area_struct *vma);
 void uvm_vma_wrapper_destroy(uvm_vma_wrapper_t *vma_wrapper);
-
-// Return the memory access permissions for the vma bound to the given VA range
-uvm_prot_t uvm_va_range_logical_prot(uvm_va_range_t *va_range);
-
-// Check if processor_id is allowed to access the managed va_range with
-// access_type permissions. Return values:
-//
-// NV_ERR_INVALID_ADDRESS       The VA range is logically dead (zombie)
-// NV_ERR_INVALID_ACCESS_TYPE   The vma corresponding to the VA range does not
-//                              allow access_type permissions, or migration is
-//                              disallowed and processor_id cannot access the
-//                              range remotely (UVM-Lite).
-// NV_ERR_INVALID_OPERATION     The access would violate the policies specified
-//                              by UvmPreventMigrationRangeGroups.
-NV_STATUS uvm_va_range_check_logical_permissions(uvm_va_range_t *va_range,
-                                                 uvm_processor_id_t processor_id,
-                                                 uvm_fault_type_t access_type,
-                                                 bool allow_migration);
 
 static uvm_va_policy_t *uvm_va_range_get_policy(uvm_va_range_t *va_range)
 {

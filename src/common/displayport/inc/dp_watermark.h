@@ -54,6 +54,7 @@ namespace DisplayPort
         unsigned bitsPerComponent;          // Bits per component
         bool     bEnableDsc;                // bEnableDsc=1 indicates DSC would be enabled for the mode
         DSC_MODE mode;                      // DSC Mode
+        bool     bEnablePassThroughForPCON;
 
         ModesetInfo(): twoChannelAudioHz(0), 
                        eightChannelAudioHz(0), 
@@ -67,13 +68,14 @@ namespace DisplayPort
                        rasterBlankEndX(0),
                        bitsPerComponent(0),
                        bEnableDsc(false),
-                       mode(DSC_SINGLE) {}
+                       mode(DSC_SINGLE),
+                       bEnablePassThroughForPCON(false) {}
         
         ModesetInfo(unsigned newTwoChannelAudioHz, unsigned newEightChannelAudioHz, NvU64 newPixelClockHz, 
                     unsigned newRasterWidth, unsigned newRasterHeight, 
                     unsigned newSurfaceWidth, unsigned newSurfaceHeight, unsigned newDepth,
                     unsigned newRasterBlankStartX=0, unsigned newRasterBlankEndX=0, bool newBEnableDsc = false,
-                    DSC_MODE newMode = DSC_SINGLE):
+                    DSC_MODE newMode = DSC_SINGLE, bool newBEnablePassThroughForPCON = false):
            twoChannelAudioHz(newTwoChannelAudioHz), 
            eightChannelAudioHz(newEightChannelAudioHz), 
            pixelClockHz(newPixelClockHz), 
@@ -86,7 +88,8 @@ namespace DisplayPort
            rasterBlankEndX(newRasterBlankEndX),
            bitsPerComponent(0),
            bEnableDsc(newBEnableDsc),
-           mode(newMode){}
+           mode(newMode),
+           bEnablePassThroughForPCON(newBEnablePassThroughForPCON) {}
     };
 
     struct Watermark

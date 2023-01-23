@@ -263,6 +263,20 @@ rmapiMapToCpuWithSecInfo
 );
 
 NV_STATUS
+rmapiMapToCpuWithSecInfoV2
+(
+    RM_API            *pRmApi,
+    NvHandle           hClient,
+    NvHandle           hDevice,
+    NvHandle           hMemory,
+    NvU64              offset,
+    NvU64              length,
+    NvP64             *ppCpuVirtAddr,
+    NvU32             *flags,
+    API_SECURITY_INFO *pSecInfo
+);
+
+NV_STATUS
 rmapiMapToCpuWithSecInfoTls
 (
     RM_API            *pRmApi,
@@ -273,6 +287,19 @@ rmapiMapToCpuWithSecInfoTls
     NvU64              length,
     NvP64             *ppCpuVirtAddr,
     NvU32              flags,
+    API_SECURITY_INFO *pSecInfo
+);
+NV_STATUS
+rmapiMapToCpuWithSecInfoTlsV2
+(
+    RM_API            *pRmApi,
+    NvHandle           hClient,
+    NvHandle           hDevice,
+    NvHandle           hMemory,
+    NvU64              offset,
+    NvU64              length,
+    NvP64             *ppCpuVirtAddr,
+    NvU32             *flags,
     API_SECURITY_INFO *pSecInfo
 );
 

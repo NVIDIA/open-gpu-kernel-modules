@@ -178,29 +178,6 @@ osdescConstruct_IMPL
     // RM support for MODS PTE kind in external allocations
     // bug 1858656
     //
-    if (status == NV_OK && NV_IS_MODS)
-    {
-        MemoryManager       *pMemoryManager    = GPU_GET_MEMORY_MANAGER(pGpu);
-        NvU32                kind;
-        FB_ALLOC_PAGE_FORMAT fbAllocPageFormat = {0};
-
-        NV_ASSERT_OR_RETURN(
-            DRF_VAL(OS32, _ATTR, _COMPR, pUserParams->attr) ==
-                NVOS32_ATTR_COMPR_NONE, NV_ERR_NOT_SUPPORTED);
-
-        fbAllocPageFormat.flags = pUserParams->flags;
-        fbAllocPageFormat.type  = pUserParams->type;
-        fbAllocPageFormat.attr  = pUserParams->attr;
-        fbAllocPageFormat.attr2 = pUserParams->attr2;
-
-        // memmgrChooseKind will select kind based on format
-        status = memmgrChooseKind_HAL(pGpu, pMemoryManager, &fbAllocPageFormat,
-                                                DRF_VAL(OS32, _ATTR, _COMPR, pUserParams->attr), &kind);
-        if (status == NV_OK)
-        {
-            memdescSetPteKind(pMemDesc, kind);
-        }
-    }
 
     // failure case
     if (status != NV_OK)

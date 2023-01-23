@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021 NVIDIA Corporation
+    Copyright (c) 2021-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -231,6 +231,19 @@ void uvm_hal_maxwell_host_set_gpfifo_entry(NvU64 *fifo_entry, NvU64 pushbuffer_v
                                 HWCONST(A16F, GP_ENTRY1, PRIV,   KERNEL)) << 32;
 
     *fifo_entry = fifo_entry_value;
+}
+
+void uvm_hal_maxwell_host_set_gpfifo_noop(NvU64 *fifo_entry)
+{
+    UVM_ASSERT(!uvm_global_is_suspended());
+
+    // A NOOP control GPFIFO does not require a GP_ENTRY0.
+    *fifo_entry = (NvU64)(HWVALUE(A16F, GP_ENTRY1, LENGTH, 0) | HWCONST(A16F, GP_ENTRY1, OPCODE, NOP)) << 32;
+}
+
+void uvm_hal_maxwell_host_set_gpfifo_pushbuffer_segment_base_unsupported(NvU64 *fifo_entry, NvU64 pushbuffer_va)
+{
+    UVM_ASSERT_MSG(false, "host set_gpfifo_pushbuffer_segment_base called on Maxwell GPU\n");
 }
 
 void uvm_hal_maxwell_host_write_gpu_put(uvm_channel_t *channel, NvU32 gpu_put)

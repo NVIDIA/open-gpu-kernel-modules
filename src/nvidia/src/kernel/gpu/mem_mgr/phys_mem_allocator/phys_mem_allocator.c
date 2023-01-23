@@ -70,7 +70,7 @@ void pmaNumaSetReclaimSkipThreshold(PMA *pPma, NvU32 data)
 }
 #endif
 
-typedef NV_STATUS (*scanFunc)(void *, NvU64, NvU64, NvU64, NvU64, NvU64*, NvU32, NvU64, NvU64*, NvBool);
+typedef NV_STATUS (*scanFunc)(void *, NvU64, NvU64, NvU64, NvU64, NvU64*, NvU32, NvU64, NvU64*, NvBool, NvBool);
 
 static void
 _pmaRollback
@@ -547,7 +547,6 @@ pmaRegisterRegion
     return status;
 }
 
-
 NV_STATUS
 pmaAllocatePages
 (
@@ -560,7 +559,7 @@ pmaAllocatePages
 {
     NvS32 regionList[PMA_REGION_SIZE];
     NV_STATUS status, prediction;
-    NvU32 flags, evictFlag, contigFlag, persistFlag, alignFlag, pinFlag, rangeFlag, blacklistOffFlag, partialFlag, skipScrubFlag;
+    NvU32 flags, evictFlag, contigFlag, persistFlag, alignFlag, pinFlag, rangeFlag, blacklistOffFlag, partialFlag, skipScrubFlag, reverseFlag;
     NvU32 regId, regionIdx;
     NvU64 numPagesAllocatedThisTime, numPagesLeftToAllocate, numPagesAllocatedSoFar;
     NvU64 addrBase, addrLimit;
@@ -612,10 +611,16 @@ pmaAllocatePages
     blacklistOffFlag = !!(flags & PMA_ALLOCATE_TURN_BLACKLIST_OFF);
     partialFlag = !!(flags & PMA_ALLOCATE_ALLOW_PARTIAL);
     skipScrubFlag = !!(flags & PMA_ALLOCATE_NO_ZERO);
+    reverseFlag = !!(flags & PMA_ALLOCATE_REVERSE_ALLOC);
 
     // Fork out new code path for NUMA sub-allocation from OS
     if (pPma->bNuma)
     {
+        if (reverseFlag)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Reverse allocation not supported on NUMA.\n");
+            return NV_ERR_INVALID_ARGUMENT;
+        }
         return pmaNumaAllocate(pPma, allocationCount, pageSize, allocationOptions, pPages);
     }
 
@@ -748,6 +753,8 @@ pmaAllocatePages_retry:
 
     for (regionIdx = 0; regionIdx < pPma->regSize; regionIdx++)
     {
+        MEMORY_PROTECTION prot;
+
         if (regionList[regionIdx] == -1)
         {
             status = NV_ERR_NO_MEMORY;
@@ -760,6 +767,8 @@ pmaAllocatePages_retry:
 
         addrBase = pPma->pRegDescriptors[regId]->base;
         addrLimit = pPma->pRegDescriptors[regId]->limit;
+        prot = pPma->pRegDescriptors[regId]->bProtected ? MEMORY_PROTECTION_PROTECTED :
+                                                          MEMORY_PROTECTION_UNPROTECTED;
 
         //
         // If the start address of the range is less than the region's base
@@ -802,7 +811,7 @@ pmaAllocatePages_retry:
 
         numPagesAllocatedThisTime = 0;
         status = (*useFunc)(pMap, addrBase, rangeStart, rangeEnd, numPagesLeftToAllocate,
-            curPages, pageSize, alignment, &numPagesAllocatedThisTime, !tryEvict);
+            curPages, pageSize, alignment, &numPagesAllocatedThisTime, !tryEvict, (NvBool)reverseFlag);
 
         NV_ASSERT(numPagesAllocatedThisTime <= numPagesLeftToAllocate);
 
@@ -889,7 +898,7 @@ pmaAllocatePages_retry:
                                       (evictStart - addrBase) >> PMA_PAGE_SHIFT,
                                       (evictEnd - addrBase) >> PMA_PAGE_SHIFT);
 
-                status = _pmaEvictContiguous(pPma, pMap, evictStart, evictEnd);
+                status = _pmaEvictContiguous(pPma, pMap, evictStart, evictEnd, prot);
             }
             else
             {
@@ -920,7 +929,8 @@ pmaAllocatePages_retry:
                                       (evictPhysEnd - addrBase) >> PMA_PAGE_SHIFT);
 
                 status = _pmaEvictPages(pPma, pMap, curPages, numPagesLeftToAllocate,
-                                        pPages, numPagesAllocatedSoFar, pageSize, evictPhysBegin, evictPhysEnd);
+                                        pPages, numPagesAllocatedSoFar, pageSize,
+                                        evictPhysBegin, evictPhysEnd, prot);
             }
 
             if (status == NV_OK)

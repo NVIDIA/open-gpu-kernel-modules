@@ -203,6 +203,10 @@ static void __nvoc_thunk_RsResource_dispchnPreDestruct(struct DispChannel *pReso
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_dispchnIsDuplicate(struct DispChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchnGetNotificationListPtr(struct DispChannel *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset));
 }
@@ -312,6 +316,8 @@ static void __nvoc_init_funcTable_DispChannel_1(DispChannel *pThis) {
     pThis->__dispchnCanCopy__ = &__nvoc_thunk_RsResource_dispchnCanCopy;
 
     pThis->__dispchnPreDestruct__ = &__nvoc_thunk_RsResource_dispchnPreDestruct;
+
+    pThis->__dispchnIsDuplicate__ = &__nvoc_thunk_RsResource_dispchnIsDuplicate;
 
     pThis->__dispchnGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchnGetNotificationListPtr;
 
@@ -593,6 +599,10 @@ static void __nvoc_thunk_RsResource_dispchnpioPreDestruct(struct DispChannelPio 
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_dispchnpioIsDuplicate(struct DispChannelPio *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchnpioGetNotificationListPtr(struct DispChannelPio *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset));
 }
@@ -692,6 +702,8 @@ static void __nvoc_init_funcTable_DispChannelPio_1(DispChannelPio *pThis) {
     pThis->__dispchnpioCanCopy__ = &__nvoc_thunk_RsResource_dispchnpioCanCopy;
 
     pThis->__dispchnpioPreDestruct__ = &__nvoc_thunk_RsResource_dispchnpioPreDestruct;
+
+    pThis->__dispchnpioIsDuplicate__ = &__nvoc_thunk_RsResource_dispchnpioIsDuplicate;
 
     pThis->__dispchnpioGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchnpioGetNotificationListPtr;
 
@@ -971,6 +983,10 @@ static void __nvoc_thunk_RsResource_dispchndmaPreDestruct(struct DispChannelDma 
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_dispchndmaIsDuplicate(struct DispChannelDma *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchndmaGetNotificationListPtr(struct DispChannelDma *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset));
 }
@@ -1070,6 +1086,8 @@ static void __nvoc_init_funcTable_DispChannelDma_1(DispChannelDma *pThis) {
     pThis->__dispchndmaCanCopy__ = &__nvoc_thunk_RsResource_dispchndmaCanCopy;
 
     pThis->__dispchndmaPreDestruct__ = &__nvoc_thunk_RsResource_dispchndmaPreDestruct;
+
+    pThis->__dispchndmaIsDuplicate__ = &__nvoc_thunk_RsResource_dispchndmaIsDuplicate;
 
     pThis->__dispchndmaGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchndmaGetNotificationListPtr;
 

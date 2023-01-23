@@ -150,20 +150,28 @@ static NV_STATUS __nvoc_thunk_RsResource_vidmemMapTo(struct VideoMemory *pResour
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VideoMemory_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_vidmemControl_Prologue(struct VideoMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VideoMemory_RmResource.offset), pCallContext, pParams);
-}
-
 static NvBool __nvoc_thunk_StandardMemory_vidmemCanCopy(struct VideoMemory *pStandardMemory) {
     return stdmemCanCopy((struct StandardMemory *)(((unsigned char *)pStandardMemory) + __nvoc_rtti_VideoMemory_StandardMemory.offset));
 }
 
-static NV_STATUS __nvoc_thunk_Memory_vidmemIsReady(struct VideoMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VideoMemory_Memory.offset));
+static NvBool __nvoc_thunk_Memory_vidmemIsGpuMapAllowed(struct VideoMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VideoMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_vidmemControl_Prologue(struct VideoMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VideoMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_vidmemIsReady(struct VideoMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VideoMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static void __nvoc_thunk_RsResource_vidmemPreDestruct(struct VideoMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VideoMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_vidmemIsDuplicate(struct VideoMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VideoMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_vidmemUnmapFrom(struct VideoMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -251,13 +259,17 @@ static void __nvoc_init_funcTable_VideoMemory_1(VideoMemory *pThis) {
 
     pThis->__vidmemMapTo__ = &__nvoc_thunk_RsResource_vidmemMapTo;
 
-    pThis->__vidmemControl_Prologue__ = &__nvoc_thunk_RmResource_vidmemControl_Prologue;
-
     pThis->__vidmemCanCopy__ = &__nvoc_thunk_StandardMemory_vidmemCanCopy;
+
+    pThis->__vidmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_vidmemIsGpuMapAllowed;
+
+    pThis->__vidmemControl_Prologue__ = &__nvoc_thunk_RmResource_vidmemControl_Prologue;
 
     pThis->__vidmemIsReady__ = &__nvoc_thunk_Memory_vidmemIsReady;
 
     pThis->__vidmemPreDestruct__ = &__nvoc_thunk_RsResource_vidmemPreDestruct;
+
+    pThis->__vidmemIsDuplicate__ = &__nvoc_thunk_Memory_vidmemIsDuplicate;
 
     pThis->__vidmemUnmapFrom__ = &__nvoc_thunk_RsResource_vidmemUnmapFrom;
 

@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_kcectxPreDestruct(struct KernelCeContext *pR
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_kcectxIsDuplicate(struct KernelCeContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_kcectxGetNotificationListPtr(struct KernelCeContext *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelCeContext_Notifier.offset));
 }
@@ -324,6 +328,8 @@ static void __nvoc_init_funcTable_KernelCeContext_1(KernelCeContext *pThis) {
     pThis->__kcectxCanCopy__ = &__nvoc_thunk_RsResource_kcectxCanCopy;
 
     pThis->__kcectxPreDestruct__ = &__nvoc_thunk_RsResource_kcectxPreDestruct;
+
+    pThis->__kcectxIsDuplicate__ = &__nvoc_thunk_RsResource_kcectxIsDuplicate;
 
     pThis->__kcectxGetNotificationListPtr__ = &__nvoc_thunk_Notifier_kcectxGetNotificationListPtr;
 

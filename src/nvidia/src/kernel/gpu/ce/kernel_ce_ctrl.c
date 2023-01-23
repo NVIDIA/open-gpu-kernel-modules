@@ -52,8 +52,9 @@ subdeviceCtrlCmdCeGetCaps_IMPL
     KernelCE    *pKCe;
     NvU32       ceNumber;
     NV_STATUS   status = NV_OK;
+    RM_ENGINE_TYPE rmEngineType; 
 
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
     // sanity check array size
     if (pCeCapsParams->capsTblSize != NV2080_CTRL_CE_CAPS_TBL_SIZE)
@@ -62,6 +63,8 @@ subdeviceCtrlCmdCeGetCaps_IMPL
                   pCeCapsParams->capsTblSize, NV2080_CTRL_CE_CAPS_TBL_SIZE);
         return NV_ERR_INVALID_ARGUMENT;
     }
+
+    rmEngineType = gpuGetRmEngineType(pCeCapsParams->ceEngineType);
 
     //
     // vGPU:
@@ -95,7 +98,7 @@ subdeviceCtrlCmdCeGetCaps_IMPL
         return status;
     }
 
-    NV_ASSERT_OK_OR_RETURN(ceIndexFromType(pGpu, RES_GET_CLIENT_HANDLE(pSubdevice), pCeCapsParams->ceEngineType, &ceNumber));
+    NV_ASSERT_OK_OR_RETURN(ceIndexFromType(pGpu, RES_GET_CLIENT_HANDLE(pSubdevice), rmEngineType, &ceNumber));
 
     pKCe = GPU_GET_KCE(pGpu, ceNumber);
 
@@ -107,64 +110,5 @@ subdeviceCtrlCmdCeGetCaps_IMPL
     }
 
     // now fill in caps for this CE
-    return kceGetDeviceCaps(pGpu, pKCe, pCeCapsParams->ceEngineType, NvP64_VALUE(pCeCapsParams->capsTbl));
-}
-
-//
-// Lock Requirements:
-//      Assert that API lock held on entry
-//
-NV_STATUS
-subdeviceCtrlCmdCeGetCapsV2_IMPL
-(
-    Subdevice *pSubdevice,
-    NV2080_CTRL_CE_GET_CAPS_V2_PARAMS *pCeCapsParams
-)
-{
-    OBJGPU      *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    KernelCE    *pKCe;
-    NvU32       ceNumber;
-    NV_STATUS   status = NV_OK;
-
-    LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
-
-    NV_PRINTF(LEVEL_INFO, "NV2080_CTRL_CE_GET_CAPS_V2 ceEngineType = %d\n", pCeCapsParams->ceEngineType);
-
-    //
-    // vGPU:
-    //
-    // Since vGPU does all real hardware management in the
-    // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
-    // do an RPC to the host to get blacklist information from host RM
-    //
-    if (IS_VIRTUAL(pGpu))
-    {
-        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-
-        return status;
-    }
-
-    NV_ASSERT_OK_OR_RETURN(ceIndexFromType(pGpu, RES_GET_CLIENT_HANDLE(pSubdevice), pCeCapsParams->ceEngineType, &ceNumber));
-
-    pKCe = GPU_GET_KCE(pGpu, ceNumber);
-
-    // Return an unsupported error for not present or stubbed CEs as they are
-    // not supposed to be user visible and cannot be allocated anyway.
-    if (!pKCe)
-    {
-        NV_PRINTF(LEVEL_INFO, "Skipping stubbed CE %d\n", ceNumber);
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
-    // now fill in caps for this CE
-    return kceGetDeviceCaps(pGpu, pKCe, pCeCapsParams->ceEngineType, NvP64_VALUE(pCeCapsParams->capsTbl));
+    return kceGetDeviceCaps(pGpu, pKCe, rmEngineType, NvP64_VALUE(pCeCapsParams->capsTbl));
 }

@@ -66,9 +66,11 @@ struct ConsoleMemory {
     NvU32 (*__conmemGetRefCount__)(struct ConsoleMemory *);
     NV_STATUS (*__conmemMapTo__)(struct ConsoleMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__conmemControl_Prologue__)(struct ConsoleMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__conmemIsReady__)(struct ConsoleMemory *);
+    NvBool (*__conmemIsGpuMapAllowed__)(struct ConsoleMemory *, struct OBJGPU *);
+    NV_STATUS (*__conmemIsReady__)(struct ConsoleMemory *, NvBool);
     NV_STATUS (*__conmemCheckCopyPermissions__)(struct ConsoleMemory *, struct OBJGPU *, NvHandle);
     void (*__conmemPreDestruct__)(struct ConsoleMemory *);
+    NV_STATUS (*__conmemIsDuplicate__)(struct ConsoleMemory *, NvHandle, NvBool *);
     NV_STATUS (*__conmemUnmapFrom__)(struct ConsoleMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__conmemControl_Epilogue__)(struct ConsoleMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__conmemControlLookup__)(struct ConsoleMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -117,9 +119,11 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory**, Dynamic*, NvU32, CALL_
 #define conmemGetRefCount(pResource) conmemGetRefCount_DISPATCH(pResource)
 #define conmemMapTo(pResource, pParams) conmemMapTo_DISPATCH(pResource, pParams)
 #define conmemControl_Prologue(pResource, pCallContext, pParams) conmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define conmemIsReady(pMemory) conmemIsReady_DISPATCH(pMemory)
+#define conmemIsGpuMapAllowed(pMemory, pGpu) conmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define conmemIsReady(pMemory, bCopyConstructorContext) conmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define conmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) conmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define conmemPreDestruct(pResource) conmemPreDestruct_DISPATCH(pResource)
+#define conmemIsDuplicate(pMemory, hMemory, pDuplicate) conmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define conmemUnmapFrom(pResource, pParams) conmemUnmapFrom_DISPATCH(pResource, pParams)
 #define conmemControl_Epilogue(pResource, pCallContext, pParams) conmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define conmemControlLookup(pResource, pParams, ppEntry) conmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -179,8 +183,12 @@ static inline NV_STATUS conmemControl_Prologue_DISPATCH(struct ConsoleMemory *pR
     return pResource->__conmemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS conmemIsReady_DISPATCH(struct ConsoleMemory *pMemory) {
-    return pMemory->__conmemIsReady__(pMemory);
+static inline NvBool conmemIsGpuMapAllowed_DISPATCH(struct ConsoleMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__conmemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS conmemIsReady_DISPATCH(struct ConsoleMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__conmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS conmemCheckCopyPermissions_DISPATCH(struct ConsoleMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -189,6 +197,10 @@ static inline NV_STATUS conmemCheckCopyPermissions_DISPATCH(struct ConsoleMemory
 
 static inline void conmemPreDestruct_DISPATCH(struct ConsoleMemory *pResource) {
     pResource->__conmemPreDestruct__(pResource);
+}
+
+static inline NV_STATUS conmemIsDuplicate_DISPATCH(struct ConsoleMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__conmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS conmemUnmapFrom_DISPATCH(struct ConsoleMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -212,6 +224,7 @@ static inline NvBool conmemAccessCallback_DISPATCH(struct ConsoleMemory *pResour
 }
 
 NV_STATUS conmemConstruct_IMPL(struct ConsoleMemory *arg_pConsoleMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_conmemConstruct(arg_pConsoleMemory, arg_pCallContext, arg_pParams) conmemConstruct_IMPL(arg_pConsoleMemory, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

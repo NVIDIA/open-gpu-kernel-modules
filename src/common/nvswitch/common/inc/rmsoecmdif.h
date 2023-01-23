@@ -116,7 +116,7 @@ typedef struct
 #define RM_SOE_TASK_ID_CHNMGMT      0x0B
 #define RM_SOE_TASK_ID_RMMSG        0x0C
 // Add new task ID here...
-#define RM_SOE_TASK_ID__END         0x0C
+#define RM_SOE_TASK_ID__END         0x0D
 
 /*!
  * Unit-identifiers:
@@ -139,8 +139,7 @@ typedef struct
 #define  RM_SOE_UNIT_IFR             (0x0C)
 #define  RM_SOE_UNIT_CHNMGMT         (0x0D)
 // Add new unit ID here...
-#define  RM_SOE_UNIT_END             (0x0D)
-
+#define  RM_SOE_UNIT_END             (0x0E)
 
 #endif // _RMSOECMDIF_H_
 

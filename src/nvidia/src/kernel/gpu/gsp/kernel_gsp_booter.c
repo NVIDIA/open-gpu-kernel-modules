@@ -466,3 +466,28 @@ kgspAllocateBooterUnloadUcodeImage_IMPL
 
     return s_allocateUcodeFromBinArchive(pGpu, pKernelGsp, pBinArchive, ppBooterUnloadUcode);
 }
+
+//
+// Note: Scrubber is not a Booter ucode, however it is a SEC2 ucode that uses
+// a similar loading and signature patching scheme, so we may use the same
+// helper functions.
+//
+NV_STATUS
+kgspAllocateScrubberUcodeImage_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspFlcnUcode **ppScrubberUcode  // out
+)
+{
+    KernelSec2 *pKernelSec2 = GPU_GET_KERNEL_SEC2(pGpu);
+    const BINDATA_ARCHIVE *pBinArchive;
+
+    NV_ASSERT_OR_RETURN(pKernelSec2 != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(ppScrubberUcode != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pBinArchive = ksec2GetBinArchiveSecurescrubUcode_HAL(pGpu, pKernelSec2);
+    NV_ASSERT_OR_RETURN(pBinArchive != NULL, NV_ERR_NOT_SUPPORTED);
+
+    return s_allocateUcodeFromBinArchive(pGpu, pKernelGsp, pBinArchive, ppScrubberUcode);
+}

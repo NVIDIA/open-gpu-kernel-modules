@@ -81,6 +81,7 @@ struct ZbcApi {
     NV_STATUS (*__zbcapiInternalControlForward__)(struct ZbcApi *, NvU32, void *, NvU32);
     void (*__zbcapiPreDestruct__)(struct ZbcApi *);
     NV_STATUS (*__zbcapiUnmapFrom__)(struct ZbcApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__zbcapiIsDuplicate__)(struct ZbcApi *, NvHandle, NvBool *);
     void (*__zbcapiControl_Epilogue__)(struct ZbcApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__zbcapiControlLookup__)(struct ZbcApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__zbcapiMap__)(struct ZbcApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -141,6 +142,7 @@ NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define zbcapiInternalControlForward(pGpuResource, command, pParams, size) zbcapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define zbcapiPreDestruct(pResource) zbcapiPreDestruct_DISPATCH(pResource)
 #define zbcapiUnmapFrom(pResource, pParams) zbcapiUnmapFrom_DISPATCH(pResource, pParams)
+#define zbcapiIsDuplicate(pResource, hMemory, pDuplicate) zbcapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define zbcapiControl_Epilogue(pResource, pCallContext, pParams) zbcapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define zbcapiControlLookup(pResource, pParams, ppEntry) zbcapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define zbcapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) zbcapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -148,6 +150,7 @@ NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 static inline NV_STATUS zbcapiConstructHal_56cd7a(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     return NV_OK;
 }
+
 
 #ifdef __nvoc_zbc_api_h_disabled
 static inline NV_STATUS zbcapiConstructHal(struct ZbcApi *pZbcApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -163,6 +166,7 @@ static inline NV_STATUS zbcapiConstructHal(struct ZbcApi *pZbcApi, struct CALL_C
 static inline void zbcapiDestruct_b3696a(struct ZbcApi *pZbcApi) {
     return;
 }
+
 
 #define __nvoc_zbcapiDestruct(pZbcApi) zbcapiDestruct_b3696a(pZbcApi)
 NV_STATUS zbcapiCtrlCmdSetZbcColorClear_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL_SET_ZBC_COLOR_CLEAR_PARAMS *pSetZBCClearParams);
@@ -277,6 +281,10 @@ static inline void zbcapiPreDestruct_DISPATCH(struct ZbcApi *pResource) {
 
 static inline NV_STATUS zbcapiUnmapFrom_DISPATCH(struct ZbcApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return pResource->__zbcapiUnmapFrom__(pResource, pParams);
+}
+
+static inline NV_STATUS zbcapiIsDuplicate_DISPATCH(struct ZbcApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__zbcapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void zbcapiControl_Epilogue_DISPATCH(struct ZbcApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {

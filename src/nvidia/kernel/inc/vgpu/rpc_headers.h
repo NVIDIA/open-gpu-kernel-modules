@@ -135,6 +135,7 @@
 #define NV_VGPU_MSG_RESULT_RPC_UNKNOWN_RM_ERROR          0xFF100005 /* RW--V */
 #define NV_VGPU_MSG_RESULT_RPC_UNKNOWN_VMIOP_ERROR       0xFF100006 /* RW--V */
 #define NV_VGPU_MSG_RESULT_RPC_RESERVED_HANDLE           0xFF100007 /* RW--V */
+#define NV_VGPU_MSG_RESULT_RPC_CUDA_PROFILING_DISABLED   0xFF100008 /* RW--V */
 /* RPC-specific code in result for incomplete request */
 #define NV_VGPU_MSG_RESULT_RPC_PENDING                   0xFFFFFFFF /* RW--V */
 /* shared union field */
@@ -226,5 +227,11 @@ typedef struct VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS
 #define UVM_METHOD_STREAM_MAX_GUEST_PAGES_v1C_05   500
 
 #define PMA_SCRUBBER_SHARED_BUFFER_MAX_GUEST_PAGES_v1F_0C 500
+
+/*
+ *  Maximum number of SMs that can be read in one RPC call to get error states
+ */
+
+#define VGPU_RPC_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PER_RPC_v21_06 80
 
 #endif // __vgpu_rpc_nv_headers_h__

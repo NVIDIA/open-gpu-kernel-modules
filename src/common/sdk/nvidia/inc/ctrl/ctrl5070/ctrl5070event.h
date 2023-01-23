@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl5070/ctrl5070event.finn
 //
 
-
-
-
 #include "ctrl/ctrl5070/ctrl5070base.h"
 
 /* NV50_DISPLAY event-related control commands and parameters */

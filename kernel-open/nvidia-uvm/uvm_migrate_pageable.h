@@ -34,8 +34,8 @@ typedef struct
 {
     uvm_va_space_t                  *va_space;
     struct mm_struct                *mm;
-    const unsigned long             start;
-    const unsigned long             length;
+    unsigned long                   start;
+    unsigned long                   length;
     uvm_processor_id_t              dst_id;
 
     // dst_node_id may be clobbered by uvm_migrate_pageable().

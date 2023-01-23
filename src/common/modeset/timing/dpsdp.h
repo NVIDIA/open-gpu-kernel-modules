@@ -49,8 +49,8 @@ typedef enum tagSDP_VSC_REVNUM
 {
     SDP_VSC_REVNUM_STEREO            = 1,
     SDP_VSC_REVNUM_STEREO_PSR,
-    SDP_VSC_REVNUM_STEREO_PSR2, 
-    SDP_VSC_REVNUM_PSR2_EXTN,  
+    SDP_VSC_REVNUM_STEREO_PSR2,
+    SDP_VSC_REVNUM_PSR2_EXTN,
     SDP_VSC_REVNUM_STEREO_PSR2_COLOR,
     SDP_VSC_REVNUM_STEREO_PR,
     SDP_VSC_REVNUM_STEREO_PR_COLOR,
@@ -60,7 +60,7 @@ typedef enum tagSDP_VSC_VALID_DATA_BYTES
 {
     SDP_VSC_VALID_DATA_BYTES_STEREO            = 1,
     SDP_VSC_VALID_DATA_BYTES_STEREO_PSR        = 8,
-    SDP_VSC_VALID_DATA_BYTES_PSR2              = 12, 
+    SDP_VSC_VALID_DATA_BYTES_PSR2              = 12,
     SDP_VSC_VALID_DATA_BYTES_PSR2_COLOR        = 19,
     SDP_VSC_VALID_DATA_BYTES_PR                = 16,
     SDP_VSC_VALID_DATA_BYTES_PR_COLOR          = 19,
@@ -161,7 +161,7 @@ typedef enum tagSDP_VSC_COLOR_FMT_Y_COLORIMETRY
 typedef struct tagDPSDP_DP_VSC_SDP_DESCRIPTOR
 {
     NvU8 dataSize; // the db data size
-    
+
     // header
     struct
     {
@@ -174,11 +174,11 @@ typedef struct tagDPSDP_DP_VSC_SDP_DESCRIPTOR
     } hb;
 
     // data content
-    struct 
+    struct
     {
-        // Stereo field. Note: Needs to be expanded when needed. Refer to DP1.3 spec. 
+        // Stereo field. Note: Needs to be expanded when needed. Refer to DP1.3 spec.
         NvU8 stereoInterface; // DB0
-        // PSR Field. Note: Needs to be expanded when needed. Refer to DP1.3 spec. 
+        // PSR Field. Note: Needs to be expanded when needed. Refer to DP1.3 spec.
         NvU8 psrState : 1;            //DB1
         NvU8 psrUpdateRfb : 1;
         NvU8 psrCrcValid : 1;
@@ -203,7 +203,7 @@ typedef struct tagDPSDP_DP_VSC_SDP_DESCRIPTOR
         NvU8 db14;
         NvU8 db15;
 
-        // Colorimetry Infoframe Secondary Data Package following DP1.3 spec 
+        // Colorimetry Infoframe Secondary Data Package following DP1.3 spec
         NvU8 colorimetryFormat      : 4; // DB16 infoframe per DP1.3 spec
         NvU8 pixEncoding            : 4; // DB16 infoframe per DP1.3 spec
 
@@ -229,7 +229,7 @@ typedef struct tagDPSDP_DP_VSC_SDP_DESCRIPTOR
 typedef struct tagDPSDP_DP_PR_VSC_SDP_DESCRIPTOR
 {
     NvU8 dataSize; // the db data size
-    
+
     // header
     struct
     {
@@ -242,11 +242,11 @@ typedef struct tagDPSDP_DP_PR_VSC_SDP_DESCRIPTOR
     } hb;
 
     // data content
-    struct 
+    struct
     {
-        // Stereo field. Note: Needs to be expanded when needed. Refer to DP1.3 spec. 
+        // Stereo field. Note: Needs to be expanded when needed. Refer to DP1.3 spec.
         NvU8 stereoInterface;                       // DB0
-        // PSR Field. Note: Needs to be expanded when needed. Refer to DP1.3 spec. 
+        // PSR Field. Note: Needs to be expanded when needed. Refer to DP1.3 spec.
         NvU8 prState                : 1;            // DB1
         NvU8 prReserved             : 1;            // Always ZERO
         NvU8 prCrcValid             : 1;
@@ -268,7 +268,7 @@ typedef struct tagDPSDP_DP_PR_VSC_SDP_DESCRIPTOR
         NvU8 db14;
         NvU8 db15;
 
-        // Colorimetry Infoframe Secondary Data Package following DP1.3 spec 
+        // Colorimetry Infoframe Secondary Data Package following DP1.3 spec
         NvU8 colorimetryFormat      : 4; // DB16 infoframe per DP1.3 spec
         NvU8 pixEncoding            : 4; // DB16 infoframe per DP1.3 spec
 
@@ -294,12 +294,12 @@ typedef struct tagDPSDP_DP_PR_VSC_SDP_DESCRIPTOR
 typedef struct tagDPSDP_DESCRIPTOR
 {
     NvU8 dataSize;
-    
+
     // header byte
-    struct 
+    struct
     {
         NvU8 hb0;
-        NvU8 hb1; 
+        NvU8 hb1;
         NvU8 hb2;
         NvU8 hb3;
     } hb;
@@ -308,7 +308,7 @@ typedef struct tagDPSDP_DESCRIPTOR
     struct
     {
         NvU8 db0;
-        NvU8 db1; 
+        NvU8 db1;
         NvU8 db2;
         NvU8 db3;
         NvU8 db4;

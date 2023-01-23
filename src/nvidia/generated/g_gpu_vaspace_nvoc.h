@@ -245,6 +245,7 @@ struct OBJGVASPACE {
     NV_STATUS (*__gvaspaceGetPteInfo__)(struct OBJGVASPACE *, struct OBJGPU *, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *, RmPhysAddr *);
     NV_STATUS (*__gvaspaceSetPteInfo__)(struct OBJGVASPACE *, struct OBJGPU *, NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS *);
     NvBool (*__gvaspaceIsInternalVaRestricted__)(struct OBJGVASPACE *);
+    NV_STATUS (*__gvaspaceFreeV2__)(struct OBJGVASPACE *, NvU64, NvU64 *);
     NvU64 (*__gvaspaceGetVaLimit__)(struct OBJGVASPACE *);
     NvU64 (*__gvaspaceGetVaStart__)(struct OBJGVASPACE *);
     struct OBJEHEAP *pHeap;
@@ -328,6 +329,7 @@ NV_STATUS __nvoc_objCreate_OBJGVASPACE(OBJGVASPACE**, Dynamic*, NvU32);
 #define gvaspaceGetPteInfo(pVAS, pGpu, pParams, pPhysAddr) gvaspaceGetPteInfo_DISPATCH(pVAS, pGpu, pParams, pPhysAddr)
 #define gvaspaceSetPteInfo(pVAS, pGpu, pParams) gvaspaceSetPteInfo_DISPATCH(pVAS, pGpu, pParams)
 #define gvaspaceIsInternalVaRestricted(pGVAS) gvaspaceIsInternalVaRestricted_DISPATCH(pGVAS)
+#define gvaspaceFreeV2(pGVAS, vAddr, pSize) gvaspaceFreeV2_DISPATCH(pGVAS, vAddr, pSize)
 #define gvaspaceGetVaLimit(pVAS) gvaspaceGetVaLimit_DISPATCH(pVAS)
 #define gvaspaceGetVaStart(pVAS) gvaspaceGetVaStart_DISPATCH(pVAS)
 NV_STATUS gvaspaceConstruct__IMPL(struct OBJGVASPACE *pGVAS, NvU32 classId, NvU32 vaspaceId, NvU64 vaStart, NvU64 vaLimit, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 flags);
@@ -492,6 +494,12 @@ static inline NvBool gvaspaceIsInternalVaRestricted_DISPATCH(struct OBJGVASPACE 
     return pGVAS->__gvaspaceIsInternalVaRestricted__(pGVAS);
 }
 
+NV_STATUS gvaspaceFreeV2_IMPL(struct OBJGVASPACE *pGVAS, NvU64 vAddr, NvU64 *pSize);
+
+static inline NV_STATUS gvaspaceFreeV2_DISPATCH(struct OBJGVASPACE *pGVAS, NvU64 vAddr, NvU64 *pSize) {
+    return pGVAS->__gvaspaceFreeV2__(pGVAS, vAddr, pSize);
+}
+
 static inline NvU64 gvaspaceGetVaLimit_DISPATCH(struct OBJGVASPACE *pVAS) {
     return pVAS->__gvaspaceGetVaLimit__(pVAS);
 }
@@ -508,8 +516,10 @@ static inline NvU32 gvaspaceGetReservedVaspaceBase(struct OBJGVASPACE *pGVAS, st
 }
 
 void gvaspaceDestruct_IMPL(struct OBJGVASPACE *pGVAS);
+
 #define __nvoc_gvaspaceDestruct(pGVAS) gvaspaceDestruct_IMPL(pGVAS)
 NV_STATUS gvaspaceExternalRootDirCommit_IMPL(struct OBJGVASPACE *pGVAS, NvHandle hClient, struct OBJGPU *pGpu, NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS *pParams);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceExternalRootDirCommit(struct OBJGVASPACE *pGVAS, NvHandle hClient, struct OBJGPU *pGpu, NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -520,6 +530,7 @@ static inline NV_STATUS gvaspaceExternalRootDirCommit(struct OBJGVASPACE *pGVAS,
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceExternalRootDirRevoke_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS *pParams);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceExternalRootDirRevoke(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -530,6 +541,7 @@ static inline NV_STATUS gvaspaceExternalRootDirRevoke(struct OBJGVASPACE *pGVAS,
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceResize_IMPL(struct OBJGVASPACE *pGVAS, NV0080_CTRL_DMA_SET_VA_SPACE_SIZE_PARAMS *pParams);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceResize(struct OBJGVASPACE *pGVAS, NV0080_CTRL_DMA_SET_VA_SPACE_SIZE_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -540,6 +552,7 @@ static inline NV_STATUS gvaspaceResize(struct OBJGVASPACE *pGVAS, NV0080_CTRL_DM
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceUpdatePde2_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *pParams);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceUpdatePde2(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -550,6 +563,7 @@ static inline NV_STATUS gvaspaceUpdatePde2(struct OBJGVASPACE *pGVAS, struct OBJ
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 const struct GMMU_FMT *gvaspaceGetGmmuFmt_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline const struct GMMU_FMT *gvaspaceGetGmmuFmt(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -560,6 +574,7 @@ static inline const struct GMMU_FMT *gvaspaceGetGmmuFmt(struct OBJGVASPACE *pGVA
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 GVAS_GPU_STATE *gvaspaceGetGpuState_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline GVAS_GPU_STATE *gvaspaceGetGpuState(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -570,6 +585,7 @@ static inline GVAS_GPU_STATE *gvaspaceGetGpuState(struct OBJGVASPACE *pGVAS, str
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 void gvaspaceWalkUserCtxAcquire_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, const GVAS_BLOCK *pVASBlock, struct MMU_WALK_USER_CTX *pUserCtx);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline void gvaspaceWalkUserCtxAcquire(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, const GVAS_BLOCK *pVASBlock, struct MMU_WALK_USER_CTX *pUserCtx) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -579,6 +595,7 @@ static inline void gvaspaceWalkUserCtxAcquire(struct OBJGVASPACE *pGVAS, struct 
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 void gvaspaceWalkUserCtxRelease_IMPL(struct OBJGVASPACE *pGVAS, struct MMU_WALK_USER_CTX *pUserCtx);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline void gvaspaceWalkUserCtxRelease(struct OBJGVASPACE *pGVAS, struct MMU_WALK_USER_CTX *pUserCtx) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -588,6 +605,7 @@ static inline void gvaspaceWalkUserCtxRelease(struct OBJGVASPACE *pGVAS, struct 
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceIncChanGrpRefCnt_IMPL(struct OBJGVASPACE *pGVAS, KernelChannelGroup *pKernelChannelGroup);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceIncChanGrpRefCnt(struct OBJGVASPACE *pGVAS, KernelChannelGroup *pKernelChannelGroup) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -598,6 +616,7 @@ static inline NV_STATUS gvaspaceIncChanGrpRefCnt(struct OBJGVASPACE *pGVAS, Kern
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceDecChanGrpRefCnt_IMPL(struct OBJGVASPACE *pGVAS, KernelChannelGroup *pKernelChannelGroup);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceDecChanGrpRefCnt(struct OBJGVASPACE *pGVAS, KernelChannelGroup *pKernelChannelGroup) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -608,6 +627,7 @@ static inline NV_STATUS gvaspaceDecChanGrpRefCnt(struct OBJGVASPACE *pGVAS, Kern
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NvU32 gvaspaceGetChanGrpRefCnt_IMPL(struct OBJGVASPACE *pGVAS, KernelChannelGroup *pKernelChannelGroup);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NvU32 gvaspaceGetChanGrpRefCnt(struct OBJGVASPACE *pGVAS, KernelChannelGroup *pKernelChannelGroup) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -618,6 +638,7 @@ static inline NvU32 gvaspaceGetChanGrpRefCnt(struct OBJGVASPACE *pGVAS, KernelCh
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceCheckChanGrpRefCnt_IMPL(struct OBJGVASPACE *pGVAS, KernelChannelGroup *pKernelChannelGroup);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceCheckChanGrpRefCnt(struct OBJGVASPACE *pGVAS, KernelChannelGroup *pKernelChannelGroup) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -628,6 +649,7 @@ static inline NV_STATUS gvaspaceCheckChanGrpRefCnt(struct OBJGVASPACE *pGVAS, Ke
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceUnregisterAllChanGrps_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceUnregisterAllChanGrps(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -638,6 +660,7 @@ static inline NV_STATUS gvaspaceUnregisterAllChanGrps(struct OBJGVASPACE *pGVAS,
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceReservePageTableEntries_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi, const NvU64 pageSizeMask);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceReservePageTableEntries(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi, const NvU64 pageSizeMask) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -648,6 +671,7 @@ static inline NV_STATUS gvaspaceReservePageTableEntries(struct OBJGVASPACE *pGVA
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceReleasePageTableEntries_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi, const NvU64 pageSizeMask);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceReleasePageTableEntries(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi, const NvU64 pageSizeMask) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -658,6 +682,7 @@ static inline NV_STATUS gvaspaceReleasePageTableEntries(struct OBJGVASPACE *pGVA
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceGetPageLevelInfo_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceGetPageLevelInfo(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -668,6 +693,7 @@ static inline NV_STATUS gvaspaceGetPageLevelInfo(struct OBJGVASPACE *pGVAS, stru
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceCopyServerRmReservedPdesToServerRm_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceCopyServerRmReservedPdesToServerRm(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -678,6 +704,7 @@ static inline NV_STATUS gvaspaceCopyServerRmReservedPdesToServerRm(struct OBJGVA
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NV_STATUS gvaspaceGetFreeHeap_IMPL(struct OBJGVASPACE *pGVAS, NvU64 *pFreeSize);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NV_STATUS gvaspaceGetFreeHeap(struct OBJGVASPACE *pGVAS, NvU64 *pFreeSize) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -688,6 +715,7 @@ static inline NV_STATUS gvaspaceGetFreeHeap(struct OBJGVASPACE *pGVAS, NvU64 *pF
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 NvBool gvaspaceIsInUse_IMPL(struct OBJGVASPACE *pGVAS);
+
 #ifdef __nvoc_gpu_vaspace_h_disabled
 static inline NvBool gvaspaceIsInUse(struct OBJGVASPACE *pGVAS) {
     NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
@@ -695,6 +723,28 @@ static inline NvBool gvaspaceIsInUse(struct OBJGVASPACE *pGVAS) {
 }
 #else //__nvoc_gpu_vaspace_h_disabled
 #define gvaspaceIsInUse(pGVAS) gvaspaceIsInUse_IMPL(pGVAS)
+#endif //__nvoc_gpu_vaspace_h_disabled
+
+NV_STATUS gvaspaceReserveSplitVaSpace_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu);
+
+#ifdef __nvoc_gpu_vaspace_h_disabled
+static inline NV_STATUS gvaspaceReserveSplitVaSpace(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_gpu_vaspace_h_disabled
+#define gvaspaceReserveSplitVaSpace(pGVAS, pGpu) gvaspaceReserveSplitVaSpace_IMPL(pGVAS, pGpu)
+#endif //__nvoc_gpu_vaspace_h_disabled
+
+NV_STATUS gvaspaceCopyServerReservedPdes_IMPL(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *pCopyServerReservedPdesParams);
+
+#ifdef __nvoc_gpu_vaspace_h_disabled
+static inline NV_STATUS gvaspaceCopyServerReservedPdes(struct OBJGVASPACE *pGVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *pCopyServerReservedPdesParams) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGVASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_gpu_vaspace_h_disabled
+#define gvaspaceCopyServerReservedPdes(pGVAS, pGpu, pCopyServerReservedPdesParams) gvaspaceCopyServerReservedPdes_IMPL(pGVAS, pGpu, pCopyServerReservedPdesParams)
 #endif //__nvoc_gpu_vaspace_h_disabled
 
 #undef PRIVATE_FIELD

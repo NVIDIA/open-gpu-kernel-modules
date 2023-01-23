@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -235,5 +235,8 @@ bool uvm_pushbuffer_has_space(uvm_pushbuffer_t *pushbuffer);
 
 // Helper to print pushbuffer state for debugging
 void uvm_pushbuffer_print(uvm_pushbuffer_t *pushbuffer);
+
+// Helper to retrieve the pushbuffer->memory GPU VA.
+NvU64 uvm_pushbuffer_get_gpu_va_base(uvm_pushbuffer_t *pushbuffer);
 
 #endif // __UVM_PUSHBUFFER_H__

@@ -41,8 +41,8 @@ void nvSetVrrActive(NVDevEvoPtr pDevEvo, NvBool active);
 void nvApplyVrrBaseFlipOverrides(const NVDispEvoRec *pDispEvo, NvU32 head,
                                  const NVFlipChannelEvoHwState *pOld,
                                  NVFlipChannelEvoHwState *pNew);
-void nvSetNextVrrFlipTypeAndIndex(NVDevEvoPtr pDevEvo,
-                                  struct NvKmsFlipReply *reply);
+enum NvKmsVrrFlipType nvGetActiveVrrType(const NVDevEvoRec *pDevEvo);
+NvS32 nvIncVrrSemaphoreIndex(NVDevEvoPtr pDevEvo);
 void nvTriggerVrrUnstallMoveCursor(NVDispEvoPtr pDispEvo);
 void nvTriggerVrrUnstallSetCursorImage(NVDispEvoPtr pDispEvo,
                                        NvBool ctxDmaChanged);

@@ -46,7 +46,7 @@ static struct proc_dir_entry *uvm_proc_dir;
 static struct proc_dir_entry *uvm_proc_gpus;
 static struct proc_dir_entry *uvm_proc_cpu;
 
-NV_STATUS uvm_procfs_init()
+NV_STATUS uvm_procfs_init(void)
 {
     if (!uvm_procfs_is_enabled())
         return NV_OK;
@@ -66,41 +66,17 @@ NV_STATUS uvm_procfs_init()
     return NV_OK;
 }
 
-void uvm_procfs_exit()
+void uvm_procfs_exit(void)
 {
-    uvm_procfs_destroy_entry(uvm_proc_dir);
+    proc_remove(uvm_proc_dir);
 }
 
-// TODO: Bug 1767237: Copied from nv-procfs.c. Refactor it out to
-//       nv-procfs-common.c.
-static void procfs_destroy_entry_with_root(struct proc_dir_entry *entry, struct proc_dir_entry *delimiter)
-{
-#if defined(NV_PROC_REMOVE_PRESENT)
-    proc_remove(entry);
-#else
-    while (entry) {
-        struct proc_dir_entry *next = entry->next;
-        if (entry->subdir)
-            procfs_destroy_entry_with_root(entry->subdir, delimiter);
-        remove_proc_entry(entry->name, entry->parent);
-        if (entry == delimiter)
-            break;
-        entry = next;
-    }
-#endif
-}
-
-void uvm_procfs_destroy_entry(struct proc_dir_entry *entry)
-{
-    procfs_destroy_entry_with_root(entry, entry);
-}
-
-struct proc_dir_entry *uvm_procfs_get_gpu_base_dir()
+struct proc_dir_entry *uvm_procfs_get_gpu_base_dir(void)
 {
     return uvm_proc_gpus;
 }
 
-struct proc_dir_entry *uvm_procfs_get_cpu_base_dir()
+struct proc_dir_entry *uvm_procfs_get_cpu_base_dir(void)
 {
     return uvm_proc_cpu;
 }

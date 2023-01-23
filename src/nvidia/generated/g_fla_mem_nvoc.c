@@ -145,8 +145,12 @@ static NV_STATUS __nvoc_thunk_RmResource_flamemControl_Prologue(struct FlaMemory
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_FlaMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_flamemIsReady(struct FlaMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_FlaMemory_Memory.offset));
+static NvBool __nvoc_thunk_Memory_flamemIsGpuMapAllowed(struct FlaMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_flamemIsReady(struct FlaMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_flamemCheckCopyPermissions(struct FlaMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -155,6 +159,10 @@ static NV_STATUS __nvoc_thunk_Memory_flamemCheckCopyPermissions(struct FlaMemory
 
 static void __nvoc_thunk_RsResource_flamemPreDestruct(struct FlaMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_FlaMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_flamemIsDuplicate(struct FlaMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_flamemUnmapFrom(struct FlaMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -246,11 +254,15 @@ static void __nvoc_init_funcTable_FlaMemory_1(FlaMemory *pThis) {
 
     pThis->__flamemControl_Prologue__ = &__nvoc_thunk_RmResource_flamemControl_Prologue;
 
+    pThis->__flamemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_flamemIsGpuMapAllowed;
+
     pThis->__flamemIsReady__ = &__nvoc_thunk_Memory_flamemIsReady;
 
     pThis->__flamemCheckCopyPermissions__ = &__nvoc_thunk_Memory_flamemCheckCopyPermissions;
 
     pThis->__flamemPreDestruct__ = &__nvoc_thunk_RsResource_flamemPreDestruct;
+
+    pThis->__flamemIsDuplicate__ = &__nvoc_thunk_Memory_flamemIsDuplicate;
 
     pThis->__flamemUnmapFrom__ = &__nvoc_thunk_RsResource_flamemUnmapFrom;
 

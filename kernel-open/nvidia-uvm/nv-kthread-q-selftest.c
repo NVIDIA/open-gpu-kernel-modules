@@ -481,16 +481,6 @@ static int _check_cpu_affinity_test(void)
     int result, node;
     nv_kthread_q_t local_q;
 
-    // If the API does not support CPU affinity, check whether the correct
-    // error code is returned.
-    // Non-affinitized queue allocation has been verified by previous test
-    // so just ensure that the affinitized version also works.
-    if (!NV_KTHREAD_Q_SUPPORTS_AFFINITY()) {
-        result = nv_kthread_q_init_on_node(&local_q, "should_fail", 0);
-        TEST_CHECK_RET(result == -ENOTSUPP);
-        return 0;
-    }
-
     for_each_online_node(node) {
         unsigned i;
         const unsigned max_i = 100;

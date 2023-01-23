@@ -30,9 +30,11 @@
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/bus/kern_bus.h"
 #include "core/locks.h"
+#include "virtualization/kernel_vgpu_mgr.h"
 #include "vgpu/rpc.h"
 #include "core/thread_state.h"
 #include "nvRmReg.h"
+#include "gpu/fsp/kern_fsp.h"
 #include "gpu/mem_mgr/phys_mem_allocator/numa.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/rmapi/rs_utils.h"
@@ -90,18 +92,12 @@ memmgrDestruct_IMPL
 
     for (i = 0; i < NUM_FBSR_TYPES; i++)
     {
-        if (pMemoryManager->pFbsr[i])
-        {
-            objDelete(pMemoryManager->pFbsr[i]);
-            pMemoryManager->pFbsr[i] = NULL;
-        }
+        objDelete(pMemoryManager->pFbsr[i]);
+        pMemoryManager->pFbsr[i] = NULL;
     }
 
-    if (pMemoryManager->pHeap != NULL)
-    {
-        objDelete(pMemoryManager->pHeap);
-        pMemoryManager->pHeap = NULL;
-    }
+    objDelete(pMemoryManager->pHeap);
+    pMemoryManager->pHeap = NULL;
 
     pMemoryManager->MIGMemoryPartitioningInfo.partitionableMemoryRange = NV_RANGE_EMPTY;
 }
@@ -131,7 +127,13 @@ _memmgrInitRegistryOverrides(OBJGPU *pGpu, MemoryManager *pMemoryManager)
     {
         pMemoryManager->bScrubOnFreeEnabled = NV_FALSE;
     }
-    
+
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_DISABLE_FAST_SCRUBBER,
+                             &data32) == NV_OK) && data32)
+    {
+        pMemoryManager->bFastScrubberEnabled = NV_FALSE;
+    }
+
     if (NV_OK == osReadRegistryDword(pGpu, NV_REG_STR_RM_SYSMEM_PAGE_SIZE, &data32))
     {
         switch (data32)
@@ -194,54 +196,12 @@ _memmgrInitRegistryOverrides(OBJGPU *pGpu, MemoryManager *pMemoryManager)
         pMemoryManager->bEnableFbsrPagedDma = !!data32;
     }
 
-    if (osReadRegistryDword(pGpu,
-                            NV_REG_STR_RM_IGNORE_UPPER_MEMORY,
-                            &data32) == NV_OK)
-    {
-        // Ignore upper memory.
-        pMemoryManager->bIgnoreUpperMemory = !!data32;
-    }
-
-    // Allow increasing the RM reserved space.
-    if (osReadRegistryDword(pGpu, NV_REG_STR_BUG_1698088_WAR, &data32) == NV_OK)
-    {
-        if (data32 == NV_REG_STR_BUG_1698088_WAR_ENABLE)
-        {
-            pMemoryManager->bBug1698088IncreaseRmReserveMemoryWar = NV_TRUE;
-        }
-    }
-
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_FBSR_FILE_MODE, &data32) == NV_OK)
     {
         if (data32 && RMCFG_FEATURE_PLATFORM_UNIX)
         {
             pMemoryManager->bEnableFbsrFileMode = NV_TRUE;
         }
-    }
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_NO_ECC_FB_SCRUB,
-                            &data32) == NV_OK)
-    {
-        pMemoryManager->bEccScrubOverride = NV_TRUE;
-    }
-
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_INIT_SCRUB,
-                            &data32) == NV_OK) && (data32))
-    {
-        pMemoryManager->bScrubberInitialized = NV_TRUE;
-    }
-
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DISABLE_ASYNC_MEM_SCRUB,
-                        &data32) == NV_OK)
-    {
-        // disable async scrub
-        pMemoryManager->bDisableAsyncScrubforMods = !!data32;
-    }
-
-    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_INCREASE_ECC_SCRUB_TIMEOUT,
-                        &data32) == NV_OK) && (data32))
-    {
-        // increase ECC scrub timeout
-        pMemoryManager->bBug1441072EccScrubWar = NV_TRUE;
     }
 
     //
@@ -524,6 +484,32 @@ memmgrStateDestroy_IMPL
     // RMCONFIG: only if FBSR engine is enabled
     if (RMCFG_MODULE_FBSR)
     {
+        // Cleanup fbsrReservedRanges
+        if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_BEFORE_BAR2PTE] != NULL)
+            memdescDestroy(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_BEFORE_BAR2PTE]);
+
+        if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE] != NULL)
+            memdescDestroy(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE]);
+
+        if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_HEAP] != NULL)
+            memdescDestroy(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_HEAP]);
+
+        if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_NON_WPR] != NULL)
+            memdescDestroy(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_NON_WPR]);
+
+        if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_WPR] != NULL)
+            memdescDestroy(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_WPR]);
+
+        if (pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_VGA_WORKSPACE] != NULL)
+            memdescDestroy(pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_VGA_WORKSPACE]);
+
+        pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_BEFORE_BAR2PTE] = NULL;
+        pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_AFTER_BAR2PTE]  = NULL;
+        pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_HEAP]       = NULL;
+        pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_NON_WPR]    = NULL;
+        pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_GSP_WPR]        = NULL;
+        pMemoryManager->fbsrReservedRanges[FBSR_RESERVED_INST_MEMORY_VGA_WORKSPACE]  = NULL;
+
         for (i = 0; i < NUM_FBSR_TYPES; i++)
         {
             fbsrDestroy_HAL(pGpu, pMemoryManager->pFbsr[i]);
@@ -615,7 +601,7 @@ memmgrCreateHeap_IMPL
 
         pMemoryManager->pHeap = newHeap;
 
-        if (memmgrIsPmaEnabled(pMemoryManager) && 
+        if (memmgrIsPmaEnabled(pMemoryManager) &&
             memmgrIsPmaSupportedOnPlatform(pMemoryManager))
         {
             portMemSet(&pMemoryManager->pHeap->pmaObject, 0, sizeof(pMemoryManager->pHeap->pmaObject));
@@ -1343,13 +1329,13 @@ memmgrAllocateConsoleRegion_IMPL
 
     NV_STATUS status     = NV_OK;
     NvU32     consoleRegionId = 0x0;
-    NvU64     regionSize; 
-    
+    NvU64     regionSize;
+
     if (pMemoryManager->Ram.ReservedConsoleDispMemSize > 0)
     {
-        pConsoleFbRegion->base = pMemoryManager->Ram.fbRegion[consoleRegionId].base; 
+        pConsoleFbRegion->base = pMemoryManager->Ram.fbRegion[consoleRegionId].base;
         pConsoleFbRegion->limit = pMemoryManager->Ram.fbRegion[consoleRegionId].limit;
-        
+
         regionSize = pConsoleFbRegion->limit - pConsoleFbRegion->base + 1;
 
         // Once the console is reserved, we don't expect to reserve it again
@@ -1459,6 +1445,7 @@ memmgrCalcReservedFbSpace_IMPL
     NvU32   idxISORegion  = 0;
     NvU32   idxFastRegion = 0;
     NvU32   idxSlowRegion = 0;
+    NvBool  bAllocProtected = NV_FALSE;
 
     //
     // This is a hack solely for Vista (on Vista the OS controls the majority of heap).
@@ -1497,20 +1484,20 @@ memmgrCalcReservedFbSpace_IMPL
 
             // Check only non-reserved regions (which are typically unpopulated blackholes in address space)
             if ((!pFbRegion->bRsvdRegion) &&
-                (!pFbRegion->bProtected)  &&
+                (bAllocProtected || !pFbRegion->bProtected)  &&
                 (regionSize >= (rsvdFastSize + rsvdSlowSize + rsvdISOSize)))
             {
                 // Find the fastest region
                 if ((pFbRegion->performance > pMemoryManager->Ram.fbRegion[idxFastRegion].performance)
                         || pMemoryManager->Ram.fbRegion[idxFastRegion].bRsvdRegion
-                        || pMemoryManager->Ram.fbRegion[idxFastRegion].bProtected)
+                        || (!bAllocProtected && pMemoryManager->Ram.fbRegion[idxFastRegion].bProtected))
                 {
                     idxFastRegion = i;
                 }
                 // Find the slowest region
                 if ((pFbRegion->performance < pMemoryManager->Ram.fbRegion[idxSlowRegion].performance)
                         || pMemoryManager->Ram.fbRegion[idxSlowRegion].bRsvdRegion
-                        || pMemoryManager->Ram.fbRegion[idxSlowRegion].bProtected)
+                        || (!bAllocProtected && pMemoryManager->Ram.fbRegion[idxSlowRegion].bProtected))
                 {
                     idxSlowRegion = i;
                 }
@@ -1519,7 +1506,7 @@ memmgrCalcReservedFbSpace_IMPL
                 {
                     if ((!pMemoryManager->Ram.fbRegion[idxISORegion].bSupportISO) ||
                         (pFbRegion->performance > pMemoryManager->Ram.fbRegion[idxISORegion].performance)
-                        || pMemoryManager->Ram.fbRegion[idxISORegion].bProtected)
+                        || (!bAllocProtected && pMemoryManager->Ram.fbRegion[idxISORegion].bProtected))
                     {
                         idxISORegion = i;
                     }
@@ -1535,10 +1522,12 @@ memmgrCalcReservedFbSpace_IMPL
         NV_ASSERT(!pMemoryManager->Ram.fbRegion[idxFastRegion].bRsvdRegion);
         NV_ASSERT(!pMemoryManager->Ram.fbRegion[idxSlowRegion].bRsvdRegion);
 
-        // Can't put reserved memory in protected region
-        NV_ASSERT(!pMemoryManager->Ram.fbRegion[idxISORegion].bProtected);
-        NV_ASSERT(!pMemoryManager->Ram.fbRegion[idxFastRegion].bProtected);
-        NV_ASSERT(!pMemoryManager->Ram.fbRegion[idxSlowRegion].bProtected);
+        if (!bAllocProtected)
+        {
+            NV_ASSERT(!pMemoryManager->Ram.fbRegion[idxISORegion].bProtected);
+            NV_ASSERT(!pMemoryManager->Ram.fbRegion[idxFastRegion].bProtected);
+            NV_ASSERT(!pMemoryManager->Ram.fbRegion[idxSlowRegion].bProtected);
+        }
 
         //
         // Vista expects to be able to VidHeapControl allocate a cursor in ISO
@@ -1972,7 +1961,7 @@ memmgrFillComprInfo_IMPL
     pComprInfo->compPageShift = pMemorySystemConfig->comprPageShift;
     pComprInfo->compTagLineMin = compTagStartOffset;
     pComprInfo->compPageIndexLo = (NvU32)(surfOffset >> pComprInfo->compPageShift);
-    pComprInfo->compPageIndexHi = (NvU32)((surfOffset + pageSize * pageCount - 1) >> pComprInfo->compPageShift);
+    pComprInfo->compPageIndexHi = (NvU32)((surfOffset + (NvU64)pageSize * (NvU64)pageCount - 1) >> pComprInfo->compPageShift);
     pComprInfo->compTagLineMultiplier = 1;
 
     return NV_OK;
@@ -2007,7 +1996,16 @@ memmgrGetKindComprForGpu_KERNEL
     }
     else
     {
-        memmgrFillComprInfoUncompressed(pMemoryManager, kind, pComprInfo);
+        if (ctagId == FB_HWRESID_CTAGID_VAL_FERMI(0xcdcdcdcd))
+        {
+            portMemSet(pComprInfo, 0, sizeof(*pComprInfo));
+
+            pComprInfo->kind = memmgrGetUncompressedKind_HAL(pMappingGpu, pMemoryManager, kind, NV_TRUE);
+        }
+        else
+        {
+            memmgrFillComprInfoUncompressed(pMemoryManager, kind, pComprInfo);
+        }
     }
 
     *pKind = pComprInfo->kind;
@@ -2404,6 +2402,7 @@ memmgrPageLevelPoolsCreate_IMPL
                                     (pFmt->version == GMMU_FMT_VERSION_1) ? POOL_CONFIG_GMMU_FMT_1 : POOL_CONFIG_GMMU_FMT_2);
 
         NV_ASSERT(NV_OK == status);
+
     }
     return status;
 }
@@ -2503,7 +2502,7 @@ memmgrPmaInitialize_IMPL
     NV_STATUS status = NV_OK;
     NvBool bNumaEnabled = osNumaOnliningEnabled(pGpu->pOsGpuInfo);
 
-    NV_ASSERT(memmgrIsPmaEnabled(pMemoryManager) && 
+    NV_ASSERT(memmgrIsPmaEnabled(pMemoryManager) &&
               memmgrIsPmaSupportedOnPlatform(pMemoryManager));
 
     if (memmgrIsPmaForcePersistence(pMemoryManager))
@@ -2548,12 +2547,12 @@ memmgrPmaInitialize_IMPL
         {
             if (numaSkipReclaimVal > NV_REG_STR_RM_NUMA_ALLOC_SKIP_RECLAIM_PERCENTAGE_MAX)
             {
-                numaSkipReclaimVal = NV_REG_STR_RM_NUMA_ALLOC_SKIP_RECLAIM_PERCENTAGE_MAX; 
+                numaSkipReclaimVal = NV_REG_STR_RM_NUMA_ALLOC_SKIP_RECLAIM_PERCENTAGE_MAX;
             }
         }
         pmaNumaSetReclaimSkipThreshold(pPma, numaSkipReclaimVal);
     }
-    
+
     return NV_OK;
 }
 
@@ -3038,5 +3037,44 @@ memmgrReserveMemoryForFsp_IMPL
     MemoryManager *pMemoryManager
 )
 {
+    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+
+    //
+    // If we sent FSP commands to boot ACR, we need to allocate the surfaces
+    // used by FSP and ACR as WPR/FRTS here from the reserved heap
+    //
+    if (pKernelFsp && (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM) &&
+        (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_BOOT_COMMAND_OK))))
+    {
+
+        // For GSP-RM flow, we don't need to allocate WPR since it is handled by CPU
+        if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
+        {
+            return NV_OK;
+        }
+
+    }
     return NV_OK;
+}
+
+NvU64
+memmgrGetVgpuHostRmReservedFb_KERNEL
+(
+    OBJGPU         *pGpu,
+    MemoryManager  *pMemoryManager,
+    NvU32           vgpuTypeId
+)
+{
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_INTERNAL_MEMMGR_GET_VGPU_CONFIG_HOST_RESERVED_FB_PARAMS params = {0};
+
+    params.vgpuTypeId = vgpuTypeId;
+    // Send to GSP to get amount of FB reserved for the host
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                           pGpu->hInternalClient,
+                                           pGpu->hInternalSubdevice,
+                                           NV2080_CTRL_CMD_INTERNAL_MEMMGR_GET_VGPU_CONFIG_HOST_RESERVED_FB,
+                                           &params,
+                                           sizeof(params)));
+    return params.hostReservedFb;
 }

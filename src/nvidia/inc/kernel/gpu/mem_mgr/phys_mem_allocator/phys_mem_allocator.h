@@ -45,6 +45,12 @@
 #include "addrtree.h"
 #include "nvmisc.h"
 
+#if defined(SRT_BUILD)
+#define RMCFG_MODULE_x 1
+#else
+#include "rmconfig.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -92,6 +98,7 @@ typedef struct SCRUB_NODE SCRUB_NODE;
 #define PMA_ALLOCATE_NO_ZERO                NVBIT(10)
 #define PMA_ALLOCATE_TURN_BLACKLIST_OFF     NVBIT(11)
 #define PMA_ALLOCATE_ALLOW_PARTIAL          NVBIT(12)
+#define PMA_ALLOCATE_REVERSE_ALLOC          NVBIT(13)
 
 // Output flags
 #define PMA_ALLOCATE_RESULT_IS_ZERO         NVBIT(0)
@@ -150,11 +157,20 @@ typedef struct _RANGELISTTYPE
     struct _RANGELISTTYPE  *pNext;
 } RANGELISTTYPE, *PRANGELISTTYPE;
 
+typedef enum
+{
+    MEMORY_PROTECTION_UNPROTECTED = 0,
+    MEMORY_PROTECTION_PROTECTED   = 1
+} MEMORY_PROTECTION;
+
 /*!
  * @brief Callbacks to UVM for eviction
  */
-typedef NV_STATUS (*pmaEvictPagesCb_t)(void *ctxPtr, NvU32 pageSize, NvU64 *pPages, NvU32 count, NvU64 physBegin, NvU64 physEnd);
-typedef NV_STATUS (*pmaEvictRangeCb_t)(void *ctxPtr, NvU64 physBegin, NvU64 physEnd);
+typedef NV_STATUS (*pmaEvictPagesCb_t)(void *ctxPtr, NvU32 pageSize, NvU64 *pPages,
+                                       NvU32 count, NvU64 physBegin, NvU64 physEnd,
+                                       MEMORY_PROTECTION prot);
+typedef NV_STATUS (*pmaEvictRangeCb_t)(void *ctxPtr, NvU64 physBegin, NvU64 physEnd,
+                                       MEMORY_PROTECTION prot);
 
 /*!
  * @brief Pluggable data structure management. Currently we have regmap and address tree.
@@ -168,10 +184,10 @@ typedef void  (*pmaMapChangePageStateAttrib_t)(void *pMap, NvU64 startFrame, NvU
 typedef PMA_PAGESTATUS (*pmaMapRead_t)(void *pMap, NvU64 frameNum, NvBool readAttrib);
 typedef NV_STATUS (*pmaMapScanContiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
                                             NvU64 numPages, NvU64 *freelist, NvU32 pageSize, NvU64 alignment,
-                                            NvU64 *pagesAllocated, NvBool bSkipEvict);
+                                            NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 typedef NV_STATUS (*pmaMapScanDiscontiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
                                                NvU64 numPages, NvU64 *freelist, NvU32 pageSize, NvU64 alignment,
-                                               NvU64 *pagesAllocated, NvBool bSkipEvict);
+                                               NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 typedef void (*pmaMapGetSize_t)(void *pMap, NvU64 *pBytesTotal);
 typedef void (*pmaMapGetLargestFree_t)(void *pMap, NvU64 *pLargestFree);
 typedef NV_STATUS (*pmaMapScanContiguousNumaEviction_t)(void *pMap, NvU64 addrBase, NvLength actualSize,

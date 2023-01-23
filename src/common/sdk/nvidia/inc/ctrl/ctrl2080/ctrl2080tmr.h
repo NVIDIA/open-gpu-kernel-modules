@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl2080/ctrl2080tmr.finn
 //
 
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 /* NV20_SUBDEVICE_TIMER related control commands and parameters */

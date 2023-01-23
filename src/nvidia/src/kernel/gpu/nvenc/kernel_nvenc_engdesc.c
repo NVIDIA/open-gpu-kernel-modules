@@ -33,6 +33,7 @@
 #include "class/clc4b7.h"
 #include "class/clb4b7.h"
 #include "class/clc7b7.h"
+#include "class/clc9b7.h"
 
 /*
  * This function returns an engine descriptor corresponding to the class
@@ -72,6 +73,7 @@ msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAl
         case NVC4B7_VIDEO_ENCODER:
         case NVB4B7_VIDEO_ENCODER:
         case NVC7B7_VIDEO_ENCODER:
+        case NVC9B7_VIDEO_ENCODER:
             engineInstance = pMsencAllocParms->engineInstance;
             break;
         default:
@@ -82,6 +84,7 @@ msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAl
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
+        RM_ENGINE_TYPE rmEngineType;
 
         NV_ASSERT_OK(
             kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
@@ -89,9 +92,9 @@ msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAl
 
         NV_ASSERT_OK(
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
-                                              NV2080_ENGINE_TYPE_NVENC(engineInstance),
-                                              &engineInstance));
-        return ENG_MSENC(NV2080_ENGINE_TYPE_NVENC_IDX(engineInstance));
+                                              RM_ENGINE_TYPE_NVENC(engineInstance),
+                                              &rmEngineType));
+        return ENG_MSENC(RM_ENGINE_TYPE_NVENC_IDX(rmEngineType));
     }
 
     // Get the right class as per engine instance.

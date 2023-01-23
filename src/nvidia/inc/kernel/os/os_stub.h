@@ -52,6 +52,7 @@ OSSimEscapeWrite                stubOsSimEscapeWrite;
 OSSimEscapeWriteBuffer          stubOsSimEscapeWriteBuffer;
 OSSimEscapeRead                 stubOsSimEscapeRead;
 OSSimEscapeReadBuffer           stubOsSimEscapeReadBuffer;
+OSSetSurfaceName                stubOsSetSurfaceName;
 OSCallACPI_MXMX                 stubOsCallACPI_MXMX;
 OSCallACPI_DSM                  stubOsCallACPI_DSM;
 OSCallACPI_DDC                  stubOsCallACPI_DDC;

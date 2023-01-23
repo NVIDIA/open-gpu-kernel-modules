@@ -86,6 +86,7 @@ struct UvmChannelRetainer {
     NV_STATUS (*__uvmchanrtnrInternalControlForward__)(struct UvmChannelRetainer *, NvU32, void *, NvU32);
     void (*__uvmchanrtnrPreDestruct__)(struct UvmChannelRetainer *);
     NV_STATUS (*__uvmchanrtnrUnmapFrom__)(struct UvmChannelRetainer *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__uvmchanrtnrIsDuplicate__)(struct UvmChannelRetainer *, NvHandle, NvBool *);
     void (*__uvmchanrtnrControl_Epilogue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__uvmchanrtnrControlLookup__)(struct UvmChannelRetainer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__uvmchanrtnrMap__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -141,11 +142,13 @@ NV_STATUS __nvoc_objCreate_UvmChannelRetainer(UvmChannelRetainer**, Dynamic*, Nv
 #define uvmchanrtnrInternalControlForward(pGpuResource, command, pParams, size) uvmchanrtnrInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define uvmchanrtnrPreDestruct(pResource) uvmchanrtnrPreDestruct_DISPATCH(pResource)
 #define uvmchanrtnrUnmapFrom(pResource, pParams) uvmchanrtnrUnmapFrom_DISPATCH(pResource, pParams)
+#define uvmchanrtnrIsDuplicate(pResource, hMemory, pDuplicate) uvmchanrtnrIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define uvmchanrtnrControl_Epilogue(pResource, pCallContext, pParams) uvmchanrtnrControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define uvmchanrtnrControlLookup(pResource, pParams, ppEntry) uvmchanrtnrControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define uvmchanrtnrMap(pGpuResource, pCallContext, pParams, pCpuMapping) uvmchanrtnrMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define uvmchanrtnrAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) uvmchanrtnrAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvBool uvmchanrtnrIsAllocationAllowed_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer, CALL_CONTEXT *pCallContext, struct KernelChannel *pKernelChannel);
+
 
 #ifdef __nvoc_uvm_channel_retainer_h_disabled
 static inline NvBool uvmchanrtnrIsAllocationAllowed(struct UvmChannelRetainer *pUvmChannelRetainer, CALL_CONTEXT *pCallContext, struct KernelChannel *pKernelChannel) {
@@ -230,6 +233,10 @@ static inline NV_STATUS uvmchanrtnrUnmapFrom_DISPATCH(struct UvmChannelRetainer 
     return pResource->__uvmchanrtnrUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS uvmchanrtnrIsDuplicate_DISPATCH(struct UvmChannelRetainer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__uvmchanrtnrIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void uvmchanrtnrControl_Epilogue_DISPATCH(struct UvmChannelRetainer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__uvmchanrtnrControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -247,8 +254,10 @@ static inline NvBool uvmchanrtnrAccessCallback_DISPATCH(struct UvmChannelRetaine
 }
 
 NV_STATUS uvmchanrtnrConstruct_IMPL(struct UvmChannelRetainer *arg_pUvmChannelRetainer, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_uvmchanrtnrConstruct(arg_pUvmChannelRetainer, arg_pCallContext, arg_pParams) uvmchanrtnrConstruct_IMPL(arg_pUvmChannelRetainer, arg_pCallContext, arg_pParams)
 void uvmchanrtnrDestruct_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer);
+
 #define __nvoc_uvmchanrtnrDestruct(pUvmChannelRetainer) uvmchanrtnrDestruct_IMPL(pUvmChannelRetainer)
 #undef PRIVATE_FIELD
 

@@ -904,6 +904,19 @@ void portMemExUnmapIOSpace(void *addr, NvU64 byteSize);
  */
 #define PORT_MEM_TRACK_USE_LOGGING 0
 #endif
+#if !defined(PORT_MEM_TRACK_USE_LIMIT)
+/**
+ * @brief Track and enforce a heap memory usage limit on processes
+ *        running in GSP-RM.
+ *
+ * Default is on in GSP-RM only.
+ */
+#ifndef GSP_PLUGIN_BUILD
+#define PORT_MEM_TRACK_USE_LIMIT (NVOS_IS_LIBOS)
+#else
+#define PORT_MEM_TRACK_USE_LIMIT 0
+#endif
+#endif // !defined(PORT_MEM_TRACK_USE_LIMIT)
 
 /** @brief Nothing is printed unless @ref portMemPrintTrackingInfo is called */
 #define PORT_MEM_TRACK_PRINT_LEVEL_SILENT  0

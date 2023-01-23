@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_hdacodecUnmapFrom(struct Hdacodec *pRes
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_hdacodecIsDuplicate(struct Hdacodec *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_hdacodecControl_Epilogue(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RmResource.offset), pCallContext, pParams);
 }
@@ -254,6 +258,8 @@ static void __nvoc_init_funcTable_Hdacodec_1(Hdacodec *pThis) {
     pThis->__hdacodecPreDestruct__ = &__nvoc_thunk_RsResource_hdacodecPreDestruct;
 
     pThis->__hdacodecUnmapFrom__ = &__nvoc_thunk_RsResource_hdacodecUnmapFrom;
+
+    pThis->__hdacodecIsDuplicate__ = &__nvoc_thunk_RsResource_hdacodecIsDuplicate;
 
     pThis->__hdacodecControl_Epilogue__ = &__nvoc_thunk_RmResource_hdacodecControl_Epilogue;
 

@@ -30,8 +30,6 @@
 // Source file: ctrl/ctrl0080/ctrl0080perf.finn
 //
 
-
-
 #define NV0080_CTRL_PERF_SLI_GPU_BOOST_SYNC_CONTROL_PARAMS_MESSAGE_ID (0x7U)
 
 typedef struct NV0080_CTRL_PERF_SLI_GPU_BOOST_SYNC_CONTROL_PARAMS {

@@ -74,7 +74,7 @@ static NV_STATUS migrate_vma_page_copy_address(struct page *page,
     }
     else {
         // Sysmem/Indirect Peer
-        NV_STATUS status = uvm_gpu_map_cpu_page(copying_gpu, page, &state->dma.addrs[page_index]);
+        NV_STATUS status = uvm_gpu_map_cpu_page(copying_gpu->parent, page, &state->dma.addrs[page_index]);
 
         if (status != NV_OK)
             return status;
@@ -628,7 +628,7 @@ void uvm_migrate_vma_finalize_and_map(struct migrate_vma *args, migrate_vma_stat
     if (state->dma.num_pages > 0) {
 
         for_each_set_bit(i, state->dma.page_mask, state->num_pages)
-            uvm_gpu_unmap_cpu_page(state->dma.addrs_gpus[i], state->dma.addrs[i]);
+            uvm_gpu_unmap_cpu_page(state->dma.addrs_gpus[i]->parent, state->dma.addrs[i]);
     }
 
     UVM_ASSERT(!bitmap_intersects(state->populate_pages_mask, state->allocation_failed_mask, state->num_pages));
@@ -1001,7 +1001,7 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
     return status;
 }
 
-NV_STATUS uvm_migrate_pageable_init()
+NV_STATUS uvm_migrate_pageable_init(void)
 {
     g_uvm_migrate_vma_state_cache = NV_KMEM_CACHE_CREATE("migrate_vma_state_t", migrate_vma_state_t);
     if (!g_uvm_migrate_vma_state_cache)
@@ -1010,7 +1010,7 @@ NV_STATUS uvm_migrate_pageable_init()
     return NV_OK;
 }
 
-void uvm_migrate_pageable_exit()
+void uvm_migrate_pageable_exit(void)
 {
     kmem_cache_destroy_safe(&g_uvm_migrate_vma_state_cache);
 }

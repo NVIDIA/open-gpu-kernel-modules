@@ -26,9 +26,8 @@
 // Need the full header for the class allocation param structure.
 #define SDK_ALL_CLASSES_INCLUDE_FULL_HEADER
 #include "g_allclasses.h"
-// Not a class header, but contains an allocation struct used by several classes
-#include "class/clb0b5sw.h"
-#include "nvos.h"
+
+#include "resource_list_required_includes.h"
 
 #include "rmapi/alloc_size.h"
 #include "rmapi/resource_fwd_decls.h"

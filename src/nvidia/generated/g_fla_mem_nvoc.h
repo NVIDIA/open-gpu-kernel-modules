@@ -67,9 +67,11 @@ struct FlaMemory {
     NvU32 (*__flamemGetRefCount__)(struct FlaMemory *);
     NV_STATUS (*__flamemMapTo__)(struct FlaMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__flamemControl_Prologue__)(struct FlaMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__flamemIsReady__)(struct FlaMemory *);
+    NvBool (*__flamemIsGpuMapAllowed__)(struct FlaMemory *, struct OBJGPU *);
+    NV_STATUS (*__flamemIsReady__)(struct FlaMemory *, NvBool);
     NV_STATUS (*__flamemCheckCopyPermissions__)(struct FlaMemory *, struct OBJGPU *, NvHandle);
     void (*__flamemPreDestruct__)(struct FlaMemory *);
+    NV_STATUS (*__flamemIsDuplicate__)(struct FlaMemory *, NvHandle, NvBool *);
     NV_STATUS (*__flamemUnmapFrom__)(struct FlaMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__flamemControl_Epilogue__)(struct FlaMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__flamemControlLookup__)(struct FlaMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -122,9 +124,11 @@ NV_STATUS __nvoc_objCreate_FlaMemory(FlaMemory**, Dynamic*, NvU32, CALL_CONTEXT 
 #define flamemGetRefCount(pResource) flamemGetRefCount_DISPATCH(pResource)
 #define flamemMapTo(pResource, pParams) flamemMapTo_DISPATCH(pResource, pParams)
 #define flamemControl_Prologue(pResource, pCallContext, pParams) flamemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define flamemIsReady(pMemory) flamemIsReady_DISPATCH(pMemory)
+#define flamemIsGpuMapAllowed(pMemory, pGpu) flamemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define flamemIsReady(pMemory, bCopyConstructorContext) flamemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define flamemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) flamemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define flamemPreDestruct(pResource) flamemPreDestruct_DISPATCH(pResource)
+#define flamemIsDuplicate(pMemory, hMemory, pDuplicate) flamemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define flamemUnmapFrom(pResource, pParams) flamemUnmapFrom_DISPATCH(pResource, pParams)
 #define flamemControl_Epilogue(pResource, pCallContext, pParams) flamemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define flamemControlLookup(pResource, pParams, ppEntry) flamemControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -190,8 +194,12 @@ static inline NV_STATUS flamemControl_Prologue_DISPATCH(struct FlaMemory *pResou
     return pResource->__flamemControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS flamemIsReady_DISPATCH(struct FlaMemory *pMemory) {
-    return pMemory->__flamemIsReady__(pMemory);
+static inline NvBool flamemIsGpuMapAllowed_DISPATCH(struct FlaMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__flamemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS flamemIsReady_DISPATCH(struct FlaMemory *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__flamemIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS flamemCheckCopyPermissions_DISPATCH(struct FlaMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -200,6 +208,10 @@ static inline NV_STATUS flamemCheckCopyPermissions_DISPATCH(struct FlaMemory *pM
 
 static inline void flamemPreDestruct_DISPATCH(struct FlaMemory *pResource) {
     pResource->__flamemPreDestruct__(pResource);
+}
+
+static inline NV_STATUS flamemIsDuplicate_DISPATCH(struct FlaMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__flamemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline NV_STATUS flamemUnmapFrom_DISPATCH(struct FlaMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -223,8 +235,10 @@ static inline NvBool flamemAccessCallback_DISPATCH(struct FlaMemory *pResource, 
 }
 
 NV_STATUS flamemConstruct_IMPL(struct FlaMemory *arg_pFlaMemory, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_flamemConstruct(arg_pFlaMemory, arg_pCallContext, arg_pParams) flamemConstruct_IMPL(arg_pFlaMemory, arg_pCallContext, arg_pParams)
 void flamemDestruct_IMPL(struct FlaMemory *pFlaMemory);
+
 #define __nvoc_flamemDestruct(pFlaMemory) flamemDestruct_IMPL(pFlaMemory)
 #undef PRIVATE_FIELD
 

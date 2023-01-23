@@ -233,6 +233,12 @@ ksmdbgssnConstruct_IMPL
     hClass3dObject = pNv83deAllocParams->hClass3dObject;
     hKernelSMDebuggerSession = pParams->hResource;
 
+    // If given a zero hAppClient, assume the client meant to target the calling hClient.
+    if (hAppClient == NV01_NULL_OBJECT)
+    {
+        hAppClient = pParams->hClient;
+    }
+
     // Validate + lookup the application client
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         serverGetClientUnderLock(&g_resServ, hAppClient, &pAppClient));

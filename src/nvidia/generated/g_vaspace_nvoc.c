@@ -42,6 +42,12 @@ static const struct NVOC_CASTINFO __nvoc_castinfo_OBJVASPACE = {
     },
 };
 
+// Not instantiable because it's an abstract class with following pure virtual functions:
+//  vaspaceConstruct_
+//  vaspaceAlloc
+//  vaspaceFree
+//  vaspaceApplyDefaultAlignment
+//  vaspaceGetVasInfo
 const struct NVOC_CLASS_DEF __nvoc_class_def_OBJVASPACE = 
 {
     /*classInfo=*/ {
@@ -147,6 +153,8 @@ static void __nvoc_init_funcTable_OBJVASPACE_1(OBJVASPACE *pThis) {
     pThis->__vaspaceGetPteInfo__ = &vaspaceGetPteInfo_b7902c;
 
     pThis->__vaspaceSetPteInfo__ = &vaspaceSetPteInfo_b7902c;
+
+    pThis->__vaspaceFreeV2__ = &vaspaceFreeV2_b7902c;
 }
 
 void __nvoc_init_funcTable_OBJVASPACE(OBJVASPACE *pThis) {

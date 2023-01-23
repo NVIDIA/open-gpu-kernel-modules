@@ -226,6 +226,7 @@ static NvU32 EvoOverlayFormatFromKmsFormat91(enum NvKmsSurfaceMemoryFormat forma
         case NvKmsSurfaceMemoryFormatX2B10G10R10:
             return NV917E_SURFACE_SET_PARAMS_FORMAT_A2B10G10R10;
         case NvKmsSurfaceMemoryFormatRF16GF16BF16AF16:
+        case NvKmsSurfaceMemoryFormatRF16GF16BF16XF16:
             return NV917E_SURFACE_SET_PARAMS_FORMAT_RF16_GF16_BF16_AF16;
         case NvKmsSurfaceMemoryFormatR16G16B16A16:
             return NV917E_SURFACE_SET_PARAMS_FORMAT_R16_G16_B16_A16;
@@ -1264,6 +1265,7 @@ static NvU32 nvHwFormatFromKmsFormat90(
     case NvKmsSurfaceMemoryFormatX2B10G10R10:
         return NV917D_HEAD_SET_PARAMS_FORMAT_A2B10G10R10;
     case NvKmsSurfaceMemoryFormatRF16GF16BF16AF16:
+    case NvKmsSurfaceMemoryFormatRF16GF16BF16XF16:
         return NV917D_HEAD_SET_PARAMS_FORMAT_RF16_GF16_BF16_AF16;
     case NvKmsSurfaceMemoryFormatR16G16B16A16:
         return NV917D_HEAD_SET_PARAMS_FORMAT_R16_G16_B16_A16;
@@ -2008,7 +2010,7 @@ static void EvoFlip90(NVDevEvoPtr pDevEvo,
                     sd,
                     head,
                     pHwState->pSurfaceEvo[NVKMS_LEFT])) {
-                const struct NvKmsCscMatrix zeroCscMatrix = { 0 };
+                const struct NvKmsCscMatrix zeroCscMatrix = { };
 
                 nvPushEvoSubDevMask(pDevEvo, NVBIT(sd));
                 EvoPushSetCoreSurfaceMethodsForOneSd(pDevEvo, sd, head,
@@ -2171,6 +2173,7 @@ static void EvoPackColorKey91(enum NvKmsSurfaceMemoryFormat format,
         break;
     case NvKmsSurfaceMemoryFormatI8:
     case NvKmsSurfaceMemoryFormatRF16GF16BF16AF16:
+    case NvKmsSurfaceMemoryFormatRF16GF16BF16XF16:
     case NvKmsSurfaceMemoryFormatR16G16B16A16:
     case NvKmsSurfaceMemoryFormatRF32GF32BF32AF32:
     case NvKmsSurfaceMemoryFormatY8_U8__Y8_V8_N422:
@@ -2768,6 +2771,7 @@ static void EvoSetOutputScaler90(const NVDispEvoRec *pDispEvo, const NvU32 head,
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVEvoChannelPtr pChannel = pDevEvo->core;
     const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+    const NVHwModeViewPortEvo *pViewPort = &pHeadState->timings.viewPort;
     NvU32 setControlOutputScaler = 0;
     NvU32 vTapsHw = 0, hTapsHw = 0;
 
@@ -2775,7 +2779,7 @@ static void EvoSetOutputScaler90(const NVDispEvoRec *pDispEvo, const NvU32 head,
     nvAssert(pDevEvo->subDevMaskStackDepth > 0);
 
     nvUpdateUpdateState(pDevEvo, updateState, pChannel);
-    switch (pHeadState->vTaps) {
+    switch (pViewPort->vTaps) {
     case NV_EVO_SCALER_5TAPS:
         vTapsHw = NV917D_HEAD_SET_CONTROL_OUTPUT_SCALER_VERTICAL_TAPS_TAPS_5;
         break;
@@ -2793,7 +2797,7 @@ static void EvoSetOutputScaler90(const NVDispEvoRec *pDispEvo, const NvU32 head,
         vTapsHw = NV917D_HEAD_SET_CONTROL_OUTPUT_SCALER_VERTICAL_TAPS_TAPS_1;
         break;
     }
-    switch (pHeadState->hTaps) {
+    switch (pViewPort->hTaps) {
     case NV_EVO_SCALER_8TAPS:
         hTapsHw = NV917D_HEAD_SET_CONTROL_OUTPUT_SCALER_HORIZONTAL_TAPS_TAPS_8;
         break;
@@ -2814,7 +2818,7 @@ static void EvoSetOutputScaler90(const NVDispEvoRec *pDispEvo, const NvU32 head,
         DRF_NUM(917D, _HEAD_SET_CONTROL_OUTPUT_SCALER, _VERTICAL_TAPS,
                 vTapsHw);
 
-    if (pHeadState->attributes.imageSharpening.available) {
+    if (nvIsImageSharpeningAvailable(&pHeadState->timings.viewPort)) {
         setControlOutputScaler =
             FLD_SET_DRF_NUM(917D, _HEAD_SET_CONTROL_OUTPUT_SCALER,
                             _HRESPONSE_BIAS, imageSharpeningValue,
@@ -3601,7 +3605,7 @@ static void EvoGetScanLine90(const NVDispEvoRec *pDispEvo,
 
 static NvU32 EvoGetActiveViewportOffset94(NVDispEvoRec *pDispEvo, NvU32 head)
 {
-    NV5070_CTRL_CMD_GET_ACTIVE_VIEWPORT_BASE_PARAMS params = {0};
+    NV5070_CTRL_CMD_GET_ACTIVE_VIEWPORT_BASE_PARAMS params = { };
     NvU32 ret;
     NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
 
@@ -3626,13 +3630,13 @@ EvoClearSurfaceUsage91(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
 {
     NvU32 sd;
     NvBool kickOff = FALSE;
-    NVEvoUpdateState updateState = { 0 };
+    NVEvoUpdateState updateState = { };
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
         NvU32 head;
 
         for (head = 0; head < pDevEvo->numHeads; head++) {
-            const struct NvKmsCscMatrix zeroCscMatrix = { 0 };
+            const struct NvKmsCscMatrix zeroCscMatrix = { };
             const NVEvoSubDevHeadStateRec *pSdHeadState =
                 &pDevEvo->gpus[sd].headState[head];
 
@@ -3737,14 +3741,27 @@ static NvBool SetAccelerators(
 static void EvoAccelerateChannel91(NVDevEvoPtr pDevEvo,
                                    NVEvoChannelPtr pChannel,
                                    const NvU32 sd,
+                                   const NvBool trashPendingMethods,
+                                   const NvBool unblockMethodsInExecutation,
                                    NvU32 *pOldAccelerators)
 {
+    NvU32 accelMask = 0x0;
+
+    if (trashPendingMethods) {
+        accelMask |= NV5070_CTRL_ACCL_TRASH_ONLY;
+    }
+
     /* Start with a conservative set of accelerators; may need to add more
      * later. */
-    const NvU32 accelMask =
-        NV5070_CTRL_ACCL_IGNORE_PI |
-        NV5070_CTRL_ACCL_SKIP_SEMA |
-        NV5070_CTRL_ACCL_IGNORE_FLIPLOCK;
+    if (unblockMethodsInExecutation) {
+        accelMask |= NV5070_CTRL_ACCL_IGNORE_PI |
+                     NV5070_CTRL_ACCL_SKIP_SEMA |
+                     NV5070_CTRL_ACCL_IGNORE_FLIPLOCK;
+    }
+
+    if (accelMask == 0x0) {
+        return;
+    }
 
     *pOldAccelerators = GetAccelerators(pDevEvo, pChannel, sd);
 
@@ -3757,14 +3774,27 @@ static void EvoAccelerateChannel91(NVDevEvoPtr pDevEvo,
 static void EvoResetChannelAccelerators91(NVDevEvoPtr pDevEvo,
                                           NVEvoChannelPtr pChannel,
                                           const NvU32 sd,
+                                          const NvBool trashPendingMethods,
+                                          const NvBool unblockMethodsInExecutation,
                                           NvU32 oldAccelerators)
 {
+    NvU32 accelMask = 0x0;
+
+    if (trashPendingMethods) {
+        accelMask |= NV5070_CTRL_ACCL_TRASH_ONLY;
+    }
+
     /* Start with a conservative set of accelerators; may need to add more
      * later. */
-    const NvU32 accelMask =
-        NV5070_CTRL_ACCL_IGNORE_PI |
-        NV5070_CTRL_ACCL_SKIP_SEMA |
-        NV5070_CTRL_ACCL_IGNORE_FLIPLOCK;
+    if (unblockMethodsInExecutation) {
+        accelMask |= NV5070_CTRL_ACCL_IGNORE_PI |
+                     NV5070_CTRL_ACCL_SKIP_SEMA |
+                     NV5070_CTRL_ACCL_IGNORE_FLIPLOCK;
+    }
+
+    if (accelMask == 0x0) {
+        return;
+    }
 
     /* Accelerate window channel. */
     if (!SetAccelerators(pDevEvo, pChannel, sd, oldAccelerators, accelMask)) {
@@ -3845,5 +3875,6 @@ NVEvoHAL nvEvo94 = {
         NV_EVO2_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_1TAP,                       /* minScalerTaps */
+        0,                                        /* xEmulatedSurfaceMemoryFormats */
     },
 };

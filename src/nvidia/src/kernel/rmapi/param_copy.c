@@ -122,8 +122,11 @@ NV_STATUS rmapiParamsAcquire
 done:
     if (rmStatus != NV_OK) // There was an error, be sure to free the buffer
     {
-        portMemFree(pKernelParams);
-        pKernelParams = NULL;
+        if (pKernelParams != NULL)
+        {
+            portMemFree(pKernelParams);
+            pKernelParams = NULL;
+        }
     }
 
     NV_ASSERT(pParamCopy->ppKernelParams != NULL);

@@ -101,6 +101,7 @@ struct ProfilerBase {
     NV_STATUS (*__profilerBaseInternalControlForward__)(struct ProfilerBase *, NvU32, void *, NvU32);
     void (*__profilerBasePreDestruct__)(struct ProfilerBase *);
     NV_STATUS (*__profilerBaseUnmapFrom__)(struct ProfilerBase *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__profilerBaseIsDuplicate__)(struct ProfilerBase *, NvHandle, NvBool *);
     void (*__profilerBaseControl_Epilogue__)(struct ProfilerBase *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__profilerBaseControlLookup__)(struct ProfilerBase *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__profilerBaseMap__)(struct ProfilerBase *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -170,6 +171,7 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase**, Dynamic*, NvU32, struct 
 #define profilerBaseInternalControlForward(pGpuResource, command, pParams, size) profilerBaseInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define profilerBasePreDestruct(pResource) profilerBasePreDestruct_DISPATCH(pResource)
 #define profilerBaseUnmapFrom(pResource, pParams) profilerBaseUnmapFrom_DISPATCH(pResource, pParams)
+#define profilerBaseIsDuplicate(pResource, hMemory, pDuplicate) profilerBaseIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define profilerBaseControl_Epilogue(pResource, pCallContext, pParams) profilerBaseControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerBaseControlLookup(pResource, pParams, ppEntry) profilerBaseControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define profilerBaseMap(pGpuResource, pCallContext, pParams, pCpuMapping) profilerBaseMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -177,6 +179,7 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase**, Dynamic*, NvU32, struct 
 static inline NV_STATUS profilerBaseConstructState_56cd7a(struct ProfilerBase *pProf, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     return NV_OK;
 }
+
 
 #ifdef __nvoc_profiler_v2_h_disabled
 static inline NV_STATUS profilerBaseConstructState(struct ProfilerBase *pProf, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
@@ -192,6 +195,7 @@ static inline NV_STATUS profilerBaseConstructState(struct ProfilerBase *pProf, s
 static inline void profilerBaseDestructState_b3696a(struct ProfilerBase *pProf) {
     return;
 }
+
 
 #ifdef __nvoc_profiler_v2_h_disabled
 static inline void profilerBaseDestructState(struct ProfilerBase *pProf) {
@@ -377,6 +381,10 @@ static inline NV_STATUS profilerBaseUnmapFrom_DISPATCH(struct ProfilerBase *pRes
     return pResource->__profilerBaseUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS profilerBaseIsDuplicate_DISPATCH(struct ProfilerBase *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__profilerBaseIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void profilerBaseControl_Epilogue_DISPATCH(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__profilerBaseControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -394,8 +402,10 @@ static inline NvBool profilerBaseAccessCallback_DISPATCH(struct ProfilerBase *pR
 }
 
 NV_STATUS profilerBaseConstruct_IMPL(struct ProfilerBase *arg_pProf, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_profilerBaseConstruct(arg_pProf, arg_pCallContext, arg_pParams) profilerBaseConstruct_IMPL(arg_pProf, arg_pCallContext, arg_pParams)
 void profilerBaseDestruct_IMPL(struct ProfilerBase *pProf);
+
 #define __nvoc_profilerBaseDestruct(pProf) profilerBaseDestruct_IMPL(pProf)
 #undef PRIVATE_FIELD
 
@@ -433,6 +443,7 @@ struct ProfilerDev {
     NV_STATUS (*__profilerDevInternalControlForward__)(struct ProfilerDev *, NvU32, void *, NvU32);
     void (*__profilerDevPreDestruct__)(struct ProfilerDev *);
     NV_STATUS (*__profilerDevUnmapFrom__)(struct ProfilerDev *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__profilerDevIsDuplicate__)(struct ProfilerDev *, NvHandle, NvBool *);
     void (*__profilerDevControl_Epilogue__)(struct ProfilerDev *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__profilerDevControlLookup__)(struct ProfilerDev *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__profilerDevMap__)(struct ProfilerDev *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -485,11 +496,13 @@ NV_STATUS __nvoc_objCreate_ProfilerDev(ProfilerDev**, Dynamic*, NvU32, struct CA
 #define profilerDevInternalControlForward(pGpuResource, command, pParams, size) profilerDevInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define profilerDevPreDestruct(pResource) profilerDevPreDestruct_DISPATCH(pResource)
 #define profilerDevUnmapFrom(pResource, pParams) profilerDevUnmapFrom_DISPATCH(pResource, pParams)
+#define profilerDevIsDuplicate(pResource, hMemory, pDuplicate) profilerDevIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define profilerDevControl_Epilogue(pResource, pCallContext, pParams) profilerDevControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerDevControlLookup(pResource, pParams, ppEntry) profilerDevControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define profilerDevMap(pGpuResource, pCallContext, pParams, pCpuMapping) profilerDevMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define profilerDevAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) profilerDevAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NV_STATUS profilerDevConstructState_IMPL(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions);
+
 
 #ifdef __nvoc_profiler_v2_h_disabled
 static inline NV_STATUS profilerDevConstructState(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions) {
@@ -504,6 +517,7 @@ static inline NV_STATUS profilerDevConstructState(struct ProfilerDev *pResource,
 
 NV_STATUS profilerDevConstructStatePrologue_FWCLIENT(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
 
+
 #ifdef __nvoc_profiler_v2_h_disabled
 static inline NV_STATUS profilerDevConstructStatePrologue(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     NV_ASSERT_FAILED_PRECOMP("ProfilerDev was disabled!");
@@ -516,6 +530,7 @@ static inline NV_STATUS profilerDevConstructStatePrologue(struct ProfilerDev *pR
 #define profilerDevConstructStatePrologue_HAL(pResource, pCallContext, pParams) profilerDevConstructStatePrologue(pResource, pCallContext, pParams)
 
 NV_STATUS profilerDevConstructStateInterlude_IMPL(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions);
+
 
 #ifdef __nvoc_profiler_v2_h_disabled
 static inline NV_STATUS profilerDevConstructStateInterlude(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS clientPermissions) {
@@ -532,6 +547,7 @@ static inline NV_STATUS profilerDevConstructStateEpilogue_56cd7a(struct Profiler
     return NV_OK;
 }
 
+
 #ifdef __nvoc_profiler_v2_h_disabled
 static inline NV_STATUS profilerDevConstructStateEpilogue(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
     NV_ASSERT_FAILED_PRECOMP("ProfilerDev was disabled!");
@@ -545,6 +561,7 @@ static inline NV_STATUS profilerDevConstructStateEpilogue(struct ProfilerDev *pR
 
 NvBool profilerDevQueryCapabilities_IMPL(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions);
 
+
 #ifdef __nvoc_profiler_v2_h_disabled
 static inline NvBool profilerDevQueryCapabilities(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams, PROFILER_CLIENT_PERMISSIONS *pClientPermissions) {
     NV_ASSERT_FAILED_PRECOMP("ProfilerDev was disabled!");
@@ -557,6 +574,7 @@ static inline NvBool profilerDevQueryCapabilities(struct ProfilerDev *pResource,
 #define profilerDevQueryCapabilities_HAL(pResource, pCallContext, pParams, pClientPermissions) profilerDevQueryCapabilities(pResource, pCallContext, pParams, pClientPermissions)
 
 void profilerDevDestructState_FWCLIENT(struct ProfilerDev *pResource);
+
 
 #ifdef __nvoc_profiler_v2_h_disabled
 static inline void profilerDevDestructState(struct ProfilerDev *pResource) {
@@ -640,6 +658,10 @@ static inline NV_STATUS profilerDevUnmapFrom_DISPATCH(struct ProfilerDev *pResou
     return pResource->__profilerDevUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS profilerDevIsDuplicate_DISPATCH(struct ProfilerDev *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__profilerDevIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void profilerDevControl_Epilogue_DISPATCH(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__profilerDevControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -657,8 +679,10 @@ static inline NvBool profilerDevAccessCallback_DISPATCH(struct ProfilerDev *pRes
 }
 
 NV_STATUS profilerDevConstruct_IMPL(struct ProfilerDev *arg_pResource, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_profilerDevConstruct(arg_pResource, arg_pCallContext, arg_pParams) profilerDevConstruct_IMPL(arg_pResource, arg_pCallContext, arg_pParams)
 void profilerDevDestruct_IMPL(struct ProfilerDev *pResource);
+
 #define __nvoc_profilerDevDestruct(pResource) profilerDevDestruct_IMPL(pResource)
 #undef PRIVATE_FIELD
 

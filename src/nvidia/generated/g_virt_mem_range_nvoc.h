@@ -70,10 +70,12 @@ struct VirtualMemoryRange {
     NvU32 (*__vmrangeGetRefCount__)(struct VirtualMemoryRange *);
     void (*__vmrangeAddAdditionalDependants__)(struct RsClient *, struct VirtualMemoryRange *, RsResourceRef *);
     NvBool (*__vmrangeCanCopy__)(struct VirtualMemoryRange *);
+    NvBool (*__vmrangeIsGpuMapAllowed__)(struct VirtualMemoryRange *, struct OBJGPU *);
     NV_STATUS (*__vmrangeControl_Prologue__)(struct VirtualMemoryRange *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__vmrangeIsReady__)(struct VirtualMemoryRange *);
+    NV_STATUS (*__vmrangeIsReady__)(struct VirtualMemoryRange *, NvBool);
     NV_STATUS (*__vmrangeUnmapFrom__)(struct VirtualMemoryRange *, struct RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__vmrangeCheckCopyPermissions__)(struct VirtualMemoryRange *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__vmrangeIsDuplicate__)(struct VirtualMemoryRange *, NvHandle, NvBool *);
     void (*__vmrangePreDestruct__)(struct VirtualMemoryRange *);
     void (*__vmrangeControl_Epilogue__)(struct VirtualMemoryRange *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vmrangeControlLookup__)(struct VirtualMemoryRange *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -121,10 +123,12 @@ NV_STATUS __nvoc_objCreate_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, Nv
 #define vmrangeGetRefCount(pResource) vmrangeGetRefCount_DISPATCH(pResource)
 #define vmrangeAddAdditionalDependants(pClient, pResource, pReference) vmrangeAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define vmrangeCanCopy(pStandardMemory) vmrangeCanCopy_DISPATCH(pStandardMemory)
+#define vmrangeIsGpuMapAllowed(pMemory, pGpu) vmrangeIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define vmrangeControl_Prologue(pResource, pCallContext, pParams) vmrangeControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vmrangeIsReady(pMemory) vmrangeIsReady_DISPATCH(pMemory)
+#define vmrangeIsReady(pMemory, bCopyConstructorContext) vmrangeIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define vmrangeUnmapFrom(pVirtualMemory, pParams) vmrangeUnmapFrom_DISPATCH(pVirtualMemory, pParams)
 #define vmrangeCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) vmrangeCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define vmrangeIsDuplicate(pMemory, hMemory, pDuplicate) vmrangeIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define vmrangePreDestruct(pResource) vmrangePreDestruct_DISPATCH(pResource)
 #define vmrangeControl_Epilogue(pResource, pCallContext, pParams) vmrangeControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vmrangeControlLookup(pResource, pParams, ppEntry) vmrangeControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -178,12 +182,16 @@ static inline NvBool vmrangeCanCopy_DISPATCH(struct VirtualMemoryRange *pStandar
     return pStandardMemory->__vmrangeCanCopy__(pStandardMemory);
 }
 
+static inline NvBool vmrangeIsGpuMapAllowed_DISPATCH(struct VirtualMemoryRange *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__vmrangeIsGpuMapAllowed__(pMemory, pGpu);
+}
+
 static inline NV_STATUS vmrangeControl_Prologue_DISPATCH(struct VirtualMemoryRange *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__vmrangeControl_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS vmrangeIsReady_DISPATCH(struct VirtualMemoryRange *pMemory) {
-    return pMemory->__vmrangeIsReady__(pMemory);
+static inline NV_STATUS vmrangeIsReady_DISPATCH(struct VirtualMemoryRange *pMemory, NvBool bCopyConstructorContext) {
+    return pMemory->__vmrangeIsReady__(pMemory, bCopyConstructorContext);
 }
 
 static inline NV_STATUS vmrangeUnmapFrom_DISPATCH(struct VirtualMemoryRange *pVirtualMemory, struct RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -192,6 +200,10 @@ static inline NV_STATUS vmrangeUnmapFrom_DISPATCH(struct VirtualMemoryRange *pVi
 
 static inline NV_STATUS vmrangeCheckCopyPermissions_DISPATCH(struct VirtualMemoryRange *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
     return pMemory->__vmrangeCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+}
+
+static inline NV_STATUS vmrangeIsDuplicate_DISPATCH(struct VirtualMemoryRange *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return pMemory->__vmrangeIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
 static inline void vmrangePreDestruct_DISPATCH(struct VirtualMemoryRange *pResource) {
@@ -215,6 +227,7 @@ static inline NvBool vmrangeAccessCallback_DISPATCH(struct VirtualMemoryRange *p
 }
 
 NV_STATUS vmrangeConstruct_IMPL(struct VirtualMemoryRange *arg_pVmRange, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_vmrangeConstruct(arg_pVmRange, arg_pCallContext, arg_pParams) vmrangeConstruct_IMPL(arg_pVmRange, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

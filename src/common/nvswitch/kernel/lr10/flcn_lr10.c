@@ -211,11 +211,10 @@ _flcnConstruct_LR10
     PFLCNABLE          pFlcnable = pFlcn->pFlcnable;
     PFALCON_QUEUE_INFO pQueueInfo;
     pFlcn->bConstructed         = NV_TRUE;
-    if (pFlcn->engArch == NV_UPROC_ENGINE_ARCH_DEFAULT)
-    {
-        // Default the arch to Falcon if it's not set
-        pFlcn->engArch = NV_UPROC_ENGINE_ARCH_FALCON;
-    }
+
+    // Set the arch to Falcon
+    pFlcn->engArch = NV_UPROC_ENGINE_ARCH_FALCON;
+
     // Allocate the memory for Queue Data Structure if needed.
     if (pFlcn->bQueuesEnabled)
     {

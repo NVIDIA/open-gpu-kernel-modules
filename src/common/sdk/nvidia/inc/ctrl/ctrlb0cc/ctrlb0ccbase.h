@@ -28,9 +28,6 @@
 // Source file: ctrl/ctrlb0cc/ctrlb0ccbase.finn
 //
 
-
-
-
 #include "ctrl/ctrlxxxx.h"
 #include "ctrl/ctrl2080/ctrl2080gpu.h"  // NV2080_CTRL_GPU_REG_OP
 #define NVB0CC_CTRL_CMD(cat,idx)                     NVXXXX_CTRL_CMD(0xB0CC, NVB0CC_CTRL_##cat, idx)

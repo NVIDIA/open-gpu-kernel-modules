@@ -108,7 +108,7 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
                                                                                               \
         root_alloc_params.hClient = hclient;                                                  \
                                                                                               \
-        if (!IsT234D(pGpu))                                                                   \
+        if (!IsT234DorBetter(pGpu))                                                           \
         {                                                                                     \
             RmClient *pClient = NULL;                                                         \
                                                                                               \
@@ -165,7 +165,7 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
             && (!(IS_VIRTUAL_WITH_SRIOV(pGpu) &&                                        \
                   !gpuIsWarBug200577889SriovHeavyEnabled(pGpu) &&                       \
                   !NV_IS_MODS))) {                                                      \
-          if (IS_GSP_CLIENT(pGpu) && IsT234D(pGpu))                                     \
+          if (IS_GSP_CLIENT(pGpu) && IsT234DorBetter(pGpu))                             \
           {                                                                             \
             RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);                              \
             NV_MEMORY_LIST_ALLOCATION_PARAMS listAllocParams = {0};                     \

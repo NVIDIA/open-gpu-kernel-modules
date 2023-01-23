@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2019-2022, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -40,9 +40,16 @@ static const u32  nvkms_to_drm_format[] = {
     [NvKmsSurfaceMemoryFormatR5G6B5]      = DRM_FORMAT_RGB565,
     [NvKmsSurfaceMemoryFormatA8R8G8B8]    = DRM_FORMAT_ARGB8888,
     [NvKmsSurfaceMemoryFormatX8R8G8B8]    = DRM_FORMAT_XRGB8888,
+    [NvKmsSurfaceMemoryFormatX8B8G8R8]    = DRM_FORMAT_XBGR8888,
     [NvKmsSurfaceMemoryFormatA2B10G10R10] = DRM_FORMAT_ABGR2101010,
     [NvKmsSurfaceMemoryFormatX2B10G10R10] = DRM_FORMAT_XBGR2101010,
     [NvKmsSurfaceMemoryFormatA8B8G8R8]    = DRM_FORMAT_ABGR8888,
+#if defined(DRM_FORMAT_ABGR16161616F)
+    [NvKmsSurfaceMemoryFormatRF16GF16BF16AF16] = DRM_FORMAT_ABGR16161616F,
+#endif
+#if defined(DRM_FORMAT_XBGR16161616F)
+    [NvKmsSurfaceMemoryFormatRF16GF16BF16XF16] = DRM_FORMAT_XBGR16161616F,
+#endif
 
     [NvKmsSurfaceMemoryFormatY8_U8__Y8_V8_N422] = DRM_FORMAT_YUYV,
     [NvKmsSurfaceMemoryFormatU8_Y8__V8_Y8_N422] = DRM_FORMAT_UYVY,

@@ -220,6 +220,10 @@ static void __nvoc_thunk_RsResource_uvmswPreDestruct(struct UvmSwObject *pResour
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_uvmswIsDuplicate(struct UvmSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RsResource.offset), hMemory, pDuplicate);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_uvmswGetNotificationListPtr(struct UvmSwObject *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_UvmSwObject_Notifier.offset));
 }
@@ -290,9 +294,6 @@ static void __nvoc_init_funcTable_UvmSwObject_1(UvmSwObject *pThis, RmHalspecOwn
     {
         pThis->__uvmswGetSwMethods__ = &uvmswGetSwMethods_56cd7a;
     }
-    else if (0)
-    {
-    }
 
     pThis->__nvoc_base_ChannelDescendant.__chandesGetSwMethods__ = &__nvoc_thunk_UvmSwObject_chandesGetSwMethods;
 
@@ -343,6 +344,8 @@ static void __nvoc_init_funcTable_UvmSwObject_1(UvmSwObject *pThis, RmHalspecOwn
     pThis->__uvmswCanCopy__ = &__nvoc_thunk_RsResource_uvmswCanCopy;
 
     pThis->__uvmswPreDestruct__ = &__nvoc_thunk_RsResource_uvmswPreDestruct;
+
+    pThis->__uvmswIsDuplicate__ = &__nvoc_thunk_RsResource_uvmswIsDuplicate;
 
     pThis->__uvmswGetNotificationListPtr__ = &__nvoc_thunk_Notifier_uvmswGetNotificationListPtr;
 

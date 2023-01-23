@@ -26,6 +26,7 @@
 #include "mem_mgr/gpu_vaspace.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "gpu/mem_mgr/mem_desc.h"
 #include "nvRmReg.h"  // NV_REG_STR_RM_*
 
 #include "mmu/gmmu_fmt.h"
@@ -192,6 +193,11 @@ _gmmuWalkCBLevelAlloc
         // Get the alignment from the parent PDE address shift.
         pPde = gmmuFmtGetPde(pFmt, pParent, subLevel);
 
+        if (pPde->version == GMMU_FMT_VERSION_3)
+        {
+            alignment = NVBIT(pPde->fldAddr.shift);
+        }
+        else
         {
             alignment = NVBIT(pPde->fldAddrSysmem.shift);
         }
@@ -345,6 +351,7 @@ _gmmuWalkCBLevelAlloc
                     status = _gmmuScrubMemDesc(pGpu, pMemDescTemp);
                 }
 
+                memdescSetName(pGpu, pMemDescTemp, NV_RM_SURF_NAME_PAGE_TABLE, mmuFmtConvertLevelIdToSuffix(pLevelFmt));
                 break;
             }
             j++;
@@ -718,6 +725,19 @@ _gmmuWalkCBUpdatePde
             const GMMU_FIELD_ADDRESS *pFldAddr = gmmuFmtPdePhysAddrFld(pPde, aperture);
             const NvU64               physAddr = memdescGetPhysAddr(pSubMemDesc, AT_GPU, 0);
 
+            if (pFmt->version == GMMU_FMT_VERSION_3)
+            {
+                NvU32 pdePcfHw    = 0;
+                NvU32 pdePcfSw    = 0;
+
+                pdePcfSw |= gvaspaceIsAtsEnabled(pGVAS) ? (1 << SW_MMU_PCF_ATS_ALLOWED_IDX) : 0;
+                pdePcfSw |= memdescGetVolatility(pSubMemDesc) ? (1 << SW_MMU_PCF_UNCACHED_IDX) : 0;
+
+                NV_ASSERT_OR_RETURN((kgmmuTranslatePdePcfFromSw_HAL(pKernelGmmu, pdePcfSw, &pdePcfHw) == NV_OK),
+                                      NV_ERR_INVALID_ARGUMENT);
+                nvFieldSet32(&pPde->fldPdePcf, pdePcfHw, entry.v8);
+            }
+            else
             {
                 nvFieldSetBool(&pPde->fldVolatile, memdescGetVolatility(pSubMemDesc), entry.v8);
             }

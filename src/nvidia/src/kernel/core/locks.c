@@ -188,7 +188,7 @@ rmGpuLockAlloc(NvU32 gpuInst)
                       NV_ERR_INVALID_STATE);
 
     // TODO: RM-1492 MODS does not hold API lock when allocating GPUs.
-    NV_ASSERT(rmApiLockIsOwner());
+    NV_ASSERT(rmapiLockIsOwner());
 
     // allocate intr mask lock
     status = rmIntrMaskLockAlloc(gpuInst);
@@ -294,7 +294,7 @@ rmGpuLockFree(NvU32 gpuInst)
     // validate gpuInst argument
     NV_ASSERT_OR_RETURN_VOID((gpuInst < NV_MAX_DEVICES));
     // TODO: RM-1492 MODS does not hold API lock when allocating GPUs.
-    NV_ASSERT(rmApiLockIsOwner());
+    NV_ASSERT(rmapiLockIsOwner());
 
     pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
 
@@ -409,11 +409,19 @@ static void _gpuLocksAcquireDisableInterrupts(NvU32 gpuInst, NvU32 flags)
     if (osLockShouldToggleInterrupts(pGpu))
     {
         Intr *pIntr = GPU_GET_INTR(pGpu);
-        NvBool isIsr = !!(flags & GPUS_LOCK_FLAGS_COND_ACQUIRE);
+        NvBool isIsr = !!(flags & GPU_LOCK_FLAGS_COND_ACQUIRE);
         NvBool bBcEnabled = gpumgrGetBcEnabledStatus(pGpu);
 
         // Always disable intrs for cond code
         gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);
+
+        // Note: SWRL is enabled only for vGPU, and is disabled otherwise.
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+        {
+            // Disable the RM callback timer interrupt
+            OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+            tmrRmCallbackIntrDisable(pTmr, pGpu);
+        }
 
         osDisableInterrupts(pGpu, isIsr);
 
@@ -477,7 +485,7 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     NvBool    bLockAll = NV_FALSE;
 
     bHighIrql = (portSyncExSafeToSleep() == NV_FALSE);
-    bCondAcquireCheck = ((flags & GPUS_LOCK_FLAGS_COND_ACQUIRE) != 0);
+    bCondAcquireCheck = ((flags & GPU_LOCK_FLAGS_COND_ACQUIRE) != 0);
 
     if (pGpuLockedMask)
         *pGpuLockedMask = 0;
@@ -894,8 +902,11 @@ rmGpuGroupLockAcquire
     {
         GPU_MASK deviceGpuMask = 0;
         rmGpuGroupLockGetMask(gpuInst, GPU_LOCK_GRP_DEVICE, &deviceGpuMask);
+        //
         // Verify that we actually locked *this* device, not all others.
-        if ((*pGpuMask & deviceGpuMask) != deviceGpuMask)
+        // Check *held* locks not *acquired* locks in case of SAFE_LOCK_UPGRADE.
+        //
+        if ((rmGpuLocksGetOwnedMask() & deviceGpuMask) != deviceGpuMask)
         {
             //
             // On Windows, at high IRQL we can't signal the semaphore. So we
@@ -1118,6 +1129,22 @@ static void _gpuLocksReleaseEnableInterrupts(NvU32 gpuInst, NvU32 flags)
             }
         }
         osEnableInterrupts(pGpu);
+
+        // Note: SWRL is enabled only for vGPU, and is disabled otherwise.
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+        {
+            // Enable the alarm interrupt. Rearm MSI when timer interrupt is pending.
+            OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+            NvU32   retVal;
+
+            tmrRmCallbackIntrEnable(pTmr, pGpu);
+            tmrGetIntrStatus_HAL(pGpu, pTmr, &retVal, NULL);
+            if (retVal != 0)
+            {
+                KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+                kbifCheckAndRearmMSI(pGpu, pKernelBif);
+            }
+        }
 
         gpumgrSetBcEnabledStatus(pGpu, bBcEnabled);
     }

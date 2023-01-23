@@ -50,6 +50,7 @@
 #include "class/clc637.h"      // AMPERE_SMC_PARTITION_REF
 #include "class/cl00c2.h"      // NV01_MEMORY_LOCAL_PHYSICAL
 #include "class/clb0b5.h"      // MAXWELL_DMA_COPY_A
+#include "class/clc8b5.h"      // HOPPER_DMA_COPY_A
 #include "class/cl0005.h"      // NV01_EVENT
 #include "class/cl90f1.h"      // FERMI_VASPACE_A
 
@@ -1030,7 +1031,7 @@ memmgrMemUtilsScrubInitScheduleChannel
         NVA06F_CTRL_BIND_PARAMS bindParams;
         portMemSet(&bindParams, 0, sizeof(bindParams));
 
-        bindParams.engineType = pChannel->engineType;
+        bindParams.engineType = gpuGetNv2080EngineType(pChannel->engineType);
 
         rmStatus = pRmApi->Control(pRmApi,
                                    pChannel->hClient,
@@ -1072,7 +1073,8 @@ memmgrMemUtilsCopyEngineInitialize_GM107
     OBJCHANNEL    *pChannel
 )
 {
-    NvU32                  classID, engineID;
+    NvU32                  classID;
+    RM_ENGINE_TYPE         engineID;
     NV_STATUS              rmStatus;
     KernelFifo            *pKernelFifo   = GPU_GET_KERNEL_FIFO(pGpu);
     KernelChannel         *pFifoKernelChannel = NULL;
@@ -1167,25 +1169,15 @@ static NV_STATUS _memUtilsGetCe_GM107
     {
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gpuUpdateEngineTable(pGpu));
 
-        for (ceInst = 0; ceInst < ENG_CE__SIZE_1; ceInst++)
-        {
-            pKCe = GPU_GET_KCE(pGpu, ceInst);
-            if (pKCe == NULL)
-            {
-                continue;
-            }
-
+        KCE_ITER_ALL_BEGIN(pGpu, pKCe, 0)
             if (kbusCheckEngine_HAL(pGpu, pKernelBus, ENG_CE(pKCe->publicID)) &&
-               !ceIsCeGrce(pGpu, NV2080_ENGINE_TYPE_COPY(pKCe->publicID)) &&
-               gpuCheckEngineTable(pGpu,  NV2080_ENGINE_TYPE_COPY(pKCe->publicID)))
+               !ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)) &&
+               gpuCheckEngineTable(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)))
             {
+                ceInst = kceInst;
                 break;
             }
-        }
-        if (ceInst == ENG_CE__SIZE_1)
-        {
-            status = NV_ERR_INSUFFICIENT_RESOURCES;
-        }
+        KCE_ITER_END_OR_RETURN_ERROR
     }
 
     NV_ASSERT_OK_OR_RETURN(status);
@@ -1217,7 +1209,7 @@ static NV_STATUS _memUtilsAllocCe_GM107
 
     createParams.engineType = NV2080_ENGINE_TYPE_COPY(pKCe->publicID);
     memmgrMemUtilsGetCopyEngineClass_HAL(pGpu, pMemoryManager, &pChannel->hTdCopyClass);
-    pChannel->engineType = createParams.engineType;
+    pChannel->engineType = gpuGetRmEngineType(createParams.engineType);
 
     if (!pChannel->hTdCopyClass)
     {
@@ -1332,7 +1324,7 @@ _memUtilsAllocateChannel
     OBJCHANNEL    *pChannel
 )
 {
-    NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS channelGPFIFOAllocParams;
+    NV_CHANNEL_ALLOC_PARAMS channelGPFIFOAllocParams;
     NV_STATUS                              rmStatus =  NV_OK;
     NvU32                                  hClass;
     RM_API                                *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
@@ -1342,7 +1334,7 @@ _memUtilsAllocateChannel
     NV_ASSERT_OK_OR_RETURN(_memUtilsGetCe_GM107(pGpu, hClientId, &pKCe));
     NV_ASSERT_OR_RETURN((pKCe != NULL), NV_ERR_INVALID_STATE);
 
-    portMemSet(&channelGPFIFOAllocParams, 0, sizeof(NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS));
+    portMemSet(&channelGPFIFOAllocParams, 0, sizeof(NV_CHANNEL_ALLOC_PARAMS));
     channelGPFIFOAllocParams.hObjectError  = hObjectError;
     channelGPFIFOAllocParams.hObjectBuffer = hObjectBuffer;
     channelGPFIFOAllocParams.gpFifoOffset  = pChannel->pbGpuVA + pChannel->channelPbSize;
@@ -1359,16 +1351,16 @@ _memUtilsAllocateChannel
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
-        NvU32 localCe;
+        RM_ENGINE_TYPE localCe;
         NV_ASSERT_OK_OR_RETURN(
             kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClientId, &ref));
         // Clear the Compute instance portion, if present
         ref = kmigmgrMakeGIReference(ref.pKernelMIGGpuInstance);
         NV_ASSERT_OK_OR_RETURN(
             kmigmgrGetGlobalToLocalEngineType(pGpu, pKernelMIGManager, ref,
-                                              NV2080_ENGINE_TYPE_COPY(pKCe->publicID),
+                                              RM_ENGINE_TYPE_COPY(pKCe->publicID),
                                               &localCe));
-        channelGPFIFOAllocParams.engineType = localCe;
+        channelGPFIFOAllocParams.engineType = gpuGetNv2080EngineType(localCe);
     }
     else
     {
@@ -2327,6 +2319,7 @@ _ceChannelPushMethodsBlock_GM107
     NvU32 *ptr                = *pPtr;
     NvU32 *pStartPtr          = ptr;
     NvBool addReductionOp     = channel->isChannelSynchronized;
+    NvBool bMemoryScrubEnable = NV_FALSE;
     NvU32  remapConstB        = 0;
     NvU32  remapComponentSize = 0;
 
@@ -2375,6 +2368,23 @@ _ceChannelPushMethodsBlock_GM107
         }
         else
         {
+            bMemoryScrubEnable = memmgrMemUtilsCheckMemoryFastScrubEnable_HAL(pGpu,
+                                                   pMemoryManager,
+                                                   channel->hTdCopyClass,
+                                                   channel->bUseVasForCeCopy,
+                                                   dst,
+                                                   NvU64_LO32(size),
+                                                   dstAddressSpace);
+            if (bMemoryScrubEnable)
+            {
+                NV_PRINTF(LEVEL_INFO, "Using Fast memory scrubber\n");
+                remapConstB        = DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _DST_X, _CONST_B);
+                PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVB0B5_SET_REMAP_CONST_B, 0x00000000);
+
+                remapComponentSize = DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _COMPONENT_SIZE, _ONE);
+                PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVB0B5_LINE_LENGTH_IN, NvU64_LO32(size));
+            }
+            else
             {
                 remapComponentSize = DRF_DEF(B0B5, _SET_REMAP_COMPONENTS, _COMPONENT_SIZE, _FOUR);
                 PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVB0B5_LINE_LENGTH_IN, NvU64_LO32(size >> 2));
@@ -2416,6 +2426,17 @@ _ceChannelPushMethodsBlock_GM107
             launchParams |= DRF_DEF(B0B5, _LAUNCH_DMA, _SEMAPHORE_TYPE, _NONE);
         }
 
+        if (bMemoryScrubEnable)
+        {
+            PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVC8B5_SET_MEMORY_SCRUB_PARAMETERS,
+                          DRF_DEF(C8B5, _SET_MEMORY_SCRUB_PARAMETERS, _DISCARDABLE, _FALSE));
+
+            launchParams |= DRF_DEF(C8B5, _LAUNCH_DMA, _MEMORY_SCRUB_ENABLE, _TRUE);
+            launchParams |= DRF_DEF(C8B5, _LAUNCH_DMA, _REMAP_ENABLE, _FALSE);
+
+            PUSH_PAIR(NVA06F_SUBCHANNEL_COPY_ENGINE, NVC8B5_LAUNCH_DMA, launchParams);
+        }
+        else
         {
             if (!bMemcopy)
             {

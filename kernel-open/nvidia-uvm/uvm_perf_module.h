@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -45,7 +45,6 @@
 //
 // - UVM_PERF_MODULE_TYPE_THRASHING: detects memory thrashing scenarios and
 // provides thrashing prevention mechanisms
-// - UVM_PERF_MODULE_TYPE_PREFETCH: detects memory prefetching opportunities
 // - UVM_PERF_MODULE_TYPE_ACCESS_COUNTERS: migrates memory using access counter
 // notifications
 typedef enum
@@ -54,7 +53,6 @@ typedef enum
 
     UVM_PERF_MODULE_TYPE_TEST      = UVM_PERF_MODULE_FIRST_TYPE,
     UVM_PERF_MODULE_TYPE_THRASHING,
-    UVM_PERF_MODULE_TYPE_PREFETCH,
     UVM_PERF_MODULE_TYPE_ACCESS_COUNTERS,
 
     UVM_PERF_MODULE_TYPE_COUNT,

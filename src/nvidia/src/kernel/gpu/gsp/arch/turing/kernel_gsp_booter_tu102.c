@@ -58,9 +58,13 @@ s_executeBooterUcode_TU102
 
     NV_PRINTF(LEVEL_INFO, "starting Booter with mailbox0 0x%08x, mailbox1 0x%08x\n", mailbox0, mailbox1);
 
+    pKernelGsp->bLibosLogsPollingEnabled = NV_FALSE;
+
     status = kgspExecuteHsFalcon_HAL(pGpu, pKernelGsp,
                                      pBooterUcode, pKernelFlcn,
                                      &mailbox0, &mailbox1);
+
+    pKernelGsp->bLibosLogsPollingEnabled = NV_TRUE;
 
     NV_PRINTF(LEVEL_INFO, "after Booter mailbox0 0x%08x, mailbox1 0x%08x\n", mailbox0, mailbox1);
 

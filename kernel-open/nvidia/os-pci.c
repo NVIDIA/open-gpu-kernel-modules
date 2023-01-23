@@ -158,49 +158,47 @@ void NV_API_CALL os_pci_remove(
 #endif
 }
 
+NV_STATUS NV_API_CALL
+os_enable_pci_req_atomics(
+    void *handle,
+    enum os_pci_req_atomics_type type
+)
+{
+#ifdef NV_PCI_ENABLE_ATOMIC_OPS_TO_ROOT_PRESENT
+    int ret;
+    u16 val;
 
+    switch (type)
+    {
+        case OS_INTF_PCIE_REQ_ATOMICS_32BIT:
+            ret = pci_enable_atomic_ops_to_root(handle,
+                                                PCI_EXP_DEVCAP2_ATOMIC_COMP32);
+            break;
+        case OS_INTF_PCIE_REQ_ATOMICS_64BIT:
+            ret = pci_enable_atomic_ops_to_root(handle,
+                                                PCI_EXP_DEVCAP2_ATOMIC_COMP64);
+            break;
+        case OS_INTF_PCIE_REQ_ATOMICS_128BIT:
+            ret = pci_enable_atomic_ops_to_root(handle,
+                                                PCI_EXP_DEVCAP2_ATOMIC_COMP128);
+            break;
+        default:
+            ret = -1;
+            break;
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    if (ret == 0)
+    {
+        /*
+         * GPUs that don't support Requester Atomics have its
+         * PCI_EXP_DEVCTL2_ATOMIC_REQ always set to 0 even after SW enables it.
+         */
+        if ((pcie_capability_read_word(handle, PCI_EXP_DEVCTL2, &val) == 0) &&
+            (val & PCI_EXP_DEVCTL2_ATOMIC_REQ))
+        {
+            return NV_OK;
+        }
+    }
+#endif
+    return NV_ERR_NOT_SUPPORTED;
+}

@@ -455,7 +455,9 @@ knvlinkStatePostLoadHal_GV100
         }
     }
 
-    if (knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink) || pKernelNvlink->bOverrideComputePeerMode)
+    if (knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink) ||
+        pKernelNvlink->bOverrideComputePeerMode            ||
+        GPU_IS_NVSWITCH_DETECTED(pGpu))
     {
         status = kgmmuEnableNvlinkComputePeerAddressing_HAL(pKernelGmmu);
         if (status != NV_OK)
@@ -521,6 +523,111 @@ knvlinkValidateFabricBaseAddress_GV100
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief   Set unique fabric address for NVSwitch enabled systems.
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ * @param[in] fabricBaseAddr Fabric Address to set
+ *
+ * @returns On success, sets unique fabric address and returns NV_OK.
+ *          On failure, returns NV_ERR_XXX.
+ */
+NV_STATUS
+knvlinkSetUniqueFabricBaseAddress_GV100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU64         fabricBaseAddr
+)
+{
+    NV_STATUS status = NV_OK;
+
+    if (!knvlinkIsForcedConfig(pGpu, pKernelNvlink))
+    {
+        knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
+
+        status = knvlinkEnableLinksPostTopology_HAL(pGpu, pKernelNvlink,
+                                        pKernelNvlink->enabledLinks);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                    "Nvlink post topology links setup failed on GPU %x\n",
+                    pGpu->gpuInstance);
+            return status;
+        }
+    }
+
+    if (!knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                "Operation failed due to no NVSwitch connectivity to the "
+                "GPU  %x\n", pGpu->gpuInstance);
+        return NV_ERR_INVALID_STATE;
+    }
+
+    status = knvlinkValidateFabricBaseAddress_HAL(pGpu, pKernelNvlink,
+                                                  fabricBaseAddr);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Fabric addr validation failed for GPU %x\n",
+                  pGpu->gpuInstance);
+        return status;
+    }
+
+    if (IsSLIEnabled(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Operation is unsupported on SLI enabled GPU %x\n",
+                  pGpu->gpuInstance);
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (pKernelNvlink->fabricBaseAddr == fabricBaseAddr)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "The same fabric addr is being re-assigned to GPU %x\n",
+                  pGpu->gpuInstance);
+        return NV_OK;
+    }
+
+    if (pKernelNvlink->fabricBaseAddr != NVLINK_INVALID_FABRIC_ADDR)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Fabric addr is already assigned to GPU %x\n",
+                  pGpu->gpuInstance);
+        return NV_ERR_STATE_IN_USE;
+    }
+
+    //
+    // Update GMMU peer field descriptor.
+    // We can safely defer reinitialization of peer field descriptor to this
+    // call because RM doesn't allow any P2P operations until FM assigns fabric
+    // addresses.
+    //
+    NV2080_CTRL_INTERNAL_NVLINK_GET_SET_NVSWITCH_FABRIC_ADDR_PARAMS params;
+
+    portMemSet(&params, 0, sizeof(params));
+    params.bGet = NV_FALSE;
+    params.addr = fabricBaseAddr;
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                                NV2080_CTRL_CMD_INTERNAL_NVLINK_GET_SET_NVSWITCH_FABRIC_ADDR,
+                                (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to stash fabric address for GPU %x\n",
+                pGpu->gpuInstance);
+        return status;
+    }
+
+    pKernelNvlink->fabricBaseAddr = fabricBaseAddr;
+
+    NV_PRINTF(LEVEL_ERROR, "Fabric base addr %llx is assigned to GPU %x\n",
+              pKernelNvlink->fabricBaseAddr, pGpu->gpuInstance);
 
     return NV_OK;
 }

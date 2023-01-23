@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,14 +28,6 @@
 
 #include "nv-time.h"
 
-
-
-
-
-
-
-
-
 extern char *NVreg_TemporaryFilePath;
 
 #define MAX_ERROR_STRING 512
@@ -52,15 +44,11 @@ NvU8  os_page_shift = PAGE_SHIFT;
 NvU32 os_sev_status = 0;
 NvBool os_sev_enabled = 0;
 
-
 #if defined(CONFIG_DMA_SHARED_BUFFER)
 NvBool os_dma_buf_enabled = NV_TRUE;
 #else
 NvBool os_dma_buf_enabled = NV_FALSE;
 #endif // CONFIG_DMA_SHARED_BUFFER
-
-
-
 
 void NV_API_CALL os_disable_console_access(void)
 {
@@ -243,6 +231,90 @@ NV_STATUS NV_API_CALL os_release_semaphore
     os_semaphore_t *os_sema = (os_semaphore_t *)pSema;
     up(os_sema);
     return NV_OK;
+}
+
+typedef struct rw_semaphore os_rwlock_t;
+
+void* NV_API_CALL os_alloc_rwlock(void)
+{
+    os_rwlock_t *os_rwlock = NULL;
+
+    NV_STATUS rmStatus = os_alloc_mem((void *)&os_rwlock, sizeof(os_rwlock_t));
+    if (rmStatus != NV_OK)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate rw_semaphore!\n");
+        return NULL;
+    }
+
+    init_rwsem(os_rwlock);
+
+    return os_rwlock;
+}
+
+void NV_API_CALL os_free_rwlock(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+    os_free_mem(os_rwlock);
+}
+
+NV_STATUS NV_API_CALL os_acquire_rwlock_read(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+
+    if (!NV_MAY_SLEEP())
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+    down_read(os_rwlock);
+    return NV_OK;
+}
+
+NV_STATUS NV_API_CALL os_acquire_rwlock_write(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+
+    if (!NV_MAY_SLEEP())
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+    down_write(os_rwlock);
+    return NV_OK;
+}
+
+NV_STATUS NV_API_CALL os_cond_acquire_rwlock_read(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+
+    if (down_read_trylock(os_rwlock))
+    {
+        return NV_ERR_TIMEOUT_RETRY;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS NV_API_CALL os_cond_acquire_rwlock_write(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+
+    if (down_write_trylock(os_rwlock))
+    {
+        return NV_ERR_TIMEOUT_RETRY;
+    }
+
+    return NV_OK;
+}
+
+void NV_API_CALL os_release_rwlock_read(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+    up_read(os_rwlock);
+}
+
+void NV_API_CALL os_release_rwlock_write(void *pRwLock)
+{
+    os_rwlock_t *os_rwlock = (os_rwlock_t *)pRwLock;
+    up_write(os_rwlock);
 }
 
 NvBool NV_API_CALL os_semaphore_may_sleep(void)
@@ -485,6 +557,7 @@ NV_STATUS NV_API_CALL os_alloc_mem(
     NvU64 size
 )
 {
+    NvU64 original_size = size;
     unsigned long alloc_size;
 
     if (address == NULL)
@@ -492,6 +565,10 @@ NV_STATUS NV_API_CALL os_alloc_mem(
 
     *address = NULL;
     NV_MEM_TRACKING_PAD_SIZE(size);
+
+    // check for integer overflow on size
+    if (size < original_size)
+        return NV_ERR_INVALID_ARGUMENT;
 
     //
     // NV_KMALLOC, nv_vmalloc take an input of 4 bytes in x86. To avoid
@@ -527,7 +604,7 @@ NV_STATUS NV_API_CALL os_alloc_mem(
 
 void NV_API_CALL os_free_mem(void *address)
 {
-    NvU32 size;
+    NvU64 size;
 
     NV_MEM_TRACKING_RETRIEVE_SIZE(address, size);
 
@@ -974,6 +1051,11 @@ void NV_API_CALL os_dbg_set_level(NvU32 new_debuglevel)
     cur_debuglevel = new_debuglevel;
 }
 
+NvU64 NV_API_CALL os_get_max_user_va(void)
+{
+	return TASK_SIZE;
+}
+
 NV_STATUS NV_API_CALL os_schedule(void)
 {
     if (NV_MAY_SLEEP())
@@ -1088,14 +1170,14 @@ void NV_API_CALL os_dbg_breakpoint(void)
 #endif // CONFIG_X86_REMOTE_DEBUG || CONFIG_KGDB || CONFIG_XMON
 }
 
-NvU32 NV_API_CALL os_get_cpu_number()
+NvU32 NV_API_CALL os_get_cpu_number(void)
 {
     NvU32 cpu_id = get_cpu();
     put_cpu();
     return cpu_id;
 }
 
-NvU32 NV_API_CALL os_get_cpu_count()
+NvU32 NV_API_CALL os_get_cpu_count(void)
 {
     return NV_NUM_CPUS();
 }
@@ -1107,7 +1189,7 @@ NvBool NV_API_CALL os_pat_supported(void)
 
 NvBool NV_API_CALL os_is_efi_enabled(void)
 {
-    return NV_EFI_ENABLED();
+    return efi_enabled(EFI_BOOT);
 }
 
 void NV_API_CALL os_get_screen_info(
@@ -1120,35 +1202,78 @@ void NV_API_CALL os_get_screen_info(
     NvU64 consoleBar2Address
 )
 {
-#if defined(CONFIG_FB)
-    int i;
     *pPhysicalAddress = 0;
     *pFbWidth = *pFbHeight = *pFbDepth = *pFbPitch = 0;
 
-    for (i = 0; i < num_registered_fb; i++)
+#if defined(CONFIG_FB) && defined(NV_NUM_REGISTERED_FB_PRESENT)
+    if (num_registered_fb > 0)
     {
-        if (!registered_fb[i])
-            continue;
+        int i;
 
-        /* Make sure base address is mapped to GPU BAR */
-        if ((registered_fb[i]->fix.smem_start == consoleBar1Address) ||
-            (registered_fb[i]->fix.smem_start == consoleBar2Address))
+        for (i = 0; i < num_registered_fb; i++)
         {
-            *pPhysicalAddress = registered_fb[i]->fix.smem_start;
-            *pFbWidth = registered_fb[i]->var.xres;
-            *pFbHeight = registered_fb[i]->var.yres;
-            *pFbDepth = registered_fb[i]->var.bits_per_pixel;
-            *pFbPitch = registered_fb[i]->fix.line_length;
-            break;
+            if (!registered_fb[i])
+                continue;
+
+            /* Make sure base address is mapped to GPU BAR */
+            if ((registered_fb[i]->fix.smem_start == consoleBar1Address) ||
+                (registered_fb[i]->fix.smem_start == consoleBar2Address))
+            {
+                *pPhysicalAddress = registered_fb[i]->fix.smem_start;
+                *pFbWidth = registered_fb[i]->var.xres;
+                *pFbHeight = registered_fb[i]->var.yres;
+                *pFbDepth = registered_fb[i]->var.bits_per_pixel;
+                *pFbPitch = registered_fb[i]->fix.line_length;
+                return;
+            }
         }
     }
-#else
-    *pPhysicalAddress = 0;
-    *pFbWidth = *pFbHeight = *pFbDepth = *pFbPitch = 0;
+#endif
+
+    /*
+     * If the screen info is not found in the registered FBs then fallback
+     * to the screen_info structure.
+     *
+     * The SYSFB_SIMPLEFB option, if enabled, marks VGA/VBE/EFI framebuffers as
+     * generic framebuffers so the new generic system-framebuffer drivers can
+     * be used instead. DRM_SIMPLEDRM drives the generic system-framebuffers
+     * device created by SYSFB_SIMPLEFB.
+     *
+     * SYSFB_SIMPLEFB registers a dummy framebuffer which does not contain the
+     * information required by os_get_screen_info(), therefore you need to
+     * fall back onto the screen_info structure.
+     */
+
+#if NV_IS_EXPORT_SYMBOL_PRESENT_screen_info
+    /*
+     * If there is not a framebuffer console, return 0 size.
+     *
+     * orig_video_isVGA is set to 1 during early Linux kernel
+     * initialization, and then will be set to a value, such as
+     * VIDEO_TYPE_VLFB or VIDEO_TYPE_EFI if an fbdev console is used.
+     */
+    if (screen_info.orig_video_isVGA > 1)
+    {
+        NvU64 physAddr = screen_info.lfb_base;
+#if defined(VIDEO_CAPABILITY_64BIT_BASE)
+        physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
+#endif
+
+        /* Make sure base address is mapped to GPU BAR */
+        if ((physAddr == consoleBar1Address) ||
+            (physAddr == consoleBar2Address))
+        {
+            *pPhysicalAddress = physAddr;
+            *pFbWidth = screen_info.lfb_width;
+            *pFbHeight = screen_info.lfb_height;
+            *pFbDepth = screen_info.lfb_depth;
+            *pFbPitch = screen_info.lfb_linelength;
+        }
+    }
 #endif
 }
 
-void NV_API_CALL os_dump_stack()
+void NV_API_CALL os_dump_stack(void)
 {
     dump_stack();
 }
@@ -1740,7 +1865,6 @@ NV_STATUS NV_API_CALL os_write_file
     NvU64 offset
 )
 {
-#if defined(NV_KERNEL_WRITE_PRESENT)
     loff_t f_pos = offset;
     ssize_t num_written;
     int num_retries = NV_MAX_NUM_FILE_IO_RETRIES;
@@ -1771,9 +1895,6 @@ retry:
     }
 
     return NV_OK;
-#else
-    return NV_ERR_NOT_SUPPORTED;
-#endif
 }
 
 NV_STATUS NV_API_CALL os_read_file
@@ -1937,52 +2058,6 @@ void NV_API_CALL os_wake_up
     complete_all(&wq->q);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 nv_cap_t* NV_API_CALL os_nv_cap_init
 (
     const char *path
@@ -2035,102 +2110,4 @@ void NV_API_CALL os_nv_cap_close_fd
 {
     nv_cap_close_fd(fd);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

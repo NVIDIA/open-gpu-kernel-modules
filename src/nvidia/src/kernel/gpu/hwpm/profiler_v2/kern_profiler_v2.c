@@ -93,7 +93,7 @@ profilerDevConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    PROFILER_CLIENT_PERMISSIONS clientPermissions;
+    PROFILER_CLIENT_PERMISSIONS clientPermissions = {0};
 
     if (!profilerDevQueryCapabilities_HAL(pProfDev, pCallContext, pParams,
                                             &clientPermissions))
@@ -122,6 +122,7 @@ profilerDevQueryCapabilities_IMPL
     pClientPermissions->bMemoryProfilingPermitted =
         _isMemoryProfilingPermitted(pGpu, pProfBase, hClient);
 
+    pClientPermissions->bAdminProfilingPermitted = NV_FALSE;
     if (pSecInfo->privLevel >= RS_PRIV_LEVEL_USER_ROOT)
     {
         bAnyProfilingPermitted = NV_TRUE;
@@ -132,7 +133,9 @@ profilerDevQueryCapabilities_IMPL
         _isDeviceProfilingPermitted(pGpu, pProfBase, pSecInfo);
 
     if (pClientPermissions->bDevProfilingPermitted)
+    {
         bAnyProfilingPermitted = NV_TRUE;
+    }
 
     return bAnyProfilingPermitted;
 }

@@ -34,6 +34,9 @@
 #include <linux/file.h>
 #include <linux/list.h>
 #include <linux/rwsem.h>
+#include <linux/freezer.h>
+
+#include <acpi/video.h>
 
 #include "nvstatus.h"
 
@@ -59,6 +62,9 @@
 
 #define NVKMS_LOG_PREFIX "nvidia-modeset: "
 
+static bool output_rounding_fix = true;
+module_param_named(output_rounding_fix, output_rounding_fix, bool, 0400);
+
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
 MODULE_PARM_DESC(fail_malloc, "Fail the Nth call to nvkms_alloc");
@@ -71,116 +77,16 @@ module_param_named(malloc_verbose, malloc_verbose, bool, 0400);
 
 static atomic_t nvkms_alloc_called_count;
 
+NvBool nvkms_output_rounding_fix(void)
+{
+    return output_rounding_fix;
+}
 
 #define NVKMS_SYNCPT_STUBS_NEEDED
 
 /*************************************************************************
  * NVKMS interface for nvhost unit for sync point APIs.
  *************************************************************************/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #ifdef NVKMS_SYNCPT_STUBS_NEEDED
 /* Unsupported STUB for nvkms_syncpt APIs */
@@ -277,7 +183,10 @@ static inline int nvkms_read_trylock_pm_lock(void)
 
 static inline void nvkms_read_lock_pm_lock(void)
 {
-    down_read(&nvkms_pm_lock);
+    while (!down_read_trylock(&nvkms_pm_lock)) {
+        try_to_freeze();
+        cond_resched();
+    }
 }
 
 static inline void nvkms_read_unlock_pm_lock(void)
@@ -1053,6 +962,12 @@ nvkms_register_backlight(NvU32 gpu_id, NvU32 display_id, void *drv_priv,
     struct nvkms_backlight_device *nvkms_bd = NULL;
     int i;
 
+#if defined(NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE)
+    if (!acpi_video_backlight_use_native()) {
+        return NULL;
+    }
+#endif
+
     gpu_info = nvkms_alloc(NV_MAX_GPUS * sizeof(*gpu_info), NV_TRUE);
     if (gpu_info == NULL) {
         return NULL;
@@ -1175,7 +1090,7 @@ failed:
     return NULL;
 }
 
-void nvkms_close_common(struct nvkms_per_open *popen)
+void nvkms_close_pm_locked(struct nvkms_per_open *popen)
 {
     /*
      * Don't use down_interruptible(): we need to free resources
@@ -1213,13 +1128,13 @@ void nvkms_close_common(struct nvkms_per_open *popen)
     nvkms_free(popen, sizeof(*popen));
 }
 
-static void nvkms_close_deferred(void *data)
+static void nvkms_close_pm_unlocked(void *data)
 {
     struct nvkms_per_open *popen = data;
 
     nvkms_read_lock_pm_lock();
 
-    nvkms_close_common(popen);
+    nvkms_close_pm_locked(popen);
 
     nvkms_read_unlock_pm_lock();
 }
@@ -1227,11 +1142,11 @@ static void nvkms_close_deferred(void *data)
 static void nvkms_close_popen(struct nvkms_per_open *popen)
 {
     if (nvkms_read_trylock_pm_lock() == 0) {
-        nvkms_close_common(popen);
+        nvkms_close_pm_locked(popen);
         nvkms_read_unlock_pm_lock();
     } else {
         nv_kthread_q_item_init(&popen->deferred_close_q_item,
-                               nvkms_close_deferred,
+                               nvkms_close_pm_unlocked,
                                popen);
         nvkms_queue_work(&nvkms_deferred_close_kthread_q,
                          &popen->deferred_close_q_item);
@@ -1284,7 +1199,7 @@ struct nvkms_per_open* nvkms_open_from_kapi
 
 void nvkms_close_from_kapi(struct nvkms_per_open *popen)
 {
-    nvkms_close_popen(popen);
+    nvkms_close_pm_unlocked(popen);
 }
 
 NvBool nvkms_ioctl_from_kapi
@@ -1443,29 +1358,7 @@ static void nvkms_proc_exit(void)
         return;
     }
 
-#if defined(NV_PROC_REMOVE_PRESENT)
     proc_remove(nvkms_proc_dir);
-#else
-    /*
-     * On kernel versions without proc_remove(), we need to explicitly
-     * remove each proc file beneath nvkms_proc_dir.
-     * nvkms_proc_init() only creates files directly under
-     * nvkms_proc_dir, so those are the only files we need to remove
-     * here: warn if there is any deeper directory nesting.
-     */
-    {
-        struct proc_dir_entry *entry = nvkms_proc_dir->subdir;
-
-        while (entry != NULL) {
-            struct proc_dir_entry *next = entry->next;
-            WARN_ON(entry->subdir != NULL);
-            remove_proc_entry(entry->name, entry->parent);
-            entry = next;
-        }
-    }
-
-    remove_proc_entry(nvkms_proc_dir->name, nvkms_proc_dir->parent);
-#endif /* NV_PROC_REMOVE_PRESENT */
 #endif /* CONFIG_PROC_FS */
 }
 
@@ -1727,16 +1620,7 @@ restart:
 module_init(nvkms_init);
 module_exit(nvkms_exit);
 
-#if defined(MODULE_LICENSE)
-
   MODULE_LICENSE("Dual MIT/GPL");
 
-
-
-#endif
-#if defined(MODULE_INFO)
-  MODULE_INFO(supported, "external");
-#endif
-#if defined(MODULE_VERSION)
-  MODULE_VERSION(NV_VERSION_STRING);
-#endif
+MODULE_INFO(supported, "external");
+MODULE_VERSION(NV_VERSION_STRING);

@@ -140,10 +140,13 @@ NV_STATUS __nvoc_objCreate_OBJGPUBOOSTMGR(OBJGPUBOOSTMGR**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJGPUBOOSTMGR((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 NV_STATUS gpuboostmgrConstruct_IMPL(struct OBJGPUBOOSTMGR *arg_pBoostMgr);
+
 #define __nvoc_gpuboostmgrConstruct(arg_pBoostMgr) gpuboostmgrConstruct_IMPL(arg_pBoostMgr)
 void gpuboostmgrDestruct_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr);
+
 #define __nvoc_gpuboostmgrDestruct(pBoostMgr) gpuboostmgrDestruct_IMPL(pBoostMgr)
 NV_STATUS gpuboostmgrCreateGroup_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NV0000_SYNC_GPU_BOOST_GROUP_CONFIG *pBoostConfig);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NV_STATUS gpuboostmgrCreateGroup(struct OBJGPUBOOSTMGR *pBoostMgr, NV0000_SYNC_GPU_BOOST_GROUP_CONFIG *pBoostConfig) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -154,6 +157,7 @@ static inline NV_STATUS gpuboostmgrCreateGroup(struct OBJGPUBOOSTMGR *pBoostMgr,
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NV_STATUS gpuboostmgrDestroyGroup_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 boostGroupId);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NV_STATUS gpuboostmgrDestroyGroup(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 boostGroupId) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -164,6 +168,7 @@ static inline NV_STATUS gpuboostmgrDestroyGroup(struct OBJGPUBOOSTMGR *pBoostMgr
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NV_STATUS gpuboostmgrQueryGroups_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NV0000_SYNC_GPU_BOOST_GROUP_INFO_PARAMS *pParams);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NV_STATUS gpuboostmgrQueryGroups(struct OBJGPUBOOSTMGR *pBoostMgr, NV0000_SYNC_GPU_BOOST_GROUP_INFO_PARAMS *pParams) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -174,6 +179,7 @@ static inline NV_STATUS gpuboostmgrQueryGroups(struct OBJGPUBOOSTMGR *pBoostMgr,
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NV_STATUS gpuboostmgrCheckConfig_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NV0000_SYNC_GPU_BOOST_GROUP_CONFIG *pBoostConfig);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NV_STATUS gpuboostmgrCheckConfig(struct OBJGPUBOOSTMGR *pBoostMgr, NV0000_SYNC_GPU_BOOST_GROUP_CONFIG *pBoostConfig) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -184,6 +190,7 @@ static inline NV_STATUS gpuboostmgrCheckConfig(struct OBJGPUBOOSTMGR *pBoostMgr,
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NV_STATUS gpuboostmgrValidateGroupId_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 boostGroupId);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NV_STATUS gpuboostmgrValidateGroupId(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 boostGroupId) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -194,6 +201,7 @@ static inline NV_STATUS gpuboostmgrValidateGroupId(struct OBJGPUBOOSTMGR *pBoost
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NV_STATUS gpuboostmgrIncrementRefCount_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 boostGroupId);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NV_STATUS gpuboostmgrIncrementRefCount(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 boostGroupId) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -204,6 +212,7 @@ static inline NV_STATUS gpuboostmgrIncrementRefCount(struct OBJGPUBOOSTMGR *pBoo
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NV_STATUS gpuboostmgrDecrementRefCount_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 boostGroupId);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NV_STATUS gpuboostmgrDecrementRefCount(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 boostGroupId) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -214,6 +223,7 @@ static inline NV_STATUS gpuboostmgrDecrementRefCount(struct OBJGPUBOOSTMGR *pBoo
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 OBJGPU *gpuboostmgrGpuItr_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 grpId, NvU32 *pIndex);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline OBJGPU *gpuboostmgrGpuItr(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 grpId, NvU32 *pIndex) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -224,6 +234,7 @@ static inline OBJGPU *gpuboostmgrGpuItr(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NV_STATUS gpuboostmgrGetBoostGrpIdFromGpu_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, OBJGPU *pGpu, NvU32 *pGrpId);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NV_STATUS gpuboostmgrGetBoostGrpIdFromGpu(struct OBJGPUBOOSTMGR *pBoostMgr, OBJGPU *pGpu, NvU32 *pGrpId) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");
@@ -234,6 +245,7 @@ static inline NV_STATUS gpuboostmgrGetBoostGrpIdFromGpu(struct OBJGPUBOOSTMGR *p
 #endif //__nvoc_gpu_boost_mgr_h_disabled
 
 NvBool gpuboostmgrIsBoostGrpActive_IMPL(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 grpId);
+
 #ifdef __nvoc_gpu_boost_mgr_h_disabled
 static inline NvBool gpuboostmgrIsBoostGrpActive(struct OBJGPUBOOSTMGR *pBoostMgr, NvU32 grpId) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUBOOSTMGR was disabled!");

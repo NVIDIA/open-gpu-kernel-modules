@@ -276,16 +276,6 @@
 //      Operations not allowed while holding the lock:
 //      - GPU memory allocation which can evict memory (would require nesting
 //        block locks)
-
-
-
-
-
-
-
-
-
-
 // - Chunk mapping lock (gpu->root_chunk_mappings.bitlocks and
 //   gpu->sysmem_mappings.bitlock)
 //      Order: UVM_LOCK_ORDER_CHUNK_MAPPING
@@ -320,20 +310,6 @@
 //      Operations not allowed while holding this lock
 //      - GPU memory allocation which can evict
 //
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // - Concurrent push semaphore
 //      Order: UVM_LOCK_ORDER_PUSH
 //      Semaphore (uvm_semaphore_t)
@@ -361,7 +337,9 @@
 //
 // - Channel lock
 //      Order: UVM_LOCK_ORDER_CHANNEL
-//      Spinlock (uvm_spinlock_t)
+//      Spinlock (uvm_spinlock_t) or exclusive lock (mutex)
+//
+//      Lock protecting the state of all the channels in a channel pool.
 //
 // - Tools global VA space list lock (g_tools_va_space_list_lock)
 //      Order: UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST
@@ -408,14 +386,8 @@ typedef enum
     UVM_LOCK_ORDER_RM_API,
     UVM_LOCK_ORDER_RM_GPUS,
     UVM_LOCK_ORDER_VA_BLOCK,
-
-
-
     UVM_LOCK_ORDER_CHUNK_MAPPING,
     UVM_LOCK_ORDER_PAGE_TREE,
-
-
-
     UVM_LOCK_ORDER_PUSH,
     UVM_LOCK_ORDER_PMM,
     UVM_LOCK_ORDER_PMM_PMA,

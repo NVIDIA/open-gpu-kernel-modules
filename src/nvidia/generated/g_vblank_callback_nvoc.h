@@ -81,14 +81,15 @@ struct VblankCallback {
     NV_STATUS (*__vblcbInternalControlForward__)(struct VblankCallback *, NvU32, void *, NvU32);
     void (*__vblcbPreDestruct__)(struct VblankCallback *);
     NV_STATUS (*__vblcbUnmapFrom__)(struct VblankCallback *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__vblcbIsDuplicate__)(struct VblankCallback *, NvHandle, NvBool *);
     void (*__vblcbControl_Epilogue__)(struct VblankCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vblcbControlLookup__)(struct VblankCallback *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__vblcbMap__)(struct VblankCallback *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__vblcbAccessCallback__)(struct VblankCallback *, struct RsClient *, void *, RsAccessRight);
     VBLANKCALLBACK CallBack;
     OSVBLANKCALLBACKPROC pProc;
-    void *pParm1;
-    void *pParm2;
+    NvP64 pParm1;
+    NvP64 pParm2;
     NvU32 LogicalHead;
 };
 
@@ -139,6 +140,7 @@ NV_STATUS __nvoc_objCreate_VblankCallback(VblankCallback**, Dynamic*, NvU32, CAL
 #define vblcbInternalControlForward(pGpuResource, command, pParams, size) vblcbInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define vblcbPreDestruct(pResource) vblcbPreDestruct_DISPATCH(pResource)
 #define vblcbUnmapFrom(pResource, pParams) vblcbUnmapFrom_DISPATCH(pResource, pParams)
+#define vblcbIsDuplicate(pResource, hMemory, pDuplicate) vblcbIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define vblcbControl_Epilogue(pResource, pCallContext, pParams) vblcbControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vblcbControlLookup(pResource, pParams, ppEntry) vblcbControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define vblcbMap(pGpuResource, pCallContext, pParams, pCpuMapping) vblcbMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -221,6 +223,10 @@ static inline NV_STATUS vblcbUnmapFrom_DISPATCH(struct VblankCallback *pResource
     return pResource->__vblcbUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS vblcbIsDuplicate_DISPATCH(struct VblankCallback *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__vblcbIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void vblcbControl_Epilogue_DISPATCH(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__vblcbControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -238,8 +244,10 @@ static inline NvBool vblcbAccessCallback_DISPATCH(struct VblankCallback *pResour
 }
 
 NV_STATUS vblcbConstruct_IMPL(struct VblankCallback *arg_pVblankCallback, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_vblcbConstruct(arg_pVblankCallback, arg_pCallContext, arg_pParams) vblcbConstruct_IMPL(arg_pVblankCallback, arg_pCallContext, arg_pParams)
 void vblcbDestruct_IMPL(struct VblankCallback *pVblankCallback);
+
 #define __nvoc_vblcbDestruct(pVblankCallback) vblcbDestruct_IMPL(pVblankCallback)
 #undef PRIVATE_FIELD
 

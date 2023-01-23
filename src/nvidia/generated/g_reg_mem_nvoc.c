@@ -145,8 +145,12 @@ static NV_STATUS __nvoc_thunk_RmResource_regmemControl_Prologue(struct RegisterM
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RegisterMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_regmemIsReady(struct RegisterMemory *pMemory) {
-    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_RegisterMemory_Memory.offset));
+static NvBool __nvoc_thunk_Memory_regmemIsGpuMapAllowed(struct RegisterMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_RegisterMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_regmemIsReady(struct RegisterMemory *pMemory, NvBool bCopyConstructorContext) {
+    return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_RegisterMemory_Memory.offset), bCopyConstructorContext);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_regmemCheckCopyPermissions(struct RegisterMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
@@ -155,6 +159,10 @@ static NV_STATUS __nvoc_thunk_Memory_regmemCheckCopyPermissions(struct RegisterM
 
 static void __nvoc_thunk_RsResource_regmemPreDestruct(struct RegisterMemory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RegisterMemory_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_Memory_regmemIsDuplicate(struct RegisterMemory *pMemory, NvHandle hMemory, NvBool *pDuplicate) {
+    return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_RegisterMemory_Memory.offset), hMemory, pDuplicate);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_regmemUnmapFrom(struct RegisterMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -243,11 +251,15 @@ static void __nvoc_init_funcTable_RegisterMemory_1(RegisterMemory *pThis) {
 
     pThis->__regmemControl_Prologue__ = &__nvoc_thunk_RmResource_regmemControl_Prologue;
 
+    pThis->__regmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_regmemIsGpuMapAllowed;
+
     pThis->__regmemIsReady__ = &__nvoc_thunk_Memory_regmemIsReady;
 
     pThis->__regmemCheckCopyPermissions__ = &__nvoc_thunk_Memory_regmemCheckCopyPermissions;
 
     pThis->__regmemPreDestruct__ = &__nvoc_thunk_RsResource_regmemPreDestruct;
+
+    pThis->__regmemIsDuplicate__ = &__nvoc_thunk_Memory_regmemIsDuplicate;
 
     pThis->__regmemUnmapFrom__ = &__nvoc_thunk_RsResource_regmemUnmapFrom;
 

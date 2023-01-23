@@ -105,7 +105,7 @@ RM_API *RmUnixRmApiPrologue(nv_state_t *pNv, THREAD_STATE_NODE *pThreadNode, NvU
 {
     threadStateInit(pThreadNode, THREAD_STATE_FLAGS_NONE);
 
-    if ((rmApiLockAcquire(API_LOCK_FLAGS_NONE, module)) == NV_OK)
+    if ((rmapiLockAcquire(API_LOCK_FLAGS_NONE, module)) == NV_OK)
     {
         if ((pNv->rmapi.hClient != 0) &&
             (os_ref_dynamic_power(pNv, NV_DYNAMIC_PM_FINE) == NV_OK))
@@ -113,7 +113,7 @@ RM_API *RmUnixRmApiPrologue(nv_state_t *pNv, THREAD_STATE_NODE *pThreadNode, NvU
             return rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
         }
 
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(pThreadNode, THREAD_STATE_FLAGS_NONE);
@@ -132,7 +132,7 @@ RM_API *RmUnixRmApiPrologue(nv_state_t *pNv, THREAD_STATE_NODE *pThreadNode, NvU
 void RmUnixRmApiEpilogue(nv_state_t *pNv, THREAD_STATE_NODE *pThreadNode)
 {
     os_unref_dynamic_power(pNv, NV_DYNAMIC_PM_FINE);
-    rmApiLockRelease();
+    rmapiLockRelease();
     threadStateFree(pThreadNode, THREAD_STATE_FLAGS_NONE);
 }
 
@@ -209,9 +209,9 @@ const NvU8 * RmGetGpuUuidRaw(
     gidFlags = DRF_DEF(2080_GPU_CMD,_GPU_GET_GID_FLAGS,_TYPE,_SHA1)
              | DRF_DEF(2080_GPU_CMD,_GPU_GET_GID_FLAGS,_FORMAT,_BINARY);
 
-    if (!rmApiLockIsOwner())
+    if (!rmapiLockIsOwner())
     {
-        rmStatus = rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU);
+        rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU);
         if (rmStatus != NV_OK)
         {
             return NULL;
@@ -224,7 +224,7 @@ const NvU8 * RmGetGpuUuidRaw(
     {
         if (isApiLockTaken == NV_TRUE)
         {
-            rmApiLockRelease();
+            rmapiLockRelease();
         }
 
         return NULL;
@@ -233,7 +233,7 @@ const NvU8 * RmGetGpuUuidRaw(
     rmStatus = gpuGetGidInfo(pGpu, NULL, NULL, gidFlags);
     if (isApiLockTaken == NV_TRUE)
     {
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     if (rmStatus != NV_OK)
@@ -354,9 +354,7 @@ static void free_os_event_under_lock(nv_event_t *event)
     // If refcount > 0, event will be freed by osDereferenceObjectCount
     // when the last associated RM event is freed.
     if (event->refcount == 0)
-    {
         portMemFree(event);
-    }
 }
 
 static void free_os_events(
@@ -775,19 +773,22 @@ static NV_STATUS RmAccessRegistry(
         // the passed-in ParmStrLength does not account for '\0'
         ParmStrLength++;
 
-        if (ParmStrLength > NVOS38_MAX_REGISTRY_STRING_LENGTH)
+        if ((ParmStrLength == 0) || (ParmStrLength > NVOS38_MAX_REGISTRY_STRING_LENGTH))
         {
             RmStatus = NV_ERR_INVALID_STRING_LENGTH;
             goto done;
         }
-
         // get access to client's parmStr
         RMAPI_PARAM_COPY_INIT(parmStrParamCopy, tmpParmStr, clientParmStrAddress, ParmStrLength, 1);
-        parmStrParamCopy.flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
         RmStatus = rmapiParamsAcquire(&parmStrParamCopy, NV_TRUE);
         if (RmStatus != NV_OK)
         {
             RmStatus = NV_ERR_OPERATING_SYSTEM;
+            goto done;
+        }
+        if (tmpParmStr[ParmStrLength - 1] != '\0')
+        {
+            RmStatus = NV_ERR_INVALID_ARGUMENT;
             goto done;
         }
     }
@@ -1100,66 +1101,55 @@ static NV_STATUS RmPerformVersionCheck(
     return NV_ERR_GENERIC;
 }
 
-NV_STATUS RmSystemEvent(
+//
+// Check if the NVPCF _DSM functions are implemented under
+// NVPCF scope or GPU device scope.
+// As part of RM initialisation this function checks the
+// support of NVPCF _DSM function implementation under
+// NVPCF scope, in case that fails, clear the cached DSM
+// support status and retry the NVPCF _DSM function under
+// GPU scope.
+//
+static void RmCheckNvpcfDsmScope(
+    OBJGPU *pGpu
+)
+{
+    NvU32 supportedFuncs;
+    NvU16 dsmDataSize = sizeof(supportedFuncs);
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+    ACPI_DSM_FUNCTION acpiDsmFunction = ACPI_DSM_FUNCTION_NVPCF_2X;
+    NvU32 acpiDsmSubFunction = NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED;
+
+    nv->nvpcf_dsm_in_gpu_scope = NV_FALSE;
+
+    if ((osCallACPI_DSM(pGpu, acpiDsmFunction, acpiDsmSubFunction,
+                        &supportedFuncs, &dsmDataSize) != NV_OK) ||
+        (FLD_TEST_DRF(PCF0100, _CTRL_CONFIG_DSM,
+                      _FUNC_GET_SUPPORTED_IS_SUPPORTED, _NO, supportedFuncs)) ||
+        (dsmDataSize != sizeof(supportedFuncs)))
+    {
+        nv->nvpcf_dsm_in_gpu_scope = NV_TRUE;
+
+        // clear cached DSM function status
+        uncacheDsmFuncStatus(pGpu, acpiDsmFunction, acpiDsmSubFunction);
+    }
+}
+
+NV_STATUS RmPowerSourceChangeEvent(
     nv_state_t *pNv,
-    NvU32       event_type,
     NvU32       event_val
 )
 {
-    NV_STATUS rmStatus = NV_OK;
-    NV0000_CTRL_SYSTEM_NOTIFY_EVENT_PARAMS params;
+    NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS params = {0};
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
-    switch (event_type)
-    {
-        case NV_SYSTEM_ACPI_BATTERY_POWER_EVENT:
-        {
-            Nv2080PowerEventNotification powerParams;
-            portMemSet(&powerParams, 0, sizeof(powerParams));
-            powerParams.bSwitchToAC = NV_TRUE;
-            powerParams.bGPUCapabilityChanged = NV_FALSE;
-            powerParams.displayMaskAffected = 0;
+    params.powerStateInfo.powerState = event_val ? NV2080_CTRL_PERF_POWER_SOURCE_BATTERY :
+                                                   NV2080_CTRL_PERF_POWER_SOURCE_AC;
 
-            params.eventType = NV0000_CTRL_SYSTEM_EVENT_TYPE_POWER_SOURCE;
-            if (event_val == NV_SYSTEM_ACPI_EVENT_VALUE_POWER_EVENT_BATTERY)
-            {
-                params.eventData = NV0000_CTRL_SYSTEM_EVENT_DATA_POWER_BATTERY;
-                powerParams.bSwitchToAC = NV_FALSE;
-            }
-            else if (event_val == NV_SYSTEM_ACPI_EVENT_VALUE_POWER_EVENT_AC)
-            {
-                params.eventData = NV0000_CTRL_SYSTEM_EVENT_DATA_POWER_AC;
-                powerParams.bSwitchToAC = NV_TRUE;
-            }
-            else
-            {
-                rmStatus = NV_ERR_INVALID_ARGUMENT;
-            }
-            if (rmStatus == NV_OK)
-            {
-                OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-
-                rmStatus = pRmApi->Control(pRmApi,
-                                           pNv->rmapi.hClient,
-                                           pNv->rmapi.hClient,
-                                           NV0000_CTRL_CMD_SYSTEM_NOTIFY_EVENT,
-                                           (void *)&params,
-                                           sizeof(NV0000_CTRL_SYSTEM_NOTIFY_EVENT_PARAMS));
-
-                //
-                // TODO: bug 2812848 Investigate if we can use system event
-                // or if we can broadcast NV2080_NOTIFIERS_POWER_EVENT for all GPUs
-                //
-                gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POWER_EVENT,
-                            &powerParams, sizeof(powerParams), 0, 0);
-            }
-            break;
-        }
-        default:
-            rmStatus = NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return rmStatus;
+    return pRmApi->Control(pRmApi, pNv->rmapi.hClient,
+                           pNv->rmapi.hSubDevice,
+                           NV2080_CTRL_CMD_PERF_SET_POWERSTATE,
+                           &params, sizeof(params));
 }
 
 /*!
@@ -1175,6 +1165,51 @@ static void RmHandleDNotifierEvent(
     NvU32       event_type
 )
 {
+    NV2080_CTRL_PERF_SET_AUX_POWER_STATE_PARAMS params = { 0 };
+    RM_API            *pRmApi;
+    THREAD_STATE_NODE  threadState;
+    NV_STATUS          rmStatus = NV_OK;
+
+    switch (event_type)
+    {
+        case ACPI_NOTIFY_POWER_LEVEL_D1:
+            params.powerState = NV2080_CTRL_PERF_AUX_POWER_STATE_P0;
+            break;
+        case ACPI_NOTIFY_POWER_LEVEL_D2:
+            params.powerState = NV2080_CTRL_PERF_AUX_POWER_STATE_P1;
+            break;
+        case ACPI_NOTIFY_POWER_LEVEL_D3:
+            params.powerState = NV2080_CTRL_PERF_AUX_POWER_STATE_P2;
+            break;
+        case ACPI_NOTIFY_POWER_LEVEL_D4:
+            params.powerState = NV2080_CTRL_PERF_AUX_POWER_STATE_P3;
+            break;
+        case ACPI_NOTIFY_POWER_LEVEL_D5:
+            params.powerState = NV2080_CTRL_PERF_AUX_POWER_STATE_P4;
+            break;
+        default:
+            return;
+    }
+
+    pRmApi = RmUnixRmApiPrologue(pNv, &threadState, RM_LOCK_MODULES_ACPI);
+    if (pRmApi == NULL)
+    {
+        return;
+    }
+
+    rmStatus = pRmApi->Control(pRmApi, pNv->rmapi.hClient,
+                               pNv->rmapi.hSubDevice,
+                               NV2080_CTRL_CMD_PERF_SET_AUX_POWER_STATE,
+                               &params, sizeof(params));
+
+    RmUnixRmApiEpilogue(pNv, &threadState);
+
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "%s: Failed to handle ACPI D-Notifier event, status=0x%x\n",
+                  __FUNCTION__, rmStatus);
+    }
 }
 
 static NV_STATUS
@@ -1372,7 +1407,7 @@ NvBool NV_API_CALL rm_init_adapter(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_DEVICE_INIT);
 
     // LOCK: acquire API lock
-    if (rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT) == NV_OK)
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT) == NV_OK)
     {
         if (!((gpumgrQueryGpuDrainState(pNv->gpu_id, &bEnabled, NULL) == NV_OK)
               && bEnabled))
@@ -1388,7 +1423,7 @@ NvBool NV_API_CALL rm_init_adapter(
         }
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -1411,7 +1446,7 @@ void NV_API_CALL rm_disable_adapter(
     NV_ASSERT_OK(os_flush_work_queue(pNv->queue));
 
     // LOCK: acquire API lock
-    if (rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
     {
         if (pNv->flags & NV_FLAG_PERSISTENT_SW_STATE)
         {
@@ -1423,7 +1458,7 @@ void NV_API_CALL rm_disable_adapter(
         }
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     NV_ASSERT_OK(os_flush_work_queue(pNv->queue));
@@ -1443,12 +1478,12 @@ void NV_API_CALL rm_shutdown_adapter(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    if (rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DESTROY) == NV_OK)
     {
         RmShutdownAdapter(pNv);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -1487,7 +1522,7 @@ NV_STATUS NV_API_CALL rm_acquire_api_lock(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI);
+    rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
@@ -1506,7 +1541,7 @@ NV_STATUS NV_API_CALL rm_release_api_lock(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // UNLOCK: release API lock
-    rmApiLockRelease();
+    rmapiLockRelease();
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
@@ -1845,6 +1880,7 @@ static NV_STATUS RmCreateMmapContextLocked(
     NvP64       address,
     NvU64       size,
     NvU64       offset,
+    NvU32       cachingType,
     NvU32       fd
 )
 {
@@ -1886,6 +1922,7 @@ static NV_STATUS RmCreateMmapContextLocked(
     nvuap->addr = addr;
     nvuap->size = size;
     nvuap->offset = offset;
+    nvuap->caching = cachingType;
 
     //
     // Assume the allocation is contiguous until RmGetMmapPteArray
@@ -1970,19 +2007,19 @@ done:
 
 // TODO: Bug 1802250: [uvm8] Use an alt stack in all functions in unix/src/osapi.c
 NV_STATUS rm_create_mmap_context(
-    nv_state_t *pNv,
     NvHandle    hClient,
     NvHandle    hDevice,
     NvHandle    hMemory,
     NvP64       address,
     NvU64       size,
     NvU64       offset,
+    NvU32       cachingType,
     NvU32       fd
 )
 {
     NV_STATUS rmStatus = NV_OK;
     // LOCK: acquire API lock
-    if ((rmStatus = rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI)) == NV_OK)
     {
         RmClient *pClient;
 
@@ -1997,7 +2034,7 @@ NV_STATUS rm_create_mmap_context(
         else if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) == NV_OK)
         {
             rmStatus = RmCreateMmapContextLocked(hClient, hDevice, hMemory,
-                                                 address, size, offset, fd);
+                                                 address, size, offset, cachingType, fd);
             // UNLOCK: release GPUs lock
             rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         }
@@ -2005,7 +2042,7 @@ NV_STATUS rm_create_mmap_context(
         serverutilReleaseClient(LOCK_ACCESS_READ, pClient);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     return rmStatus;
@@ -2026,6 +2063,7 @@ static NV_STATUS RmGetAllocPrivate(
     PMEMORY_DESCRIPTOR pMemDesc;
     NvU32 pageOffset;
     NvU64 pageCount;
+    NvU64 endingOffset;
     RsResourceRef *pResourceRef;
     RmResource *pRmResource;
     void *pMemData;
@@ -2037,7 +2075,7 @@ static NV_STATUS RmGetAllocPrivate(
     pageOffset = (offset & ~os_page_mask);
     offset &= os_page_mask;
 
-    NV_ASSERT_OR_RETURN(rmApiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+    NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
     if (NV_OK != serverutilAcquireClient(hClient, LOCK_ACCESS_READ, &pClient))
         return NV_ERR_INVALID_CLIENT;
@@ -2086,8 +2124,20 @@ static NV_STATUS RmGetAllocPrivate(
     if (rmStatus != NV_OK)
         goto done;
 
-    pageCount = ((pageOffset + length) / os_page_size);
-    pageCount += (*pPageIndex + (((pageOffset + length) % os_page_size) ? 1 : 0));
+    if (!portSafeAddU64(pageOffset, length, &endingOffset))
+    {
+        rmStatus = NV_ERR_INVALID_ARGUMENT;
+        goto done;
+    }
+
+    pageCount = (endingOffset / os_page_size);
+
+    if (!portSafeAddU64(*pPageIndex + ((endingOffset % os_page_size) ? 1 : 0),
+                        pageCount, &pageCount))
+    {
+        rmStatus = NV_ERR_INVALID_ARGUMENT;
+        goto done;
+    }
 
     if (pageCount > NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount))
     {
@@ -2147,12 +2197,12 @@ NV_STATUS rm_get_adapter_status(
     NV_STATUS rmStatus = NV_ERR_OPERATING_SYSTEM;
 
     // LOCK: acquire API lock
-    if (rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI) == NV_OK)
+    if (rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI) == NV_OK)
     {
         rmStatus = RmGetAdapterStatus(pNv, pStatus);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     return rmStatus;
@@ -2416,7 +2466,7 @@ void NV_API_CALL rm_cleanup_file_private(
         return;
 
     // LOCK: acquire API lock
-    if (rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI) == NV_OK)
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI) == NV_OK)
     {
         // Unref any object which was exported on this file.
         if (nvfp->handles != NULL)
@@ -2441,7 +2491,7 @@ void NV_API_CALL rm_cleanup_file_private(
         RmFreeUnusedClients(pNv, nvfp);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     rmapiEpilogue(pRmApi, &rmApiContext);
@@ -2469,12 +2519,12 @@ void NV_API_CALL rm_unbind_lock(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    if (rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI) == NV_OK)
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI) == NV_OK)
     {
         RmUnbindLock(pNv);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -2490,12 +2540,12 @@ NV_STATUS rm_alloc_os_event(
     NV_STATUS RmStatus;
 
     // LOCK: acquire API lock
-    if ((RmStatus = rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
+    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
     {
         RmStatus = RmAllocOsEvent(hClient, nvfp, fd);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     return RmStatus;
@@ -2509,12 +2559,12 @@ NV_STATUS rm_free_os_event(
     NV_STATUS RmStatus;
 
     // LOCK: acquire API lock
-    if ((RmStatus = rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
+    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
     {
         RmStatus = RmFreeOsEvent(hClient, fd);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     return RmStatus;
@@ -2529,12 +2579,12 @@ NV_STATUS rm_get_event_data(
     NV_STATUS RmStatus;
 
     // LOCK: acquire API lock
-    if ((RmStatus = rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
+    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_EVENT)) == NV_OK)
     {
         RmStatus = RmGetEventData(nvfp, pEvent, MoreEvents, NV_TRUE);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     return RmStatus;
@@ -2566,7 +2616,7 @@ NV_STATUS NV_API_CALL rm_read_registry_dword(
     if (nv != NULL)
     {
         // LOCK: acquire API lock
-        if ((RmStatus = rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI)) != NV_OK)
+        if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI)) != NV_OK)
         {
             NV_EXIT_RM_RUNTIME(sp,fp);
             return RmStatus;
@@ -2583,7 +2633,7 @@ NV_STATUS NV_API_CALL rm_read_registry_dword(
     if (isApiLockTaken == NV_TRUE)
     {
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     NV_EXIT_RM_RUNTIME(sp,fp);
@@ -2607,7 +2657,7 @@ NV_STATUS NV_API_CALL rm_write_registry_dword(
     if (nv != NULL)
     {
         // LOCK: acquire API lock
-        if ((RmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) != NV_OK)
+        if ((RmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) != NV_OK)
         {
             NV_EXIT_RM_RUNTIME(sp,fp);
             return RmStatus;
@@ -2621,7 +2671,7 @@ NV_STATUS NV_API_CALL rm_write_registry_dword(
     if (isApiLockTaken == NV_TRUE)
     {
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     NV_EXIT_RM_RUNTIME(sp,fp);
@@ -2646,7 +2696,7 @@ NV_STATUS NV_API_CALL rm_write_registry_binary(
     if (nv != NULL)
     {
         // LOCK: acquire API lock
-        if ((RmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) != NV_OK)
+        if ((RmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) != NV_OK)
         {
             NV_EXIT_RM_RUNTIME(sp,fp);
             return RmStatus;
@@ -2660,7 +2710,7 @@ NV_STATUS NV_API_CALL rm_write_registry_binary(
     if (isApiLockTaken == NV_TRUE)
     {
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     NV_EXIT_RM_RUNTIME(sp,fp);
@@ -2685,7 +2735,7 @@ NV_STATUS NV_API_CALL rm_write_registry_string(
     if (nv != NULL)
     {
         // LOCK: acquire API lock
-        if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) != NV_OK)
+        if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) != NV_OK)
         {
             NV_EXIT_RM_RUNTIME(sp,fp);
             return rmStatus;
@@ -2699,7 +2749,7 @@ NV_STATUS NV_API_CALL rm_write_registry_string(
     if (isApiLockTaken == NV_TRUE)
     {
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     NV_EXIT_RM_RUNTIME(sp,fp);
@@ -2858,22 +2908,21 @@ static NV_STATUS RmRunNanoTimerCallback(
     void *pTmrEvent
 )
 {
-    OBJSYS             *pSys = SYS_GET_INSTANCE();
     POBJTMR             pTmr = GPU_GET_TIMER(pGpu);
     THREAD_STATE_NODE   threadState;
-    NV_STATUS status = NV_OK;
-
+    NV_STATUS         status = NV_OK;
     // LOCK: try to acquire GPUs lock
-    if ((status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_TMR)) != NV_OK)
+    if ((status = rmGpuLocksAcquire(GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_TMR)) != NV_OK)
     {
-        return status;
-    }
+        TMR_EVENT *pEvent = (TMR_EVENT *)pTmrEvent;
 
-    if ((status = osCondAcquireRmSema(pSys->pSema)) != NV_OK)
-    {
-        // UNLOCK: release GPUs lock
-        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-        return status;
+        //
+        // We failed to acquire the lock - depending on what's holding it,
+        // the lock could be held for a while, so try again soon, but not too
+        // soon to prevent the owner from making forward progress indefinitely.
+        //
+        return osStartNanoTimer(pGpu->pOsGpuInfo, pEvent->pOSTmrCBdata,
+                                osGetTickResolution());
     }
 
     threadStateInitISRAndDeferredIntHandler(&threadState, pGpu,
@@ -2886,7 +2935,6 @@ static NV_STATUS RmRunNanoTimerCallback(
     threadStateFreeISRAndDeferredIntHandler(&threadState,
         pGpu, THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
 
-    osReleaseRmSema(pSys->pSema, NULL);
     // UNLOCK: release GPUs lock
     rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, pGpu);
 
@@ -3000,7 +3048,7 @@ NV_STATUS rm_access_registry(
                        (AccessType == NVOS38_ACCESS_TYPE_READ_BINARY);
 
     // LOCK: acquire API lock
-    if ((RmStatus = rmApiLockAcquire(bReadOnly ? RMAPI_LOCK_FLAGS_READ : RMAPI_LOCK_FLAGS_NONE,
+    if ((RmStatus = rmapiLockAcquire(bReadOnly ? RMAPI_LOCK_FLAGS_READ : RMAPI_LOCK_FLAGS_NONE,
                                      RM_LOCK_MODULES_OSAPI)) == NV_OK)
     {
         RmStatus = RmAccessRegistry(hClient,
@@ -3016,7 +3064,7 @@ NV_STATUS rm_access_registry(
                                     Entry);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     return RmStatus;
@@ -3033,7 +3081,7 @@ NV_STATUS rm_update_device_mapping_info(
     NV_STATUS RmStatus;
 
     // LOCK: acquire API lock
-    if ((RmStatus = rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU)) == NV_OK)
+    if ((RmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU)) == NV_OK)
     {
         RmStatus = RmUpdateDeviceMappingInfo(hClient,
                                              hDevice,
@@ -3042,7 +3090,7 @@ NV_STATUS rm_update_device_mapping_info(
                                              pNewCpuAddress);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     return RmStatus;
@@ -3057,7 +3105,6 @@ static void rm_is_device_rm_firmware_capable(
 {
     NvBool bIsFirmwareCapable = NV_FALSE;
     NvBool bEnableByDefault = NV_FALSE;
-    NvU16 pciDeviceId = pNv->pci_info.device_id;
 
     if (NV_IS_SOC_DISPLAY_DEVICE(pNv))
     {
@@ -3065,7 +3112,7 @@ static void rm_is_device_rm_firmware_capable(
     }
     else
     {
-        bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pciDeviceId,
+        bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pNv->pci_info.device_id,
                                                              pmcBoot42,
                                                              &bEnableByDefault);
     }
@@ -3132,6 +3179,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
         rmStatus = NV_ERR_OPERATING_SYSTEM;
         goto threadfree;
     }
+    NvU32 pmc_boot_1 = NV_PRIV_REG_RD32(reg_mapping, NV_PMC_BOOT_1);
     pmc_boot_0 = NV_PRIV_REG_RD32(reg_mapping, NV_PMC_BOOT_0);
     pmc_boot_42 = NV_PRIV_REG_RD32(reg_mapping, NV_PMC_BOOT_42);
 
@@ -3192,6 +3240,10 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
         goto print_unsupported;
     }
 
+    rmStatus = rm_is_vgpu_supported_device(pNv, pmc_boot_1);
+
+    if (rmStatus != NV_OK)
+        goto print_unsupported;
     goto threadfree;
 
 print_unsupported:
@@ -3328,7 +3380,7 @@ static NV_STATUS RmNonDPAuxI2CTransfer
 (
     nv_state_t *pNv,
     NvU8        portId,
-    NvU8        type,
+    nv_i2c_cmd_t type,
     NvU8        addr,
     NvU8        command,
     NvU32       len,
@@ -3364,13 +3416,29 @@ static NV_STATUS RmNonDPAuxI2CTransfer
             break;
 
         case NV_I2C_CMD_SMBUS_WRITE:
-            params->transData.smbusByteData.bWrite = NV_TRUE;
+            if (len == 2)
+            {
+                params->transData.smbusWordData.bWrite = NV_TRUE;
+            }
+            else
+            {
+                params->transData.smbusByteData.bWrite = NV_TRUE;
+            }
             /* fall through*/
 
         case NV_I2C_CMD_SMBUS_READ:
-            params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW;
-            params->transData.smbusByteData.message = pData[0];
-            params->transData.smbusByteData.registerAddress = command;
+            if (len == 2)
+            {
+                params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_WORD_RW;
+                params->transData.smbusWordData.message = pData[0] | ((NvU16)pData[1] << 8);
+                params->transData.smbusWordData.registerAddress = command;
+            }
+            else
+            {
+                params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_BYTE_RW;
+                params->transData.smbusByteData.message = pData[0];
+                params->transData.smbusByteData.registerAddress = command;
+            }
             break;
 
         case NV_I2C_CMD_SMBUS_BLOCK_WRITE:
@@ -3392,6 +3460,17 @@ static NV_STATUS RmNonDPAuxI2CTransfer
             params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_SMBUS_QUICK_RW;
             break;
 
+        case NV_I2C_CMD_BLOCK_WRITE:
+            params->transData.i2cBufferData.bWrite = NV_TRUE;
+            /* fall through */
+
+        case NV_I2C_CMD_BLOCK_READ:
+            params->transType = NV402C_CTRL_I2C_TRANSACTION_TYPE_I2C_BUFFER_RW;
+            params->transData.i2cBufferData.registerAddress = command;
+            params->transData.i2cBufferData.messageLength = len;
+            params->transData.i2cBufferData.pMessage = pData;
+            break;
+
         default:
             portMemFree(params);
             return NV_ERR_INVALID_ARGUMENT;
@@ -3408,7 +3487,15 @@ static NV_STATUS RmNonDPAuxI2CTransfer
     //
     if (rmStatus == NV_OK && type == NV_I2C_CMD_SMBUS_READ)
     {
-        pData[0] = params->transData.smbusByteData.message;
+        if (len == 2)
+        {
+            pData[0] = (params->transData.smbusWordData.message & 0xff);
+            pData[1] = params->transData.smbusWordData.message >> 8;
+        }
+        else
+        {
+            pData[0] = params->transData.smbusByteData.message;
+        }
     }
 
     portMemFree(params);
@@ -3420,7 +3507,7 @@ NV_STATUS NV_API_CALL rm_i2c_transfer(
     nvidia_stack_t *sp,
     nv_state_t *pNv,
     void       *pI2cAdapter,
-    NvU8        type,
+    nv_i2c_cmd_t type,
     NvU8        addr,
     NvU8        command,
     NvU32       len,
@@ -3443,7 +3530,7 @@ NV_STATUS NV_API_CALL rm_i2c_transfer(
     if (pNvp->flags & NV_INIT_FLAG_PUBLIC_I2C)
     {
         // LOCK: acquire API lock
-        if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_I2C)) != NV_OK)
+        if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_I2C)) != NV_OK)
             goto finish;
 
         unlockApi = NV_TRUE;
@@ -3520,7 +3607,7 @@ finish:
     if (unlockApi)
     {
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -3776,7 +3863,7 @@ NvBool NV_API_CALL rm_i2c_is_smbus_capable(
     if (pNvp->flags & NV_INIT_FLAG_PUBLIC_I2C)
     {
         // LOCK: acquire API lock
-        if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_I2C)) != NV_OK)
+        if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_I2C)) != NV_OK)
             goto semafinish;
 
         unlock = NV_TRUE;
@@ -3815,7 +3902,7 @@ semafinish:
     if (unlock)
     {
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -3845,23 +3932,27 @@ NV_STATUS NV_API_CALL rm_perform_version_check(
     return rmStatus;
 }
 
-NV_STATUS NV_API_CALL rm_system_event(
+//
+// Handles the Power Source Change event(AC/DC) for Notebooks.
+// Notebooks from Maxwell have only one Gpu, so this functions grabs first Gpu
+// from GpuMgr and call subdevice RmControl.
+//
+void NV_API_CALL rm_power_source_change_event(
     nvidia_stack_t *sp,
-    NvU32 event_type,
     NvU32 event_val
 )
 {
     THREAD_STATE_NODE threadState;
-    NV_STATUS  rmStatus;
-    void      *fp;
+    void       *fp;
     nv_state_t *nv;
-    OBJGPU *pGpu = gpumgrGetGpu(0);// Grab the first GPU
+    OBJGPU *pGpu       = gpumgrGetGpu(0);
+    NV_STATUS rmStatus = NV_OK;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_EVENT)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_EVENT)) == NV_OK)
     {
         if (pGpu != NULL)
         {
@@ -3873,7 +3964,7 @@ NV_STATUS NV_API_CALL rm_system_event(
                 if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_EVENT)) ==
                                                                          NV_OK)
                 {
-                    rmStatus = RmSystemEvent(nv, event_type, event_val);
+                    rmStatus = RmPowerSourceChangeEvent(nv, event_val);
 
                     // UNLOCK: release GPU lock
                     rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
@@ -3881,14 +3972,19 @@ NV_STATUS NV_API_CALL rm_system_event(
                 os_unref_dynamic_power(nv, NV_DYNAMIC_PM_FINE);
             }
             // UNLOCK: release API lock
-            rmApiLockRelease();
+            rmapiLockRelease();
         }
     }
 
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "%s: Failed to handle Power Source change event, status=0x%x\n",
+                  __FUNCTION__, rmStatus);
+    }
+ 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
-
-    return rmStatus;
 }
 
 NV_STATUS NV_API_CALL rm_p2p_dma_map_pages(
@@ -3915,7 +4011,7 @@ NV_STATUS NV_API_CALL rm_p2p_dma_map_pages(
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
     {
         OBJGPU *pGpu = gpumgrGetGpuFromUuid(pGpuUuid,
             DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1) |
@@ -3957,7 +4053,7 @@ NV_STATUS NV_API_CALL rm_p2p_dma_map_pages(
             }
         }
 
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -3982,7 +4078,7 @@ NV_STATUS NV_API_CALL rm_p2p_get_gpu_info(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P);
+    rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P);
     if (rmStatus == NV_OK)
     {
         OBJGPU *pGpu;
@@ -4012,7 +4108,7 @@ NV_STATUS NV_API_CALL rm_p2p_get_gpu_info(
         }
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4040,7 +4136,7 @@ NV_STATUS NV_API_CALL rm_p2p_get_pages_persistent(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
     {
         rmStatus = RmP2PGetPagesPersistent(gpuVirtualAddress,
                                            length,
@@ -4050,7 +4146,7 @@ NV_STATUS NV_API_CALL rm_p2p_get_pages_persistent(
                                            pPlatformData,
                                            pGpuInfo);
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4081,7 +4177,7 @@ NV_STATUS NV_API_CALL rm_p2p_get_pages(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
     {
         OBJGPU *pGpu;
         rmStatus = RmP2PGetPagesWithoutCallbackRegistration(p2pToken,
@@ -4116,7 +4212,7 @@ NV_STATUS NV_API_CALL rm_p2p_get_pages(
         }
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4143,13 +4239,13 @@ NV_STATUS NV_API_CALL rm_p2p_register_callback(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
     {
         rmStatus = RmP2PRegisterCallback(p2pToken, gpuVirtualAddress, length,
                                          pPlatformData, pFreeCallback, pData);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4172,12 +4268,12 @@ NV_STATUS NV_API_CALL rm_p2p_put_pages_persistent(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
     {
         rmStatus = RmP2PPutPagesPersistent(p2pObject, pKey);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4202,7 +4298,7 @@ NV_STATUS NV_API_CALL rm_p2p_put_pages(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    if ((rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_P2P)) == NV_OK)
     {
         rmStatus = RmP2PPutPages(p2pToken,
                                  vaSpaceToken,
@@ -4210,7 +4306,7 @@ NV_STATUS NV_API_CALL rm_p2p_put_pages(
                                  pKey);
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4226,7 +4322,6 @@ char* NV_API_CALL rm_get_gpu_uuid(
 {
     NV_STATUS rmStatus;
     const NvU8 *pGid;
-    OBJGPU *pGpu;
     char *pGidString;
 
     THREAD_STATE_NODE threadState;
@@ -4258,16 +4353,7 @@ char* NV_API_CALL rm_get_gpu_uuid(
     }
     else
     {
-        const char *pTmpString;
-
-        // No raw GID, but we still return a string
-        pGpu = NV_GET_NV_PRIV_PGPU(nv);
-
-        if (rmStatus == NV_ERR_NOT_SUPPORTED && pGpu != NULL &&
-            pGpu->getProperty(pGpu, PDB_PROP_GPU_STATE_INITIALIZED))
-            pTmpString = "N/A";
-        else
-            pTmpString = "GPU-???????\?-???\?-???\?-???\?-????????????";
+        const char *pTmpString = "GPU-???????\?-???\?-???\?-???\?-????????????";
 
         portStringCopy(pGidString, GPU_UUID_ASCII_LEN, pTmpString,
                        portStringLength(pTmpString) + 1);
@@ -4436,7 +4522,7 @@ NV_STATUS NV_API_CALL rm_log_gpu_crash(
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    if ((status = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DIAG)) == NV_OK)
+    if ((status = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DIAG)) == NV_OK)
     {
         OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(nv);
 
@@ -4447,7 +4533,7 @@ NV_STATUS NV_API_CALL rm_log_gpu_crash(
 
             rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         }
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4536,6 +4622,10 @@ void RmInitAcpiMethods(OBJOS *pOS, OBJSYS *pSys, OBJGPU *pGpu)
         return;
 
     nv_acpi_methods_init(&handlesPresent);
+
+    // Check if NVPCF _DSM functions are implemented under NVPCF or GPU device scope.
+    RmCheckNvpcfDsmScope(pGpu);
+    acpiDsmInit(pGpu);
 
 }
 
@@ -4790,7 +4880,7 @@ NvBool NV_API_CALL rm_is_device_sequestered(
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    if (rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU) == NV_OK)
+    if (rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU) == NV_OK)
     {
         //
         // If gpumgrQueryGpuDrainState succeeds, bDrain will be set as needed.
@@ -4800,7 +4890,7 @@ NvBool NV_API_CALL rm_is_device_sequestered(
         //
         (void) gpumgrQueryGpuDrainState(pNv->gpu_id, &bDrain, NULL);
 
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4821,7 +4911,7 @@ void NV_API_CALL rm_check_for_gpu_surprise_removal(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock.
-    if ((rmStatus = rmApiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU)) == NV_OK)
+    if ((rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU)) == NV_OK)
     {
         OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(nv);
 
@@ -4832,7 +4922,7 @@ void NV_API_CALL rm_check_for_gpu_surprise_removal(
         }
 
         // UNLOCK: release api lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -4984,7 +5074,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
 
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
 
-    NV_ASSERT(rmApiLockIsOwner());
+    NV_ASSERT(rmapiLockIsOwner());
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
@@ -5052,7 +5142,7 @@ void NV_API_CALL rm_dma_buf_undup_mem_handle(
 
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
 
-    NV_ASSERT(rmApiLockIsOwner());
+    NV_ASSERT(rmapiLockIsOwner());
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
@@ -5090,7 +5180,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
     pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-    NV_ASSERT(rmApiLockIsOwner());
+    NV_ASSERT(rmapiLockIsOwner());
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
@@ -5128,7 +5218,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_unmap_mem_handle(
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
     pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-    NV_ASSERT(rmApiLockIsOwner());
+    NV_ASSERT(rmapiLockIsOwner());
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
@@ -5159,7 +5249,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI);
+    rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI);
     if (rmStatus == NV_OK)
     {
         OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(nv);
@@ -5174,7 +5264,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
         }
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -5200,7 +5290,7 @@ void NV_API_CALL rm_dma_buf_put_client_and_device(
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // LOCK: acquire API lock
-    rmStatus = rmApiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI);
+    rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI);
     if (rmStatus == NV_OK)
     {
         OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(nv);
@@ -5215,10 +5305,24 @@ void NV_API_CALL rm_dma_buf_put_client_and_device(
         }
 
         // UNLOCK: release API lock
-        rmApiLockRelease();
+        rmapiLockRelease();
     }
     NV_ASSERT_OK(rmStatus);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
+}
+
+//
+// Fetches GSP ucode data for usage during RM Init
+// NOTE: Used only on VMWware
+//
+
+NvBool NV_API_CALL rm_is_altstack_in_use(void)
+{
+#if defined(__use_altstack__)
+    return NV_TRUE;
+#else
+    return NV_FALSE;
+#endif
 }

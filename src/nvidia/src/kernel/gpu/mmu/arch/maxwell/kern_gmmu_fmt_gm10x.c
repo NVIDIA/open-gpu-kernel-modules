@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,7 @@
  */
 
 #if !defined(SRT_BUILD)
+#define NVOC_KERN_GMMU_H_PRIVATE_ACCESS_ALLOWED
 #include "gpu/mmu/kern_gmmu.h"
 #endif
 #include "mmu/gmmu_fmt.h"
@@ -57,23 +58,26 @@ void kgmmuFmtInitLevels_GM10X(KernelGmmu    *pKernelGmmu,
     NV_ASSERT_OR_RETURN_VOID(bigPageShift == 16 || bigPageShift == 17);
 
     // Page directory (root).
-    pLevels[0].virtAddrBitHi = 39;
-    pLevels[0].virtAddrBitLo = (NvU8)bigPageShift + 10;
-    pLevels[0].entrySize     = NV_MMU_PDE__SIZE;
-    pLevels[0].numSubLevels  = 2;
-    pLevels[0].subLevels     = pLevels + 1;
+    pLevels[0].virtAddrBitHi  = 39;
+    pLevels[0].virtAddrBitLo  = (NvU8)bigPageShift + 10;
+    pLevels[0].entrySize      = NV_MMU_PDE__SIZE;
+    pLevels[0].numSubLevels   = 2;
+    pLevels[0].subLevels      = pLevels + 1;
+    pLevels[0].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PD0;
 
     // Big page table.
-    pLevels[1].virtAddrBitHi = pLevels[0].virtAddrBitLo - 1;
-    pLevels[1].virtAddrBitLo = (NvU8)bigPageShift;
-    pLevels[1].entrySize     = NV_MMU_PTE__SIZE;
-    pLevels[1].bPageTable    = NV_TRUE;
+    pLevels[1].virtAddrBitHi  = pLevels[0].virtAddrBitLo - 1;
+    pLevels[1].virtAddrBitLo  = (NvU8)bigPageShift;
+    pLevels[1].entrySize      = NV_MMU_PTE__SIZE;
+    pLevels[1].bPageTable     = NV_TRUE;
+    pLevels[1].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_BIG;
 
     // Small page table.
-    pLevels[2].virtAddrBitHi = pLevels[0].virtAddrBitLo - 1;
-    pLevels[2].virtAddrBitLo = 12;
-    pLevels[2].entrySize     = NV_MMU_PTE__SIZE;
-    pLevels[2].bPageTable    = NV_TRUE;
+    pLevels[2].virtAddrBitHi  = pLevels[0].virtAddrBitLo - 1;
+    pLevels[2].virtAddrBitLo  = 12;
+    pLevels[2].entrySize      = NV_MMU_PTE__SIZE;
+    pLevels[2].bPageTable     = NV_TRUE;
+    pLevels[2].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_4K;
 }
 
 void kgmmuFmtInitPdeMulti_GM10X(KernelGmmu                *pKernelGmmu,

@@ -302,59 +302,6 @@ void nvDbgDumpBufferBytes(void *pBuffer, NvU32 length);
 #endif
 
 
-//********************************************************************************
-//
-//  NVRM_TRACE support
-//    low-overhead runtime state capture
-//    to enable, define USE_NVRM_TRACE (retail or debug builds)
-//
-//********************************************************************************
-
-#ifdef USE_NVRM_TRACE
-
-NvU32 NVRM_TRACE_INIT(void);
-NvU32 NVRM_TRACE_DISABLE(void);
-void NVRM_TRACE_ENABLE(void);
-void NVRM_TRACE_DUMP(void);
-void NVRM_TRACE(NvU32);
-void NVRM_TRACEV(NvU32 *,NvU32);
-void NVRM_TRACE1(NvU32);
-void NVRM_TRACE2(NvU32, NvU32);
-void NVRM_TRACE3(NvU32, NvU32, NvU32);
-void NVRM_TRACE4(NvU32, NvU32, NvU32, NvU32);
-void NVRM_TRACE5(NvU32, NvU32, NvU32, NvU32, NvU32);
-
-// versions of reg read/write that log to trace buffer
-//NvU32 NVRM_TRACE_REG_RD32(OBJGPU *, NvU32);
-//void NVRM_TRACE_REG_WR32(OBJGPU *, NvU32, NvU32);
-
-// fifolog format looks like:
-//  31:28   = unique file number
-//  27:4    = file line number
-//  1:0     = fifo state bits (bit1 = puller, bit0 = reassign)
-#define FIFOLOG(fn,fa,fb) NVRM_TRACE2('FIFO', ((fn << 28) | (__LINE__ << 4) |       \
-                                                    ((fa & 0x1) ? 1 : 0) << 1 |     \
-                                                    ((fb & 0x1) ? 1 : 0)) )
-
-#else  // ! USE_NVRM_TRACE
-
-#define NVRM_TRACE_INIT()
-#define NVRM_TRACE_DISABLE() 0
-#define NVRM_TRACE_ENABLE()
-#define NVRM_TRACE_DUMP()
-#define NVRM_TRACE(c0)
-#define NVRM_TRACE1(c0)
-#define NVRM_TRACE2(c0, c1)
-#define NVRM_TRACE3(c0, c1, c2)
-#define NVRM_TRACE4(c0, c1, c2, c3)
-#define NVRM_TRACE5(c0, c1, c2, c3, c4)
-#define FIFOLOG(a,b,c)
-
-#endif  // ! USE_NVRM_TRACE
-
-#define NVRM_TRACE_ERROR(code, status)   NVRM_TRACE3('EEEE', (code), (status))
-#define NVRM_TRACE_API(code, p0, p1, p2) NVRM_TRACE5('API ', (code), (p0), (p1), (p2))
-
 void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist);
 void nvErrorLog_va(void * pGpu, NvU32 num, const char * pFormat, ...);
 

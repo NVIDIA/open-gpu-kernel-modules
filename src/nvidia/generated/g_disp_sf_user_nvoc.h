@@ -78,6 +78,7 @@ struct DispSfUser {
     NV_STATUS (*__dispsfInternalControlForward__)(struct DispSfUser *, NvU32, void *, NvU32);
     void (*__dispsfPreDestruct__)(struct DispSfUser *);
     NV_STATUS (*__dispsfUnmapFrom__)(struct DispSfUser *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__dispsfIsDuplicate__)(struct DispSfUser *, NvHandle, NvBool *);
     void (*__dispsfControl_Epilogue__)(struct DispSfUser *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispsfControlLookup__)(struct DispSfUser *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__dispsfMap__)(struct DispSfUser *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -132,6 +133,7 @@ NV_STATUS __nvoc_objCreate_DispSfUser(DispSfUser**, Dynamic*, NvU32, struct CALL
 #define dispsfInternalControlForward(pGpuResource, command, pParams, size) dispsfInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dispsfPreDestruct(pResource) dispsfPreDestruct_DISPATCH(pResource)
 #define dispsfUnmapFrom(pResource, pParams) dispsfUnmapFrom_DISPATCH(pResource, pParams)
+#define dispsfIsDuplicate(pResource, hMemory, pDuplicate) dispsfIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispsfControl_Epilogue(pResource, pCallContext, pParams) dispsfControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define dispsfControlLookup(pResource, pParams, ppEntry) dispsfControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispsfMap(pGpuResource, pCallContext, pParams, pCpuMapping) dispsfMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -210,6 +212,10 @@ static inline NV_STATUS dispsfUnmapFrom_DISPATCH(struct DispSfUser *pResource, R
     return pResource->__dispsfUnmapFrom__(pResource, pParams);
 }
 
+static inline NV_STATUS dispsfIsDuplicate_DISPATCH(struct DispSfUser *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__dispsfIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline void dispsfControl_Epilogue_DISPATCH(struct DispSfUser *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__dispsfControl_Epilogue__(pResource, pCallContext, pParams);
 }
@@ -227,6 +233,7 @@ static inline NvBool dispsfAccessCallback_DISPATCH(struct DispSfUser *pResource,
 }
 
 NV_STATUS dispsfConstruct_IMPL(struct DispSfUser *arg_pDispSfUser, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_dispsfConstruct(arg_pDispSfUser, arg_pCallContext, arg_pParams) dispsfConstruct_IMPL(arg_pDispSfUser, arg_pCallContext, arg_pParams)
 #undef PRIVATE_FIELD
 

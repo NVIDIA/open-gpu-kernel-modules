@@ -21,6 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+
+#include "nvport/nvport.h"
 #include "deprecated/rmapi_deprecated.h"
 
 #include "class/cl0070.h"  // NV01_MEMORY_VIRTUAL/NV01_MEMORY_SYSTEM_DYNAMIC
@@ -247,6 +249,7 @@ RmDeprecatedIdleChannels
 {
     NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS params     = {0};
     NV_STATUS                            status;
+    NvU32                                handleBufferSize;
     void                                *phClients  = 0;
     void                                *phDevices  = 0;
     void                                *phChannels = 0;
@@ -257,13 +260,19 @@ RmDeprecatedIdleChannels
     params.flags       = pArgs->flags;
     params.timeout     = pArgs->timeout;
 
+    if (!portSafeMulU32(pArgs->numChannels, sizeof(NvU32), &handleBufferSize))
+    {
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto done;
+    }
+
     // XXX this should have a max - but copying old behavior for now
     if (DRF_VAL(OS30, _FLAGS, _CHANNEL, pArgs->flags) == NVOS30_FLAGS_CHANNEL_LIST && 
         params.numChannels)
     {
         // Copy-in phClients
         status = pContext->CopyUser(pContext, RMAPI_DEPRECATED_COPYIN, RMAPI_DEPRECATED_BUFFER_ALLOCATE,
-                                    pArgs->phClients, pArgs->numChannels * sizeof(NvU32), &phClients);
+                                    pArgs->phClients, handleBufferSize, &phClients);
         if (status != NV_OK)
             goto done;
 
@@ -271,7 +280,7 @@ RmDeprecatedIdleChannels
 
         // Copy-in phDevices
         status = pContext->CopyUser(pContext, RMAPI_DEPRECATED_COPYIN, RMAPI_DEPRECATED_BUFFER_ALLOCATE,
-                                    pArgs->phDevices, pArgs->numChannels * sizeof(NvU32), &phDevices);
+                                    pArgs->phDevices, handleBufferSize, &phDevices);
         if (status != NV_OK)
             goto done;
 
@@ -279,7 +288,7 @@ RmDeprecatedIdleChannels
 
         // Copy-in phChannels
         status = pContext->CopyUser(pContext, RMAPI_DEPRECATED_COPYIN, RMAPI_DEPRECATED_BUFFER_ALLOCATE,
-                                    pArgs->phChannels, pArgs->numChannels * sizeof(NvU32), &phChannels);
+                                    pArgs->phChannels, handleBufferSize, &phChannels);
         if (status != NV_OK)
             goto done;
 
@@ -295,19 +304,19 @@ done:
     if (phClients)
     {
         pContext->CopyUser(pContext, RMAPI_DEPRECATED_COPYRELEASE, RMAPI_DEPRECATED_BUFFER_ALLOCATE,
-                           pArgs->phClients, pArgs->numChannels * sizeof(NvU32), &phClients);
+                           pArgs->phClients, handleBufferSize, &phClients);
     }
 
     if (phDevices)
     {
         pContext->CopyUser(pContext, RMAPI_DEPRECATED_COPYRELEASE, RMAPI_DEPRECATED_BUFFER_ALLOCATE,
-                           pArgs->phDevices, pArgs->numChannels * sizeof(NvU32), &phDevices);
+                           pArgs->phDevices, handleBufferSize, &phDevices);
     }
 
     if (phChannels)
     {
         pContext->CopyUser(pContext, RMAPI_DEPRECATED_COPYRELEASE, RMAPI_DEPRECATED_BUFFER_ALLOCATE,
-                           pArgs->phChannels, pArgs->numChannels * sizeof(NvU32), &phChannels);
+                           pArgs->phChannels, handleBufferSize, &phChannels);
     }
     pArgs->status = status;
 }

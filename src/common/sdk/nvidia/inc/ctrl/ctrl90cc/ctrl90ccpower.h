@@ -30,9 +30,6 @@
 // Source file: ctrl/ctrl90cc/ctrl90ccpower.finn
 //
 
-
-
-
 #include "ctrl/ctrl90cc/ctrl90ccbase.h"
 
 /* GF100_PROFILER GPU control commands and parameters */

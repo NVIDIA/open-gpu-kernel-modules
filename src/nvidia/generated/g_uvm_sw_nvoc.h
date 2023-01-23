@@ -82,6 +82,7 @@ struct UvmSwObject {
     NV_STATUS (*__uvmswUnregisterEvent__)(struct UvmSwObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__uvmswCanCopy__)(struct UvmSwObject *);
     void (*__uvmswPreDestruct__)(struct UvmSwObject *);
+    NV_STATUS (*__uvmswIsDuplicate__)(struct UvmSwObject *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__uvmswGetNotificationListPtr__)(struct UvmSwObject *);
     struct NotifShare *(*__uvmswGetNotificationShare__)(struct UvmSwObject *);
     NV_STATUS (*__uvmswMap__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -147,6 +148,7 @@ NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject**, Dynamic*, NvU32, struct CA
 #define uvmswUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) uvmswUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define uvmswCanCopy(pResource) uvmswCanCopy_DISPATCH(pResource)
 #define uvmswPreDestruct(pResource) uvmswPreDestruct_DISPATCH(pResource)
+#define uvmswIsDuplicate(pResource, hMemory, pDuplicate) uvmswIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define uvmswGetNotificationListPtr(pNotifier) uvmswGetNotificationListPtr_DISPATCH(pNotifier)
 #define uvmswGetNotificationShare(pNotifier) uvmswGetNotificationShare_DISPATCH(pNotifier)
 #define uvmswMap(pGpuResource, pCallContext, pParams, pCpuMapping) uvmswMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -255,6 +257,10 @@ static inline void uvmswPreDestruct_DISPATCH(struct UvmSwObject *pResource) {
     pResource->__uvmswPreDestruct__(pResource);
 }
 
+static inline NV_STATUS uvmswIsDuplicate_DISPATCH(struct UvmSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__uvmswIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *uvmswGetNotificationListPtr_DISPATCH(struct UvmSwObject *pNotifier) {
     return pNotifier->__uvmswGetNotificationListPtr__(pNotifier);
 }
@@ -272,10 +278,13 @@ static inline NV_STATUS uvmswGetOrAllocNotifShare_DISPATCH(struct UvmSwObject *p
 }
 
 NV_STATUS uvmswConstruct_IMPL(struct UvmSwObject *arg_pUvmSw, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
 #define __nvoc_uvmswConstruct(arg_pUvmSw, arg_pCallContext, arg_pParams) uvmswConstruct_IMPL(arg_pUvmSw, arg_pCallContext, arg_pParams)
 void uvmswDestruct_IMPL(struct UvmSwObject *pUvmSw);
+
 #define __nvoc_uvmswDestruct(pUvmSw) uvmswDestruct_IMPL(pUvmSw)
 void uvmswInitSwMethodState_IMPL(struct UvmSwObject *pUvmSw);
+
 #ifdef __nvoc_uvm_sw_h_disabled
 static inline void uvmswInitSwMethodState(struct UvmSwObject *pUvmSw) {
     NV_ASSERT_FAILED_PRECOMP("UvmSwObject was disabled!");

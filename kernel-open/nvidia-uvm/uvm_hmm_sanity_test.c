@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021 NVIDIA Corporation
+    Copyright (c) 2021-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -35,7 +35,7 @@ NV_STATUS uvm_test_hmm_sanity(UVM_TEST_HMM_SANITY_PARAMS *params, struct file *f
     uvm_va_block_t *hmm_block = NULL;
     NV_STATUS status;
 
-    mm = uvm_va_space_mm_retain(va_space);
+    mm = uvm_va_space_mm_or_current_retain(va_space);
     if (!mm)
         return NV_WARN_NOTHING_TO_DO;
 
@@ -61,7 +61,7 @@ NV_STATUS uvm_test_hmm_sanity(UVM_TEST_HMM_SANITY_PARAMS *params, struct file *f
     status = uvm_hmm_va_block_find_create(va_space, 0UL, NULL, &hmm_block);
     TEST_CHECK_GOTO(status == NV_ERR_INVALID_ADDRESS, done);
 
-    // Try to create an HMM va_block which overlaps a UVM managed block.
+    // Try to create an HMM va_block which overlaps a managed block.
     // It should fail.
     status = uvm_hmm_va_block_find_create(va_space, params->uvm_address, NULL, &hmm_block);
     TEST_CHECK_GOTO(status == NV_ERR_INVALID_ADDRESS, done);
@@ -77,14 +77,14 @@ NV_STATUS uvm_test_hmm_sanity(UVM_TEST_HMM_SANITY_PARAMS *params, struct file *f
 done:
     uvm_va_space_up_read(va_space);
     uvm_up_read_mmap_lock(mm);
-    uvm_va_space_mm_release(va_space);
+    uvm_va_space_mm_or_current_release(va_space, mm);
 
     return status;
 
 out:
     uvm_va_space_up_write(va_space);
     uvm_up_write_mmap_lock(mm);
-    uvm_va_space_mm_release(va_space);
+    uvm_va_space_mm_or_current_release(va_space, mm);
 
     return status;
 }

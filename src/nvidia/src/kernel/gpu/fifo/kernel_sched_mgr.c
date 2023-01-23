@@ -53,34 +53,12 @@ _kschedmgrGetSchedulerPolicy
     NvU32           *pSchedPolicy
 )
 {
-    NvBool  bSupportSwScheduler = NV_FALSE;
     NvU32   schedPolicy         = SCHED_POLICY_DEFAULT;
-
-    //
-    //  Disable OBJSCHED_SW_ENABLE when GPU is older than Pascal.
-    //  This is true for WDDM and vGPU scheduling
-    if (!IsPASCALorBetter(pGpu))
-    {
-        bSupportSwScheduler = NV_FALSE;
-    }
-
-    //  Disable OBJSCHED_SW_ENABLE when mig is enabled.
-    if (bSupportSwScheduler && IS_MIG_ENABLED(pGpu))
-    {
-        bSupportSwScheduler = NV_FALSE;
-        portDbgPrintf("NVRM: Software Scheduler is not supported in MIG mode\n");
-    }
 
     *pSchedPolicy = schedPolicy;
 
     switch (schedPolicy)
     {
-        case SCHED_POLICY_VGPU_RELATIVE:
-            return "EQUAL_SHARE";
-        case SCHED_POLICY_PGPU_SHARE:
-            return  "FIXED_SHARE";
-        case SCHED_POLICY_GFN_LSTT:
-            return  "GFN_LSTT";
         default:
             if (hypervisorIsVgxHyper())
                 return "BEST_EFFORT";
@@ -107,7 +85,7 @@ kschedmgrConstructPolicy_IMPL
     schedPolicyName = _kschedmgrGetSchedulerPolicy(pKernelSchedMgr, pGpu, &pKernelSchedMgr->configSchedPolicy);
 
     // PVMRL is disabled when GPU is older than Pascal
-    if (hypervisorIsVgxHyper() && IsPASCALorBetter(pGpu))
+    if (((RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)) || hypervisorIsVgxHyper()) && IsPASCALorBetter(pGpu))
     {
         pKernelSchedMgr->bIsSchedSwEnabled = (pKernelSchedMgr->configSchedPolicy != SCHED_POLICY_DEFAULT);
 
@@ -126,8 +104,8 @@ kschedmgrConstructPolicy_IMPL
                   schedPolicyName);
     }
 
-    // Enabled SWRL Granular locking only if SWRL is enabled on hypervisor.
-    if (hypervisorIsVgxHyper() && pKernelSchedMgr->bIsSchedSwEnabled)
+    // Enabled SWRL Granular locking only if SWRL is enabled on hypervisor or VGPU_GSP_PLUGIN_OFFLOAD is enabled
+    if (((RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)) || hypervisorIsVgxHyper()) && pKernelSchedMgr->bIsSchedSwEnabled)
     {
         pGpu->setProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING, NV_TRUE);
     }

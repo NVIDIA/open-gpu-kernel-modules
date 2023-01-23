@@ -165,6 +165,10 @@ static NV_STATUS __nvoc_thunk_RsResource_i2capiUnmapFrom(struct I2cApi *pResourc
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pParams);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_i2capiIsDuplicate(struct I2cApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), hMemory, pDuplicate);
+}
+
 static void __nvoc_thunk_RmResource_i2capiControl_Epilogue(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RmResource.offset), pCallContext, pParams);
 }
@@ -359,6 +363,8 @@ static void __nvoc_init_funcTable_I2cApi_1(I2cApi *pThis) {
     pThis->__i2capiPreDestruct__ = &__nvoc_thunk_RsResource_i2capiPreDestruct;
 
     pThis->__i2capiUnmapFrom__ = &__nvoc_thunk_RsResource_i2capiUnmapFrom;
+
+    pThis->__i2capiIsDuplicate__ = &__nvoc_thunk_RsResource_i2capiIsDuplicate;
 
     pThis->__i2capiControl_Epilogue__ = &__nvoc_thunk_RmResource_i2capiControl_Epilogue;
 

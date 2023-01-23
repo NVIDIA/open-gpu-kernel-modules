@@ -94,4 +94,153 @@ subdeviceCtrlCmdPerfRatedTdpSetControl_KERNEL
     return status;
 }
 
+/*!
+ * @brief Send ACPI callback function to notify SBIOS of our power state change
+ *
+ * @param  pGpu            OBJGPU pointer
+ * @param  pKernelPerf     KernelPerf pointer
+ *
+ * @return No return value from this function.
+ */
+static void
+_kperfSendPostPowerStateCallback
+(
+    OBJGPU     *pGpu,
+    KernelPerf *pKernelPerf
+)
+{
+    NvU32     inOutData    = 0;
+    NvU16     outDataSize  = sizeof(inOutData);
+    OBJOS    *pOS          = GPU_GET_OS(pGpu);
+    NV_STATUS status       = NV_OK;
+    ACPI_DSM_FUNCTION func = gpuGetPerfPostPowerStateFunc(pGpu);
+    RM_API    *pRmApi      = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_INTERNAL_PERF_GET_AUX_POWER_STATE_PARAMS ctrlParams = { 0 };
+
+    // Bail out early if ACPI callback is not supported.
+    if (func == ACPI_DSM_FUNCTION_COUNT)
+    {
+        return;
+    }
+
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_PERF_GET_AUX_POWER_STATE,
+                             &ctrlParams,
+                             sizeof(ctrlParams));
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Error getting Aux Power State:0x%x\n", status);
+    }
+
+    // Setup the argument to send
+    inOutData = FLD_SET_DRF(_ACPI, _CALLBACKS_ARG, _POSTPOWERSTATE, _NOTIFY,
+                            inOutData);
+    inOutData = FLD_SET_DRF_NUM(_ACPI, _CALLBACKS_ARG, _CURRENTPOWERSTATE,
+                                ctrlParams.powerState, inOutData);
+
+    status = pOS->osCallACPI_DSM(pGpu, func,
+                                   NV_ACPI_GENERIC_FUNC_CALLBACKS,
+                                   &inOutData, &outDataSize);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "PostPState callback error:0x%x\n", status);
+    }
+}
+
+NV_STATUS
+subdeviceCtrlCmdPerfSetAuxPowerState_KERNEL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_PERF_SET_AUX_POWER_STATE_PARAMS *pPowerStateParams
+)
+{
+    OBJGPU   *pGpu   = GPU_RES_GET_GPU(pSubdevice);
+    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    KernelPerf *pKernelPerf = GPU_GET_KERNEL_PERF(pGpu);
+    NV_STATUS status;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, (pKernelPerf != NULL), NV_ERR_NOT_SUPPORTED);
+
+    NV_ASSERT_OR_RETURN(pPowerStateParams->powerState < NV2080_CTRL_PERF_AUX_POWER_STATE_COUNT,
+                        NV_ERR_INVALID_ARGUMENT);
+
+    // Redirect to Physical RM.
+    status = pRmApi->Control(pRmApi,
+                             RES_GET_CLIENT_HANDLE(pSubdevice),
+                             RES_GET_HANDLE(pSubdevice),
+                             NV2080_CTRL_CMD_PERF_SET_AUX_POWER_STATE,
+                             pPowerStateParams,
+                             sizeof(*pPowerStateParams));
+
+    if (status != NV_OK)
+    {
+        NV_ASSERT(0);
+    }
+
+    _kperfSendPostPowerStateCallback(pGpu, pKernelPerf);
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdPerfSetPowerstate_KERNEL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS *pPowerInfoParams
+)
+{
+    POBJGPU     pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    RM_API     *pRmApi      = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    KernelPerf *pKernelPerf = GPU_GET_KERNEL_PERF(pGpu);
+    NV_STATUS   status      = NV_OK;
+    NvBool      bSwitchToAC = (pPowerInfoParams->powerStateInfo.powerState ==
+                                             NV2080_CTRL_PERF_POWER_SOURCE_AC);
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, (pKernelPerf != NULL), NV_ERR_NOT_SUPPORTED);
+
+    if ((pPowerInfoParams->powerStateInfo.powerState != NV2080_CTRL_PERF_POWER_SOURCE_AC) &&
+        (pPowerInfoParams->powerStateInfo.powerState != NV2080_CTRL_PERF_POWER_SOURCE_BATTERY))
+    {
+        status = NV_ERR_INVALID_ARGUMENT;
+    }
+    else if(!gpuIsGpuFullPower(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NV2080_CTRL_CMD_PERF_SET_POWERSTATE called in power down state.\n");
+        NV_PRINTF(LEVEL_ERROR, "      Returning NV_ERR_GPU_NOT_FULL_POWER.\n");
+        status = NV_ERR_GPU_NOT_FULL_POWER;
+    }
+
+    if (status != NV_OK)
+        return status;
+
+    // Redirect to Physical RM.
+    status = pRmApi->Control(pRmApi,
+                             RES_GET_CLIENT_HANDLE(pSubdevice),
+                             RES_GET_HANDLE(pSubdevice),
+                             NV2080_CTRL_CMD_PERF_SET_POWERSTATE,
+                             pPowerInfoParams,
+                             sizeof(*pPowerInfoParams));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NV2080_CTRL_CMD_PERF_SET_POWERSTATE RPC failed\n");
+    }
+
+    // If callback was registered, update platform with the current Auxpower state(Dx)
+    _kperfSendPostPowerStateCallback(pGpu, pKernelPerf);
+
+    Nv2080PowerEventNotification powerEventNotificationParams = {0};
+
+    // Notify clients about AC/DC switch
+    powerEventNotificationParams.bSwitchToAC = bSwitchToAC;
+    powerEventNotificationParams.bGPUCapabilityChanged = 0;
+    powerEventNotificationParams.displayMaskAffected = 0;
+    gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POWER_EVENT,
+        &powerEventNotificationParams, sizeof(powerEventNotificationParams), 0, 0);
+
+    return status;
+}
 /* ------------------------- Private Functions ------------------------------ */

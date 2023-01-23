@@ -1923,7 +1923,8 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
                                 const struct NvKmsMode *pKmsMode,
                                 const struct NvKmsSize *pViewPortSizeIn,
                                 const struct NvKmsRect *pViewPortOut,
-                                NVHwModeTimingsEvo *pTimingsEvo)
+                                NVHwModeTimingsEvo *pTimingsEvo,
+                                NVT_VIDEO_INFOFRAME_CTRL *pInfoFrameCtrl)
 {
     EvoValidateModeFlags flags;
     struct NvKmsMode kmsMode = *pKmsMode;
@@ -1959,7 +1960,9 @@ NvBool nvValidateModeForModeset(NVDpyEvoRec *pDpyEvo,
         return FALSE;
     }
 
-    pTimingsEvo->infoFrameCtrl = infoFrameCtrl;
+    if (pInfoFrameCtrl != NULL) {
+        *pInfoFrameCtrl = infoFrameCtrl;
+    }
 
     return TRUE;
 }

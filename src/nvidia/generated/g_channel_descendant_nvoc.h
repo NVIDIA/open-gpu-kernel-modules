@@ -147,6 +147,7 @@ struct ChannelDescendant {
     NV_STATUS (*__chandesUnregisterEvent__)(struct ChannelDescendant *, NvHandle, NvHandle, NvHandle, NvHandle);
     NvBool (*__chandesCanCopy__)(struct ChannelDescendant *);
     void (*__chandesPreDestruct__)(struct ChannelDescendant *);
+    NV_STATUS (*__chandesIsDuplicate__)(struct ChannelDescendant *, NvHandle, NvBool *);
     PEVENTNOTIFICATION *(*__chandesGetNotificationListPtr__)(struct ChannelDescendant *);
     struct NotifShare *(*__chandesGetNotificationShare__)(struct ChannelDescendant *);
     NV_STATUS (*__chandesMap__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -211,6 +212,7 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant**, Dynamic*, NvU3
 #define chandesUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) chandesUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define chandesCanCopy(pResource) chandesCanCopy_DISPATCH(pResource)
 #define chandesPreDestruct(pResource) chandesPreDestruct_DISPATCH(pResource)
+#define chandesIsDuplicate(pResource, hMemory, pDuplicate) chandesIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define chandesGetNotificationListPtr(pNotifier) chandesGetNotificationListPtr_DISPATCH(pNotifier)
 #define chandesGetNotificationShare(pNotifier) chandesGetNotificationShare_DISPATCH(pNotifier)
 #define chandesMap(pGpuResource, pCallContext, pParams, pCpuMapping) chandesMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -218,6 +220,7 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant**, Dynamic*, NvU3
 static inline void chandesIsolateOnDestruct_b3696a(struct ChannelDescendant *pChannelDescendant) {
     return;
 }
+
 
 #ifdef __nvoc_channel_descendant_h_disabled
 static inline void chandesIsolateOnDestruct(struct ChannelDescendant *pChannelDescendant) {
@@ -232,6 +235,7 @@ static inline void chandesIsolateOnDestruct(struct ChannelDescendant *pChannelDe
 static inline void chandesDestroy_b3696a(struct ChannelDescendant *pChannelDescendant) {
     return;
 }
+
 
 #ifdef __nvoc_channel_descendant_h_disabled
 static inline void chandesDestroy(struct ChannelDescendant *pChannelDescendant) {
@@ -349,6 +353,10 @@ static inline void chandesPreDestruct_DISPATCH(struct ChannelDescendant *pResour
     pResource->__chandesPreDestruct__(pResource);
 }
 
+static inline NV_STATUS chandesIsDuplicate_DISPATCH(struct ChannelDescendant *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__chandesIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
 static inline PEVENTNOTIFICATION *chandesGetNotificationListPtr_DISPATCH(struct ChannelDescendant *pNotifier) {
     return pNotifier->__chandesGetNotificationListPtr__(pNotifier);
 }
@@ -366,8 +374,10 @@ static inline NvBool chandesAccessCallback_DISPATCH(struct ChannelDescendant *pR
 }
 
 NV_STATUS chandesConstruct_IMPL(struct ChannelDescendant *arg_pChannelDescendant, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams, PARAM_TO_ENGDESC_FUNCTION *arg_pParamToEngDescFn);
+
 #define __nvoc_chandesConstruct(arg_pChannelDescendant, arg_pCallContext, arg_pParams, arg_pParamToEngDescFn) chandesConstruct_IMPL(arg_pChannelDescendant, arg_pCallContext, arg_pParams, arg_pParamToEngDescFn)
 void chandesDestruct_IMPL(struct ChannelDescendant *pChannelDescendant);
+
 #define __nvoc_chandesDestruct(pChannelDescendant) chandesDestruct_IMPL(pChannelDescendant)
 #undef PRIVATE_FIELD
 

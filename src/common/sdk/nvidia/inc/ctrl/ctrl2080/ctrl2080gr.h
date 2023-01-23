@@ -30,12 +30,11 @@
 // Source file: ctrl/ctrl2080/ctrl2080gr.finn
 //
 
-
-
-
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 #include "ctrl/ctrl0080/ctrl0080gr.h"        /* 2080 is partially derivative of 0080 */
+#include "nvcfg_sdk.h"
+
 /*
  * NV2080_CTRL_GR_ROUTE_INFO
  *
@@ -253,6 +252,7 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_SINGLETON_GPCS         NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_SINGLETON_GPCS
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_GPCS              NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_GPCS
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_TPCS_PER_GFXC_GPC NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_TPCS_PER_GFXC_GPC
+#define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_SLICES_PER_LTC         NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_SLICES_PER_LTC
 
 /* When adding a new INDEX, please update INDEX_MAX and MAX_SIZE accordingly
  * NOTE: 0080 functionality is merged with 2080 functionality, so this max size
@@ -300,6 +300,8 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_09                         (0x00000809U)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_9_00                         (0x00000900U)
 
+
+
 /* compatibility SM versions to match the official names in the ISA (e.g., SM5.2)  */
 #define NV2080_CTRL_GR_INFO_SM_VERSION_5_2                          (NV2080_CTRL_GR_INFO_SM_VERSION_5_02)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_5_3                          (NV2080_CTRL_GR_INFO_SM_VERSION_5_03)
@@ -315,6 +317,7 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_8                          (NV2080_CTRL_GR_INFO_SM_VERSION_8_08)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_8_9                          (NV2080_CTRL_GR_INFO_SM_VERSION_8_09)
 #define NV2080_CTRL_GR_INFO_SM_VERSION_9_0                          (NV2080_CTRL_GR_INFO_SM_VERSION_9_00)
+
 
 
 /**
@@ -514,7 +517,8 @@ typedef struct NV2080_CTRL_GR_CTXSW_PM_MODE_PARAMS {
  *
  *   hClient
  *     This parameter specifies the client handle of
- *     that owns the zcull context buffer.
+ *     that owns the zcull context buffer. This field must match
+ *     the hClient used in the control call for non-kernel clients.
  *   hChannel
  *     This parameter specifies the channel handle of
  *     the channel that is to have its zcull context switch mode changed.
@@ -1085,6 +1089,8 @@ typedef struct NV2080_CTRL_GR_GET_CTX_BUFFER_INFO_PARAMS {
 #define NV2080_CTRL_CMD_GR_GET_GLOBAL_SM_ORDER              (0x2080121bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_GLOBAL_SM_ORDER_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_CMD_GR_GET_GLOBAL_SM_ORDER_MAX_SM_COUNT 512U
+
+#define NV2080_CTRL_GR_DISABLED_SM_VGPC_ID                  0xFFU
 
 #define NV2080_CTRL_GR_GET_GLOBAL_SM_ORDER_PARAMS_MESSAGE_ID (0x1BU)
 
@@ -1785,5 +1791,30 @@ typedef struct NV2080_CTRL_GR_FECS_BIND_EVTBUF_FOR_UID_V2_PARAMS {
     NvBool                              bAllUsers;
     NvU32                               reasonCode;
 } NV2080_CTRL_GR_FECS_BIND_EVTBUF_FOR_UID_V2_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_GR_GET_GFX_GPC_AND_TPC_INFO
+ *
+ * This command grabs information on GFX capable GPC's and TPC's for a specifc GR engine
+ *
+ *  grRouteInfo[IN]
+ *      This parameter specifies the routing information used to
+ *      disambiguate the target GR engine.
+ *
+ *  physGfxGpcMask [OUT]
+ *     Physical mask of Gfx capable GPC's
+ *
+ *  numGfxTpc [OUT]
+ *     Total number of Gfx capable TPC's
+ */
+#define NV2080_CTRL_CMD_GR_GET_GFX_GPC_AND_TPC_INFO (0x20801239U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GET_GFX_GPC_AND_TPC_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GR_GET_GFX_GPC_AND_TPC_INFO_PARAMS_MESSAGE_ID (0x39U)
+
+typedef struct NV2080_CTRL_GR_GET_GFX_GPC_AND_TPC_INFO_PARAMS {
+    NV_DECLARE_ALIGNED(NV2080_CTRL_GR_ROUTE_INFO grRouteInfo, 8);
+    NvU32 physGfxGpcMask;
+    NvU32 numGfxTpc;
+} NV2080_CTRL_GR_GET_GFX_GPC_AND_TPC_INFO_PARAMS;
 
 /* _ctrl2080gr_h_ */
