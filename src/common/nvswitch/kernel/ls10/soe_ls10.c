@@ -337,6 +337,13 @@ nvswitch_set_nport_tprod_state_ls10
     NVSWITCH_TIMEOUT    timeout;
     RM_SOE_CORE_CMD_NPORT_TPROD_STATE *nportTprodState;
 
+    if (!NVSWITCH_ENG_IS_VALID(device, NPORT, nport))
+    {
+         NVSWITCH_PRINT(device, ERROR, "%s: NPORT #%d invalid\n",
+                        __FUNCTION__, nport);
+        return -NVL_BAD_ARGS;
+    }
+
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 
     cmd.hdr.unitId = RM_SOE_UNIT_CORE;
@@ -414,7 +421,6 @@ nvswitch_soe_init_l2_state_ls10
     }
 }
 
-
 /*
  * @Brief : Init sequence for SOE FSP RISCV image
  *
@@ -474,6 +480,14 @@ nvswitch_init_soe_ls10
             "SOE init failed(2)\n");
         return status;
     }
+
+    //
+    // Set TRACEPC to stack mode for better ucode trace
+    // In Vulcan CR firmware, this is set to reduced mode in the SOE's manifest
+    //
+    data = flcnRiscvRegRead_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL);
+    data = FLD_SET_DRF(_PRISCV, _RISCV_TRACECTL, _MODE, _STACK, data);
+    flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL, data);
 
     // Sanity the command and message queues as a final check
     if (_nvswitch_soe_send_test_cmd(device) != NV_OK)

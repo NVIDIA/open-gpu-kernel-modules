@@ -189,7 +189,7 @@ PMA_PAGESTATUS pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib);
 NV_STATUS pmaRegmapScanContiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
     NvU64 numPages, NvU64 *freelist, NvU32 pageSize, NvU64 alignment,
-    NvU64 *pagesAllocated, NvBool bSkipEvict);
+    NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 /*!
  * @brief Scan the list for any space
@@ -216,7 +216,7 @@ NV_STATUS pmaRegmapScanContiguous(
 NV_STATUS pmaRegmapScanDiscontiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
     NvU64 numPages, NvU64 *freelist, NvU32 pageSize, NvU64 alignment,
-    NvU64 *pagesAllocated, NvBool bSkipEvict);
+    NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 /*!
  * @brief Gets the total size of specified PMA managed region.

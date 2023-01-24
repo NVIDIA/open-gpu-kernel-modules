@@ -277,8 +277,8 @@ _flcnDbgInfoCaptureRiscvPcTrace_LS10
     PFLCN            pFlcn
 )
 {
-    NvU32 ctl, ridx, widx, count, bufferSize;
-    NvBool full;
+    NvU32 ctl, ridx, widx, bufferSize;
+    NvBool bWasFull;
 
     // Only supported on riscv
     if (!UPROC_ENG_ARCH_FALCON_RISCV(pFlcn))
@@ -290,23 +290,22 @@ _flcnDbgInfoCaptureRiscvPcTrace_LS10
         return;
     }
 
-    flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL,
-        DRF_DEF(_PRISCV_RISCV, _TRACECTL, _MODE, _FULL) |
-        DRF_DEF(_PRISCV_RISCV, _TRACECTL, _UMODE_ENABLE, _TRUE) |
-        DRF_DEF(_PRISCV_RISCV, _TRACECTL, _MMODE_ENABLE, _TRUE) |
-        DRF_DEF(_PRISCV_RISCV, _TRACECTL, _INTR_ENABLE, _FALSE) |
-        DRF_DEF(_PRISCV_RISCV, _TRACECTL, _HIGH_THSHD, _INIT));
-
     ctl = flcnRiscvRegRead_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL);
+    if (ctl == 0)
+    {
+          NVSWITCH_PRINT(device, ERROR, "Trace buffer is disabled.\n");
+          return;
+    }
 
-    full = FLD_TEST_DRF_NUM(_PRISCV_RISCV, _TRACECTL,_FULL, 1, ctl);
 
-    if (full)
+    bWasFull = FLD_TEST_DRF_NUM(_PRISCV_RISCV, _TRACECTL,_FULL, 1, ctl);
+
+    if (bWasFull)
     {
         NVSWITCH_PRINT(device, INFO, "%s: Trace buffer full. Entries may have been lost.\n", __FUNCTION__);
     }
 
-    // Reset and disable buffer, we don't need it during dump
+    // Reset and disable buffer, we don't need it during dump (and if core is running)
     flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL, 0);
 
     widx = flcnRiscvRegRead_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACE_WTIDX);
@@ -316,34 +315,47 @@ _flcnDbgInfoCaptureRiscvPcTrace_LS10
     bufferSize = DRF_VAL(_PRISCV_RISCV, _TRACE_RDIDX, _MAXIDX, ridx);
     ridx = DRF_VAL(_PRISCV_RISCV, _TRACE_RDIDX, _RDIDX, ridx);
 
-    count = widx > ridx ? widx - ridx : bufferSize + widx - ridx;
-
-    //
-    // Trace buffer is full when write idx == read idx and full is set,
-    // otherwise it is empty.
-    //
-    if (widx == ridx && !full)
-        count = 0;
-
-    if (count)
+    if (bufferSize > 0)
     {
         NvU32 entry;
-        NVSWITCH_PRINT(device, INFO, "%s: Tracebuffer has %d entries. Starting with latest.\n", __FUNCTION__, count);
+
+        switch (DRF_VAL(_PRISCV_RISCV, _TRACECTL, _MODE, ctl))
+        {
+            case NV_PRISCV_RISCV_TRACECTL_MODE_FULL:
+                NVSWITCH_PRINT(device, ERROR, "Tracebuffer is in full mode.\n");
+                break;
+            case NV_PRISCV_RISCV_TRACECTL_MODE_REDUCED:
+                NVSWITCH_PRINT(device, ERROR, "Tracebuffer is in reduced mode.\n");
+                break;
+            case NV_PRISCV_RISCV_TRACECTL_MODE_STACK:
+                NVSWITCH_PRINT(device, ERROR, "Tracebuffer is in stack mode.\n");
+                break;
+            default:
+                NVSWITCH_PRINT(device, ERROR, "Tracebuffer is in unknown mode.\n");
+        }
+
+        NVSWITCH_PRINT(device, ERROR, "Entries (most recent first):\n");
+
         ridx = widx;
-        for (entry = 0; entry < count; ++entry)
+        for (entry = 0; entry < bufferSize; entry++)
         {
             NvU64 pc;
 
             ridx = ridx > 0 ? ridx - 1 : bufferSize - 1;
-            flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACE_RDIDX, DRF_NUM(_PRISCV_RISCV, _TRACE_RDIDX, _RDIDX, ridx));
+            flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACE_RDIDX,
+                                  DRF_NUM(_PRISCV_RISCV, _TRACE_RDIDX, _RDIDX, ridx));
+
             pc = flcnRiscvRegRead_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACEPC_HI);
             pc = (pc << 32) | flcnRiscvRegRead_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACEPC_LO);
-            NVSWITCH_PRINT(device, INFO, "%s: TRACE[%d] = 0x%16llx\n", __FUNCTION__, entry, pc);
+
+            // Non-mod2 values are invalid here, so stop (this likely indicates an init-marker val)
+            if (NvU64_LO32(pc) % 2U != 0U)
+            {
+                break;
+            }
+
+            NVSWITCH_PRINT(device, ERROR, "%s: TRACE[%d] = 0x%16llx\n", __FUNCTION__, entry, pc);
         }
-    }
-    else
-    {
-        NVSWITCH_PRINT(device, INFO, "%s: Trace buffer is empty.\n", __FUNCTION__);
     }
 
     // reset trace buffer

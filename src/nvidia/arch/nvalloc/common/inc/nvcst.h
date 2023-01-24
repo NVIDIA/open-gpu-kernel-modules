@@ -290,6 +290,7 @@ VENDORNAME vendorName[] =
     {PCI_VENDOR_ID_FUJITSU,     "Fujitsu"},
     {PCI_VENDOR_ID_CADENCE,     "Cadence"},
     {PCI_VENDOR_ID_ARM,         "ARM"},
+    {PCI_VENDOR_ID_ALIBABA,     "Alibaba"},
     {0,                         "Unknown"} // Indicates end of the table
 };
 
@@ -345,6 +346,7 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_ARM,         0x0100, CS_ARM_NEOVERSEN1},     // Arm Neoverse N1
     {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN96XX}, // Marvell OCTEON CN96xx
     {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN98XX}, // Marvell OCTEON CN98xx
+    {PCI_VENDOR_ID_ALIBABA,     0x8000, CS_ALIBABA_YITIAN},      // Alibaba Yitian
 
     // last element must have chipset CS_UNKNOWN (zero)
     {0,                         0,      CS_UNKNOWN}

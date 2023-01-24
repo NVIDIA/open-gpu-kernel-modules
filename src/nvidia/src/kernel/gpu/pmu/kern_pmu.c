@@ -79,7 +79,7 @@ kpmuInitLibosLoggingStructures_IMPL
                      "NVRISCV", NULL);
 
     // Finish PMU log init (setting the lossless-print flag and resolve-pointers flag)
-    libosLogInitEx(&pKernelPmu->logDecode, pKernelPmu->pLogElf, NV_TRUE, NV_TRUE, pKernelPmu->logElfSize);
+    libosLogInitEx(&pKernelPmu->logDecode, pKernelPmu->pLogElf, NV_TRUE, NV_TRUE, NV_TRUE, pKernelPmu->logElfSize);
 
     if (nvStatus != NV_OK)
         kpmuFreeLibosLoggingStructures(pGpu, pKernelPmu);

@@ -257,10 +257,6 @@ nv_drm_init_mode_config(struct nv_drm_device *nv_dev,
     dev->mode_config.preferred_depth = 24;
     dev->mode_config.prefer_shadow = 1;
 
-    /* Currently unused. Update when needed. */
-
-    dev->mode_config.fb_base = 0;
-
 #if defined(NV_DRM_CRTC_STATE_HAS_ASYNC_FLIP) || \
     defined(NV_DRM_CRTC_STATE_HAS_PAGEFLIP_FLAGS)
     dev->mode_config.async_page_flip = true;

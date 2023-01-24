@@ -325,13 +325,6 @@ static NvBool HsIoctlFlipValidateOneHwState(
     const NVFlipChannelEvoHwState *pHwState,
     const NvU32 sd)
 {
-    /* HeadSurface does not support completion notifiers, yet. */
-
-    if ((pHwState->completionNotifier.surface.pSurfaceEvo != NULL) ||
-        (pHwState->completionNotifier.awaken)) {
-        return FALSE;
-    }
-
     /* The semaphore surface must have a CPU mapping. */
 
     if (!pHwState->syncObject.usingSyncpt) {
@@ -404,6 +397,17 @@ static NvBool HsIoctlFlipAssignHwStateOneHead(
     for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
         if (!pFlipState->dirty.layer[layer]) {
             continue;
+        }
+
+        /*
+         * HeadSurface only supports client notifiers when running in
+         * swapgroup mode where each flip IOCTL will result in a real
+         * flip in HW.
+         */
+        if (((pFlipState->layer[layer].completionNotifier.surface.pSurfaceEvo != NULL) ||
+             pFlipState->layer[layer].completionNotifier.awaken) &&
+            !pHsChannel->config.neededForSwapGroup) {
+            return FALSE;
         }
 
         if (!HsIoctlFlipValidateOneHwState(&pFlipState->layer[layer], sd)) {

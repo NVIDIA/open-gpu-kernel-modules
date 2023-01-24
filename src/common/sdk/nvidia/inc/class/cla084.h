@@ -73,5 +73,9 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NvHandle   guestFbHandleList[NVA084_MAX_VMMU_SEGMENTS];
     NvHandle   hPluginHeapMemory;
     NV_DECLARE_ALIGNED(NvU64 ctrlBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffSize, 8);
     NvBool     bDeviceProfilingEnabled;
 } NVA084_ALLOC_PARAMETERS;

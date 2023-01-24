@@ -340,6 +340,7 @@ knvlinkStateLoad_IMPL
                                                !kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
     NvU32             preInitializedLinks;
     NvU32             i;
+    OBJTMR            *pTmr = GPU_GET_TIMER(pGpu);
 
     //
     // If we are on the resume path, nvlinkIsPresent will not be called,
@@ -652,6 +653,21 @@ knvlinkStateLoad_IMPL
         FOR_EACH_INDEX_IN_MASK_END;
     }
 
+    FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink->enabledLinks)
+    {
+        status = tmrEventCreate(pTmr, &pKernelNvlink->nvlinkLinks[i].pTmrEvent,
+                            ioctrlFaultUpTmrHandler, NULL,
+                            TMR_FLAGS_NONE);
+        if (status != NV_OK)
+        {
+           NV_PRINTF(LEVEL_ERROR,
+                          "Failed to create TmrEvent for Link %d\n", i);
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    listInit(&pKernelNvlink->faultUpLinks, portMemAllocatorGetGlobalNonPaged());
+
 knvlinkStateLoad_end:
 
     if (status != NV_OK)
@@ -922,6 +938,8 @@ knvlinkStatePostUnload_IMPL
     FOR_EACH_INDEX_IN_MASK_END;
 #endif
 
+    listDestroy(&pKernelNvlink->faultUpLinks);
+
 knvlinkStatePostUnload_end:
 
     _knvlinkPurgeState(pGpu, pKernelNvlink);
@@ -946,13 +964,28 @@ _knvlinkPurgeState
 {
     KernelIoctrl *pKernelIoctrl = NULL;
     NvU32         ioctrlIdx;
-
 #if defined(INCLUDE_NVLINK_LIB)
 
+    NvU32         linkId;
+    OBJTMR       *pTmr = GPU_GET_TIMER(pGpu);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool bMIGNvLinkP2PDisabled = ((pKernelMIGManager != NULL) &&
                           !kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
-    
+
+    FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
+    {
+        if ((pKernelNvlink->nvlinkLinks[linkId].pTmrEvent != NULL) && (pTmr != NULL))
+        {
+            if (tmrEventOnList(pTmr, pKernelNvlink->nvlinkLinks[linkId].pTmrEvent))
+            {
+                 tmrEventCancel(pTmr, pKernelNvlink->nvlinkLinks[linkId].pTmrEvent);
+            }
+            tmrEventDestroy(pTmr, pKernelNvlink->nvlinkLinks[linkId].pTmrEvent);
+            pKernelNvlink->nvlinkLinks[linkId].pTmrEvent = NULL;
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
     // RM disables NVLink at runtime in Hopper so device un-registration can't be skipped
     if (!IsGH100orBetter(pGpu))
     {
@@ -976,8 +1009,6 @@ _knvlinkPurgeState
     {
         if (pKernelNvlink->pNvlinkDev)
         {
-            NvU32 linkId;
-
             // Un-register the links from nvlink core library
             FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
             {
@@ -1088,6 +1119,9 @@ knvlinkSetDegradedMode_IMPL
     if (pRemoteKernelNvlink->bIsGpuDegraded == NV_FALSE)
     {
         pKernelNvlink->bIsGpuDegraded = NV_TRUE;
+        NV_PRINTF(LEVEL_ERROR,
+                "GPU%d marked Degraded for error on linkId %d \n", 
+                pGpu->gpuInstance, linkId);
 
         // shutdown all the links on this GPU
         status = knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, NV_TRUE);

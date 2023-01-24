@@ -141,6 +141,20 @@ struct nvlink_link_change
     enum nvlink_link_change_type change_type;
 };
 
+//
+// Structure representing Nvlink Error Threshold
+//
+struct nvlink_link_error_threshold
+{
+    NvU8 thresholdMan;
+    NvU8 thresholdExp;
+    NvU8 timescaleMan;
+    NvU8 timescaleExp;
+    NvBool bInterruptEn;
+    NvBool bUserConfig;
+    NvBool bInterruptTrigerred; // Error threshold interrupt generated
+};
+
 // nvlink link state
 struct nvlink_link
 {
@@ -233,6 +247,8 @@ struct nvlink_link
 
     //seed data for given nvlink
     NvU32 seedData[NVLINK_MAX_SEED_BUFFER_SIZE];
+
+    struct nvlink_link_error_threshold errorThreshold;
 };
 
 // nvlink link handler ops

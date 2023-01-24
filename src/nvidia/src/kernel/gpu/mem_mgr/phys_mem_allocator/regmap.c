@@ -760,84 +760,51 @@ pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib)
     return (PMA_PAGESTATUS)val;
 }
 
-
-//
-// Note that these functions only return the free regions but doesn't reserve them
-// therefore locks should not be released after they return until you mark them allocated
-//
-NV_STATUS
-pmaRegmapScanContiguous
+static NvS64 _scanContiguousSearchLoop
 (
-    void *pMap,
-    NvU64 addrBase,
-    NvU64 rangeStart,
-    NvU64 rangeEnd,
-    NvU64 numPages,
-    NvU64 *freeList,
-    NvU32 pageSize,
-    NvU64 alignment,
-    NvU64 *numPagesAlloc,
-    NvBool bSkipEvict
+    PMA_REGMAP *pRegmap,
+    NvU64 numFrames,
+    NvU64 localStart,
+    NvU64 localEnd,
+    NvU64 frameAlignment,
+    NvU64 frameAlignmentPadding,
+    NvBool bSearchEvictable
 )
 {
-    NvU64 freeStart, numFrames, localStart, localEnd, framesPerPage;
-    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding;
-    NvBool found;
-    PMA_PAGESTATUS startStatus, endStatus;
-    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+    NvU64 freeStart;
+    PMA_PAGESTATUS startStatus, endStatus, state;
+    NvS64 checkDiff;
+    NvS64 (*useFunc)(PMA_REGMAP *, NvU64, NvU64);
 
-    framesPerPage = pageSize >> PMA_PAGE_SHIFT;
-    numFrames = framesPerPage * numPages;
-    frameAlignment = alignment >> PMA_PAGE_SHIFT;
-
-    //
-    // Find how much is the base address short of the alignment requirements
-    // and adjust that value in the scanning range before starting the scan.
-    //
-    alignedAddrBase       = NV_ALIGN_UP(addrBase, alignment);
-    frameAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
-
-    // Handle restricted allocations
-    if (rangeStart != 0 || rangeEnd != 0)
+    if (!bSearchEvictable)
     {
-        localStart = rangeStart >> PMA_PAGE_SHIFT;
-        localEnd   = NV_MIN(rangeEnd >> PMA_PAGE_SHIFT, pRegmap->totalFrames - 1);
+        // Look for available frames
+        state = STATE_FREE;
+        checkDiff = ALL_FREE;
+        useFunc = _pmaRegmapAvailable;
     }
     else
     {
-        localStart = 0;
-        localEnd   = pRegmap->totalFrames - 1;
+        // Look for evictable frames
+        state = STATE_UNPIN;
+        checkDiff = EVICTABLE;
+        useFunc = _pmaRegmapEvictable;
     }
 
-    localStart = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
     freeStart = localStart;
-    found = 0;
-
-    NV_PRINTF(LEVEL_INFO,
-              "Scanning with addrBase 0x%llx in frame range 0x%llx..0x%llx, pages to allocate 0x%llx\n",
-              addrBase, localStart, localEnd, numPages);
-
-    while (!found)
+    while ((freeStart + numFrames - 1) <= localEnd)
     {
-        if ((freeStart + numFrames - 1) > localEnd)
-        {
-            // freeStart + numFrames too close to local search end.  Re-starting search
-            break;
-        }
-
         startStatus = pmaRegmapRead(pRegmap, freeStart, NV_TRUE);
         endStatus = pmaRegmapRead(pRegmap, (freeStart + numFrames - 1), NV_TRUE);
 
-        if (endStatus == STATE_FREE)
+        if (endStatus == STATE_FREE || endStatus == state)
         {
-            if (startStatus == STATE_FREE)
+            if (startStatus == STATE_FREE || startStatus == state)
             {
-                NvS64 diff = _pmaRegmapAvailable(pRegmap, freeStart, (freeStart + numFrames - 1));
-                if (diff == ALL_FREE)
+                NvS64 diff = (*useFunc)(pRegmap, freeStart, (freeStart + numFrames - 1));
+                if (diff == checkDiff)
                 {
-                    found = NV_TRUE;
-                    *freeList = addrBase + (freeStart << PMA_PAGE_SHIFT);
-                    *numPagesAlloc = numPages;
+                    return (NvS64)freeStart;
                 }
                 else
                 {
@@ -868,57 +835,71 @@ pmaRegmapScanContiguous
         }
     }
 
-    if (found) return NV_OK;
+    return -1;
+}
 
-    *numPagesAlloc = 0;
+static NvS64 _scanContiguousSearchLoopReverse
+(
+    PMA_REGMAP *pRegmap,
+    NvU64 numFrames,
+    NvU64 localStart,
+    NvU64 localEnd,
+    NvU64 frameAlignment,
+    NvU64 frameAlignmentPadding,
+    NvBool bSearchEvictable
+)
+{
+    NvU64 freeStart;
+    PMA_PAGESTATUS startStatus, endStatus, state;
+    NvS64 checkDiff;
+    NvS64 (*useFunc)(PMA_REGMAP *, NvU64, NvU64);
 
-    if (bSkipEvict) return NV_ERR_NO_MEMORY;
-
-    // Loop back to the beginning and continue searching
-
-    freeStart = localStart;
-    while (!found)
+    if (!bSearchEvictable)
     {
-        if ((freeStart + numFrames - 1) > localEnd)
-        {
-            // Failed searching for STATE_FREE or STATE_UNPIN
-            return NV_ERR_NO_MEMORY;
-        }
+        // Look for available frames
+        state = STATE_FREE;
+        checkDiff = ALL_FREE;
+        useFunc = _pmaRegmapAvailable;
+    }
+    else
+    {
+        // Look for evictable frames
+        state = STATE_UNPIN;
+        checkDiff = EVICTABLE;
+        useFunc = _pmaRegmapEvictable;
+    }
 
+    // First frame from end able to accommodate num_frames allocation.
+    freeStart = localEnd + 1 - numFrames;
+    freeStart -= (freeStart - localStart) % frameAlignment;
+
+    while (freeStart >= localStart && (NvS64)freeStart >= 0)
+    {
         startStatus = pmaRegmapRead(pRegmap, freeStart, NV_TRUE);
         endStatus = pmaRegmapRead(pRegmap, (freeStart + numFrames - 1), NV_TRUE);
 
-        if (endStatus == STATE_FREE || endStatus == STATE_UNPIN)
+        if (startStatus == STATE_FREE || startStatus == state)
         {
-            if (startStatus == STATE_FREE || startStatus == STATE_UNPIN)
+            if (endStatus == STATE_FREE || endStatus == state)
             {
-                NvS64 diff = _pmaRegmapEvictable(pRegmap, freeStart, (freeStart + numFrames - 1));
-                if (diff == EVICTABLE)
+                NvS64 diff = (*useFunc)(pRegmap, freeStart, (freeStart + numFrames - 1));
+                if (diff == checkDiff)
                 {
-                    found = NV_TRUE;
-                    *freeList = addrBase + (freeStart << PMA_PAGE_SHIFT);
+                    return (NvS64)freeStart;
                 }
                 else
                 {
-                    //
-                    // The previous search should have found an all free region
-                    // and we wouldn't be looking for an evictable one.
-                    //
-                    NV_ASSERT(diff != ALL_FREE);
                     NV_ASSERT(diff >= 0);
 
-                    //
-                    // Find the next aligned free frame and set it as the start
-                    // frame for next iteration's scan.
-                    //
-                    freeStart = alignUpToMod(diff + 1, frameAlignment, frameAlignmentPadding);
-                    NV_ASSERT(freeStart != 0);
+                    // Set end point to one frame before the first unavailable frame found
+                    freeStart = diff - numFrames;
+                    freeStart -= (freeStart - localStart) % frameAlignment;
                 }
             }
             else
             {
-                // Start point isn't usable, so bump to the next aligned frame to check again
-                freeStart += frameAlignment;
+                // Start point isn't free, so bump to check the next aligned frame
+                freeStart -= frameAlignment;
             }
         }
         else
@@ -927,11 +908,109 @@ pmaRegmapScanContiguous
             // End point isn't usable, so jump to after the end to check again
             // However, align the new start point properly before next iteration.
             //
-            freeStart += NV_ALIGN_UP(numFrames, frameAlignment);
+            freeStart -= NV_ALIGN_UP(numFrames, frameAlignment);
         }
     }
 
-    return NV_ERR_IN_USE;
+    return -1;
+}
+
+//
+// Note that these functions only return the free regions but doesn't reserve them
+// therefore locks should not be released after they return until you mark them allocated
+//
+NV_STATUS
+pmaRegmapScanContiguous
+(
+    void *pMap,
+    NvU64 addrBase,
+    NvU64 rangeStart,
+    NvU64 rangeEnd,
+    NvU64 numPages,
+    NvU64 *freeList,
+    NvU32 pageSize,
+    NvU64 alignment,
+    NvU64 *numPagesAlloc,
+    NvBool bSkipEvict,
+    NvBool bReverseAlloc
+)
+{
+    NvU64 numFrames, localStart, localEnd, framesPerPage;
+    NvU64 frameAlignment, alignedAddrBase, frameAlignmentPadding;
+    NvS64 frameFound;
+    PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
+
+    framesPerPage = pageSize >> PMA_PAGE_SHIFT;
+    numFrames = framesPerPage * numPages;
+    frameAlignment = alignment >> PMA_PAGE_SHIFT;
+
+    //
+    // Find how much is the base address short of the alignment requirements
+    // and adjust that value in the scanning range before starting the scan.
+    //
+    alignedAddrBase       = NV_ALIGN_UP(addrBase, alignment);
+    frameAlignmentPadding = (alignedAddrBase - addrBase) >> PMA_PAGE_SHIFT;
+
+    // Handle restricted allocations
+    if (rangeStart != 0 || rangeEnd != 0)
+    {
+        localStart = rangeStart >> PMA_PAGE_SHIFT;
+        localEnd   = NV_MIN(rangeEnd >> PMA_PAGE_SHIFT, pRegmap->totalFrames - 1);
+    }
+    else
+    {
+        localStart = 0;
+        localEnd   = pRegmap->totalFrames - 1;
+    }
+    localStart = alignUpToMod(localStart, frameAlignment, frameAlignmentPadding);
+
+    NV_PRINTF(LEVEL_INFO,
+              "Scanning with addrBase 0x%llx in frame range 0x%llx..0x%llx, pages to allocate 0x%llx\n",
+              addrBase, localStart, localEnd, numPages);
+
+    if (!bReverseAlloc)
+    {
+        frameFound = _scanContiguousSearchLoop(pRegmap, numFrames, localStart, localEnd,
+                                               frameAlignment, frameAlignmentPadding, NV_FALSE);
+    }
+    else
+    {
+        frameFound = _scanContiguousSearchLoopReverse(pRegmap, numFrames, localStart, localEnd,
+                                                      frameAlignment, frameAlignmentPadding, NV_FALSE);
+    }
+
+    if (frameFound >= 0)
+    {
+        *freeList = addrBase + ((NvU64)frameFound << PMA_PAGE_SHIFT);
+        *numPagesAlloc = numPages;
+        return NV_OK;
+    }
+
+    *numPagesAlloc = 0;
+
+    if (bSkipEvict) return NV_ERR_NO_MEMORY;
+
+    // Loop back to the beginning and continue searching
+    if (!bReverseAlloc)
+    {
+        frameFound = _scanContiguousSearchLoop(pRegmap, numFrames, localStart, localEnd,
+                                               frameAlignment, frameAlignmentPadding, NV_TRUE);
+    }
+    else
+    {
+        frameFound = _scanContiguousSearchLoopReverse(pRegmap, numFrames, localStart, localEnd,
+                                                      frameAlignment, frameAlignmentPadding, NV_TRUE);
+    }
+
+    if (frameFound >= 0)
+    {
+        *freeList = addrBase + ((NvU64)frameFound << PMA_PAGE_SHIFT);
+        return NV_ERR_IN_USE;
+    }
+    else
+    {
+        return NV_ERR_NO_MEMORY;
+    }
 }
 
 NV_STATUS
@@ -946,7 +1025,8 @@ pmaRegmapScanDiscontiguous
     NvU32 pageSize,
     NvU64 alignment,
     NvU64 *numPagesAlloc,
-    NvBool bSkipEvict
+    NvBool bSkipEvict,
+    NvBool bReverseAlloc
 )
 {
     NvU64 freeStart, found, framesPerPage, localStart, localEnd;
@@ -984,8 +1064,17 @@ pmaRegmapScanDiscontiguous
     }
 
     localStart = alignUpToMod(localStart, framesPerPage, frameAlignmentPadding);
-    freeStart = localStart;
     found = 0;
+    if (!bReverseAlloc)
+    {
+        freeStart = localStart;
+    }
+    else
+    {
+        // First frame from end able to accommodate page allocation.
+        freeStart = localEnd + 1 - framesPerPage;
+        freeStart -= (freeStart - localStart) % framesPerPage;
+    }
 
     NV_PRINTF(LEVEL_INFO,
               "Scanning with addrBase 0x%llx in frame range 0x%llx..0x%llx, pages to allocate 0x%llx\n",
@@ -995,7 +1084,14 @@ pmaRegmapScanDiscontiguous
     // two-pass algorithm
     while (found != numPages)
     {
-        if ((freeStart + framesPerPage - 1) > localEnd) break;
+        if (!bReverseAlloc)
+        {
+            if ((freeStart + framesPerPage - 1) > localEnd) break;
+        }
+        else
+        {
+            if (freeStart < localStart || (NvS64)freeStart < 0) break;
+        }
 
         startStatus = pmaRegmapRead(pRegmap, freeStart, NV_TRUE);
         endStatus = pmaRegmapRead(pRegmap, (freeStart + framesPerPage - 1), NV_TRUE);
@@ -1011,17 +1107,33 @@ pmaRegmapScanDiscontiguous
                 }
             }
         }
-        freeStart += framesPerPage;
+        freeStart = !bReverseAlloc ? (freeStart + framesPerPage) : (freeStart - framesPerPage);
     }
 
     *numPagesAlloc = found;
     if(found == numPages) return NV_OK;
     if(bSkipEvict) return NV_ERR_NO_MEMORY;
 
-    freeStart = localStart;
+    if (!bReverseAlloc)
+    {
+        freeStart = localStart;
+    }
+    else
+    {
+        // First frame from end able to accommodate page allocation.
+        freeStart = localEnd + 1 - framesPerPage;
+        freeStart -= (freeStart - localStart) % framesPerPage;
+    }
     while (found != numPages)
     {
-        if ((freeStart + framesPerPage - 1) > localEnd) return NV_ERR_NO_MEMORY;
+        if (!bReverseAlloc)
+        {
+            if ((freeStart + framesPerPage - 1) > localEnd) return NV_ERR_NO_MEMORY;
+        }
+        else
+        {
+            if (freeStart < localStart || (NvS64)freeStart < 0) return NV_ERR_NO_MEMORY;
+        }
 
         startStatus = pmaRegmapRead(pRegmap, freeStart, NV_TRUE);
         endStatus = pmaRegmapRead(pRegmap, (freeStart + framesPerPage - 1), NV_TRUE);
@@ -1037,7 +1149,7 @@ pmaRegmapScanDiscontiguous
                 }
             }
         }
-        freeStart += framesPerPage;
+        freeStart = !bReverseAlloc ? (freeStart + framesPerPage) : (freeStart - framesPerPage);
     }
 
     return NV_ERR_IN_USE;

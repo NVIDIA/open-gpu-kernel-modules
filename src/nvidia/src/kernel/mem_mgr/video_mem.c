@@ -210,6 +210,12 @@ _vidmemPmaAllocate
         allocOptions.flags |= PMA_ALLOCATE_PROTECTED_REGION;
     }
 
+    // Check memory alloc direction.
+    if (pAllocData->flags & NVOS32_ALLOC_FLAGS_FORCE_REVERSE_ALLOC)
+    {
+        allocOptions.flags |= PMA_ALLOCATE_REVERSE_ALLOC;
+    }
+
     // Fixed address allocations.
     if (pAllocData->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE)
     {

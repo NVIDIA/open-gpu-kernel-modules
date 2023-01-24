@@ -1446,7 +1446,7 @@ typedef struct
 #define NVOS32_ALLOC_FLAGS_BANK_GROW_UP                 0x00000000
 #define NVOS32_ALLOC_FLAGS_BANK_GROW_DOWN               0x00000200
 #define NVOS32_ALLOC_FLAGS_LAZY                         0x00000400
-// unused                                               0x00000800
+#define NVOS32_ALLOC_FLAGS_FORCE_REVERSE_ALLOC          0x00000800
 #define NVOS32_ALLOC_FLAGS_NO_SCANOUT                   0x00001000
 #define NVOS32_ALLOC_FLAGS_PITCH_FORCE                  0x00002000
 #define NVOS32_ALLOC_FLAGS_MEMORY_HANDLE_PROVIDED       0x00004000

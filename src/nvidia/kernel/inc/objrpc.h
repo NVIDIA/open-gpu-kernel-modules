@@ -111,6 +111,7 @@ NV_STATUS _allocRpcMemDesc(OBJGPU *pGpu, NvU64 size, NvBool bContig, NV_ADDRESS_
 void _freeRpcMemDesc(OBJGPU *pGpu, MEMORY_DESCRIPTOR **ppMemDesc, void **ppMemBuffer, void **ppMemBufferPriv);
 NV_STATUS vgpuGspSetupBuffers(OBJGPU *pGpu);
 void vgpuGspTeardownBuffers(OBJGPU *pGpu);
+NV_STATUS vgpuReinitializeRpcInfraOnStateLoad(POBJGPU pGpu);
 
 //
 // OBJGPU RPC member accessors.

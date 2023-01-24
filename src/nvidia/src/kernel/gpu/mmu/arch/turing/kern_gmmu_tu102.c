@@ -400,12 +400,13 @@ NvBool
 kgmmuIsNonReplayableFaultPending_TU102
 (
     OBJGPU     *pGpu,
-    KernelGmmu *pKernelGmmu
+    KernelGmmu *pKernelGmmu,
+    THREAD_STATE_NODE *pThreadState
 )
 {
     NvU32 reg = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(NV_PFB_PRI_MMU_INT_VECTOR_FAULT_NOTIFY_NON_REPLAYABLE);
     NvU32 bit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(NV_PFB_PRI_MMU_INT_VECTOR_FAULT_NOTIFY_NON_REPLAYABLE);
-    NvU32 pending = GPU_VREG_RD32_EX(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(reg), NULL /* threadstate */);
+    NvU32 pending = GPU_VREG_RD32_EX(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(reg), pThreadState);
     return pending & NVBIT(bit);
 }
 

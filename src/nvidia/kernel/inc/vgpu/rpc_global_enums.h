@@ -246,6 +246,7 @@ enum {
     E(TIMED_SEMAPHORE_RELEASE)                   // 0x1018
     E(NVLINK_IS_GPU_DEGRADED)                    // 0x1019
     E(PFM_REQ_HNDLR_STATE_SYNC_CALLBACK)         // 0x101a
+    E(NVLINK_FAULT_UP)                           // 0x101c
     E(NUM_EVENTS)                                // END
 #ifdef DEFINING_E_IN_RPC_GLOBAL_ENUMS_H
 };

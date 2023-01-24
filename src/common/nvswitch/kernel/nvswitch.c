@@ -3227,6 +3227,22 @@ _nvswitch_ctrl_inband_pending_data_stats
 }
 
 static NvlStatus
+_nvswitch_ctrl_get_board_part_number
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p
+)
+{
+    if (!nvswitch_is_inforom_supported(device))
+    {
+        NVSWITCH_PRINT(device, ERROR, "InfoROM is not supported\n");
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    return device->hal.nvswitch_ctrl_get_board_part_number(device, p);
+}
+
+static NvlStatus
 _nvswitch_ctrl_i2c_smbus_command
 (
     nvswitch_device *device,
@@ -4656,6 +4672,26 @@ nvswitch_load_link_disable_settings
     device->hal.nvswitch_load_link_disable_settings(device, link);
 }
 
+static NvlStatus
+_nvswitch_ctrl_set_nvlink_error_threshold
+(
+    nvswitch_device *device,
+    NVSWITCH_SET_NVLINK_ERROR_THRESHOLD_PARAMS *pParams
+)
+{
+    return device->hal.nvswitch_ctrl_set_nvlink_error_threshold(device, pParams);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_nvlink_error_threshold
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS *pParams
+)
+{
+    return device->hal.nvswitch_ctrl_get_nvlink_error_threshold(device, pParams);
+}
+
 NvlStatus
 nvswitch_lib_ctrl
 (
@@ -4961,6 +4997,9 @@ nvswitch_lib_ctrl
                 _nvswitch_ctrl_inband_pending_data_stats,
                 NVSWITCH_INBAND_PENDING_DATA_STATS_PARAMS,
                 osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_BOARD_PART_NUMBER,
+                _nvswitch_ctrl_get_board_part_number,
+                NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR);
         NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
                 CTRL_NVSWITCH_GET_SW_INFO,
                 _nvswitch_ctrl_get_sw_info,
@@ -4982,6 +5021,13 @@ nvswitch_lib_ctrl
                 _nvswitch_ctrl_clear_counters,
                 NVSWITCH_NVLINK_CLEAR_COUNTERS_PARAMS,
                 osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(CTRL_NVSWITCH_SET_NVLINK_ERROR_THRESHOLD,
+                _nvswitch_ctrl_set_nvlink_error_threshold,
+                NVSWITCH_SET_NVLINK_ERROR_THRESHOLD_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_NVLINK_ERROR_THRESHOLD,
+                _nvswitch_ctrl_get_nvlink_error_threshold,
+                NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS);
 
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);

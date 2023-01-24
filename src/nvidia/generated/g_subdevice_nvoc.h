@@ -213,6 +213,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdNvlinkEnableLinks__)(struct Subdevice *);
     NV_STATUS (*__subdeviceCtrlCmdNvlinkProcessInitDisabledLinks__)(struct Subdevice *, NV2080_CTRL_NVLINK_PROCESS_INIT_DISABLED_LINKS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdNvlinkInbandSendData__)(struct Subdevice *, NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdNvlinkPostFaultUp__)(struct Subdevice *, NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdNvlinkEomControl__)(struct Subdevice *, NV2080_CTRL_NVLINK_EOM_CONTROL_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdNvlinkL1Threshold__)(struct Subdevice *, NV2080_CTRL_NVLINK_L1_THRESHOLD_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdNvlinkDirectConnectCheck__)(struct Subdevice *, NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS *);
@@ -443,10 +444,10 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdLpwrDifrPrefetchResponse__)(struct Subdevice *, NV2080_CTRL_CMD_LPWR_DIFR_PREFETCH_RESPONSE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdLpwrDifrCtrl__)(struct Subdevice *, NV2080_CTRL_CMD_LPWR_DIFR_CTRL_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdCeGetCaps__)(struct Subdevice *, NV2080_CTRL_CE_GET_CAPS_PARAMS *);
-    NV_STATUS (*__subdeviceCtrlCmdCeGetAllCaps__)(struct Subdevice *, NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdCeGetCePceMask__)(struct Subdevice *, NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdCeUpdatePceLceMappings__)(struct Subdevice *, NV2080_CTRL_CE_UPDATE_PCE_LCE_MAPPINGS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdCeGetCapsV2__)(struct Subdevice *, NV2080_CTRL_CE_GET_CAPS_V2_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdCeGetAllCaps__)(struct Subdevice *, NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFlcnGetDmemUsage__)(struct Subdevice *, NV2080_CTRL_FLCN_GET_DMEM_USAGE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFlcnGetEngineArch__)(struct Subdevice *, NV2080_CTRL_FLCN_GET_ENGINE_ARCH_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFlcnUstreamerQueueInfo__)(struct Subdevice *, NV2080_CTRL_FLCN_USTREAMER_QUEUE_INFO_PARAMS *);
@@ -752,6 +753,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdNvlinkEnableLinks(pSubdevice) subdeviceCtrlCmdNvlinkEnableLinks_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdNvlinkProcessInitDisabledLinks(pSubdevice, pParams) subdeviceCtrlCmdNvlinkProcessInitDisabledLinks_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdNvlinkInbandSendData(pSubdevice, pParams) subdeviceCtrlCmdNvlinkInbandSendData_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdNvlinkPostFaultUp(pSubdevice, pParams) subdeviceCtrlCmdNvlinkPostFaultUp_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdNvlinkEomControl(pSubdevice, pParams) subdeviceCtrlCmdNvlinkEomControl_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdNvlinkL1Threshold(pSubdevice, pParams) subdeviceCtrlCmdNvlinkL1Threshold_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdNvlinkDirectConnectCheck(pSubdevice, pParams) subdeviceCtrlCmdNvlinkDirectConnectCheck_DISPATCH(pSubdevice, pParams)
@@ -986,10 +988,10 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdLpwrDifrPrefetchResponse(pSubdevice, pParams) subdeviceCtrlCmdLpwrDifrPrefetchResponse_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdLpwrDifrCtrl(pSubdevice, pParams) subdeviceCtrlCmdLpwrDifrCtrl_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdCeGetCaps(pSubdevice, pCeCapsParams) subdeviceCtrlCmdCeGetCaps_DISPATCH(pSubdevice, pCeCapsParams)
-#define subdeviceCtrlCmdCeGetAllCaps(pSubdevice, pCeCapsParams) subdeviceCtrlCmdCeGetAllCaps_DISPATCH(pSubdevice, pCeCapsParams)
 #define subdeviceCtrlCmdCeGetCePceMask(pSubdevice, pCePceMaskParams) subdeviceCtrlCmdCeGetCePceMask_DISPATCH(pSubdevice, pCePceMaskParams)
 #define subdeviceCtrlCmdCeUpdatePceLceMappings(pSubdevice, pCeUpdatePceLceMappingsParams) subdeviceCtrlCmdCeUpdatePceLceMappings_DISPATCH(pSubdevice, pCeUpdatePceLceMappingsParams)
 #define subdeviceCtrlCmdCeGetCapsV2(pSubdevice, pCeCapsParams) subdeviceCtrlCmdCeGetCapsV2_DISPATCH(pSubdevice, pCeCapsParams)
+#define subdeviceCtrlCmdCeGetAllCaps(pSubdevice, pCeCapsParams) subdeviceCtrlCmdCeGetAllCaps_DISPATCH(pSubdevice, pCeCapsParams)
 #define subdeviceCtrlCmdFlcnGetDmemUsage(pSubdevice, pFlcnDmemUsageParams) subdeviceCtrlCmdFlcnGetDmemUsage_DISPATCH(pSubdevice, pFlcnDmemUsageParams)
 #define subdeviceCtrlCmdFlcnGetEngineArch(pSubdevice, pParams) subdeviceCtrlCmdFlcnGetEngineArch_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdFlcnUstreamerQueueInfo(pSubdevice, pParams) subdeviceCtrlCmdFlcnUstreamerQueueInfo_DISPATCH(pSubdevice, pParams)
@@ -1720,6 +1722,12 @@ NV_STATUS subdeviceCtrlCmdNvlinkInbandSendData_IMPL(struct Subdevice *pSubdevice
 
 static inline NV_STATUS subdeviceCtrlCmdNvlinkInbandSendData_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdNvlinkInbandSendData__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdNvlinkPostFaultUp_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdNvlinkPostFaultUp_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdNvlinkPostFaultUp__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdNvlinkEomControl_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_NVLINK_EOM_CONTROL_PARAMS *pParams);
@@ -3104,12 +3112,6 @@ static inline NV_STATUS subdeviceCtrlCmdCeGetCaps_DISPATCH(struct Subdevice *pSu
     return pSubdevice->__subdeviceCtrlCmdCeGetCaps__(pSubdevice, pCeCapsParams);
 }
 
-NV_STATUS subdeviceCtrlCmdCeGetAllCaps_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *pCeCapsParams);
-
-static inline NV_STATUS subdeviceCtrlCmdCeGetAllCaps_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *pCeCapsParams) {
-    return pSubdevice->__subdeviceCtrlCmdCeGetAllCaps__(pSubdevice, pCeCapsParams);
-}
-
 NV_STATUS subdeviceCtrlCmdCeGetCePceMask_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS *pCePceMaskParams);
 
 static inline NV_STATUS subdeviceCtrlCmdCeGetCePceMask_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS *pCePceMaskParams) {
@@ -3126,6 +3128,12 @@ NV_STATUS subdeviceCtrlCmdCeGetCapsV2_IMPL(struct Subdevice *pSubdevice, NV2080_
 
 static inline NV_STATUS subdeviceCtrlCmdCeGetCapsV2_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CE_GET_CAPS_V2_PARAMS *pCeCapsParams) {
     return pSubdevice->__subdeviceCtrlCmdCeGetCapsV2__(pSubdevice, pCeCapsParams);
+}
+
+NV_STATUS subdeviceCtrlCmdCeGetAllCaps_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *pCeCapsParams);
+
+static inline NV_STATUS subdeviceCtrlCmdCeGetAllCaps_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *pCeCapsParams) {
+    return pSubdevice->__subdeviceCtrlCmdCeGetAllCaps__(pSubdevice, pCeCapsParams);
 }
 
 NV_STATUS subdeviceCtrlCmdFlcnGetDmemUsage_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_FLCN_GET_DMEM_USAGE_PARAMS *pFlcnDmemUsageParams);

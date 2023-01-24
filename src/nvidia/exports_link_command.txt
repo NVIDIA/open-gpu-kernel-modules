@@ -154,7 +154,6 @@
 --undefined=nvswitch_lib_i2c_transfer
 --undefined=rm_gpu_copy_mmu_faults
 --undefined=rm_gpu_handle_mmu_faults
---undefined=rm_gpu_copy_mmu_faults_unlocked
 --undefined=rm_gpu_need_4k_page_isolation
 --undefined=rm_is_chipset_io_coherent
 --undefined=rm_get_device_remove_flag

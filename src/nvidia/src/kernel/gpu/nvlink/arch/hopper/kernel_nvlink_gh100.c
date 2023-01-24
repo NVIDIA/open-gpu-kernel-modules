@@ -27,6 +27,7 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "nverror.h"
+#include "objtmr.h"
 
 /*!
  * @brief Check if ALI is supported for the given device
@@ -246,6 +247,66 @@ knvlinkDiscoverPostRxDetLinks_GH100
     }
 
 #endif
+
+    return status;
+}
+
+NV_STATUS
+ioctrlFaultUpTmrHandler
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    TMR_EVENT *pEvent
+)
+{
+    //NvU32 linkId = *(NvU32*)pData;
+    NV_STATUS    status = NV_OK;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS *nvlinkPostFaultUpParams
+                 = portMemAllocNonPaged(sizeof(NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS));
+    PNVLINK_ID   pFaultLink;
+    pFaultLink = listHead(&pKernelNvlink->faultUpLinks);
+
+    nvlinkPostFaultUpParams->linkId = pFaultLink->linkId;
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                        NV2080_CTRL_CMD_NVLINK_POST_FAULT_UP,
+                        (void *)nvlinkPostFaultUpParams,
+                        sizeof(NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS));
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to send Faultup RPC\n");
+    }
+
+    listRemove(&pKernelNvlink->faultUpLinks, pFaultLink);
+    portMemFree(nvlinkPostFaultUpParams);
+
+    return status;
+}
+
+NV_STATUS
+knvlinkHandleFaultUpInterrupt_GH100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32        linkId
+)
+{
+    OBJTMR    *pTmr = GPU_GET_TIMER(pGpu);
+    PNVLINK_ID pFaultLink;
+    NV_STATUS status = NV_OK;
+
+    pFaultLink = listAppendNew(&pKernelNvlink->faultUpLinks);
+    NV_ASSERT_OR_RETURN(pFaultLink != NULL, NV_ERR_GENERIC);
+    pFaultLink->linkId = linkId;
+
+    status = tmrEventScheduleRel(pTmr, pKernelNvlink->nvlinkLinks[linkId].pTmrEvent, NVLINK_RETRAIN_TIME);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) tmrEventScheduleRel failed for linkid %d\n",
+                  gpuGetInstance(pGpu), linkId);
+        return NV_ERR_GENERIC;
+    }
 
     return status;
 }

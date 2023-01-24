@@ -415,6 +415,7 @@ SRCS += src/kernel/gpu/gr/kernel_graphics_manager.c
 SRCS += src/kernel/gpu/gr/kernel_graphics_object.c
 SRCS += src/kernel/gpu/gr/kernel_sm_debugger_session.c
 SRCS += src/kernel/gpu/gr/kernel_sm_debugger_session_ctrl.c
+SRCS += src/kernel/gpu/gsp/arch/ada/kernel_gsp_ad102.c
 SRCS += src/kernel/gpu/gsp/arch/ampere/kernel_gsp_falcon_ga102.c
 SRCS += src/kernel/gpu/gsp/arch/ampere/kernel_gsp_ga100.c
 SRCS += src/kernel/gpu/gsp/arch/ampere/kernel_gsp_ga102.c

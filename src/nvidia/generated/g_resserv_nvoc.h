@@ -180,6 +180,12 @@ typedef void *PUID_TOKEN;
 /// Internal Client handles start at this base value
 #define RS_CLIENT_INTERNAL_HANDLE_BASE  0xC1E00000
 
+/// VF Client handles start at this base value
+#define RS_CLIENT_VF_HANDLE_BASE        0xE0000000
+
+/// Get the VF client handle range for gfid
+#define RS_CLIENT_GET_VF_HANDLE_BASE(gfid) (RS_CLIENT_VF_HANDLE_BASE + ((gfid) - 1) * RS_CLIENT_HANDLE_MAX)
+
 //
 // Print a warning if any client's resource count exceeds this
 // threshold. Unless this was intentional, this is likely a client bug.

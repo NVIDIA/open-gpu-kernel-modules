@@ -431,6 +431,13 @@ typedef struct rpc_perf_bridgeless_info_update_v17_00
 
 typedef rpc_perf_bridgeless_info_update_v17_00 rpc_perf_bridgeless_info_update_v;
 
+typedef struct rpc_nvlink_fault_up_v17_00
+{
+    NvU32      linkId;
+} rpc_nvlink_fault_up_v17_00;
+
+typedef rpc_nvlink_fault_up_v17_00 rpc_nvlink_fault_up_v;
+
 typedef struct rpc_nvlink_inband_received_data_256_v17_00
 {
     NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_256_PARAMS_v17_00 params;
@@ -1911,6 +1918,25 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_perf_bridgeless_info_update_v17_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_nvlink_fault_up_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_fault_up_v17_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_nvlink_fault_up_v17_00, linkId),
+        .name                 = "linkId"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_fault_up_v17_00 = {
+    .name = "rpc_nvlink_fault_up",
+    .header_length = NV_SIZEOF32(rpc_nvlink_fault_up_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_nvlink_fault_up_v17_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_256_v17_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_256_v17_00[] = {
     {
@@ -2450,6 +2476,13 @@ vmiopd_mdesc_t *rpcdebugPerfBridgelessInfoUpdate_v17_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_nvlink_fault_up_v17_00
+vmiopd_mdesc_t *rpcdebugNvlinkFaultUp_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_nvlink_fault_up_v17_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_nvlink_inband_received_data_256_v17_00
 vmiopd_mdesc_t *rpcdebugNvlinkInbandReceivedData256_v17_00(void)
 {
@@ -2603,6 +2636,8 @@ typedef union rpc_generic_union {
     rpc_perf_gpu_boost_sync_limits_callback_v perf_gpu_boost_sync_limits_callback_v;
     rpc_perf_bridgeless_info_update_v17_00 perf_bridgeless_info_update_v17_00;
     rpc_perf_bridgeless_info_update_v perf_bridgeless_info_update_v;
+    rpc_nvlink_fault_up_v17_00 nvlink_fault_up_v17_00;
+    rpc_nvlink_fault_up_v nvlink_fault_up_v;
     rpc_nvlink_inband_received_data_256_v17_00 nvlink_inband_received_data_256_v17_00;
     rpc_nvlink_inband_received_data_256_v nvlink_inband_received_data_256_v;
     rpc_nvlink_inband_received_data_512_v17_00 nvlink_inband_received_data_512_v17_00;

@@ -652,6 +652,7 @@ NvlStatus nvswitch_ctrl_get_sw_info_lr10(nvswitch_device *device, NVSWITCH_GET_S
 void      nvswitch_setup_link_system_registers_lr10(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_load_link_disable_settings_lr10(nvswitch_device *device, nvlink_link *link);
 NvBool    nvswitch_is_smbpbi_supported_lr10(nvswitch_device *device);
+NvlStatus nvswitch_ctrl_get_board_part_number_lr10(nvswitch_device *device, NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p);
 
 NvlStatus nvswitch_ctrl_set_mc_rid_table_lr10(nvswitch_device *device, NVSWITCH_SET_MC_RID_TABLE_PARAMS *p);
 NvlStatus nvswitch_ctrl_get_mc_rid_table_lr10(nvswitch_device *device, NVSWITCH_GET_MC_RID_TABLE_PARAMS *p);

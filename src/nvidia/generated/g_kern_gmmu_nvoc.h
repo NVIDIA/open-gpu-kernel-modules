@@ -874,19 +874,19 @@ static inline void kgmmuWriteMmuFaultStatus(OBJGPU *pGpu, struct KernelGmmu *pKe
 
 #define kgmmuWriteMmuFaultStatus_HAL(pGpu, pKernelGmmu, arg0) kgmmuWriteMmuFaultStatus(pGpu, pKernelGmmu, arg0)
 
-NvBool kgmmuIsNonReplayableFaultPending_TU102(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
+NvBool kgmmuIsNonReplayableFaultPending_TU102(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *arg0);
 
 
 #ifdef __nvoc_kern_gmmu_h_disabled
-static inline NvBool kgmmuIsNonReplayableFaultPending(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
+static inline NvBool kgmmuIsNonReplayableFaultPending(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *arg0) {
     NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
     return NV_FALSE;
 }
 #else //__nvoc_kern_gmmu_h_disabled
-#define kgmmuIsNonReplayableFaultPending(pGpu, pKernelGmmu) kgmmuIsNonReplayableFaultPending_TU102(pGpu, pKernelGmmu)
+#define kgmmuIsNonReplayableFaultPending(pGpu, pKernelGmmu, arg0) kgmmuIsNonReplayableFaultPending_TU102(pGpu, pKernelGmmu, arg0)
 #endif //__nvoc_kern_gmmu_h_disabled
 
-#define kgmmuIsNonReplayableFaultPending_HAL(pGpu, pKernelGmmu) kgmmuIsNonReplayableFaultPending(pGpu, pKernelGmmu)
+#define kgmmuIsNonReplayableFaultPending_HAL(pGpu, pKernelGmmu, arg0) kgmmuIsNonReplayableFaultPending(pGpu, pKernelGmmu, arg0)
 
 NV_STATUS kgmmuClientShadowFaultBufferAlloc_GV100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
 

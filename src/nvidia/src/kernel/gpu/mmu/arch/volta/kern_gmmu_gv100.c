@@ -406,7 +406,7 @@ kgmmuReportFaultBufferOverflow_GV100
 
     faultBufferSize = kgmmuReadMmuFaultBufferSize_HAL(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);
 
-    if (kgmmuIsNonReplayableFaultPending_HAL(pGpu, pKernelGmmu))
+    if (kgmmuIsNonReplayableFaultPending_HAL(pGpu, pKernelGmmu, NULL))
     {
         if (IsVOLTA(pGpu))
         {

@@ -699,7 +699,8 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_INFO, "Nvlink is not ready yet!\n");
-                return NV_ERR_NOT_READY;
+                status = NV_ERR_NOT_READY;
+                goto done;
             }
         }
 

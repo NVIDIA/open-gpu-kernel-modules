@@ -245,13 +245,20 @@ parseDisplayId20EDIDExtDataBlocks(
 
             // copy all the vendor specific data block from DisplayId20 to pEdidInfo
             // NOTE: mixed CTA extension block and DID2.0 extension block are not handled
-            NVMISC_MEMCPY(&pEdidInfo->hdmiLlcInfo,              &pDisplayId20Info->vendor_specific.hdmiLlc,  sizeof(NVT_HDMI_LLC_INFO));
-            NVMISC_MEMCPY(&pEdidInfo->hdmiForumInfo,            &pDisplayId20Info->vendor_specific.hfvs,     sizeof(NVT_HDMI_FORUM_INFO));
-            NVMISC_MEMCPY(&pEdidInfo->nvdaVsdbInfo,             &pDisplayId20Info->vendor_specific.nvVsdb,   sizeof(NVDA_VSDB_PARSED_INFO));
-            NVMISC_MEMCPY(&pEdidInfo->msftVsdbInfo,             &pDisplayId20Info->vendor_specific.msftVsdb, sizeof(MSFT_VSDB_PARSED_INFO));
-            NVMISC_MEMCPY(&pEdidInfo->hdr_static_metadata_info, &pDisplayId20Info->cta.hdrInfo,              sizeof(NVT_HDR_STATIC_METADATA));
-            NVMISC_MEMCPY(&pEdidInfo->dv_static_metadata_info,  &pDisplayId20Info->cta.dvInfo,               sizeof(NVT_DV_STATIC_METADATA));
-            NVMISC_MEMCPY(&pEdidInfo->hdr10PlusInfo,            &pDisplayId20Info->cta.hdr10PlusInfo,        sizeof(NVT_HDR10PLUS_INFO));
+            if (pEdidInfo->ext861.valid.H14B_VSDB == 0 && pEdidInfo->ext861_2.valid.H14B_VSDB == 0 && pDisplayId20Info->cta.cta861_info.valid.H14B_VSDB)
+                NVMISC_MEMCPY(&pEdidInfo->hdmiLlcInfo,              &pDisplayId20Info->vendor_specific.hdmiLlc,  sizeof(NVT_HDMI_LLC_INFO));
+            if (pEdidInfo->ext861.valid.H20_HF_VSDB == 0 && pEdidInfo->ext861_2.valid.H20_HF_VSDB == 0 && pDisplayId20Info->cta.cta861_info.valid.H20_HF_VSDB)
+                NVMISC_MEMCPY(&pEdidInfo->hdmiForumInfo,            &pDisplayId20Info->vendor_specific.hfvs,     sizeof(NVT_HDMI_FORUM_INFO));
+            if (pEdidInfo->ext861.valid.nvda_vsdb == 0 && pEdidInfo->ext861_2.valid.nvda_vsdb == 0 && pDisplayId20Info->cta.cta861_info.valid.nvda_vsdb)
+                NVMISC_MEMCPY(&pEdidInfo->nvdaVsdbInfo,             &pDisplayId20Info->vendor_specific.nvVsdb,   sizeof(NVDA_VSDB_PARSED_INFO));
+            if (pEdidInfo->ext861.valid.msft_vsdb == 0 && pEdidInfo->ext861_2.valid.msft_vsdb == 0 && pDisplayId20Info->cta.cta861_info.valid.msft_vsdb)
+                NVMISC_MEMCPY(&pEdidInfo->msftVsdbInfo,             &pDisplayId20Info->vendor_specific.msftVsdb, sizeof(MSFT_VSDB_PARSED_INFO));
+            if (pEdidInfo->ext861.valid.hdr_static_metadata == 0 && pEdidInfo->ext861_2.valid.hdr_static_metadata == 0 && pDisplayId20Info->cta.cta861_info.valid.hdr_static_metadata)
+                NVMISC_MEMCPY(&pEdidInfo->hdr_static_metadata_info, &pDisplayId20Info->cta.hdrInfo,              sizeof(NVT_HDR_STATIC_METADATA));
+            if (pEdidInfo->ext861.valid.dv_static_metadata == 0 && pEdidInfo->ext861_2.valid.dv_static_metadata == 0 && pDisplayId20Info->cta.cta861_info.valid.dv_static_metadata)
+                NVMISC_MEMCPY(&pEdidInfo->dv_static_metadata_info,  &pDisplayId20Info->cta.dvInfo,               sizeof(NVT_DV_STATIC_METADATA));
+            if (pEdidInfo->ext861.valid.hdr10Plus == 0 && pEdidInfo->ext861_2.valid.hdr10Plus == 0 && pDisplayId20Info->cta.cta861_info.valid.hdr10Plus)
+                NVMISC_MEMCPY(&pEdidInfo->hdr10PlusInfo,            &pDisplayId20Info->cta.hdr10PlusInfo,        sizeof(NVT_HDR10PLUS_INFO));
 
             // If the CTA861 extension existed already, we need to synced the revision/basic_caps to CTA which is embedded in DID20
             if (pEdidInfo->ext861.revision >= NVT_CEA861_REV_B)
@@ -262,7 +269,10 @@ parseDisplayId20EDIDExtDataBlocks(
             }
 
             // this is the DisplayID20 Extension, so we need to copy from what is the CTA raw data in DID20 to Edid's CTA block
-            NVMISC_MEMCPY(&pEdidInfo->ext861,                   &pDisplayId20Info->cta.cta861_info,          sizeof(NVT_EDID_CEA861_INFO));
+            if (pEdidInfo->ext861.revision == 0)
+                NVMISC_MEMCPY(&pEdidInfo->ext861, &pDisplayId20Info->cta.cta861_info, sizeof(NVT_EDID_CEA861_INFO));
+            else if (pEdidInfo->ext861_2.revision == 0)
+                NVMISC_MEMCPY(&pEdidInfo->ext861_2, &pDisplayId20Info->cta.cta861_info, sizeof(NVT_EDID_CEA861_INFO));
         break;
 
         case DISPLAYID_2_0_BLOCK_TYPE_DISPLAY_PARAM:

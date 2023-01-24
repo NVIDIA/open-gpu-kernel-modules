@@ -40,7 +40,7 @@
  * FINN compiler version
  */
 #define FINN_VERSION_MAJOR 1
-#define FINN_VERSION_MINOR 14
+#define FINN_VERSION_MINOR 15
 #define FINN_VERSION_PATCH 0
 
 typedef struct FINN_RM_API
@@ -130,7 +130,7 @@ NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message, const void *src
  */
 /**@{*/
 NV_STATUS FinnRmApiDeserializeDown(NvU8 **src, NvLength src_size, void *dst, NvLength dst_size);
-NV_STATUS FinnRmApiDeserializeUp(NvU8 * const *src, NvLength src_size, void *dst, NvLength dst_size);
+NV_STATUS FinnRmApiDeserializeUp(NvU8 **src, NvLength src_size, void *dst, NvLength dst_size);
 /**@}*/
 
 /*!

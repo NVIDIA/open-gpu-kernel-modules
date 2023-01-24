@@ -268,6 +268,7 @@ struct channel_iterator
     NvU32 numRunlists;
     NvU32 physicalChannelID;
     NvU32 runlistId;
+    EMEMBLOCK *pFifoDataBlock;
     CHANNEL_NODE channelNode;
 };
 
@@ -455,6 +456,7 @@ struct KernelFifo {
     FifoSchedulingHandlerEntryList preSchedulingDisableHandlerList;
     NvBool bUseChidHeap;
     NvBool bUsePerRunlistChram;
+    NvBool bDisableChidIsolation;
     NvBool bIsPerRunlistChramSupportedInHw;
     NvBool bHostEngineExpansion;
     NvBool bHostHasLbOverflow;

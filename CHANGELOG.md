@@ -2,12 +2,6 @@
 
 ## Release 525 Entries
 
-### [525.60.13] 2022-12-05
-
-### [525.60.11] 2022-11-28
-
-### [525.53] 2022-11-10
-
 #### Changed
 
 - GSP firmware is now distributed as multiple firmware files: this release has `gsp_tu10x.bin` and `gsp_ad10x.bin` replacing `gsp.bin` from previous releases.

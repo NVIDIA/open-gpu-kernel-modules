@@ -109,6 +109,25 @@ nvswitch_inforom_ecc_get_total_errors_ls10
 }
 
 NvlStatus
+nvswitch_inforom_load_obd_ls10
+(
+    nvswitch_device *device
+)
+{
+    struct inforom *pInforom = device->pInforom;
+
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    return nvswitch_inforom_load_object(device, pInforom, "OBD",
+                                        INFOROM_OBD_OBJECT_V2_XX_FMT,
+                                        pInforom->OBD.packedObject.v2,
+                                        &pInforom->OBD.object.v2);
+}
+
+NvlStatus
 nvswitch_bbx_add_sxid_ls10
 (
     nvswitch_device *device,
@@ -254,4 +273,3 @@ nvswitch_bbx_get_sxid_ls10
 {
     return -NVL_ERR_NOT_SUPPORTED;
 }
-

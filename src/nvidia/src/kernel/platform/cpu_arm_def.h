@@ -88,6 +88,7 @@ extern void CP_WRITE_CSSELR_REGISTER(NvU32 val);
 #define CP_MIDR_PRIMARY_PART_NUM_ALTRA         0x000
 #define CP_MIDR_PRIMARY_PART_NUM_OCTEON_CN96XX 0x0b2
 #define CP_MIDR_PRIMARY_PART_NUM_OCTEON_CN98XX 0x0b1
+#define CP_MIDR_PRIMARY_PART_NUM_NEOVERSE_N2   0xd49
 
 // Cache Size Identification Register
 #define CP_CCSIDR                     "ccsidr_el1"

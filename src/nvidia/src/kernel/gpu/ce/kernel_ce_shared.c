@@ -28,6 +28,7 @@
 #include "kernel/gpu/subdevice/subdevice.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
+#include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/ce/kernel_ce_private.h"
@@ -160,4 +161,62 @@ subdeviceCtrlCmdCeGetCapsV2_IMPL
         // now fill in caps for this CE
         return kceGetDeviceCaps(pGpu, pKCe, rmEngineType, NvP64_VALUE(pCeCapsParams->capsTbl));
     }
+}
+
+NV_STATUS
+subdeviceCtrlCmdCeGetAllCaps_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *pCeCapsParams
+)
+{
+    RM_API *pRmApi;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+
+    ct_assert(ENG_CE__SIZE_1 <= sizeof(pCeCapsParams->capsTbl) / sizeof(pCeCapsParams->capsTbl[0]));
+
+    if (!RMCFG_FEATURE_PLATFORM_GSP)
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+        //
+        // Since some CE capabilities depend on the nvlink topology,
+        // trigger topology detection before updating the CE caps
+        //
+        if ((pKernelNvlink != NULL) && !knvlinkIsForcedConfig(pGpu, pKernelNvlink) &&
+             kmigmgrIsMIGNvlinkP2PSupported(pGpu, GPU_GET_KERNEL_MIG_MANAGER(pGpu)))
+        {
+            knvlinkCoreGetRemoteDeviceInfo(pGpu, pKernelNvlink);
+        }
+    }
+
+    portMemSet(pCeCapsParams, 0, sizeof(*pCeCapsParams));
+
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                           pGpu->hInternalClient,
+                                           pGpu->hInternalSubdevice,
+                                           NV2080_CTRL_CMD_CE_GET_ALL_PHYSICAL_CAPS,
+                                           pCeCapsParams,
+                                           sizeof(*pCeCapsParams)));
+
+    {
+        KernelCE *pKCe;
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+        KCE_ITER_CLIENT_BEGIN(pGpu, pKCe, hClient)
+            if (pKCe->bStubbed)
+                continue;
+
+            pCeCapsParams->present |= BIT(kceInst);
+
+            NvU8 *pKCeCaps = pCeCapsParams->capsTbl[kceInst];
+
+            if (pKernelNvlink != NULL)
+                kceGetNvlinkCaps(pGpu, pKCe, pKCeCaps);
+        KCE_ITER_END
+    }
+
+    return NV_OK;
 }

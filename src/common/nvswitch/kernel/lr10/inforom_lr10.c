@@ -748,6 +748,25 @@ nvswitch_oms_set_device_disable_lr10
 }
 
 NvlStatus
+nvswitch_inforom_load_obd_lr10
+(
+    nvswitch_device *device
+)
+{
+    struct inforom *pInforom = device->pInforom;
+
+    if (pInforom == NULL)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    return nvswitch_inforom_load_object(device, pInforom, "OBD",
+                                        INFOROM_OBD_OBJECT_V1_XX_FMT,
+                                        pInforom->OBD.packedObject.v1,
+                                        &pInforom->OBD.object.v1);
+}
+
+NvlStatus
 nvswitch_bbx_add_sxid_lr10
 (
     nvswitch_device *device,

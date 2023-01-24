@@ -69,6 +69,7 @@ struct BINDATA_STORAGE_PVT_ALL
 #include "g_bindata_kgspGetBinArchiveBooterUnloadUcode_GA102.c"
 #include "g_bindata_kgspGetBinArchiveBooterUnloadUcode_AD102.c"
 #include "g_bindata_ksec2GetBinArchiveBlUcode_TU102.c"
+#include "g_bindata_ksec2GetBinArchiveSecurescrubUcode_AD10X.c"
 
 #undef BINDATA_INCLUDE_STORAGE_PVT_DECL
 #undef BINDATA_NO_SEGMENTS
@@ -97,6 +98,7 @@ struct BINDATA_STORAGE_PVT_ALL
 #include "g_bindata_kgspGetBinArchiveBooterUnloadUcode_GA102.c"
 #include "g_bindata_kgspGetBinArchiveBooterUnloadUcode_AD102.c"
 #include "g_bindata_ksec2GetBinArchiveBlUcode_TU102.c"
+#include "g_bindata_ksec2GetBinArchiveSecurescrubUcode_AD10X.c"
 
 #undef BINDATA_INCLUDE_DATA
 
@@ -123,6 +125,7 @@ BINDATA_CONST struct BINDATA_STORAGE_PVT_ALL g_bindata_pvt =
 #include "g_bindata_kgspGetBinArchiveBooterUnloadUcode_GA102.c"
 #include "g_bindata_kgspGetBinArchiveBooterUnloadUcode_AD102.c"
 #include "g_bindata_ksec2GetBinArchiveBlUcode_TU102.c"
+#include "g_bindata_ksec2GetBinArchiveSecurescrubUcode_AD10X.c"
 
 #undef BINDATA_INCLUDE_STORAGE_PVT_DEFN
 #undef BINDATA_NO_SEGMENTS
@@ -152,6 +155,7 @@ const NvU32 g_bindata_pvt_count = sizeof(g_bindata_pvt) / sizeof(BINDATA_STORAGE
 #include "g_bindata_kgspGetBinArchiveBooterUnloadUcode_GA102.c"
 #include "g_bindata_kgspGetBinArchiveBooterUnloadUcode_AD102.c"
 #include "g_bindata_ksec2GetBinArchiveBlUcode_TU102.c"
+#include "g_bindata_ksec2GetBinArchiveSecurescrubUcode_AD10X.c"
 
 #undef BINDATA_INCLUDE_FUNCTION
 #undef BINDATA_INCLUDE_ARCHIVE

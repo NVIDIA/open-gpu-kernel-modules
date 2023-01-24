@@ -109,6 +109,12 @@ nvswitch_oms_inforom_flush_lr10
 );
 
 NvlStatus
+nvswitch_inforom_load_obd_lr10
+(
+    nvswitch_device *device
+);
+
+NvlStatus
 nvswitch_bbx_add_sxid_lr10
 (
     nvswitch_device *device,

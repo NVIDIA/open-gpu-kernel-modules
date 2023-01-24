@@ -79,6 +79,10 @@ typedef struct NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAM
     NV_DECLARE_ALIGNED(NvU64 pluginHeapMemoryPhysAddr, 8);
     NV_DECLARE_ALIGNED(NvU64 pluginHeapMemoryLength, 8);
     NV_DECLARE_ALIGNED(NvU64 ctrlBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 vgpuTaskLogBuffSize, 8);
     NvBool bDeviceProfilingEnabled;
 } NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS;
 

@@ -195,6 +195,10 @@ NvBool LibosDebugResolveSymbolToName(
 {
     LibosElf64Symbol *i = (LibosElf64Symbol *)pThis->symtabStart;
     NvU64 count  = (pThis->symtabEnd - pThis->symtabStart) / sizeof(LibosElf64Symbol);
+
+    if (i == NULL)
+        return NV_FALSE;
+
     while (count--)
     {
         if (i->name && (symbolAddress == i->value || (symbolAddress >= i->value && symbolAddress < i->value + i->size)))
@@ -731,6 +735,9 @@ static void libosDwarfBuildTables(LibosDebugResolver *pThis)
 {
     pThis->arangeTable    = NULL;
     pThis->nARangeEntries = 0;
+
+    if (pThis->debugARangesStart == NULL || pThis->debugLineStart == NULL)
+        return;
 
     // Run through the .debug_aranges elf section to get a count of consolidated ranges.
     dwarfBuildARangeTable(pThis);

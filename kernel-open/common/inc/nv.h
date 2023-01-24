@@ -958,7 +958,6 @@ NV_STATUS  NV_API_CALL  rm_log_gpu_crash          (nv_stack_t *, nv_state_t *);
 void       NV_API_CALL rm_kernel_rmapi_op(nvidia_stack_t *sp, void *ops_cmd);
 NvBool     NV_API_CALL rm_get_device_remove_flag(nvidia_stack_t *sp, NvU32 gpu_id);
 NV_STATUS  NV_API_CALL rm_gpu_copy_mmu_faults(nvidia_stack_t *, nv_state_t *, NvU32 *);
-NV_STATUS  NV_API_CALL rm_gpu_copy_mmu_faults_unlocked(nvidia_stack_t *, nv_state_t *, NvU32 *);
 NV_STATUS  NV_API_CALL rm_gpu_handle_mmu_faults(nvidia_stack_t *, nv_state_t *, NvU32 *);
 NvBool     NV_API_CALL rm_gpu_need_4k_page_isolation(nv_state_t *);
 NvBool     NV_API_CALL rm_is_chipset_io_coherent(nv_stack_t *);

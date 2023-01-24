@@ -5350,6 +5350,10 @@ _nvswitch_emit_link_errors_nvldl_nonfatal_link_ls10
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _RX_SHORT_ERROR_RATE, 1);
     if (nvswitch_test_flags(pending, bit))
     {
+        // Disable further interrupts
+        nvlink_link *nvlink = nvswitch_get_link(device, link);
+        nvlink->errorThreshold.bInterruptTrigerred = NV_TRUE;
+        nvswitch_configure_error_rate_threshold_interrupt_ls10(nvlink, NV_FALSE);
         NVSWITCH_REPORT_NONFATAL(_HW_DLPL_RX_SHORT_ERROR_RATE, "RX Short Error Rate");
     }
 }
@@ -6304,18 +6308,24 @@ _nvswitch_service_nvlipt_link_nonfatal_ls10
     NvU32 interruptingLinks = 0;
     NvU32 lnkStatusChangeLinks = 0;
     NvlStatus status;
-
+    NvU64 link_enable_mask;
+    
+    link_enable_mask = ((NvU64)device->regkeys.link_enable_mask2 << 32 |
+        (NvU64)device->regkeys.link_enable_mask);
     for (i = 0; i < NVSWITCH_LINKS_PER_NVLIPT_LS10; ++i)
     {
         globalLink = (instance * NVSWITCH_LINKS_PER_NVLIPT_LS10) + i;
-
+        if ((NVBIT64(globalLink) & link_enable_mask) == 0)
+        {
+            continue;
+        }
         intrLink = NVSWITCH_LINK_RD32(device, globalLink, NVLIPT_LNK, _NVLIPT_LNK, _ERR_STATUS_0);
 
         if(intrLink)
         {
             interruptingLinks |= NVBIT(i);
         }
-
+        
        intrLink = NVSWITCH_LINK_RD32(device, globalLink, NVLIPT_LNK, _NVLIPT_LNK, _INTR_STATUS);
 
         if(intrLink)

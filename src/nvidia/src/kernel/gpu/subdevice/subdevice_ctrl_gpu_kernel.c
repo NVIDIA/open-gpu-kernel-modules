@@ -38,6 +38,7 @@
 #include "nvVer.h"
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/bus/kern_bus.h"
+#include "gpu/disp/kern_disp.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/mc/kernel_mc.h"
@@ -275,6 +276,18 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 else
                 {
                     data = NV2080_CTRL_GPU_INFO_INDEX_4K_PAGE_ISOLATION_REQUIRED_NO;
+                }
+                break;
+            }
+            case NV2080_CTRL_GPU_INFO_INDEX_DISPLAY_ENABLED:
+            {
+                if (GPU_GET_KERNEL_DISPLAY(pGpu) != NULL)
+                {
+                    data = NV2080_CTRL_GPU_INFO_DISPLAY_ENABLED_YES;
+                }
+                else
+                {
+                    data = NV2080_CTRL_GPU_INFO_DISPLAY_ENABLED_NO;
                 }
                 break;
             }

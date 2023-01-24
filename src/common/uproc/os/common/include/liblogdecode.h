@@ -141,6 +141,11 @@ typedef struct
     char lineBuffer[LIBOS_LOG_LINE_BUFFER_SIZE];
     NvBool bSynchronousBuffer;
     NvBool bPtrSymbolResolve;
+
+    // Attempt to decode %s format arguments
+    // This requires all %s libos log arguments to be present in the logging elf, otherwise
+    // garbage output may be produced.
+    NvBool bDecodeStrFmt;
 #endif // LIBOS_LOG_DECODE_ENABLE
 
 #if defined(NVSYM_STANDALONE) && !defined(PROTODMP_BUILD)
@@ -168,11 +173,13 @@ void libosLogAddLog(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSize,
 #if LIBOS_LOG_DECODE_ENABLE
 void libosLogInit(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfSize);
 void libosLogInitEx(
-    LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvBool bSynchronousBuffer, NvBool bPtrSymbolResolve, NvU64 elfSize);
+    LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvBool bSynchronousBuffer,
+    NvBool bPtrSymbolResolve, NvBool bDecodeStrFmt, NvU64 elfSize);
 #else
 void libosLogInit(LIBOS_LOG_DECODE *logDecode, void *elf, NvU64 elfSize);
 void libosLogInitEx(
-    LIBOS_LOG_DECODE *logDecode, void *elf, NvBool bSynchronousBuffer, NvBool bPtrSymbolResolve, NvU64 elfSize);
+    LIBOS_LOG_DECODE *logDecode, void *elf, NvBool bSynchronousBuffer, NvBool bPtrSymbolResolve,
+    NvBool bDecodeStrFmt, NvU64 elfSize);
 #endif // LIBOS_LOG_DECODE_ENABLE
 
 void libosLogSymbolicateAddress(LIBOS_LOG_DECODE *logDecode, char *decodedLine, NvLength decodedLineSize, NvUPtr addr);

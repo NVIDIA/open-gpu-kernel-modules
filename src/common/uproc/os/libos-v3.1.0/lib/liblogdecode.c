@@ -725,7 +725,7 @@ static int libos_printf_a(
             }
             goto print_string;
         case 's':
-            a = (char *)LibosElfMapVirtualString(&pRec->log->elfImage, (NvUPtr)arg.p, NV_FALSE);
+            a = (char *)LibosElfMapVirtualString(&pRec->log->elfImage, (NvUPtr)arg.p, logDecode->bDecodeStrFmt);
             if (!a)
                 a = (char *)"(bad-pointer)";
         print_string:
@@ -1467,8 +1467,8 @@ void libosLogInit(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfS
     // This will allow us to calculate for max possible number of log entries,
     // i.e. if none of them have args and are thus the smallest size possible.
     //
-    NvU64 minLogBufferEntryLength = 0;
-    minLogBufferEntryLength++; // account for metadata pointer
+    NvU64 minLogBufferEntryLength = 1;// account for metadata pointer
+
     if (!logDecode->bSynchronousBuffer)
     {
         minLogBufferEntryLength++; // account for timestamp
@@ -1530,11 +1530,13 @@ void libosLogInit(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfS
 }
 
 void libosLogInitEx(
-    LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvBool bSynchronousBuffer, NvBool bPtrSymbolResolve, NvU64 elfSize)
+    LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvBool bSynchronousBuffer,
+    NvBool bPtrSymbolResolve, NvBool bDecodeStrFmt, NvU64 elfSize)
 {
     // Set extended config
     logDecode->bSynchronousBuffer = bSynchronousBuffer;
     logDecode->bPtrSymbolResolve = bPtrSymbolResolve;
+    logDecode->bDecodeStrFmt = bDecodeStrFmt;
 
     // Complete init
     libosLogInit(logDecode, elf, elfSize);
@@ -1546,7 +1548,7 @@ void libosLogInit(LIBOS_LOG_DECODE *logDecode, void *elf, NvU64 elfSize) {}
 
 void libosLogInitEx(
     LIBOS_LOG_DECODE *logDecode, void *elf,
-    NvBool bSynchronousBuffer, NvBool bPtrSymbolResolve, NvU64 elfSize)
+    NvBool bSynchronousBuffer, NvBool bPtrSymbolResolve, NvBool bDecodeStrFmt, NvU64 elfSize)
 {
     // No extended config to set when decode is disabled
 }
@@ -1589,6 +1591,9 @@ void libosLogDestroy(LIBOS_LOG_DECODE *logDecode)
         logDecode->scratchBuffer = NULL;
     }
 #endif // LIBOS_LOG_DECODE_ENABLE
+
+    logDecode->numLogBuffers = 0;
+    logDecode->bIsDecodable = NV_FALSE;
 }
 
 void libosExtractLogs(LIBOS_LOG_DECODE *logDecode, NvBool bSyncNvLog)
