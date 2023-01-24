@@ -328,7 +328,7 @@ bitVectorTestAllSet_IMPL
 {
     const NvU64 *qword;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorLast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorLast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorLast - 1);
     NvU64 mask;
 
@@ -361,7 +361,7 @@ bitVectorTestAllCleared_IMPL
 {
     const NvU64 *qword;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorLast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorLast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorLast - 1);
     NvU64 mask;
 
@@ -397,7 +397,7 @@ bitVectorTestEqual_IMPL
     const NvU64 *qwordA;
     const NvU64 *qwordB;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorALast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorALast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorALast - 1);
     NvU64 mask;
 
@@ -437,7 +437,7 @@ bitVectorTestIsSubset_IMPL
     const NvU64 *qwordA;
     const NvU64 *qwordB;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorALast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorALast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorALast - 1);
     NvU64 mask;
 
@@ -509,7 +509,7 @@ bitVectorAnd_IMPL
     const NvU64 *qwordA;
     const NvU64 *qwordB;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorDstLast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorDstLast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorDstLast - 1);
     NvU64 mask;
 
@@ -559,7 +559,7 @@ bitVectorOr_IMPL
     const NvU64 *qwordA;
     const NvU64 *qwordB;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorDstLast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorDstLast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorDstLast - 1);
     NvU64 mask;
 
@@ -609,7 +609,7 @@ bitVectorXor_IMPL
     const NvU64 *qwordA;
     const NvU64 *qwordB;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorDstLast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorDstLast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorDstLast - 1);
     NvU64 mask;
 
@@ -655,7 +655,7 @@ bitVectorComplement_IMPL
     NvU64 *qwordDst;
     const NvU64 *qwordSrc;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorDstLast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorDstLast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorDstLast - 1);
     NvU64 mask;
 
@@ -722,7 +722,7 @@ bitVectorCountTrailingZeros_IMPL
 {
     const NvU64 *qword;
     NvU16 idx;
-    NvU32 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorLast);
+    NvU16 arraySize = NV_BITVECTOR_ARRAY_SIZE(bitVectorLast);
     NvU16 qwordOffset = NV_BITVECTOR_OFFSET(bitVectorLast - 1);
     NvU64 mask;
 
