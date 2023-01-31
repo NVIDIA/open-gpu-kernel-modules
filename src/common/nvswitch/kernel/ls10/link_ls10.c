@@ -496,34 +496,6 @@ nvswitch_corelib_get_rx_detect_ls10
     return NVL_SUCCESS;
 }
 
-static NvBool
-_nvswitch_is_tlc_in_reset
-(
-    nvswitch_device *device,
-    nvlink_link     *link
-)
-{
-    NvU32 clkStatus;
-
-    clkStatus = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
-            NVLIPT_LNK, _NVLIPT_LNK, _CTRL_CLK_CTRL);
-
-    //
-    // TLC is in reset if any of the per-link clocks are off
-    // -- if TX and RX clocks are off then link is not powered on
-    // -- if TX/RX clocks are on but NCISOC clock is off, DL layer
-    //    is on but TLC is still off
-    //
-    if (FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _RXCLK_STS, _OFF, clkStatus)      ||
-        FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _TXCLK_STS, _OFF, clkStatus)      ||
-        FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _NCISOCCLK_STS, _OFF, clkStatus))
-    {
-        return NV_TRUE;
-    }
-
-    return NV_FALSE;
-}
-
 void
 nvswitch_reset_persistent_link_hw_state_ls10
 (
@@ -531,6 +503,8 @@ nvswitch_reset_persistent_link_hw_state_ls10
     NvU32            linkNumber
 )
 {
+    NvU32 clocksMask = NVSWITCH_PER_LINK_CLOCK_SET(RXCLK)|NVSWITCH_PER_LINK_CLOCK_SET(TXCLK)|
+                            NVSWITCH_PER_LINK_CLOCK_SET(NCISOCCLK);
     nvlink_link *link = nvswitch_get_link(device, linkNumber);
     if (nvswitch_is_link_in_reset(device, link))
     {
@@ -541,7 +515,8 @@ nvswitch_reset_persistent_link_hw_state_ls10
     (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_DLSTAT_CLR_DLERRCNT, 0);
 
     // If TLC is not up then return
-    if (_nvswitch_is_tlc_in_reset(device, link))
+
+    if (!nvswitch_are_link_clocks_on_ls10(device, link, clocksMask))
     {
         return;
     }
@@ -1581,5 +1556,53 @@ nvswitch_reset_and_train_link_ls10
         return status;
     }
     return NVL_SUCCESS;
+}
+
+NvBool
+nvswitch_are_link_clocks_on_ls10
+(
+    nvswitch_device *device,
+    nvlink_link *link,
+    NvU32 clocksMask
+)
+{
+    NvU32  clockStatus;
+    NvU32  clk;
+    NvBool bIsOff = NV_FALSE;
+
+    clockStatus = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
+                    NVLIPT_LNK, _NVLIPT_LNK, _CTRL_CLK_CTRL);
+
+    FOR_EACH_INDEX_IN_MASK(32, clk, clocksMask)
+    {
+        switch(clk)
+        {
+            case NVSWITCH_PER_LINK_CLOCK_RXCLK:
+            {
+                bIsOff = FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _RXCLK_STS, _OFF, clockStatus);
+                break;
+            }
+            case NVSWITCH_PER_LINK_CLOCK_TXCLK:
+            {
+                bIsOff = FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _TXCLK_STS, _OFF, clockStatus);
+                break;
+            }
+            case NVSWITCH_PER_LINK_CLOCK_NCISOCCLK:
+            {
+                bIsOff = FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _NCISOCCLK_STS, _OFF, clockStatus);
+                break;
+            }
+            default:
+                return NV_FALSE;
+        }
+
+        if (bIsOff)
+        {
+            return NV_FALSE;
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return NV_TRUE;
 }
 

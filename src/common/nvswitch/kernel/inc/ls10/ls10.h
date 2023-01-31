@@ -519,6 +519,8 @@ typedef struct
 
     NVLINK_LINK_ERROR_INFO_ERR_MASKS fatalIntrMask;
     NVLINK_LINK_ERROR_INFO_ERR_MASKS nonFatalIntrMask;
+
+    NvBool bResetAndDrainRetry;
 } NVLINK_LINK_ERROR_REPORTING;
 
 typedef struct
@@ -749,6 +751,15 @@ typedef const struct
 } RISCV_UCODE_HDR_INFO_LS10, *PRISCV_UCODE_HDR_INFO_LS10;
 
 //
+// defines used by internal ls10 functions to get
+// specific clock status
+//
+#define NVSWITCH_PER_LINK_CLOCK_RXCLK     0
+#define NVSWITCH_PER_LINK_CLOCK_TXCLK     1
+#define NVSWITCH_PER_LINK_CLOCK_NCISOCCLK 2
+#define NVSWITCH_PER_LINK_CLOCK_NUM       3
+#define NVSWITCH_PER_LINK_CLOCK_SET(_name) BIT(NVSWITCH_PER_LINK_CLOCK_##_name)
+//
 // HAL functions shared by LR10 and used by LS10
 //
 
@@ -971,6 +982,7 @@ NvlStatus nvswitch_reset_and_drain_links_ls10(nvswitch_device *device, NvU64 lin
 
 void      nvswitch_service_minion_all_links_ls10(nvswitch_device *device);
 NvlStatus nvswitch_ctrl_get_board_part_number_ls10(nvswitch_device *device, NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p);
+void      nvswitch_create_deferred_link_state_check_task_ls10(nvswitch_device *device, NvU32 nvlipt_instance, NvU32 link);
 
 //
 // SU generated functions
@@ -994,6 +1006,7 @@ NvBool    nvswitch_is_inforom_supported_ls10(nvswitch_device *device);
 void      nvswitch_set_error_rate_threshold_ls10(nvlink_link *link, NvBool bIsDefault);
 void      nvswitch_configure_error_rate_threshold_interrupt_ls10(nvlink_link *link, NvBool bEnable);
 NvlStatus nvswitch_reset_and_train_link_ls10(nvswitch_device *device, nvlink_link *link);
+NvBool    nvswitch_are_link_clocks_on_ls10(nvswitch_device *device, nvlink_link *link, NvU32 clocksMask);
 
 #endif //_LS10_H_
 
