@@ -1213,8 +1213,6 @@ void RmClearPrivateState(
     void *pVbiosCopy = NULL;
     void *pRegistryCopy = NULL;
     NvU32 vbiosSize;
-    NvU32 *pEfiDisplayCache;
-    NvU32 efiDisplayCacheSize;
     nv_i2c_adapter_entry_t i2c_adapters[MAX_I2C_ADAPTERS];
     nv_dynamic_power_t dynamicPowerCopy;
     NvU32 x = 0;
@@ -1234,8 +1232,6 @@ void RmClearPrivateState(
     pVbiosCopy = nvp->pVbiosCopy;
     vbiosSize = nvp->vbiosSize;
     pRegistryCopy = nvp->pRegistry;
-    pEfiDisplayCache = nvp->efi.display.pCache;
-    efiDisplayCacheSize = nvp->efi.display.cacheSize;
     dynamicPowerCopy = nvp->dynamic_power;
     pmc_boot_0 = nvp->pmc_boot_0;
     pmc_boot_42 = nvp->pmc_boot_42;
@@ -1251,8 +1247,6 @@ void RmClearPrivateState(
     nvp->pVbiosCopy = pVbiosCopy;
     nvp->vbiosSize = vbiosSize;
     nvp->pRegistry = pRegistryCopy;
-    nvp->efi.display.pCache = pEfiDisplayCache;
-    nvp->efi.display.cacheSize = efiDisplayCacheSize;
     nvp->dynamic_power = dynamicPowerCopy;
     nvp->pmc_boot_0 = pmc_boot_0;
     nvp->pmc_boot_42 = pmc_boot_42;
@@ -1280,7 +1274,6 @@ void RmFreePrivateState(
     if (nvp != NULL)
     {
         portMemFree(nvp->pVbiosCopy);
-        portMemFree(nvp->efi.display.pCache);
         os_free_mem(nvp);
     }
 

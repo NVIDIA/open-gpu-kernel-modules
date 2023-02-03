@@ -1170,14 +1170,14 @@ void NV_API_CALL os_dbg_breakpoint(void)
 #endif // CONFIG_X86_REMOTE_DEBUG || CONFIG_KGDB || CONFIG_XMON
 }
 
-NvU32 NV_API_CALL os_get_cpu_number()
+NvU32 NV_API_CALL os_get_cpu_number(void)
 {
     NvU32 cpu_id = get_cpu();
     put_cpu();
     return cpu_id;
 }
 
-NvU32 NV_API_CALL os_get_cpu_count()
+NvU32 NV_API_CALL os_get_cpu_count(void)
 {
     return NV_NUM_CPUS();
 }
@@ -1273,7 +1273,7 @@ void NV_API_CALL os_get_screen_info(
 #endif
 }
 
-void NV_API_CALL os_dump_stack()
+void NV_API_CALL os_dump_stack(void)
 {
     dump_stack();
 }

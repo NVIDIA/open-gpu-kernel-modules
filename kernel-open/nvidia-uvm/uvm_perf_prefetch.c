@@ -425,7 +425,7 @@ void uvm_perf_prefetch_get_hint(uvm_va_block_t *va_block,
     }
 }
 
-NV_STATUS uvm_perf_prefetch_init()
+NV_STATUS uvm_perf_prefetch_init(void)
 {
     g_uvm_perf_prefetch_enable = uvm_perf_prefetch_enable != 0;
 

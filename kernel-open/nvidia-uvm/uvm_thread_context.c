@@ -101,7 +101,7 @@ static DEFINE_PER_CPU(uvm_thread_context_lock_acquired_t, interrupt_thread_conte
 static void thread_context_non_interrupt_remove(uvm_thread_context_t *thread_context,
                                                 uvm_thread_context_table_entry_t *thread_context_entry);
 
-bool uvm_thread_context_wrapper_is_used()
+bool uvm_thread_context_wrapper_is_used(void)
 {
     // The wrapper contains lock information. While uvm_record_lock_X
     // routines are a no-op outside of debug mode, unit tests do invoke their

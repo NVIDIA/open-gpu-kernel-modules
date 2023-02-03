@@ -662,6 +662,12 @@ NV_STATUS serverControl_ValidateCookie
     OBJGPU *pGpu;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
+    if (pCallContext == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Calling context is NULL!\n");
+        return NV_ERR_INVALID_PARAMETER;
+    }
+
     if (RMCFG_FEATURE_PLATFORM_GSP)
     {
         pGpu = gpumgrGetSomeGpu();

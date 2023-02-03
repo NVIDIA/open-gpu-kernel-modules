@@ -40,7 +40,7 @@ AR                    ?= ar
 CFLAGS                ?= -Wall
 # always set these -f CFLAGS
 CFLAGS                += -fno-strict-aliasing -fno-omit-frame-pointer -Wformat=2
-CC_ONLY_CFLAGS        ?=
+CC_ONLY_CFLAGS        ?= -Wstrict-prototypes -Wold-style-definition
 CXX_ONLY_CFLAGS       ?=
 LDFLAGS               ?=
 BIN_LDFLAGS           ?=

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2365,6 +2365,16 @@ nvswitch_launch_ALI_link_training_lr10
     nvswitch_device *device,
     nvlink_link     *link,
     NvBool           bSync
+)
+{
+    return NVL_ERR_NOT_IMPLEMENTED;
+}
+
+NvlStatus
+nvswitch_reset_and_train_link_lr10
+(
+    nvswitch_device *device,
+    nvlink_link     *link
 )
 {
     return NVL_ERR_NOT_IMPLEMENTED;

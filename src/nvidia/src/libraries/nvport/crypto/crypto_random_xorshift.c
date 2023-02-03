@@ -53,7 +53,7 @@ struct PORT_CRYPTO_PRNG
 };
 PORT_CRYPTO_PRNG *portCryptoDefaultGenerator;
 
-void portCryptoInitialize()
+void portCryptoInitialize(void)
 {
     NvU64 seed;
 #if defined(PORT_CRYPTO_PRNG_SEED)
@@ -73,7 +73,7 @@ void portCryptoInitialize()
     portCryptoPseudoRandomSetSeed(seed);
 }
 
-void portCryptoShutdown()
+void portCryptoShutdown(void)
 {
     portCryptoPseudoRandomGeneratorDestroy(portCryptoDefaultGenerator);
     portCryptoDefaultGenerator = NULL;
@@ -174,12 +174,12 @@ void portCryptoPseudoRandomSetSeed(NvU64 seed)
     portCryptoDefaultGenerator = portCryptoPseudoRandomGeneratorCreate(seed);
 }
 
-NvU32 portCryptoPseudoRandomGetU32()
+NvU32 portCryptoPseudoRandomGetU32(void)
 {
     return portCryptoPseudoRandomGeneratorGetU32(portCryptoDefaultGenerator);
 }
 
-NvU64 portCryptoPseudoRandomGetU64()
+NvU64 portCryptoPseudoRandomGetU64(void)
 {
     return portCryptoPseudoRandomGeneratorGetU64(portCryptoDefaultGenerator);
 }

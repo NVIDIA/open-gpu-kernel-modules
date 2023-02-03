@@ -502,6 +502,7 @@ gpuNotifySubDeviceEvent_IMPL
     for (i = 0; i < pGpu->numSubdeviceBackReferences; i++)
     {
         Subdevice *pSubdevice = pGpu->pSubdeviceBackReferences[i];
+        NV_ASSERT_OR_RETURN_VOID(pSubdevice != NULL);
         INotifier *pNotifier = staticCast(pSubdevice, INotifier);
 
         GPU_RES_SET_THREAD_BC_STATE(pSubdevice);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -496,6 +496,34 @@ nvswitch_corelib_get_rx_detect_ls10
     return NVL_SUCCESS;
 }
 
+static NvBool
+_nvswitch_is_tlc_in_reset
+(
+    nvswitch_device *device,
+    nvlink_link     *link
+)
+{
+    NvU32 clkStatus;
+
+    clkStatus = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
+            NVLIPT_LNK, _NVLIPT_LNK, _CTRL_CLK_CTRL);
+
+    //
+    // TLC is in reset if any of the per-link clocks are off
+    // -- if TX and RX clocks are off then link is not powered on
+    // -- if TX/RX clocks are on but NCISOC clock is off, DL layer
+    //    is on but TLC is still off
+    //
+    if (FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _RXCLK_STS, _OFF, clkStatus)      ||
+        FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _TXCLK_STS, _OFF, clkStatus)      ||
+        FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CLK_CTRL, _NCISOCCLK_STS, _OFF, clkStatus))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
 void
 nvswitch_reset_persistent_link_hw_state_ls10
 (
@@ -509,14 +537,21 @@ nvswitch_reset_persistent_link_hw_state_ls10
         return;
     }
 
-    // SETUPTC called with HW Reset
-    (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_SETUPTC , 0x4);
-
-    // clear TLC TP Counters
-    (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_CLR_TLC_MISC_REGS, 0);
-
     // clear DL error counters
     (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_DLSTAT_CLR_DLERRCNT, 0);
+
+    // If TLC is not up then return
+    if (_nvswitch_is_tlc_in_reset(device, link))
+    {
+        return;
+    }
+
+    // SETUPTC called to reset and setup throughput counters
+    (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_SETUPTC , 0x4);
+
+    // clear miscellaneous TLC counters and registers
+    (void)nvswitch_minion_send_command(device, linkNumber, NV_MINION_NVLINK_DL_CMD_COMMAND_CLR_TLC_MISC_REGS, 0);
+
 }
 
 NvlStatus
@@ -1467,5 +1502,84 @@ nvswitch_execute_unilateral_link_shutdown_ls10
         __FUNCTION__, link->linkNumber);
 
     return;
+}
+
+NvlStatus
+nvswitch_reset_and_train_link_ls10
+(
+    nvswitch_device *device,
+    nvlink_link     *link
+)
+{
+    NvlStatus  status      = NVL_SUCCESS;
+    NvU32      retry_count = 3;
+    NvU32      link_state_request;
+    NvU32      link_state;
+    NvU32      stat_data;
+    NvU32      link_intr_subcode;
+
+    nvswitch_execute_unilateral_link_shutdown_ls10(link);
+    nvswitch_corelib_clear_link_state_ls10(link);
+
+    do
+    {
+        status = nvswitch_request_tl_link_state_ls10(link,
+                 NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_RESET, NV_TRUE);
+
+        if (status == NVL_SUCCESS)
+        {
+            break;
+        }
+        else
+        {
+
+            link_state_request = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
+                                    NVLIPT_LNK , _NVLIPT_LNK , _CTRL_LINK_STATE_REQUEST);
+
+            link_state = DRF_VAL(_NVLIPT_LNK, _CTRL_LINK_STATE_REQUEST, _STATUS,
+                                    link_state_request);
+
+            if (nvswitch_minion_get_dl_status(device, link->linkNumber,
+                              NV_NVLSTAT_MN00, 0, &stat_data) == NVL_SUCCESS)
+            {
+                link_intr_subcode = DRF_VAL(_NVLSTAT, _MN00, _LINK_INTR_SUBCODE, stat_data);
+            }
+
+            if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
+                (link_intr_subcode == MINION_ALARM_BUSY))
+            {
+
+                status = nvswitch_request_tl_link_state_ls10(link,
+                         NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_RESET, NV_TRUE);
+
+                //
+                // We retry the shutdown sequence 3 times when we see a MINION_REQUEST_FAIL
+                // or MINION_ALARM_BUSY
+                //
+                retry_count--;
+            }
+            else
+            {
+                break;
+            }
+        }
+    } while(retry_count);
+
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: NvLink Reset has failed for link %d\n",
+            __FUNCTION__, link->linkNumber);
+
+        // Re-register links.
+        status = nvlink_lib_register_link(device->nvlink_device, link);
+        if (status != NVL_SUCCESS)
+        {
+            nvswitch_destroy_link(link);
+            return status;
+        }
+        return status;
+    }
+    return NVL_SUCCESS;
 }
 

@@ -544,6 +544,8 @@ typedef struct NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS {
  *          Cap bit to indicate whether TSG timeslice override is enabled or not.
  *          When set true, TSG timeslice override is enabled.
  *          When false, TSG timeslice override is disabled.
+ *      CAPS_GUEST_HIBERNATION_ENABLED
+ *          Cap bit to indicate whether Guest OS Hibernation is supported or not.
  *   uvmEnabledFeatures
  *      This parameter returns mask of UVM enabled features on vGPU. It comprises of
  *      UVM managed APIs and replayable faults that are enabled or disabled based on
@@ -628,6 +630,9 @@ typedef struct NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS {
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_USE_NON_STALL_LINUX_EVENTS                  21:21
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_USE_NON_STALL_LINUX_EVENTS_FALSE           (0x00000000)
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_USE_NON_STALL_LINUX_EVENTS_TRUE            (0x00000001)
+#define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_GUEST_HIBERNATION_ENABLED                  22:22
+#define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_GUEST_HIBERNATION_ENABLED_FALSE            (0x00000000)
+#define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_GUEST_HIBERNATION_ENABLED_TRUE             (0x00000001)
 
 /* UVM supported features */
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_UVM_FEATURES_REPLAYABLE_FAULTS_ENABLED                    0:0

@@ -145,6 +145,8 @@ kchannelConstruct_IMPL
     NvBool                  bTsgAllocated    = NV_FALSE;
     NvHandle                hChanGrp         = NV01_NULL_OBJECT;
     RsResourceRef          *pDeviceRef       = NULL;
+    RsResourceRef          *pVASpaceRef      = NULL;
+    KernelGraphicsContext  *pKernelGraphicsContext = NULL;
     NvBool                  bMIGInUse;
     KernelChannelGroup     *pKernelChannelGroup = NULL;
     NvU32                   chID             = ~0;
@@ -694,7 +696,7 @@ kchannelConstruct_IMPL
 
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "Error in Allocating channel id %d for hClient %d hKernelChannel %d \n",
+            NV_PRINTF(LEVEL_ERROR, "Error in Allocating channel id 0x%x for hClient 0x%x hKernelChannel 0x%x \n",
                                    chID, hClient, pResourceRef->hResource);
             DBG_BREAKPOINT();
             goto cleanup;
@@ -729,7 +731,7 @@ kchannelConstruct_IMPL
 
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "Error in Allocating channel id %d for hClient %d hKernelChannel %d \n",
+            NV_PRINTF(LEVEL_ERROR, "Error in Allocating channel id 0x%x for hClient 0x%x hKernelChannel 0x%x \n",
                       chID, hClient, pResourceRef->hResource);
             chID = ~0;
             DBG_BREAKPOINT();
@@ -852,8 +854,6 @@ kchannelConstruct_IMPL
     // We depend on VASpace if it was provided
     if (pChannelGpfifoParams->hVASpace != NV01_NULL_OBJECT)
     {
-        RsResourceRef *pVASpaceRef = NULL;
-
         NV_ASSERT_OK_OR_GOTO(status, clientGetResourceRef(pRsClient, pChannelGpfifoParams->hVASpace, &pVASpaceRef), cleanup);
         NV_ASSERT_OR_ELSE(pVASpaceRef != NULL, status = NV_ERR_INVALID_OBJECT; goto cleanup);
 
@@ -875,8 +875,6 @@ kchannelConstruct_IMPL
     pKernelChannel->hKernelGraphicsContext = pKernelChannelGroupApi->hKernelGraphicsContext;
     if (pKernelChannel->hKernelGraphicsContext != NV01_NULL_OBJECT)
     {
-        KernelGraphicsContext *pKernelGraphicsContext;
-
         NV_ASSERT_OK_OR_GOTO(status,
             kgrctxFromKernelChannel(pKernelChannel, &pKernelGraphicsContext),
             cleanup);
@@ -918,6 +916,24 @@ cleanup:
         if (bNotifyActionsSetup)
         {
             _kchannelCleanupNotifyActions(pKernelChannel);
+        }
+
+        // Remove any dependencies we may have added; we don't want our destructor called when freeing anything below
+        if (pKernelGraphicsContext != NULL)
+        {
+            refRemoveDependant(RES_GET_REF(pKernelGraphicsContext), pResourceRef);
+        }
+        if (pKernelChannel->pKernelCtxShareApi != NULL)
+        {
+            refRemoveDependant(RES_GET_REF(pKernelChannel->pKernelCtxShareApi), pResourceRef);
+        }
+        if (pVASpaceRef != NULL)
+        {
+            refRemoveDependant(pVASpaceRef, pResourceRef);
+        }
+        if (bTsgAllocated)
+        {
+            refRemoveDependant(pChanGrpRef, pResourceRef);
         }
 
         if (bAddedToGroup)

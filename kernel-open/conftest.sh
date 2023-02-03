@@ -101,7 +101,8 @@ test_header_presence() {
 build_cflags() {
     BASE_CFLAGS="-O2 -D__KERNEL__ \
 -DKBUILD_BASENAME=\"#conftest$$\" -DKBUILD_MODNAME=\"#conftest$$\" \
--nostdinc -isystem $ISYSTEM"
+-nostdinc -isystem $ISYSTEM \
+-Wno-implicit-function-declaration -Wno-strict-prototypes"
 
     if [ "$OUTPUT" != "$SOURCES" ]; then
         OUTPUT_CFLAGS="-I$OUTPUT/include2 -I$OUTPUT/include"

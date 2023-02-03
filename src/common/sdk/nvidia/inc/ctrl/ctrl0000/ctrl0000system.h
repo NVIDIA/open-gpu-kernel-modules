@@ -2068,29 +2068,17 @@ typedef struct NV0000_CTRL_SYSTEM_GET_RM_INSTANCE_ID_PARAMS {
  *
  * NVPCF is an acronym for Nvidia Platform Controllers and Framework 
  * which implements platform level policies. NVPCF is implemented in
- * a kernel driver on windows. It is implemented in a user mode app 
+ * a kernel driver on windows. It is implemented in a user mode app
  * called nvidia-powerd on Linux.
- * 
- *  gpuId
- *      GPU ID
- *  tpp
- *      Total processing power including CPU and GPU
- *  ratedTgp
- *      Rated total GPU Power
- *  subFunc
- *      NVPCF subfunction id
- *  ctgpOffsetmW
- *      Configurable TGP offset, in mW
- *  targetTppOffsetmW
- *      TPP, as offset in mW.
- *  maxOutputOffsetmW
- *      Maximum allowed output, as offset in mW.
- *  minOutputOffsetmW;
- *      Minimum allowed output, as offset in mW.
  *
  *   Valid subFunc ids for NVPCF 1x include :
  *   NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED
  *   NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_PARAMS
+ *
+ *   Valid subFunc ids for NVPCF 2x include :
+ *   NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED
+ *   NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_PARAMS
+ *   NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_STATIC_CONFIG_TABLES
  *
  * Possible status values returned are:
  *   NV_OK
@@ -2102,25 +2090,89 @@ typedef struct NV0000_CTRL_SYSTEM_GET_RM_INSTANCE_ID_PARAMS {
 #define NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS_MESSAGE_ID (0x3BU)
 
 typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
+    /* GPU ID */
     NvU32 gpuId;
+
+    /* Total processing power including CPU and GPU */
     NvU32 tpp;
+
+    /* Rated total GPU Power */
     NvU32 ratedTgp;
+
+    /* NVPCF subfunction id */
     NvU32 subFunc;
+
+    /* Configurable TGP offset, in mW */
     NvU32 ctgpOffsetmW;
+
+    /* TPP, as offset in mW */
     NvU32 targetTppOffsetmW;
+
+    /* Maximum allowed output, as offset in mW */
     NvU32 maxOutputOffsetmW;
+
+    /* Minimum allowed output, as offset in mW */
     NvU32 minOutputOffsetmW;
+
+    /* The System Controller Table Version */
+    NvU8  version;
+
+    /* Base sampling period */
+    NvU16 samplingPeriodmS;
+
+    /* Sampling Multiplier */
+    NvU16 samplingMulti;
+
+    /* Fitler function type */
+    NvU8  filterType;
+
+    union {
+
+        /* weight */
+        NvU8 weight;
+
+        /* windowSize */
+        NvU8 windowSize;
+    } filterParam;
+
+    /* Reserved */
+    NvU16  filterReserved;
+
+    /* Controller Type Dynamic Boost Controller */
+    NvBool bIsBoostController;
+
+    /* Increase power limit ratio */
+    NvU16  incRatio;
+
+    /* Decrease power limit ratio */
+    NvU16  decRatio;
+
+    /* Dynamic Boost Controller DC Support */
+    NvBool bSupportBatt;
+
+    /* CPU type(Intel/AMD) */
+    NvU8   cpuType;
+
+    /* GPU type(Nvidia) */
+    NvU8   gpuType;
 } NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS;
 
+/* Define the filter types */
+#define CONTROLLER_FILTER_TYPE_EMWA                                0U
+#define CONTROLLER_FILTER_TYPE_MOVING_MAX                          1U
+
 /* Valid NVPCF subfunction case */
-#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED_CASE 0U
-#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_CASE   1U
-#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE 2U
-#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_CASE   3U
+#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED_CASE       0U
+#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_CASE         1U
+#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE       2U
+#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_CASE         3U
+
+/* NVPCF subfunction to get the static data tables */
+#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_STATIC_CASE          4U
 
 /* Valid NVPCF subfunction ids */
-#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED      (0x00000000)
-#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_PARAMS (0x00000002)
+#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED            (0x00000000)
+#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_PARAMS       (0x00000002)
 
 /*
  *  Defines for get supported sub functions bit fields
@@ -2132,9 +2184,15 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
 /*!
  * Config DSM 2x version specific defines
  */
-#define NVPCF0100_CTRL_CONFIG_DSM_2X_VERSION                 (0x00000200)
-#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED      (0x00000000)
-#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_PARAMS (0x00000002)
+#define NVPCF0100_CTRL_CONFIG_DSM_2X_VERSION                       (0x00000200)
+#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED            (0x00000000)
+#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_STATIC_CONFIG_TABLES (0x00000001)
+#define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_PARAMS       (0x00000002)
+
+/*!
+ * Defines the max buffer size for config
+ */
+#define NVPCF0100_CTRL_CONFIG_2X_BUFF_SIZE_MAX                            (255)
 
 /*
  * NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT
@@ -2148,7 +2206,7 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
  * Possible status values returned are:
  *   NV_OK
  */
-#define NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT     (0x13cU) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT           (0x13cU) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS_MESSAGE_ID (0x3CU)
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -657,6 +657,7 @@ NvlStatus nvswitch_ctrl_get_board_part_number_lr10(nvswitch_device *device, NVSW
 NvlStatus nvswitch_ctrl_set_mc_rid_table_lr10(nvswitch_device *device, NVSWITCH_SET_MC_RID_TABLE_PARAMS *p);
 NvlStatus nvswitch_ctrl_get_mc_rid_table_lr10(nvswitch_device *device, NVSWITCH_GET_MC_RID_TABLE_PARAMS *p);
 NvlStatus nvswitch_launch_ALI_lr10(nvswitch_device *device);
+NvlStatus nvswitch_reset_and_train_link_lr10(nvswitch_device *device, nvlink_link *link);
 
 NvlStatus nvswitch_ctrl_get_bios_info_lr10(nvswitch_device *device, NVSWITCH_GET_BIOS_INFO_PARAMS *p);
 

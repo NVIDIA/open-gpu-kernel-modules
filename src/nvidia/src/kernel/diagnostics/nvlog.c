@@ -92,11 +92,11 @@ nvlogInit(void *pData)
     return NV_OK;
 }
 
-void nvlogUpdate() {
+void nvlogUpdate(void) {
 }
 
 NV_STATUS
-nvlogDestroy()
+nvlogDestroy(void)
 {
     NvU32 i;
 

@@ -178,7 +178,7 @@ initAPIOSFunctionPointers(OBJOS *pOS)
 //
 // Function to find the maximum number of cores in the system
 //
-NvU32 osGetMaximumCoreCount()
+NvU32 osGetMaximumCoreCount(void)
 {
     //
     // Windows provides an API to query this that supports CPU hotadd that our
@@ -599,7 +599,7 @@ osMemGetFilter(NvUPtr address)
  *                               full call stack that is much helpful for debugging.
  */
 
-void osPagedSegmentAccessCheck()
+void osPagedSegmentAccessCheck(void)
 {
     OBJSYS    *pSys = SYS_GET_INSTANCE();
     OBJOS     *pOS  = SYS_GET_OS(pSys);

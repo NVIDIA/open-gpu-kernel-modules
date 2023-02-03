@@ -1866,6 +1866,8 @@ NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo)
     NVHDMIPKT_RESULT ret;
     const NvU32 displayId = nvDpyIdToNvU32(pDpyEvo->pConnectorEvo->displayId);
 
+    nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
+
     /* HDMI dpys not dynamic dpy so its connector should have a dpyId. */
     nvAssert(displayId != 0);
     nvAssert(pDpyEvo->parsedEdid.valid);
@@ -1884,33 +1886,54 @@ NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo)
     return pDpyEvo->hdmi.sinkCaps.linkMaxFRLRate != HDMI_FRL_DATA_RATE_NONE;
 }
 
-/* Determine if HDMI FRL is needed to drive the given timings on the given dpy. */
-static NvBool TimingsNeedFRL(const NVDpyEvoRec *pDpyEvo,
-                             const NVHwModeTimingsEvo *pTimings)
+/*
+ * Determine if the given HDMI dpy supports FRL.
+ *
+ * Returns TRUE if the dpy supports FRL, or FALSE otherwise.
+ */
+NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo)
 {
+    NvU32 passiveDpDongleMaxPclkKHz;
     const NVDevEvoRec *pDevEvo = pDpyEvo->pDispEvo->pDevEvo;
 
-    /* Can't use FRL if the display hardware doesn't support it */
+    nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
+
+    /* Can't use FRL if the display hardware doesn't support it. */
     if (!pDevEvo->hal->caps.supportsHDMIFRL) {
         return FALSE;
     }
 
-    /* Can only use FRL for HDMI devices. */
-    if (!nvDpyIsHdmiEvo(pDpyEvo)) {
-        return FALSE;
-    }
-
-    /* Can only use FRL if the HDMI sink supports it. */
+    /* Can't use FRL if the HDMI sink doesn't support it. */
     if (!pDpyEvo->parsedEdid.valid ||
         !pDpyEvo->parsedEdid.info.hdmiForumInfo.max_FRL_Rate) {
         return FALSE;
     }
 
+    /* Can't use FRL if we are using a passive DP to HDMI dongle. */
+    if (nvDpyGetPassiveDpDongleType(pDpyEvo, &passiveDpDongleMaxPclkKHz) !=
+        NV_EVO_PASSIVE_DP_DONGLE_UNUSED) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+/*
+ * Determine if HDMI FRL is needed to drive timings with the given pixel clock
+ * on the given dpy.
+ *
+ * Returns TRUE if FRL is needed, or FALSE otherwise.
+ * */
+static NvBool HdmiTimingsNeedFrl(const NVDpyEvoRec *pDpyEvo,
+                                 const NvU32 pixelClock)
+{
+    nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
+
     /*
      * For HDMI, maxSingleLinkPixelClockKHz is the maximum non-FRL rate.
      * If the rate is higher than that, try to use FRL for the mode.
      */
-    return pTimings->pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz;
+    return pixelClock > pDpyEvo->maxSingleLinkPixelClockKHz;
 }
 
 NvBool nvHdmiFrlQueryConfig(
@@ -1927,8 +1950,13 @@ NvBool nvHdmiFrlQueryConfig(
     NVT_TIMING nvtTiming = { };
     NVHDMIPKT_RESULT ret;
 
-    if (!TimingsNeedFRL(pDpyEvo, pHwTimings)) {
+    if (!nvDpyIsHdmiEvo(pDpyEvo) ||
+        !HdmiTimingsNeedFrl(pDpyEvo, pHwTimings->pixelClock)) {
         return TRUE;
+    }
+
+    if (!nvHdmiDpySupportsFrl(pDpyEvo)) {
+        return FALSE;
     }
 
     /* See if we can find an NVT_TIMING for this mode from the EDID. */

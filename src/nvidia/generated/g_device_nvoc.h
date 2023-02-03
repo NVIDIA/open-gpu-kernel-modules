@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,7 +83,6 @@ struct Device {
     struct Device *__nvoc_pbase_Device;
     NV_STATUS (*__deviceControl__)(struct Device *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__deviceInternalControlForward__)(struct Device *, NvU32, void *, NvU32);
-    NV_STATUS (*__deviceCtrlCmdBifReset__)(struct Device *, NV0080_CTRL_BIF_RESET_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdBifGetDmaBaseSysmemAddr__)(struct Device *, NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdBifAspmFeatureSupported__)(struct Device *, NV0080_CTRL_BIF_SET_ASPM_FEATURE_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdBifAspmCyaUpdate__)(struct Device *, NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS *);
@@ -213,7 +212,6 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 
 #define deviceControl(pResource, pCallContext, pParams) deviceControl_DISPATCH(pResource, pCallContext, pParams)
 #define deviceInternalControlForward(pDevice, command, pParams, size) deviceInternalControlForward_DISPATCH(pDevice, command, pParams, size)
-#define deviceCtrlCmdBifReset(pDevice, pBifResetParams) deviceCtrlCmdBifReset_DISPATCH(pDevice, pBifResetParams)
 #define deviceCtrlCmdBifGetDmaBaseSysmemAddr(pDevice, pBifDmaBaseSysmemParams) deviceCtrlCmdBifGetDmaBaseSysmemAddr_DISPATCH(pDevice, pBifDmaBaseSysmemParams)
 #define deviceCtrlCmdBifAspmFeatureSupported(pDevice, pBifAspmParams) deviceCtrlCmdBifAspmFeatureSupported_DISPATCH(pDevice, pBifAspmParams)
 #define deviceCtrlCmdBifAspmCyaUpdate(pDevice, pBifAspmCyaParams) deviceCtrlCmdBifAspmCyaUpdate_DISPATCH(pDevice, pBifAspmCyaParams)
@@ -303,12 +301,6 @@ NV_STATUS deviceInternalControlForward_IMPL(struct Device *pDevice, NvU32 comman
 
 static inline NV_STATUS deviceInternalControlForward_DISPATCH(struct Device *pDevice, NvU32 command, void *pParams, NvU32 size) {
     return pDevice->__deviceInternalControlForward__(pDevice, command, pParams, size);
-}
-
-NV_STATUS deviceCtrlCmdBifReset_IMPL(struct Device *pDevice, NV0080_CTRL_BIF_RESET_PARAMS *pBifResetParams);
-
-static inline NV_STATUS deviceCtrlCmdBifReset_DISPATCH(struct Device *pDevice, NV0080_CTRL_BIF_RESET_PARAMS *pBifResetParams) {
-    return pDevice->__deviceCtrlCmdBifReset__(pDevice, pBifResetParams);
 }
 
 NV_STATUS deviceCtrlCmdBifGetDmaBaseSysmemAddr_IMPL(struct Device *pDevice, NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS *pBifDmaBaseSysmemParams);

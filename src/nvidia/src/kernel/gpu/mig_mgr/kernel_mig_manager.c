@@ -124,7 +124,7 @@ kmigmgrMakeCIReference_IMPL
 
 /*! @brief create a Ref referencing no GI/CI */
 MIG_INSTANCE_REF
-kmigmgrMakeNoMIGReference_IMPL()
+kmigmgrMakeNoMIGReference_IMPL(void)
 {
     MIG_INSTANCE_REF ref = { NULL, NULL };
     return ref;

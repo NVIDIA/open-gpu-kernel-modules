@@ -1058,6 +1058,7 @@ kfspSendBootCommands_GH100
     }
 
     pCotPayload = portMemAllocNonPaged(sizeof(NVDM_PAYLOAD_COT));
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pCotPayload != NULL, NV_ERR_NO_MEMORY);
     portMemSet(pCotPayload, 0, sizeof(NVDM_PAYLOAD_COT));
 
     frtsSize = NV_PGC6_AON_FRTS_INPUT_WPR_SIZE_SECURE_SCRATCH_GROUP_03_0_WPR_SIZE_1MB_IN_4K << 12;

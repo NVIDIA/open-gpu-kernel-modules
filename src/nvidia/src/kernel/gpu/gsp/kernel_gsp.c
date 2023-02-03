@@ -1139,7 +1139,7 @@ _kgspRpcRecvPoll
     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
     NV_STATUS  nvStatus;
     RMTIMEOUT  timeout;
-    NvU32      timeoutUs = GPU_TIMEOUT_DEFAULT;
+    NvU32      timeoutUs;
     NvBool     bSlowGspRpc = IS_EMULATION(pGpu) || IS_SIMULATION(pGpu);
 
     //
@@ -1172,12 +1172,20 @@ _kgspRpcRecvPoll
     }
     else
     {
-        // We should only ever timeout this when GSP is in really bad state, so if it just
-        // happens to timeout on default timeout it should be OK for us to give it a little
-        // more time - make this timeout 1.5 of the default to allow some leeway.
         NvU32 defaultus = pGpu->timeoutData.defaultus;
 
-        timeoutUs = defaultus + defaultus / 2;
+        if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+        {
+            // Ensure at least 3.1s for vGPU-GSP before adding leeway (Bug 3928607)
+            timeoutUs = NV_MAX(3100 * 1000, defaultus) + (defaultus / 2);
+        }
+        else
+        {
+            // We should only ever timeout this when GSP is in really bad state, so if it just
+            // happens to timeout on default timeout it should be OK for us to give it a little
+            // more time - make this timeout 1.5 of the default to allow some leeway.
+            timeoutUs = defaultus + defaultus / 2;
+        }
     }
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));

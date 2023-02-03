@@ -10,6 +10,7 @@
 
 #### Fixed
 
+- Fix build problems with Clang 15.0, [#https://github.com/NVIDIA/open-gpu-kernel-modules/issues/377] by @ptr1337
 - Add support for IBT (indirect branch tracking) on supported platforms, [#256](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/256) by @rnd-ash
 - Return EINVAL when [failing to] allocating memory, [#280](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/280) by @YusufKhan-gamedev
 - Fix various typos in nvidia/src/kernel, [#16](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/16) by @alexisgeoffrey

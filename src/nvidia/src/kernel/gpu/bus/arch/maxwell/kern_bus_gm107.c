@@ -460,6 +460,9 @@ kbusStateUnload_GM107
     NV_STATUS          status     = NV_OK;
     KernelBif         *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
 
+    if (IS_VIRTUAL(pGpu) && !(flags & GPU_STATE_FLAGS_PRESERVING))
+        return NV_OK;
+
     if ((pKernelBif != NULL)
         &&
         (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
@@ -476,9 +479,12 @@ kbusStateUnload_GM107
     {
         if (!IS_GPU_GC6_STATE_ENTERING(pGpu))
         {
-            status = kbusTeardownBar2CpuAperture_HAL(pGpu, pKernelBus, GPU_GFID_PF);
-            // Do not use BAR2 physical mode for bootstrapping BAR2 across S/R.
-            pKernelBus->bUsePhysicalBar2InitPagetable = NV_FALSE;
+			status = kbusTeardownBar2CpuAperture_HAL(pGpu, pKernelBus, GPU_GFID_PF);
+			if (!IS_VIRTUAL_WITH_SRIOV(pGpu))
+            {
+                // Do not use BAR2 physical mode for bootstrapping BAR2 across S/R.
+                pKernelBus->bUsePhysicalBar2InitPagetable = NV_FALSE;
+            }
         }
     }
     else

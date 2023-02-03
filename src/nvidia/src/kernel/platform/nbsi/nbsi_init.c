@@ -3364,7 +3364,7 @@ void initNbsiObject(NBSI_OBJ *pNbsiObj)
     }
 }
 
-NBSI_OBJ *getNbsiObject()
+NBSI_OBJ *getNbsiObject(void)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJPFM *pPfm = SYS_GET_PFM(pSys);

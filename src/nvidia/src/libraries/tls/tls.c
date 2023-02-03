@@ -130,18 +130,6 @@ NvU32 osGetMaximumCoreCount(void);
 #endif
 #endif
 
-#if NVOS_IS_LIBOS
-//
-// On LibOS we have at most one passive thread (task_rm) and one ISR
-// (task_interrupt) active at once (on same CPU core). Since these two will
-// use different maps, we don't need to protect them with spinlocks.
-//
-#define TLS_SPINLOCK_ACQUIRE(x)
-#define TLS_SPINLOCK_RELEASE(x)
-#else
-#define TLS_SPINLOCK_ACQUIRE(x) portSyncSpinlockAcquire(x)
-#define TLS_SPINLOCK_RELEASE(x) portSyncSpinlockRelease(x)
-#endif // NVOS_IS_LIBOS
 
 #if !PORT_IS_FUNC_SUPPORTED(portSyncExSafeToSleep)
 #define portSyncExSafeToSleep() NV_TRUE
@@ -158,7 +146,7 @@ NvU32 osGetMaximumCoreCount(void);
 
 
 
-NV_STATUS tlsInitialize()
+NV_STATUS tlsInitialize(void)
 {
     NV_STATUS status;
 
@@ -216,7 +204,7 @@ done:
     return status;
 }
 
-void tlsShutdown()
+void tlsShutdown(void)
 {
     if (portAtomicDecrementU32(&tlsDatabase.initCount) != 0)
     {
@@ -313,7 +301,7 @@ PORT_MEM_ALLOCATOR *tlsIsrAllocatorGet(void)
     return _tlsIsrAllocatorGet();
 }
 
-NvU64 tlsEntryAlloc()
+NvU64 tlsEntryAlloc(void)
 {
     NV_ASSERT_OR_RETURN(tlsDatabase.initCount > 0, TLS_ERROR_VAL);
     return portAtomicExIncrementU64(&tlsDatabase.lastEntryId);
@@ -427,7 +415,7 @@ NvU32 tlsEntryUnreference(NvU64 entryId)
 
 
 static ThreadEntry *
-_tlsThreadEntryGet()
+_tlsThreadEntryGet(void)
 {
     ThreadEntry *pThreadEntry;
 
@@ -438,16 +426,16 @@ _tlsThreadEntryGet()
     else
     {
         NvU64 threadId = portThreadGetCurrentThreadId();
-        TLS_SPINLOCK_ACQUIRE(tlsDatabase.pLock);
-        pThreadEntry = mapFind(&tlsDatabase.threadEntries, threadId);
-        TLS_SPINLOCK_RELEASE(tlsDatabase.pLock);
+        portSyncSpinlockAcquire(tlsDatabase.pLock);
+          pThreadEntry = mapFind(&tlsDatabase.threadEntries, threadId);
+        portSyncSpinlockRelease(tlsDatabase.pLock);
     }
     return pThreadEntry;
 }
 
 
 static ThreadEntry *
-_tlsThreadEntryGetOrAlloc()
+_tlsThreadEntryGetOrAlloc(void)
 {
     ThreadEntry* pThreadEntry = NULL;
 
@@ -460,11 +448,11 @@ _tlsThreadEntryGetOrAlloc()
         {
             pThreadEntry->key.threadId = portThreadGetCurrentThreadId();
             mapInitIntrusive(&pThreadEntry->map);
-            TLS_SPINLOCK_ACQUIRE(tlsDatabase.pLock);
-            mapInsertExisting(&tlsDatabase.threadEntries,
-                              pThreadEntry->key.threadId,
-                              pThreadEntry);
-            TLS_SPINLOCK_RELEASE(tlsDatabase.pLock);
+            portSyncSpinlockAcquire(tlsDatabase.pLock);
+              mapInsertExisting(&tlsDatabase.threadEntries,
+                                pThreadEntry->key.threadId,
+                                pThreadEntry);
+            portSyncSpinlockRelease(tlsDatabase.pLock);
         }
     }
 
@@ -522,9 +510,9 @@ _tlsEntryRelease
         {
             NV_ASSERT(portMemExSafeForNonPagedAlloc());
             mapDestroy(&pThreadEntry->map);
-            TLS_SPINLOCK_ACQUIRE(tlsDatabase.pLock);
-            mapRemove(&tlsDatabase.threadEntries, pThreadEntry);
-            TLS_SPINLOCK_RELEASE(tlsDatabase.pLock);
+            portSyncSpinlockAcquire(tlsDatabase.pLock);
+              mapRemove(&tlsDatabase.threadEntries, pThreadEntry);
+            portSyncSpinlockRelease(tlsDatabase.pLock);
             PORT_FREE(tlsDatabase.pAllocator, pThreadEntry);
         }
     }
@@ -549,7 +537,7 @@ static PORT_MEM_ALLOCATOR *_tlsAllocatorGet(void)
 
 #if TLS_ISR_CAN_USE_LOCK
 
-static NV_STATUS _tlsIsrEntriesInit()
+static NV_STATUS _tlsIsrEntriesInit(void)
 {
     tlsDatabase.pIsrLock = portSyncSpinlockCreate(tlsDatabase.pAllocator);
     if (tlsDatabase.pLock == NULL)
@@ -559,7 +547,7 @@ static NV_STATUS _tlsIsrEntriesInit()
     mapInitIntrusive(&tlsDatabase.isrEntries);
     return NV_OK;
 }
-static void _tlsIsrEntriesDestroy()
+static void _tlsIsrEntriesDestroy(void)
 {
     if (tlsDatabase.pIsrLock)
         portSyncSpinlockDestroy(tlsDatabase.pIsrLock);
@@ -567,40 +555,40 @@ static void _tlsIsrEntriesDestroy()
 }
 static void _tlsIsrEntriesInsert(ThreadEntry *pThreadEntry)
 {
-    TLS_SPINLOCK_ACQUIRE(tlsDatabase.pIsrLock);
-    mapInsertExisting(&tlsDatabase.isrEntries, pThreadEntry->key.sp, pThreadEntry);
-    TLS_SPINLOCK_RELEASE(tlsDatabase.pIsrLock);
+    portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
+      mapInsertExisting(&tlsDatabase.isrEntries, pThreadEntry->key.sp, pThreadEntry);
+    portSyncSpinlockRelease(tlsDatabase.pIsrLock);
 }
 static ThreadEntry *_tlsIsrEntriesRemove(NvU64 sp)
 {
     ThreadEntry *pThreadEntry;
-    TLS_SPINLOCK_ACQUIRE(tlsDatabase.pIsrLock);
-    pThreadEntry = mapFind(&tlsDatabase.isrEntries, sp);
-    mapRemove(&tlsDatabase.isrEntries, pThreadEntry);
-    TLS_SPINLOCK_RELEASE(tlsDatabase.pIsrLock);
+    portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
+      pThreadEntry = mapFind(&tlsDatabase.isrEntries, sp);
+      mapRemove(&tlsDatabase.isrEntries, pThreadEntry);
+    portSyncSpinlockRelease(tlsDatabase.pIsrLock);
     return pThreadEntry;
 }
 static ThreadEntry *_tlsIsrEntriesFind(NvU64 approxSp)
 {
     ThreadEntry *pThreadEntry;
-    TLS_SPINLOCK_ACQUIRE(tlsDatabase.pIsrLock);
+    portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
 #if STACK_GROWS_DOWNWARD
-    pThreadEntry = mapFindGEQ(&tlsDatabase.isrEntries, approxSp);
+      pThreadEntry = mapFindGEQ(&tlsDatabase.isrEntries, approxSp);
 #else
-    pThreadEntry = mapFindLEQ(&tlsDatabase.isrEntries, approxSp);
+      pThreadEntry = mapFindLEQ(&tlsDatabase.isrEntries, approxSp);
 #endif
-    TLS_SPINLOCK_RELEASE(tlsDatabase.pIsrLock);
+    portSyncSpinlockRelease(tlsDatabase.pIsrLock);
     return pThreadEntry;
 }
 
 #else // Lockless
 
-static NV_STATUS _tlsIsrEntriesInit()
+static NV_STATUS _tlsIsrEntriesInit(void)
 {
     portMemSet(tlsDatabase.isrEntries, 0, sizeof(tlsDatabase.isrEntries));
     return NV_OK;
 }
-static void _tlsIsrEntriesDestroy()
+static void _tlsIsrEntriesDestroy(void)
 {
     portMemSet(tlsDatabase.isrEntries, 0, sizeof(tlsDatabase.isrEntries));
 }
@@ -656,7 +644,7 @@ static ThreadEntry *_tlsIsrEntriesFind(NvU64 approxSp)
 
 
 
-static NvBool _tlsIsIsr()
+static NvBool _tlsIsIsr(void)
 {
 #if defined (TLS_ISR_UNIT_TEST)
     // In unit tests we simulate ISR tests in different ways, so tests define this
