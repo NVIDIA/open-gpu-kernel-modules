@@ -780,6 +780,8 @@ _acpiDsmSupportedFuncCacheInit
     // Just checking to make sure this is correct!
     NV_ASSERT_OR_RETURN_VOID(0 == ACPI_DSM_FUNCTION_NBSI);
 
+    portMemSet(supportFuncs, 0, sizeof(supportFuncs));
+
     //
     // loop through all guids. The read will cache the subfunction list (if
     // available)

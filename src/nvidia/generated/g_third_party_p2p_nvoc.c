@@ -8,6 +8,161 @@
 #include "g_third_party_p2p_nvoc.h"
 
 #ifdef DEBUG
+char __nvoc_class_id_uniqueness_check_0x3e3a6a = 1;
+#endif
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_P2PTokenShare;
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_RsShared;
+
+void __nvoc_init_P2PTokenShare(P2PTokenShare*);
+void __nvoc_init_funcTable_P2PTokenShare(P2PTokenShare*);
+NV_STATUS __nvoc_ctor_P2PTokenShare(P2PTokenShare*);
+void __nvoc_init_dataField_P2PTokenShare(P2PTokenShare*);
+void __nvoc_dtor_P2PTokenShare(P2PTokenShare*);
+extern const struct NVOC_EXPORT_INFO __nvoc_export_info_P2PTokenShare;
+
+static const struct NVOC_RTTI __nvoc_rtti_P2PTokenShare_P2PTokenShare = {
+    /*pClassDef=*/          &__nvoc_class_def_P2PTokenShare,
+    /*dtor=*/               (NVOC_DYNAMIC_DTOR) &__nvoc_dtor_P2PTokenShare,
+    /*offset=*/             0,
+};
+
+static const struct NVOC_RTTI __nvoc_rtti_P2PTokenShare_Object = {
+    /*pClassDef=*/          &__nvoc_class_def_Object,
+    /*dtor=*/               &__nvoc_destructFromBase,
+    /*offset=*/             NV_OFFSETOF(P2PTokenShare, __nvoc_base_RsShared.__nvoc_base_Object),
+};
+
+static const struct NVOC_RTTI __nvoc_rtti_P2PTokenShare_RsShared = {
+    /*pClassDef=*/          &__nvoc_class_def_RsShared,
+    /*dtor=*/               &__nvoc_destructFromBase,
+    /*offset=*/             NV_OFFSETOF(P2PTokenShare, __nvoc_base_RsShared),
+};
+
+static const struct NVOC_CASTINFO __nvoc_castinfo_P2PTokenShare = {
+    /*numRelatives=*/       3,
+    /*relatives=*/ {
+        &__nvoc_rtti_P2PTokenShare_P2PTokenShare,
+        &__nvoc_rtti_P2PTokenShare_RsShared,
+        &__nvoc_rtti_P2PTokenShare_Object,
+    },
+};
+
+const struct NVOC_CLASS_DEF __nvoc_class_def_P2PTokenShare = 
+{
+    /*classInfo=*/ {
+        /*size=*/               sizeof(P2PTokenShare),
+        /*classId=*/            classId(P2PTokenShare),
+        /*providerId=*/         &__nvoc_rtti_provider,
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*name=*/               "P2PTokenShare",
+#endif
+    },
+    /*objCreatefn=*/        (NVOC_DYNAMIC_OBJ_CREATE) &__nvoc_objCreateDynamic_P2PTokenShare,
+    /*pCastInfo=*/          &__nvoc_castinfo_P2PTokenShare,
+    /*pExportInfo=*/        &__nvoc_export_info_P2PTokenShare
+};
+
+const struct NVOC_EXPORT_INFO __nvoc_export_info_P2PTokenShare = 
+{
+    /*numEntries=*/     0,
+    /*pExportEntries=*/  0
+};
+
+void __nvoc_dtor_RsShared(RsShared*);
+void __nvoc_dtor_P2PTokenShare(P2PTokenShare *pThis) {
+    __nvoc_shrp2pDestruct(pThis);
+    __nvoc_dtor_RsShared(&pThis->__nvoc_base_RsShared);
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+void __nvoc_init_dataField_P2PTokenShare(P2PTokenShare *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+NV_STATUS __nvoc_ctor_RsShared(RsShared* );
+NV_STATUS __nvoc_ctor_P2PTokenShare(P2PTokenShare *pThis) {
+    NV_STATUS status = NV_OK;
+    status = __nvoc_ctor_RsShared(&pThis->__nvoc_base_RsShared);
+    if (status != NV_OK) goto __nvoc_ctor_P2PTokenShare_fail_RsShared;
+    __nvoc_init_dataField_P2PTokenShare(pThis);
+
+    status = __nvoc_shrp2pConstruct(pThis);
+    if (status != NV_OK) goto __nvoc_ctor_P2PTokenShare_fail__init;
+    goto __nvoc_ctor_P2PTokenShare_exit; // Success
+
+__nvoc_ctor_P2PTokenShare_fail__init:
+    __nvoc_dtor_RsShared(&pThis->__nvoc_base_RsShared);
+__nvoc_ctor_P2PTokenShare_fail_RsShared:
+__nvoc_ctor_P2PTokenShare_exit:
+
+    return status;
+}
+
+static void __nvoc_init_funcTable_P2PTokenShare_1(P2PTokenShare *pThis) {
+    PORT_UNREFERENCED_VARIABLE(pThis);
+}
+
+void __nvoc_init_funcTable_P2PTokenShare(P2PTokenShare *pThis) {
+    __nvoc_init_funcTable_P2PTokenShare_1(pThis);
+}
+
+void __nvoc_init_RsShared(RsShared*);
+void __nvoc_init_P2PTokenShare(P2PTokenShare *pThis) {
+    pThis->__nvoc_pbase_P2PTokenShare = pThis;
+    pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_RsShared.__nvoc_base_Object;
+    pThis->__nvoc_pbase_RsShared = &pThis->__nvoc_base_RsShared;
+    __nvoc_init_RsShared(&pThis->__nvoc_base_RsShared);
+    __nvoc_init_funcTable_P2PTokenShare(pThis);
+}
+
+NV_STATUS __nvoc_objCreate_P2PTokenShare(P2PTokenShare **ppThis, Dynamic *pParent, NvU32 createFlags) {
+    NV_STATUS status;
+    Object *pParentObj;
+    P2PTokenShare *pThis;
+
+    pThis = portMemAllocNonPaged(sizeof(P2PTokenShare));
+    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+
+    portMemSet(pThis, 0, sizeof(P2PTokenShare));
+
+    __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_P2PTokenShare);
+
+    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    {
+        pParentObj = dynamicCast(pParent, Object);
+        objAddChild(pParentObj, &pThis->__nvoc_base_RsShared.__nvoc_base_Object);
+    }
+    else
+    {
+        pThis->__nvoc_base_RsShared.__nvoc_base_Object.pParent = NULL;
+    }
+
+    __nvoc_init_P2PTokenShare(pThis);
+    status = __nvoc_ctor_P2PTokenShare(pThis);
+    if (status != NV_OK) goto __nvoc_objCreate_P2PTokenShare_cleanup;
+
+    *ppThis = pThis;
+    return NV_OK;
+
+__nvoc_objCreate_P2PTokenShare_cleanup:
+    // do not call destructors here since the constructor already called them
+    portMemFree(pThis);
+    return status;
+}
+
+NV_STATUS __nvoc_objCreateDynamic_P2PTokenShare(P2PTokenShare **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
+    NV_STATUS status;
+
+    status = __nvoc_objCreate_P2PTokenShare(ppThis, pParent, createFlags);
+
+    return status;
+}
+
+#ifdef DEBUG
 char __nvoc_class_id_uniqueness_check_0x34d08b = 1;
 #endif
 

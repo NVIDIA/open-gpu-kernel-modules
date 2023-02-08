@@ -506,6 +506,13 @@ typedef struct rpc_pfm_req_hndlr_state_sync_callback_v21_04
 
 typedef rpc_pfm_req_hndlr_state_sync_callback_v21_04 rpc_pfm_req_hndlr_state_sync_callback_v;
 
+typedef struct rpc_gsp_lockdown_notice_v17_00
+{
+    NvBool     bLockdownEngaging;
+} rpc_gsp_lockdown_notice_v17_00;
+
+typedef rpc_gsp_lockdown_notice_v17_00 rpc_gsp_lockdown_notice_v;
+
 
 #endif
 
@@ -2133,6 +2140,25 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_0
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_gsp_lockdown_notice_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_lockdown_notice_v17_00[] = {
+    {
+        .vtype                = vtype_NvBool,
+        .offset               = NV_OFFSETOF(rpc_gsp_lockdown_notice_v17_00, bLockdownEngaging),
+        .name                 = "bLockdownEngaging"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_lockdown_notice_v17_00 = {
+    .name = "rpc_gsp_lockdown_notice",
+    .header_length = NV_SIZEOF32(rpc_gsp_lockdown_notice_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_gsp_lockdown_notice_v17_00
+};
+#endif
+
 #endif
 
 #ifdef RPC_DEBUG_PRINT_FUNCTIONS
@@ -2546,6 +2572,13 @@ vmiopd_mdesc_t *rpcdebugPfmReqHndlrStateSyncCallback_v21_04(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_gsp_lockdown_notice_v17_00
+vmiopd_mdesc_t *rpcdebugGspLockdownNotice_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_gsp_lockdown_notice_v17_00;
+}
+#endif
+
 
 #endif
 
@@ -2656,6 +2689,8 @@ typedef union rpc_generic_union {
     rpc_extdev_intr_service_v extdev_intr_service_v;
     rpc_pfm_req_hndlr_state_sync_callback_v21_04 pfm_req_hndlr_state_sync_callback_v21_04;
     rpc_pfm_req_hndlr_state_sync_callback_v pfm_req_hndlr_state_sync_callback_v;
+    rpc_gsp_lockdown_notice_v17_00 gsp_lockdown_notice_v17_00;
+    rpc_gsp_lockdown_notice_v gsp_lockdown_notice_v;
 } rpc_generic_union;
 
 #endif

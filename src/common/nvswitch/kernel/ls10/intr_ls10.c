@@ -5498,10 +5498,10 @@ nvswitch_create_deferred_link_state_check_task_ls10
         pErrorReportParams->nvlipt_instance = nvlipt_instance;
         pErrorReportParams->link = link;
 
-        status = nvswitch_task_create_args(device, (void*)pErrorReportParams, 
+        status = nvswitch_task_create_args(device, (void*)pErrorReportParams,
                                            &_nvswitch_deferred_link_state_check_ls10,
                                            NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS,
-                                           NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE | 
+                                           NVSWITCH_TASK_TYPE_FLAGS_RUN_ONCE |
                                            NVSWITCH_TASK_TYPE_FLAGS_VOID_PTR_ARGS);
     }
 
@@ -5527,7 +5527,7 @@ _nvswitch_deferred_link_errors_check_ls10
     void *fn_args
 )
 {
-    NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS *pErrorReportParams = 
+    NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS *pErrorReportParams =
                                            (NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS*)fn_args;
     NvU32 nvlipt_instance = pErrorReportParams->nvlipt_instance;
     NvU32 link = pErrorReportParams->link;
@@ -5550,7 +5550,7 @@ _nvswitch_deferred_link_errors_check_ls10
 
     if (pErrorReportParams)
     {
-    nvswitch_os_free(pErrorReportParams);
+        nvswitch_os_free(pErrorReportParams);
     }
     chip_device->deferredLinkErrors[link].bLinkErrorsCallBackEnabled = NV_FALSE;
 }
@@ -5566,7 +5566,7 @@ _nvswitch_create_deferred_link_errors_task_ls10
     ls10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
     NVSWITCH_DEFERRED_ERROR_REPORTING_ARGS *pErrorReportParams;
     NvlStatus status;
-    
+
     if (chip_device->deferredLinkErrors[link].bLinkErrorsCallBackEnabled)
     {
         return;
@@ -7168,7 +7168,7 @@ nvswitch_service_nvldl_fatal_link_ls10
 
         chip_device->deferredLinkErrors[link].fatalIntrMask.dl |= bit;
         _nvswitch_create_deferred_link_errors_task_ls10(device, nvlipt_instance, link);
-            
+
         nvswitch_clear_flags(&unhandled, bit);
         device->hal.nvswitch_reset_and_drain_links(device, NVBIT64(link));
 
@@ -7244,7 +7244,7 @@ nvswitch_service_minion_link_ls10
     }
 
     unhandled = pending;
-
+ 
     FOR_EACH_INDEX_IN_MASK(32, localLinkIdx, pending)
     {
         link = (instance * NVSWITCH_LINKS_PER_NVLIPT_LS10) + localLinkIdx;

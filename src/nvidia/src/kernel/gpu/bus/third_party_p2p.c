@@ -66,6 +66,8 @@ thirdpartyp2pConstruct_IMPL
     NvU32                       pidIndex         = 0;
     NV_STATUS                   status           = NV_OK;
     NvU32                       pid = osGetCurrentProcess();
+    RsShared                   *pShare;
+    P2PTokenShare              *pP2PTokenShare;
 
     pSubdevice = dynamicCast(pSubdeviceRef->pResource, Subdevice);
     if (pSubdevice == NULL)
@@ -153,6 +155,15 @@ thirdpartyp2pConstruct_IMPL
         }
     }
 
+    status = serverAllocShare(&g_resServ, classInfo(P2PTokenShare), &pShare);
+
+    if (status != NV_OK)
+        return status;
+
+    pP2PTokenShare = dynamicCast(pShare, P2PTokenShare);
+    pP2PTokenShare->pThirdPartyP2P = pThirdPartyP2P;
+    pThirdPartyP2P->pTokenShare = pP2PTokenShare;
+
     NV_ASSERT(status == NV_OK);
     return status;
 }
@@ -177,6 +188,9 @@ thirdpartyp2pDestruct_IMPL
     RS_RES_FREE_PARAMS_INTERNAL            *pParams;
 
     resGetFreeParams(staticCast(pThirdPartyP2P, RsResource), &pCallContext, &pParams);
+
+    if (pThirdPartyP2P->pTokenShare)
+        serverFreeShare(&g_resServ, staticCast(pThirdPartyP2P->pTokenShare, RsShared));
 
     pParams->status = gpuFullPowerSanityCheck(pGpu, NV_TRUE);
     if (pParams->status != NV_OK)
@@ -239,29 +253,24 @@ NV_STATUS CliGetThirdPartyP2PInfoFromToken
 )
 {
     ThirdPartyP2P *pThirdPartyP2P;
-    RmClient **ppClient;
-    RmClient  *pClient;
+    RS_SHARE_ITERATOR it;
 
     NV_ASSERT_OR_RETURN((ppThirdPartyP2P != NULL), NV_ERR_INVALID_ARGUMENT);
 
-    for (ppClient = serverutilGetFirstClientUnderLock();
-         ppClient;
-         ppClient = serverutilGetNextClientUnderLock(ppClient))
-    {
-        RS_ITERATOR it;
-        RsClient *pRsClient;
-        pClient = *ppClient;
-        pRsClient = staticCast(pClient, RsClient);
+    it = serverutilShareIter(classId(P2PTokenShare));
 
-        it = clientRefIter(pRsClient, NULL, classId(ThirdPartyP2P), RS_ITERATE_DESCENDANTS, NV_TRUE);
-        while (clientRefIterNext(pRsClient, &it))
+    while(serverutilShareIterNext(&it))
+    {
+        RsShared *pShared = it.pShared;
+        P2PTokenShare *pP2PTokenShare = dynamicCast(pShared, P2PTokenShare);
+        if (pP2PTokenShare == NULL)
+            continue;
+        pThirdPartyP2P = pP2PTokenShare->pThirdPartyP2P;
+
+        if (pThirdPartyP2P->p2pToken == p2pToken)
         {
-            pThirdPartyP2P = dynamicCast(it.pResourceRef->pResource, ThirdPartyP2P);
-            if (pThirdPartyP2P->p2pToken == p2pToken)
-            {
-                *ppThirdPartyP2P = pThirdPartyP2P;
-                return NV_OK;
-            }
+            *ppThirdPartyP2P = pThirdPartyP2P;
+            return NV_OK;
         }
     }
 
@@ -314,61 +323,34 @@ NV_STATUS CliNextThirdPartyP2PInfoWithPid
 )
 {
     ThirdPartyP2P *pThirdPartyP2P;
-    RmClient **ppClient;
-    RmClient  *pClient;
+    RS_SHARE_ITERATOR it;
 
-    for (ppClient = serverutilGetFirstClientUnderLock();
-         ppClient;
-         ppClient = serverutilGetNextClientUnderLock(ppClient))
+    it = serverutilShareIter(classId(P2PTokenShare));
+
+    while(serverutilShareIterNext(&it))
     {
-        RsClient *pRsClient;
-        RS_ITERATOR it, devIt, subDevIt;
-        pClient = *ppClient;
-        pRsClient = staticCast(pClient, RsClient);
-
-        if (pRsClient->type == CLIENT_TYPE_KERNEL)
-        {
+        RsShared *pShared = it.pShared;
+        P2PTokenShare *pP2PTokenShare = dynamicCast(pShared, P2PTokenShare);
+        if (pP2PTokenShare == NULL)
             continue;
-        }
 
-        devIt = clientRefIter(pRsClient, NULL, classId(Device),
-                              RS_ITERATE_CHILDREN, NV_TRUE);
-        while(clientRefIterNext(pRsClient, &devIt))
+        pThirdPartyP2P = pP2PTokenShare->pThirdPartyP2P;
+
+        if (NULL == *ppThirdPartyP2P)
         {
-            Device *pDevice = dynamicCast(devIt.pResourceRef->pResource, Device);
-            OBJGPU *pGpuFromDevice = GPU_RES_GET_GPU(pDevice);
-
-            if ((pGpu != NULL) && (pGpu != pGpuFromDevice))
+            if (thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hClient))
             {
-                continue;
+                RsClient *pClient = RES_GET_CLIENT(pThirdPartyP2P);
+                *ppClientOut = dynamicCast(pClient, RmClient);
+                *ppThirdPartyP2P = pThirdPartyP2P;
+                return NV_OK;
             }
-
-            subDevIt = clientRefIter(pRsClient, devIt.pResourceRef, classId(Subdevice),
-                                     RS_ITERATE_CHILDREN, NV_TRUE);
-            while(clientRefIterNext(pRsClient, &subDevIt))
-            {
-                it = clientRefIter(pRsClient, subDevIt.pResourceRef,
-                                   classId(ThirdPartyP2P), RS_ITERATE_CHILDREN, NV_TRUE);
-                while (clientRefIterNext(pRsClient, &it))
-                {
-                    pThirdPartyP2P = dynamicCast(it.pResourceRef->pResource, ThirdPartyP2P);
-                    if (NULL == *ppThirdPartyP2P)
-                    {
-                        if (thirdpartyp2pIsValidClientPid(pThirdPartyP2P, pid, hClient))
-                        {
-                            *ppClientOut = pClient;
-                            *ppThirdPartyP2P = pThirdPartyP2P;
-                            return NV_OK;
-                        }
-                    }
-                    else if (pThirdPartyP2P->p2pToken ==
-                             (*ppThirdPartyP2P)->p2pToken)
-                    {
-                        *ppClientOut = NULL;
-                        *ppThirdPartyP2P = NULL;
-                    }
-                }
-            }
+        }
+        else if (pThirdPartyP2P->p2pToken ==
+                                         (*ppThirdPartyP2P)->p2pToken)
+        {
+            *ppClientOut = NULL;
+            *ppThirdPartyP2P = NULL;
         }
     }
 
@@ -1172,6 +1154,16 @@ CliUnregisterFromThirdPartyP2P
     }
 
     return status;
+}
+
+NV_STATUS 
+shrp2pConstruct_IMPL(P2PTokenShare *pP2PTokenShare)
+{
+    return NV_OK;
+}
+
+void shrp2pDestruct_IMPL(P2PTokenShare *pP2PTokenShare)
+{
 }
 
 void

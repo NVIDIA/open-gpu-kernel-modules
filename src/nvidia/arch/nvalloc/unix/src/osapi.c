@@ -1114,7 +1114,7 @@ static void RmCheckNvpcfDsmScope(
     OBJGPU *pGpu
 )
 {
-    NvU32 supportedFuncs;
+    NvU32 supportedFuncs = 0;
     NvU16 dsmDataSize = sizeof(supportedFuncs);
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
     ACPI_DSM_FUNCTION acpiDsmFunction = ACPI_DSM_FUNCTION_NVPCF_2X;
@@ -5317,6 +5317,25 @@ void NV_API_CALL rm_dma_buf_put_client_and_device(
 // Fetches GSP ucode data for usage during RM Init
 // NOTE: Used only on VMWware
 //
+
+void NV_API_CALL rm_vgpu_vfio_set_driver_vm(
+    nvidia_stack_t *sp,
+    NvBool is_driver_vm
+)
+{
+    OBJSYS *pSys;
+    POBJHYPERVISOR pHypervisor;
+    void *fp;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+
+    pSys = SYS_GET_INSTANCE();
+    pHypervisor = SYS_GET_HYPERVISOR(pSys);
+
+    pHypervisor->setProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED, is_driver_vm);
+
+    NV_EXIT_RM_RUNTIME(sp,fp);
+}
 
 NvBool NV_API_CALL rm_is_altstack_in_use(void)
 {

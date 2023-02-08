@@ -347,6 +347,9 @@ static nv_dma_fence_t *__nv_drm_fence_context_create_fence(
                       &nv_fence->lock, nv_fence_context->context,
                       seqno);
 
+    /* The context maintains a reference to any pending fences. */
+    nv_dma_fence_get(&nv_fence->base);
+
     list_add_tail(&nv_fence->list_entry, &nv_fence_context->pending);
 
     nv_fence_context->last_seqno = seqno;
@@ -511,6 +514,9 @@ int nv_drm_gem_fence_attach_ioctl(struct drm_device *dev,
     }
 
     nv_dma_resv_unlock(&nv_gem->resv);
+
+    /* dma_resv_add_excl_fence takes its own reference to the fence. */
+    nv_dma_fence_put(fence);
 
 fence_context_create_fence_failed:
     nv_drm_gem_object_unreference_unlocked(&nv_gem_fence_context->base);

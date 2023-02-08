@@ -16,6 +16,7 @@
 --undefined=rm_init_adapter
 --undefined=rm_init_private_state
 --undefined=rm_init_rm
+--undefined=rm_vgpu_vfio_set_driver_vm
 --undefined=rm_ioctl
 --undefined=rm_is_supported_device
 --undefined=rm_is_supported_pci_device

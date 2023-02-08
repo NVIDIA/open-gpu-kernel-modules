@@ -830,6 +830,7 @@ struct DPCDHALImpl : DPCDHAL
         return bSDPExtnForColorimetry;
     }
 
+
     virtual AuxRetry::status setOuiSource(unsigned ouiId, const char * model, size_t modelNameLength, NvU8 chipRevision)
     {
         NvU8 ouiBuffer[16];
@@ -887,7 +888,7 @@ struct DPCDHALImpl : DPCDHAL
             return false;
         }
         //  The first 3 bytes are IEEE_OUI. 2 hex digits per register.
-        ouiId = ouiBuffer[0] | (ouiBuffer[1] << 8) | (ouiBuffer[2] << 16);
+        ouiId = ouiBuffer[2] | (ouiBuffer[1] << 8) | (ouiBuffer[0] << 16);
 
         // Next 6 bytes are Device Identification String, copy as much as we can (limited buffer case).
         unsigned int i;

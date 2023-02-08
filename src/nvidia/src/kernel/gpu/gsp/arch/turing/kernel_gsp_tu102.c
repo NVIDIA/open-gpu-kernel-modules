@@ -843,6 +843,12 @@ kgspService_TU102
             DRF_DEF(_PFALCON, _FALCON_IRQSCLR, _SWGEN0, _SET));
 
         kgspRpcRecvEvents(pGpu, pKernelGsp);
+
+        //
+        // If lockdown has been engaged (as notified by an RPC event),
+        // we shouldn't access any more GSP registers.
+        //
+        NV_CHECK_OR_RETURN(LEVEL_SILENT, !pKernelGsp->bInLockdown, 0);
     }
 
     // Clear any sources that were serviced and get the new status

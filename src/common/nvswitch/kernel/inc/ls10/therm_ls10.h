@@ -50,4 +50,10 @@ nvswitch_monitor_thermal_alert_ls10
     nvswitch_device *device
 );
 
+NvlStatus
+nvswitch_ctrl_therm_read_voltage_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_CTRL_GET_VOLTAGE_PARAMS *info
+);
 #endif //_THERM_LS10_H_

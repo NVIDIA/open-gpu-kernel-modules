@@ -146,6 +146,11 @@ typedef struct
 typedef struct
 {
     NvU8   cmdType;
+} RM_SOE_CORE_CMD_GET_VOLTAGE;
+
+typedef struct
+{
+    NvU8   cmdType;
 } RM_SOE_CORE_CMD_L2_STATE;
 
 typedef union
@@ -157,6 +162,23 @@ typedef union
     RM_SOE_CORE_CMD_NPORT_RESET nportReset;
     RM_SOE_CORE_CMD_NPORT_STATE nportState;
     RM_SOE_CORE_CMD_NPORT_TPROD_STATE nportTprodState;
+    RM_SOE_CORE_CMD_GET_VOLTAGE getVoltage;
     RM_SOE_CORE_CMD_L2_STATE l2State;
 } RM_SOE_CORE_CMD;
+
+
+typedef struct
+{
+    NvU8   msgType;
+    NvU8   flcnStatus;
+    NvU32  vdd_mv;
+    NvU32  dvdd_mv;
+    NvU32  hvdd_mv;
+} RM_SOE_CORE_MSG_GET_VOLTAGE;
+
+typedef union
+{
+    NvU8 msgType;
+    RM_SOE_CORE_MSG_GET_VOLTAGE getVoltage;
+} RM_SOE_CORE_MSG;
 #endif  // _SOECORE_H_

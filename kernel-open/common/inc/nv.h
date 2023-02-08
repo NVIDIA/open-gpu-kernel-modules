@@ -915,6 +915,7 @@ NV_STATUS  NV_API_CALL  rm_write_registry_string (nvidia_stack_t *, nv_state_t *
 void       NV_API_CALL  rm_parse_option_string   (nvidia_stack_t *, const char *);
 char*      NV_API_CALL  rm_remove_spaces         (const char *);
 char*      NV_API_CALL  rm_string_token          (char **, const char);
+void       NV_API_CALL  rm_vgpu_vfio_set_driver_vm(nvidia_stack_t *, NvBool);
 
 NV_STATUS  NV_API_CALL  rm_run_rc_callback       (nvidia_stack_t *, nv_state_t *);
 void       NV_API_CALL  rm_execute_work_item     (nvidia_stack_t *, void *);
@@ -988,7 +989,7 @@ void       NV_API_CALL rm_acpi_notify(nvidia_stack_t *, nv_state_t *, NvU32);
 NvBool     NV_API_CALL rm_is_altstack_in_use(void);
 
 /* vGPU VFIO specific functions */
-NV_STATUS  NV_API_CALL  nv_vgpu_create_request(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU32, NvU16 *, NvU32, NvBool *);
+NV_STATUS  NV_API_CALL  nv_vgpu_create_request(nvidia_stack_t *, nv_state_t *, const NvU8 *, NvU32, NvU16 *, NvU32);
 NV_STATUS  NV_API_CALL  nv_vgpu_delete(nvidia_stack_t *, const NvU8 *, NvU16);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_type_ids(nvidia_stack_t *, nv_state_t *, NvU32 *, NvU32 *, NvBool, NvU8, NvBool);
 NV_STATUS  NV_API_CALL  nv_vgpu_get_type_info(nvidia_stack_t *, nv_state_t *, NvU32, char *, int, NvU8);

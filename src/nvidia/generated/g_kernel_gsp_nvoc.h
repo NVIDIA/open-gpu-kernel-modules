@@ -338,6 +338,7 @@ struct KernelGsp {
     NvU64 logElfDataSize;
     NvBool bLibosLogsPollingEnabled;
     NvBool bInInit;
+    NvBool bInLockdown;
     NvBool bPollingForRpcResponse;
     NvBool bXid119Printed;
     MEMORY_DESCRIPTOR *pMemDesc_simAccessBuf;

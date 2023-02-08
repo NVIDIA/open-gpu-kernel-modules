@@ -4722,6 +4722,16 @@ _nvswitch_ctrl_get_nvlink_error_threshold
     return device->hal.nvswitch_ctrl_get_nvlink_error_threshold(device, pParams);
 }
 
+static NvlStatus
+_nvswitch_ctrl_therm_read_voltage
+(
+    nvswitch_device *device,
+    NVSWITCH_CTRL_GET_VOLTAGE_PARAMS *info
+)
+{
+    return device->hal.nvswitch_ctrl_therm_read_voltage(device, info);
+}
+
 NvlStatus
 nvswitch_lib_ctrl
 (
@@ -5058,6 +5068,9 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_NVLINK_ERROR_THRESHOLD,
                 _nvswitch_ctrl_get_nvlink_error_threshold,
                 NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_VOLTAGE,
+                _nvswitch_ctrl_therm_read_voltage,
+                NVSWITCH_CTRL_GET_VOLTAGE_PARAMS);
 
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);

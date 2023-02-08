@@ -89,6 +89,7 @@ typedef struct
         RM_SOE_THERM_MSG     soeTherm;
         RM_FLCN_MSG_SOE_INIT init;
         RM_SOE_CHNMGMT_MSG   chnmgmt;
+        RM_SOE_CORE_MSG      core;   
     } msg;
 } RM_FLCN_MSG_SOE,
 *PRM_FLCN_MSG_SOE;

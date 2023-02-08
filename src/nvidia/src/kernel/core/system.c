@@ -172,6 +172,7 @@ sysDestruct_IMPL(OBJSYS *pSys)
     //
     listDestroy(&g_clientListBehindGpusLock);
     listDestroy(&g_userInfoList);
+    multimapDestroy(&g_osInfoList);
 
     rmapiShutdown();
     osSyncWithRmDestroy();
@@ -317,6 +318,12 @@ _sysRegistryOverrideResourceServer
     else
     {
         pSys->apiLockModuleMask = RM_LOCK_MODULE_GRP(RM_LOCK_MODULES_CLIENT);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_HANDLE_LOOKUP,
+                            &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_CLIENT_HANDLE_LOOKUP, !!data32);
     }
 }
 

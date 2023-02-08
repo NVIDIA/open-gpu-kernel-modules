@@ -803,6 +803,27 @@ _kgspRpcEventPlatformRequestHandlerStateSyncCallback
     return NV_OK;
 }
 
+static void
+_kgspRpcGspLockdownNotice
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc
+)
+{
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+    RPC_PARAMS(gsp_lockdown_notice, _v17_00);
+
+    //
+    // While the GSP is in lockdown, we cannot access some of its registers,
+    // including interrupt status and control. We shouldn't receive any more
+    // SWGEN0 interrupts while the core is in lockdown.
+    //
+    pKernelGsp->bInLockdown = rpc_params->bLockdownEngaging;
+
+    NV_PRINTF(LEVEL_INFO, "GSP lockdown %s\n",
+              pKernelGsp->bInLockdown ? "engaged" : "disengaged");
+}
+
 static
 const char *_getRpcName
 (
@@ -944,6 +965,10 @@ _kgspProcessRpcEvent
 
         case NV_VGPU_MSG_EVENT_PFM_REQ_HNDLR_STATE_SYNC_CALLBACK:
             nvStatus = _kgspRpcEventPlatformRequestHandlerStateSyncCallback(pGpu, pRpc);
+            break;
+
+        case NV_VGPU_MSG_EVENT_GSP_LOCKDOWN_NOTICE:
+            _kgspRpcGspLockdownNotice(pGpu, pRpc);
             break;
 
         case NV_VGPU_MSG_EVENT_GSP_INIT_DONE:   // Handled by _kgspRpcRecvPoll.

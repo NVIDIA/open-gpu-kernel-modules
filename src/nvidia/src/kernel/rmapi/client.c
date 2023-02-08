@@ -39,13 +39,16 @@
 #include "gpu/bus/third_party_p2p.h"
 #include "virtualization/hypervisor/hypervisor.h"
 
+OsInfoMap g_osInfoList;
 UserInfoList g_userInfoList;
 RmClientList g_clientListBehindGpusLock; // RS-TODO remove this WAR
 
 #define RS_FW_UNIQUE_HANDLE_BASE  (0xc9f00000)
 
-NV_STATUS _registerUserInfo(PUID_TOKEN *ppUidToken, UserInfo **ppUserInfo);
-NV_STATUS _unregisterUserInfo(UserInfo *pUserInfo);
+static NV_STATUS _registerUserInfo(PUID_TOKEN *ppUidToken, UserInfo **ppUserInfo);
+static NV_STATUS _unregisterUserInfo(UserInfo *pUserInfo);
+static NV_STATUS _registerOSInfo(RmClient *pClient, void *pOSInfo);
+static NV_STATUS _unregisterOSInfo(RmClient *pClient, void *pOSInfo);
 
 NV_STATUS
 rmclientConstruct_IMPL
@@ -149,6 +152,8 @@ rmclientConstruct_IMPL
         }
         bReleaseLock = NV_TRUE;
     }
+
+    _registerOSInfo(pClient, pClient->pOSInfo);
 
     pClient->bIsClientVirtualMode = (pSecInfo->pProcessToken != NULL);
 
@@ -261,6 +266,8 @@ rmclientDestruct_IMPL
             bReleaseLock = NV_TRUE;
         }
     }
+
+    _unregisterOSInfo(pClient, pClient->pOSInfo);
 
     listRemoveFirstByValue(&g_clientListBehindGpusLock, (void*)&pClient);
 
@@ -622,7 +629,7 @@ NV_STATUS rmclientUserClientSecurityCheckByHandle(NvHandle hClient, const API_SE
  * @param[inout] ppUidToken
  * @param[out] ppUserInfo
  */
-NV_STATUS
+static NV_STATUS
 _registerUserInfo
 (
     PUID_TOKEN *ppUidToken,
@@ -687,7 +694,7 @@ _registerUserInfo
  *
  * @param[in] pUserInfo
  */
-NV_STATUS
+static NV_STATUS
 _unregisterUserInfo
 (
     UserInfo *pUserInfo
@@ -888,4 +895,78 @@ NvBool rmclientIsCapableByHandle
     }
 
     return rmclientIsCapable(pClient, capability);
+}
+
+/**
+ *
+ * Register a client with a user info list
+ *
+ * This function must be protected by a lock (currently the GPUs lock.)
+ *
+ * @param[in] pClient
+ * @param[in] pOSInfo
+ */
+static NV_STATUS
+_registerOSInfo
+(
+   RmClient *pClient,
+   void *pOSInfo
+)
+{
+    OsInfoMapSubmap *pSubmap = NULL;
+    RmClient **pInsert = NULL;
+    NvU64 key1 = (NvUPtr)pOSInfo;
+    NvU64 key2 = (NvU64)(staticCast(pClient,RsClient))->hClient;
+
+    if (multimapFindItem(&g_osInfoList, key1, key2) != NULL)
+        return NV_ERR_INSERT_DUPLICATE_NAME;
+
+    if (multimapFindSubmap(&g_osInfoList, key1) == NULL)
+    {
+        pSubmap = multimapInsertSubmap(&g_osInfoList, key1);
+        if (pSubmap == NULL)
+            return NV_ERR_NO_MEMORY;
+    }
+
+    pInsert = multimapInsertItemNew(&g_osInfoList, key1, key2);
+    if (pInsert == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    *pInsert = pClient;
+
+    return NV_OK;
+}
+
+/**
+ *
+ * Unregister a client from a user info list
+ *
+ * This function must be protected by a lock (currently the GPUs lock.)
+ *
+ * @param[in] pClient
+ * @param[in] pOSInfo
+ */
+static NV_STATUS
+_unregisterOSInfo
+(
+    RmClient *pClient,
+    void *pOSInfo
+)
+{
+     NvU64 key1 = (NvUPtr)pOSInfo;
+     NvU64 key2 = (NvU64)(staticCast(pClient, RsClient))->hClient;
+     OsInfoMapSubmap *pSubmap = NULL;
+     RmClient **pFind = NULL;
+ 
+     pFind = multimapFindItem(&g_osInfoList, key1, key2);
+     if (pFind != NULL)
+         multimapRemoveItem(&g_osInfoList, pFind);
+
+     pSubmap = multimapFindSubmap(&g_osInfoList, key1);
+     if (pSubmap == NULL || multimapCountSubmapItems(&g_osInfoList, pSubmap) > 0)
+         return NV_OK;
+ 
+     multimapRemoveSubmap(&g_osInfoList, pSubmap);
+ 
+     return NV_OK;
 }

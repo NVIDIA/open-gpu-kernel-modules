@@ -209,6 +209,10 @@
 #define NV_P2060_SYNC_SKEW_HIGH_VAL                              7:0 /* RWIVF */
 #define NV_P2060_SYNC_SKEW_HIGH_VAL_0                           0x00 /* RWI-V */
 
+#define NV_P2060_SYNC_SKEW_UPPER                                0x35 /* RW-1R */
+#define NV_P2060_SYNC_SKEW_UPPER_VAL                             7:0 /* RWIVF */
+#define NV_P2060_SYNC_SKEW_UPPER_VAL_0                          0x00 /* RWI-V */
+
 #define NV_P2060_START_DELAY_LOW                                0x0A /* RW-1R */
 #define NV_P2060_START_DELAY_LOW_VAL                             7:0 /* RWIVF */
 #define NV_P2060_START_DELAY_LOW_VAL_0                          0x00 /* RWI-V */

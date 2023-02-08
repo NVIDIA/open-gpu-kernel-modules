@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 525.85.12.
+version 525.89.02.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-525.85.12 driver release.  This can be achieved by installing
+525.89.02 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -167,7 +167,7 @@ for the target kernel.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 525.85.12 release,
+(see the table below). However, in the 525.89.02 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -175,7 +175,7 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/525.85.12/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/525.89.02/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -810,4 +810,14 @@ Subsystem Device ID.
 | NVIDIA RTX 6000 Ada Generation                  | 26B1 17AA 16A1 |
 | NVIDIA L40                                      | 26B5 10DE 169D |
 | NVIDIA GeForce RTX 4080                         | 2704           |
+| NVIDIA GeForce RTX 4090 Laptop GPU              | 2717           |
+| NVIDIA GeForce RTX 4090 Laptop GPU              | 2757           |
 | NVIDIA GeForce RTX 4070 Ti                      | 2782           |
+| NVIDIA GeForce RTX 4080 Laptop GPU              | 27A0           |
+| NVIDIA GeForce RTX 4080 Laptop GPU              | 27E0           |
+| NVIDIA GeForce RTX 4070 Laptop GPU              | 2820           |
+| NVIDIA GeForce RTX 4070 Laptop GPU              | 2860           |
+| NVIDIA GeForce RTX 4060 Laptop GPU              | 28A0           |
+| NVIDIA GeForce RTX 4050 Laptop GPU              | 28A1           |
+| NVIDIA GeForce RTX 4060 Laptop GPU              | 28E0           |
+| NVIDIA GeForce RTX 4050 Laptop GPU              | 28E1           |

@@ -200,7 +200,8 @@ extern "C" {
 #define NV2080_NOTIFIERS_POSSIBLE_ERROR                            (164)
 #define NV2080_NOTIFIERS_NVLINK_INFO_LINK_UP                       (165)
 #define NV2080_NOTIFIERS_NVLINK_INFO_LINK_DOWN                     (176)
-#define NV2080_NOTIFIERS_MAXCOUNT                                  (177)
+#define NV2080_NOTIFIERS_HDMI_FRL_RETRAINING_REQUEST               (177)
+#define NV2080_NOTIFIERS_MAXCOUNT                                  (178)
 
 // Indexed GR notifier reference
 #define NV2080_NOTIFIERS_GR(x)         ((x == 0) ? (NV2080_NOTIFIERS_GR0) : (NV2080_NOTIFIERS_GR1 + (x - 1)))
@@ -450,6 +451,11 @@ typedef struct {
 typedef struct Nv2080DstateHdaCodecNotificationRec {
     NvU32 dstateHdaCodec;
 } Nv2080DstateHdaCodecNotification;
+
+/* HDMI FRL retraining request notification information */
+typedef struct Nv2080HdmiFrlRequestNotificationRec {
+    NvU32 displayId;
+} Nv2080HdmiFrlRequestNotification;
 
 /* 
  * Platform Power Mode event information
