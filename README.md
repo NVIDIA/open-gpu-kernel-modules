@@ -3,6 +3,35 @@
 This is the source release of the NVIDIA Linux open GPU kernel modules,
 version 525.89.02.
 
+## System pre-requisites
+
+1. Install the dynamic kernel module support (dkms) 
+2. Provide the certificate for signing the modules
+
+## Example how to create the certificate
+
+	mkdir -p /usr/src/$(uname -r)/certs
+	cd /usr/src/$(uname -r)/certs
+	echo "[ req ]
+	default_bits = 4096
+	distinguished_name = req_distinguished_name
+	prompt = no
+	string_mask = utf8only
+	x509_extensions = myexts
+
+	[ req_distinguished_name ]
+	CN = Modules
+
+	[ myexts ]
+	basicConstraints=critical,CA:FALSE
+	keyUsage=digitalSignature
+	subjectKeyIdentifier=hash
+	authorityKeyIdentifier=keyid" > x509.genkey
+	openssl req -new -nodes -utf8 -sha512 -days 36500 -batch -x509 -config x509.genkey -outform DER -out signing_key.x509 -keyout signing_key.pem
+	chmod a+xr .
+	chmod a+r -R .
+	mkdir -p /usr/lib/modules/$(uname -r)/build/certs
+	cp -arf /usr/src/$(uname -r)/certs/* /usr/lib/modules/$(uname -r)/build/certs
 
 ## How to Build
 
@@ -23,6 +52,12 @@ option.  E.g.,
 
     sh ./NVIDIA-Linux-[...].run --no-kernel-modules
 
+The .run package could be downloaded selecting the proper version from this
+page:
+
+    https://www.nvidia.com/en-us/drivers/unix
+
+The versions of the kernel module and the .run package should be the same.
 
 ## Supported Target CPU Architectures
 
