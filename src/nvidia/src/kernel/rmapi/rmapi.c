@@ -99,6 +99,7 @@ rmapiInitialize
 
     listInit(&g_clientListBehindGpusLock, g_resServ.pAllocator);
     listInit(&g_userInfoList, g_resServ.pAllocator);
+    multimapInit(&g_osInfoList, g_resServ.pAllocator);
 
     secInfo.privLevel         = RS_PRIV_LEVEL_KERNEL;
     secInfo.paramLocation     = PARAM_LOCATION_KERNEL;
@@ -636,6 +637,8 @@ rmapiDelPendingClients
     }
 }
 
+extern OsInfoMap g_osInfoList;
+
 NV_STATUS
 rmapiGetClientHandlesFromOSInfo
 (
@@ -644,6 +647,8 @@ rmapiGetClientHandlesFromOSInfo
     NvU32     *pClientHandleListSize
 )
 {
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
     NvHandle   *pClientHandleList;
     NvU32       clientHandleListSize = 0;
     NvU32       k;
@@ -653,53 +658,97 @@ rmapiGetClientHandlesFromOSInfo
     RmClient  *pClient;
     RsClient  *pRsClient;
 
-    ppFirstClient = NULL;
-    for (ppClient = serverutilGetFirstClientUnderLock();
-         ppClient;
-         ppClient = serverutilGetNextClientUnderLock(ppClient))
+    NvBool clientHandleLookup = pSys->getProperty(pSys, PDB_PROP_SYS_CLIENT_HANDLE_LOOKUP);
+
+    if (!clientHandleLookup)
     {
-        pClient = *ppClient;
-        if (pClient->pOSInfo != pOSInfo)
+        ppFirstClient = NULL;
+        for (ppClient = serverutilGetFirstClientUnderLock();
+            ppClient;
+            ppClient = serverutilGetNextClientUnderLock(ppClient))
         {
-            continue;
+            pClient = *ppClient;
+            if (pClient->pOSInfo != pOSInfo)
+            {
+                continue;
+            }
+            clientHandleListSize++;
+
+            if (NULL == ppFirstClient)
+                ppFirstClient = ppClient;
         }
-        clientHandleListSize++;
 
-        if (NULL == ppFirstClient)
-            ppFirstClient = ppClient;
-    }
-
-    if (clientHandleListSize == 0)
-    {
-        *pClientHandleListSize = 0;
-        *ppClientHandleList = NULL;
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    pClientHandleList = portMemAllocNonPaged(clientHandleListSize * sizeof(NvU32));
-    if (pClientHandleList == NULL)
-    {
-        return NV_ERR_NO_MEMORY;
-    }
-
-    *pClientHandleListSize = clientHandleListSize;
-    *ppClientHandleList = pClientHandleList;
-
-    k = 0;
-    for (ppClient = ppFirstClient;
-         ppClient;
-         ppClient = serverutilGetNextClientUnderLock(ppClient))
-    {
-        pClient = *ppClient;
-        pRsClient = staticCast(pClient, RsClient);
-        if (pClient->pOSInfo != pOSInfo)
+        if (clientHandleListSize == 0)
         {
-            continue;
+            *pClientHandleListSize = 0;
+            *ppClientHandleList = NULL;
+            return NV_ERR_INVALID_ARGUMENT;
         }
-        pClientHandleList[k++] = pRsClient->hClient;
 
-        if (clientHandleListSize <= k)
-            break;
+        pClientHandleList = portMemAllocNonPaged(clientHandleListSize * sizeof(NvU32));
+        if (pClientHandleList == NULL)
+        {
+            return NV_ERR_NO_MEMORY;
+        }
+
+        *pClientHandleListSize = clientHandleListSize;
+        *ppClientHandleList = pClientHandleList;
+
+        k = 0;
+        for (ppClient = ppFirstClient;
+            ppClient;
+            ppClient = serverutilGetNextClientUnderLock(ppClient))
+        {
+            pClient = *ppClient;
+            pRsClient = staticCast(pClient, RsClient);
+            if (pClient->pOSInfo != pOSInfo)
+            {
+                continue;
+            }
+            pClientHandleList[k++] = pRsClient->hClient;
+
+            if (clientHandleListSize <= k)
+                break;
+        }
+    }
+    else
+    {
+        OsInfoMapSubmap *pSubmap = NULL;
+        OsInfoMapIter it;
+        NvU64 key1 = (NvUPtr)pOSInfo;
+        pSubmap = multimapFindSubmap(&g_osInfoList, key1);
+        if (pSubmap != NULL)
+        {
+            clientHandleListSize = multimapCountSubmapItems(&g_osInfoList, pSubmap);
+            NV_PRINTF(LEVEL_INFO, "*** Found %d clients for %llx\n", clientHandleListSize, key1);
+        }
+        if (clientHandleListSize == 0)
+        {
+            *pClientHandleListSize = 0;
+            *ppClientHandleList = NULL;
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+        pClientHandleList = portMemAllocNonPaged(clientHandleListSize * sizeof(NvU32));
+        if (pClientHandleList == NULL)
+        {
+            return NV_ERR_NO_MEMORY;
+        }
+        *pClientHandleListSize = clientHandleListSize;
+        *ppClientHandleList = pClientHandleList;
+        k = 0;
+        it = multimapSubmapIterItems(&g_osInfoList, pSubmap);
+        while(multimapItemIterNext(&it))
+        {
+            pClient = *it.pValue;
+            pRsClient = staticCast(pClient, RsClient);
+            
+            NV_CHECK_OR_ELSE_STR(LEVEL_ERROR, pClient->pOSInfo == pOSInfo, "*** OS info mismatch", continue);
+
+            pClientHandleList[k++] = pRsClient->hClient;
+            NV_PRINTF(LEVEL_INFO, "*** Found: %x\n", pRsClient->hClient);
+            if (clientHandleListSize <= k)
+                break;
+        }
     }
 
     return NV_OK;

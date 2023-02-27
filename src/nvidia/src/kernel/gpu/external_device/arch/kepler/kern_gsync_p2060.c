@@ -79,7 +79,6 @@ static NV_STATUS  gsyncFrameCountTimerService_P2060(OBJGPU *, OBJTMR *, void *);
 static NV_STATUS  gsyncResetFrameCountData_P2060(OBJGPU *, PDACP2060EXTERNALDEVICE);
 
 static NV_STATUS  gsyncGpuStereoHeadSync(OBJGPU *, NvU32, PDACEXTERNALDEVICE, NvU32);
-static NvBool     supportsLargeSyncSkew(PDACEXTERNALDEVICE);
 static NvBool     needsMasterBarrierWar(PDACEXTERNALDEVICE);
 static NvBool     isFirmwareRevMismatch(OBJGPU *, DAC_EXTERNAL_DEVICE_REVS);
 
@@ -1921,7 +1920,7 @@ gsyncSetSyncSkew_P2060
     // update p2060 object
     pThis->SyncSkew = SyncSkew;
 
-    if (supportsLargeSyncSkew(pExtDev))
+    if (gsyncSupportsLargeSyncSkew_P2060(pExtDev))
     {
         SyncSkewLow  = (NvU8)((SyncSkew     ) & DRF_MASK(NV_P2060_SYNC_SKEW_LOW_VAL ));
         SyncSkewHigh = (NvU8)((SyncSkew >> 8) & DRF_MASK(NV_P2060_SYNC_SKEW_HIGH_VAL));
@@ -4104,6 +4103,8 @@ gsyncGetRevision_P2060
         (deviceId == DAC_EXTERNAL_DEVICE_P2060 ||
          deviceId == DAC_EXTERNAL_DEVICE_P2061))
     {
+        DACP2060EXTERNALDEVICE *p2060 = (DACP2060EXTERNALDEVICE *)pExtDev;
+
         pParams->capFlags = NV30F1_CTRL_GSYNC_GET_CAPS_CAP_FLAGS_FREQ_ACCURACY_3DPS;
 
         if (!pSys->getProperty(pSys, PDB_PROP_SYS_IS_QSYNC_FW_REVISION_CHECK_DISABLED))
@@ -4115,19 +4116,11 @@ gsyncGetRevision_P2060
             pParams->isFirmwareRevMismatch = NV_FALSE;
         }
 
-        if (supportsLargeSyncSkew(pExtDev))
-        {
-            pParams->maxSyncSkew = NV_P2060_SYNC_SKEW_MAX_UNITS_FULL_SUPPORT;
-        }
-        else
-        {
-            pParams->maxSyncSkew = NV_P2060_SYNC_SKEW_MAX_UNITS_LIMITED_SUPPORT;
-        }
-
-        pParams->syncSkewResolution = NV_P2060_SYNC_SKEW_RESOLUTION;
-        pParams->maxStartDelay = NV_P2060_START_DELAY_MAX_UNITS;
+        pParams->maxSyncSkew          = p2060->syncSkewMax;
+        pParams->syncSkewResolution   = p2060->syncSkewResolutionInNs;
+        pParams->maxStartDelay        = NV_P2060_START_DELAY_MAX_UNITS;
         pParams->startDelayResolution = NV_P2060_START_DELAY_RESOLUTION;
-        pParams->maxSyncInterval = NV_P2060_SYNC_INTERVAL_MAX_UNITS;
+        pParams->maxSyncInterval      = NV_P2060_SYNC_INTERVAL_MAX_UNITS;
 
         // let client know which events we support
         pParams->capFlags |= NV30F1_CTRL_GSYNC_GET_CAPS_CAP_FLAGS_SYNC_LOCK_EVENT;
@@ -5356,10 +5349,10 @@ gsyncGetNumberOfGpuFrameCountRollbacks_P2060
 }
 
 // Return NV_TRUE if the current Qsync revision supports large sync skew
-static NvBool
-supportsLargeSyncSkew
+NvBool
+gsyncSupportsLargeSyncSkew_P2060
 (
-    PDACEXTERNALDEVICE pExtdev
+    DACEXTERNALDEVICE *pExtdev
 )
 {
     if (pExtdev->deviceId == DAC_EXTERNAL_DEVICE_P2061)

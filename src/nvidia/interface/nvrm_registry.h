@@ -1736,4 +1736,9 @@
 #define NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_DISABLE    0x00000000
 #define NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_DEFAULT    NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_ENABLE
 
+#define NV_REG_STR_RM_CLIENT_HANDLE_LOOKUP                  "RmClientHandleLookup"
+// Type DWORD (Boolean)
+// 1 - Store active RM clients in a multimap to speed up lookups (currently only in thirdpartyp2p)
+// 0 - (Default) Linear list search for clients
+
 #endif // NVRM_REGISTRY_H

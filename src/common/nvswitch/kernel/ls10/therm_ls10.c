@@ -30,6 +30,11 @@
 #include "soe/soeiftherm.h"
 #include "rmflcncmdif_nvswitch.h"
 
+#include "flcn/flcnable_nvswitch.h"
+#include "flcn/flcn_nvswitch.h"
+#include "rmflcncmdif_nvswitch.h"
+#include "soe/soeifcmn.h"
+
 #include "nvswitch/ls10/dev_therm.h"
 
 //
@@ -452,5 +457,89 @@ nvswitch_therm_soe_callback_ls10
             NVSWITCH_ASSERT(0);
         }
     }
+}
+
+//
+// nvswitch_therm_read_voltage
+//
+// Temperature and voltage are only available on SKUs which have thermal and
+// voltage sensors.
+//
+NvlStatus
+nvswitch_ctrl_therm_read_voltage_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_CTRL_GET_VOLTAGE_PARAMS *pParams
+)
+{
+    FLCN                *pFlcn;
+    NvU32               cmdSeqDesc;
+    NV_STATUS           status;
+    NvU8                flcnStatus;
+    RM_FLCN_CMD_SOE     cmd;
+    RM_FLCN_MSG_SOE     msg;
+    RM_SOE_CORE_CMD_GET_VOLTAGE *pGetVoltageCmd;
+    NVSWITCH_TIMEOUT    timeout;
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    if (pParams == NULL)
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    pFlcn = device->pSoe->pFlcn;
+
+    nvswitch_os_memset(pParams, 0, sizeof(NVSWITCH_CTRL_GET_VOLTAGE_PARAMS));
+    nvswitch_os_memset(&cmd, 0, sizeof(RM_FLCN_CMD_SOE));
+    nvswitch_os_memset(&msg, 0, sizeof(RM_FLCN_MSG_SOE));
+
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, GET_VOLTAGE);
+
+    msg.hdr.unitId = RM_SOE_UNIT_CORE;
+    msg.hdr.size   = RM_SOE_MSG_SIZE(CORE, GET_VOLTAGE);
+
+    pGetVoltageCmd = &cmd.cmd.core.getVoltage;
+    pGetVoltageCmd->cmdType = RM_SOE_CORE_CMD_GET_VOLTAGE_VALUES;
+
+    cmdSeqDesc = 0;
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_1SEC_IN_NS * 5, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      (PRM_FLCN_MSG)&msg,   // pMsg
+                                      NULL, // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to read VRs 0x%x\n", 
+                       __FUNCTION__, status);
+        return -NVL_ERR_INVALID_STATE;
+    }
+
+    flcnStatus = msg.msg.core.getVoltage.flcnStatus;
+    if (flcnStatus != FLCN_OK)
+    {
+        if (flcnStatus == FLCN_ERR_MORE_PROCESSING_REQUIRED)
+        {
+            return -NVL_MORE_PROCESSING_REQUIRED;
+        }
+        else
+        {
+            return -NVL_ERR_GENERIC;
+        }
+    }
+
+    pParams->vdd_mv = msg.msg.core.getVoltage.vdd_mv;
+    pParams->dvdd_mv = msg.msg.core.getVoltage.dvdd_mv;
+    pParams->hvdd_mv = msg.msg.core.getVoltage.hvdd_mv;
+
+    return NVL_SUCCESS;
 }
 

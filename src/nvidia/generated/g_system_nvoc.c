@@ -90,6 +90,7 @@ void __nvoc_init_dataField_OBJSYS(OBJSYS *pThis) {
     pThis->setProperty(pThis, PDB_PROP_SYS_IS_AGGRESSIVE_GC6_ENABLED, (0));
     pThis->setProperty(pThis, PDB_PROP_SYS_PRIORITY_BOOST, (0));
     pThis->setProperty(pThis, PDB_PROP_SYS_PRIORITY_THROTTLE_DELAY_US, 16 * 1000);
+    pThis->setProperty(pThis, PDB_PROP_SYS_CLIENT_HANDLE_LOOKUP, ((NvBool)(0 != 0)));
     pThis->setProperty(pThis, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, ((NvBool)(0 == 0)));
 }
 

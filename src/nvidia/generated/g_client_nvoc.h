@@ -301,6 +301,8 @@ MAKE_LIST(RmClientList, RmClient*);
 extern RmClientList g_clientListBehindGpusLock;
 MAKE_LIST(UserInfoList, UserInfo*);
 extern UserInfoList g_userInfoList;
+MAKE_MULTIMAP(OsInfoMap, RmClient*);
+extern OsInfoMap g_osInfoList;
 
 
 //

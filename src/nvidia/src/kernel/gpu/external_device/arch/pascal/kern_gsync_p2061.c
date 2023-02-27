@@ -140,3 +140,118 @@ gsyncGetCplStatus_P2061
     return status;
 }
 
+// Write to the SyncSkew register
+NV_STATUS
+gsyncSetSyncSkew_P2061_V204
+(
+    OBJGPU            *pGpu,
+    DACEXTERNALDEVICE *pExtDev,
+    NvU32              syncSkew
+)
+{
+    DACP2060EXTERNALDEVICE *pThis = (DACP2060EXTERNALDEVICE *)pExtDev;
+    NvU64 temp;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+                       syncSkew <= NV_P2061_V204_SYNC_SKEW_MAX_UNITS,
+                       NV_ERR_INVALID_ARGUMENT);
+
+    //
+    // Cache the unmodified syncSkew value from the user.
+    // We use this later to improve the stability of returned values in GetSyncSkew.
+    //
+    pThis->lastUserSkewSent = syncSkew;
+
+    //
+    // Fix the skew value which goes to HW, because we passed the resolution up
+    // to NVAPI as 7us. However, the real resolution in hardware is
+    // (1 / 131.072 MHz) = 7.6293945...
+    // Fix it by multiplying by the ratio 7 / 7.6293945
+    //
+    temp = syncSkew;
+    temp *= 70000000; // Safe because temp is 64 bits
+    temp /= 76293945;
+    syncSkew = (NvU32)temp; // Safe because we multiplied by less than 1.
+
+    // update p2060 object
+    pThis->SyncStartDelay = syncSkew;
+
+    NV_ASSERT_OK_OR_RETURN(
+        writeregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2060_SYNC_SKEW_LOW,
+                                       syncSkew & DRF_MASK(NV_P2060_SYNC_SKEW_LOW_VAL)));
+    NV_ASSERT_OK_OR_RETURN(
+        writeregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2060_SYNC_SKEW_HIGH,
+                                       (syncSkew >> 8) & DRF_MASK(NV_P2060_SYNC_SKEW_HIGH_VAL)));
+    NV_ASSERT_OK_OR_RETURN(
+        writeregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2060_SYNC_SKEW_UPPER,
+                                       (syncSkew >> 16) & DRF_MASK(NV_P2060_SYNC_SKEW_UPPER_VAL)));
+
+    return NV_OK;
+}
+
+// Read from the SyncSkew register
+NV_STATUS
+gsyncGetSyncSkew_P2061_V204
+(
+    OBJGPU            *pGpu,
+    DACEXTERNALDEVICE *pExtDev,
+    NvU32             *pSyncSkew
+)
+{
+    NvU8 data;
+    NvU32 syncSkew;
+    NvU64 temp;
+    DACP2060EXTERNALDEVICE *pThis = (DACP2060EXTERNALDEVICE *)pExtDev;
+
+    *pSyncSkew = 0;
+
+    NV_ASSERT_OK_OR_RETURN(readregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2060_SYNC_SKEW_LOW, &data));
+    syncSkew = DRF_VAL(_P2060, _SYNC_SKEW_LOW, _VAL, data);
+
+    NV_ASSERT_OK_OR_RETURN(readregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2060_SYNC_SKEW_HIGH, &data));
+    syncSkew |= DRF_VAL(_P2060, _SYNC_SKEW_HIGH, _VAL, data) << 8;
+
+    NV_ASSERT_OK_OR_RETURN(readregu008_extdeviceTargeted(pGpu, pExtDev, (NvU8)NV_P2060_SYNC_SKEW_UPPER, &data));
+    syncSkew |= DRF_VAL(_P2060, _SYNC_SKEW_UPPER, _VAL, data) << 16;
+
+    // update p2060 object
+    pThis->SyncStartDelay = syncSkew;
+
+    //
+    // Perform the opposite adjustment for returning the value to the user.
+    // Multiply by the ratio 7.6293945 / 7
+    //
+    temp = syncSkew;
+    temp *= 76293945; // Safe because temp is 64 bits
+    temp /= 70000000;
+    syncSkew = (NvU32)temp; // Safe because the HW register is only 24 bits wide to begin with
+
+    //
+    // Could be higher than maximum because we multiplied by greater than 1,
+    // but this would only happen by someone manually programming the register
+    //
+    NV_CHECK_OR_ELSE(LEVEL_INFO,
+                     syncSkew <= NV_P2061_V204_SYNC_SKEW_MAX_UNITS,
+                     syncSkew = NV_P2061_V204_SYNC_SKEW_MAX_UNITS);
+
+    //
+    // Returning this value with stability to the user:
+    // The programmed value can change slightly due to divisions, so if we read
+    // from the hardware and find a value that is very close, just return the
+    // last sent value. This assures stability even through multiple cycles of
+    // set-get-set-get.
+    //
+    if (pThis->lastUserSkewSent != NV_P2061_V204_SYNC_SKEW_INVALID)
+    {
+        NvS32 difference;
+
+        difference = syncSkew - pThis->lastUserSkewSent;
+        if ((difference >= -2) && (difference <= 2))
+        {
+            syncSkew = pThis->lastUserSkewSent;
+        }
+    }
+    *pSyncSkew = syncSkew;
+
+    return NV_OK;
+}

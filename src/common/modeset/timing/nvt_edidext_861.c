@@ -1299,7 +1299,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
         tag = NVT_CEA861_GET_SHORT_DESCRIPTOR_TAG(p[i]);
         payload = NVT_CEA861_GET_SHORT_DESCRIPTOR_SIZE(p[i]);
 
-        // move the pointer to the payload section
+        // move the pointer to the payload section or extended Tag Code
         i++;
         
         // NvTiming_EDIDValidationMask will use the different tag/payload value to make sure each of cta861 data block legal

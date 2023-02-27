@@ -177,7 +177,14 @@ int msgqTxSubmitBuffers(msgqHandle handle, unsigned n);
 int msgqTxSync(msgqHandle handle);
 
 /**
- * @brief Get number of unread messages
+ * @brief Get number of unread messages in TX channel
+ * @param handle
+ * @return Number of messages. 0 if queue is empty or not linked. 
+ */
+unsigned msgqTxGetPending(msgqHandle handle);
+
+/**
+ * @brief Get number of unread messages in RX channel
  * @param handle
  * @return Number of messages. 0 if queue is empty or not linked.
  */

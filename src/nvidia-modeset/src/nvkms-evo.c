@@ -5483,6 +5483,8 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
                     pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_30_444;
                 } else if (pDpyEvo->parsedEdid.info.input.u.digital.bpc < 8) {
                     pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_18_444;
+                } else {
+                    pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_24_444;
                 }
             }
         } else {

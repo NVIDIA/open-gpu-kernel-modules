@@ -50,12 +50,17 @@
 #define NV_P2060_START_DELAY_MAX_UNITS                  65535
 #define NV_P2060_START_DELAY_RESOLUTION                 7800
 #define NV_P2060_SYNC_INTERVAL_MAX_UNITS                7
+#define NV_P2061_V204_SYNC_SKEW_RESOLUTION              7          // For 2061 V2.04+
+#define NV_P2061_V204_SYNC_SKEW_MAX_UNITS               0xFFFFFF   // For 2061 V2.04+
+#define NV_P2061_V204_SYNC_SKEW_INVALID                 (NV_P2061_V204_SYNC_SKEW_MAX_UNITS + 1)
 
 #define NV_P2060_WATCHDOG_COUNT_DOWN_VALUE  60   // 1 minute, assuming watchdog time interval is 1 second.
 #define NV_P2060_FRAME_COUNT_TIMER_INTERVAL 5000000000LL // 5 sec
 
 #define NV_P2060_MAX_GPU_FRAME_COUNT           65535
 #define NV_P2060_MAX_GSYNC_FRAME_COUNT         16777215 // 2^24.Gsync frame count is a 24 bit register
+
+#define P2061_FW_REV(pExtDev)           ((pExtDev->deviceRev << 8) | (pExtDev->deviceExRev))
 /* ------------------------ Types definitions ------------------------------ */
 
 typedef struct EXTDEV_I2C_HANDLES
@@ -111,6 +116,10 @@ struct DACP2060EXTERNALDEVICE
     NvU32 tSwapRdyHiLsrMinTime; /* Value of LSR_MIN_TIME in accordance to the time (in us)
                                  * swap ready line will remain high.(Provided via a regkey)
                                 */
+
+    NvU32 syncSkewResolutionInNs; // resolution in ns
+    NvU32 syncSkewMax;            // max syncSkew setting in raw units
+    NvU32 lastUserSkewSent;       // Remember the last Sync Skew value sent by the user
 
     struct {
         NvU32  currentFrameCount;              // gpu frame count register value for current user query
@@ -239,5 +248,6 @@ NV_STATUS gsyncGetStereoLockMode_P2060       (OBJGPU *, PDACEXTERNALDEVICE, NvU3
 NV_STATUS gsyncSetStereoLockMode_P2060       (OBJGPU *, PDACEXTERNALDEVICE, NvU32);
 NV_STATUS gsyncSetMosaic_P2060               (OBJGPU *, PDACEXTERNALDEVICE, NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS *);
 NV_STATUS gsyncConfigFlashGsync_P2060        (OBJGPU *, PDACEXTERNALDEVICE, NvU32);
+NvBool    gsyncSupportsLargeSyncSkew_P2060   (DACEXTERNALDEVICE *);
 
 #endif

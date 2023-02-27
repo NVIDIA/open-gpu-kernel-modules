@@ -130,6 +130,18 @@ NvU32 osGetMaximumCoreCount(void);
 #endif
 #endif
 
+#if NVOS_IS_LIBOS
+//
+// On LibOS we have at most one passive thread (task_rm) and one ISR
+// (task_interrupt) active at once (on same CPU core). Since these two will
+// use different maps, we don't need to protect them with spinlocks.
+//
+#define TLS_SPINLOCK_ACQUIRE(x)
+#define TLS_SPINLOCK_RELEASE(x)
+#else
+#define TLS_SPINLOCK_ACQUIRE(x) portSyncSpinlockAcquire(x)
+#define TLS_SPINLOCK_RELEASE(x) portSyncSpinlockRelease(x)
+#endif // NVOS_IS_LIBOS
 
 #if !PORT_IS_FUNC_SUPPORTED(portSyncExSafeToSleep)
 #define portSyncExSafeToSleep() NV_TRUE
@@ -426,9 +438,9 @@ _tlsThreadEntryGet(void)
     else
     {
         NvU64 threadId = portThreadGetCurrentThreadId();
-        portSyncSpinlockAcquire(tlsDatabase.pLock);
-          pThreadEntry = mapFind(&tlsDatabase.threadEntries, threadId);
-        portSyncSpinlockRelease(tlsDatabase.pLock);
+        TLS_SPINLOCK_ACQUIRE(tlsDatabase.pLock);
+        pThreadEntry = mapFind(&tlsDatabase.threadEntries, threadId);
+        TLS_SPINLOCK_RELEASE(tlsDatabase.pLock);
     }
     return pThreadEntry;
 }
@@ -448,11 +460,11 @@ _tlsThreadEntryGetOrAlloc(void)
         {
             pThreadEntry->key.threadId = portThreadGetCurrentThreadId();
             mapInitIntrusive(&pThreadEntry->map);
-            portSyncSpinlockAcquire(tlsDatabase.pLock);
-              mapInsertExisting(&tlsDatabase.threadEntries,
-                                pThreadEntry->key.threadId,
-                                pThreadEntry);
-            portSyncSpinlockRelease(tlsDatabase.pLock);
+            TLS_SPINLOCK_ACQUIRE(tlsDatabase.pLock);
+            mapInsertExisting(&tlsDatabase.threadEntries,
+                              pThreadEntry->key.threadId,
+                              pThreadEntry);
+            TLS_SPINLOCK_RELEASE(tlsDatabase.pLock);
         }
     }
 
@@ -510,9 +522,9 @@ _tlsEntryRelease
         {
             NV_ASSERT(portMemExSafeForNonPagedAlloc());
             mapDestroy(&pThreadEntry->map);
-            portSyncSpinlockAcquire(tlsDatabase.pLock);
-              mapRemove(&tlsDatabase.threadEntries, pThreadEntry);
-            portSyncSpinlockRelease(tlsDatabase.pLock);
+            TLS_SPINLOCK_ACQUIRE(tlsDatabase.pLock);
+            mapRemove(&tlsDatabase.threadEntries, pThreadEntry);
+            TLS_SPINLOCK_RELEASE(tlsDatabase.pLock);
             PORT_FREE(tlsDatabase.pAllocator, pThreadEntry);
         }
     }
@@ -555,29 +567,29 @@ static void _tlsIsrEntriesDestroy(void)
 }
 static void _tlsIsrEntriesInsert(ThreadEntry *pThreadEntry)
 {
-    portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
-      mapInsertExisting(&tlsDatabase.isrEntries, pThreadEntry->key.sp, pThreadEntry);
-    portSyncSpinlockRelease(tlsDatabase.pIsrLock);
+    TLS_SPINLOCK_ACQUIRE(tlsDatabase.pIsrLock);
+    mapInsertExisting(&tlsDatabase.isrEntries, pThreadEntry->key.sp, pThreadEntry);
+    TLS_SPINLOCK_RELEASE(tlsDatabase.pIsrLock);
 }
 static ThreadEntry *_tlsIsrEntriesRemove(NvU64 sp)
 {
     ThreadEntry *pThreadEntry;
-    portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
-      pThreadEntry = mapFind(&tlsDatabase.isrEntries, sp);
-      mapRemove(&tlsDatabase.isrEntries, pThreadEntry);
-    portSyncSpinlockRelease(tlsDatabase.pIsrLock);
+    TLS_SPINLOCK_ACQUIRE(tlsDatabase.pIsrLock);
+    pThreadEntry = mapFind(&tlsDatabase.isrEntries, sp);
+    mapRemove(&tlsDatabase.isrEntries, pThreadEntry);
+    TLS_SPINLOCK_RELEASE(tlsDatabase.pIsrLock);
     return pThreadEntry;
 }
 static ThreadEntry *_tlsIsrEntriesFind(NvU64 approxSp)
 {
     ThreadEntry *pThreadEntry;
-    portSyncSpinlockAcquire(tlsDatabase.pIsrLock);
+    TLS_SPINLOCK_ACQUIRE(tlsDatabase.pIsrLock);
 #if STACK_GROWS_DOWNWARD
-      pThreadEntry = mapFindGEQ(&tlsDatabase.isrEntries, approxSp);
+    pThreadEntry = mapFindGEQ(&tlsDatabase.isrEntries, approxSp);
 #else
-      pThreadEntry = mapFindLEQ(&tlsDatabase.isrEntries, approxSp);
+    pThreadEntry = mapFindLEQ(&tlsDatabase.isrEntries, approxSp);
 #endif
-    portSyncSpinlockRelease(tlsDatabase.pIsrLock);
+    TLS_SPINLOCK_RELEASE(tlsDatabase.pIsrLock);
     return pThreadEntry;
 }
 

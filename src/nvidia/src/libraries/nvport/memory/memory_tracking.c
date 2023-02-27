@@ -34,14 +34,44 @@
 #error "DEBUG module must be present for memory tracking"
 #endif
 
-#if !PORT_IS_MODULE_SUPPORTED(atomic)
-#error "ATOMIC module must be present for memory tracking"
-#endif
-
 #if PORT_MEM_TRACK_USE_LIMIT
 #include "os/os.h"
 #define PORT_MEM_LIMIT_MAX_PIDS 32
 #endif
+
+#if NVOS_IS_LIBOS
+#define PORT_MEM_THREAD_SAFE_ALLOCATIONS 0
+#else
+#define PORT_MEM_THREAD_SAFE_ALLOCATIONS 1
+#endif
+
+#if PORT_MEM_THREAD_SAFE_ALLOCATIONS && !PORT_IS_MODULE_SUPPORTED(atomic)
+#error "ATOMIC module must be present for memory tracking"
+#endif
+
+#if PORT_MEM_THREAD_SAFE_ALLOCATIONS
+#define PORT_MEM_ATOMIC_ADD_SIZE portAtomicAddSize
+#define PORT_MEM_ATOMIC_SUB_SIZE portAtomicSubSize
+#define PORT_MEM_ATOMIC_DEC_U32 portAtomicDecrementU32
+#define PORT_MEM_ATOMIC_INC_U32 portAtomicIncrementU32
+#define PORT_MEM_ATOMIC_SET_U32 portAtomicSetU32
+#define PORT_MEM_ATOMIC_CAS_SIZE portAtomicCompareAndSwapSize
+#define PORT_MEM_ATOMIC_CAS_U32 portAtomicCompareAndSwapU32
+#else
+//
+// We can just stub out the atomic operations for non-atomic ones and not waste
+// waste cycles on synchronization
+//
+#define PORT_MEM_ATOMIC_ADD_SIZE(pVal, val) (*((NvSPtr *)pVal) += val)
+#define PORT_MEM_ATOMIC_SUB_SIZE(pVal, val) (*((NvSPtr *)pVal) -= val)
+#define PORT_MEM_ATOMIC_DEC_U32(pVal)      (--(*((NvU32 *)pVal)))
+#define PORT_MEM_ATOMIC_INC_U32(pVal)      (++(*((NvU32 *)pVal)))
+#define PORT_MEM_ATOMIC_SET_U32(pVal, val) (*((NvU32 *)pVal) = val)
+#define PORT_MEM_ATOMIC_CAS_SIZE(pVal, newVal, oldVal) \
+    ((*pVal == oldVal) ? ((*((NvSPtr *)pVal) = newVal), NV_TRUE) : NV_FALSE)
+#define PORT_MEM_ATOMIC_CAS_U32(pVal, newVal, oldVal) \
+    ((*pVal == oldVal) ? ((*((NvU32 *)pVal) = newVal), NV_TRUE) : NV_FALSE)
+#endif // !PORT_MEM_THREAD_SAFE_ALLOCATIONS
 
 struct PORT_MEM_ALLOCATOR_IMPL
 {
@@ -78,11 +108,11 @@ static NV_STATUS portSyncSpinlockInitialize(PORT_SPINLOCK *pSpinlock)
 }
 static void portSyncSpinlockAcquire(PORT_SPINLOCK *pSpinlock)
 {
-    while (!portAtomicCompareAndSwapU32(pSpinlock, 1, 0));
+    while (!PORT_MEM_ATOMIC_CAS_U32(pSpinlock, 1, 0));
 }
 static void portSyncSpinlockRelease(PORT_SPINLOCK *pSpinlock)
 {
-    portAtomicSetU32(pSpinlock, 0);
+    PORT_MEM_ATOMIC_SET_U32(pSpinlock, 0);
 }
 static void portSyncSpinlockDestroy(PORT_SPINLOCK *pSpinlock)
 {
@@ -150,13 +180,13 @@ _portMemCounterInc
     NvU32 activeAllocs;
     NvLength activeSize = 0;
 
-    activeAllocs = portAtomicIncrementU32(&pCounter->activeAllocs);
-    portAtomicIncrementU32(&pCounter->totalAllocs);
+    activeAllocs = PORT_MEM_ATOMIC_INC_U32(&pCounter->activeAllocs);
+    PORT_MEM_ATOMIC_INC_U32(&pCounter->totalAllocs);
     if (PORT_MEM_TRACK_USE_FENCEPOSTS)
     {
-        activeSize = portAtomicAddSize(&pCounter->activeSize, size);
+        activeSize = PORT_MEM_ATOMIC_ADD_SIZE(&pCounter->activeSize, size);
     }
-    portAtomicAddSize(&pCounter->totalSize, size);
+    PORT_MEM_ATOMIC_ADD_SIZE(&pCounter->totalSize, size);
 
     // Atomically compare the peak value with the active, and update if greater.
     while (1)
@@ -164,14 +194,14 @@ _portMemCounterInc
         NvU32 peakAllocs = pCounter->peakAllocs;
         if (activeAllocs <= peakAllocs)
             break;
-        portAtomicCompareAndSwapU32(&pCounter->peakAllocs, activeAllocs, peakAllocs);
+        PORT_MEM_ATOMIC_CAS_U32(&pCounter->peakAllocs, activeAllocs, peakAllocs);
     }
     while (1)
     {
         NvLength peakSize = pCounter->peakSize;
         if (activeSize <= peakSize)
             break;
-        portAtomicCompareAndSwapSize(&pCounter->peakSize, activeSize, peakSize);
+        PORT_MEM_ATOMIC_CAS_SIZE(&pCounter->peakSize, activeSize, peakSize);
     }
 }
 static NV_INLINE void
@@ -181,11 +211,11 @@ _portMemCounterDec
     void             *pMem
 )
 {
-    portAtomicDecrementU32(&pCounter->activeAllocs);
+    PORT_MEM_ATOMIC_DEC_U32(&pCounter->activeAllocs);
     if (PORT_MEM_TRACK_USE_FENCEPOSTS)
     {
-        portAtomicSubSize(&pCounter->activeSize,
-                          ((PORT_MEM_FENCE_HEAD *)pMem-1)->blockSize);
+        PORT_MEM_ATOMIC_SUB_SIZE(&pCounter->activeSize,
+                                 ((PORT_MEM_FENCE_HEAD *)pMem-1)->blockSize);
     }
 }
 
@@ -273,7 +303,7 @@ _portMemListAdd
     PORT_MEM_LIST *pList = &pHead->list;
     pList->pNext = pList;
     pList->pPrev = pList;
-    if (!portAtomicCompareAndSwapSize(&pTracking->pFirstAlloc, pList, NULL))
+    if (!PORT_MEM_ATOMIC_CAS_SIZE(&pTracking->pFirstAlloc, pList, NULL))
     {
         PORT_LOCKED_LIST_LINK(pTracking->pFirstAlloc, pList, pTracking->listLock);
     }
@@ -288,11 +318,11 @@ _portMemListRemove
     PORT_MEM_HEADER *pHead = (PORT_MEM_HEADER*)pMem - 1;
     PORT_MEM_LIST *pList = &pHead->list;
 
-    if (!portAtomicCompareAndSwapSize(&pList->pNext, NULL, pList))
+    if (!PORT_MEM_ATOMIC_CAS_SIZE(&pList->pNext, NULL, pList))
     {
         PORT_LOCKED_LIST_UNLINK(pTracking->pFirstAlloc, pList, pTracking->listLock);
     }
-    portAtomicCompareAndSwapSize(&pTracking->pFirstAlloc, pList->pNext, pList);
+    PORT_MEM_ATOMIC_CAS_SIZE(&pTracking->pFirstAlloc, pList->pNext, pList);
 }
 
 static NV_INLINE PORT_MEM_HEADER *
@@ -517,7 +547,7 @@ _portMemLimitInc(NvU32 pid, void *pMem, NvU64 size)
         {
             NvU32 pidIdx = pid - 1;
             pMemHeader->blockSize = size;
-            portAtomicAddSize(&portMemGlobals.counterPid[pidIdx], size);
+            PORT_MEM_ATOMIC_ADD_SIZE(&portMemGlobals.counterPid[pidIdx], size);
         }
     }
 }
@@ -541,7 +571,7 @@ _portMemLimitDec(void *pMem)
             }
             else
             {
-                portAtomicSubSize(&portMemGlobals.counterPid[pidIdx], pMemHeader->blockSize);
+                PORT_MEM_ATOMIC_SUB_SIZE(&portMemGlobals.counterPid[pidIdx], pMemHeader->blockSize);
             }
         }
     }
@@ -596,7 +626,7 @@ portMemInitialize(void)
 #if PORT_MEM_TRACK_USE_CALLERINFO
     PORT_MEM_CALLERINFO_TYPE_PARAM = PORT_MEM_CALLERINFO_MAKE;
 #endif
-    if (portAtomicIncrementU32(&portMemGlobals.initCount) != 1)
+    if (PORT_MEM_ATOMIC_INC_U32(&portMemGlobals.initCount) != 1)
         return;
 
     portMemGlobals.mainTracking.pAllocator = NULL;
@@ -649,7 +679,7 @@ void
 portMemShutdown(NvBool bForceSilent)
 {
     PORT_UNREFERENCED_VARIABLE(bForceSilent);
-    if (portAtomicDecrementU32(&portMemGlobals.initCount) != 0)
+    if (PORT_MEM_ATOMIC_DEC_U32(&portMemGlobals.initCount) != 0)
         return;
 
 #if (PORT_MEM_TRACK_PRINT_LEVEL > PORT_MEM_TRACK_PRINT_LEVEL_SILENT)
@@ -850,7 +880,7 @@ portMemInitializeAllocatorTracking
     PORT_MEM_COUNTER_INIT(&pTracking->counter);
     PORT_MEM_LIST_INIT(pTracking);
     PORT_MEM_CALLERINFO_INIT_TRACKING(pTracking);
-    portAtomicIncrementU32(&portMemGlobals.totalAllocators);
+    PORT_MEM_ATOMIC_INC_U32(&portMemGlobals.totalAllocators);
 }
 
 #if PORT_MEM_TRACK_USE_LIMIT
@@ -1201,7 +1231,7 @@ _portMemTrackingRelease
 
     PORT_LOCKED_LIST_UNLINK(&portMemGlobals.mainTracking, pTracking, portMemGlobals.trackingLock);
     PORT_MEM_LIST_DESTROY(pTracking);
-    portAtomicDecrementU32(&portMemGlobals.totalAllocators);
+    PORT_MEM_ATOMIC_DEC_U32(&portMemGlobals.totalAllocators);
 }
 
 static void

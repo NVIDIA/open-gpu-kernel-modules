@@ -577,6 +577,19 @@ msgqTxSync(msgqHandle handle) // "transmit"
     return msgqTxGetFreeSpace(handle);
 }
 
+sysSHARED_CODE unsigned
+msgqTxGetPending(msgqHandle handle)
+{
+    msgqMetadata *pQueue = (msgqMetadata*)handle;
+
+    if ((pQueue == NULL) || !pQueue->txLinked)
+    {
+        return 0;
+    }
+
+    return pQueue->tx.msgCount - msgqTxSync(handle) - 1;
+}
+
 /*
  *
  * Receive code (incoming messages)

@@ -179,6 +179,68 @@ struct _def_client_third_party_p2p_pid_client_mapping_info
 };
 typedef struct _def_client_third_party_p2p_pid_client_mapping_info CLI_THIRD_PARTY_P2P_PID_CLIENT_INFO, *PCLI_THIRD_PARTY_P2P_PID_CLIENT_INFO;
 
+struct ThirdPartyP2P;
+
+#ifndef __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__
+#define __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__
+typedef struct ThirdPartyP2P ThirdPartyP2P;
+#endif /* __NVOC_CLASS_ThirdPartyP2P_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_ThirdPartyP2P
+#define __nvoc_class_id_ThirdPartyP2P 0x34d08b
+#endif /* __nvoc_class_id_ThirdPartyP2P */
+
+
+#ifdef NVOC_THIRD_PARTY_P2P_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+struct P2PTokenShare {
+    const struct NVOC_RTTI *__nvoc_rtti;
+    struct RsShared __nvoc_base_RsShared;
+    struct Object *__nvoc_pbase_Object;
+    struct RsShared *__nvoc_pbase_RsShared;
+    struct P2PTokenShare *__nvoc_pbase_P2PTokenShare;
+    struct ThirdPartyP2P *pThirdPartyP2P;
+};
+
+#ifndef __NVOC_CLASS_P2PTokenShare_TYPEDEF__
+#define __NVOC_CLASS_P2PTokenShare_TYPEDEF__
+typedef struct P2PTokenShare P2PTokenShare;
+#endif /* __NVOC_CLASS_P2PTokenShare_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_P2PTokenShare
+#define __nvoc_class_id_P2PTokenShare 0x3e3a6a
+#endif /* __nvoc_class_id_P2PTokenShare */
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_P2PTokenShare;
+
+#define __staticCast_P2PTokenShare(pThis) \
+    ((pThis)->__nvoc_pbase_P2PTokenShare)
+
+#ifdef __nvoc_third_party_p2p_h_disabled
+#define __dynamicCast_P2PTokenShare(pThis) ((P2PTokenShare*)NULL)
+#else //__nvoc_third_party_p2p_h_disabled
+#define __dynamicCast_P2PTokenShare(pThis) \
+    ((P2PTokenShare*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(P2PTokenShare)))
+#endif //__nvoc_third_party_p2p_h_disabled
+
+
+NV_STATUS __nvoc_objCreateDynamic_P2PTokenShare(P2PTokenShare**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_P2PTokenShare(P2PTokenShare**, Dynamic*, NvU32);
+#define __objCreate_P2PTokenShare(ppNewObj, pParent, createFlags) \
+    __nvoc_objCreate_P2PTokenShare((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
+
+NV_STATUS shrp2pConstruct_IMPL(struct P2PTokenShare *arg_pP2PTokenShare);
+
+#define __nvoc_shrp2pConstruct(arg_pP2PTokenShare) shrp2pConstruct_IMPL(arg_pP2PTokenShare)
+void shrp2pDestruct_IMPL(struct P2PTokenShare *pP2PTokenShare);
+
+#define __nvoc_shrp2pDestruct(pP2PTokenShare) shrp2pDestruct_IMPL(pP2PTokenShare)
+#undef PRIVATE_FIELD
+
 
 #ifdef NVOC_THIRD_PARTY_P2P_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
@@ -235,6 +297,7 @@ struct ThirdPartyP2P {
     THIRD_PARTY_P2P_DESTROY_CALLBACK *pDestroyCallback;
     void *pData;
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO_MAP vidmemInfoMap;
+    struct P2PTokenShare *pTokenShare;
     PNODE pAddressRangeTree;
 };
 

@@ -192,6 +192,8 @@ static OBJGPU *gsyncGetMasterableGpu(OBJGSYNC *pGsync)
 static NV_STATUS
 gsyncP2060StartupProvider(OBJGSYNC *pGsync)
 {
+    DACEXTERNALDEVICE      *pExtDev = pGsync->pExtDev;
+    DACP2060EXTERNALDEVICE *p2060   = (DACP2060EXTERNALDEVICE *)pGsync->pExtDev;
 
     // All four GPU connectors are masterable on P2060
     pGsync->masterableGpuConnectors          = ((1 << NV30F1_GSYNC_CONNECTOR_ONE)   |
@@ -235,6 +237,12 @@ gsyncP2060StartupProvider(OBJGSYNC *pGsync)
     pGsync->gsyncHal.gsyncSetMosaic          = gsyncSetMosaic_P2060;
     pGsync->gsyncHal.gsyncConfigFlashGsync   = gsyncConfigFlashGsync_P2060;
 
+    // Constants to be returned in NV30F1_CTRL_GSYNC_GET_CAPS
+    p2060->syncSkewResolutionInNs = NV_P2060_SYNC_SKEW_RESOLUTION;
+    p2060->syncSkewMax            = gsyncSupportsLargeSyncSkew_P2060(pExtDev) ? 
+                                    NV_P2060_SYNC_SKEW_MAX_UNITS_FULL_SUPPORT :
+                                    NV_P2060_SYNC_SKEW_MAX_UNITS_LIMITED_SUPPORT;
+
     return NV_OK;
 }
 
@@ -245,6 +253,8 @@ static NV_STATUS
 gsyncP2061StartupProvider(OBJGSYNC *pGsync)
 {
     NV_STATUS status;
+    DACP2060EXTERNALDEVICE *p2060 = (DACP2060EXTERNALDEVICE *)pGsync->pExtDev;
+
     // Call P2060 startup provider for setting up those HALs that
     // are identical to P2060.
     status = gsyncP2060StartupProvider(pGsync);
@@ -255,6 +265,18 @@ gsyncP2061StartupProvider(OBJGSYNC *pGsync)
     // HALs for P2061 specifically
     pGsync->gsyncHal.gsyncGetHouseSyncMode  = gsyncGetHouseSyncMode_P2061;
     pGsync->gsyncHal.gsyncSetHouseSyncMode  = gsyncSetHouseSyncMode_P2061;
+
+    // SyncSkew is different for FW V2.04+
+    if (P2061_FW_REV(pGsync->pExtDev) >= 0x204)
+    {
+        pGsync->gsyncHal.gsyncGetSyncSkew  = gsyncGetSyncSkew_P2061_V204;
+        pGsync->gsyncHal.gsyncSetSyncSkew  = gsyncSetSyncSkew_P2061_V204;
+
+        // Constants to be returned in NV30F1_CTRL_GSYNC_GET_CAPS
+        p2060->syncSkewResolutionInNs      = NV_P2061_V204_SYNC_SKEW_RESOLUTION;
+        p2060->syncSkewMax                 = NV_P2061_V204_SYNC_SKEW_MAX_UNITS;
+        p2060->lastUserSkewSent            = NV_P2061_V204_SYNC_SKEW_INVALID;
+    }
 
     return status;
 }

@@ -1252,7 +1252,7 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                                 (modesetParams.modesetInfo.mode == DSC_DUAL))
                             {
                                 //
-                                // If DSC is force enabled or DSC_DUAL mode is requested, 
+                                // If DSC is force enabled or DSC_DUAL mode is requested,
                                 // then return failure here
                                 //
                                 compoundQueryResult = false;
@@ -1284,19 +1284,19 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                                      (NvU32*)(&bitsPerPixelX16))) != NVT_STATUS_SUCCESS)
                 {
                     //
-                    // If generating PPS failed 
+                    // If generating PPS failed
                     //          AND
                     //    (DSC is force enabled
                     //          OR
                     //    the requested DSC mode = DUAL)
-                    //then 
+                    //then
                     //    return failure here
-                    // Else 
+                    // Else
                     //    we will check if non DSC path is possible.
                     //
                     // If dsc mode = DUAL failed to generate PPS and if we pursue
-                    // non DSC path, DD will still follow 2Head1OR modeset path with 
-                    // DSC disabled, eventually leading to HW hang. Bug 3632901 
+                    // non DSC path, DD will still follow 2Head1OR modeset path with
+                    // DSC disabled, eventually leading to HW hang. Bug 3632901
                     //
                     if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
                         (modesetParams.modesetInfo.mode == DSC_DUAL))
@@ -2599,7 +2599,7 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
         if (main->isEDP() && nativeDev)
         {
             // eDP can support DSC with and without FEC
-            bEnableFEC = bEnableDsc && nativeDev->isFECSupported();
+            bEnableFEC = bEnableDsc && nativeDev->getFECSupport();
         }
         else
         {
@@ -2697,17 +2697,9 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
 
     if (main->isEDP() && this->bEnableOuiRestoring)
     {
-        // Power-up eDP and restore eDP OUI if it's powered off now.
-        bool bPanelPowerOn;
-        main->getEdpPowerData(&bPanelPowerOn, NULL);
-        if (!bPanelPowerOn)
-        {
-            main->configurePowerState(true);
-            hal->setOuiSource(cachedSourceOUI,
-                              &cachedSourceModelName[0],
-                              6 /* string length of ieeeOuiDevId */,
-                              cachedSourceChipRevision);
-        }
+      main->configurePowerState(true);
+      hal->setOuiSource(cachedSourceOUI, &cachedSourceModelName[0], 6 /* string length of ieeeOuiDevId */,
+                        cachedSourceChipRevision);
     }
 
     // if failed, we're guaranteed that assessed link rate didn't meet the mode requirements

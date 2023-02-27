@@ -738,6 +738,20 @@ typedef struct nvswitch_get_ingress_response_table_params
 } NVSWITCH_GET_INGRESS_RESPONSE_TABLE_PARAMS;
 
 /*
+ * CTRL_NVSWITCH_GET_VOLTAGE
+ *
+ * Zero(0) indicates that a measurement is not available on the current platform.
+ *
+ */
+
+typedef struct
+{
+    NvU32 vdd_mv;
+    NvU32 dvdd_mv;
+    NvU32 hvdd_mv;
+} NVSWITCH_CTRL_GET_VOLTAGE_PARAMS;
+
+/*
  * CTRL_NVSWITCH_GET_ERRORS
  *
  * Control to query error information.
@@ -3802,6 +3816,7 @@ typedef struct
 #define CTRL_NVSWITCH_CLEAR_COUNTERS                        0x51
 #define CTRL_NVSWITCH_SET_NVLINK_ERROR_THRESHOLD            0x52
 #define CTRL_NVSWITCH_GET_NVLINK_ERROR_THRESHOLD            0x53
+#define CTRL_NVSWITCH_GET_VOLTAGE                           0x55
 #define CTRL_NVSWITCH_GET_BOARD_PART_NUMBER                 0x54
 
 #ifdef __cplusplus
