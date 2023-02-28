@@ -459,8 +459,6 @@ static void kill_channel_delayed(void *_user_channel)
     uvm_user_channel_t *user_channel = (uvm_user_channel_t *)_user_channel;
     uvm_va_space_t *va_space = user_channel->kill_channel.va_space;
 
-    UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
-
     uvm_va_space_down_read_rm(va_space);
     if (user_channel->gpu_va_space) {
         // RM handles the fault, which will do the correct fault reporting in the

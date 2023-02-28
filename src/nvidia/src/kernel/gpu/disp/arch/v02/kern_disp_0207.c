@@ -53,3 +53,59 @@ kdispComputeLsrMinTimeValue_v02_07
     *computedLsrMinTime = swapRdyHiLsrMinTime * 1000;
     return NV_OK;
 }
+
+NV_STATUS
+kdispGetRgScanLock_v02_01
+(
+    POBJGPU    pGpu,
+    KernelDisplay  *pKernelDisplay,
+    NvU32      head0,
+    POBJGPU    pPeerGpu,
+    NvU32      head1,
+    NvBool     *pMasterScanLock,
+    NvU32      *pMasterScanLockPin,
+    NvBool     *pSlaveScanLock,
+    NvU32      *pSlaveScanLockPin
+)
+{
+    NvU32 pinSetOut,  pinSetIn;
+    NV_STATUS rmStatus = NV_OK;
+
+    if (!pMasterScanLock || !pMasterScanLockPin ||
+        !pSlaveScanLock  || !pSlaveScanLockPin  || head0 >= pKernelDisplay->numHeads ||
+        ((pPeerGpu != NULL) && (head1 >= pKernelDisplay->numHeads)))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    //
+    // The head parameters are not currently needed for G8X, but for more
+    // complicated setups or GT200 SLI, we may need to take them into
+    // consideration in the future.
+    //
+    rmStatus = gpumgrGetGpuLockAndDrPorts(pGpu, pPeerGpu, &pinSetOut, &pinSetIn);
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    NV2080_CTRL_INTERNAL_DISP_PINSETS_TO_LOCKPINS_PARAMS params = {0};
+    params.pinSetIn = pinSetIn;
+    params.pinSetOut = pinSetOut;
+
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                            pGpu->hInternalClient,
+                            pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_INTERNAL_DISP_PINSETS_TO_LOCKPINS,
+                            &params,
+                            sizeof(params)));
+
+    *pMasterScanLock = params.bMasterScanLock;
+    *pMasterScanLockPin = params.masterScanLockPin;
+
+    *pSlaveScanLock = params.bSlaveScanLock;
+    *pSlaveScanLockPin = params.slaveScanLockPin;
+
+    return rmStatus;
+}

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -398,11 +398,13 @@ static uvm_perf_module_t g_module_thrashing;
 // Callback declaration for the performance heuristics events
 static void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data);
 static void thrashing_block_destroy_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data);
+static void thrashing_block_munmap_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data);
 
 static uvm_perf_module_event_callback_desc_t g_callbacks_thrashing[] = {
     { UVM_PERF_EVENT_BLOCK_DESTROY, thrashing_block_destroy_cb },
     { UVM_PERF_EVENT_MODULE_UNLOAD, thrashing_block_destroy_cb },
     { UVM_PERF_EVENT_BLOCK_SHRINK , thrashing_block_destroy_cb },
+    { UVM_PERF_EVENT_BLOCK_MUNMAP , thrashing_block_munmap_cb  },
     { UVM_PERF_EVENT_MIGRATION,     thrashing_event_cb         },
     { UVM_PERF_EVENT_REVOCATION,    thrashing_event_cb         }
 };
@@ -533,7 +535,7 @@ static void gpu_thrashing_stats_destroy(uvm_gpu_t *gpu)
 // VA space lock needs to be held
 static va_space_thrashing_info_t *va_space_thrashing_info_get_or_null(uvm_va_space_t *va_space)
 {
-    uvm_assert_rwsem_locked(&va_space->lock);
+    // TODO: Bug 3898454: check locking requirement for UVM-HMM.
 
     return uvm_perf_module_type_data(va_space->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
 }
@@ -687,6 +689,20 @@ void thrashing_block_destroy_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t
         return;
 
     uvm_perf_thrashing_info_destroy(va_block);
+}
+
+void thrashing_block_munmap_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
+{
+    uvm_va_block_t *va_block = event_data->block_munmap.block;
+    uvm_va_block_region_t region = event_data->block_munmap.region;
+
+    UVM_ASSERT(g_uvm_perf_thrashing_enable);
+    UVM_ASSERT(event_id == UVM_PERF_EVENT_BLOCK_MUNMAP);
+    UVM_ASSERT(va_block);
+
+    thrashing_reset_pages_in_region(va_block,
+                                    uvm_va_block_region_start(va_block, region),
+                                    uvm_va_block_region_size(region));
 }
 
 // Sanity checks of the thrashing tracking state
@@ -1075,7 +1091,7 @@ static NV_STATUS unmap_remote_pinned_pages(uvm_va_block_t *va_block,
     NV_STATUS tracker_status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     uvm_processor_id_t processor_id;
-    uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = va_block_context->policy;
 
     uvm_assert_mutex_locked(&va_block->lock);
 
@@ -1121,7 +1137,7 @@ NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_bl
 {
     block_thrashing_info_t *block_thrashing;
     uvm_processor_mask_t unmap_processors;
-    uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = va_block_context->policy;
 
     uvm_assert_mutex_locked(&va_block->lock);
     UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, policy, region));
@@ -1425,7 +1441,7 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_processor_id_t do_not_throttle_processor = page_thrashing->do_not_throttle_processor_id;
     uvm_processor_id_t pinned_residency = page_thrashing->pinned_residency_id;
-    uvm_va_policy_t *policy;
+    const uvm_va_policy_t *policy;
     uvm_processor_id_t preferred_location;
 
     policy = uvm_va_policy_get(va_block, uvm_va_block_cpu_page_address(va_block, page_index));
@@ -1519,8 +1535,9 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
                 }
             }
         }
-        else if (uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(page_thrashing->pinned_residency_id)], requester)) {
-            UVM_ASSERT(uvm_id_equal(closest_resident_id, pinned_residency));
+        else if (uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(pinned_residency)], requester)) {
+            if (!uvm_va_block_is_hmm(va_block))
+                UVM_ASSERT(uvm_id_equal(closest_resident_id, pinned_residency));
 
             hint.type = UVM_PERF_THRASHING_HINT_TYPE_PIN;
             hint.pin.residency = pinned_residency;
@@ -1789,8 +1806,6 @@ static void thrashing_unpin_pages(struct work_struct *work)
     va_space_thrashing_info_t *va_space_thrashing = container_of(dwork, va_space_thrashing_info_t, pinned_pages.dwork);
     uvm_va_space_t *va_space = va_space_thrashing->va_space;
     uvm_va_block_context_t *va_block_context = &va_space_thrashing->pinned_pages.va_block_context;
-
-    UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
 
     // Take the VA space lock so that VA blocks don't go away during this
     // operation.

@@ -44,7 +44,8 @@ faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_IMPL
     const NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo = kgmmuGetStaticInfo(pGpu, pKernelGmmu);
     GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuffer;
 
-    pClientShadowFaultBuffer = pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer;
+    pClientShadowFaultBuffer =
+        pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer[NON_REPLAYABLE_FAULT_BUFFER];
 
     // This call takes GpuLock, so shadowBuffer pointers can be accessed without grabbing lock protecting them
     if (pClientShadowFaultBuffer)
@@ -56,7 +57,7 @@ faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    status = kgmmuClientShadowFaultBufferAlloc_HAL(pGpu, pKernelGmmu);
+    status = kgmmuClientShadowFaultBufferAlloc_HAL(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -65,10 +66,13 @@ faultbufCtrlCmdMmuFaultBufferRegisterNonReplayBuf_IMPL
         return status;
     }
 
-    pClientShadowFaultBuffer = pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer;
+    pClientShadowFaultBuffer =
+        pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer[NON_REPLAYABLE_FAULT_BUFFER];
 
-    pParams->pShadowBuffer = pClientShadowFaultBuffer->pQueueAddress;
-    pParams->pShadowBufferContext = (NvP64) &pClientShadowFaultBuffer->queueContext;
+    {
+        pParams->pShadowBuffer = pClientShadowFaultBuffer->pQueueAddress;
+        pParams->pShadowBufferContext = (NvP64) &pClientShadowFaultBuffer->queueContext;
+    }
     pParams->bufferSize = pStaticInfo->nonReplayableFaultBufferSize;
 
     return NV_OK;
@@ -86,25 +90,105 @@ faultbufCtrlCmdMmuFaultBufferUnregisterNonReplayBuf_IMPL
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
 
     // This call takes GpuLock, so shadowBuffer pointers can be accessed without grabbing lock protecting them
-    if (!pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer)
+    if (!pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer[NON_REPLAYABLE_FAULT_BUFFER])
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Client shadow fault buffer for non-replayable faults does not exist\n");
         return NV_OK;
     }
 
-    if (pParams->pShadowBuffer !=
-        pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer->pQueueAddress)
+    if ((pParams->pShadowBuffer !=
+        pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer[NON_REPLAYABLE_FAULT_BUFFER]->pQueueAddress)
+       )
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Given client shadow fault buffer for non-replayable faults does not "
                   "match with the actual\n");
     }
 
-    status = kgmmuClientShadowFaultBufferFree_HAL(pGpu, pKernelGmmu);
+    status = kgmmuClientShadowFaultBufferFree_HAL(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER);
     if (status != NV_OK) {
         NV_PRINTF(LEVEL_ERROR,
                   "Error freeing client shadow fault buffer for non-replayable faults\n");
+    }
+
+    return status;
+}
+
+NV_STATUS
+faultbufCtrlCmdMmuFaultBufferRegisterReplayBuf_IMPL
+(
+    MmuFaultBuffer *pMmuFaultBuffer,
+    NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS *pParams
+)
+{
+    NV_STATUS status;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pMmuFaultBuffer);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    const NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo = kgmmuGetStaticInfo(pGpu, pKernelGmmu);
+    GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuffer;
+
+    pClientShadowFaultBuffer =
+        pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer[REPLAYABLE_FAULT_BUFFER];
+
+    // This call takes GpuLock, so shadowBuffer pointers can be accessed without grabbing lock protecting them
+    if (pClientShadowFaultBuffer != NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Client shadow fault buffer for replayable faults already allocated\n");
+        NV_ASSERT(0);
+
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    status = kgmmuClientShadowFaultBufferAlloc_HAL(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Error allocating client shadow fault buffer for replayable faults\n");
+        return status;
+    }
+
+    pClientShadowFaultBuffer =
+        pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer[REPLAYABLE_FAULT_BUFFER];
+
+    pParams->pShadowBuffer = pClientShadowFaultBuffer->pBufferAddress;
+    pParams->bufferSize = pStaticInfo->replayableFaultBufferSize;
+
+    return NV_OK;
+}
+
+NV_STATUS
+faultbufCtrlCmdMmuFaultBufferUnregisterReplayBuf_IMPL
+(
+    MmuFaultBuffer *pMmuFaultBuffer,
+    NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS *pParams
+)
+{
+    NV_STATUS status;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pMmuFaultBuffer);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+    // This call takes GpuLock, so shadowBuffer pointers can be accessed without grabbing lock protecting them
+    if (pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer[REPLAYABLE_FAULT_BUFFER] == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Client shadow fault buffer for replayable faults does not exist\n");
+        return NV_OK;
+    }
+
+    if (pParams->pShadowBuffer !=
+        pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].pClientShadowFaultBuffer[REPLAYABLE_FAULT_BUFFER]->pBufferAddress)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Given client shadow fault buffer for replayable faults does not "
+                  "match with the actual\n");
+    }
+
+    status = kgmmuClientShadowFaultBufferFree_HAL(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER);
+    if (status != NV_OK) {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Error freeing client shadow fault buffer for replayable faults\n");
     }
 
     return status;

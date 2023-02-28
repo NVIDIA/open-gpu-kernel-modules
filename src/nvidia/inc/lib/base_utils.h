@@ -68,6 +68,9 @@ NvU64 nvMsb64(NvU64);
 //
 char * nvU32ToStr(NvU32 value, char *string, NvU32 radix);
 
+/*! Converts unsigned long long hex int to string */
+char * nvU64ToStr(NvU64 value, char *string, NvU32 targedStrLen);
+
 //
 // Find the string length
 //

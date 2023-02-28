@@ -103,24 +103,26 @@ struct KernelChannelGroupApi {
     NV_STATUS (*__kchangrpapiCtrlGetMMUDebugMode__)(struct KernelChannelGroupApi *, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *);
     NV_STATUS (*__kchangrpapiCtrlProgramVidmemPromote__)(struct KernelChannelGroupApi *, NV0090_CTRL_PROGRAM_VIDMEM_PROMOTE_PARAMS *);
     NvBool (*__kchangrpapiShareCallback__)(struct KernelChannelGroupApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__kchangrpapiUnmap__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
-    NV_STATUS (*__kchangrpapiGetMemInterMapParams__)(struct KernelChannelGroupApi *, RMRES_MEM_INTER_MAP_PARAMS *);
-    NV_STATUS (*__kchangrpapiGetMemoryMappingDescriptor__)(struct KernelChannelGroupApi *, struct MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__kchangrpapiGetMapAddrSpace__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvHandle (*__kchangrpapiGetInternalObjectHandle__)(struct KernelChannelGroupApi *);
-    NV_STATUS (*__kchangrpapiControlFilter__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__kchangrpapiAddAdditionalDependants__)(struct RsClient *, struct KernelChannelGroupApi *, RsResourceRef *);
-    NvU32 (*__kchangrpapiGetRefCount__)(struct KernelChannelGroupApi *);
     NV_STATUS (*__kchangrpapiCheckMemInterUnmap__)(struct KernelChannelGroupApi *, NvBool);
     NV_STATUS (*__kchangrpapiMapTo__)(struct KernelChannelGroupApi *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__kchangrpapiGetMapAddrSpace__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__kchangrpapiGetRefCount__)(struct KernelChannelGroupApi *);
+    void (*__kchangrpapiAddAdditionalDependants__)(struct RsClient *, struct KernelChannelGroupApi *, RsResourceRef *);
     NV_STATUS (*__kchangrpapiControl_Prologue__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kchangrpapiGetRegBaseOffsetAndSize__)(struct KernelChannelGroupApi *, struct OBJGPU *, NvU32 *, NvU32 *);
     NV_STATUS (*__kchangrpapiInternalControlForward__)(struct KernelChannelGroupApi *, NvU32, void *, NvU32);
-    void (*__kchangrpapiPreDestruct__)(struct KernelChannelGroupApi *);
     NV_STATUS (*__kchangrpapiUnmapFrom__)(struct KernelChannelGroupApi *, RS_RES_UNMAP_FROM_PARAMS *);
-    NV_STATUS (*__kchangrpapiIsDuplicate__)(struct KernelChannelGroupApi *, NvHandle, NvBool *);
     void (*__kchangrpapiControl_Epilogue__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kchangrpapiControlLookup__)(struct KernelChannelGroupApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NvHandle (*__kchangrpapiGetInternalObjectHandle__)(struct KernelChannelGroupApi *);
+    NV_STATUS (*__kchangrpapiUnmap__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
+    NV_STATUS (*__kchangrpapiGetMemInterMapParams__)(struct KernelChannelGroupApi *, RMRES_MEM_INTER_MAP_PARAMS *);
+    NV_STATUS (*__kchangrpapiGetMemoryMappingDescriptor__)(struct KernelChannelGroupApi *, struct MEMORY_DESCRIPTOR **);
+    NV_STATUS (*__kchangrpapiControlFilter__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__kchangrpapiControlSerialization_Prologue__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    void (*__kchangrpapiPreDestruct__)(struct KernelChannelGroupApi *);
+    NV_STATUS (*__kchangrpapiIsDuplicate__)(struct KernelChannelGroupApi *, NvHandle, NvBool *);
+    void (*__kchangrpapiControlSerialization_Epilogue__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kchangrpapiMap__)(struct KernelChannelGroupApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__kchangrpapiAccessCallback__)(struct KernelChannelGroupApi *, struct RsClient *, void *, RsAccessRight);
     struct KernelChannelGroup *pKernelChannelGroup;
@@ -180,24 +182,26 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi**, Dynami
 #define kchangrpapiCtrlGetMMUDebugMode(pKernelChannelGroupApi, pParams) kchangrpapiCtrlGetMMUDebugMode_DISPATCH(pKernelChannelGroupApi, pParams)
 #define kchangrpapiCtrlProgramVidmemPromote(pKernelChannelGroupApi, pParams) kchangrpapiCtrlProgramVidmemPromote_DISPATCH(pKernelChannelGroupApi, pParams)
 #define kchangrpapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kchangrpapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define kchangrpapiUnmap(pGpuResource, pCallContext, pCpuMapping) kchangrpapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
-#define kchangrpapiGetMemInterMapParams(pRmResource, pParams) kchangrpapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
-#define kchangrpapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kchangrpapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define kchangrpapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) kchangrpapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define kchangrpapiGetInternalObjectHandle(pGpuResource) kchangrpapiGetInternalObjectHandle_DISPATCH(pGpuResource)
-#define kchangrpapiControlFilter(pResource, pCallContext, pParams) kchangrpapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define kchangrpapiAddAdditionalDependants(pClient, pResource, pReference) kchangrpapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define kchangrpapiGetRefCount(pResource) kchangrpapiGetRefCount_DISPATCH(pResource)
 #define kchangrpapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) kchangrpapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define kchangrpapiMapTo(pResource, pParams) kchangrpapiMapTo_DISPATCH(pResource, pParams)
+#define kchangrpapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) kchangrpapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
+#define kchangrpapiGetRefCount(pResource) kchangrpapiGetRefCount_DISPATCH(pResource)
+#define kchangrpapiAddAdditionalDependants(pClient, pResource, pReference) kchangrpapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define kchangrpapiControl_Prologue(pResource, pCallContext, pParams) kchangrpapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define kchangrpapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) kchangrpapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
 #define kchangrpapiInternalControlForward(pGpuResource, command, pParams, size) kchangrpapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
-#define kchangrpapiPreDestruct(pResource) kchangrpapiPreDestruct_DISPATCH(pResource)
 #define kchangrpapiUnmapFrom(pResource, pParams) kchangrpapiUnmapFrom_DISPATCH(pResource, pParams)
-#define kchangrpapiIsDuplicate(pResource, hMemory, pDuplicate) kchangrpapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kchangrpapiControl_Epilogue(pResource, pCallContext, pParams) kchangrpapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kchangrpapiControlLookup(pResource, pParams, ppEntry) kchangrpapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define kchangrpapiGetInternalObjectHandle(pGpuResource) kchangrpapiGetInternalObjectHandle_DISPATCH(pGpuResource)
+#define kchangrpapiUnmap(pGpuResource, pCallContext, pCpuMapping) kchangrpapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
+#define kchangrpapiGetMemInterMapParams(pRmResource, pParams) kchangrpapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
+#define kchangrpapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kchangrpapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
+#define kchangrpapiControlFilter(pResource, pCallContext, pParams) kchangrpapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
+#define kchangrpapiControlSerialization_Prologue(pResource, pCallContext, pParams) kchangrpapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define kchangrpapiPreDestruct(pResource) kchangrpapiPreDestruct_DISPATCH(pResource)
+#define kchangrpapiIsDuplicate(pResource, hMemory, pDuplicate) kchangrpapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define kchangrpapiControlSerialization_Epilogue(pResource, pCallContext, pParams) kchangrpapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kchangrpapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kchangrpapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define kchangrpapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) kchangrpapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvBool kchangrpapiCanCopy_IMPL(struct KernelChannelGroupApi *pKernelChannelGroupApi);
@@ -326,44 +330,24 @@ static inline NvBool kchangrpapiShareCallback_DISPATCH(struct KernelChannelGroup
     return pGpuResource->__kchangrpapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS kchangrpapiUnmap_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return pGpuResource->__kchangrpapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
-}
-
-static inline NV_STATUS kchangrpapiGetMemInterMapParams_DISPATCH(struct KernelChannelGroupApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pRmResource->__kchangrpapiGetMemInterMapParams__(pRmResource, pParams);
-}
-
-static inline NV_STATUS kchangrpapiGetMemoryMappingDescriptor_DISPATCH(struct KernelChannelGroupApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return pRmResource->__kchangrpapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
-}
-
-static inline NV_STATUS kchangrpapiGetMapAddrSpace_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__kchangrpapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvHandle kchangrpapiGetInternalObjectHandle_DISPATCH(struct KernelChannelGroupApi *pGpuResource) {
-    return pGpuResource->__kchangrpapiGetInternalObjectHandle__(pGpuResource);
-}
-
-static inline NV_STATUS kchangrpapiControlFilter_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__kchangrpapiControlFilter__(pResource, pCallContext, pParams);
-}
-
-static inline void kchangrpapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelChannelGroupApi *pResource, RsResourceRef *pReference) {
-    pResource->__kchangrpapiAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 kchangrpapiGetRefCount_DISPATCH(struct KernelChannelGroupApi *pResource) {
-    return pResource->__kchangrpapiGetRefCount__(pResource);
-}
-
 static inline NV_STATUS kchangrpapiCheckMemInterUnmap_DISPATCH(struct KernelChannelGroupApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return pRmResource->__kchangrpapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS kchangrpapiMapTo_DISPATCH(struct KernelChannelGroupApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return pResource->__kchangrpapiMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS kchangrpapiGetMapAddrSpace_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pGpuResource->__kchangrpapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 kchangrpapiGetRefCount_DISPATCH(struct KernelChannelGroupApi *pResource) {
+    return pResource->__kchangrpapiGetRefCount__(pResource);
+}
+
+static inline void kchangrpapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct KernelChannelGroupApi *pResource, RsResourceRef *pReference) {
+    pResource->__kchangrpapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline NV_STATUS kchangrpapiControl_Prologue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -378,16 +362,8 @@ static inline NV_STATUS kchangrpapiInternalControlForward_DISPATCH(struct Kernel
     return pGpuResource->__kchangrpapiInternalControlForward__(pGpuResource, command, pParams, size);
 }
 
-static inline void kchangrpapiPreDestruct_DISPATCH(struct KernelChannelGroupApi *pResource) {
-    pResource->__kchangrpapiPreDestruct__(pResource);
-}
-
 static inline NV_STATUS kchangrpapiUnmapFrom_DISPATCH(struct KernelChannelGroupApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return pResource->__kchangrpapiUnmapFrom__(pResource, pParams);
-}
-
-static inline NV_STATUS kchangrpapiIsDuplicate_DISPATCH(struct KernelChannelGroupApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return pResource->__kchangrpapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
 static inline void kchangrpapiControl_Epilogue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -396,6 +372,42 @@ static inline void kchangrpapiControl_Epilogue_DISPATCH(struct KernelChannelGrou
 
 static inline NV_STATUS kchangrpapiControlLookup_DISPATCH(struct KernelChannelGroupApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
     return pResource->__kchangrpapiControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NvHandle kchangrpapiGetInternalObjectHandle_DISPATCH(struct KernelChannelGroupApi *pGpuResource) {
+    return pGpuResource->__kchangrpapiGetInternalObjectHandle__(pGpuResource);
+}
+
+static inline NV_STATUS kchangrpapiUnmap_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return pGpuResource->__kchangrpapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
+}
+
+static inline NV_STATUS kchangrpapiGetMemInterMapParams_DISPATCH(struct KernelChannelGroupApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return pRmResource->__kchangrpapiGetMemInterMapParams__(pRmResource, pParams);
+}
+
+static inline NV_STATUS kchangrpapiGetMemoryMappingDescriptor_DISPATCH(struct KernelChannelGroupApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return pRmResource->__kchangrpapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+}
+
+static inline NV_STATUS kchangrpapiControlFilter_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__kchangrpapiControlFilter__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS kchangrpapiControlSerialization_Prologue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__kchangrpapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline void kchangrpapiPreDestruct_DISPATCH(struct KernelChannelGroupApi *pResource) {
+    pResource->__kchangrpapiPreDestruct__(pResource);
+}
+
+static inline NV_STATUS kchangrpapiIsDuplicate_DISPATCH(struct KernelChannelGroupApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__kchangrpapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void kchangrpapiControlSerialization_Epilogue_DISPATCH(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__kchangrpapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS kchangrpapiMap_DISPATCH(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {

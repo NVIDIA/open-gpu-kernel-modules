@@ -131,6 +131,7 @@ static NV_STATUS pool_alloc_page(uvm_gpu_semaphore_pool_t *pool)
     uvm_gpu_semaphore_pool_page_t *pool_page;
     NvU32 *payloads;
     size_t i;
+    uvm_rm_mem_type_t rm_mem_type = UVM_RM_MEM_TYPE_SYS;
 
     uvm_assert_mutex_locked(&pool->mutex);
 
@@ -142,7 +143,7 @@ static NV_STATUS pool_alloc_page(uvm_gpu_semaphore_pool_t *pool)
     pool_page->pool = pool;
 
     status = uvm_rm_mem_alloc_and_map_all(pool->gpu,
-                                          UVM_RM_MEM_TYPE_SYS,
+                                          rm_mem_type,
                                           UVM_SEMAPHORE_PAGE_SIZE,
                                           0,
                                           &pool_page->memory);

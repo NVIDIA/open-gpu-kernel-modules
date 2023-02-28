@@ -126,6 +126,12 @@ gisubscriptionConstruct_IMPL
     }
 
     //
+    // Disable RMCTRL Cache before subscribe to GPU instance.
+    // RMCTRL-CACHE-TODO: remove the workaround when CORERM-5016 is done.
+    //
+    rmapiControlCacheSetMode(NV0000_CTRL_SYSTEM_RMCTRL_CACHE_MODE_CTRL_MODE_DISABLE);
+
+    //
     // Root-SwizzID is a special swizzID which doesn't have any GPU instance
     // associated with it. It can be subscribed to even without GPU instances
     //

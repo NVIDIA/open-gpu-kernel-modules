@@ -165,6 +165,11 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                           cbAllocFlags | MEMDESC_FLAGS_GPU_PRIVILEGED | MEMDESC_FLAGS_HIGH_PRIORITY));
 
         memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
+        if ((cbAllocFlags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
+        {
+            memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+            NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+        }
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_BUNDLE_CB].pAllocList));
     }
@@ -185,6 +190,11 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                           cbAllocFlags | MEMDESC_FLAGS_GPU_PRIVILEGED));
 
         memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
+        if ((cbAllocFlags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
+        {
+            memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+            NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+        }
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_PAGEPOOL].pAllocList));
     }
@@ -205,6 +215,11 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                           cbAllocFlags | MEMDESC_FLAGS_HIGH_PRIORITY));
 
         memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
+        if ((cbAllocFlags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
+        {
+            memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+            NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+        }
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_ATTRIBUTE_CB].pAllocList));
         memdescSetName(pGpu, *ppMemDesc, NV_RM_SURF_NAME_GR_CIRCULAR_BUFFER, NULL);
@@ -231,12 +246,15 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                                   pCtxAttr[GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP].cpuAttr,
                                   flags));
 
-                //
-                // Force page size to 4KB, we can change this later when RM
-                // access method support 64k pages
-                //
-                memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
-                NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+                if ((flags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
+                {
+                    //
+                    // Force page size to 4KB, we can change this later when RM
+                    // access method support 64k pages
+                    //
+                    memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+                    NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+                }
                 NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                     memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP].pAllocList));
             }
@@ -259,12 +277,15 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                                   pCtxAttr[GR_GLOBALCTX_BUFFER_UNRESTRICTED_PRIV_ACCESS_MAP].cpuAttr,
                                   flags));
 
-                //
-                // Force page size to 4KB, we can change this later when RM
-                // access method support 64k pages
-                //
-                memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
-                NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+                if ((flags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
+                {
+                    //
+                    // Force page size to 4KB, we can change this later when RM
+                    // access method support 64k pages
+                    //
+                    memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+                    NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+                }
 
                 NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                     memdescAllocList(*ppMemDesc,

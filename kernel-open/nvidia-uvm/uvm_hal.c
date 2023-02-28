@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -44,6 +44,10 @@
 #include "clc86f.h"
 #include "clc8b5.h"
 
+static int uvm_downgrade_force_membar_sys = 1;
+module_param(uvm_downgrade_force_membar_sys, uint, 0644);
+MODULE_PARM_DESC(uvm_downgrade_force_membar_sys, "Force all TLB invalidation downgrades to use MEMBAR_SYS");
+
 #define CE_OP_COUNT (sizeof(uvm_ce_hal_t) / sizeof(void *))
 #define HOST_OP_COUNT (sizeof(uvm_host_hal_t) / sizeof(void *))
 #define ARCH_OP_COUNT (sizeof(uvm_arch_hal_t) / sizeof(void *))
@@ -61,7 +65,7 @@ static uvm_hal_class_ops_t ce_table[] =
         .id = MAXWELL_DMA_COPY_A,
         .u.ce_ops = {
             .init = uvm_hal_maxwell_ce_init,
-            .method_validate = uvm_hal_method_validate_stub,
+            .method_is_valid = uvm_hal_method_is_valid_stub,
             .semaphore_release = uvm_hal_maxwell_ce_semaphore_release,
             .semaphore_timestamp = uvm_hal_maxwell_ce_semaphore_timestamp,
             .semaphore_reduction_inc = uvm_hal_maxwell_ce_semaphore_reduction_inc,
@@ -69,11 +73,11 @@ static uvm_hal_class_ops_t ce_table[] =
             .offset_in_out = uvm_hal_maxwell_ce_offset_in_out,
             .phys_mode = uvm_hal_maxwell_ce_phys_mode,
             .plc_mode = uvm_hal_maxwell_ce_plc_mode,
-            .memcopy_validate = uvm_hal_ce_memcopy_validate_stub,
+            .memcopy_is_valid = uvm_hal_ce_memcopy_is_valid_stub,
             .memcopy_patch_src = uvm_hal_ce_memcopy_patch_src_stub,
             .memcopy = uvm_hal_maxwell_ce_memcopy,
             .memcopy_v_to_v = uvm_hal_maxwell_ce_memcopy_v_to_v,
-            .memset_validate = uvm_hal_ce_memset_validate_stub,
+            .memset_is_valid = uvm_hal_ce_memset_is_valid_stub,
             .memset_1 = uvm_hal_maxwell_ce_memset_1,
             .memset_4 = uvm_hal_maxwell_ce_memset_4,
             .memset_8 = uvm_hal_maxwell_ce_memset_8,
@@ -99,7 +103,15 @@ static uvm_hal_class_ops_t ce_table[] =
     {
         .id = VOLTA_DMA_COPY_A,
         .parent_id = PASCAL_DMA_COPY_B,
-        .u.ce_ops = {},
+        .u.ce_ops = {
+            .semaphore_release = uvm_hal_volta_ce_semaphore_release,
+            .semaphore_timestamp = uvm_hal_volta_ce_semaphore_timestamp,
+            .semaphore_reduction_inc = uvm_hal_volta_ce_semaphore_reduction_inc,
+            .memcopy = uvm_hal_volta_ce_memcopy,
+            .memset_1 = uvm_hal_volta_ce_memset_1,
+            .memset_4 = uvm_hal_volta_ce_memset_4,
+            .memset_8 = uvm_hal_volta_ce_memset_8,
+        },
     },
     {
         .id = TURING_DMA_COPY_A,
@@ -110,22 +122,22 @@ static uvm_hal_class_ops_t ce_table[] =
         .id = AMPERE_DMA_COPY_A,
         .parent_id = TURING_DMA_COPY_A,
         .u.ce_ops = {
-            .method_validate = uvm_hal_ampere_ce_method_validate_c6b5,
+            .method_is_valid = uvm_hal_ampere_ce_method_is_valid_c6b5,
             .phys_mode = uvm_hal_ampere_ce_phys_mode,
-            .memcopy_validate = uvm_hal_ampere_ce_memcopy_validate_c6b5,
+            .memcopy_is_valid = uvm_hal_ampere_ce_memcopy_is_valid_c6b5,
             .memcopy_patch_src = uvm_hal_ampere_ce_memcopy_patch_src_c6b5,
-            .memset_validate = uvm_hal_ampere_ce_memset_validate_c6b5,
+            .memset_is_valid = uvm_hal_ampere_ce_memset_is_valid_c6b5,
         },
     },
     {
         .id = AMPERE_DMA_COPY_B,
         .parent_id = AMPERE_DMA_COPY_A,
         .u.ce_ops = {
-            .method_validate = uvm_hal_method_validate_stub,
+            .method_is_valid = uvm_hal_method_is_valid_stub,
             .plc_mode = uvm_hal_ampere_ce_plc_mode_c7b5,
-            .memcopy_validate = uvm_hal_ce_memcopy_validate_stub,
+            .memcopy_is_valid = uvm_hal_ce_memcopy_is_valid_stub,
             .memcopy_patch_src = uvm_hal_ce_memcopy_patch_src_stub,
-            .memset_validate = uvm_hal_ce_memset_validate_stub,
+            .memset_is_valid = uvm_hal_ce_memset_is_valid_stub,
         },
     },
     {
@@ -140,6 +152,8 @@ static uvm_hal_class_ops_t ce_table[] =
             .memset_1 = uvm_hal_hopper_ce_memset_1,
             .memset_4 = uvm_hal_hopper_ce_memset_4,
             .memset_8 = uvm_hal_hopper_ce_memset_8,
+            .memcopy_is_valid = uvm_hal_hopper_ce_memcopy_is_valid,
+            .memset_is_valid = uvm_hal_hopper_ce_memset_is_valid,
         },
     },
 };
@@ -152,8 +166,8 @@ static uvm_hal_class_ops_t host_table[] =
         .id = KEPLER_CHANNEL_GPFIFO_B,
         .u.host_ops = {
             .init = uvm_hal_maxwell_host_init_noop,
-            .method_validate = uvm_hal_method_validate_stub,
-            .sw_method_validate = uvm_hal_method_validate_stub,
+            .method_is_valid = uvm_hal_method_is_valid_stub,
+            .sw_method_is_valid = uvm_hal_method_is_valid_stub,
             .wait_for_idle = uvm_hal_maxwell_host_wait_for_idle,
             .membar_sys = uvm_hal_maxwell_host_membar_sys,
             // No MEMBAR GPU until Pascal, just do a MEMBAR SYS.
@@ -235,8 +249,8 @@ static uvm_hal_class_ops_t host_table[] =
         .id = AMPERE_CHANNEL_GPFIFO_A,
         .parent_id = TURING_CHANNEL_GPFIFO_A,
         .u.host_ops = {
-            .method_validate = uvm_hal_ampere_host_method_validate,
-            .sw_method_validate = uvm_hal_ampere_host_sw_method_validate,
+            .method_is_valid = uvm_hal_ampere_host_method_is_valid,
+            .sw_method_is_valid = uvm_hal_ampere_host_sw_method_is_valid,
             .clear_faulted_channel_sw_method = uvm_hal_ampere_host_clear_faulted_channel_sw_method,
             .clear_faulted_channel_register = uvm_hal_ampere_host_clear_faulted_channel_register,
             .tlb_invalidate_all = uvm_hal_ampere_host_tlb_invalidate_all,
@@ -248,8 +262,8 @@ static uvm_hal_class_ops_t host_table[] =
         .id = HOPPER_CHANNEL_GPFIFO_A,
         .parent_id = AMPERE_CHANNEL_GPFIFO_A,
         .u.host_ops = {
-            .method_validate = uvm_hal_method_validate_stub,
-            .sw_method_validate = uvm_hal_method_validate_stub,
+            .method_is_valid = uvm_hal_method_is_valid_stub,
+            .sw_method_is_valid = uvm_hal_method_is_valid_stub,
             .semaphore_acquire = uvm_hal_hopper_host_semaphore_acquire,
             .semaphore_release = uvm_hal_hopper_host_semaphore_release,
             .semaphore_timestamp = uvm_hal_hopper_host_semaphore_timestamp,
@@ -637,14 +651,20 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
     return NV_OK;
 }
 
+static void hal_override_properties(uvm_parent_gpu_t *parent_gpu)
+{
+    // Access counters are currently not supported in vGPU.
+    //
+    // TODO: Bug 200692962: Add support for access counters in vGPU
+    if (parent_gpu->virt_mode != UVM_VIRT_MODE_NONE)
+        parent_gpu->access_counters_supported = false;
+}
+
 void uvm_hal_init_properties(uvm_parent_gpu_t *parent_gpu)
 {
     parent_gpu->arch_hal->init_properties(parent_gpu);
 
-    // Override the HAL when in non-passthrough virtualization
-    // TODO: Bug 200692962: [UVM] Add support for access counters in UVM on SR-IOV configurations
-    if (parent_gpu->virt_mode != UVM_VIRT_MODE_NONE)
-        parent_gpu->access_counters_supported = false;
+    hal_override_properties(parent_gpu);
 }
 
 void uvm_hal_tlb_invalidate_membar(uvm_push_t *push, uvm_membar_t membar)
@@ -661,6 +681,44 @@ void uvm_hal_tlb_invalidate_membar(uvm_push_t *push, uvm_membar_t membar)
         gpu->parent->host_hal->membar_gpu(push);
 
     uvm_hal_membar(gpu, push, membar);
+}
+
+bool uvm_hal_membar_before_semaphore(uvm_push_t *push)
+{
+    uvm_membar_t membar = uvm_push_get_and_reset_membar_flag(push);
+
+    if (membar == UVM_MEMBAR_NONE) {
+        // No MEMBAR requested, don't use a flush.
+        return false;
+    }
+
+    if (membar == UVM_MEMBAR_GPU) {
+        // MEMBAR GPU requested, do it on the HOST and skip the engine flush as
+        // it doesn't have this capability.
+        uvm_hal_wfi_membar(push, UVM_MEMBAR_GPU);
+        return false;
+    }
+
+    // By default do a MEMBAR SYS and for that we can just use flush on the
+    // semaphore operation.
+    return true;
+}
+
+uvm_membar_t uvm_hal_downgrade_membar_type(uvm_gpu_t *gpu, bool is_local_vidmem)
+{
+    // If the mapped memory was local, and we're not using a coherence protocol,
+    // we only need a GPU-local membar. This is because all accesses to this
+    // memory, including those from other processors like the CPU or peer GPUs,
+    // must come through this GPU's L2. In all current architectures, MEMBAR_GPU
+    // is sufficient to resolve ordering at the L2 level.
+    if (is_local_vidmem && !gpu->parent->numa_info.enabled && !uvm_downgrade_force_membar_sys)
+        return UVM_MEMBAR_GPU;
+
+    // If the mapped memory was remote, or if a coherence protocol can cache
+    // this GPU's memory, then there are external ways for other processors to
+    // access the memory without always going the local GPU L2, so we must use a
+    // MEMBAR_SYS.
+    return UVM_MEMBAR_SYS;
 }
 
 const char *uvm_aperture_string(uvm_aperture_t aperture)
@@ -823,12 +881,12 @@ void uvm_hal_print_access_counter_buffer_entry(const uvm_access_counter_buffer_e
     UVM_DBG_PRINT("    tag             %x\n", entry->tag);
 }
 
-bool uvm_hal_method_validate_stub(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
+bool uvm_hal_method_is_valid_stub(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
 {
     return true;
 }
 
-bool uvm_hal_ce_memcopy_validate_stub(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
+bool uvm_hal_ce_memcopy_is_valid_stub(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
 {
     return true;
 }
@@ -837,7 +895,7 @@ void uvm_hal_ce_memcopy_patch_src_stub(uvm_push_t *push, uvm_gpu_address_t *src)
 {
 }
 
-bool uvm_hal_ce_memset_validate_stub(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size)
+bool uvm_hal_ce_memset_is_valid_stub(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size)
 {
     return true;
 }

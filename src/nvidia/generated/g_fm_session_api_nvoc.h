@@ -84,26 +84,28 @@ struct FmSessionApi {
     NV_STATUS (*__fmsessionapiCtrlCmdClearFmState__)(struct FmSessionApi *);
     NvBool (*__fmsessionapiShareCallback__)(struct FmSessionApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__fmsessionapiCheckMemInterUnmap__)(struct FmSessionApi *, NvBool);
+    NV_STATUS (*__fmsessionapiMapTo__)(struct FmSessionApi *, RS_RES_MAP_TO_PARAMS *);
     NvBool (*__fmsessionapiAccessCallback__)(struct FmSessionApi *, struct RsClient *, void *, RsAccessRight);
+    void (*__fmsessionapiSetNotificationShare__)(struct FmSessionApi *, struct NotifShare *);
+    NvU32 (*__fmsessionapiGetRefCount__)(struct FmSessionApi *);
+    void (*__fmsessionapiAddAdditionalDependants__)(struct RsClient *, struct FmSessionApi *, RsResourceRef *);
+    NV_STATUS (*__fmsessionapiControl_Prologue__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__fmsessionapiUnmapFrom__)(struct FmSessionApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__fmsessionapiControl_Epilogue__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__fmsessionapiControlLookup__)(struct FmSessionApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NV_STATUS (*__fmsessionapiControl__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__fmsessionapiUnmap__)(struct FmSessionApi *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__fmsessionapiGetMemInterMapParams__)(struct FmSessionApi *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__fmsessionapiGetMemoryMappingDescriptor__)(struct FmSessionApi *, struct MEMORY_DESCRIPTOR **);
-    void (*__fmsessionapiSetNotificationShare__)(struct FmSessionApi *, struct NotifShare *);
-    NV_STATUS (*__fmsessionapiControl__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__fmsessionapiControlFilter__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvU32 (*__fmsessionapiGetRefCount__)(struct FmSessionApi *);
     NV_STATUS (*__fmsessionapiUnregisterEvent__)(struct FmSessionApi *, NvHandle, NvHandle, NvHandle, NvHandle);
-    NV_STATUS (*__fmsessionapiUnmap__)(struct FmSessionApi *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__fmsessionapiControlSerialization_Prologue__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__fmsessionapiCanCopy__)(struct FmSessionApi *);
-    NV_STATUS (*__fmsessionapiControl_Prologue__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__fmsessionapiMapTo__)(struct FmSessionApi *, RS_RES_MAP_TO_PARAMS *);
-    void (*__fmsessionapiAddAdditionalDependants__)(struct RsClient *, struct FmSessionApi *, RsResourceRef *);
     void (*__fmsessionapiPreDestruct__)(struct FmSessionApi *);
-    NV_STATUS (*__fmsessionapiUnmapFrom__)(struct FmSessionApi *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__fmsessionapiIsDuplicate__)(struct FmSessionApi *, NvHandle, NvBool *);
+    void (*__fmsessionapiControlSerialization_Epilogue__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__fmsessionapiGetNotificationListPtr__)(struct FmSessionApi *);
-    void (*__fmsessionapiControl_Epilogue__)(struct FmSessionApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__fmsessionapiGetNotificationShare__)(struct FmSessionApi *);
-    NV_STATUS (*__fmsessionapiControlLookup__)(struct FmSessionApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__fmsessionapiMap__)(struct FmSessionApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NV_STATUS (*__fmsessionapiGetOrAllocNotifShare__)(struct FmSessionApi *, NvHandle, NvHandle, struct NotifShare **);
     NvU64 dupedCapDescriptor;
@@ -141,26 +143,28 @@ NV_STATUS __nvoc_objCreate_FmSessionApi(FmSessionApi**, Dynamic*, NvU32, struct 
 #define fmsessionapiCtrlCmdClearFmState(pFmSessionApi) fmsessionapiCtrlCmdClearFmState_DISPATCH(pFmSessionApi)
 #define fmsessionapiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) fmsessionapiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define fmsessionapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) fmsessionapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define fmsessionapiMapTo(pResource, pParams) fmsessionapiMapTo_DISPATCH(pResource, pParams)
 #define fmsessionapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) fmsessionapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
+#define fmsessionapiSetNotificationShare(pNotifier, pNotifShare) fmsessionapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
+#define fmsessionapiGetRefCount(pResource) fmsessionapiGetRefCount_DISPATCH(pResource)
+#define fmsessionapiAddAdditionalDependants(pClient, pResource, pReference) fmsessionapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define fmsessionapiControl_Prologue(pResource, pCallContext, pParams) fmsessionapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define fmsessionapiUnmapFrom(pResource, pParams) fmsessionapiUnmapFrom_DISPATCH(pResource, pParams)
+#define fmsessionapiControl_Epilogue(pResource, pCallContext, pParams) fmsessionapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define fmsessionapiControlLookup(pResource, pParams, ppEntry) fmsessionapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define fmsessionapiControl(pResource, pCallContext, pParams) fmsessionapiControl_DISPATCH(pResource, pCallContext, pParams)
+#define fmsessionapiUnmap(pResource, pCallContext, pCpuMapping) fmsessionapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define fmsessionapiGetMemInterMapParams(pRmResource, pParams) fmsessionapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define fmsessionapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) fmsessionapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define fmsessionapiSetNotificationShare(pNotifier, pNotifShare) fmsessionapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define fmsessionapiControl(pResource, pCallContext, pParams) fmsessionapiControl_DISPATCH(pResource, pCallContext, pParams)
 #define fmsessionapiControlFilter(pResource, pCallContext, pParams) fmsessionapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define fmsessionapiGetRefCount(pResource) fmsessionapiGetRefCount_DISPATCH(pResource)
 #define fmsessionapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) fmsessionapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define fmsessionapiUnmap(pResource, pCallContext, pCpuMapping) fmsessionapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define fmsessionapiControlSerialization_Prologue(pResource, pCallContext, pParams) fmsessionapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define fmsessionapiCanCopy(pResource) fmsessionapiCanCopy_DISPATCH(pResource)
-#define fmsessionapiControl_Prologue(pResource, pCallContext, pParams) fmsessionapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define fmsessionapiMapTo(pResource, pParams) fmsessionapiMapTo_DISPATCH(pResource, pParams)
-#define fmsessionapiAddAdditionalDependants(pClient, pResource, pReference) fmsessionapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define fmsessionapiPreDestruct(pResource) fmsessionapiPreDestruct_DISPATCH(pResource)
-#define fmsessionapiUnmapFrom(pResource, pParams) fmsessionapiUnmapFrom_DISPATCH(pResource, pParams)
 #define fmsessionapiIsDuplicate(pResource, hMemory, pDuplicate) fmsessionapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define fmsessionapiControlSerialization_Epilogue(pResource, pCallContext, pParams) fmsessionapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define fmsessionapiGetNotificationListPtr(pNotifier) fmsessionapiGetNotificationListPtr_DISPATCH(pNotifier)
-#define fmsessionapiControl_Epilogue(pResource, pCallContext, pParams) fmsessionapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define fmsessionapiGetNotificationShare(pNotifier) fmsessionapiGetNotificationShare_DISPATCH(pNotifier)
-#define fmsessionapiControlLookup(pResource, pParams, ppEntry) fmsessionapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define fmsessionapiMap(pResource, pCallContext, pParams, pCpuMapping) fmsessionapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define fmsessionapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) fmsessionapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NV_STATUS fmsessionapiCtrlCmdSetFmState_IMPL(struct FmSessionApi *pFmSessionApi);
@@ -183,8 +187,48 @@ static inline NV_STATUS fmsessionapiCheckMemInterUnmap_DISPATCH(struct FmSession
     return pRmResource->__fmsessionapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
+static inline NV_STATUS fmsessionapiMapTo_DISPATCH(struct FmSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__fmsessionapiMapTo__(pResource, pParams);
+}
+
 static inline NvBool fmsessionapiAccessCallback_DISPATCH(struct FmSessionApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__fmsessionapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+}
+
+static inline void fmsessionapiSetNotificationShare_DISPATCH(struct FmSessionApi *pNotifier, struct NotifShare *pNotifShare) {
+    pNotifier->__fmsessionapiSetNotificationShare__(pNotifier, pNotifShare);
+}
+
+static inline NvU32 fmsessionapiGetRefCount_DISPATCH(struct FmSessionApi *pResource) {
+    return pResource->__fmsessionapiGetRefCount__(pResource);
+}
+
+static inline void fmsessionapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct FmSessionApi *pResource, RsResourceRef *pReference) {
+    pResource->__fmsessionapiAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS fmsessionapiControl_Prologue_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__fmsessionapiControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS fmsessionapiUnmapFrom_DISPATCH(struct FmSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__fmsessionapiUnmapFrom__(pResource, pParams);
+}
+
+static inline void fmsessionapiControl_Epilogue_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__fmsessionapiControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS fmsessionapiControlLookup_DISPATCH(struct FmSessionApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__fmsessionapiControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NV_STATUS fmsessionapiControl_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__fmsessionapiControl__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS fmsessionapiUnmap_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__fmsessionapiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS fmsessionapiGetMemInterMapParams_DISPATCH(struct FmSessionApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
@@ -195,72 +239,40 @@ static inline NV_STATUS fmsessionapiGetMemoryMappingDescriptor_DISPATCH(struct F
     return pRmResource->__fmsessionapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline void fmsessionapiSetNotificationShare_DISPATCH(struct FmSessionApi *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__fmsessionapiSetNotificationShare__(pNotifier, pNotifShare);
-}
-
-static inline NV_STATUS fmsessionapiControl_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__fmsessionapiControl__(pResource, pCallContext, pParams);
-}
-
 static inline NV_STATUS fmsessionapiControlFilter_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__fmsessionapiControlFilter__(pResource, pCallContext, pParams);
-}
-
-static inline NvU32 fmsessionapiGetRefCount_DISPATCH(struct FmSessionApi *pResource) {
-    return pResource->__fmsessionapiGetRefCount__(pResource);
 }
 
 static inline NV_STATUS fmsessionapiUnregisterEvent_DISPATCH(struct FmSessionApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return pNotifier->__fmsessionapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static inline NV_STATUS fmsessionapiUnmap_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__fmsessionapiUnmap__(pResource, pCallContext, pCpuMapping);
+static inline NV_STATUS fmsessionapiControlSerialization_Prologue_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__fmsessionapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool fmsessionapiCanCopy_DISPATCH(struct FmSessionApi *pResource) {
     return pResource->__fmsessionapiCanCopy__(pResource);
 }
 
-static inline NV_STATUS fmsessionapiControl_Prologue_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__fmsessionapiControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS fmsessionapiMapTo_DISPATCH(struct FmSessionApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__fmsessionapiMapTo__(pResource, pParams);
-}
-
-static inline void fmsessionapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct FmSessionApi *pResource, RsResourceRef *pReference) {
-    pResource->__fmsessionapiAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
 static inline void fmsessionapiPreDestruct_DISPATCH(struct FmSessionApi *pResource) {
     pResource->__fmsessionapiPreDestruct__(pResource);
-}
-
-static inline NV_STATUS fmsessionapiUnmapFrom_DISPATCH(struct FmSessionApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__fmsessionapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS fmsessionapiIsDuplicate_DISPATCH(struct FmSessionApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__fmsessionapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
+static inline void fmsessionapiControlSerialization_Epilogue_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__fmsessionapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+}
+
 static inline PEVENTNOTIFICATION *fmsessionapiGetNotificationListPtr_DISPATCH(struct FmSessionApi *pNotifier) {
     return pNotifier->__fmsessionapiGetNotificationListPtr__(pNotifier);
 }
 
-static inline void fmsessionapiControl_Epilogue_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__fmsessionapiControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
 static inline struct NotifShare *fmsessionapiGetNotificationShare_DISPATCH(struct FmSessionApi *pNotifier) {
     return pNotifier->__fmsessionapiGetNotificationShare__(pNotifier);
-}
-
-static inline NV_STATUS fmsessionapiControlLookup_DISPATCH(struct FmSessionApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__fmsessionapiControlLookup__(pResource, pParams, ppEntry);
 }
 
 static inline NV_STATUS fmsessionapiMap_DISPATCH(struct FmSessionApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

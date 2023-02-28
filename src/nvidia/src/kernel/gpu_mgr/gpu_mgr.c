@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -726,6 +726,9 @@ static NvBool _gpumgrIsRmFirmwareDefaultChip(NvU32 pmcBoot42)
 
 static NvBool _gpumgrIsVgxRmFirmwareDefaultChip(NvU32 pmcBoot42)
 {
+    if (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_GH100)
+        return NV_TRUE;
+
     if (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pmcBoot42) == NV_PMC_BOOT_42_ARCHITECTURE_AD100)
         return NV_TRUE;
 
@@ -764,14 +767,14 @@ NvBool gpumgrIsDeviceRmFirmwareCapable
         0x25B6, // A16
         0x20F5, // A800-80
         0x20F6, // A800-40
+        0x20FD, // A100T RoyB
 
         0x26B5, // L40
         0x26B8, // L40G
         0x26F5, // L40-CNX
+        0x27B7, // L16
         0x27B8, // L4 (both SKUs)
     };
-    NvU32 count = NV_ARRAY_ELEMENTS(defaultGspRmGpus);
-    NvU32 i;
 
     *pbEnabledByDefault = NV_FALSE;
 
@@ -791,7 +794,7 @@ NvBool gpumgrIsDeviceRmFirmwareCapable
 
     if (!hypervisorIsVgxHyper() || RMCFG_FEATURE_PLATFORM_GSP)
     {
-        for (i = 0; i < count; i++)
+        for (NvU32 i = 0; i < NV_ARRAY_ELEMENTS(defaultGspRmGpus); i++)
         {
             if (defaultGspRmGpus[i] == devId)
             {
@@ -822,22 +825,10 @@ static NvBool gpumgrCheckRmFirmwarePolicy
     if (!bRequestFwClientRm)
         return NV_FALSE;
 
-    NvU32 data;
-
     if (!_gpumgrIsRmFirmwareCapableChip(pmcBoot42))
     {
         NV_PRINTF(LEVEL_ERROR, "Disabling GSP offload -- GPU not supported\n");
         return NV_FALSE;
-    }
-
-    // Disable if RM registry override set
-    if (osReadRegistryDword(NULL, NV_REG_STR_RM_DISABLE_GSP_OFFLOAD, &data) == NV_OK)
-    {
-        if (data != NV_REG_STR_RM_DISABLE_GSP_OFFLOAD_FALSE)
-        {
-            NV_PRINTF(LEVEL_NOTICE, "Disabling GSP offload -- registry entry\n");
-            return NV_FALSE;
-        }
     }
 
     return NV_TRUE;
@@ -1920,7 +1911,7 @@ gpumgrGetGpuIdInfoV2(NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *pGpuInfo)
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    LOCK_ASSERT_AND_RETURN(rmGpuLockIsOwner());
+    NV_ASSERT_OR_RETURN(gpumgrIsSafeToReadGpuInfo(), NV_ERR_INVALID_LOCK_STATE);
 
     //
     // We have a valid gpuInstance, so now let's get the corresponding
@@ -2264,7 +2255,7 @@ gpumgrServiceInterrupts_IMPL(NvU32 gpuMask, MC_ENGINE_BITVECTOR *engineMask, NvB
         if (gpuIsGpuFullPower(pGpu))
         {
             Intr *pIntr = GPU_GET_INTR(pGpu);
-
+            
             //
             // On SLI, one OBJGPU's StateInit functions could attempt to service
             // interrupts on another OBJGPU which has not yet started StateInit.
@@ -2297,9 +2288,75 @@ gpumgrGetGpuLockAndDrPorts
     NvU32 *pPinsetIn
 )
 {
-    *pPinsetOut = 0;
-    *pPinsetIn = 0;
-    return NV_OK;
+
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPUGRP *pGpuGrp = NULL;
+    NvU32      pinsetIndex = 0, childPinset = drPinSet_None;
+    NvU32      i;
+    NvU32      gpuInstance = pGpu->gpuInstance;
+    NV_STATUS  rmStatus;
+
+    *pPinsetOut = drPinSet_None;
+    *pPinsetIn = drPinSet_None;
+
+    if (pPeerGpu == NULL)
+    {
+        pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+        NV_ASSERT_OR_RETURN(pGpuGrp != NULL, NV_ERR_INVALID_DATA);
+
+        for (i = 0; i < NV2080_MAX_SUBDEVICES; i++)
+        {
+            if (pGpuGrp->SliLinkOrder[i].gpuInstance == gpuInstance)
+            {
+                break;
+            }
+        }
+
+        if (i == NV2080_MAX_SUBDEVICES)
+        {
+            *pPinsetOut = 0;
+            *pPinsetIn  = 0;
+        }
+        else
+        {
+            *pPinsetOut = pGpuGrp->SliLinkOrder[i].ChildDrPort;
+            *pPinsetIn  = pGpuGrp->SliLinkOrder[i].ParentDrPort;
+        }
+
+        return NV_OK;
+    }
+    else
+    {
+        NvU32 childPinsetIndex;
+
+        for (pinsetIndex = 0; pinsetIndex < DR_PINSET_COUNT; pinsetIndex++)
+        {
+            if (!FLD_TEST_DRF(_SLILINK, _ROUTE, _INPUT, _PASSED,
+                pGpuMgr->gpuSliLinkRoute[pGpuMgr->gpuBridgeType][gpuInstance][pPeerGpu->gpuInstance][pinsetIndex]))
+            {
+                continue;
+            }
+
+            childPinset = DRF_VAL(_SLILINK, _ROUTE, _INPUT_CHILD_PORT,
+                pGpuMgr->gpuSliLinkRoute[pGpuMgr->gpuBridgeType][gpuInstance][pPeerGpu->gpuInstance][pinsetIndex]);
+
+            rmStatus = gpumgrPinsetToPinsetTableIndex(childPinset, &childPinsetIndex);
+            if (rmStatus != NV_OK)
+            {
+                return rmStatus;
+            }
+            if (!FLD_TEST_DRF(_SLILINK, _ROUTE, _OUTPUT, _PASSED,
+                pGpuMgr->gpuSliLinkRoute[pGpuMgr->gpuBridgeType][pPeerGpu->gpuInstance][gpuInstance][childPinsetIndex]))
+            {
+                continue;
+            }
+            *pPinsetOut |= childPinset;
+            *pPinsetIn |= NVBIT(pinsetIndex);
+        }
+        return ((*pPinsetOut != drPinSet_None) && (*pPinsetIn != drPinSet_None)) ? NV_OK : NV_ERR_INVALID_ARGUMENT;
+    }
+
 }
 
 //
@@ -3016,6 +3073,128 @@ gpumgrGetGpuInitDisabledNvlinks_IMPL
 }
 
 /*!
+ * @brief Get nvlink bandwidth mode
+ *
+ * @return mode     reduced bandwidth mode.
+ */
+NvU8
+gpumgrGetGpuNvlinkBwMode_IMPL(void)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+
+    return pGpuMgr->nvlinkBwMode;
+}
+
+/*!
+ * @brief Set nvlink bandwidth mode from Registry
+ *
+ * @param[in]  pGpu   reference of OBJGPU
+ *
+ */
+void
+gpumgrSetGpuNvlinkBwModeFromRegistry_IMPL
+(
+    OBJGPU *pGpu
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    const char *pStrChar;
+    NvU32 strLength = 32;
+    NvU8 pStr[32];
+
+    //
+    // An RM client can set NVLink BW mode using
+    // NV0000_CTRL_CMD_GPU_SET_NVLINK_BW_MODE control call.
+    // If the value is not default i.e. `GPU_NVLINK_BW_MODE_FULL`, then skip.
+    //
+    if (pGpuMgr->nvlinkBwMode != GPU_NVLINK_BW_MODE_FULL)
+    {
+        return;
+    }
+
+    // sysInitRegistryOverrides should pass in valid pGpu
+    NV_ASSERT (pGpu != NULL);
+
+    if (osReadRegistryString(pGpu, NV_REG_STR_RM_NVLINK_BW, pStr, &strLength) != NV_OK)
+    {
+         goto out;
+    }
+
+    pStrChar = (const char *)pStr;
+    strLength = portStringLength(pStrChar);
+    if (portStringCompare(pStrChar, "OFF", strLength) == 0)
+    {
+        pGpuMgr->nvlinkBwMode = GPU_NVLINK_BW_MODE_OFF;
+    }
+    else if (portStringCompare(pStrChar, "MIN", strLength) == 0)
+    {
+        pGpuMgr->nvlinkBwMode = GPU_NVLINK_BW_MODE_MIN;
+    }
+    else if (portStringCompare(pStrChar, "HALF", strLength) == 0)
+    {
+        pGpuMgr->nvlinkBwMode = GPU_NVLINK_BW_MODE_HALF;
+    }
+    else if (portStringCompare(pStrChar, "3QUARTER", strLength) == 0)
+    {
+        pGpuMgr->nvlinkBwMode = GPU_NVLINK_BW_MODE_3QUARTER;
+    }
+
+out:
+    NV_PRINTF(LEVEL_INFO, "nvlinkBwMode=%d\n", pGpuMgr->nvlinkBwMode);
+}
+
+/*!
+ * @brief Set nvlink bandwidth mode
+ *
+ * @param[in]  mode        nvlink bandwidth mode
+ *
+ * @return NV_OK on success, appropriate error on failure.
+ */
+NV_STATUS
+gpumgrSetGpuNvlinkBwMode_IMPL
+(
+    NvU8 mode
+)
+{
+    OBJSYS     *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR  *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    NvU32 attachedGpuCount;
+    NvU32 attachedGpuMask;
+    KernelBus *pKernelBus;
+    NV_STATUS rmStatus;
+    NvU32 gpuIndex;
+    OBJGPU *pGpu;
+
+    rmStatus = gpumgrGetGpuAttachInfo(&attachedGpuCount, &attachedGpuMask);
+    if (rmStatus != NV_OK)
+    {
+        return rmStatus;
+    }
+
+    gpuIndex = 0;
+    for(pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex);
+         pGpu != NULL;
+         pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex))
+    {
+        pKernelBus  = GPU_GET_KERNEL_BUS(pGpu);
+        if (pKernelBus->totalP2pObjectsAliveRefCount > 0)
+        {
+            return NV_ERR_IN_USE;
+        }
+    }
+
+    if (mode > GPU_NVLINK_BW_MODE_3QUARTER)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pGpuMgr->nvlinkBwMode = mode;
+    return NV_OK;
+}
+
+/*!
  * @brief Adds an entry in the system partition topology save for the given GPU
  *        ID. Note that this does not create any saved partition topology.
  *
@@ -3044,7 +3223,7 @@ gpumgrAddSystemMIGInstanceTopo_IMPL
         {
             pGpuMgr->MIGTopologyInfo[i].bValid = NV_TRUE;
             pGpuMgr->MIGTopologyInfo[i].domainBusDevice = domainBusDevice;
-
+            
             // Set MIG enablement to disabled by default
             pGpuMgr->MIGTopologyInfo[i].bMIGEnabled = NV_FALSE;
             break;
@@ -3146,9 +3325,9 @@ gpumgrIsSystemMIGEnabled_IMPL
  * @returns NV_TRUE if entry found
  *          NV_FALSE otherwise
  */
-void
+void 
 gpumgrSetSystemMIGEnabled_IMPL
-(
+(  
     NvU64 domainBusDevice,
     NvBool bMIGEnabled
 )
@@ -3264,7 +3443,7 @@ gpumgrGetGpuBridgeType(void)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
-
+    
     return pGpuMgr->gpuBridgeType;
 }
 
@@ -3286,7 +3465,7 @@ gpumgrInitPcieP2PCapsCache_IMPL(OBJGPUMGR* pGpuMgr)
 /**
 * @brief Destroy the PCIE P2P info cache
 */
-void
+void 
 gpumgrDestroyPcieP2PCapsCache_IMPL(OBJGPUMGR* pGpuMgr)
 {
     PCIEP2PCAPSINFO *pPcieCapsInfo, *pPcieCapsInfoNext;
@@ -3313,7 +3492,7 @@ gpumgrDestroyPcieP2PCapsCache_IMPL(OBJGPUMGR* pGpuMgr)
  * @param[in]   gpuMask             NvU32 value
  * @param[in]   p2pWriteCapsStatus  NvU8 value
  * @param[in]   pP2PReadCapsStatus  NvU8 value
- *
+ * 
  * @return      NV_OK or NV_ERR_NO_MEMORY
  */
 NV_STATUS
@@ -3463,7 +3642,7 @@ gpumgrGetPcieP2PCapsFromCache_IMPL
     OBJSYS    *pSys    = SYS_GET_INSTANCE();
     OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
     NvBool     bFound;
-
+        
     portSyncMutexAcquire(pGpuMgr->pcieP2PCapsInfoLock);
 
     bFound = _gpumgrGetPcieP2PCapsFromCache(gpuMask, pP2PWriteCapsStatus, pP2PReadCapsStatus);
@@ -3521,4 +3700,21 @@ NvBool gpumgrAreAllGpusInOffloadMode(void)
     OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
 
     return pGpuMgr->gpuMonolithicRmMask == 0;
+}
+
+NvBool gpumgrIsSafeToReadGpuInfo(void)
+{
+    //
+    // A thread that tears down the GPU must own both the API lock for WRITE
+    // and all GPU locks.
+    //
+    // Conversely, if you hold the API lock (either READ or WRITE), or hold
+    // any GPU locks, you know that no GPUs will be freed from under you.
+    //
+
+    //
+    // NOTE: Currently rmapiLockIsOwner() returns TRUE if you own the lock in
+    // either READ or WRITE modes
+    //
+    return rmapiLockIsOwner() || (rmGpuLocksGetOwnedMask() != 0);
 }

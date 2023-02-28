@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,6 +36,7 @@ static NV_STATUS   nv_acpi_extract_package (const union acpi_object *, void *, N
 static NV_STATUS   nv_acpi_extract_object  (const union acpi_object *, void *, NvU32, NvU32 *);
 
 static void        nv_acpi_powersource_hotplug_event(acpi_handle, u32, void *);
+static void        nv_acpi_nvpcf_event     (acpi_handle, u32, void *);
 static acpi_status nv_acpi_find_methods    (acpi_handle, u32, void *, void **);
 static NV_STATUS   nv_acpi_nvif_method     (NvU32, NvU32, void *, NvU16, NvU32 *, void *, NvU16 *);
 
@@ -65,6 +66,13 @@ static NvBool battery_present = NV_FALSE;
 #define ACPI_VIDEO_CLASS    "video"
 #endif
 
+// Used for NVPCF event handling
+static acpi_handle nvpcf_handle = NULL;
+static acpi_handle nvpcf_device_handle = NULL;
+static nv_acpi_t  *nvpcf_nv_acpi_object = NULL;
+
+#define ACPI_NVPCF_EVENT_CHANGE    0xC0
+
 static int nv_acpi_get_device_handle(nv_state_t *nv, acpi_handle *dev_handle)
 {
     nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
@@ -80,49 +88,40 @@ static int nv_acpi_get_device_handle(nv_state_t *nv, acpi_handle *dev_handle)
 #endif
 }
 
-static int nv_acpi_notify(struct notifier_block *nb,
-                        unsigned long val, void *data)
+/*
+ * This callback will be invoked by the acpi_notifier_call_chain()
+ */
+static int nv_acpi_notifier_call_chain_handler(
+    struct notifier_block *nb,
+    unsigned long val,
+    void *data
+)
 {
     struct acpi_bus_event *info = data;
     nv_stack_t *sp = NULL;
     nv_linux_state_t *nvl = container_of(nb, nv_linux_state_t, acpi_nb);
     nv_state_t *nv = NV_STATE_PTR(nvl);
 
-    if (!strcmp(info->device_class, ACPI_VIDEO_CLASS)) {
-        if (nv_kmem_cache_alloc_stack(&sp) == 0) {
-            /*
-             * Function to handle device specific ACPI events
-             * such as display hotplug and D-notifier events.
-             */
-            rm_acpi_notify(sp, nv, info->type);
-            nv_kmem_cache_free_stack(sp);
-        }
-        else
-            nv_printf(NV_DBG_ERRORS,
-                "NVRM: nv_acpi_notify: failed to allocate stack\n");
-
+    /*
+     * The ACPI_VIDEO_NOTIFY_PROBE will be sent for display hot-plug/unplug.
+     * This event will be received first by the acpi-video driver
+     * and then it will be notified through acpi_notifier_call_chain().
+     */
+    if (!strcmp(info->device_class, ACPI_VIDEO_CLASS) &&
+        (info->type == ACPI_VIDEO_NOTIFY_PROBE))
+    {
         /*
-         * Special case for ACPI_VIDEO_NOTIFY_PROBE event: intentionally return
-         * NOTIFY_BAD to inform acpi-video to stop generating keypresses for
-         * this event.
+         * Intentionally return NOTIFY_BAD to inform acpi-video to stop
+         * generating keypresses for this event. The default behavior in the
+         * acpi-video driver for an ACPI_VIDEO_NOTIFY_PROBE, is to send a
+         * KEY_SWITCHVIDEOMODE evdev event, which causes the desktop settings
+         * daemons like gnome-setting-daemon to switch mode and this impacts
+         * the notebooks having external HDMI connected.
          */
-        if (info->type == ACPI_VIDEO_NOTIFY_PROBE) {
-            return NOTIFY_BAD;
-        }
+        return NOTIFY_BAD;
     }
 
     return NOTIFY_DONE;
-}
-
-void nv_acpi_register_notifier(nv_linux_state_t *nvl)
-{
-    nvl->acpi_nb.notifier_call = nv_acpi_notify;
-    register_acpi_notifier(&nvl->acpi_nb);
-}
-
-void nv_acpi_unregister_notifier(nv_linux_state_t *nvl)
-{
-    unregister_acpi_notifier(&nvl->acpi_nb);
 }
 
 NV_STATUS NV_API_CALL nv_acpi_get_powersource(NvU32 *ac_plugged)
@@ -167,12 +166,31 @@ static void nv_acpi_powersource_hotplug_event(acpi_handle handle, u32 event_type
         rm_power_source_change_event(pNvAcpiObject->sp, !ac_plugged);
     }
 }
+
+static void nv_acpi_nvpcf_event(acpi_handle handle, u32 event_type, void *data)
+{
+    nv_acpi_t *pNvAcpiObject = data;
+
+    if (event_type == ACPI_NVPCF_EVENT_CHANGE)
+    {
+        rm_acpi_nvpcf_notify(pNvAcpiObject->sp);
+    }
+    else
+    {
+        nv_printf(NV_DBG_INFO,"NVRM: %s: NVPCF event 0x%x is not supported\n", event_type, __FUNCTION__);
+    }
+}
+
 /*
  * End of ACPI event handler functions
  */
 
 /* Do the necessary allocations and install notifier "handler" on the device-node "device" */
-static nv_acpi_t* nv_install_notifier(struct acpi_handle *handle, acpi_notify_handler handler)
+static nv_acpi_t* nv_install_notifier(
+    struct acpi_handle *handle,
+    acpi_notify_handler handler,
+    void               *notifier_data
+)
 {
     nvidia_stack_t *sp = NULL;
     nv_acpi_t *pNvAcpiObject = NULL;
@@ -196,6 +214,7 @@ static nv_acpi_t* nv_install_notifier(struct acpi_handle *handle, acpi_notify_ha
     // store a handle reference in our object
     pNvAcpiObject->handle = handle;
     pNvAcpiObject->sp = sp;
+    pNvAcpiObject->notifier_data = notifier_data;
 
     status = acpi_install_notify_handler(handle, ACPI_DEVICE_NOTIFY,
               handler, pNvAcpiObject);
@@ -237,6 +256,49 @@ static void nv_uninstall_notifier(nv_acpi_t *pNvAcpiObject, acpi_notify_handler 
     return;
 }
 
+static void nv_acpi_notify_event(acpi_handle handle, u32 event_type, void *data)
+{
+    nv_acpi_t  *pNvAcpiObject = data;
+    nv_state_t *nvl = pNvAcpiObject->notifier_data;
+
+    /*
+     * Function to handle device specific ACPI events such as display hotplug,
+     * GPS and D-notifier events.
+     */
+    rm_acpi_notify(pNvAcpiObject->sp, NV_STATE_PTR(nvl), event_type);
+}
+
+void nv_acpi_register_notifier(nv_linux_state_t *nvl)
+{
+    acpi_handle dev_handle  = NULL;
+
+    /* Install the ACPI notifier corresponding to dGPU ACPI device. */
+    if ((nvl->nv_acpi_object == NULL) &&
+        nv_acpi_get_device_handle(NV_STATE_PTR(nvl), &dev_handle) &&
+        (dev_handle != NULL))
+    {
+        nvl->nv_acpi_object = nv_install_notifier(dev_handle, nv_acpi_notify_event, nvl);
+        if (nvl->nv_acpi_object == NULL)
+        {
+            nv_printf(NV_DBG_ERRORS,
+                "NVRM: nv_acpi_register_notifier: failed to install notifier\n");
+        }
+    }
+
+    nvl->acpi_nb.notifier_call = nv_acpi_notifier_call_chain_handler;
+    register_acpi_notifier(&nvl->acpi_nb);
+}
+
+void nv_acpi_unregister_notifier(nv_linux_state_t *nvl)
+{
+    unregister_acpi_notifier(&nvl->acpi_nb);
+    if (nvl->nv_acpi_object != NULL)
+    {
+        nv_uninstall_notifier(nvl->nv_acpi_object, nv_acpi_notify_event);
+        nvl->nv_acpi_object = NULL;
+    }
+}
+
 /*
  * acpi methods init function.
  * check if the NVIF, _DSM and WMMX methods are present in the acpi namespace.
@@ -268,8 +330,13 @@ void NV_API_CALL nv_acpi_methods_init(NvU32 *handlesPresent)
         // devices
         if (psr_nv_acpi_object == NULL)
         {
-            psr_nv_acpi_object = nv_install_notifier(psr_device_handle, nv_acpi_powersource_hotplug_event);
+            psr_nv_acpi_object = nv_install_notifier(psr_device_handle, nv_acpi_powersource_hotplug_event, NULL);
         }
+    }
+
+    if (nvpcf_handle && (nvpcf_nv_acpi_object == NULL))
+    {
+        nvpcf_nv_acpi_object = nv_install_notifier(nvpcf_device_handle, nv_acpi_nvpcf_event, NULL);
     }
 
     return;
@@ -300,6 +367,12 @@ acpi_status nv_acpi_find_methods(
         psr_device_handle = handle;
     }
 
+    if (!acpi_get_handle(handle, "NPCF", &method_handle))
+    {
+        nvpcf_handle = method_handle;
+        nvpcf_device_handle = handle;
+    }
+
     return 0;
 }
 
@@ -315,6 +388,15 @@ void NV_API_CALL nv_acpi_methods_uninit(void)
         psr_handle = NULL;
         psr_device_handle = NULL;
         psr_nv_acpi_object = NULL;
+    }
+
+    if (nvpcf_nv_acpi_object != NULL)
+    {
+        nv_uninstall_notifier(nvpcf_nv_acpi_object, nv_acpi_nvpcf_event);
+
+        nvpcf_handle = NULL;
+        nvpcf_device_handle = NULL;
+        nvpcf_nv_acpi_object = NULL;
     }
 }
 

@@ -69,13 +69,15 @@ struct GpuManagementApi {
     NvU32 (*__gpumgmtapiGetRefCount__)(struct GpuManagementApi *);
     NV_STATUS (*__gpumgmtapiControlFilter__)(struct GpuManagementApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__gpumgmtapiAddAdditionalDependants__)(struct RsClient *, struct GpuManagementApi *, RsResourceRef *);
-    NV_STATUS (*__gpumgmtapiUnmap__)(struct GpuManagementApi *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__gpumgmtapiUnmapFrom__)(struct GpuManagementApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__gpumgmtapiControlSerialization_Prologue__)(struct GpuManagementApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__gpumgmtapiControl_Prologue__)(struct GpuManagementApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__gpumgmtapiCanCopy__)(struct GpuManagementApi *);
-    NV_STATUS (*__gpumgmtapiMapTo__)(struct GpuManagementApi *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__gpumgmtapiUnmap__)(struct GpuManagementApi *, struct CALL_CONTEXT *, RsCpuMapping *);
     void (*__gpumgmtapiPreDestruct__)(struct GpuManagementApi *);
-    NV_STATUS (*__gpumgmtapiUnmapFrom__)(struct GpuManagementApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__gpumgmtapiMapTo__)(struct GpuManagementApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__gpumgmtapiIsDuplicate__)(struct GpuManagementApi *, NvHandle, NvBool *);
+    void (*__gpumgmtapiControlSerialization_Epilogue__)(struct GpuManagementApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__gpumgmtapiControl_Epilogue__)(struct GpuManagementApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__gpumgmtapiControlLookup__)(struct GpuManagementApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__gpumgmtapiMap__)(struct GpuManagementApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -119,13 +121,15 @@ NV_STATUS __nvoc_objCreate_GpuManagementApi(GpuManagementApi**, Dynamic*, NvU32,
 #define gpumgmtapiGetRefCount(pResource) gpumgmtapiGetRefCount_DISPATCH(pResource)
 #define gpumgmtapiControlFilter(pResource, pCallContext, pParams) gpumgmtapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define gpumgmtapiAddAdditionalDependants(pClient, pResource, pReference) gpumgmtapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define gpumgmtapiUnmap(pResource, pCallContext, pCpuMapping) gpumgmtapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define gpumgmtapiUnmapFrom(pResource, pParams) gpumgmtapiUnmapFrom_DISPATCH(pResource, pParams)
+#define gpumgmtapiControlSerialization_Prologue(pResource, pCallContext, pParams) gpumgmtapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define gpumgmtapiControl_Prologue(pResource, pCallContext, pParams) gpumgmtapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define gpumgmtapiCanCopy(pResource) gpumgmtapiCanCopy_DISPATCH(pResource)
-#define gpumgmtapiMapTo(pResource, pParams) gpumgmtapiMapTo_DISPATCH(pResource, pParams)
+#define gpumgmtapiUnmap(pResource, pCallContext, pCpuMapping) gpumgmtapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define gpumgmtapiPreDestruct(pResource) gpumgmtapiPreDestruct_DISPATCH(pResource)
-#define gpumgmtapiUnmapFrom(pResource, pParams) gpumgmtapiUnmapFrom_DISPATCH(pResource, pParams)
+#define gpumgmtapiMapTo(pResource, pParams) gpumgmtapiMapTo_DISPATCH(pResource, pParams)
 #define gpumgmtapiIsDuplicate(pResource, hMemory, pDuplicate) gpumgmtapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define gpumgmtapiControlSerialization_Epilogue(pResource, pCallContext, pParams) gpumgmtapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define gpumgmtapiControl_Epilogue(pResource, pCallContext, pParams) gpumgmtapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define gpumgmtapiControlLookup(pResource, pParams, ppEntry) gpumgmtapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define gpumgmtapiMap(pResource, pCallContext, pParams, pCpuMapping) gpumgmtapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -168,8 +172,12 @@ static inline void gpumgmtapiAddAdditionalDependants_DISPATCH(struct RsClient *p
     pResource->__gpumgmtapiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS gpumgmtapiUnmap_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__gpumgmtapiUnmap__(pResource, pCallContext, pCpuMapping);
+static inline NV_STATUS gpumgmtapiUnmapFrom_DISPATCH(struct GpuManagementApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__gpumgmtapiUnmapFrom__(pResource, pParams);
+}
+
+static inline NV_STATUS gpumgmtapiControlSerialization_Prologue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__gpumgmtapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS gpumgmtapiControl_Prologue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -180,20 +188,24 @@ static inline NvBool gpumgmtapiCanCopy_DISPATCH(struct GpuManagementApi *pResour
     return pResource->__gpumgmtapiCanCopy__(pResource);
 }
 
-static inline NV_STATUS gpumgmtapiMapTo_DISPATCH(struct GpuManagementApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__gpumgmtapiMapTo__(pResource, pParams);
+static inline NV_STATUS gpumgmtapiUnmap_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__gpumgmtapiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline void gpumgmtapiPreDestruct_DISPATCH(struct GpuManagementApi *pResource) {
     pResource->__gpumgmtapiPreDestruct__(pResource);
 }
 
-static inline NV_STATUS gpumgmtapiUnmapFrom_DISPATCH(struct GpuManagementApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__gpumgmtapiUnmapFrom__(pResource, pParams);
+static inline NV_STATUS gpumgmtapiMapTo_DISPATCH(struct GpuManagementApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__gpumgmtapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS gpumgmtapiIsDuplicate_DISPATCH(struct GpuManagementApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__gpumgmtapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void gpumgmtapiControlSerialization_Epilogue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__gpumgmtapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void gpumgmtapiControl_Epilogue_DISPATCH(struct GpuManagementApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {

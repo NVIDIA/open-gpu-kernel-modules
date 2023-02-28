@@ -26,7 +26,7 @@
 
 #include "nvidia-drm-priv.h"
 #include "nvidia-drm-ioctl.h"
-#include "nvidia-drm-prime-fence.h"
+#include "nvidia-drm-fence.h"
 #include "nvidia-drm-gem.h"
 #include "nvidia-drm-gem-nvkms-memory.h"
 #include "nvidia-drm-gem-user-memory.h"

@@ -616,6 +616,7 @@ typedef struct
     // Array of processors which have a virtual mapping covering lookup_address.
     NvProcessorUuid                 mapped_on[UVM_MAX_PROCESSORS];                      // Out
     NvU32                           mapping_type[UVM_MAX_PROCESSORS];                   // Out
+    NvU64                           mapping_physical_address[UVM_MAX_PROCESSORS] NV_ALIGN_BYTES(8); // Out
     NvU32                           mapped_on_count;                                    // Out
 
     // The size of the virtual mapping covering lookup_address on each
@@ -1394,16 +1395,6 @@ typedef struct
     NvU32                           rmStatus;                                           // Out
 } UVM_TEST_GET_CPU_CHUNK_ALLOC_SIZES_PARAMS;
 
-#define UVM_TEST_HMM_SANITY                              UVM_TEST_IOCTL_BASE(92)
-typedef struct
-{
-    NvU64     hmm_address             NV_ALIGN_BYTES(8); // In
-    NvU64     hmm_length              NV_ALIGN_BYTES(8); // In
-    NvU64     uvm_address             NV_ALIGN_BYTES(8); // In
-    NvU64     uvm_length              NV_ALIGN_BYTES(8); // In
-    NV_STATUS rmStatus;                                  // Out
-} UVM_TEST_HMM_SANITY_PARAMS;
-
 // Forces the next range covering the lookup_address to fail in
 // uvm_va_range_add_gpu_va_space() with an out-of-memory error. Only the next
 // uvm_va_range_add_gpu_va_space() will fail. Subsequent ones will succeed.
@@ -1435,12 +1426,6 @@ typedef struct
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED_PARAMS;
 
-#define UVM_TEST_HMM_INIT                                UVM_TEST_IOCTL_BASE(97)
-typedef struct
-{
-    NV_STATUS rmStatus;                                  // Out
-} UVM_TEST_HMM_INIT_PARAMS;
-
 #define UVM_TEST_SPLIT_INVALIDATE_DELAY                  UVM_TEST_IOCTL_BASE(98)
 typedef struct
 {
@@ -1448,6 +1433,11 @@ typedef struct
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS;
 
+#define UVM_TEST_CPU_CHUNK_API                           UVM_TEST_IOCTL_BASE(100)
+typedef struct
+{
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_CPU_CHUNK_API_PARAMS;
 #ifdef __cplusplus
 }
 #endif

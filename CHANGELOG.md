@@ -1,5 +1,13 @@
 # Changelog
 
+## Release 530 Entries
+ 
+### [530.30.02] 2023-02-28
+ 
+#### Fixed
+
+- Add support for resizable BAR on Linux when NVreg_EnableResizableBar=1 module param is set. [#3](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/3) by @sjkelly
+
 ## Release 525 Entries
 
 ### [525.89.02] 2023-02-08
@@ -17,6 +25,10 @@
 ### [525.60.13] 2022-12-05
 
 ### [525.60.11] 2022-11-28
+
+#### Fixed
+
+- Fixed nvenc compatibility with usermode clients [#104](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/104)
 
 ### [525.53] 2022-11-10
 

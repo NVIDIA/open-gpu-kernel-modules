@@ -39,5 +39,6 @@
 #define NVDM_TYPE_FSP_RESPONSE          0x15
 #define NVDM_TYPE_INFOROM               0x17
 #define NVDM_TYPE_SMBPBI                0x18
+#define NVDM_TYPE_UEFI_RM               0x1C
 
 #endif // _FSP_NVDM_FORMAT_H_

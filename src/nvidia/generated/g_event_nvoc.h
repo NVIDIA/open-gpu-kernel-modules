@@ -179,13 +179,15 @@ struct Event {
     NvU32 (*__eventGetRefCount__)(struct Event *);
     NV_STATUS (*__eventControlFilter__)(struct Event *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__eventAddAdditionalDependants__)(struct RsClient *, struct Event *, RsResourceRef *);
-    NV_STATUS (*__eventUnmap__)(struct Event *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__eventUnmapFrom__)(struct Event *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__eventControlSerialization_Prologue__)(struct Event *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__eventControl_Prologue__)(struct Event *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__eventCanCopy__)(struct Event *);
-    NV_STATUS (*__eventMapTo__)(struct Event *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__eventUnmap__)(struct Event *, struct CALL_CONTEXT *, RsCpuMapping *);
     void (*__eventPreDestruct__)(struct Event *);
-    NV_STATUS (*__eventUnmapFrom__)(struct Event *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__eventMapTo__)(struct Event *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__eventIsDuplicate__)(struct Event *, NvHandle, NvBool *);
+    void (*__eventControlSerialization_Epilogue__)(struct Event *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__eventControl_Epilogue__)(struct Event *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__eventControlLookup__)(struct Event *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__eventMap__)(struct Event *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -232,13 +234,15 @@ NV_STATUS __nvoc_objCreate_Event(Event**, Dynamic*, NvU32, struct CALL_CONTEXT *
 #define eventGetRefCount(pResource) eventGetRefCount_DISPATCH(pResource)
 #define eventControlFilter(pResource, pCallContext, pParams) eventControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define eventAddAdditionalDependants(pClient, pResource, pReference) eventAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define eventUnmap(pResource, pCallContext, pCpuMapping) eventUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define eventUnmapFrom(pResource, pParams) eventUnmapFrom_DISPATCH(pResource, pParams)
+#define eventControlSerialization_Prologue(pResource, pCallContext, pParams) eventControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define eventControl_Prologue(pResource, pCallContext, pParams) eventControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define eventCanCopy(pResource) eventCanCopy_DISPATCH(pResource)
-#define eventMapTo(pResource, pParams) eventMapTo_DISPATCH(pResource, pParams)
+#define eventUnmap(pResource, pCallContext, pCpuMapping) eventUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define eventPreDestruct(pResource) eventPreDestruct_DISPATCH(pResource)
-#define eventUnmapFrom(pResource, pParams) eventUnmapFrom_DISPATCH(pResource, pParams)
+#define eventMapTo(pResource, pParams) eventMapTo_DISPATCH(pResource, pParams)
 #define eventIsDuplicate(pResource, hMemory, pDuplicate) eventIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define eventControlSerialization_Epilogue(pResource, pCallContext, pParams) eventControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define eventControl_Epilogue(pResource, pCallContext, pParams) eventControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define eventControlLookup(pResource, pParams, ppEntry) eventControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define eventMap(pResource, pCallContext, pParams, pCpuMapping) eventMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -275,8 +279,12 @@ static inline void eventAddAdditionalDependants_DISPATCH(struct RsClient *pClien
     pResource->__eventAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS eventUnmap_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__eventUnmap__(pResource, pCallContext, pCpuMapping);
+static inline NV_STATUS eventUnmapFrom_DISPATCH(struct Event *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__eventUnmapFrom__(pResource, pParams);
+}
+
+static inline NV_STATUS eventControlSerialization_Prologue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__eventControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventControl_Prologue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -287,20 +295,24 @@ static inline NvBool eventCanCopy_DISPATCH(struct Event *pResource) {
     return pResource->__eventCanCopy__(pResource);
 }
 
-static inline NV_STATUS eventMapTo_DISPATCH(struct Event *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__eventMapTo__(pResource, pParams);
+static inline NV_STATUS eventUnmap_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__eventUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline void eventPreDestruct_DISPATCH(struct Event *pResource) {
     pResource->__eventPreDestruct__(pResource);
 }
 
-static inline NV_STATUS eventUnmapFrom_DISPATCH(struct Event *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__eventUnmapFrom__(pResource, pParams);
+static inline NV_STATUS eventMapTo_DISPATCH(struct Event *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__eventMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS eventIsDuplicate_DISPATCH(struct Event *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__eventIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void eventControlSerialization_Epilogue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__eventControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void eventControl_Epilogue_DISPATCH(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {

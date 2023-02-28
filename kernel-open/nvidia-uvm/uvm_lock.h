@@ -75,26 +75,29 @@
 //
 //      Protects:
 //      - gpu->parent->isr.replayable_faults.service_lock:
-//        Changes to the state of a GPU as it transitions from top-half to bottom-half
-//        interrupt handler for replayable faults. This lock is acquired for that GPU,
-//        in the ISR top-half. Then a bottom-half is scheduled (to run in a workqueue).
-//        Then the bottom-half releases the lock when that GPU's processing appears to
-//        be done.
+//        Changes to the state of a GPU as it transitions from top-half to
+//        bottom-half interrupt handler for replayable faults. This lock is
+//        acquired for that GPU, in the ISR top-half. Then a bottom-half is
+//        scheduled (to run in a workqueue). Then the bottom-half releases the
+//        lock when that GPU's processing appears to be done.
+//
 //      - gpu->parent->isr.non_replayable_faults.service_lock:
-//        Changes to the state of a GPU in the bottom-half for non-replayable faults.
-//        Non-replayable faults are handed-off from RM instead of directly from the GPU
-//        hardware. This means that we do not keep receiving interrupts after RM pops
-//        out the faults from the HW buffer. In order not to miss fault notifications,
-//        we will always schedule a bottom-half for non-replayable faults if there are
-//        faults ready to be consumed in the buffer, even if there already is some
-//        bottom-half running or scheduled. This lock serializes all scheduled bottom
-//        halves per GPU which service non-replayable faults.
+//        Changes to the state of a GPU in the bottom-half for non-replayable
+//        faults. Non-replayable faults are handed-off from RM instead of
+//        directly from the GPU hardware. This means that we do not keep
+//        receiving interrupts after RM pops out the faults from the HW buffer.
+//        In order not to miss fault notifications, we will always schedule a
+//        bottom-half for non-replayable faults if there are faults ready to be
+//        consumed in the buffer, even if there already is some bottom-half
+//        running or scheduled. This lock serializes all scheduled bottom halves
+//        per GPU which service non-replayable faults.
+//
 //      - gpu->parent->isr.access_counters.service_lock:
-//        Changes to the state of a GPU as it transitions from top-half to bottom-half
-//        interrupt handler for access counter notifications. This lock is acquired for
-//        that GPU, in the ISR top-half. Then a bottom-half is scheduled (to run in a
-//        workqueue). Then the bottom-half releases the lock when that GPU's processing
-//        appears to be done.
+//        Changes to the state of a GPU as it transitions from top-half to
+//        bottom-half interrupt handler for access counter notifications. This
+//        lock is acquired for that GPU, in the ISR top-half. Then a bottom-half
+//        is scheduled (to run in a workqueue). Then the bottom-half releases
+//        the lock when that GPU's processing appears to be done.
 //
 // - mmap_lock (mmap_sem in kernels < 5.8)
 //      Order: UVM_LOCK_ORDER_MMAP_LOCK
@@ -339,7 +342,9 @@
 //      Order: UVM_LOCK_ORDER_CHANNEL
 //      Spinlock (uvm_spinlock_t) or exclusive lock (mutex)
 //
-//      Lock protecting the state of all the channels in a channel pool.
+//      Lock protecting the state of all the channels in a channel pool. The
+//      channel pool lock documentation contains the guidelines about which lock
+//      type (mutex or spinlock) to use.
 //
 // - Tools global VA space list lock (g_tools_va_space_list_lock)
 //      Order: UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST

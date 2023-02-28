@@ -27,6 +27,9 @@
 #include <linux/pci.h>
 #include "nv-linux.h"
 
+#define NV_GPU_BAR1 1
+#define NV_GPU_BAR3 3
+
 int nv_pci_register_driver(void);
 void nv_pci_unregister_driver(void);
 int nv_pci_count_devices(void);

@@ -73,25 +73,29 @@ struct MemoryFabric {
     NV_STATUS (*__memoryfabricCtrlCmdDescribe__)(struct MemoryFabric *, NV00F8_CTRL_DESCRIBE_PARAMS *);
     NV_STATUS (*__memoryfabricCtrlAttachMem__)(struct MemoryFabric *, NV00F8_CTRL_ATTACH_MEM_PARAMS *);
     NV_STATUS (*__memoryfabricCtrlDetachMem__)(struct MemoryFabric *, NV00F8_CTRL_DETACH_MEM_PARAMS *);
+    NV_STATUS (*__memoryfabricCtrlGetNumAttachedMem__)(struct MemoryFabric *, NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *);
+    NV_STATUS (*__memoryfabricCtrlGetAttachedMem__)(struct MemoryFabric *, NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *);
     NV_STATUS (*__memoryfabricCheckMemInterUnmap__)(struct MemoryFabric *, NvBool);
+    NvBool (*__memoryfabricShareCallback__)(struct MemoryFabric *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__memoryfabricMapTo__)(struct MemoryFabric *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__memoryfabricGetMapAddrSpace__)(struct MemoryFabric *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__memoryfabricGetRefCount__)(struct MemoryFabric *);
+    void (*__memoryfabricAddAdditionalDependants__)(struct RsClient *, struct MemoryFabric *, RsResourceRef *);
+    NV_STATUS (*__memoryfabricControl_Prologue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__memoryfabricIsGpuMapAllowed__)(struct MemoryFabric *, struct OBJGPU *);
+    NV_STATUS (*__memoryfabricUnmapFrom__)(struct MemoryFabric *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__memoryfabricControl_Epilogue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__memoryfabricControlLookup__)(struct MemoryFabric *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__memoryfabricUnmap__)(struct MemoryFabric *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__memoryfabricGetMemInterMapParams__)(struct MemoryFabric *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__memoryfabricGetMemoryMappingDescriptor__)(struct MemoryFabric *, MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__memoryfabricGetMapAddrSpace__)(struct MemoryFabric *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvBool (*__memoryfabricShareCallback__)(struct MemoryFabric *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__memoryfabricControlFilter__)(struct MemoryFabric *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__memoryfabricAddAdditionalDependants__)(struct RsClient *, struct MemoryFabric *, RsResourceRef *);
-    NvU32 (*__memoryfabricGetRefCount__)(struct MemoryFabric *);
-    NV_STATUS (*__memoryfabricMapTo__)(struct MemoryFabric *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__memoryfabricControl_Prologue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvBool (*__memoryfabricIsGpuMapAllowed__)(struct MemoryFabric *, struct OBJGPU *);
+    NV_STATUS (*__memoryfabricControlSerialization_Prologue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memoryfabricIsReady__)(struct MemoryFabric *, NvBool);
     NV_STATUS (*__memoryfabricCheckCopyPermissions__)(struct MemoryFabric *, struct OBJGPU *, NvHandle);
     void (*__memoryfabricPreDestruct__)(struct MemoryFabric *);
     NV_STATUS (*__memoryfabricIsDuplicate__)(struct MemoryFabric *, NvHandle, NvBool *);
-    NV_STATUS (*__memoryfabricUnmapFrom__)(struct MemoryFabric *, RS_RES_UNMAP_FROM_PARAMS *);
-    void (*__memoryfabricControl_Epilogue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__memoryfabricControlLookup__)(struct MemoryFabric *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__memoryfabricControlSerialization_Epilogue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memoryfabricMap__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__memoryfabricAccessCallback__)(struct MemoryFabric *, struct RsClient *, void *, RsAccessRight);
 };
@@ -131,25 +135,29 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricCtrlCmdDescribe(pMemoryFabric, pParams) memoryfabricCtrlCmdDescribe_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCtrlAttachMem(pMemoryFabric, pParams) memoryfabricCtrlAttachMem_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCtrlDetachMem(pMemoryFabric, pParams) memoryfabricCtrlDetachMem_DISPATCH(pMemoryFabric, pParams)
+#define memoryfabricCtrlGetNumAttachedMem(pMemoryFabric, pParams) memoryfabricCtrlGetNumAttachedMem_DISPATCH(pMemoryFabric, pParams)
+#define memoryfabricCtrlGetAttachedMem(pMemoryFabric, pParams) memoryfabricCtrlGetAttachedMem_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) memoryfabricCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
+#define memoryfabricShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memoryfabricShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
+#define memoryfabricMapTo(pResource, pParams) memoryfabricMapTo_DISPATCH(pResource, pParams)
+#define memoryfabricGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) memoryfabricGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define memoryfabricGetRefCount(pResource) memoryfabricGetRefCount_DISPATCH(pResource)
+#define memoryfabricAddAdditionalDependants(pClient, pResource, pReference) memoryfabricAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define memoryfabricControl_Prologue(pResource, pCallContext, pParams) memoryfabricControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define memoryfabricIsGpuMapAllowed(pMemory, pGpu) memoryfabricIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define memoryfabricUnmapFrom(pResource, pParams) memoryfabricUnmapFrom_DISPATCH(pResource, pParams)
+#define memoryfabricControl_Epilogue(pResource, pCallContext, pParams) memoryfabricControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define memoryfabricControlLookup(pResource, pParams, ppEntry) memoryfabricControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define memoryfabricUnmap(pMemory, pCallContext, pCpuMapping) memoryfabricUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define memoryfabricGetMemInterMapParams(pMemory, pParams) memoryfabricGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define memoryfabricGetMemoryMappingDescriptor(pMemory, ppMemDesc) memoryfabricGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define memoryfabricGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) memoryfabricGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define memoryfabricShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memoryfabricShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define memoryfabricControlFilter(pResource, pCallContext, pParams) memoryfabricControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define memoryfabricAddAdditionalDependants(pClient, pResource, pReference) memoryfabricAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define memoryfabricGetRefCount(pResource) memoryfabricGetRefCount_DISPATCH(pResource)
-#define memoryfabricMapTo(pResource, pParams) memoryfabricMapTo_DISPATCH(pResource, pParams)
-#define memoryfabricControl_Prologue(pResource, pCallContext, pParams) memoryfabricControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memoryfabricIsGpuMapAllowed(pMemory, pGpu) memoryfabricIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define memoryfabricControlSerialization_Prologue(pResource, pCallContext, pParams) memoryfabricControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define memoryfabricIsReady(pMemory, bCopyConstructorContext) memoryfabricIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define memoryfabricCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) memoryfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define memoryfabricPreDestruct(pResource) memoryfabricPreDestruct_DISPATCH(pResource)
 #define memoryfabricIsDuplicate(pMemory, hMemory, pDuplicate) memoryfabricIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define memoryfabricUnmapFrom(pResource, pParams) memoryfabricUnmapFrom_DISPATCH(pResource, pParams)
-#define memoryfabricControl_Epilogue(pResource, pCallContext, pParams) memoryfabricControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memoryfabricControlLookup(pResource, pParams, ppEntry) memoryfabricControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define memoryfabricControlSerialization_Epilogue(pResource, pCallContext, pParams) memoryfabricControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define memoryfabricMap(pMemory, pCallContext, pParams, pCpuMapping) memoryfabricMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
 #define memoryfabricAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) memoryfabricAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvBool memoryfabricCanCopy_IMPL(struct MemoryFabric *pMemoryFabric);
@@ -194,8 +202,60 @@ static inline NV_STATUS memoryfabricCtrlDetachMem_DISPATCH(struct MemoryFabric *
     return pMemoryFabric->__memoryfabricCtrlDetachMem__(pMemoryFabric, pParams);
 }
 
+NV_STATUS memoryfabricCtrlGetNumAttachedMem_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *pParams);
+
+static inline NV_STATUS memoryfabricCtrlGetNumAttachedMem_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *pParams) {
+    return pMemoryFabric->__memoryfabricCtrlGetNumAttachedMem__(pMemoryFabric, pParams);
+}
+
+NV_STATUS memoryfabricCtrlGetAttachedMem_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *pParams);
+
+static inline NV_STATUS memoryfabricCtrlGetAttachedMem_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *pParams) {
+    return pMemoryFabric->__memoryfabricCtrlGetAttachedMem__(pMemoryFabric, pParams);
+}
+
 static inline NV_STATUS memoryfabricCheckMemInterUnmap_DISPATCH(struct MemoryFabric *pMemory, NvBool bSubdeviceHandleProvided) {
     return pMemory->__memoryfabricCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+}
+
+static inline NvBool memoryfabricShareCallback_DISPATCH(struct MemoryFabric *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return pResource->__memoryfabricShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline NV_STATUS memoryfabricMapTo_DISPATCH(struct MemoryFabric *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__memoryfabricMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS memoryfabricGetMapAddrSpace_DISPATCH(struct MemoryFabric *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pMemory->__memoryfabricGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 memoryfabricGetRefCount_DISPATCH(struct MemoryFabric *pResource) {
+    return pResource->__memoryfabricGetRefCount__(pResource);
+}
+
+static inline void memoryfabricAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MemoryFabric *pResource, RsResourceRef *pReference) {
+    pResource->__memoryfabricAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS memoryfabricControl_Prologue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__memoryfabricControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool memoryfabricIsGpuMapAllowed_DISPATCH(struct MemoryFabric *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__memoryfabricIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS memoryfabricUnmapFrom_DISPATCH(struct MemoryFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__memoryfabricUnmapFrom__(pResource, pParams);
+}
+
+static inline void memoryfabricControl_Epilogue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__memoryfabricControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS memoryfabricControlLookup_DISPATCH(struct MemoryFabric *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__memoryfabricControlLookup__(pResource, pParams, ppEntry);
 }
 
 static inline NV_STATUS memoryfabricUnmap_DISPATCH(struct MemoryFabric *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
@@ -210,36 +270,12 @@ static inline NV_STATUS memoryfabricGetMemoryMappingDescriptor_DISPATCH(struct M
     return pMemory->__memoryfabricGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
 }
 
-static inline NV_STATUS memoryfabricGetMapAddrSpace_DISPATCH(struct MemoryFabric *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemory->__memoryfabricGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvBool memoryfabricShareCallback_DISPATCH(struct MemoryFabric *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__memoryfabricShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
-}
-
 static inline NV_STATUS memoryfabricControlFilter_DISPATCH(struct MemoryFabric *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__memoryfabricControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void memoryfabricAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MemoryFabric *pResource, RsResourceRef *pReference) {
-    pResource->__memoryfabricAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 memoryfabricGetRefCount_DISPATCH(struct MemoryFabric *pResource) {
-    return pResource->__memoryfabricGetRefCount__(pResource);
-}
-
-static inline NV_STATUS memoryfabricMapTo_DISPATCH(struct MemoryFabric *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__memoryfabricMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS memoryfabricControl_Prologue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__memoryfabricControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NvBool memoryfabricIsGpuMapAllowed_DISPATCH(struct MemoryFabric *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__memoryfabricIsGpuMapAllowed__(pMemory, pGpu);
+static inline NV_STATUS memoryfabricControlSerialization_Prologue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__memoryfabricControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS memoryfabricIsReady_DISPATCH(struct MemoryFabric *pMemory, NvBool bCopyConstructorContext) {
@@ -258,16 +294,8 @@ static inline NV_STATUS memoryfabricIsDuplicate_DISPATCH(struct MemoryFabric *pM
     return pMemory->__memoryfabricIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
-static inline NV_STATUS memoryfabricUnmapFrom_DISPATCH(struct MemoryFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__memoryfabricUnmapFrom__(pResource, pParams);
-}
-
-static inline void memoryfabricControl_Epilogue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__memoryfabricControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS memoryfabricControlLookup_DISPATCH(struct MemoryFabric *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__memoryfabricControlLookup__(pResource, pParams, ppEntry);
+static inline void memoryfabricControlSerialization_Epilogue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__memoryfabricControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS memoryfabricMap_DISPATCH(struct MemoryFabric *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -290,6 +318,7 @@ void memoryfabricDestruct_IMPL(struct MemoryFabric *pMemoryFabric);
 typedef struct
 {
     MEMORY_DESCRIPTOR *pPhysMemDesc;
+    NvU64    physMapOffset;
     NvU64    physMapLength;
     NvHandle hDupedPhysMem;
     NODE     node;

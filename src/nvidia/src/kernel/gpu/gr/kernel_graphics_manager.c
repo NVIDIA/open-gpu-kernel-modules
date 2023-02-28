@@ -796,8 +796,6 @@ kgrmgrDiscoverMaxLocalCtxBufInfo_IMPL
 )
 {
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-    const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
-    NvU32 bufId;
 
     //
     // Most of GR is stub'd so context related things are not needed in AMODEL.
@@ -810,43 +808,7 @@ kgrmgrDiscoverMaxLocalCtxBufInfo_IMPL
     NV_CHECK_OR_RETURN(LEVEL_SILENT,
         kmigmgrIsMemoryPartitioningNeeded_HAL(pGpu, pKernelMIGManager, swizzId), NV_OK);
 
-    // Make sure sizes of all buffers are setup
-    NV_ASSERT_OK_OR_RETURN(
-        kgraphicsInitializeDeferredStaticData(pGpu, pKernelGraphics, NV01_NULL_OBJECT, NV01_NULL_OBJECT));
-
-    NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo->pContextBuffersInfo != NULL, NV_ERR_INVALID_STATE);
-
-    // Get sizes of local ctx buffers
-    FOR_EACH_IN_ENUM(GR_CTX_BUFFER, bufId)
-    {
-        if (bufId == GR_CTX_BUFFER_MAIN)
-        {
-            NvU32 size;
-
-            // Get size of main buffer including subctx headers
-            NV_ASSERT_OK_OR_RETURN(kgraphicsGetMainCtxBufferSize(pGpu, pKernelGraphics, NV_TRUE, &size));
-            kgraphicsSetCtxBufferInfo(pGpu, pKernelGraphics, bufId,
-                                      size,
-                                      RM_PAGE_SIZE,
-                                      RM_ATTR_PAGE_SIZE_4KB,
-                                      kgraphicsShouldForceMainCtxContiguity_HAL(pGpu, pKernelGraphics));
-        }
-        else
-        {
-            NvU32 fifoEngineId;
-
-            NV_ASSERT_OK_OR_RETURN(
-                kgrctxCtxBufferToFifoEngineId(bufId, &fifoEngineId));
-
-            kgraphicsSetCtxBufferInfo(pGpu, pKernelGraphics, bufId,
-                                      pKernelGraphicsStaticInfo->pContextBuffersInfo->engine[fifoEngineId].size,
-                                      RM_PAGE_SIZE,
-                                      RM_ATTR_PAGE_SIZE_4KB,
-                                      ((bufId == GR_CTX_BUFFER_PATCH) || (bufId == GR_CTX_BUFFER_PM)));
-        }
-    }
-    FOR_EACH_IN_ENUM_END;
-    return NV_OK;
+    return kgraphicsDiscoverMaxLocalCtxBufferSize(pGpu, pKernelGraphics);
 }
 
 /*!

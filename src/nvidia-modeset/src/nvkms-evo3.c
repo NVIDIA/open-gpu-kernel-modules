@@ -33,7 +33,6 @@
 #include "nvkms-softfloat.h"
 #include "nvkms-evo.h"
 #include "nvkms-evo1.h"
-#include "nvkms-modeset-types.h"
 #include "nvkms-prealloc.h"
 #include "nv-float.h"
 #include "nvkms-dpy.h"
@@ -2078,6 +2077,11 @@ static NvU32 EvoGetPixelDepthC3(const enum nvKmsPixelDepth pixelDepth)
         return NVC37D_HEAD_SET_CONTROL_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_24_444;
     case NVKMS_PIXEL_DEPTH_30_444:
         return NVC37D_HEAD_SET_CONTROL_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_30_444;
+    case NVKMS_PIXEL_DEPTH_16_422:
+        return NVC37D_HEAD_SET_CONTROL_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_16_422;
+    case NVKMS_PIXEL_DEPTH_20_422:
+        return NVC37D_HEAD_SET_CONTROL_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_20_422;
+
     }
     nvAssert(!"Unexpected pixel depth");
     return NVC37D_HEAD_SET_CONTROL_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_24_444;
@@ -2189,11 +2193,12 @@ static void EvoORSetControlC6(NVDevEvoPtr pDevEvo,
 static void EvoHeadSetControlORC3(NVDevEvoPtr pDevEvo,
                                   const int head,
                                   const NVHwModeTimingsEvo *pTimings,
+                                  const enum nvKmsPixelDepth pixelDepth,
                                   const NvBool colorSpaceOverride,
                                   NVEvoUpdateState *updateState)
 {
     NVEvoChannelPtr pChannel = pDevEvo->core;
-    const NvU32 hwPixelDepth = EvoGetPixelDepthC3(pTimings->pixelDepth);
+    const NvU32 hwPixelDepth = EvoGetPixelDepthC3(pixelDepth);
     const NvU16 colorSpaceFlag = nvEvo1GetColorSpaceFlag(pDevEvo,
                                                          colorSpaceOverride);
 
@@ -2216,11 +2221,12 @@ static void EvoHeadSetControlORC3(NVDevEvoPtr pDevEvo,
 static void EvoHeadSetControlORC5(NVDevEvoPtr pDevEvo,
                                   const int head,
                                   const NVHwModeTimingsEvo *pTimings,
+                                  const enum nvKmsPixelDepth pixelDepth,
                                   const NvBool colorSpaceOverride,
                                   NVEvoUpdateState *updateState)
 {
     NVEvoChannelPtr pChannel = pDevEvo->core;
-    const NvU32 hwPixelDepth = EvoGetPixelDepthC3(pTimings->pixelDepth);
+    const NvU32 hwPixelDepth = EvoGetPixelDepthC3(pixelDepth);
     const NvU16 colorSpaceFlag = nvEvo1GetColorSpaceFlag(pDevEvo,
                                                          colorSpaceOverride);
 
@@ -2961,6 +2967,9 @@ static NvBool AssignPerHeadImpParams(NVC372_CTRL_IMP_HEAD *pImpHead,
     pImpHead->bEnableDsc = pTimings->hdmiFrlConfig.dscInfo.bEnableDSC ||
                            pTimings->dpDsc.enable;
 
+    pImpHead->bYUV420Format =
+        (pTimings->yuv420Mode == NV_YUV420_MODE_HW);
+
     return TRUE;
 }
 
@@ -3437,12 +3446,9 @@ EvoProgramSemaphore6(NVDevEvoPtr pDevEvo,
         acqMode = DRF_DEF(C67E, _SET_SEMAPHORE_CONTROL, _SKIP_ACQ, _TRUE);
         relMode = DRF_DEF(C67E, _SET_SEMAPHORE_CONTROL, _REL_MODE, _WRITE);
         value = pHwState->syncObject.u.syncpts.postValue;
-        /*! increase value in host1x hardware as well */
+        /*! increase local max val as well */
         if (hCtxDma != 0) {
-            NvKmsSyncPtOpParams params = { };
-            params.incr_max.id = pChannel->postSyncpt.id;
-            params.incr_max.incr = 1;
-            nvkms_syncpt_op(NVKMS_SYNCPT_OP_INCR_MAX, &params);
+            pChannel->postSyncpt.syncptMaxVal++;
         }
     } else {
         if (pHwState->syncObject.u.semaphores.releaseSurface.pSurfaceEvo != NULL) {
@@ -3945,7 +3951,7 @@ NVLutSurfaceEvoPtr EvoGetLutSurface3(NVDevEvoPtr pDevEvo,
     NvU32 win = NV_EVO_CHANNEL_MASK_WINDOW_NUMBER(pChannel->channelMask);
     NvU32 head = pDevEvo->headForWindow[win];
     NvBool found = FALSE;
-    NvU32 dispIndex = 0;
+    const NVDispEvoRec *pDispEvo = NULL;
     NvU32 sd;
 
     if ((pHwState->pSurfaceEvo[NVKMS_LEFT] == NULL) ||
@@ -3977,9 +3983,9 @@ NVLutSurfaceEvoPtr EvoGetLutSurface3(NVDevEvoPtr pDevEvo,
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
         if (nvPeekEvoSubDevMask(pDevEvo) & (1 << sd)) {
             if (found) {
-                nvAssert(dispIndex == pDevEvo->gpus[sd].pDispEvo->displayOwner);
+                nvAssert(pDispEvo == pDevEvo->gpus[sd].pDispEvo);
             } else {
-                dispIndex = pDevEvo->gpus[sd].pDispEvo->displayOwner;
+                pDispEvo = pDevEvo->gpus[sd].pDispEvo;
                 found = TRUE;
             }
         }
@@ -3993,10 +3999,7 @@ NVLutSurfaceEvoPtr EvoGetLutSurface3(NVDevEvoPtr pDevEvo,
      * in the surface format and curLUTIndex does not change until next
      * EvoSetLUTContextDma3() call which also makes sure to disable tearing.
      */
-    const NvU32 lutIndex =
-        pDevEvo->lut.head[head].disp[dispIndex].curLUTIndex;
-
-    return pDevEvo->lut.head[head].LUT[lutIndex];
+    return pDispEvo->headState[head].lut.pCurrSurface;
 }
 
 static void
@@ -7221,7 +7224,8 @@ EvoConfigureVblankSyncObjectC6(const NVDevEvoPtr pDevEvo,
 
 static void EvoSetHdmiFrlDscParams(const NVDispEvoRec *pDispEvo,
                                    const NvU32 head,
-                                   const NVHwModeTimingsEvo *pTimings)
+                                   const NVHwModeTimingsEvo *pTimings,
+                                   const enum nvKmsPixelDepth pixelDepth)
 {
     NVEvoChannelPtr pChannel = pDispEvo->pDevEvo->core;
     const HDMI_FRL_CONFIG *pFrl = &pTimings->hdmiFrlConfig;
@@ -7232,7 +7236,7 @@ static void EvoSetHdmiFrlDscParams(const NVDispEvoRec *pDispEvo,
              pFrl->frlRate != HDMI_FRL_DATA_RATE_NONE &&
              pFrl->dscInfo.bEnableDSC);
 
-    bpc = nvPixelDepthToBitsPerComponent(pTimings->pixelDepth);
+    bpc = nvPixelDepthToBitsPerComponent(pixelDepth);
     if (bpc < 8) {
         nvAssert(bpc >= 8);
         bpc = 8;
@@ -7338,12 +7342,13 @@ static void EvoSetDpDscParams(const NVDispEvoRec *pDispEvo,
 
 static void EvoSetDscParamsC5(const NVDispEvoRec *pDispEvo,
                               const NvU32 head,
-                              const NVHwModeTimingsEvo *pTimings)
+                              const NVHwModeTimingsEvo *pTimings,
+                              const enum nvKmsPixelDepth pixelDepth)
 {
 
     if (pTimings->hdmiFrlConfig.frlRate != HDMI_FRL_DATA_RATE_NONE) {
         if (pTimings->hdmiFrlConfig.dscInfo.bEnableDSC) {
-            EvoSetHdmiFrlDscParams(pDispEvo, head, pTimings);
+            EvoSetHdmiFrlDscParams(pDispEvo, head, pTimings, pixelDepth);
         }
     } else if (pTimings->dpDsc.enable) {
         EvoSetDpDscParams(pDispEvo, head, pTimings);

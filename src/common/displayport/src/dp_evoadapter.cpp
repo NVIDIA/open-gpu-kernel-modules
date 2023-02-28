@@ -94,7 +94,6 @@ const struct
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,          &dpRegkeyDatabase.bOptLinkKeptAliveSst,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
     {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_ENABLE_OUI_RESTORING,             &dpRegkeyDatabase.bEnableOuiRestoring,             DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL}
 };
 
@@ -117,9 +116,6 @@ EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
      _isLTPhyRepeaterSupported  = true;
      _rmPhyRepeaterCount        = 0;
      dpMemZero(&_DSC, sizeof(_DSC));
-    queryGPUCapability();
-
-    queryAndUpdateDfpParams();
 
     //
     //  Tell RM to hands off on the DisplayPort hardware
@@ -1162,8 +1158,12 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
                 // 1. CR or EQ phase failed.
                 // 2. The request link bandwidth is NOT RBR
                 //
+                if (!requestRmLC.lowerConfig())
+                {
+                    // If no valid link config could be found, break here. 
+                    break;
+                }
                 fallback = true;
-                requestRmLC.lowerConfig();
             }
             else
             {

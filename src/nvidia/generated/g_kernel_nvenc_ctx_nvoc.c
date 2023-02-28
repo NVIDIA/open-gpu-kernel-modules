@@ -176,7 +176,7 @@ static NV_STATUS __nvoc_thunk_RsResource_msencctxControlLookup(struct MsencConte
     return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MsencContext_RsResource.offset), pParams, ppEntry);
 }
 
-static NV_STATUS __nvoc_thunk_ChannelDescendant_msencctxGetSwMethods(struct MsencContext *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static NV_STATUS __nvoc_thunk_ChannelDescendant_msencctxGetSwMethods(struct MsencContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_MsencContext_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
@@ -212,6 +212,10 @@ static NV_STATUS __nvoc_thunk_Notifier_msencctxUnregisterEvent(struct MsencConte
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_MsencContext_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_msencctxControlSerialization_Prologue(struct MsencContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MsencContext_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_msencctxCanCopy(struct MsencContext *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MsencContext_RsResource.offset));
 }
@@ -222,6 +226,10 @@ static void __nvoc_thunk_RsResource_msencctxPreDestruct(struct MsencContext *pRe
 
 static NV_STATUS __nvoc_thunk_RsResource_msencctxIsDuplicate(struct MsencContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MsencContext_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_msencctxControlSerialization_Epilogue(struct MsencContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MsencContext_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_msencctxGetNotificationListPtr(struct MsencContext *pNotifier) {
@@ -335,11 +343,15 @@ static void __nvoc_init_funcTable_MsencContext_1(MsencContext *pThis, RmHalspecO
 
     pThis->__msencctxUnregisterEvent__ = &__nvoc_thunk_Notifier_msencctxUnregisterEvent;
 
+    pThis->__msencctxControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_msencctxControlSerialization_Prologue;
+
     pThis->__msencctxCanCopy__ = &__nvoc_thunk_RsResource_msencctxCanCopy;
 
     pThis->__msencctxPreDestruct__ = &__nvoc_thunk_RsResource_msencctxPreDestruct;
 
     pThis->__msencctxIsDuplicate__ = &__nvoc_thunk_RsResource_msencctxIsDuplicate;
+
+    pThis->__msencctxControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_msencctxControlSerialization_Epilogue;
 
     pThis->__msencctxGetNotificationListPtr__ = &__nvoc_thunk_Notifier_msencctxGetNotificationListPtr;
 
@@ -375,12 +387,15 @@ NV_STATUS __nvoc_objCreate_MsencContext(MsencContext **ppThis, Dynamic *pParent,
     MsencContext *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(MsencContext));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(MsencContext), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(MsencContext));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_MsencContext);
+
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -401,11 +416,17 @@ NV_STATUS __nvoc_objCreate_MsencContext(MsencContext **ppThis, Dynamic *pParent,
     if (status != NV_OK) goto __nvoc_objCreate_MsencContext_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_MsencContext_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(MsencContext));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

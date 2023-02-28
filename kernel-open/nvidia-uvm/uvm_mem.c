@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -455,7 +455,7 @@ static gfp_t sysmem_allocation_gfp_flags(int order, bool zero)
 //
 // In case of failure, the caller is required to handle cleanup by calling
 // uvm_mem_free
-static NV_STATUS mem_alloc_sysmem_dma_chunks(uvm_mem_t *mem, struct mm_struct *mm, gfp_t gfp_flags)
+static NV_STATUS mem_alloc_sysmem_dma_chunks(uvm_mem_t *mem, gfp_t gfp_flags)
 {
     size_t i;
     NV_STATUS status;
@@ -500,7 +500,7 @@ error:
 
 // In case of failure, the caller is required to handle cleanup by calling
 // uvm_mem_free
-static NV_STATUS mem_alloc_sysmem_chunks(uvm_mem_t *mem, struct mm_struct *mm, gfp_t gfp_flags)
+static NV_STATUS mem_alloc_sysmem_chunks(uvm_mem_t *mem, gfp_t gfp_flags)
 {
     size_t i;
     int order;
@@ -573,23 +573,15 @@ static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zer
 
         uvm_memcg_context_start(&memcg_context, mm);
         if (uvm_mem_is_sysmem_dma(mem))
-            status = mem_alloc_sysmem_dma_chunks(mem, mm, gfp_flags);
+            status = mem_alloc_sysmem_dma_chunks(mem, gfp_flags);
         else
-            status = mem_alloc_sysmem_chunks(mem, mm, gfp_flags);
+            status = mem_alloc_sysmem_chunks(mem, gfp_flags);
 
         uvm_memcg_context_end(&memcg_context);
         return status;
     }
 
     return mem_alloc_vidmem_chunks(mem, zero, is_protected);
-}
-
-static const char *mem_physical_source(uvm_mem_t *mem)
-{
-    if (uvm_mem_is_vidmem(mem))
-        return uvm_gpu_name(mem->backing_gpu);
-
-    return "CPU";
 }
 
 NV_STATUS uvm_mem_map_kernel(uvm_mem_t *mem, const uvm_global_processor_mask_t *mask)
@@ -617,6 +609,7 @@ NV_STATUS uvm_mem_map_kernel(uvm_mem_t *mem, const uvm_global_processor_mask_t *
 NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_out)
 {
     NV_STATUS status;
+    NvU64 physical_size;
     uvm_mem_t *mem = NULL;
     bool is_protected = false;
 
@@ -637,8 +630,8 @@ NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_ou
 
     UVM_ASSERT(mem->chunk_size > 0);
 
-    mem->physical_allocation_size = UVM_ALIGN_UP(mem->size, mem->chunk_size);
-    mem->chunks_count = mem->physical_allocation_size / mem->chunk_size;
+    physical_size = UVM_ALIGN_UP(mem->size, mem->chunk_size);
+    mem->chunks_count = physical_size / mem->chunk_size;
 
     status = mem_alloc_chunks(mem, params->mm, params->zero, is_protected);
     if (status != NV_OK)
@@ -665,7 +658,7 @@ static NV_STATUS mem_init_user_mapping(uvm_mem_t *mem, uvm_va_space_t *user_va_s
     }
 
     UVM_ASSERT(IS_ALIGNED((NvU64)user_addr, mem->chunk_size));
-    UVM_ASSERT(mem->physical_allocation_size == mem->size);
+    UVM_ASSERT(uvm_mem_physical_size(mem) == mem->size);
 
     mem->user = uvm_kvmalloc_zero(sizeof(*mem->user));
     if (mem->user == NULL)
@@ -691,7 +684,7 @@ static void mem_deinit_user_mapping(uvm_mem_t *mem)
 
 static NvU64 reserved_gpu_va(uvm_mem_t *mem, uvm_gpu_t *gpu)
 {
-    UVM_ASSERT(mem->kernel.range_alloc.aligned_start + mem->physical_allocation_size < gpu->parent->uvm_mem_va_size);
+    UVM_ASSERT(mem->kernel.range_alloc.aligned_start + uvm_mem_physical_size(mem) < gpu->parent->uvm_mem_va_size);
 
     return gpu->parent->uvm_mem_va_base + mem->kernel.range_alloc.aligned_start;
 }
@@ -709,7 +702,7 @@ static struct page *mem_cpu_page(uvm_mem_t *mem, NvU64 offset)
 static NV_STATUS mem_map_cpu_to_sysmem_kernel(uvm_mem_t *mem)
 {
     struct page **pages = mem->sysmem.pages;
-    size_t num_pages = mem->physical_allocation_size / PAGE_SIZE;
+    size_t num_pages = uvm_mem_physical_size(mem) / PAGE_SIZE;
     pgprot_t prot = PAGE_KERNEL;
 
     UVM_ASSERT(uvm_mem_is_sysmem(mem));
@@ -743,7 +736,7 @@ static NV_STATUS mem_map_cpu_to_vidmem_kernel(uvm_mem_t *mem)
 {
     struct page **pages;
     size_t num_chunk_pages = mem->chunk_size / PAGE_SIZE;
-    size_t num_pages = mem->physical_allocation_size / PAGE_SIZE;
+    size_t num_pages = uvm_mem_physical_size(mem) / PAGE_SIZE;
     size_t page_index;
     size_t chunk_index;
 
@@ -798,7 +791,7 @@ static NV_STATUS mem_map_cpu_to_sysmem_user(uvm_mem_t *mem, struct vm_area_struc
     // compound pages in order to be able to use vm_insert_page on them. This
     // is not currently being exercised because the only allocations using this
     // are semaphore pools (which typically use a single page).
-    for (offset = 0; offset < mem->physical_allocation_size; offset += PAGE_SIZE) {
+    for (offset = 0; offset < uvm_mem_physical_size(mem); offset += PAGE_SIZE) {
         int ret = vm_insert_page(vma, (unsigned long)mem->user->addr + offset, mem_cpu_page(mem, offset));
         if (ret) {
             UVM_ASSERT_MSG(ret == -ENOMEM, "ret: %d\n", ret);
@@ -810,7 +803,7 @@ static NV_STATUS mem_map_cpu_to_sysmem_user(uvm_mem_t *mem, struct vm_area_struc
     return NV_OK;
 
 error:
-    unmap_mapping_range(&mem->user->va_space->mapping, (size_t)mem->user->addr, mem->physical_allocation_size, 1);
+    unmap_mapping_range(mem->user->va_space->mapping, (size_t)mem->user->addr, uvm_mem_physical_size(mem), 1);
     return status;
 }
 
@@ -819,7 +812,7 @@ void uvm_mem_unmap_cpu_user(uvm_mem_t *mem)
     if (!uvm_mem_mapped_on_cpu_user(mem))
         return;
 
-    unmap_mapping_range(&mem->user->va_space->mapping, (size_t)mem->user->addr, mem->physical_allocation_size, 1);
+    unmap_mapping_range(mem->user->va_space->mapping, (size_t)mem->user->addr, uvm_mem_physical_size(mem), 1);
     mem_clear_mapped_on_cpu_user(mem);
     mem_deinit_user_mapping(mem);
 }
@@ -959,21 +952,17 @@ static uvm_gpu_phys_address_t mem_gpu_physical_sysmem(uvm_mem_t *mem, uvm_gpu_t 
     return uvm_gpu_phys_address(UVM_APERTURE_SYS, dma_addr + offset % mem->chunk_size);
 }
 
-static bool mem_check_range(uvm_mem_t *mem, NvU64 offset, NvU64 size)
+bool uvm_mem_is_physically_contiguous(uvm_mem_t *mem, NvU64 offset, NvU64 size)
 {
     UVM_ASSERT(size != 0);
-    UVM_ASSERT_MSG(UVM_ALIGN_DOWN(offset, mem->chunk_size) == UVM_ALIGN_DOWN(offset + size - 1, mem->chunk_size),
-                   "offset %llu size %llu page_size %u\n",
-                   offset,
-                   size,
-                   mem->chunk_size);
-    UVM_ASSERT_MSG(offset / mem->chunk_size < mem->chunks_count, "offset %llu\n", offset);
-    return true;
+    UVM_ASSERT((offset + size) <= uvm_mem_physical_size(mem));
+
+    return UVM_ALIGN_DOWN(offset, mem->chunk_size) == UVM_ALIGN_DOWN(offset + size - 1, mem->chunk_size);
 }
 
 uvm_gpu_phys_address_t uvm_mem_gpu_physical(uvm_mem_t *mem, uvm_gpu_t *gpu, NvU64 offset, NvU64 size)
 {
-    UVM_ASSERT(mem_check_range(mem, offset, size));
+    UVM_ASSERT(uvm_mem_is_physically_contiguous(mem, offset, size));
 
     if (uvm_mem_is_vidmem(mem)) {
         UVM_ASSERT(uvm_mem_is_local_vidmem(mem, gpu));
@@ -990,7 +979,7 @@ uvm_gpu_address_t uvm_mem_gpu_address_copy(uvm_mem_t *mem, uvm_gpu_t *accessing_
     size_t chunk_offset;
     uvm_gpu_chunk_t *chunk;
 
-    UVM_ASSERT(mem_check_range(mem, offset, size));
+    UVM_ASSERT(uvm_mem_is_physically_contiguous(mem, offset, size));
 
     if (uvm_mem_is_sysmem(mem) || uvm_mem_is_local_vidmem(mem, accessing_gpu))
         return uvm_mem_gpu_address_physical(mem, accessing_gpu, offset, size);
@@ -1024,13 +1013,8 @@ static NvU64 mem_pte_maker(uvm_page_table_range_vec_t *range_vec, NvU64 offset, 
 
 static void mem_unmap_gpu(uvm_mem_t *mem, uvm_gpu_t *gpu, uvm_page_table_range_vec_t **range_vec)
 {
-    NV_STATUS status;
-    uvm_membar_t tlb_membar = UVM_MEMBAR_SYS;
-
-    if (uvm_mem_is_local_vidmem(mem, gpu))
-        tlb_membar = UVM_MEMBAR_GPU;
-
-    status = uvm_page_table_range_vec_clear_ptes(*range_vec, tlb_membar);
+    uvm_membar_t tlb_membar = uvm_hal_downgrade_membar_type(gpu, uvm_mem_is_local_vidmem(mem, gpu));
+    NV_STATUS status = uvm_page_table_range_vec_clear_ptes(*range_vec, tlb_membar);
     if (status != NV_OK)
         UVM_ERR_PRINT("Clearing PTEs failed: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
 
@@ -1054,22 +1038,19 @@ static NV_STATUS mem_map_gpu(uvm_mem_t *mem,
             .attrs = attrs
         };
 
-    if (!uvm_gpu_can_address(gpu, gpu_va, mem->size))
-        return NV_ERR_OUT_OF_RANGE;
-
     page_size = mem_pick_gpu_page_size(mem, gpu, tree);
     UVM_ASSERT_MSG(uvm_mmu_page_size_supported(tree, page_size), "page_size 0x%x\n", page_size);
 
     status = uvm_page_table_range_vec_create(tree,
                                              gpu_va,
-                                             mem->physical_allocation_size,
+                                             uvm_mem_physical_size(mem),
                                              page_size,
                                              pmm_flags,
                                              range_vec);
     if (status != NV_OK) {
         UVM_ERR_PRINT("Failed to init page mapping at [0x%llx, 0x%llx): %s, GPU %s\n",
                       gpu_va,
-                      gpu_va + mem->physical_allocation_size,
+                      gpu_va + uvm_mem_physical_size(mem),
                       nvstatusToString(status),
                       uvm_gpu_name(gpu));
         return status;
@@ -1079,7 +1060,7 @@ static NV_STATUS mem_map_gpu(uvm_mem_t *mem,
     if (status != NV_OK) {
         UVM_ERR_PRINT("Failed to write PTEs for mapping at [0x%llx, 0x%llx): %s, GPU %s\n",
                       gpu_va,
-                      gpu_va + mem->physical_allocation_size,
+                      gpu_va + uvm_mem_physical_size(mem),
                       nvstatusToString(status),
                       uvm_gpu_name(gpu));
         goto error;
@@ -1098,7 +1079,7 @@ static NV_STATUS mem_init_gpu_kernel_range(uvm_mem_t *mem)
         return NV_OK;
 
     return uvm_range_allocator_alloc(&g_free_ranges,
-                                     mem->physical_allocation_size,
+                                     uvm_mem_physical_size(mem),
                                      mem->chunk_size,
                                      &mem->kernel.range_alloc);
 }
@@ -1139,7 +1120,7 @@ NV_STATUS uvm_mem_map_gpu_kernel(uvm_mem_t *mem, uvm_gpu_t *gpu)
     if (status != NV_OK)
         return status;
 
-    gpu_va = uvm_parent_gpu_canonical_address(gpu->parent, reserved_gpu_va(mem, gpu));
+    gpu_va = reserved_gpu_va(mem, gpu);
     range_vec = &mem->kernel.range_vecs[uvm_global_id_gpu_index(gpu->global_id)];
 
     status = mem_map_gpu(mem, gpu, gpu_va, &gpu->address_space_tree, &attrs, range_vec);
@@ -1165,12 +1146,17 @@ NV_STATUS uvm_mem_map_gpu_user(uvm_mem_t *mem,
     NV_STATUS status;
     uvm_gpu_va_space_t *gpu_va_space;
     uvm_page_table_range_vec_t **range_vec;
+    NvU64 gpu_va;
 
     UVM_ASSERT(mem_can_be_mapped_on_gpu_user(mem, gpu));
     uvm_assert_rwsem_locked(&user_va_space->lock);
 
     if (uvm_mem_mapped_on_gpu_user(mem, gpu))
         return NV_OK;
+
+    gpu_va = (NvU64)user_addr;
+    if (!uvm_gpu_can_address(gpu, gpu_va, mem->size))
+        return NV_ERR_OUT_OF_RANGE;
 
     status = uvm_mem_map_gpu_phys(mem, gpu);
     if (status != NV_OK)
@@ -1183,7 +1169,7 @@ NV_STATUS uvm_mem_map_gpu_user(uvm_mem_t *mem,
     gpu_va_space = uvm_gpu_va_space_get(mem->user->va_space, gpu);
     range_vec = &mem->user->range_vecs[uvm_global_id_gpu_index(gpu->global_id)];
 
-    status = mem_map_gpu(mem, gpu, (NvU64)mem->user->addr, &gpu_va_space->page_tables, attrs, range_vec);
+    status = mem_map_gpu(mem, gpu, gpu_va, &gpu_va_space->page_tables, attrs, range_vec);
     if (status != NV_OK)
         goto cleanup;
 

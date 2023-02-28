@@ -331,7 +331,6 @@ memMap_IMPL
             }
             else
             {
-                NV_ASSERT(DRF_VAL(OS33, _FLAGS, _BUS, pMapParams->flags) == NVOS33_FLAGS_BUS_NVLINK_COHERENT);
 
                 //
                 // Allocating mapping for user mode client

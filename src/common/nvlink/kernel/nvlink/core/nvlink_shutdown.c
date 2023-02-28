@@ -995,12 +995,9 @@ nvlink_core_powerdown_floorswept_conns_to_off
                 conn = NULL;
                 nvlink_core_get_intranode_conn(links[j], &(conn));
                 if (conn == NULL ||
-                    _nvlink_core_check_if_conn_in_array(visitedConns, connCount, conn) || 
+                    _nvlink_core_check_if_conn_in_array(visitedConns, connCount, conn) ||
                     (conn->end0 == NULL || conn->end1 == NULL))
                 {
-                    NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                        "%s: AC debug -- conn gotten: 0x%x\n",
-                        __FUNCTION__, conn));
                     continue;
                 }
                 else if(nvlink_core_check_intranode_conn_state(conn, NVLINK_LINKSTATE_OFF) ==

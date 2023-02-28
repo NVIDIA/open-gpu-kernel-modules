@@ -85,7 +85,7 @@ typedef struct KernelChannel KernelChannel;
  */
 typedef struct _METHOD METHOD, *PMETHOD;
 
-typedef NV_STATUS (*METHODPROC)(OBJGPU *, struct ChannelDescendant *, PMETHOD, NvU32, NvV32);
+typedef NV_STATUS (*METHODPROC)(OBJGPU *, struct ChannelDescendant *, NvU32, NvV32);
 
 struct _METHOD
 {
@@ -122,12 +122,12 @@ struct ChannelDescendant {
     struct INotifier *__nvoc_pbase_INotifier;
     struct Notifier *__nvoc_pbase_Notifier;
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;
-    NV_STATUS (*__chandesGetSwMethods__)(struct ChannelDescendant *, METHOD **, NvU32 *);
+    NV_STATUS (*__chandesGetSwMethods__)(struct ChannelDescendant *, const METHOD **, NvU32 *);
     NvBool (*__chandesIsSwMethodStalling__)(struct ChannelDescendant *, NvU32);
     NV_STATUS (*__chandesCheckMemInterUnmap__)(struct ChannelDescendant *, NvBool);
     NvBool (*__chandesShareCallback__)(struct ChannelDescendant *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__chandesMapTo__)(struct ChannelDescendant *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__chandesGetOrAllocNotifShare__)(struct ChannelDescendant *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__chandesMapTo__)(struct ChannelDescendant *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__chandesGetMapAddrSpace__)(struct ChannelDescendant *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__chandesSetNotificationShare__)(struct ChannelDescendant *, struct NotifShare *);
     NvU32 (*__chandesGetRefCount__)(struct ChannelDescendant *);
@@ -145,9 +145,11 @@ struct ChannelDescendant {
     NV_STATUS (*__chandesGetMemoryMappingDescriptor__)(struct ChannelDescendant *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__chandesControlFilter__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__chandesUnregisterEvent__)(struct ChannelDescendant *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__chandesControlSerialization_Prologue__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__chandesCanCopy__)(struct ChannelDescendant *);
     void (*__chandesPreDestruct__)(struct ChannelDescendant *);
     NV_STATUS (*__chandesIsDuplicate__)(struct ChannelDescendant *, NvHandle, NvBool *);
+    void (*__chandesControlSerialization_Epilogue__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__chandesGetNotificationListPtr__)(struct ChannelDescendant *);
     struct NotifShare *(*__chandesGetNotificationShare__)(struct ChannelDescendant *);
     NV_STATUS (*__chandesMap__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -191,8 +193,8 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant**, Dynamic*, NvU3
 #define chandesIsSwMethodStalling(pChannelDescendant, hHandle) chandesIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define chandesCheckMemInterUnmap(pChannelDescendant, bSubdeviceHandleProvided) chandesCheckMemInterUnmap_DISPATCH(pChannelDescendant, bSubdeviceHandleProvided)
 #define chandesShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) chandesShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define chandesMapTo(pResource, pParams) chandesMapTo_DISPATCH(pResource, pParams)
 #define chandesGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) chandesGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define chandesMapTo(pResource, pParams) chandesMapTo_DISPATCH(pResource, pParams)
 #define chandesGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) chandesGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define chandesSetNotificationShare(pNotifier, pNotifShare) chandesSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define chandesGetRefCount(pResource) chandesGetRefCount_DISPATCH(pResource)
@@ -210,9 +212,11 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant**, Dynamic*, NvU3
 #define chandesGetMemoryMappingDescriptor(pRmResource, ppMemDesc) chandesGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define chandesControlFilter(pResource, pCallContext, pParams) chandesControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define chandesUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) chandesUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define chandesControlSerialization_Prologue(pResource, pCallContext, pParams) chandesControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define chandesCanCopy(pResource) chandesCanCopy_DISPATCH(pResource)
 #define chandesPreDestruct(pResource) chandesPreDestruct_DISPATCH(pResource)
 #define chandesIsDuplicate(pResource, hMemory, pDuplicate) chandesIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define chandesControlSerialization_Epilogue(pResource, pCallContext, pParams) chandesControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define chandesGetNotificationListPtr(pNotifier) chandesGetNotificationListPtr_DISPATCH(pNotifier)
 #define chandesGetNotificationShare(pNotifier) chandesGetNotificationShare_DISPATCH(pNotifier)
 #define chandesMap(pGpuResource, pCallContext, pParams, pCpuMapping) chandesMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -247,9 +251,9 @@ static inline void chandesDestroy(struct ChannelDescendant *pChannelDescendant) 
 
 #define chandesDestroy_HAL(pChannelDescendant) chandesDestroy(pChannelDescendant)
 
-NV_STATUS chandesGetSwMethods_IMPL(struct ChannelDescendant *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods);
+NV_STATUS chandesGetSwMethods_IMPL(struct ChannelDescendant *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods);
 
-static inline NV_STATUS chandesGetSwMethods_DISPATCH(struct ChannelDescendant *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS chandesGetSwMethods_DISPATCH(struct ChannelDescendant *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__chandesGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
@@ -269,12 +273,12 @@ static inline NvBool chandesShareCallback_DISPATCH(struct ChannelDescendant *pGp
     return pGpuResource->__chandesShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS chandesMapTo_DISPATCH(struct ChannelDescendant *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__chandesMapTo__(pResource, pParams);
-}
-
 static inline NV_STATUS chandesGetOrAllocNotifShare_DISPATCH(struct ChannelDescendant *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__chandesGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
+}
+
+static inline NV_STATUS chandesMapTo_DISPATCH(struct ChannelDescendant *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__chandesMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS chandesGetMapAddrSpace_DISPATCH(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -345,6 +349,10 @@ static inline NV_STATUS chandesUnregisterEvent_DISPATCH(struct ChannelDescendant
     return pNotifier->__chandesUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS chandesControlSerialization_Prologue_DISPATCH(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__chandesControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool chandesCanCopy_DISPATCH(struct ChannelDescendant *pResource) {
     return pResource->__chandesCanCopy__(pResource);
 }
@@ -355,6 +363,10 @@ static inline void chandesPreDestruct_DISPATCH(struct ChannelDescendant *pResour
 
 static inline NV_STATUS chandesIsDuplicate_DISPATCH(struct ChannelDescendant *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__chandesIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void chandesControlSerialization_Epilogue_DISPATCH(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__chandesControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *chandesGetNotificationListPtr_DISPATCH(struct ChannelDescendant *pNotifier) {
@@ -388,7 +400,7 @@ void chandesDestruct_IMPL(struct ChannelDescendant *pChannelDescendant);
 //
 //---------------------------------------------------------------------------
 
-NV_STATUS mthdNoOperation(OBJGPU *, struct ChannelDescendant *, PMETHOD, NvU32, NvU32);
+NV_STATUS mthdNoOperation(OBJGPU *, struct ChannelDescendant *, NvU32, NvU32);
 
 #endif // _CHANNEL_DESCENDANT_H_
 

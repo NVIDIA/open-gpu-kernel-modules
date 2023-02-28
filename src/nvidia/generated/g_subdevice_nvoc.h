@@ -289,6 +289,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalFifoPromoteRunlistBuffers__)(struct Subdevice *, NV2080_CTRL_INTERNAL_FIFO_PROMOTE_RUNLIST_BUFFERS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalFifoGetNumChannels__)(struct Subdevice *, NV2080_CTRL_INTERNAL_FIFO_GET_NUM_CHANNELS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFifoGetAllocatedChannels__)(struct Subdevice *, NV2080_CTRL_FIFO_GET_ALLOCATED_CHANNELS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalFifoGetNumSecureChannels__)(struct Subdevice *, NV2080_CTRL_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrGetInfo__)(struct Subdevice *, NV2080_CTRL_GR_GET_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrGetInfoV2__)(struct Subdevice *, NV2080_CTRL_GR_GET_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrGetCapsV2__)(struct Subdevice *, NV2080_CTRL_GR_GET_CAPS_V2_PARAMS *);
@@ -310,7 +311,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdKGrGetCtxBufferSize__)(struct Subdevice *, NV2080_CTRL_GR_GET_CTX_BUFFER_SIZE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrGetCtxBufferInfo__)(struct Subdevice *, NV2080_CTRL_GR_GET_CTX_BUFFER_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrGetCtxBufferPtes__)(struct Subdevice *, NV2080_CTRL_KGR_GET_CTX_BUFFER_PTES_PARAMS *);
-    NV_STATUS (*__subdeviceCtrlCmdKGrGetCurrentResidentChannel__)(struct Subdevice *, NV2080_CTRL_CMD_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdKGrGetCurrentResidentChannel__)(struct Subdevice *, NV2080_CTRL_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrGetVatAlarmData__)(struct Subdevice *, NV2080_CTRL_GR_GET_VAT_ALARM_DATA_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrGetAttributeBufferSize__)(struct Subdevice *, NV2080_CTRL_GR_GET_ATTRIBUTE_BUFFER_SIZE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdKGrGfxPoolQuerySize__)(struct Subdevice *, NV2080_CTRL_GR_GFX_POOL_QUERY_SIZE_PARAMS *);
@@ -353,6 +354,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdGpuGetEncoderCapacity__)(struct Subdevice *, NV2080_CTRL_GPU_GET_ENCODER_CAPACITY_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetNvencSwSessionStats__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_STATS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetNvencSwSessionInfo__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetNvfbcSwSessionStats__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_STATS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetNvfbcSwSessionInfo__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuSetFabricAddr__)(struct Subdevice *, NV2080_CTRL_GPU_SET_FABRIC_BASE_ADDR_PARAMS *);
@@ -401,6 +403,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdGpuGetEngineFaultInfo__)(struct Subdevice *, NV2080_CTRL_GPU_GET_ENGINE_FAULT_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetEngineRunlistPriBase__)(struct Subdevice *, NV2080_CTRL_GPU_GET_ENGINE_RUNLIST_PRI_BASE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetHwEngineId__)(struct Subdevice *, NV2080_CTRL_GPU_GET_HW_ENGINE_ID_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdGpuGetVmmuSegmentSize__)(struct Subdevice *, NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetMaxSupportedPageSize__)(struct Subdevice *, NV2080_CTRL_GPU_GET_MAX_SUPPORTED_PAGE_SIZE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuHandleVfPriFault__)(struct Subdevice *, NV2080_CTRL_CMD_GPU_HANDLE_VF_PRI_FAULT_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuSetComputePolicyConfig__)(struct Subdevice *, NV2080_CTRL_GPU_SET_COMPUTE_POLICY_CONFIG_PARAMS *);
@@ -411,6 +414,8 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdGpuGetEngineLoadTimes__)(struct Subdevice *, NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGetP2pCaps__)(struct Subdevice *, NV2080_CTRL_GET_P2P_CAPS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGetGpuFabricProbeInfo__)(struct Subdevice *, NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdGpuGetResetStatus__)(struct Subdevice *, NV2080_CTRL_GPU_GET_RESET_STATUS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdGpuGetDrainAndResetStatus__)(struct Subdevice *, NV2080_CTRL_GPU_GET_DRAIN_AND_RESET_STATUS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdEventSetTrigger__)(struct Subdevice *);
     NV_STATUS (*__subdeviceCtrlCmdEventSetTriggerFifo__)(struct Subdevice *, NV2080_CTRL_EVENT_SET_TRIGGER_FIFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdEventSetNotification__)(struct Subdevice *, NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS *);
@@ -491,6 +496,12 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdDisplaySetupRgLineIntr__)(struct Subdevice *, NV2080_CTRL_INTERNAL_DISPLAY_SETUP_RG_LINE_INTR_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdDisplaySetImportedImpData__)(struct Subdevice *, NV2080_CTRL_INTERNAL_DISPLAY_SET_IMP_INIT_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdDisplayGetDisplayMask__)(struct Subdevice *, NV2080_CTRL_INTERNAL_DISPLAY_GET_ACTIVE_DISPLAY_DEVICES_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdDisplayPinsetsToLockpins__)(struct Subdevice *, NV2080_CTRL_INTERNAL_DISP_PINSETS_TO_LOCKPINS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdDisplaySetSliLinkGpioSwControl__)(struct Subdevice *, NV2080_CTRL_INTERNAL_DISP_SET_SLI_LINK_GPIO_SW_CONTROL_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalGpioProgramDirection__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GPIO_PROGRAM_DIRECTION_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalGpioProgramOutput__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GPIO_PROGRAM_OUTPUT_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalGpioReadInput__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GPIO_READ_INPUT_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalGpioActivateHwFunction__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GPIO_ACTIVATE_HW_FUNCTION_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdMsencGetCaps__)(struct Subdevice *, NV2080_CTRL_INTERNAL_MSENC_GET_CAPS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalUvmRegisterAccessCntrBuffer__)(struct Subdevice *, NV2080_CTRL_INTERNAL_UVM_REGISTER_ACCESS_CNTR_BUFFER_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalUvmUnregisterAccessCntrBuffer__)(struct Subdevice *);
@@ -508,11 +519,12 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalBusDestroyP2pMailbox__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BUS_DESTROY_P2P_MAILBOX_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalBusCreateC2cPeerMapping__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BUS_CREATE_C2C_PEER_MAPPING_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalBusRemoveC2cPeerMapping__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BUS_REMOVE_C2C_PEER_MAPPING_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalVmmuGetSpaForGpaEntries__)(struct Subdevice *, NV2080_CTRL_INTERNAL_VMMU_GET_SPA_FOR_GPA_ENTRIES_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGmmuGetStaticInfo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalGmmuRegisterFaultBuffer__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GMMU_REGISTER_FAULT_BUFFER_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalGmmuUnregisterFaultBuffer__)(struct Subdevice *);
     NV_STATUS (*__subdeviceCtrlCmdInternalGmmuRegisterClientShadowFaultBuffer__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GMMU_REGISTER_CLIENT_SHADOW_FAULT_BUFFER_PARAMS *);
-    NV_STATUS (*__subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer__)(struct Subdevice *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GMMU_UNREGISTER_CLIENT_SHADOW_FAULT_BUFFER_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalGmmuCopyReservedSplitGVASpacePdesServer__)(struct Subdevice *, NV2080_CTRL_INTERNAL_GMMU_COPY_RESERVED_SPLIT_GVASPACE_PDES_TO_SERVER_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdCeGetPhysicalCaps__)(struct Subdevice *, NV2080_CTRL_CE_GET_CAPS_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdCeGetAllPhysicalCaps__)(struct Subdevice *, NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *);
@@ -535,6 +547,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdBifGetStaticInfo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_GET_STATIC_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdBifGetAspmL1Flags__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_GET_ASPM_L1_FLAGS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdBifSetPcieRo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdBifDisableSystemMemoryAccess__)(struct Subdevice *, NV2080_CTRL_INTERNAL_BIF_DISABLE_SYSTEM_MEMORY_ACCESS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubPeerConnConfig__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubFirstLinkPeerId__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_FIRST_LINK_PEER_ID_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdHshubGetHshubIdForLinks__)(struct Subdevice *, NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS *);
@@ -559,6 +572,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalFbsrSendRegionInfo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_FBSR_SEND_REGION_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalPostInitBrightcStateLoad__)(struct Subdevice *, NV2080_CTRL_INTERNAL_INIT_BRIGHTC_STATE_LOAD_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit__)(struct Subdevice *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalDetectHsVideoBridge__)(struct Subdevice *);
     NV_STATUS (*__subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask__)(struct Subdevice *, NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdVgpuMgrInternalShutdownGspVgpuPluginTask__)(struct Subdevice *, NV2080_CTRL_VGPU_MGR_INTERNAL_SHUTDOWN_GSP_VGPU_PLUGIN_TASK_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdVgpuMgrInternalPgpuAddVgpuType__)(struct Subdevice *, NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_PARAMS *);
@@ -575,9 +589,9 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdCcuUnmap__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CCU_UNMAP_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdCcuSetStreamState__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CCU_STREAM_STATE_PARAMS *);
     NvBool (*__subdeviceShareCallback__)(struct Subdevice *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__subdeviceMapTo__)(struct Subdevice *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__subdeviceGetOrAllocNotifShare__)(struct Subdevice *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__subdeviceCheckMemInterUnmap__)(struct Subdevice *, NvBool);
+    NV_STATUS (*__subdeviceGetOrAllocNotifShare__)(struct Subdevice *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__subdeviceMapTo__)(struct Subdevice *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__subdeviceGetMapAddrSpace__)(struct Subdevice *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__subdeviceSetNotificationShare__)(struct Subdevice *, struct NotifShare *);
     NvU32 (*__subdeviceGetRefCount__)(struct Subdevice *);
@@ -593,8 +607,10 @@ struct Subdevice {
     NV_STATUS (*__subdeviceGetMemInterMapParams__)(struct Subdevice *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__subdeviceGetMemoryMappingDescriptor__)(struct Subdevice *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__subdeviceUnregisterEvent__)(struct Subdevice *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__subdeviceControlSerialization_Prologue__)(struct Subdevice *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__subdeviceCanCopy__)(struct Subdevice *);
     NV_STATUS (*__subdeviceIsDuplicate__)(struct Subdevice *, NvHandle, NvBool *);
+    void (*__subdeviceControlSerialization_Epilogue__)(struct Subdevice *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__subdeviceGetNotificationListPtr__)(struct Subdevice *);
     struct NotifShare *(*__subdeviceGetNotificationShare__)(struct Subdevice *);
     NV_STATUS (*__subdeviceMap__)(struct Subdevice *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -604,7 +620,7 @@ struct Subdevice {
     struct Device *pDevice;
     NvBool bMaxGrTickFreqRequested;
     NvU64 P2PfbMappedBytes;
-    NvU32 notifyActions[178];
+    NvU32 notifyActions[179];
     NvHandle hNotifierMemory;
     struct Memory *pNotifierMemory;
     NvHandle hSemMemory;
@@ -834,6 +850,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalFifoPromoteRunlistBuffers(pSubdevice, pParams) subdeviceCtrlCmdInternalFifoPromoteRunlistBuffers_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalFifoGetNumChannels(pSubdevice, pNumChannelsParams) subdeviceCtrlCmdInternalFifoGetNumChannels_DISPATCH(pSubdevice, pNumChannelsParams)
 #define subdeviceCtrlCmdFifoGetAllocatedChannels(pSubdevice, pParams) subdeviceCtrlCmdFifoGetAllocatedChannels_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalFifoGetNumSecureChannels(pSubdevice, pNumSecureChannelsParams) subdeviceCtrlCmdInternalFifoGetNumSecureChannels_DISPATCH(pSubdevice, pNumSecureChannelsParams)
 #define subdeviceCtrlCmdKGrGetInfo(pSubdevice, pParams) subdeviceCtrlCmdKGrGetInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdKGrGetInfoV2(pSubdevice, pParams) subdeviceCtrlCmdKGrGetInfoV2_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdKGrGetCapsV2(pSubdevice, pGrCapsParams) subdeviceCtrlCmdKGrGetCapsV2_DISPATCH(pSubdevice, pGrCapsParams)
@@ -898,6 +915,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdGpuGetEncoderCapacity(pSubdevice, pEncoderCapacityParams) subdeviceCtrlCmdGpuGetEncoderCapacity_DISPATCH(pSubdevice, pEncoderCapacityParams)
 #define subdeviceCtrlCmdGpuGetNvencSwSessionStats(pSubdevice, pParams) subdeviceCtrlCmdGpuGetNvencSwSessionStats_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetNvencSwSessionInfo(pSubdevice, pParams) subdeviceCtrlCmdGpuGetNvencSwSessionInfo_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2(pSubdevice, pParams) subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetNvfbcSwSessionStats(pSubdevice, params) subdeviceCtrlCmdGpuGetNvfbcSwSessionStats_DISPATCH(pSubdevice, params)
 #define subdeviceCtrlCmdGpuGetNvfbcSwSessionInfo(pSubdevice, params) subdeviceCtrlCmdGpuGetNvfbcSwSessionInfo_DISPATCH(pSubdevice, params)
 #define subdeviceCtrlCmdGpuSetFabricAddr(pSubdevice, pParams) subdeviceCtrlCmdGpuSetFabricAddr_DISPATCH(pSubdevice, pParams)
@@ -946,6 +964,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdGpuGetEngineFaultInfo(pSubdevice, pParams) subdeviceCtrlCmdGpuGetEngineFaultInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetEngineRunlistPriBase(pSubdevice, pParams) subdeviceCtrlCmdGpuGetEngineRunlistPriBase_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetHwEngineId(pSubdevice, pParams) subdeviceCtrlCmdGpuGetHwEngineId_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdGpuGetVmmuSegmentSize(pSubdevice, pParams) subdeviceCtrlCmdGpuGetVmmuSegmentSize_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetMaxSupportedPageSize(pSubdevice, pParams) subdeviceCtrlCmdGpuGetMaxSupportedPageSize_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuHandleVfPriFault(pSubdevice, pParams) subdeviceCtrlCmdGpuHandleVfPriFault_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuSetComputePolicyConfig(pSubdevice, pParams) subdeviceCtrlCmdGpuSetComputePolicyConfig_DISPATCH(pSubdevice, pParams)
@@ -956,6 +975,8 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdGpuGetEngineLoadTimes(pSubdevice, pParams) subdeviceCtrlCmdGpuGetEngineLoadTimes_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGetP2pCaps(pSubdevice, pParams) subdeviceCtrlCmdGetP2pCaps_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGetGpuFabricProbeInfo(pSubdevice, pParams) subdeviceCtrlCmdGetGpuFabricProbeInfo_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdGpuGetResetStatus(pSubdevice, pParams) subdeviceCtrlCmdGpuGetResetStatus_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdGpuGetDrainAndResetStatus(pSubdevice, pParams) subdeviceCtrlCmdGpuGetDrainAndResetStatus_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdEventSetTrigger(pSubdevice) subdeviceCtrlCmdEventSetTrigger_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdEventSetTriggerFifo(pSubdevice, pTriggerFifoParams) subdeviceCtrlCmdEventSetTriggerFifo_DISPATCH(pSubdevice, pTriggerFifoParams)
 #define subdeviceCtrlCmdEventSetNotification(pSubdevice, pSetEventParams) subdeviceCtrlCmdEventSetNotification_DISPATCH(pSubdevice, pSetEventParams)
@@ -1036,6 +1057,12 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdDisplaySetupRgLineIntr(pSubdevice, pParams) subdeviceCtrlCmdDisplaySetupRgLineIntr_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdDisplaySetImportedImpData(pSubdevice, pParams) subdeviceCtrlCmdDisplaySetImportedImpData_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdDisplayGetDisplayMask(pSubdevice, pParams) subdeviceCtrlCmdDisplayGetDisplayMask_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdDisplayPinsetsToLockpins(pSubdevice, pParams) subdeviceCtrlCmdDisplayPinsetsToLockpins_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdDisplaySetSliLinkGpioSwControl(pSubdevice, pParams) subdeviceCtrlCmdDisplaySetSliLinkGpioSwControl_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalGpioProgramDirection(pSubdevice, pParams) subdeviceCtrlCmdInternalGpioProgramDirection_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalGpioProgramOutput(pSubdevice, pParams) subdeviceCtrlCmdInternalGpioProgramOutput_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalGpioReadInput(pSubdevice, pParams) subdeviceCtrlCmdInternalGpioReadInput_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalGpioActivateHwFunction(pSubdevice, pParams) subdeviceCtrlCmdInternalGpioActivateHwFunction_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdMsencGetCaps(pSubdevice, pParams) subdeviceCtrlCmdMsencGetCaps_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalUvmRegisterAccessCntrBuffer(pSubdevice, pParams) subdeviceCtrlCmdInternalUvmRegisterAccessCntrBuffer_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalUvmUnregisterAccessCntrBuffer(pSubdevice) subdeviceCtrlCmdInternalUvmUnregisterAccessCntrBuffer_DISPATCH(pSubdevice)
@@ -1053,11 +1080,12 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalBusDestroyP2pMailbox(pSubdevice, pParams) subdeviceCtrlCmdInternalBusDestroyP2pMailbox_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalBusCreateC2cPeerMapping(pSubdevice, pParams) subdeviceCtrlCmdInternalBusCreateC2cPeerMapping_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalBusRemoveC2cPeerMapping(pSubdevice, pParams) subdeviceCtrlCmdInternalBusRemoveC2cPeerMapping_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalVmmuGetSpaForGpaEntries(pSubdevice, pParams) subdeviceCtrlCmdInternalVmmuGetSpaForGpaEntries_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGmmuGetStaticInfo(pSubdevice, pParams) subdeviceCtrlCmdGmmuGetStaticInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalGmmuRegisterFaultBuffer(pSubdevice, pParams) subdeviceCtrlCmdInternalGmmuRegisterFaultBuffer_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalGmmuUnregisterFaultBuffer(pSubdevice) subdeviceCtrlCmdInternalGmmuUnregisterFaultBuffer_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdInternalGmmuRegisterClientShadowFaultBuffer(pSubdevice, pParams) subdeviceCtrlCmdInternalGmmuRegisterClientShadowFaultBuffer_DISPATCH(pSubdevice, pParams)
-#define subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer(pSubdevice) subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer_DISPATCH(pSubdevice)
+#define subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer(pSubdevice, pParams) subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalGmmuCopyReservedSplitGVASpacePdesServer(pSubdevice, pCopyServerReservedPdesParams) subdeviceCtrlCmdInternalGmmuCopyReservedSplitGVASpacePdesServer_DISPATCH(pSubdevice, pCopyServerReservedPdesParams)
 #define subdeviceCtrlCmdCeGetPhysicalCaps(pSubdevice, pCeCapsParams) subdeviceCtrlCmdCeGetPhysicalCaps_DISPATCH(pSubdevice, pCeCapsParams)
 #define subdeviceCtrlCmdCeGetAllPhysicalCaps(pSubdevice, pCeCapsParams) subdeviceCtrlCmdCeGetAllPhysicalCaps_DISPATCH(pSubdevice, pCeCapsParams)
@@ -1080,6 +1108,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdBifGetStaticInfo(pSubdevice, pParams) subdeviceCtrlCmdBifGetStaticInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBifGetAspmL1Flags(pSubdevice, pParams) subdeviceCtrlCmdBifGetAspmL1Flags_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBifSetPcieRo(pSubdevice, pParams) subdeviceCtrlCmdBifSetPcieRo_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdBifDisableSystemMemoryAccess(pSubdevice, pParams) subdeviceCtrlCmdBifDisableSystemMemoryAccess_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubPeerConnConfig(pSubdevice, pParams) subdeviceCtrlCmdHshubPeerConnConfig_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubFirstLinkPeerId(pSubdevice, pParams) subdeviceCtrlCmdHshubFirstLinkPeerId_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdHshubGetHshubIdForLinks(pSubdevice, pParams) subdeviceCtrlCmdHshubGetHshubIdForLinks_DISPATCH(pSubdevice, pParams)
@@ -1104,6 +1133,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalFbsrSendRegionInfo(pSubdevice, pParams) subdeviceCtrlCmdInternalFbsrSendRegionInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalPostInitBrightcStateLoad(pSubdevice, pParams) subdeviceCtrlCmdInternalPostInitBrightcStateLoad_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit(pSubdevice) subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit_DISPATCH(pSubdevice)
+#define subdeviceCtrlCmdInternalDetectHsVideoBridge(pSubdevice) subdeviceCtrlCmdInternalDetectHsVideoBridge_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdVgpuMgrInternalShutdownGspVgpuPluginTask(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalShutdownGspVgpuPluginTask_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdVgpuMgrInternalPgpuAddVgpuType(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalPgpuAddVgpuType_DISPATCH(pSubdevice, pParams)
@@ -1120,9 +1150,9 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdCcuUnmap(pSubdevice, pParams) subdeviceCtrlCmdCcuUnmap_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdCcuSetStreamState(pSubdevice, pParams) subdeviceCtrlCmdCcuSetStreamState_DISPATCH(pSubdevice, pParams)
 #define subdeviceShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) subdeviceShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define subdeviceMapTo(pResource, pParams) subdeviceMapTo_DISPATCH(pResource, pParams)
-#define subdeviceGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) subdeviceGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define subdeviceCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) subdeviceCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define subdeviceGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) subdeviceGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define subdeviceMapTo(pResource, pParams) subdeviceMapTo_DISPATCH(pResource, pParams)
 #define subdeviceGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) subdeviceGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define subdeviceSetNotificationShare(pNotifier, pNotifShare) subdeviceSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define subdeviceGetRefCount(pResource) subdeviceGetRefCount_DISPATCH(pResource)
@@ -1138,8 +1168,10 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceGetMemInterMapParams(pRmResource, pParams) subdeviceGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define subdeviceGetMemoryMappingDescriptor(pRmResource, ppMemDesc) subdeviceGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define subdeviceUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) subdeviceUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define subdeviceControlSerialization_Prologue(pResource, pCallContext, pParams) subdeviceControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define subdeviceCanCopy(pResource) subdeviceCanCopy_DISPATCH(pResource)
 #define subdeviceIsDuplicate(pResource, hMemory, pDuplicate) subdeviceIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define subdeviceControlSerialization_Epilogue(pResource, pCallContext, pParams) subdeviceControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define subdeviceGetNotificationListPtr(pNotifier) subdeviceGetNotificationListPtr_DISPATCH(pNotifier)
 #define subdeviceGetNotificationShare(pNotifier) subdeviceGetNotificationShare_DISPATCH(pNotifier)
 #define subdeviceMap(pGpuResource, pCallContext, pParams, pCpuMapping) subdeviceMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -2184,6 +2216,12 @@ static inline NV_STATUS subdeviceCtrlCmdFifoGetAllocatedChannels_DISPATCH(struct
     return pSubdevice->__subdeviceCtrlCmdFifoGetAllocatedChannels__(pSubdevice, pParams);
 }
 
+NV_STATUS subdeviceCtrlCmdInternalFifoGetNumSecureChannels_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS_PARAMS *pNumSecureChannelsParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalFifoGetNumSecureChannels_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS_PARAMS *pNumSecureChannelsParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalFifoGetNumSecureChannels__(pSubdevice, pNumSecureChannelsParams);
+}
+
 NV_STATUS subdeviceCtrlCmdKGrGetInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GR_GET_INFO_PARAMS *pParams);
 
 static inline NV_STATUS subdeviceCtrlCmdKGrGetInfo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GR_GET_INFO_PARAMS *pParams) {
@@ -2310,9 +2348,9 @@ static inline NV_STATUS subdeviceCtrlCmdKGrGetCtxBufferPtes_DISPATCH(struct Subd
     return pSubdevice->__subdeviceCtrlCmdKGrGetCtxBufferPtes__(pSubdevice, pParams);
 }
 
-NV_STATUS subdeviceCtrlCmdKGrGetCurrentResidentChannel_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS *pParams);
+NV_STATUS subdeviceCtrlCmdKGrGetCurrentResidentChannel_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS *pParams);
 
-static inline NV_STATUS subdeviceCtrlCmdKGrGetCurrentResidentChannel_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS *pParams) {
+static inline NV_STATUS subdeviceCtrlCmdKGrGetCurrentResidentChannel_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GR_GET_CURRENT_RESIDENT_CHANNEL_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdKGrGetCurrentResidentChannel__(pSubdevice, pParams);
 }
 
@@ -2566,6 +2604,12 @@ NV_STATUS subdeviceCtrlCmdGpuGetNvencSwSessionInfo_IMPL(struct Subdevice *pSubde
 
 static inline NV_STATUS subdeviceCtrlCmdGpuGetNvencSwSessionInfo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdGpuGetNvencSwSessionInfo__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdGpuGetNvfbcSwSessionStats_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_STATS_PARAMS *params);
@@ -2856,6 +2900,12 @@ static inline NV_STATUS subdeviceCtrlCmdGpuGetHwEngineId_DISPATCH(struct Subdevi
     return pSubdevice->__subdeviceCtrlCmdGpuGetHwEngineId__(pSubdevice, pParams);
 }
 
+NV_STATUS subdeviceCtrlCmdGpuGetVmmuSegmentSize_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdGpuGetVmmuSegmentSize_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_VMMU_SEGMENT_SIZE_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdGpuGetVmmuSegmentSize__(pSubdevice, pParams);
+}
+
 NV_STATUS subdeviceCtrlCmdGpuGetMaxSupportedPageSize_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_MAX_SUPPORTED_PAGE_SIZE_PARAMS *pParams);
 
 static inline NV_STATUS subdeviceCtrlCmdGpuGetMaxSupportedPageSize_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_MAX_SUPPORTED_PAGE_SIZE_PARAMS *pParams) {
@@ -2914,6 +2964,18 @@ NV_STATUS subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL(struct Subdevice *pSubdevic
 
 static inline NV_STATUS subdeviceCtrlCmdGetGpuFabricProbeInfo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdGetGpuFabricProbeInfo__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdGpuGetResetStatus_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_RESET_STATUS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdGpuGetResetStatus_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_RESET_STATUS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdGpuGetResetStatus__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdGpuGetDrainAndResetStatus_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_DRAIN_AND_RESET_STATUS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdGpuGetDrainAndResetStatus_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_DRAIN_AND_RESET_STATUS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdGpuGetDrainAndResetStatus__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdEventSetTrigger_IMPL(struct Subdevice *pSubdevice);
@@ -3396,6 +3458,42 @@ static inline NV_STATUS subdeviceCtrlCmdDisplayGetDisplayMask_DISPATCH(struct Su
     return pSubdevice->__subdeviceCtrlCmdDisplayGetDisplayMask__(pSubdevice, pParams);
 }
 
+NV_STATUS subdeviceCtrlCmdDisplayPinsetsToLockpins_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_DISP_PINSETS_TO_LOCKPINS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdDisplayPinsetsToLockpins_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_DISP_PINSETS_TO_LOCKPINS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdDisplayPinsetsToLockpins__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdDisplaySetSliLinkGpioSwControl_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_DISP_SET_SLI_LINK_GPIO_SW_CONTROL_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdDisplaySetSliLinkGpioSwControl_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_DISP_SET_SLI_LINK_GPIO_SW_CONTROL_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdDisplaySetSliLinkGpioSwControl__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalGpioProgramDirection_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPIO_PROGRAM_DIRECTION_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalGpioProgramDirection_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPIO_PROGRAM_DIRECTION_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalGpioProgramDirection__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalGpioProgramOutput_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPIO_PROGRAM_OUTPUT_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalGpioProgramOutput_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPIO_PROGRAM_OUTPUT_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalGpioProgramOutput__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalGpioReadInput_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPIO_READ_INPUT_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalGpioReadInput_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPIO_READ_INPUT_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalGpioReadInput__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalGpioActivateHwFunction_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPIO_ACTIVATE_HW_FUNCTION_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalGpioActivateHwFunction_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GPIO_ACTIVATE_HW_FUNCTION_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalGpioActivateHwFunction__(pSubdevice, pParams);
+}
+
 NV_STATUS subdeviceCtrlCmdMsencGetCaps_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_MSENC_GET_CAPS_PARAMS *pParams);
 
 static inline NV_STATUS subdeviceCtrlCmdMsencGetCaps_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_MSENC_GET_CAPS_PARAMS *pParams) {
@@ -3498,6 +3596,12 @@ static inline NV_STATUS subdeviceCtrlCmdInternalBusRemoveC2cPeerMapping_DISPATCH
     return pSubdevice->__subdeviceCtrlCmdInternalBusRemoveC2cPeerMapping__(pSubdevice, pParams);
 }
 
+NV_STATUS subdeviceCtrlCmdInternalVmmuGetSpaForGpaEntries_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_VMMU_GET_SPA_FOR_GPA_ENTRIES_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalVmmuGetSpaForGpaEntries_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_VMMU_GET_SPA_FOR_GPA_ENTRIES_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalVmmuGetSpaForGpaEntries__(pSubdevice, pParams);
+}
+
 NV_STATUS subdeviceCtrlCmdGmmuGetStaticInfo_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pParams);
 
 static inline NV_STATUS subdeviceCtrlCmdGmmuGetStaticInfo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pParams) {
@@ -3522,10 +3626,10 @@ static inline NV_STATUS subdeviceCtrlCmdInternalGmmuRegisterClientShadowFaultBuf
     return pSubdevice->__subdeviceCtrlCmdInternalGmmuRegisterClientShadowFaultBuffer__(pSubdevice, pParams);
 }
 
-NV_STATUS subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer_IMPL(struct Subdevice *pSubdevice);
+NV_STATUS subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GMMU_UNREGISTER_CLIENT_SHADOW_FAULT_BUFFER_PARAMS *pParams);
 
-static inline NV_STATUS subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer_DISPATCH(struct Subdevice *pSubdevice) {
-    return pSubdevice->__subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer__(pSubdevice);
+static inline NV_STATUS subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GMMU_UNREGISTER_CLIENT_SHADOW_FAULT_BUFFER_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalGmmuUnregisterClientShadowFaultBuffer__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdInternalGmmuCopyReservedSplitGVASpacePdesServer_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_GMMU_COPY_RESERVED_SPLIT_GVASPACE_PDES_TO_SERVER_PARAMS *pCopyServerReservedPdesParams);
@@ -3658,6 +3762,12 @@ NV_STATUS subdeviceCtrlCmdBifSetPcieRo_IMPL(struct Subdevice *pSubdevice, NV2080
 
 static inline NV_STATUS subdeviceCtrlCmdBifSetPcieRo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_BIF_SET_PCIE_RO_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdBifSetPcieRo__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdBifDisableSystemMemoryAccess_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_BIF_DISABLE_SYSTEM_MEMORY_ACCESS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdBifDisableSystemMemoryAccess_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_BIF_DISABLE_SYSTEM_MEMORY_ACCESS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdBifDisableSystemMemoryAccess__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdHshubPeerConnConfig_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_HSHUB_PEER_CONN_CONFIG_PARAMS *pParams);
@@ -3804,6 +3914,12 @@ static inline NV_STATUS subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit_DISPA
     return pSubdevice->__subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit__(pSubdevice);
 }
 
+NV_STATUS subdeviceCtrlCmdInternalDetectHsVideoBridge_IMPL(struct Subdevice *pSubdevice);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalDetectHsVideoBridge_DISPATCH(struct Subdevice *pSubdevice) {
+    return pSubdevice->__subdeviceCtrlCmdInternalDetectHsVideoBridge__(pSubdevice);
+}
+
 NV_STATUS subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS *pParams);
 
 static inline NV_STATUS subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS *pParams) {
@@ -3898,16 +4014,16 @@ static inline NvBool subdeviceShareCallback_DISPATCH(struct Subdevice *pGpuResou
     return pGpuResource->__subdeviceShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS subdeviceMapTo_DISPATCH(struct Subdevice *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__subdeviceMapTo__(pResource, pParams);
+static inline NV_STATUS subdeviceCheckMemInterUnmap_DISPATCH(struct Subdevice *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__subdeviceCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS subdeviceGetOrAllocNotifShare_DISPATCH(struct Subdevice *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__subdeviceGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS subdeviceCheckMemInterUnmap_DISPATCH(struct Subdevice *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__subdeviceCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS subdeviceMapTo_DISPATCH(struct Subdevice *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__subdeviceMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS subdeviceGetMapAddrSpace_DISPATCH(struct Subdevice *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -3970,12 +4086,20 @@ static inline NV_STATUS subdeviceUnregisterEvent_DISPATCH(struct Subdevice *pNot
     return pNotifier->__subdeviceUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS subdeviceControlSerialization_Prologue_DISPATCH(struct Subdevice *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__subdeviceControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool subdeviceCanCopy_DISPATCH(struct Subdevice *pResource) {
     return pResource->__subdeviceCanCopy__(pResource);
 }
 
 static inline NV_STATUS subdeviceIsDuplicate_DISPATCH(struct Subdevice *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__subdeviceIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void subdeviceControlSerialization_Epilogue_DISPATCH(struct Subdevice *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__subdeviceControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *subdeviceGetNotificationListPtr_DISPATCH(struct Subdevice *pNotifier) {

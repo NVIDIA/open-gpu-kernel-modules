@@ -90,10 +90,6 @@ static NV_STATUS __nvoc_thunk_Intr_engstateStateUnload(OBJGPU *pGpu, struct OBJE
     return intrStateUnload(pGpu, (struct Intr *)(((unsigned char *)pIntr) - __nvoc_rtti_Intr_OBJENGSTATE.offset), arg0);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_intrReconcileTunableState(POBJGPU pGpu, struct Intr *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_intrStatePreLoad(POBJGPU pGpu, struct Intr *pEngstate, NvU32 arg0) {
     return engstateStatePreLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset), arg0);
 }
@@ -118,28 +114,8 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_intrStatePreInitUnlocked(POBJGPU pGpu,
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_intrGetTunableState(POBJGPU pGpu, struct Intr *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_intrCompareTunableState(POBJGPU pGpu, struct Intr *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_intrFreeTunableState(POBJGPU pGpu, struct Intr *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_intrStatePostLoad(POBJGPU pGpu, struct Intr *pEngstate, NvU32 arg0) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset), arg0);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_intrAllocTunableState(POBJGPU pGpu, struct Intr *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_intrSetTunableState(POBJGPU pGpu, struct Intr *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_Intr_OBJENGSTATE.offset), pTunableState);
 }
 
 static NvBool __nvoc_thunk_OBJENGSTATE_intrIsPresent(POBJGPU pGpu, struct Intr *pEngstate) {
@@ -329,16 +305,6 @@ static void __nvoc_init_funcTable_Intr_1(Intr *pThis, RmHalspecOwner *pRmhalspec
         pThis->__intrWriteRegTopEnClear__ = &intrWriteRegTopEnClear_GA102;
     }
 
-    // Hal function -- intrGetStallSubtreeLast
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
-    {
-        pThis->__intrGetStallSubtreeLast__ = &intrGetStallSubtreeLast_TU102;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__intrGetStallSubtreeLast__ = &intrGetStallSubtreeLast_GH100;
-    }
-
     // Hal function -- intrGetNumLeaves
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
@@ -453,8 +419,6 @@ static void __nvoc_init_funcTable_Intr_1(Intr *pThis, RmHalspecOwner *pRmhalspec
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_thunk_Intr_engstateStateUnload;
 
-    pThis->__intrReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_intrReconcileTunableState;
-
     pThis->__intrStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_intrStatePreLoad;
 
     pThis->__intrStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_intrStatePostUnload;
@@ -467,17 +431,7 @@ static void __nvoc_init_funcTable_Intr_1(Intr *pThis, RmHalspecOwner *pRmhalspec
 
     pThis->__intrStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_intrStatePreInitUnlocked;
 
-    pThis->__intrGetTunableState__ = &__nvoc_thunk_OBJENGSTATE_intrGetTunableState;
-
-    pThis->__intrCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_intrCompareTunableState;
-
-    pThis->__intrFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_intrFreeTunableState;
-
     pThis->__intrStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_intrStatePostLoad;
-
-    pThis->__intrAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_intrAllocTunableState;
-
-    pThis->__intrSetTunableState__ = &__nvoc_thunk_OBJENGSTATE_intrSetTunableState;
 
     pThis->__intrIsPresent__ = &__nvoc_thunk_OBJENGSTATE_intrIsPresent;
 }
@@ -501,12 +455,15 @@ NV_STATUS __nvoc_objCreate_Intr(Intr **ppThis, Dynamic *pParent, NvU32 createFla
     Intr *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(Intr));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(Intr), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(Intr));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_Intr);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -527,11 +484,17 @@ NV_STATUS __nvoc_objCreate_Intr(Intr **ppThis, Dynamic *pParent, NvU32 createFla
     if (status != NV_OK) goto __nvoc_objCreate_Intr_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_Intr_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(Intr));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

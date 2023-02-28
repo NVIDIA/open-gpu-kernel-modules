@@ -1129,8 +1129,7 @@ static NvBool FrameLockDpyCanBeServer(const NVDpyEvoRec *pDpyEvo)
     NV30F1_CTRL_GSYNC_GET_CONTROL_SYNC_PARAMS gsyncGetControlSyncParams = { 0 };
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
     NVFrameLockEvoPtr pFrameLockEvo = pDispEvo->pFrameLockEvo;
-    /* XXX[2Heads1OR] Get the primary hardware head. */
-    const NvU32 head = pDpyEvo->apiHead;
+    const NvU32 head = nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead);
     const NVDispHeadStateEvoRec *pHeadState;
     NvU32 ret;
 
@@ -2172,25 +2171,43 @@ NvU32 nvGetFramelockServerHead(const NVDispEvoRec *pDispEvo)
 {
     const NVDpyEvoRec *pDpyEvo =
         nvGetDpyEvoFromDispEvo(pDispEvo, pDispEvo->framelock.server);
-    /* XXX[2Heads1OR] Get the primary hardware head. */
-    return (pDpyEvo != NULL) ? pDpyEvo->apiHead : NV_INVALID_HEAD;
+    return (pDpyEvo != NULL) ? nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead) :
+                NV_INVALID_HEAD;
 }
 
 NvU32 nvGetFramelockClientHeadsMask(const NVDispEvoRec *pDispEvo)
 {
     NvU32 headsMask = 0x0;
-    const NVDpyEvoRec *pDpyEvo;
+    const NVDpyEvoRec *pServerDpyEvo, *pClientDpyEvo;
 
-    /*
-     * XXX[2Heads1OR] Translate api-head -> hardware-heads, and make sure to
-     * include the secondary hardware-head of the server dpy.
-     */
-    FOR_ALL_EVO_DPYS(pDpyEvo, pDispEvo->framelock.clients, pDispEvo) {
-        if (pDpyEvo->apiHead == NV_INVALID_HEAD) {
+    pServerDpyEvo = nvGetDpyEvoFromDispEvo(pDispEvo,
+                                           pDispEvo->framelock.server);
+    if ((pServerDpyEvo != NULL) &&
+            (pServerDpyEvo->apiHead != NV_INVALID_HEAD)) {
+        const NVDispApiHeadStateEvoRec *pApiHeadState =
+            &pDispEvo->apiHeadState[pServerDpyEvo->apiHead];
+        NvU32 primaryHead = nvGetPrimaryHwHead(pDispEvo,
+                                               pServerDpyEvo->apiHead);
+
+        nvAssert(primaryHead != NV_INVALID_HEAD);
+
+        /*
+         * The secondary hardware-head of the server dpy are client of the
+         * primary head.
+         */
+        headsMask |= pApiHeadState->hwHeadsMask;
+        headsMask &= ~NVBIT(primaryHead);
+    }
+
+    FOR_ALL_EVO_DPYS(pClientDpyEvo, pDispEvo->framelock.clients, pDispEvo) {
+        if (pClientDpyEvo->apiHead == NV_INVALID_HEAD) {
             continue;
         }
-        headsMask |= NVBIT(pDpyEvo->apiHead);
+        const NVDispApiHeadStateEvoRec *pApiHeadState =
+            &pDispEvo->apiHeadState[pClientDpyEvo->apiHead];
+        headsMask |= pApiHeadState->hwHeadsMask;
     }
+
     return headsMask;
 }
 
@@ -2205,8 +2222,13 @@ void nvUpdateGLSFramelock(const NVDispEvoRec *pDispEvo, const NvU32 head,
      * apiHead -> pDpyEvo mapping will get implemented.
      */
     FOR_ALL_EVO_DPYS(pDpyEvo, pDispEvo->validDisplays, pDispEvo) {
-        /* XXX[2Heads1OR] Get the primary hardware head. */
-        if (pDpyEvo->apiHead != head) {
+        /*
+         * XXX[2Heads1OR] Framelock is currently not supported with
+         * 2Heads1OR, the api head is expected to be mapped onto a single
+         * hardware head which is the primary hardware head.
+         */
+        if ((pDpyEvo->apiHead == NV_INVALID_HEAD) ||
+                (nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead) != head)) {
             continue;
         }
 

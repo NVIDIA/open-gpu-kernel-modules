@@ -5080,3 +5080,21 @@ nvswitch_lib_ctrl
 
     return retval;
 }
+
+#if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
+void nvswitch_assert_log
+(
+    const char *function,
+    const char *file,
+    NvU32 line
+)
+{
+    nvswitch_os_assert_log("NVSwitch: Assertion failed in %s() at %s:%d\n",
+                           function, file, line);
+}
+#else
+void nvswitch_assert_log(void)
+{
+    nvswitch_os_assert_log("NVSwitch: Assertion failed\n");
+}
+#endif

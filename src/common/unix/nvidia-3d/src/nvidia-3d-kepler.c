@@ -102,10 +102,6 @@ void _nv3dUploadDataInlineKepler(
         nvPushSetMethodDataU64(p, gpuBaseAddress + offset + bytesSoFar);
         nvPushSetMethodData(p, bytesThisChunk); // NVA097_PITCH_OUT
 
-        nvPushMethod(p, NVA06F_SUBCHANNEL_3D, NVA097_SET_DST_WIDTH, 2);
-        nvPushSetMethodData(p, bytesThisChunk);
-        nvPushSetMethodData(p, 1); // NVA097_SET_DST_HEIGHT
-
         nvPushMethodOneIncr(p, NVA06F_SUBCHANNEL_3D, NVA097_LAUNCH_DMA,
                             1 + dwordsThisChunk);
         nvPushSetMethodData(p,

@@ -101,6 +101,46 @@ static NV_STATUS __nvoc_thunk_Memory_conmemCheckMemInterUnmap(struct ConsoleMemo
     return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), bSubdeviceHandleProvided);
 }
 
+static NvBool __nvoc_thunk_RmResource_conmemShareCallback(struct ConsoleMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_conmemMapTo(struct ConsoleMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_conmemGetMapAddrSpace(struct ConsoleMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_conmemGetRefCount(struct ConsoleMemory *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_conmemAddAdditionalDependants(struct RsClient *pClient, struct ConsoleMemory *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_conmemControl_Prologue(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_Memory_conmemIsGpuMapAllowed(struct ConsoleMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_conmemUnmapFrom(struct ConsoleMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_conmemControl_Epilogue(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_conmemControlLookup(struct ConsoleMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pParams, ppEntry);
+}
+
 static NV_STATUS __nvoc_thunk_Memory_conmemControl(struct ConsoleMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), pCallContext, pParams);
 }
@@ -117,36 +157,12 @@ static NV_STATUS __nvoc_thunk_Memory_conmemGetMemoryMappingDescriptor(struct Con
     return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_conmemGetMapAddrSpace(struct ConsoleMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvBool __nvoc_thunk_RmResource_conmemShareCallback(struct ConsoleMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_conmemControlFilter(struct ConsoleMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_conmemAddAdditionalDependants(struct RsClient *pClient, struct ConsoleMemory *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_conmemGetRefCount(struct ConsoleMemory *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_conmemMapTo(struct ConsoleMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_conmemControl_Prologue(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_Memory_conmemIsGpuMapAllowed(struct ConsoleMemory *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), pGpu);
+static NV_STATUS __nvoc_thunk_RmResource_conmemControlSerialization_Prologue(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_conmemIsReady(struct ConsoleMemory *pMemory, NvBool bCopyConstructorContext) {
@@ -165,16 +181,8 @@ static NV_STATUS __nvoc_thunk_Memory_conmemIsDuplicate(struct ConsoleMemory *pMe
     return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_conmemUnmapFrom(struct ConsoleMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_conmemControl_Epilogue(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_conmemControlLookup(struct ConsoleMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_conmemControlSerialization_Epilogue(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_conmemMap(struct ConsoleMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -229,6 +237,26 @@ static void __nvoc_init_funcTable_ConsoleMemory_1(ConsoleMemory *pThis) {
 
     pThis->__conmemCheckMemInterUnmap__ = &__nvoc_thunk_Memory_conmemCheckMemInterUnmap;
 
+    pThis->__conmemShareCallback__ = &__nvoc_thunk_RmResource_conmemShareCallback;
+
+    pThis->__conmemMapTo__ = &__nvoc_thunk_RsResource_conmemMapTo;
+
+    pThis->__conmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_conmemGetMapAddrSpace;
+
+    pThis->__conmemGetRefCount__ = &__nvoc_thunk_RsResource_conmemGetRefCount;
+
+    pThis->__conmemAddAdditionalDependants__ = &__nvoc_thunk_RsResource_conmemAddAdditionalDependants;
+
+    pThis->__conmemControl_Prologue__ = &__nvoc_thunk_RmResource_conmemControl_Prologue;
+
+    pThis->__conmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_conmemIsGpuMapAllowed;
+
+    pThis->__conmemUnmapFrom__ = &__nvoc_thunk_RsResource_conmemUnmapFrom;
+
+    pThis->__conmemControl_Epilogue__ = &__nvoc_thunk_RmResource_conmemControl_Epilogue;
+
+    pThis->__conmemControlLookup__ = &__nvoc_thunk_RsResource_conmemControlLookup;
+
     pThis->__conmemControl__ = &__nvoc_thunk_Memory_conmemControl;
 
     pThis->__conmemUnmap__ = &__nvoc_thunk_Memory_conmemUnmap;
@@ -237,21 +265,9 @@ static void __nvoc_init_funcTable_ConsoleMemory_1(ConsoleMemory *pThis) {
 
     pThis->__conmemGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_conmemGetMemoryMappingDescriptor;
 
-    pThis->__conmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_conmemGetMapAddrSpace;
-
-    pThis->__conmemShareCallback__ = &__nvoc_thunk_RmResource_conmemShareCallback;
-
     pThis->__conmemControlFilter__ = &__nvoc_thunk_RsResource_conmemControlFilter;
 
-    pThis->__conmemAddAdditionalDependants__ = &__nvoc_thunk_RsResource_conmemAddAdditionalDependants;
-
-    pThis->__conmemGetRefCount__ = &__nvoc_thunk_RsResource_conmemGetRefCount;
-
-    pThis->__conmemMapTo__ = &__nvoc_thunk_RsResource_conmemMapTo;
-
-    pThis->__conmemControl_Prologue__ = &__nvoc_thunk_RmResource_conmemControl_Prologue;
-
-    pThis->__conmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_conmemIsGpuMapAllowed;
+    pThis->__conmemControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_conmemControlSerialization_Prologue;
 
     pThis->__conmemIsReady__ = &__nvoc_thunk_Memory_conmemIsReady;
 
@@ -261,11 +277,7 @@ static void __nvoc_init_funcTable_ConsoleMemory_1(ConsoleMemory *pThis) {
 
     pThis->__conmemIsDuplicate__ = &__nvoc_thunk_Memory_conmemIsDuplicate;
 
-    pThis->__conmemUnmapFrom__ = &__nvoc_thunk_RsResource_conmemUnmapFrom;
-
-    pThis->__conmemControl_Epilogue__ = &__nvoc_thunk_RmResource_conmemControl_Epilogue;
-
-    pThis->__conmemControlLookup__ = &__nvoc_thunk_RsResource_conmemControlLookup;
+    pThis->__conmemControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_conmemControlSerialization_Epilogue;
 
     pThis->__conmemMap__ = &__nvoc_thunk_Memory_conmemMap;
 
@@ -293,12 +305,15 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory **ppThis, Dynamic *pParen
     Object *pParentObj;
     ConsoleMemory *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(ConsoleMemory));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ConsoleMemory), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(ConsoleMemory));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ConsoleMemory);
+
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -315,11 +330,17 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory **ppThis, Dynamic *pParen
     if (status != NV_OK) goto __nvoc_objCreate_ConsoleMemory_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_ConsoleMemory_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(ConsoleMemory));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

@@ -442,12 +442,6 @@
 #define NV_REG_STR_RM_INST_LOC_4_FECS_EVENT_BUF_NCOH          NV_REG_STR_RM_INST_LOC_NCOH
 #define NV_REG_STR_RM_INST_LOC_4_FECS_EVENT_BUF_VID           NV_REG_STR_RM_INST_LOC_VID
 
-#define NV_REG_STR_RM_DISABLE_GSP_OFFLOAD                   "RmDisableGspOffload"
-#define NV_REG_STR_RM_DISABLE_GSP_OFFLOAD_FALSE             (0x00000000)
-#define NV_REG_STR_RM_DISABLE_GSP_OFFLOAD_TRUE              (0x00000001)
-// Type DWORD (Boolean)
-// Override any other settings and disable GSP-RM offload.
-
 #define NV_REG_STR_RM_GSP_STATUS_QUEUE_SIZE         "RmGspStatusQueueSize"
 // TYPE DWORD
 // Set the GSP status queue size in KB (for GSP to CPU RPC status and event communication)
@@ -475,6 +469,17 @@
 // Enable/Disable RM event tracing
 // 0 - Disable RM event tracing
 // 1 - Enable RM event tracing
+
+
+#define NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA            "AllocCtxBuffersFromPMA"
+#define NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA_DISABLE    0
+#define NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA_DEFAULT    0
+#define NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA_ENABLE     1
+// Type DWORD
+// Encoding boolean
+// Enable/Disable context buffers from being allocated in PMA
+// 0 - Disable PMA allocation for context buffers and allocate from reserved memory
+// 1 - Enable PMA allocation for context buffers and do not allocate from reserved memory
 
 
 #define NV_REG_STR_RM_COMPUTE_MODE_RULES "RmComputeModeRules"
@@ -725,6 +730,17 @@
 // Used to enable no locking on copy
 //
 #define NV_REG_STR_RM_PARAM_COPY_NO_LOCK                      "RMParamCopyNoLock"
+
+//
+// Type DWORD
+// Used to control RM API lock aging for low priority acquires.
+// If 0, low priority acquires (e.g. from cleanup when a process dies)
+// are disabled and treated like regular ones.
+// Otherwise, they will yield the lock this many times to the higher priority
+// threads before proceeding.
+// Off by default; 3 would be a good starting value if the feature is desired.
+//
+#define NV_REG_STR_RM_LOCKING_LOW_PRIORITY_AGING              "RMLockingLowPriorityAging"
 
 //
 // Type DWORD
@@ -986,7 +1002,7 @@
 // RM aperture size. This can result in undefined beahvior in environments that
 // rely on a virtual bar2 aperture shared between RM and VBIOS for VESA support.
 
-#if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
+#if defined(DEVELOP) || defined(DEBUG) || (defined(RMCFG_FEATURE_MODS_FEATURES) && RMCFG_FEATURE_MODS_FEATURES)
 //
 // TYPE DWORD
 // This setting will override the BAR1 Big page size
@@ -995,7 +1011,7 @@
 #define NV_REG_STR_RM_SET_BAR1_ADDRESS_SPACE_BIG_PAGE_SIZE                  "RMSetBAR1AddressSpaceBigPageSize"
 #define NV_REG_STR_RM_SET_BAR1_ADDRESS_SPACE_BIG_PAGE_SIZE_64k              (64 * 1024)
 #define NV_REG_STR_RM_SET_BAR1_ADDRESS_SPACE_BIG_PAGE_SIZE_128k             (128 * 1024)
-#endif //DEVELOP || DEBUG || NV_MODS
+#endif //DEVELOP || DEBUG || MODS_FEATURES
 
 // This regkey is to disable coherent path CPU->Nvlink/C2C->FB and force BAR path.
 #define NV_REG_STR_RM_FORCE_BAR_PATH            "RMForceBarPath"
@@ -1716,15 +1732,46 @@
 // period for which swap lock window will remain HIGH for QSYNC III.
 //
 
-#define NV_REG_STR_RM_MULTICAST_FLA                   "RMEnableMulticastFla"
-#define NV_REG_STR_RM_MULTICAST_FLA_DISABLED          0x00000000
-#define NV_REG_STR_RM_MULTICAST_FLA_ENABLED           0x00000001
+#define NV_REG_STR_RM_NVLINK_BW                     "RmNvlinkBandwidth"
+// Type String
+// The option is in the string format.
 //
-// Type: Dword
-// Encoding:
-// 1 - Multicast FLA Enabled on supported GPU
-// 0 - Multicast FLA Disabled on specific GPU
+// Possible string values:
+//   OFF:      0% bandwidth
+//   MIN:      15%-25% bandwidth depending on the system's NVLink topology
+//   HALF:     50% bandwidth
+//   3QUARTER: 75% bandwidth
+//   FULL:     100% bandwidth (default)
 //
+// This option is only for Hopper+ GPU with NVLINK version 4.0.
+
+#define NV_REG_STR_RM_CLIENT_HANDLE_LOOKUP                  "RmClientHandleLookup"
+// Type DWORD (Boolean)
+// 1 - Store active RM clients in a multimap to speed up lookups (currently only in thirdpartyp2p)
+// 0 - (Default) Linear list search for clients
+
+
+//
+// Type: DWORD (Boolean)
+//
+// 1 - Only invalidate and free CPU mappings immediatelly, then collect GPU resources
+//     from individual clients under separate lock acquire/release sequences.
+// 0 - (Default) Immediately free all clients resources when freeing a client list
+#define NV_REG_STR_RM_CLIENT_LIST_DEFERRED_FREE             "RMClientListDeferredFree"
+
+//
+// Type: DWORD
+//
+// Number of clients to free in a single chunk before yielding and scheduling
+// a work item to handle the rest.
+//
+// Only valid if NV_REG_STR_RM_CLIENT_LIST_DEFERRED_FREE is set.
+//
+// Value of 0 (default) means there is no limit and all clients will be freed
+// at once before the process terminates.
+//
+#define NV_REG_STR_RM_CLIENT_LIST_DEFERRED_FREE_LIMIT      "RMClientListDeferredFreeLimit"
+
 //
 // TYPE Dword
 // Determines whether or not to emulate VF MMU TLB Invalidation register range
@@ -1736,9 +1783,42 @@
 #define NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_DISABLE    0x00000000
 #define NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_DEFAULT    NV_REG_STR_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE_ENABLE
 
-#define NV_REG_STR_RM_CLIENT_HANDLE_LOOKUP                  "RmClientHandleLookup"
+#define NV_REG_STR_RM_POWER_FEATURES                        "RMPowerFeature"
+
+// Type DWORD
+// This Regkey controls inforom black box data recording. This can be used to
+// restrict access to BBX.
+// 0               - Enable BBX. (Default)
+// COMPLETELY      - Enable/Disable BBX access (read/write).
+// WRITE_BY_RM     - Enable/Disable writes by RM itself.
+// WRITE_BY_CLIENT - Enable/Disable writes by clients to RM.
+// PERIODIC FLUSH  - Enable/Disable periodic flush to inforom (Also enables/disables Power data collection)
+//
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX                  "RmDisableInforomBBX"
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_NO                        (0x00000000)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_YES                       (0x00000001)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_COMPLETELY                         0:0
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_COMPLETELY_NO             (0x00000000)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_COMPLETELY_YES            (0x00000001)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_WRITE_BY_RM                        1:1
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_WRITE_BY_RM_NO            (0x00000000)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_WRITE_BY_RM_YES           (0x00000001)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_WRITE_BY_CLIENT                    2:2
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_WRITE_BY_CLIENT_NO        (0x00000000)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_WRITE_BY_CLIENT_YES       (0x00000001)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_PERIODIC_FLUSH                     3:3
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_PERIODIC_FLUSH_YES        (0x00000000)
+#define NV_REG_STR_RM_INFOROM_DISABLE_BBX_PERIODIC_FLUSH_NO         (0x00000001)
+
+//
 // Type DWORD (Boolean)
-// 1 - Store active RM clients in a multimap to speed up lookups (currently only in thirdpartyp2p)
-// 0 - (Default) Linear list search for clients
+// RmNvlinkEnablePrivErrorRc
+//
+// 0 - (default) does not do RC recovery when PRIV_ERROR
+// 1 - enable FLA PRIV_ERROR RC recovery
+//
+#define NV_REG_STR_RM_NVLINK_ENABLE_PRIV_ERROR_RC                 "RmNvlinkEnablePrivErrorRc"
+#define NV_REG_STR_RM_NVLINK_ENABLE_PRIV_ERROR_RC_NO              0
+#define NV_REG_STR_RM_NVLINK_ENABLE_PRIV_ERROR_RC_YES             1
 
 #endif // NVRM_REGISTRY_H

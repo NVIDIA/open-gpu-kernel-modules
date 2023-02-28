@@ -386,7 +386,8 @@ struct uvm_access_counter_service_batch_context_struct
         // Virtual address notifications are always aligned to 64k. This means up to 16
         // different physical locations could have been accessed to trigger one notification.
         // The sub-granularity mask can correspond to any of them.
-        struct {
+        struct
+        {
             uvm_processor_id_t resident_processors[16];
             uvm_gpu_phys_address_t phys_addresses[16];
             uvm_access_counter_buffer_entry_t phys_entry;
@@ -523,7 +524,6 @@ typedef enum
     UVM_GPU_LINK_NVLINK_2,
     UVM_GPU_LINK_NVLINK_3,
     UVM_GPU_LINK_NVLINK_4,
-    UVM_GPU_LINK_C2C,
     UVM_GPU_LINK_MAX
 } uvm_gpu_link_type_t;
 
@@ -957,6 +957,10 @@ struct uvm_parent_gpu_struct
     // NUMA info, mainly for ATS
     uvm_numa_info_t numa_info;
 
+    // PMM lazy free processing queue.
+    // TODO: Bug 3881835: revisit whether to use nv_kthread_q_t or workqueue.
+    nv_kthread_q_t lazy_free_q;
+
     // Access counter buffer info. This is only valid if supports_access_counters is set to true
     uvm_access_counter_buffer_info_t access_counter_buffer_info;
 
@@ -1120,7 +1124,8 @@ struct uvm_gpu_peer_struct
     // deletion.
     NvHandle p2p_handle;
 
-    struct {
+    struct
+    {
         struct proc_dir_entry *peer_file[2];
         struct proc_dir_entry *peer_symlink_file[2];
 
@@ -1363,6 +1368,16 @@ void uvm_gpu_dma_free_page(uvm_parent_gpu_t *parent_gpu, void *va, NvU64 dma_add
 //
 // The GPU must be initialized before calling this function.
 bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
+
+// Returns whether the given range is within the GPU's addressable VA ranges in
+// the internal GPU VA "kernel" address space, which is a linear address space.
+// Therefore, the input 'addr' must not be in canonical form, even platforms
+// that use to the canonical form addresses, i.e., ARM64, and x86.
+// Warning: This only checks whether the GPU's MMU can support the given
+// address. Some HW units on that GPU might only support a smaller range.
+//
+// The GPU must be initialized before calling this function.
+bool uvm_gpu_can_address_kernel(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
 
 // Returns addr's canonical form for host systems that use canonical form
 // addresses.

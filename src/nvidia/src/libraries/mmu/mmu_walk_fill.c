@@ -285,7 +285,7 @@ static NV_STATUS _mmuWalkPostFillPTETasks
     // 
     if (pWalk->flags.bAtsEnabled && fillState == MMU_WALK_FILL_INVALID)
     {
-        const NvU32 pageSize    = NvU64_LO32(mmuFmtLevelPageSize(pFmtLevel));
+        const NvU64 pageSize    = mmuFmtLevelPageSize(pFmtLevel);
 
         NvU32 progress          = 0;
         NvU32 entryIndex        = 0;

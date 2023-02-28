@@ -111,7 +111,6 @@ _kperfSendPostPowerStateCallback
 {
     NvU32     inOutData    = 0;
     NvU16     outDataSize  = sizeof(inOutData);
-    OBJOS    *pOS          = GPU_GET_OS(pGpu);
     NV_STATUS status       = NV_OK;
     ACPI_DSM_FUNCTION func = gpuGetPerfPostPowerStateFunc(pGpu);
     RM_API    *pRmApi      = GPU_GET_PHYSICAL_RMAPI(pGpu);
@@ -141,9 +140,9 @@ _kperfSendPostPowerStateCallback
     inOutData = FLD_SET_DRF_NUM(_ACPI, _CALLBACKS_ARG, _CURRENTPOWERSTATE,
                                 ctrlParams.powerState, inOutData);
 
-    status = pOS->osCallACPI_DSM(pGpu, func,
-                                   NV_ACPI_GENERIC_FUNC_CALLBACKS,
-                                   &inOutData, &outDataSize);
+    status = osCallACPI_DSM(pGpu, func,
+                            NV_ACPI_GENERIC_FUNC_CALLBACKS,
+                            &inOutData, &outDataSize);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "PostPState callback error:0x%x\n", status);
@@ -192,7 +191,7 @@ subdeviceCtrlCmdPerfSetPowerstate_KERNEL
     NV2080_CTRL_PERF_SET_POWERSTATE_PARAMS *pPowerInfoParams
 )
 {
-    POBJGPU     pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
     RM_API     *pRmApi      = GPU_GET_PHYSICAL_RMAPI(pGpu);
     KernelPerf *pKernelPerf = GPU_GET_KERNEL_PERF(pGpu);
     NV_STATUS   status      = NV_OK;

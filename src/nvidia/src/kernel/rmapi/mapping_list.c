@@ -104,38 +104,35 @@ CliFindMappingInClient
 // allocates/initializes a new CLI_DMA_MAPPING_INFO.
 //
 // Ideally, we would know the dmaOffset by now but we typically don't. Thus the caller needs
-// to call intermapRegisterDmaMapping() to record the dma mapping at the proper hDevice/dmaOffset location
+// to call intermapRegisterDmaMapping() to record the dma mapping at the proper dmaOffset location
 //
 NV_STATUS
 intermapCreateDmaMapping
 (
     RsClient              *pClient,
-    RsResourceRef         *pMemoryRef,
-    NvHandle               hDevice,
-    NvHandle               hMemCtx,
+    VirtualMemory         *pVirtualMemory,
     PCLI_DMA_MAPPING_INFO *ppDmaMapping,
     NvU32                  flags
 )
 {
-    VirtualMemory         *pVirtualMemory;
     Memory                *pMemory  = NULL;
     PCLI_DMA_MAPPING_INFO  pDmaMapping;
     OBJVASPACE            *pVAS = NULL;
 
     // Mapping is always virtual memory object
-    if (memGetByHandleAndDevice(pClient, hMemCtx, hDevice, &pMemory) != NV_OK)
-    {
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
-
-    pVirtualMemory = dynamicCast(pMemory, VirtualMemory);
-
-    if ((pMemory->pMemDesc == NULL) || (pVirtualMemory == NULL))
+    if (pVirtualMemory == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (vaspaceGetByHandleOrDeviceDefault(pClient, hDevice, pVirtualMemory->hVASpace, &pVAS) != NV_OK)
+    pMemory = dynamicCast(pVirtualMemory, Memory);
+
+    if (pMemory->pMemDesc == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (vaspaceGetByHandleOrDeviceDefault(pClient, RES_GET_HANDLE(pMemory->pDevice), pVirtualMemory->hVASpace, &pVAS) != NV_OK)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -149,7 +146,6 @@ intermapCreateDmaMapping
 
     // initialize the dma mapping info (not registered yet)
     portMemSet(pDmaMapping, 0, sizeof(CLI_DMA_MAPPING_INFO));
-    pDmaMapping->hDevice            = hDevice;
     pDmaMapping->DmaOffset          = 0;
     pDmaMapping->bP2P               = NV_FALSE;
     pDmaMapping->Flags              = flags; // NV0S46_*
@@ -160,191 +156,130 @@ intermapCreateDmaMapping
 }
 
 //
-// registers/stores a pDmaMapping created by intermapCreateDmaMapping() at the hDevice/dmaOffset.
+// registers/stores a pDmaMapping created by intermapCreateDmaMapping() at the dmaOffset.
 //
-// important: we assume the hDevice/dmaOffset does NOT change (needs to be re-registerd)
+// important: we assume the dmaOffset does NOT change (needs to be re-registerd)
 //
 NV_STATUS
 intermapRegisterDmaMapping
 (
     RsClient              *pClient,
-    NvHandle               hDevice,
-    NvHandle               hMemCtx,
+    VirtualMemory         *pVirtualMemory,
     PCLI_DMA_MAPPING_INFO  pDmaMapping,
     NvU64                  dmaOffset,
     NvU32                  gpuMask
 )
 {
     NV_STATUS             rmStatus = NV_OK;
-    VirtualMemory        *pVirtualMemory = NULL;
     PNODE                 pNode;
-    PNODE                *ppDmaMappingList;
-    PCLI_DMA_MAPPING_INFO pDmaMappingFirst, pDmaMappingNext;
-
-    // eventually remove Next/Prev once all other linear list based on PCLI_DMA_MAPPING_INFO are gone...
-    NV_ASSERT(!pDmaMapping->Next && !pDmaMapping->Prev);
-
-    NV_CHECK_OK_OR_RETURN(LEVEL_SILENT,
-        virtmemGetByHandleAndDevice(pClient, hMemCtx, hDevice, &pVirtualMemory));
-
-    // the top level consists of lists sorted by hDevice - already created the hDevice specific list?
-    if (btreeSearch(hDevice, &pNode, pVirtualMemory->pDmaMappingList) != NV_OK)
-    {
-        // create a NODE for all pDmaMappings of this hDevice
-        pNode = portMemAllocNonPaged(sizeof(NODE));
-        if (NULL == pNode)
-        {
-            return NV_ERR_INSUFFICIENT_RESOURCES;
-        }
-        portMemSet(pNode, 0, sizeof(NODE));
-        pNode->keyStart = hDevice;
-        pNode->keyEnd   = hDevice;
-        pNode->Data     = NULL;
-
-        // register the hDevice list itself
-        rmStatus = btreeInsert(pNode, &pVirtualMemory->pDmaMappingList);
-        if (rmStatus != NV_OK)
-        {
-            portMemFree(pNode);
-            return rmStatus;
-        }
-    }
-
-    NV_ASSERT(pNode);
-    ppDmaMappingList = (PNODE*)&pNode->Data;
+    NvU64 alignment = 0;
 
     pDmaMapping->gpuMask = gpuMask;
 
-    // the second level consists of CLI_DMA_MAPPING_INFO sorted by dmaOffset -
-    if (DRF_VAL(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, pDmaMapping->Flags) ==
-                       NVOS46_FLAGS_DMA_UNICAST_REUSE_ALLOC_FALSE)
+    if (FLD_TEST_DRF(OS46, _FLAGS, _DMA_UNICAST_REUSE_ALLOC, _TRUE, pDmaMapping->Flags))
     {
-        NvU64 alignment = 0;
+        CLI_DMA_MAPPING_INFO *pDmaMappingFirst;
+        CLI_DMA_MAPPING_INFO *pDmaMappingCurrent;
 
-        if (pDmaMapping->pMemDesc->pGpu != NULL)
-        {
-            OBJGPU  *pGpu  = pDmaMapping->pMemDesc->pGpu;
-            //
-            // For verify purposes we should allow small page override for mapping.
-            // This will be used for testing VASpace interop.
-            // However, this info is not captured in the DMA mapping info for guest.
-            // So explicitly check for this case in guest.
-            //
-            if (IS_VIRTUAL_WITH_SRIOV(pGpu)
-                && RMCFG_FEATURE_PLATFORM_MODS
-                && FLD_TEST_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, pDmaMapping->Flags) 
-                && kgmmuIsVaspaceInteropSupported(GPU_GET_KERNEL_GMMU(pGpu))
-                )
-            {
-                alignment = RM_PAGE_SIZE;
-            }
-            else
-            {
-                alignment = (NvU64)memdescGetPageSize(memdescGetMemDescFromGpu(pDmaMapping->pMemDesc, pGpu),
-                                                      pDmaMapping->addressTranslation);
-            }
-        }
-
-        //
-        // In some cases page size may not be set (e.g. NV50, AMODEL, VGPU).
-        // Ideally we should fix all paths for consistency, but for now
-        // allowing fallback to unaligned tracking (no worse than before).
-        //
-        // TODO: Revisit this with memdesc page size cleanup.
-        //
-        if (alignment == 0)
-        {
-            alignment = 1;
-        }
-
-        // create the node for this dmaOffset
-        pNode = portMemAllocNonPaged(sizeof(NODE));
-        if (NULL == pNode)
-        {
-            return NV_ERR_INSUFFICIENT_RESOURCES;
-        }
-        portMemSet(pNode, 0, sizeof(NODE));
-
-        //
-        // For normal GPU devices, track the mapping over its entire
-        // virtual range so overlapping mappings are caught.
-        //
-        // keyStart and keyEnd must be aligned to the physical page size to
-        // ensure no page can be mapped twice.
-        // (e.g. small pages mapped into the leftovers of a big page).
-        //
-        // NOTE: Unfortunately this check occurs after the internal mapping
-        //       has already taken place, so the state is already corrupted.
-        //       Failure here means "Oops, your're screwed."
-        //
-        //       For Fermi+ we have added checks in the internal mapping code
-        //       that will fail safely.
-        //
-        pNode->keyStart = RM_ALIGN_DOWN(dmaOffset, alignment);
-        pNode->keyEnd   = RM_ALIGN_UP(dmaOffset + pDmaMapping->pMemDesc->Size,
-                                      alignment) - 1;
-        pNode->Data     = pDmaMapping;
-
-        // register the 'dmaOffset' list itself
-        rmStatus = btreeInsert(pNode, ppDmaMappingList);
-        if (rmStatus != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Failed to insert new mapping node for range 0x%llX-0x%llX!\n",
-                      pNode->keyStart, pNode->keyEnd);
-            DBG_BREAKPOINT();
-            portMemFree(pNode);
-            return rmStatus;
-        }
-    }
-    else
-    {
         // The node for this DMA offset should be already created
-        rmStatus = btreeSearch(dmaOffset, &pNode, *ppDmaMappingList);
-        if (rmStatus != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Failed to find existing mapping node for offset 0x%llX!\n",
-                      dmaOffset);
-            DBG_BREAKPOINT();
-            return rmStatus;
-        }
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, btreeSearch(dmaOffset, &pNode, pVirtualMemory->pDmaMappingList));
+        pDmaMappingFirst = (CLI_DMA_MAPPING_INFO *)pNode->Data;
 
-        NV_ASSERT(pNode);
-        pDmaMappingFirst = (PCLI_DMA_MAPPING_INFO)pNode->Data;
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, pDmaMappingFirst->DmaOffset == pDmaMapping->DmaOffset &&
+                                        pDmaMappingFirst->pMemDesc->Size ==  pDmaMapping->pMemDesc->Size,
+                           NV_ERR_INVALID_ARGUMENT);
 
-        // check that we do not exceed the original mapping length
-        if (pDmaMapping->pMemDesc->Size > pDmaMappingFirst->pMemDesc->Size)
+        // Check gpuMasks for consistency
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, (pDmaMappingFirst->gpuMask & (pDmaMappingFirst->gpuMask - 1)) == 0, NV_ERR_INVALID_ARGUMENT);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, (pDmaMapping->gpuMask & (pDmaMapping->gpuMask - 1)) == 0, NV_ERR_INVALID_ARGUMENT);
+        pDmaMappingCurrent = pDmaMappingFirst;
+        while (pDmaMappingCurrent != NULL)
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Mapping length 0x%llX exceeds existing mapping length of 0x%llX!\n",
-                      pDmaMapping->pMemDesc->Size,
-                      pDmaMappingFirst->pMemDesc->Size);
-            DBG_BREAKPOINT();
-            return NV_ERR_INVALID_LIMIT;
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, (pDmaMapping->gpuMask & pDmaMappingCurrent->gpuMask) == 0, NV_ERR_INVALID_ARGUMENT);
+            pDmaMappingCurrent = pDmaMappingCurrent->pNext;
         }
 
         // Insert the gpuMask element to the list
-        pDmaMapping->Next = pDmaMappingFirst;
-        pDmaMappingFirst->Prev = pDmaMapping;
+        pDmaMapping->pNext = pDmaMappingFirst;
         pNode->Data = pDmaMapping;
 
-        // Change the other mappings to remove this gpuMask from them
-        pDmaMapping = pDmaMapping->Next;
-        while (pDmaMapping)
+        return NV_OK;
+    }
+
+    if (pDmaMapping->pMemDesc->pGpu != NULL)
+    {
+        OBJGPU  *pGpu  = pDmaMapping->pMemDesc->pGpu;
+        //
+        // For verify purposes we should allow small page override for mapping.
+        // This will be used for testing VASpace interop.
+        // However, this info is not captured in the DMA mapping info for guest.
+        // So explicitly check for this case in guest.
+        //
+        if (IS_VIRTUAL_WITH_SRIOV(pGpu)
+            && RMCFG_FEATURE_PLATFORM_MODS
+            && FLD_TEST_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, pDmaMapping->Flags) 
+            && kgmmuIsVaspaceInteropSupported(GPU_GET_KERNEL_GMMU(pGpu))
+            )
         {
-            pDmaMappingNext = pDmaMapping->Next;
-            if (pDmaMapping->gpuMask & gpuMask)
-            {
-                pDmaMapping->gpuMask &= ~gpuMask;
-                if (pDmaMapping->gpuMask == 0)
-                {
-                    // free the pDmaMapping itself
-                    intermapFreeDmaMapping(pDmaMapping);
-                }
-            }
-            pDmaMapping = pDmaMappingNext;
+            alignment = RM_PAGE_SIZE;
         }
+        else
+        {
+            alignment = memdescGetPageSize64(memdescGetMemDescFromGpu(pDmaMapping->pMemDesc, pGpu),
+                                             pDmaMapping->addressTranslation);
+        }
+    }
+
+    //
+    // In some cases page size may not be set (e.g. NV50, AMODEL, VGPU).
+    // Ideally we should fix all paths for consistency, but for now
+    // allowing fallback to unaligned tracking (no worse than before).
+    //
+    // TODO: Revisit this with memdesc page size cleanup.
+    //
+    if (alignment == 0)
+    {
+        alignment = 1;
+    }
+
+    // create the node for this dmaOffset
+    pNode = portMemAllocNonPaged(sizeof(NODE));
+    if (NULL == pNode)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
+    portMemSet(pNode, 0, sizeof(NODE));
+
+    //
+    // For normal GPU devices, track the mapping over its entire
+    // virtual range so overlapping mappings are caught.
+    //
+    // keyStart and keyEnd must be aligned to the physical page size to
+    // ensure no page can be mapped twice.
+    // (e.g. small pages mapped into the leftovers of a big page).
+    //
+    // NOTE: Unfortunately this check occurs after the internal mapping
+    //       has already taken place, so the state is already corrupted.
+    //       Failure here means "Oops, your're screwed."
+    //
+    //       For Fermi+ we have added checks in the internal mapping code
+    //       that will fail safely.
+    //
+    pNode->keyStart = RM_ALIGN_DOWN(dmaOffset, alignment);
+    pNode->keyEnd   = RM_ALIGN_UP(dmaOffset + pDmaMapping->pMemDesc->Size,
+                                  alignment) - 1;
+    pNode->Data     = pDmaMapping;
+
+    // register the 'dmaOffset' list itself
+    rmStatus = btreeInsert(pNode, &pVirtualMemory->pDmaMappingList);
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to insert new mapping node for range 0x%llX-0x%llX!\n",
+                  pNode->keyStart, pNode->keyEnd);
+        DBG_BREAKPOINT();
+        portMemFree(pNode);
+        return rmStatus;
     }
 
     return NV_OK;
@@ -354,115 +289,52 @@ NV_STATUS
 intermapDelDmaMapping
 (
     RsClient *pClient,
-    NvHandle hDevice,
-    NvHandle hMemCtx,
+    VirtualMemory *pVirtualMemory,
     NvU64    dmaOffset,
-    NvU32    gpuMask,
-    NvBool  *pbUnmapped
+    NvU32    gpuMask
 )
 {
-    NV_STATUS               rmStatus = NV_OK;
-    VirtualMemory          *pVirtualMemory = NULL;
-    PCLI_DMA_MAPPING_INFO   pDmaMapping, pDmaMappingNext, pDmaMappingPrev;
-    PNODE                   pDeviceNode;
-    PNODE                   pOffsetNode;
     PNODE                   pNode;
-
-    if (pbUnmapped != NULL)
-        *pbUnmapped = NV_FALSE;
-
-    // Mapping is always virtual memory object
-    NV_CHECK_OK_OR_RETURN(LEVEL_SILENT,
-        virtmemGetByHandleAndDevice(pClient, hMemCtx, hDevice, &pVirtualMemory));
-
-    // first find the list specific to the hDevice
-    rmStatus = btreeSearch(hDevice, &pDeviceNode, pVirtualMemory->pDmaMappingList);
-    if (rmStatus != NV_OK)
-    {
-        return rmStatus;
-    }
+    CLI_DMA_MAPPING_INFO   *pDmaMapping;
+    CLI_DMA_MAPPING_INFO   *pDmaMappingPrev = NULL;
 
     // then get the node belonging to the search offset
-    rmStatus = btreeSearch(dmaOffset, &pOffsetNode, (PNODE)pDeviceNode->Data);
-    if (rmStatus != NV_OK)
-    {
-        return rmStatus;
-    }
+    NV_ASSERT_OK_OR_RETURN(btreeSearch(dmaOffset, &pNode, pVirtualMemory->pDmaMappingList));
 
-    pDmaMapping = pOffsetNode->Data;
-
-    // Remove the first dma mappings intersecting with this GPU mask
+    pDmaMapping = (CLI_DMA_MAPPING_INFO *)pNode->Data;
     while (pDmaMapping != NULL)
     {
-        pDmaMappingNext = pDmaMapping->Next;
-
         if (pDmaMapping->gpuMask & gpuMask)
         {
-            // Remove the element
-            pDmaMappingPrev = pDmaMapping->Prev;
+            CLI_DMA_MAPPING_INFO *pDmaMappingNext = pDmaMapping->pNext;
 
+            NV_ASSERT_OR_RETURN(pDmaMapping->gpuMask == gpuMask, NV_ERR_INVALID_ARGUMENT);
+
+            // Remove the element
             if (pDmaMappingPrev != NULL)
             {
-                pDmaMappingPrev->Next = pDmaMappingNext;
+                pDmaMappingPrev->pNext = pDmaMappingNext;
+            }
+            else if (pDmaMappingNext != NULL)
+            {
+                pNode->Data = pDmaMappingNext;
             }
             else
             {
-                pOffsetNode->Data = pDmaMappingNext;
+                NV_ASSERT_OK_OR_RETURN(btreeUnlink(pNode, &pVirtualMemory->pDmaMappingList));
+                portMemFree(pNode);
             }
 
-            if (pDmaMappingNext != NULL)
-            {
-                pDmaMappingNext->Prev = pDmaMappingPrev;
-            }
-
-            // free the pDmaMapping itself
             intermapFreeDmaMapping(pDmaMapping);
-
-            if (pbUnmapped != NULL)
-                *pbUnmapped = NV_TRUE;
-
-            break;
+            return NV_OK;
         }
-
-        pDmaMapping = pDmaMappingNext;
+        pDmaMappingPrev = pDmaMapping;
+        pDmaMapping = pDmaMapping->pNext;
     }
 
-    // Is the list empty ?
-    if (pOffsetNode->Data == NULL)
-    {
-        // unlink the node
-        rmStatus = btreeSearch(dmaOffset, &pNode, (PNODE)pDeviceNode->Data);
-        if (rmStatus != NV_OK)
-        {
-            return rmStatus;
-        }
-
-        rmStatus = btreeUnlink(pNode, (PNODE*)&pDeviceNode->Data);
-        if (rmStatus == NV_OK)
-        {
-            // free the node memory itself
-            portMemFree(pOffsetNode);
-
-            // is our dmaOffset list empty now?
-            if (pDeviceNode->Data == NULL)
-            {
-                // remove the whole hDevice list
-                rmStatus = btreeSearch(hDevice, &pNode, pVirtualMemory->pDmaMappingList);
-                if (rmStatus != NV_OK)
-                {
-                    return rmStatus;
-                }
-
-                rmStatus = btreeUnlink(pNode, &pVirtualMemory->pDmaMappingList);
-                if (rmStatus == NV_OK)
-                {
-                    portMemFree(pDeviceNode);
-                }
-            }
-        }
-    }
-
-    return rmStatus;
+    // mapping with the right gpuMask was not found
+    NV_ASSERT(0);
+    return NV_ERR_OBJECT_NOT_FOUND;
 }
 
 void
@@ -477,57 +349,41 @@ intermapFreeDmaMapping
     portMemFree(pDmaMapping);
 }
 
-static NvBool
-_getDmaMappingInfoFromMemory
+/*!
+ * @brief Lookup mapping info in a virtual memory allocation
+ */
+CLI_DMA_MAPPING_INFO *
+intermapGetDmaMapping
 (
     VirtualMemory         *pVirtualMemory,
-    NvHandle               hDevice,
     NvU64                  dmaOffset,
-    NvU32                  gpuMask,
-    PCLI_DMA_MAPPING_INFO *ppDmaMappingInfo
+    NvU32                  gpuMask
 )
 {
-    PNODE pDmaMappingList;
     PNODE pNode;
-    PCLI_DMA_MAPPING_INFO pDmaMappingInfo;
+    CLI_DMA_MAPPING_INFO *pDmaMapping;
 
-    // first find the list specific to the hDevice
-    pDmaMappingList = pVirtualMemory->pDmaMappingList;
-    if (btreeSearch(hDevice, &pNode, pDmaMappingList) == NV_OK)
+    // get the node belonging to the search offset
+    if (btreeSearch(dmaOffset, &pNode, pVirtualMemory->pDmaMappingList) != NV_OK)
+        return NULL;
+
+    pDmaMapping = pNode->Data;
+
+    while (pDmaMapping != NULL)
     {
-        pDmaMappingList = (PNODE)pNode->Data;
-        NV_ASSERT(pDmaMappingList);
+        if (pDmaMapping->gpuMask & gpuMask)
+            return pDmaMapping;
 
-        // then get the node belonging to the search offset
-        if (btreeSearch(dmaOffset, &pNode, pDmaMappingList) == NV_OK)
-        {
-            // Then look for the GPU mask
-            pDmaMappingInfo = pNode->Data;
-            while (pDmaMappingInfo)
-            {
-                if (pDmaMappingInfo->gpuMask & gpuMask)
-                {
-                    // Returns the first mapping that intersects with this gpu mask.
-                    break;
-                }
-                pDmaMappingInfo = pDmaMappingInfo->Next;
-            }
-            if (pDmaMappingInfo != NULL)
-            {
-                *ppDmaMappingInfo = pDmaMappingInfo;
-                return NV_TRUE;
-            }
-        }
+        pDmaMapping = pDmaMapping->pNext;
     }
-    return NV_FALSE;
+
+    return pDmaMapping;
 }
 
 /*!
- * @brief Lookup mapping info in memory context or VA space
+ * @brief Lookup mapping info in VA space
  *
- * This is useful when processing SW methods.  We can find the hVASpace
- * from the channel context uniquely.  Previous lookup within the whole
- * client could mistakenly find an alias on another device.
+ * This is useful for semaphores/notifiers when processing SW methods.
  */
 NvBool
 CliGetDmaMappingInfo
@@ -545,7 +401,6 @@ CliGetDmaMappingInfo
     Device             *pDevice;
     NODE               *pNode;
     NV_STATUS           status;
-    NvBool              bFound;
 
     status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
     if (status != NV_OK)
@@ -564,7 +419,9 @@ CliGetDmaMappingInfo
         pVirtualMemory = dynamicCast(pMemCtxRef->pResource, VirtualMemory);
         if (pVirtualMemory != NULL)
         {
-            return _getDmaMappingInfoFromMemory(pVirtualMemory, hDevice, dmaOffset, gpuMask, ppDmaMappingInfo);
+
+            *ppDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset, gpuMask);
+            return *ppDmaMappingInfo != NULL;
         }
     }
 
@@ -582,11 +439,10 @@ CliGetDmaMappingInfo
         if ((pVirtualMemory != NULL) &&
              virtmemMatchesVASpace(pVirtualMemory, hClient, hMemCtx))
         {
-            bFound = _getDmaMappingInfoFromMemory(pVirtualMemory, hDevice,
-                                                  dmaOffset, gpuMask,
-                                                  ppDmaMappingInfo);
-            if (bFound)
-                return bFound;
+            *ppDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset, gpuMask);
+
+            if (*ppDmaMappingInfo != NULL)
+                return NV_TRUE;
         }
     }
 
@@ -604,22 +460,19 @@ CliGetDmaMappingIterator
     // don't iterate if we didn't get a empty list
     *ppFirstDmaMapping = NULL;
     portMemSet(pIt, 0, sizeof(*pIt));
-    if (pDmaMappingList != NULL)
-    {
-        // find the first hDevice list
-        pIt->pDmaMappingList = pDmaMappingList;
-        btreeEnumStart(0, &pIt->pCurrentList, pIt->pDmaMappingList);
-        if (pIt->pCurrentList != NULL)
-        {
-            // find the first pDmaMapping of the hDevice list (hDevice lists can't be empty *ever*)
-            NV_ASSERT(pIt->pCurrentList->Data);
-            btreeEnumStart(0, &pIt->pNextDmaMapping, pIt->pCurrentList->Data);
-            NV_ASSERT(pIt->pNextDmaMapping);
-            NV_ASSERT(pIt->pNextDmaMapping->Data);
 
-            CliGetDmaMappingNext(ppFirstDmaMapping, pIt);
-        }
-    }
+    if (pDmaMappingList == NULL)
+        return;
+
+    // find the first pDmaMapping
+    pIt->pDmaMappingList = pDmaMappingList;
+    btreeEnumStart(0, &pIt->pNextDmaMapping, pIt->pDmaMappingList);
+
+    if (pIt->pNextDmaMapping == NULL)
+        return;
+
+    NV_ASSERT(pIt->pNextDmaMapping->Data);
+    CliGetDmaMappingNext(ppFirstDmaMapping, pIt);
 }
 
 void
@@ -631,37 +484,23 @@ CliGetDmaMappingNext
 {
     PCLI_DMA_MAPPING_INFO pDmaMapping = NULL;
 
-    // are we done with all hDevice lists?
-    if ((pIt->pDmaMappingList != NULL) &&
-        (pIt->pCurrentList != NULL) &&
-        (pIt->pNextDmaMapping != NULL))
+    if (pIt->pNextDmaMapping != NULL)
     {
         // return the current node.
         NV_ASSERT(pIt->pNextDmaMapping->Data);
         pDmaMapping = (PCLI_DMA_MAPPING_INFO)pIt->pNextDmaMapping->Data;
 
-        // iterate to the next DmaOffset (so the caller is free to delete the node)
-        btreeEnumNext(&pIt->pNextDmaMapping, pIt->pCurrentList);
+        // not supporting legacy _DMA_UNICAST_REUSE_ALLOC case
+        NV_ASSERT(pDmaMapping->pNext == NULL);
 
-        // reached the end of the hDevice list? move to next hDevice
-        if (pIt->pNextDmaMapping == NULL)
-        {
-            btreeEnumNext(&pIt->pCurrentList, pIt->pDmaMappingList);
-            if (pIt->pCurrentList != NULL)
-            {
-                // restart iteration process for the new list
-                NV_ASSERT(pIt->pCurrentList->Data);
-                btreeEnumStart(0, &pIt->pNextDmaMapping, pIt->pCurrentList->Data);
-                NV_ASSERT(pIt->pNextDmaMapping);
-            }
-        }
+        // iterate to the next DmaOffset (so the caller is free to delete the node)
+        btreeEnumNext(&pIt->pNextDmaMapping, pIt->pDmaMappingList);
     }
 
     // stop iterating once we hit the end of list [or something bad happened]
     if (pDmaMapping == NULL)
     {
         pIt->pDmaMappingList = NULL;
-        pIt->pCurrentList    = NULL;
         pIt->pNextDmaMapping = NULL;
     }
     *ppDmaMapping = pDmaMapping;

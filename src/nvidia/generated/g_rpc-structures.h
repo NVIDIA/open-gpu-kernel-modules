@@ -104,7 +104,7 @@ typedef rpc_idle_channels_v03_00 rpc_idle_channels_v;
 
 typedef struct rpc_unloading_guest_driver_v1F_07
 {
-    NvBool     bSuspend;
+    NvBool     bInPMTransition;
     NvBool     bGc6Entering;
     NvU32      newLevel;
 } rpc_unloading_guest_driver_v1F_07;
@@ -480,6 +480,13 @@ typedef struct rpc_nvlink_is_gpu_degraded_v17_00
 
 typedef rpc_nvlink_is_gpu_degraded_v17_00 rpc_nvlink_is_gpu_degraded_v;
 
+typedef struct rpc_gsp_send_user_shared_data_v17_00
+{
+    NvU32      data;
+} rpc_gsp_send_user_shared_data_v17_00;
+
+typedef rpc_gsp_send_user_shared_data_v17_00 rpc_gsp_send_user_shared_data_v;
+
 typedef struct rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 {
     NvU32      sysmemPfnBitmapRing;
@@ -790,8 +797,8 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_driver_v03_00 = {
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07[] = {
     {
         .vtype                = vtype_NvBool,
-        .offset               = NV_OFFSETOF(rpc_unloading_guest_driver_v1F_07, bSuspend),
-        .name                 = "bSuspend"
+        .offset               = NV_OFFSETOF(rpc_unloading_guest_driver_v1F_07, bInPMTransition),
+        .name                 = "bInPMTransition"
     },
     {
         .vtype                = vtype_NvBool,
@@ -2058,6 +2065,25 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_is_gpu_degraded_v17_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_gsp_send_user_shared_data_v17_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_gsp_send_user_shared_data_v17_00, data),
+        .name                 = "data"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_send_user_shared_data_v17_00 = {
+    .name = "rpc_gsp_send_user_shared_data",
+    .header_length = NV_SIZEOF32(rpc_gsp_send_user_shared_data_v17_00),
+    .fdesc = vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00[] = {
     {
@@ -2551,6 +2577,13 @@ vmiopd_mdesc_t *rpcdebugNvlinkIsGpuDegraded_v17_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_gsp_send_user_shared_data_v17_00
+vmiopd_mdesc_t *rpcdebugGspSendUserSharedData_v17_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_gsp_send_user_shared_data_v17_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 vmiopd_mdesc_t *rpcdebugSetSysmemDirtyPageTrackingBuffer_v20_00(void)
 {
@@ -2683,6 +2716,8 @@ typedef union rpc_generic_union {
     rpc_nvlink_inband_received_data_4096_v nvlink_inband_received_data_4096_v;
     rpc_nvlink_is_gpu_degraded_v17_00 nvlink_is_gpu_degraded_v17_00;
     rpc_nvlink_is_gpu_degraded_v nvlink_is_gpu_degraded_v;
+    rpc_gsp_send_user_shared_data_v17_00 gsp_send_user_shared_data_v17_00;
+    rpc_gsp_send_user_shared_data_v gsp_send_user_shared_data_v;
     rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 set_sysmem_dirty_page_tracking_buffer_v20_00;
     rpc_set_sysmem_dirty_page_tracking_buffer_v set_sysmem_dirty_page_tracking_buffer_v;
     rpc_extdev_intr_service_v17_00 extdev_intr_service_v17_00;

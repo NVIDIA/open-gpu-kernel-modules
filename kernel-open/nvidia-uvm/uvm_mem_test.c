@@ -62,7 +62,7 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
 
     verif_size = UVM_ALIGN_UP(verif_size, sizeof(*sys_verif));
 
-    UVM_ASSERT(mem->physical_allocation_size >= verif_size);
+    UVM_ASSERT(uvm_mem_physical_size(mem) >= verif_size);
     UVM_ASSERT(verif_size >= sizeof(*sys_verif));
 
     TEST_NV_CHECK_GOTO(__alloc_map_sysmem(verif_size, gpu, &sys_mem), done);
@@ -185,7 +185,7 @@ static NV_STATUS test_map_gpu(uvm_mem_t *mem, uvm_gpu_t *gpu)
 
     gpu_va = uvm_mem_get_gpu_va_kernel(mem, gpu);
     TEST_CHECK_RET(gpu_va >= gpu->parent->uvm_mem_va_base);
-    TEST_CHECK_RET(gpu_va + mem->physical_allocation_size <= gpu->parent->uvm_mem_va_base + gpu->parent->uvm_mem_va_size);
+    TEST_CHECK_RET(gpu_va + uvm_mem_physical_size(mem) <= gpu->parent->uvm_mem_va_base + gpu->parent->uvm_mem_va_size);
 
     // Mapping if already mapped is OK
     TEST_NV_CHECK_RET(uvm_mem_map_gpu_kernel(mem, gpu));
@@ -369,6 +369,7 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
     // for the default.
     static const int max_supported_page_sizes = 4 + 1;
     int i;
+
 
     gpu_count = uvm_processor_mask_get_gpu_count(&va_space->registered_gpus);
 

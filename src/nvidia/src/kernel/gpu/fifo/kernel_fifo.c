@@ -64,6 +64,20 @@ static void _kfifoChidMgrDestroyChannelGroupMgr(CHID_MGR *pChidMgr);
 
 static NV_STATUS _kfifoChidMgrFreeIsolationId(CHID_MGR *pChidMgr, NvU32 ChID);
 
+
+NvU32 kfifoGetNumEschedDrivenEngines_IMPL
+(
+    KernelFifo *pKernelFifo
+)
+{
+    const ENGINE_INFO *pEngineInfo;
+    NV_ASSERT(kfifoGetNumEngines_HAL(ENG_GET_GPU(pKernelFifo), pKernelFifo) >
+              0);
+    pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
+    return pEngineInfo->numRunlists;
+}
+
+
 NV_STATUS
 kfifoChidMgrConstruct_IMPL
 (
@@ -953,6 +967,7 @@ kfifoChidMgrFreeChid_IMPL
         pChidMgr->pFifoDataHeap,
         ChID,
         NV_FALSE);
+    NV_ASSERT_OR_RETURN(pFifoDataBlock != NULL, NV_ERR_OBJECT_NOT_FOUND);
     NV_ASSERT(pFifoDataBlock->refCount > 0);
     pFifoDataBlock->pData = NULL;
 
@@ -999,6 +1014,7 @@ kfifoChidMgrReserveSystemChids_IMPL
     NvU32             flags,
     NvU32             gfid,
     NvU32            *pChidOffset,
+    NvU32            *pChannelCount,
     NvHandle          hMigClient,
     NvU32             engineFifoListNumEntries,
     FIFO_ENGINE_LIST *pEngineFifoList
@@ -1063,8 +1079,8 @@ kfifoChidMgrReserveSystemChids_IMPL
     pIsolationIdBlock->pData = pIsolationID;
 
     status = kfifoSetChidOffset(pGpu, pKernelFifo, pChidMgr, (NvU32)offset,
-                                numChannels, gfid, pChidOffset, hMigClient,
-                                engineFifoListNumEntries, pEngineFifoList);
+                                numChannels, gfid, pChidOffset, pChannelCount,
+                                hMigClient, engineFifoListNumEntries, pEngineFifoList);
 
     if (status != NV_OK)
     {
@@ -1102,7 +1118,7 @@ kfifoChidMgrReserveSystemChids_IMPL
 cleanup:
     portMemFree(pChidMgr->ppVirtualChIDHeap[gfid]);
     NV_ASSERT(kfifoSetChidOffset(pGpu, pKernelFifo, pChidMgr, 0, 0,
-                                 gfid, pChidOffset, hMigClient,
+                                 gfid, pChidOffset, pChannelCount, hMigClient,
                                  engineFifoListNumEntries, pEngineFifoList) == NV_OK);
     NV_ASSERT(pChidMgr->pGlobalChIDHeap->eheapFree(pChidMgr->pGlobalChIDHeap, offset) == NV_OK);
     portMemFree(pIsolationID);
@@ -1118,6 +1134,7 @@ kfifoChidMgrFreeSystemChids_IMPL
     CHID_MGR         *pChidMgr,
     NvU32             gfid,
     NvU32            *pChidOffset,
+    NvU32            *pChannelCount,
     NvHandle          hMigClient,
     NvU32             engineFifoListNumEntries,
     FIFO_ENGINE_LIST *pEngineFifoList
@@ -1162,7 +1179,7 @@ kfifoChidMgrFreeSystemChids_IMPL
     }
 
     tmpStatus = kfifoSetChidOffset(pGpu, pKernelFifo, pChidMgr, 0, 0,
-                                   gfid, pChidOffset, hMigClient,
+                                   gfid, pChidOffset, pChannelCount, hMigClient,
                                    engineFifoListNumEntries, pEngineFifoList);
     if (tmpStatus != NV_OK)
     {
@@ -1865,7 +1882,6 @@ kfifoGetHostDeviceInfoTable_KERNEL
     NvU32 numRunlists;
     NvU32 maxRunlistId;
     NvU32 maxPbdmaId;
-    NvU32 minPbdmaFaultId;
     NvU32 i;
     struct {
         NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_PARAMS params;
@@ -1960,7 +1976,6 @@ kfifoGetHostDeviceInfoTable_KERNEL
     numRunlists = 0;
     maxRunlistId = 0;
     maxPbdmaId = 0;
-    minPbdmaFaultId = NV_U32_MAX;
     for (entry = 0; entry < numEntries; ++entry)
     {
         portMemCopy(pEngineInfo->engineInfoList[entry].engineData,
@@ -1984,7 +1999,7 @@ kfifoGetHostDeviceInfoTable_KERNEL
                        (char *)pHostEntries[entry].engineName,
                        FIFO_ENGINE_NAME_MAX_SIZE);
 
-        if (0 != pEngineInfo->engineInfoList[entry].engineData[ENGINE_INFO_TYPE_IS_ENGINE])
+        if (pEngineInfo->engineInfoList[entry].engineData[ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE] != 0)
         {
             numRunlists++;
         }
@@ -2001,29 +2016,22 @@ kfifoGetHostDeviceInfoTable_KERNEL
             //
             if (pEngineInfo->engineInfoList[entry].engineData[ENGINE_INFO_TYPE_ENG_DESC] != ENG_SW)
             {
-                minPbdmaFaultId = NV_MIN(minPbdmaFaultId, pEngineInfo->engineInfoList[entry].pbdmaFaultIds[i]);
+                bitVectorSet(&pEngineInfo->validEngineIdsForPbdmas, pEngineInfo->engineInfoList[entry].pbdmaFaultIds[i]);
             }
         }
     }
+
+    NV_ASSERT_OR_GOTO(kfifoReservePbdmaFaultIds_HAL(pGpu, pKernelFifo, pEngineInfo->engineInfoList,
+                                    pEngineInfo->engineInfoListSize) == NV_OK, cleanup);
 
     if (IS_VIRTUAL(pGpu))
     {
         _kfifoLocalizeGuestEngineData(pGpu, pKernelFifo, pEngineInfo);
     }
 
-    //
-    // Host RM sends back a copy of their devinfo table, which includes the SW
-    // engine. This engine has no runlist, so decrement the runlist count.
-    //
-    if (numRunlists > 0)
-    {
-        --numRunlists;
-    }
-
     pEngineInfo->numRunlists = numRunlists;
     pEngineInfo->maxNumRunlists = maxRunlistId + 1;
     pEngineInfo->maxNumPbdmas = maxPbdmaId + 1;
-    pEngineInfo->basePbdmaFaultId = minPbdmaFaultId;
 
 cleanup:
     portMemFree(pLocals);
@@ -3071,6 +3079,7 @@ kfifoSetChidOffset_IMPL
     NvU32             numChannels,
     NvU32             gfid,
     NvU32            *pChidOffset,
+    NvU32            *pChannelCount,
     NvU32             hMigClient,
     NvU32             engineFifoListNumEntries,
     FIFO_ENGINE_LIST *pEngineFifoList
@@ -3094,6 +3103,7 @@ kfifoSetChidOffset_IMPL
     {
         NV_ASSERT_OR_ELSE(NV2080_ENGINE_TYPE_IS_VALID(pEngineIds[i]), status = NV_ERR_INVALID_STATE; goto cleanup);
         pChidOffset[pEngineIds[i]] = offset;
+        pChannelCount[pEngineIds[i]] = numChannels;
     }
 
     NV_ASSERT_OK_OR_GOTO(status, kfifoProgramChIdTable_HAL(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid,

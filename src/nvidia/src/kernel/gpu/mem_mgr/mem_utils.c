@@ -615,8 +615,28 @@ memmgrMemBeginTransfer_IMPL
     switch (transferType)
     {
         case TRANSFER_TYPE_PROCESSOR:
+            if (flags & TRANSFER_FLAGS_USE_BAR1)
+            {
+                NvP64 pPriv;
+                NvU32 protect = NV_PROTECT_READ_WRITE;
+
+                if (flags & TRANSFER_FLAGS_MAP_PROTECT_READABLE)
+                {
+                    protect = NV_PROTECT_READABLE;
+                }
+                else if (flags & TRANSFER_FLAGS_MAP_PROTECT_WRITEABLE)
+                {
+                    protect = NV_PROTECT_WRITEABLE;
+                }
+
+                NV_ASSERT_OR_RETURN(memdescMap(pMemDesc, offset, memSz, NV_TRUE, protect,
+                    (NvP64*) &pPtr, &pPriv) == NV_OK, NULL);
+                memdescSetKernelMappingPriv(pMemDesc, pPtr);
+                break;
+            }
             NV_ASSERT_OR_RETURN((pPtr = memdescMapInternal(pGpu, pMemDesc, flags)) != NULL, NULL);
             pPtr = &pPtr[offset];
+            
             break;
         case TRANSFER_TYPE_GSP_DMA:
         case TRANSFER_TYPE_CE:
@@ -669,6 +689,13 @@ memmgrMemEndTransfer_IMPL
     switch (transferType)
     {
         case TRANSFER_TYPE_PROCESSOR:
+            if (flags & TRANSFER_FLAGS_USE_BAR1)
+            {
+                NvP64 pPriv = memdescGetKernelMappingPriv(pMemDesc);
+                memdescSetKernelMappingPriv(pMemDesc, NULL);
+                memdescUnmap(pMemDesc, NV_TRUE, 0, pMapping, pPriv);
+                return;
+            }
             memdescUnmapInternal(pGpu, pMemDesc, flags);
             return;
         case TRANSFER_TYPE_GSP_DMA:
@@ -743,7 +770,7 @@ memmgrAllocResources_IMPL
     NV_ADDRESS_SPACE             addrSpace     = memmgrAllocGetAddrSpace(pMemoryManager, pVidHeapAlloc->flags,
                                                                          pFbAllocInfo->retAttr);
 
-    NvU32                        pageSize      = 0;
+    NvU64                        pageSize      = 0;
     NvBool                       bAllocedHwRes = NV_FALSE;
 
     // IRQL TEST:  must be running at equivalent of passive-level
@@ -1003,6 +1030,15 @@ memUtilsMemSetNoBAR2(OBJGPU *pGpu, PMEMORY_DESCRIPTOR pMemDesc, NvU8 value)
     switch (memdescGetAddressSpace(pMemDesc))
     {
         case ADDR_FBMEM:
+            if (KBUS_BAR0_PRAMIN_DISABLED(pGpu))
+            {
+                NvU8 *pMap = kbusMapRmAperture_HAL(pGpu, pMemDesc);
+                NV_ASSERT_OR_RETURN(pMap != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+                portMemSet(pMap, value, pMemDesc->Size);
+                kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pMap, NV_TRUE);
+
+                break;
+            }
             //
             // Set the BAR0 window to encompass the given surface while
             // saving off the location to where the BAR0 window was

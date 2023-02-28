@@ -75,7 +75,7 @@ struct DeferredApiObject {
     struct Notifier *__nvoc_pbase_Notifier;
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;
     struct DeferredApiObject *__nvoc_pbase_DeferredApiObject;
-    NV_STATUS (*__defapiGetSwMethods__)(struct DeferredApiObject *, METHOD **, NvU32 *);
+    NV_STATUS (*__defapiGetSwMethods__)(struct DeferredApiObject *, const METHOD **, NvU32 *);
     NvBool (*__defapiIsSwMethodStalling__)(struct DeferredApiObject *, NvU32);
     NV_STATUS (*__defapiCtrlCmdDeferredApi__)(struct DeferredApiObject *, NV5080_CTRL_DEFERRED_API_PARAMS *);
     NV_STATUS (*__defapiCtrlCmdDeferredApiV2__)(struct DeferredApiObject *, NV5080_CTRL_DEFERRED_API_V2_PARAMS *);
@@ -101,9 +101,11 @@ struct DeferredApiObject {
     NV_STATUS (*__defapiGetMemoryMappingDescriptor__)(struct DeferredApiObject *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__defapiControlFilter__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__defapiUnregisterEvent__)(struct DeferredApiObject *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__defapiControlSerialization_Prologue__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__defapiCanCopy__)(struct DeferredApiObject *);
     void (*__defapiPreDestruct__)(struct DeferredApiObject *);
     NV_STATUS (*__defapiIsDuplicate__)(struct DeferredApiObject *, NvHandle, NvBool *);
+    void (*__defapiControlSerialization_Epilogue__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__defapiGetNotificationListPtr__)(struct DeferredApiObject *);
     struct NotifShare *(*__defapiGetNotificationShare__)(struct DeferredApiObject *);
     NV_STATUS (*__defapiMap__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -166,16 +168,18 @@ NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject**, Dynamic*, NvU3
 #define defapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) defapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define defapiControlFilter(pResource, pCallContext, pParams) defapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define defapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) defapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define defapiControlSerialization_Prologue(pResource, pCallContext, pParams) defapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define defapiCanCopy(pResource) defapiCanCopy_DISPATCH(pResource)
 #define defapiPreDestruct(pResource) defapiPreDestruct_DISPATCH(pResource)
 #define defapiIsDuplicate(pResource, hMemory, pDuplicate) defapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define defapiControlSerialization_Epilogue(pResource, pCallContext, pParams) defapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define defapiGetNotificationListPtr(pNotifier) defapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define defapiGetNotificationShare(pNotifier) defapiGetNotificationShare_DISPATCH(pNotifier)
 #define defapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) defapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define defapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) defapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
-NV_STATUS defapiGetSwMethods_IMPL(struct DeferredApiObject *pDeferredApi, METHOD **ppMethods, NvU32 *pNumMethods);
+NV_STATUS defapiGetSwMethods_IMPL(struct DeferredApiObject *pDeferredApi, const METHOD **ppMethods, NvU32 *pNumMethods);
 
-static inline NV_STATUS defapiGetSwMethods_DISPATCH(struct DeferredApiObject *pDeferredApi, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS defapiGetSwMethods_DISPATCH(struct DeferredApiObject *pDeferredApi, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pDeferredApi->__defapiGetSwMethods__(pDeferredApi, ppMethods, pNumMethods);
 }
 
@@ -287,6 +291,10 @@ static inline NV_STATUS defapiUnregisterEvent_DISPATCH(struct DeferredApiObject 
     return pNotifier->__defapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS defapiControlSerialization_Prologue_DISPATCH(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__defapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool defapiCanCopy_DISPATCH(struct DeferredApiObject *pResource) {
     return pResource->__defapiCanCopy__(pResource);
 }
@@ -297,6 +305,10 @@ static inline void defapiPreDestruct_DISPATCH(struct DeferredApiObject *pResourc
 
 static inline NV_STATUS defapiIsDuplicate_DISPATCH(struct DeferredApiObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__defapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void defapiControlSerialization_Epilogue_DISPATCH(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__defapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *defapiGetNotificationListPtr_DISPATCH(struct DeferredApiObject *pNotifier) {

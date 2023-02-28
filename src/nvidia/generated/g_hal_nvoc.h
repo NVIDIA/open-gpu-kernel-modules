@@ -133,12 +133,6 @@ static inline PMODULEDESCRIPTOR objhalGetModuleDescriptor(struct OBJHAL *pHal) {
 #undef PRIVATE_FIELD
 
 
-//--------------------------------------------------------------------
-// RM routines.
-//--------------------------------------------------------------------
-
-NV_STATUS ipVersionsSetupHal(struct OBJGPU *, void *pDynamic, IGrp_ipVersions_getInfo getInfoFn);
-
 #endif // _OBJHAL_H_
 
 #ifdef __cplusplus

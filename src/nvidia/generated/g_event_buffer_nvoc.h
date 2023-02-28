@@ -93,13 +93,15 @@ struct EventBuffer {
     NvU32 (*__eventbufferGetRefCount__)(struct EventBuffer *);
     NV_STATUS (*__eventbufferControlFilter__)(struct EventBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__eventbufferAddAdditionalDependants__)(struct RsClient *, struct EventBuffer *, RsResourceRef *);
-    NV_STATUS (*__eventbufferUnmap__)(struct EventBuffer *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__eventbufferUnmapFrom__)(struct EventBuffer *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__eventbufferControlSerialization_Prologue__)(struct EventBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__eventbufferControl_Prologue__)(struct EventBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__eventbufferCanCopy__)(struct EventBuffer *);
-    NV_STATUS (*__eventbufferMapTo__)(struct EventBuffer *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__eventbufferUnmap__)(struct EventBuffer *, struct CALL_CONTEXT *, RsCpuMapping *);
     void (*__eventbufferPreDestruct__)(struct EventBuffer *);
-    NV_STATUS (*__eventbufferUnmapFrom__)(struct EventBuffer *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__eventbufferMapTo__)(struct EventBuffer *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__eventbufferIsDuplicate__)(struct EventBuffer *, NvHandle, NvBool *);
+    void (*__eventbufferControlSerialization_Epilogue__)(struct EventBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__eventbufferControl_Epilogue__)(struct EventBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__eventbufferControlLookup__)(struct EventBuffer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__eventbufferMap__)(struct EventBuffer *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -166,13 +168,15 @@ NV_STATUS __nvoc_objCreate_EventBuffer(EventBuffer**, Dynamic*, NvU32, struct CA
 #define eventbufferGetRefCount(pResource) eventbufferGetRefCount_DISPATCH(pResource)
 #define eventbufferControlFilter(pResource, pCallContext, pParams) eventbufferControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define eventbufferAddAdditionalDependants(pClient, pResource, pReference) eventbufferAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define eventbufferUnmap(pResource, pCallContext, pCpuMapping) eventbufferUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define eventbufferUnmapFrom(pResource, pParams) eventbufferUnmapFrom_DISPATCH(pResource, pParams)
+#define eventbufferControlSerialization_Prologue(pResource, pCallContext, pParams) eventbufferControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define eventbufferControl_Prologue(pResource, pCallContext, pParams) eventbufferControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define eventbufferCanCopy(pResource) eventbufferCanCopy_DISPATCH(pResource)
-#define eventbufferMapTo(pResource, pParams) eventbufferMapTo_DISPATCH(pResource, pParams)
+#define eventbufferUnmap(pResource, pCallContext, pCpuMapping) eventbufferUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define eventbufferPreDestruct(pResource) eventbufferPreDestruct_DISPATCH(pResource)
-#define eventbufferUnmapFrom(pResource, pParams) eventbufferUnmapFrom_DISPATCH(pResource, pParams)
+#define eventbufferMapTo(pResource, pParams) eventbufferMapTo_DISPATCH(pResource, pParams)
 #define eventbufferIsDuplicate(pResource, hMemory, pDuplicate) eventbufferIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define eventbufferControlSerialization_Epilogue(pResource, pCallContext, pParams) eventbufferControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define eventbufferControl_Epilogue(pResource, pCallContext, pParams) eventbufferControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define eventbufferControlLookup(pResource, pParams, ppEntry) eventbufferControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define eventbufferMap(pResource, pCallContext, pParams, pCpuMapping) eventbufferMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -233,8 +237,12 @@ static inline void eventbufferAddAdditionalDependants_DISPATCH(struct RsClient *
     pResource->__eventbufferAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS eventbufferUnmap_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__eventbufferUnmap__(pResource, pCallContext, pCpuMapping);
+static inline NV_STATUS eventbufferUnmapFrom_DISPATCH(struct EventBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__eventbufferUnmapFrom__(pResource, pParams);
+}
+
+static inline NV_STATUS eventbufferControlSerialization_Prologue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__eventbufferControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS eventbufferControl_Prologue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -245,20 +253,24 @@ static inline NvBool eventbufferCanCopy_DISPATCH(struct EventBuffer *pResource) 
     return pResource->__eventbufferCanCopy__(pResource);
 }
 
-static inline NV_STATUS eventbufferMapTo_DISPATCH(struct EventBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__eventbufferMapTo__(pResource, pParams);
+static inline NV_STATUS eventbufferUnmap_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__eventbufferUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline void eventbufferPreDestruct_DISPATCH(struct EventBuffer *pResource) {
     pResource->__eventbufferPreDestruct__(pResource);
 }
 
-static inline NV_STATUS eventbufferUnmapFrom_DISPATCH(struct EventBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__eventbufferUnmapFrom__(pResource, pParams);
+static inline NV_STATUS eventbufferMapTo_DISPATCH(struct EventBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__eventbufferMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS eventbufferIsDuplicate_DISPATCH(struct EventBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__eventbufferIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void eventbufferControlSerialization_Epilogue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__eventbufferControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void eventbufferControl_Epilogue_DISPATCH(struct EventBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {

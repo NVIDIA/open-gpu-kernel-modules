@@ -66,7 +66,6 @@ struct OBJDCECLIENTRM {
     struct OBJDCECLIENTRM *__nvoc_pbase_OBJDCECLIENTRM;
     NV_STATUS (*__dceclientConstructEngine__)(struct OBJGPU *, struct OBJDCECLIENTRM *, ENGDESCRIPTOR);
     void (*__dceclientStateDestroy__)(struct OBJGPU *, struct OBJDCECLIENTRM *);
-    NV_STATUS (*__dceclientReconcileTunableState__)(POBJGPU, struct OBJDCECLIENTRM *, void *);
     NV_STATUS (*__dceclientStateLoad__)(POBJGPU, struct OBJDCECLIENTRM *, NvU32);
     NV_STATUS (*__dceclientStateUnload__)(POBJGPU, struct OBJDCECLIENTRM *, NvU32);
     NV_STATUS (*__dceclientStateInitLocked__)(POBJGPU, struct OBJDCECLIENTRM *);
@@ -77,12 +76,7 @@ struct OBJDCECLIENTRM {
     void (*__dceclientInitMissing__)(POBJGPU, struct OBJDCECLIENTRM *);
     NV_STATUS (*__dceclientStatePreInitLocked__)(POBJGPU, struct OBJDCECLIENTRM *);
     NV_STATUS (*__dceclientStatePreInitUnlocked__)(POBJGPU, struct OBJDCECLIENTRM *);
-    NV_STATUS (*__dceclientGetTunableState__)(POBJGPU, struct OBJDCECLIENTRM *, void *);
-    NV_STATUS (*__dceclientCompareTunableState__)(POBJGPU, struct OBJDCECLIENTRM *, void *, void *);
-    void (*__dceclientFreeTunableState__)(POBJGPU, struct OBJDCECLIENTRM *, void *);
     NV_STATUS (*__dceclientStatePostLoad__)(POBJGPU, struct OBJDCECLIENTRM *, NvU32);
-    NV_STATUS (*__dceclientAllocTunableState__)(POBJGPU, struct OBJDCECLIENTRM *, void **);
-    NV_STATUS (*__dceclientSetTunableState__)(POBJGPU, struct OBJDCECLIENTRM *, void *);
     NvBool (*__dceclientIsPresent__)(POBJGPU, struct OBJDCECLIENTRM *);
     struct OBJRPC *pRpc;
     NvU32 clientId[2];
@@ -120,7 +114,6 @@ NV_STATUS __nvoc_objCreate_OBJDCECLIENTRM(OBJDCECLIENTRM**, Dynamic*, NvU32);
 
 #define dceclientConstructEngine(arg0, arg1, arg2) dceclientConstructEngine_DISPATCH(arg0, arg1, arg2)
 #define dceclientStateDestroy(arg0, arg1) dceclientStateDestroy_DISPATCH(arg0, arg1)
-#define dceclientReconcileTunableState(pGpu, pEngstate, pTunableState) dceclientReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define dceclientStateLoad(pGpu, pEngstate, arg0) dceclientStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define dceclientStateUnload(pGpu, pEngstate, arg0) dceclientStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define dceclientStateInitLocked(pGpu, pEngstate) dceclientStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -131,12 +124,7 @@ NV_STATUS __nvoc_objCreate_OBJDCECLIENTRM(OBJDCECLIENTRM**, Dynamic*, NvU32);
 #define dceclientInitMissing(pGpu, pEngstate) dceclientInitMissing_DISPATCH(pGpu, pEngstate)
 #define dceclientStatePreInitLocked(pGpu, pEngstate) dceclientStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define dceclientStatePreInitUnlocked(pGpu, pEngstate) dceclientStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define dceclientGetTunableState(pGpu, pEngstate, pTunableState) dceclientGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define dceclientCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) dceclientCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define dceclientFreeTunableState(pGpu, pEngstate, pTunableState) dceclientFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define dceclientStatePostLoad(pGpu, pEngstate, arg0) dceclientStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define dceclientAllocTunableState(pGpu, pEngstate, ppTunableState) dceclientAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define dceclientSetTunableState(pGpu, pEngstate, pTunableState) dceclientSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define dceclientIsPresent(pGpu, pEngstate) dceclientIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS dceclientConstructEngine_IMPL(struct OBJGPU *arg0, struct OBJDCECLIENTRM *arg1, ENGDESCRIPTOR arg2);
 
@@ -148,10 +136,6 @@ void dceclientStateDestroy_IMPL(struct OBJGPU *arg0, struct OBJDCECLIENTRM *arg1
 
 static inline void dceclientStateDestroy_DISPATCH(struct OBJGPU *arg0, struct OBJDCECLIENTRM *arg1) {
     arg1->__dceclientStateDestroy__(arg0, arg1);
-}
-
-static inline NV_STATUS dceclientReconcileTunableState_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, void *pTunableState) {
-    return pEngstate->__dceclientReconcileTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NV_STATUS dceclientStateLoad_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg0) {
@@ -194,28 +178,8 @@ static inline NV_STATUS dceclientStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, str
     return pEngstate->__dceclientStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS dceclientGetTunableState_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, void *pTunableState) {
-    return pEngstate->__dceclientGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS dceclientCompareTunableState_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__dceclientCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void dceclientFreeTunableState_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, void *pTunableState) {
-    pEngstate->__dceclientFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS dceclientStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, NvU32 arg0) {
     return pEngstate->__dceclientStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS dceclientAllocTunableState_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, void **ppTunableState) {
-    return pEngstate->__dceclientAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS dceclientSetTunableState_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate, void *pTunableState) {
-    return pEngstate->__dceclientSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool dceclientIsPresent_DISPATCH(POBJGPU pGpu, struct OBJDCECLIENTRM *pEngstate) {

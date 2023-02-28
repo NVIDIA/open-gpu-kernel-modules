@@ -22,9 +22,10 @@
  */
 #include "deprecated/rmapi_deprecated.h"
 
-#include "finn_rm_api.h"
 #include "gpu/gpu.h"
 #include "core/locks.h"
+
+#include "g_finn_rm_api.h"
 
 /*!
  * Some clients are still making these legacy GSS controls. We no longer support these in RM,

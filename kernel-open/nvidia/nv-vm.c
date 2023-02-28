@@ -265,7 +265,7 @@ static unsigned int nv_compute_gfp_mask(
         gfp_mask |= __GFP_ZERO;
 #endif
 #if defined(__GFP_THISNODE)
-    if (at->flags.node0)
+    if (at->flags.node)
         gfp_mask |= __GFP_THISNODE;
 #endif
     // Compound pages are required by vm_insert_page for high-order page
@@ -384,9 +384,9 @@ NV_STATUS nv_alloc_contig_pages(
     at->order = get_order(at->num_pages * PAGE_SIZE);
     gfp_mask = nv_compute_gfp_mask(nv, at);
 
-    if (at->flags.node0)
+    if (at->flags.node)
     {
-        NV_ALLOC_PAGES_NODE(virt_addr, 0, at->order, gfp_mask);
+        NV_ALLOC_PAGES_NODE(virt_addr, at->node_id, at->order, gfp_mask);
     }
     else
     {
@@ -529,9 +529,9 @@ NV_STATUS nv_alloc_system_pages(
                                                           gfp_mask);
             at->flags.coherent = NV_TRUE;
         }
-        else if (at->flags.node0)
+        else if (at->flags.node)
         {
-            NV_ALLOC_PAGES_NODE(virt_addr, 0, 0, gfp_mask);
+            NV_ALLOC_PAGES_NODE(virt_addr, at->node_id, 0, gfp_mask);
         }
         else
         {

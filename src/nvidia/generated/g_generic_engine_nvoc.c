@@ -109,6 +109,50 @@ static NvBool __nvoc_thunk_GpuResource_genapiShareCallback(struct GenericEngineA
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GenericEngineApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_genapiCheckMemInterUnmap(struct GenericEngineApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_genapiMapTo(struct GenericEngineApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pParams);
+}
+
+static NvU32 __nvoc_thunk_RsResource_genapiGetRefCount(struct GenericEngineApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_genapiAddAdditionalDependants(struct RsClient *pClient, struct GenericEngineApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_genapiControl_Prologue(struct GenericEngineApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_genapiGetRegBaseOffsetAndSize(struct GenericEngineApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GenericEngineApi_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_genapiInternalControlForward(struct GenericEngineApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GenericEngineApi_GpuResource.offset), command, pParams, size);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_genapiUnmapFrom(struct GenericEngineApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_genapiControl_Epilogue(struct GenericEngineApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_genapiControlLookup(struct GenericEngineApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_genapiGetInternalObjectHandle(struct GenericEngineApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GenericEngineApi_GpuResource.offset));
+}
+
 static NV_STATUS __nvoc_thunk_GpuResource_genapiUnmap(struct GenericEngineApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GenericEngineApi_GpuResource.offset), pCallContext, pCpuMapping);
 }
@@ -121,64 +165,28 @@ static NV_STATUS __nvoc_thunk_RmResource_genapiGetMemoryMappingDescriptor(struct
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), ppMemDesc);
 }
 
-static NvHandle __nvoc_thunk_GpuResource_genapiGetInternalObjectHandle(struct GenericEngineApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GenericEngineApi_GpuResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_genapiControlFilter(struct GenericEngineApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_genapiAddAdditionalDependants(struct RsClient *pClient, struct GenericEngineApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_genapiGetRefCount(struct GenericEngineApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_genapiCheckMemInterUnmap(struct GenericEngineApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_genapiMapTo(struct GenericEngineApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_genapiControl_Prologue(struct GenericEngineApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_genapiGetRegBaseOffsetAndSize(struct GenericEngineApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GenericEngineApi_GpuResource.offset), pGpu, pOffset, pSize);
+static NV_STATUS __nvoc_thunk_RmResource_genapiControlSerialization_Prologue(struct GenericEngineApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_genapiCanCopy(struct GenericEngineApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_genapiInternalControlForward(struct GenericEngineApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GenericEngineApi_GpuResource.offset), command, pParams, size);
-}
-
 static void __nvoc_thunk_RsResource_genapiPreDestruct(struct GenericEngineApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_genapiUnmapFrom(struct GenericEngineApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_genapiIsDuplicate(struct GenericEngineApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_genapiControl_Epilogue(struct GenericEngineApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_genapiControlLookup(struct GenericEngineApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_genapiControlSerialization_Epilogue(struct GenericEngineApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GenericEngineApi_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RmResource_genapiAccessCallback(struct GenericEngineApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
@@ -285,41 +293,45 @@ static void __nvoc_init_funcTable_GenericEngineApi_1(GenericEngineApi *pThis) {
 
     pThis->__genapiShareCallback__ = &__nvoc_thunk_GpuResource_genapiShareCallback;
 
+    pThis->__genapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_genapiCheckMemInterUnmap;
+
+    pThis->__genapiMapTo__ = &__nvoc_thunk_RsResource_genapiMapTo;
+
+    pThis->__genapiGetRefCount__ = &__nvoc_thunk_RsResource_genapiGetRefCount;
+
+    pThis->__genapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_genapiAddAdditionalDependants;
+
+    pThis->__genapiControl_Prologue__ = &__nvoc_thunk_RmResource_genapiControl_Prologue;
+
+    pThis->__genapiGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_genapiGetRegBaseOffsetAndSize;
+
+    pThis->__genapiInternalControlForward__ = &__nvoc_thunk_GpuResource_genapiInternalControlForward;
+
+    pThis->__genapiUnmapFrom__ = &__nvoc_thunk_RsResource_genapiUnmapFrom;
+
+    pThis->__genapiControl_Epilogue__ = &__nvoc_thunk_RmResource_genapiControl_Epilogue;
+
+    pThis->__genapiControlLookup__ = &__nvoc_thunk_RsResource_genapiControlLookup;
+
+    pThis->__genapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_genapiGetInternalObjectHandle;
+
     pThis->__genapiUnmap__ = &__nvoc_thunk_GpuResource_genapiUnmap;
 
     pThis->__genapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_genapiGetMemInterMapParams;
 
     pThis->__genapiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_genapiGetMemoryMappingDescriptor;
 
-    pThis->__genapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_genapiGetInternalObjectHandle;
-
     pThis->__genapiControlFilter__ = &__nvoc_thunk_RsResource_genapiControlFilter;
 
-    pThis->__genapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_genapiAddAdditionalDependants;
-
-    pThis->__genapiGetRefCount__ = &__nvoc_thunk_RsResource_genapiGetRefCount;
-
-    pThis->__genapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_genapiCheckMemInterUnmap;
-
-    pThis->__genapiMapTo__ = &__nvoc_thunk_RsResource_genapiMapTo;
-
-    pThis->__genapiControl_Prologue__ = &__nvoc_thunk_RmResource_genapiControl_Prologue;
-
-    pThis->__genapiGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_genapiGetRegBaseOffsetAndSize;
+    pThis->__genapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_genapiControlSerialization_Prologue;
 
     pThis->__genapiCanCopy__ = &__nvoc_thunk_RsResource_genapiCanCopy;
 
-    pThis->__genapiInternalControlForward__ = &__nvoc_thunk_GpuResource_genapiInternalControlForward;
-
     pThis->__genapiPreDestruct__ = &__nvoc_thunk_RsResource_genapiPreDestruct;
-
-    pThis->__genapiUnmapFrom__ = &__nvoc_thunk_RsResource_genapiUnmapFrom;
 
     pThis->__genapiIsDuplicate__ = &__nvoc_thunk_RsResource_genapiIsDuplicate;
 
-    pThis->__genapiControl_Epilogue__ = &__nvoc_thunk_RmResource_genapiControl_Epilogue;
-
-    pThis->__genapiControlLookup__ = &__nvoc_thunk_RsResource_genapiControlLookup;
+    pThis->__genapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_genapiControlSerialization_Epilogue;
 
     pThis->__genapiAccessCallback__ = &__nvoc_thunk_RmResource_genapiAccessCallback;
 }
@@ -345,12 +357,15 @@ NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi **ppThis, Dynamic *
     Object *pParentObj;
     GenericEngineApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(GenericEngineApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(GenericEngineApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(GenericEngineApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GenericEngineApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -367,11 +382,17 @@ NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi **ppThis, Dynamic *
     if (status != NV_OK) goto __nvoc_objCreate_GenericEngineApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_GenericEngineApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(GenericEngineApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

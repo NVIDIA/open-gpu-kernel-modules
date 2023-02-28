@@ -23,6 +23,7 @@
 #include "gpu/gpu.h"
 #include "published/turing/tu102/dev_vm.h"
 #include "published/turing/tu102/hwproject.h"
+#include "jt.h"
 
 /*!
  * @brief Returns SR-IOV capabilities
@@ -111,6 +112,28 @@ NvU32 gpuGetPhysAddrWidth_TU102
 //
 static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
 {
+    { classId(OBJFUSE), 1, },
+    { classId(OBJSEQ), 1, },
+    { classId(GpuMutexMgr), 1, },
+    { classId(OBJTMR), 1, },
+    { classId(GraphicsManager), 1, },
+    { classId(MIGManager), 1, },
+    { classId(KernelMIGManager), 1, },
+    { classId(KernelGraphicsManager), 1, },
+    { classId(OBJVBIOS), 1, },
+    { classId(OBJDCB), 1, },
+    { classId(OBJGPIO), 1, },
+    { classId(I2c), 1, },
+    { classId(Spi), 1, },
+    { classId(KernelRc), 1, },
+    { classId(OBJRC), 1, },
+    { classId(OBJSTEREO), 1, },
+    { classId(Intr), 1, },
+    { classId(OBJINFOROM), 1, },
+    { classId(NvDebugDump), 1, },
+    { classId(SMDebugger), 1, },
+    { classId(OBJGPULOG), 1, },
+    { classId(OBJGPUMON), 1, },
     {classId(OBJSWENG), 1},
     {classId(OBJUVM), 1},
     {classId(OBJACR), 1},
@@ -138,18 +161,10 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     {classId(OBJFIFO), 1},
     {classId(OBJGMMU), 1},
     {classId(KernelGmmu), 1},
-    {classId(OBJGPULOG), 1},
-    {classId(OBJGPUMON), 1},
-    {classId(GraphicsManager), 1},
-    {classId(MIGManager), 1},
-    {classId(KernelMIGManager), 1},
-    {classId(KernelGraphicsManager), 1},
     {classId(Graphics), 1},
     {classId(KernelGraphics), 1},
     {classId(OBJHDACODEC), 1},
     {classId(OBJHWPM), 1},
-    {classId(OBJINFOROM), 1},
-    {classId(Intr), 1},
     {classId(Lpwr   ), 1},
     {classId(OBJLSFM), 1},
     {classId(OBJMC), 1},
@@ -157,7 +172,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     {classId(PrivRing), 1},
     {classId(SwIntr), 1},
     {classId(OBJMSENC), 1},
-    {classId(NvDebugDump), 1},
     {classId(KernelNvlink), 1},
     {classId(Nvlink), 1},
     {classId(Perf), 1},
@@ -168,10 +182,8 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     {classId(OBJSEC2), 1},
     {classId(Gsp), 1},
     {classId(Therm), 1},
-    {classId(OBJTMR), 1},
     {classId(OBJVOLT), 1},
     {classId(OBJGRIDDISPLAYLESS), 1},
-    {classId(OBJFAS), 1},
     {classId(OBJVMMU), 1},
     {classId(KernelSec2), 1},
     {classId(KernelGsp), 1},
@@ -179,6 +191,28 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
 
 static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
 {
+    { classId(OBJFUSE), 1, },
+    { classId(OBJSEQ), 1, },
+    { classId(GpuMutexMgr), 1, },
+    { classId(OBJTMR), 1, },
+    { classId(GraphicsManager), 1, },
+    { classId(MIGManager), 1, },
+    { classId(KernelMIGManager), 1, },
+    { classId(KernelGraphicsManager), 1, },
+    { classId(OBJVBIOS), 1, },
+    { classId(OBJDCB), 1, },
+    { classId(OBJGPIO), 1, },
+    { classId(I2c), 1, },
+    { classId(Spi), 1, },
+    { classId(KernelRc), 1, },
+    { classId(OBJRC), 1, },
+    { classId(OBJSTEREO), 1, },
+    { classId(Intr), 1, },
+    { classId(OBJINFOROM), 1, },
+    { classId(NvDebugDump), 1, },
+    { classId(SMDebugger), 1, },
+    { classId(OBJGPULOG), 1, },
+    { classId(OBJGPUMON), 1, },
     {classId(OBJSWENG), 1},
     {classId(OBJUVM), 1},
     {classId(OBJACR), 1},
@@ -206,18 +240,10 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     {classId(OBJFIFO), 1},
     {classId(OBJGMMU), 1},
     {classId(KernelGmmu), 1},
-    {classId(OBJGPULOG), 1},
-    {classId(OBJGPUMON), 1},
-    {classId(GraphicsManager), 1},
-    {classId(MIGManager), 1},
-    {classId(KernelMIGManager), 1},
-    {classId(KernelGraphicsManager), 1},
     {classId(Graphics), 1},
     {classId(KernelGraphics), 1},
     {classId(OBJHDACODEC), 1},
     {classId(OBJHWPM), 1},
-    {classId(OBJINFOROM), 1},
-    {classId(Intr), 1},
     {classId(Lpwr   ), 1},
     {classId(OBJLSFM), 1},
     {classId(OBJMC), 1},
@@ -225,7 +251,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     {classId(PrivRing), 1},
     {classId(SwIntr), 1},
     {classId(OBJMSENC), 1},
-    {classId(NvDebugDump), 1},
     {classId(KernelNvlink), 1},
     {classId(Nvlink), 1},
     {classId(Perf), 1},
@@ -236,10 +261,8 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     {classId(OBJSEC2), 1},
     {classId(Gsp), 1},
     {classId(Therm), 1},
-    {classId(OBJTMR), 1},
     {classId(OBJVOLT), 1},
     {classId(OBJGRIDDISPLAYLESS), 1},
-    {classId(OBJFAS), 1},
     {classId(OBJVMMU), 1},
     {classId(KernelSec2), 1},
     {classId(KernelGsp), 1},
@@ -247,6 +270,28 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
 
 static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
 {
+    { classId(OBJFUSE), 1, },
+    { classId(OBJSEQ), 1, },
+    { classId(GpuMutexMgr), 1, },
+    { classId(OBJTMR), 1, },
+    { classId(GraphicsManager), 1, },
+    { classId(MIGManager), 1, },
+    { classId(KernelMIGManager), 1, },
+    { classId(KernelGraphicsManager), 1, },
+    { classId(OBJVBIOS), 1, },
+    { classId(OBJDCB), 1, },
+    { classId(OBJGPIO), 1, },
+    { classId(I2c), 1, },
+    { classId(Spi), 1, },
+    { classId(KernelRc), 1, },
+    { classId(OBJRC), 1, },
+    { classId(OBJSTEREO), 1, },
+    { classId(Intr), 1, },
+    { classId(OBJINFOROM), 1, },
+    { classId(NvDebugDump), 1, },
+    { classId(SMDebugger), 1, },
+    { classId(OBJGPULOG), 1, },
+    { classId(OBJGPUMON), 1, },
     {classId(OBJSWENG), 1},
     {classId(OBJUVM), 1},
     {classId(OBJACR), 1},
@@ -272,18 +317,10 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
     {classId(OBJFIFO), 1},
     {classId(OBJGMMU), 1},
     {classId(KernelGmmu), 1},
-    {classId(OBJGPULOG), 1},
-    {classId(OBJGPUMON), 1},
-    {classId(GraphicsManager), 1},
-    {classId(MIGManager), 1},
-    {classId(KernelMIGManager), 1},
-    {classId(KernelGraphicsManager), 1},
     {classId(Graphics), 1},
     {classId(KernelGraphics), 1},
     {classId(OBJHDACODEC), 1},
     {classId(OBJHWPM), 1},
-    {classId(OBJINFOROM), 1},
-    {classId(Intr), 1},
     {classId(Lpwr   ), 1},
     {classId(OBJLSFM), 1},
     {classId(OBJMC), 1},
@@ -291,7 +328,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
     {classId(PrivRing), 1},
     {classId(SwIntr), 1},
     {classId(OBJMSENC), 1},
-    {classId(NvDebugDump), 1},
     {classId(KernelNvlink), 1},
     {classId(Nvlink), 1},
     {classId(Perf), 1},
@@ -302,10 +338,8 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
     {classId(OBJSEC2), 1},
     {classId(Gsp), 1},
     {classId(Therm), 1},
-    {classId(OBJTMR), 1},
     {classId(OBJVOLT), 1},
     {classId(OBJGRIDDISPLAYLESS), 1},
-    {classId(OBJFAS), 1},
     {classId(OBJVMMU), 1},
     {classId(KernelSec2), 1},
     {classId(KernelGsp), 1},
@@ -332,3 +366,38 @@ gpuGetChildrenPresent_TU106(OBJGPU *pGpu, NvU32 *pNumEntries)
     return gpuChildrenPresent_TU106;
 }
 
+/*!
+ * @brief Check if the DSM JT version is correct
+ *
+ * @param  pGpu    OBJGPU pointer
+ *
+ * @return NV_OK if DSM version matches otherwise NV_ERR_INVALID_PARAMETER
+ */
+NV_STATUS
+gpuJtVersionSanityCheck_TU102
+(
+    OBJGPU *pGpu
+)
+{
+    NV_STATUS status = NV_OK;
+
+    if (!IS_SILICON(pGpu) || NV_IS_MODS)
+    {
+        goto gpuJtVersionSanityCheck_TU102_EXIT;
+    }
+
+    if (FLD_TEST_DRF(_JT_FUNC, _CAPS, _JT_ENABLED, _TRUE, pGpu->acpiMethodData.jtMethodData.jtCaps))
+    {
+        if (!(pGpu->acpiMethodData.jtMethodData.jtRevId == NV_JT_FUNC_CAPS_REVISION_ID_2_00))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "JT Version mismatch 0x%x\n", pGpu->acpiMethodData.jtMethodData.jtRevId);
+            DBG_BREAKPOINT();
+            status = NV_ERR_INVALID_PARAMETER;
+            goto gpuJtVersionSanityCheck_TU102_EXIT;
+        }
+    }
+
+gpuJtVersionSanityCheck_TU102_EXIT:
+    return status;
+}

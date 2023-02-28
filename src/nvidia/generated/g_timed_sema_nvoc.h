@@ -69,7 +69,7 @@ struct TimedSemaSwObject {
     struct Notifier *__nvoc_pbase_Notifier;
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;
     struct TimedSemaSwObject *__nvoc_pbase_TimedSemaSwObject;
-    NV_STATUS (*__tsemaGetSwMethods__)(struct TimedSemaSwObject *, METHOD **, NvU32 *);
+    NV_STATUS (*__tsemaGetSwMethods__)(struct TimedSemaSwObject *, const METHOD **, NvU32 *);
     NV_STATUS (*__tsemaCtrlCmdFlush__)(struct TimedSemaSwObject *, NV9074_CTRL_CMD_FLUSH_PARAMS *);
     NV_STATUS (*__tsemaCtrlCmdGetTime__)(struct TimedSemaSwObject *, NV9074_CTRL_CMD_GET_TIME_PARAMS *);
     NV_STATUS (*__tsemaCtrlCmdRelease__)(struct TimedSemaSwObject *, NV9074_CTRL_CMD_RELEASE_PARAMS *);
@@ -95,9 +95,11 @@ struct TimedSemaSwObject {
     NvBool (*__tsemaIsSwMethodStalling__)(struct TimedSemaSwObject *, NvU32);
     NV_STATUS (*__tsemaControlFilter__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__tsemaUnregisterEvent__)(struct TimedSemaSwObject *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__tsemaControlSerialization_Prologue__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__tsemaCanCopy__)(struct TimedSemaSwObject *);
     void (*__tsemaPreDestruct__)(struct TimedSemaSwObject *);
     NV_STATUS (*__tsemaIsDuplicate__)(struct TimedSemaSwObject *, NvHandle, NvBool *);
+    void (*__tsemaControlSerialization_Epilogue__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__tsemaGetNotificationListPtr__)(struct TimedSemaSwObject *);
     struct NotifShare *(*__tsemaGetNotificationShare__)(struct TimedSemaSwObject *);
     NV_STATUS (*__tsemaMap__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -171,9 +173,11 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU3
 #define tsemaIsSwMethodStalling(pChannelDescendant, hHandle) tsemaIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define tsemaControlFilter(pResource, pCallContext, pParams) tsemaControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define tsemaUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) tsemaUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define tsemaControlSerialization_Prologue(pResource, pCallContext, pParams) tsemaControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define tsemaCanCopy(pResource) tsemaCanCopy_DISPATCH(pResource)
 #define tsemaPreDestruct(pResource) tsemaPreDestruct_DISPATCH(pResource)
 #define tsemaIsDuplicate(pResource, hMemory, pDuplicate) tsemaIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define tsemaControlSerialization_Epilogue(pResource, pCallContext, pParams) tsemaControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define tsemaGetNotificationListPtr(pNotifier) tsemaGetNotificationListPtr_DISPATCH(pNotifier)
 #define tsemaGetNotificationShare(pNotifier) tsemaGetNotificationShare_DISPATCH(pNotifier)
 #define tsemaMap(pGpuResource, pCallContext, pParams, pCpuMapping) tsemaMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -184,9 +188,9 @@ NV_STATUS tsemaRelease_KERNEL(struct OBJGPU *pGpu, NvU64 semaphoreVA, NvU64 noti
 #define tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, hClient) tsemaRelease_KERNEL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, hClient)
 #define tsemaRelease_HAL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, hClient) tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, hClient)
 
-NV_STATUS tsemaGetSwMethods_IMPL(struct TimedSemaSwObject *pTimedSemSw, METHOD **ppMethods, NvU32 *pNumMethods);
+NV_STATUS tsemaGetSwMethods_IMPL(struct TimedSemaSwObject *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods);
 
-static inline NV_STATUS tsemaGetSwMethods_DISPATCH(struct TimedSemaSwObject *pTimedSemSw, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS tsemaGetSwMethods_DISPATCH(struct TimedSemaSwObject *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pTimedSemSw->__tsemaGetSwMethods__(pTimedSemSw, ppMethods, pNumMethods);
 }
 
@@ -296,6 +300,10 @@ static inline NV_STATUS tsemaUnregisterEvent_DISPATCH(struct TimedSemaSwObject *
     return pNotifier->__tsemaUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS tsemaControlSerialization_Prologue_DISPATCH(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__tsemaControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool tsemaCanCopy_DISPATCH(struct TimedSemaSwObject *pResource) {
     return pResource->__tsemaCanCopy__(pResource);
 }
@@ -306,6 +314,10 @@ static inline void tsemaPreDestruct_DISPATCH(struct TimedSemaSwObject *pResource
 
 static inline NV_STATUS tsemaIsDuplicate_DISPATCH(struct TimedSemaSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__tsemaIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void tsemaControlSerialization_Epilogue_DISPATCH(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__tsemaControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *tsemaGetNotificationListPtr_DISPATCH(struct TimedSemaSwObject *pNotifier) {

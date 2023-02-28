@@ -34,6 +34,7 @@
 #include "clb06f.h"
 
 #define HWMASK(d, r, f) DRF_MASK(NV ## d ## _ ## r ## _ ## f)
+#define HWSHIFT(d, r, f) DRF_SHIFT(NV ## d ## _ ## r ## _ ## f)
 #define HWSHIFTMASK(d, r, f) DRF_SHIFTMASK(NV ## d ## _ ## r ## _ ## f)
 #define HWSIZE(d, r, f) DRF_SIZE(NV ## d ## _ ## r ## _ ## f)
 #define HWCONST(d, r, f, c) DRF_DEF(d, _ ## r, _ ## f, _ ## c)
@@ -92,6 +93,8 @@
 #define UVM_SUBCHANNEL_C0B5 UVM_SUBCHANNEL_CE
 
 #define UVM_SUBCHANNEL_C36F UVM_SUBCHANNEL_HOST
+#define UVM_SUBCHANNEL_C3B5 UVM_SUBCHANNEL_CE
+
 #define UVM_SUBCHANNEL_C46F UVM_SUBCHANNEL_HOST
 
 #define UVM_SUBCHANNEL_C56F UVM_SUBCHANNEL_HOST
@@ -143,7 +146,7 @@
     do {                                                                \
         __NV_PUSH_0U(subch, count, a1);                                 \
         push->next[0] = d1;                                             \
-        UVM_ASSERT_MSG(uvm_push_method_validate(push, subch, a1, d1),   \
+        UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a1, d1),   \
                       "Method validation failed in channel %s\n",       \
                       push->channel->name);                             \
         ++push->next;                                                   \
@@ -153,7 +156,7 @@
     do {                                                                \
         __UVM_ASSERT_CONTIGUOUS_METHODS(a1, a2);                        \
         __NV_PUSH_1U(subch, count, a1,d1);                              \
-        UVM_ASSERT_MSG(uvm_push_method_validate(push, subch, a2, d2),   \
+        UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a2, d2),   \
                       "Method validation failed in channel %s\n",       \
                       push->channel->name);                             \
         push->next[0] = d2;                                             \
@@ -164,7 +167,7 @@
     do {                                                                \
         __UVM_ASSERT_CONTIGUOUS_METHODS(a2, a3);                        \
         __NV_PUSH_2U(subch, count, a1,d1, a2,d2);                       \
-        UVM_ASSERT_MSG(uvm_push_method_validate(push, subch, a3, d3),   \
+        UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a3, d3),   \
                       "Method validation failed in channel %s\n",       \
                       push->channel->name);                             \
         push->next[0] = d3;                                             \
@@ -175,7 +178,7 @@
     do {                                                                \
         __UVM_ASSERT_CONTIGUOUS_METHODS(a3, a4);                        \
         __NV_PUSH_3U(subch, count, a1,d1, a2,d2, a3,d3);                \
-        UVM_ASSERT_MSG(uvm_push_method_validate(push, subch, a4, d4),   \
+        UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a4, d4),   \
                       "Method validation failed in channel %s\n",       \
                       push->channel->name);                             \
         push->next[0] = d4;                                             \
@@ -186,7 +189,7 @@
     do {                                                                \
         __UVM_ASSERT_CONTIGUOUS_METHODS(a4, a5);                        \
         __NV_PUSH_4U(subch, count, a1,d1, a2,d2, a3,d3, a4,d4);         \
-        UVM_ASSERT_MSG(uvm_push_method_validate(push, subch, a5, d5),   \
+        UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a5, d5),   \
                       "Method validation failed in channel %s\n",       \
                       push->channel->name);                             \
         push->next[0] = d5;                                             \
@@ -197,7 +200,7 @@
     do {                                                                        \
         __UVM_ASSERT_CONTIGUOUS_METHODS(a5, a6);                                \
         __NV_PUSH_5U(subch, count, a1,d1, a2,d2, a3,d3, a4,d4, a5,d5);          \
-        UVM_ASSERT_MSG(uvm_push_method_validate(push, subch, a6, d6),           \
+        UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a6, d6),           \
                       "Method validation failed in channel %s\n",               \
                       push->channel->name);                                     \
         push->next[0] = d6;                                                     \

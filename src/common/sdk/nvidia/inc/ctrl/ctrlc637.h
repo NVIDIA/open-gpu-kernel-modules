@@ -302,6 +302,7 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_EXPORTED_INFO {
     NvU8  uuid[NVC637_UUID_LEN];
     NvU32 sharedEngFlags;
     NvU32 gpcMask;
+    NvU32 gfxGpcCount;
     NvU32 veidOffset;
     NvU32 veidCount;
     NvU32 smCount;

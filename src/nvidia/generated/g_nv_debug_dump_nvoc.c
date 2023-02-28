@@ -74,10 +74,6 @@ static NV_STATUS __nvoc_thunk_NvDebugDump_engstateStateInitLocked(struct OBJGPU 
     return nvdStateInitLocked(pGpu, (struct NvDebugDump *)(((unsigned char *)pNvd) - __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_nvdReconcileTunableState(POBJGPU pGpu, struct NvDebugDump *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_nvdStateLoad(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg0) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), arg0);
 }
@@ -118,28 +114,8 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_nvdStatePreInitUnlocked(POBJGPU pGpu, 
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_nvdGetTunableState(POBJGPU pGpu, struct NvDebugDump *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_nvdCompareTunableState(POBJGPU pGpu, struct NvDebugDump *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_nvdFreeTunableState(POBJGPU pGpu, struct NvDebugDump *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_nvdStatePostLoad(POBJGPU pGpu, struct NvDebugDump *pEngstate, NvU32 arg0) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), arg0);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_nvdAllocTunableState(POBJGPU pGpu, struct NvDebugDump *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_nvdSetTunableState(POBJGPU pGpu, struct NvDebugDump *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_NvDebugDump_OBJENGSTATE.offset), pTunableState);
 }
 
 static NvBool __nvoc_thunk_OBJENGSTATE_nvdIsPresent(POBJGPU pGpu, struct NvDebugDump *pEngstate) {
@@ -188,8 +164,6 @@ static void __nvoc_init_funcTable_NvDebugDump_1(NvDebugDump *pThis) {
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_NvDebugDump_engstateStateInitLocked;
 
-    pThis->__nvdReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_nvdReconcileTunableState;
-
     pThis->__nvdStateLoad__ = &__nvoc_thunk_OBJENGSTATE_nvdStateLoad;
 
     pThis->__nvdStateUnload__ = &__nvoc_thunk_OBJENGSTATE_nvdStateUnload;
@@ -210,17 +184,7 @@ static void __nvoc_init_funcTable_NvDebugDump_1(NvDebugDump *pThis) {
 
     pThis->__nvdStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_nvdStatePreInitUnlocked;
 
-    pThis->__nvdGetTunableState__ = &__nvoc_thunk_OBJENGSTATE_nvdGetTunableState;
-
-    pThis->__nvdCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_nvdCompareTunableState;
-
-    pThis->__nvdFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_nvdFreeTunableState;
-
     pThis->__nvdStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_nvdStatePostLoad;
-
-    pThis->__nvdAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_nvdAllocTunableState;
-
-    pThis->__nvdSetTunableState__ = &__nvoc_thunk_OBJENGSTATE_nvdSetTunableState;
 
     pThis->__nvdIsPresent__ = &__nvoc_thunk_OBJENGSTATE_nvdIsPresent;
 }
@@ -243,12 +207,15 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, N
     Object *pParentObj;
     NvDebugDump *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(NvDebugDump));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(NvDebugDump), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(NvDebugDump));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_NvDebugDump);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -265,11 +232,17 @@ NV_STATUS __nvoc_objCreate_NvDebugDump(NvDebugDump **ppThis, Dynamic *pParent, N
     if (status != NV_OK) goto __nvoc_objCreate_NvDebugDump_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_NvDebugDump_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(NvDebugDump));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

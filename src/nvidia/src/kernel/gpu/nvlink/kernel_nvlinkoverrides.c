@@ -59,7 +59,6 @@ knvlinkApplyRegkeyOverrides_IMPL
     pKernelNvlink->nvlinkLinkSpeed = NV_REG_STR_RM_NVLINK_SPEED_CONTROL_SPEED_DEFAULT;
 
     // Power management settings
-    pKernelNvlink->bDisableSingleLaneMode = NV_FALSE;
     pKernelNvlink->bDisableL2Mode         = NV_FALSE;
 
     // Debug Settings
@@ -224,15 +223,6 @@ knvlinkApplyRegkeyOverrides_IMPL
                          NV_REG_STR_RM_NVLINK_LINK_PM_CONTROL, &regdata))
     {
         NV_PRINTF(LEVEL_INFO, "RM NVLink Link PM controlled via regkey\n");
-
-        // Whether one-eighth mode has been disabled by regkey
-        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_LINK_PM_CONTROL, _SINGLE_LANE_MODE,
-                        _DISABLE, regdata))
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "NVLink single-lane power state disabled via regkey\n");
-            pKernelNvlink->bDisableSingleLaneMode = NV_TRUE;
-        }
 
         // Whether L2 power state has been disabled by regkey
         if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_LINK_PM_CONTROL, _L2_MODE,

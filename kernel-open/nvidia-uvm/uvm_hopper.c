@@ -54,6 +54,7 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->uvm_mem_va_base = parent_gpu->rm_va_size + 384ull * 1024 * 1024 * 1024 * 1024;
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
 
+
     parent_gpu->peer_copy_mode = g_uvm_global.peer_copy_mode;
 
     // All GR context buffers may be mapped to 57b wide VAs. All "compute" units

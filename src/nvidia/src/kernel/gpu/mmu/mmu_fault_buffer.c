@@ -54,12 +54,6 @@ faultbufConstruct_IMPL
         return NV_ERR_INVALID_CLASS;
     }
 
-    if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Client is not privileged\n");
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
-
     NV_ASSERT_OR_RETURN(pKernelGmmu != NULL, NV_ERR_NOT_SUPPORTED);
 
     status = kgmmuFaultBufferReplayableAllocate(pGpu, pKernelGmmu,

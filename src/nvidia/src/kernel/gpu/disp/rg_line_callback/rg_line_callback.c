@@ -97,11 +97,6 @@ rglcbConstruct_IMPL
 {
     NV0092_RG_LINE_CALLBACK_ALLOCATION_PARAMETERS *pAllocParams = pParams->pAllocParams;
 
-    if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
-    {
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
-
     pRgLineCallback->subDeviceInstance = pAllocParams->subDeviceInstance;
     pRgLineCallback->head              = pAllocParams->head;
     pRgLineCallback->rgLineNum         = pAllocParams->rgLineNum;

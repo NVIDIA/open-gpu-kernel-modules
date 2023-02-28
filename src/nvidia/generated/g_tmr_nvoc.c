@@ -119,16 +119,16 @@ static NvBool __nvoc_thunk_GpuResource_tmrapiShareCallback(struct TimerApi *pGpu
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_tmrapiMapTo(struct TimerApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RmResource_tmrapiCheckMemInterUnmap(struct TimerApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_TimerApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_tmrapiGetOrAllocNotifShare(struct TimerApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_tmrapiCheckMemInterUnmap(struct TimerApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_TimerApi_RmResource.offset), bSubdeviceHandleProvided);
+static NV_STATUS __nvoc_thunk_RsResource_tmrapiMapTo(struct TimerApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_tmrapiGetMapAddrSpace(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -195,6 +195,10 @@ static NV_STATUS __nvoc_thunk_Notifier_tmrapiUnregisterEvent(struct TimerApi *pN
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimerApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_tmrapiControlSerialization_Prologue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_tmrapiCanCopy(struct TimerApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
 }
@@ -205,6 +209,10 @@ static void __nvoc_thunk_RsResource_tmrapiPreDestruct(struct TimerApi *pResource
 
 static NV_STATUS __nvoc_thunk_RsResource_tmrapiIsDuplicate(struct TimerApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_tmrapiControlSerialization_Epilogue(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_tmrapiGetNotificationListPtr(struct TimerApi *pNotifier) {
@@ -303,11 +311,11 @@ static void __nvoc_init_funcTable_TimerApi_1(TimerApi *pThis) {
 
     pThis->__tmrapiShareCallback__ = &__nvoc_thunk_GpuResource_tmrapiShareCallback;
 
-    pThis->__tmrapiMapTo__ = &__nvoc_thunk_RsResource_tmrapiMapTo;
+    pThis->__tmrapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_tmrapiCheckMemInterUnmap;
 
     pThis->__tmrapiGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_tmrapiGetOrAllocNotifShare;
 
-    pThis->__tmrapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_tmrapiCheckMemInterUnmap;
+    pThis->__tmrapiMapTo__ = &__nvoc_thunk_RsResource_tmrapiMapTo;
 
     pThis->__tmrapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_tmrapiGetMapAddrSpace;
 
@@ -341,11 +349,15 @@ static void __nvoc_init_funcTable_TimerApi_1(TimerApi *pThis) {
 
     pThis->__tmrapiUnregisterEvent__ = &__nvoc_thunk_Notifier_tmrapiUnregisterEvent;
 
+    pThis->__tmrapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_tmrapiControlSerialization_Prologue;
+
     pThis->__tmrapiCanCopy__ = &__nvoc_thunk_RsResource_tmrapiCanCopy;
 
     pThis->__tmrapiPreDestruct__ = &__nvoc_thunk_RsResource_tmrapiPreDestruct;
 
     pThis->__tmrapiIsDuplicate__ = &__nvoc_thunk_RsResource_tmrapiIsDuplicate;
+
+    pThis->__tmrapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_tmrapiControlSerialization_Epilogue;
 
     pThis->__tmrapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_tmrapiGetNotificationListPtr;
 
@@ -381,12 +393,15 @@ NV_STATUS __nvoc_objCreate_TimerApi(TimerApi **ppThis, Dynamic *pParent, NvU32 c
     Object *pParentObj;
     TimerApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(TimerApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(TimerApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(TimerApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_TimerApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -403,11 +418,17 @@ NV_STATUS __nvoc_objCreate_TimerApi(TimerApi **ppThis, Dynamic *pParent, NvU32 c
     if (status != NV_OK) goto __nvoc_objCreate_TimerApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_TimerApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(TimerApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

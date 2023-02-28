@@ -97,7 +97,7 @@ struct FABRIC_VASPACE {
     NvU64 (*__fabricvaspaceGetVaLimit__)(struct FABRIC_VASPACE *);
     PMEMORY_DESCRIPTOR (*__fabricvaspaceGetPageDirBase__)(struct FABRIC_VASPACE *, struct OBJGPU *);
     PMEMORY_DESCRIPTOR (*__fabricvaspaceGetKernelPageDirBase__)(struct FABRIC_VASPACE *, struct OBJGPU *);
-    NvU32 (*__fabricvaspaceGetMapPageSize__)(struct FABRIC_VASPACE *, struct OBJGPU *, EMEMBLOCK *);
+    NvU64 (*__fabricvaspaceGetMapPageSize__)(struct FABRIC_VASPACE *, struct OBJGPU *, EMEMBLOCK *);
     struct OBJEHEAP *(*__fabricvaspaceGetHeap__)(struct FABRIC_VASPACE *);
     NvBool (*__fabricvaspaceIsFaultCapable__)(struct FABRIC_VASPACE *);
     NvU64 (*__fabricvaspaceGetVaStart__)(struct FABRIC_VASPACE *);
@@ -278,7 +278,7 @@ static inline PMEMORY_DESCRIPTOR fabricvaspaceGetKernelPageDirBase_DISPATCH(stru
     return pVAS->__fabricvaspaceGetKernelPageDirBase__(pVAS, pGpu);
 }
 
-static inline NvU32 fabricvaspaceGetMapPageSize_DISPATCH(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
+static inline NvU64 fabricvaspaceGetMapPageSize_DISPATCH(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return pVAS->__fabricvaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 

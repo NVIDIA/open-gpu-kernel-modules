@@ -120,7 +120,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SoftwareMethodTest =
     /*pExportInfo=*/        &__nvoc_export_info_SoftwareMethodTest
 };
 
-static NV_STATUS __nvoc_thunk_SoftwareMethodTest_chandesGetSwMethods(struct ChannelDescendant *pSwTest, METHOD **ppMethods, NvU32 *pNumMethods) {
+static NV_STATUS __nvoc_thunk_SoftwareMethodTest_chandesGetSwMethods(struct ChannelDescendant *pSwTest, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return swtestGetSwMethods((struct SoftwareMethodTest *)(((unsigned char *)pSwTest) - __nvoc_rtti_SoftwareMethodTest_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
@@ -212,6 +212,10 @@ static NV_STATUS __nvoc_thunk_Notifier_swtestUnregisterEvent(struct SoftwareMeth
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_SoftwareMethodTest_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_swtestControlSerialization_Prologue(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_swtestCanCopy(struct SoftwareMethodTest *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset));
 }
@@ -222,6 +226,10 @@ static void __nvoc_thunk_RsResource_swtestPreDestruct(struct SoftwareMethodTest 
 
 static NV_STATUS __nvoc_thunk_RsResource_swtestIsDuplicate(struct SoftwareMethodTest *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SoftwareMethodTest_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_swtestControlSerialization_Epilogue(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SoftwareMethodTest_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_swtestGetNotificationListPtr(struct SoftwareMethodTest *pNotifier) {
@@ -327,11 +335,15 @@ static void __nvoc_init_funcTable_SoftwareMethodTest_1(SoftwareMethodTest *pThis
 
     pThis->__swtestUnregisterEvent__ = &__nvoc_thunk_Notifier_swtestUnregisterEvent;
 
+    pThis->__swtestControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_swtestControlSerialization_Prologue;
+
     pThis->__swtestCanCopy__ = &__nvoc_thunk_RsResource_swtestCanCopy;
 
     pThis->__swtestPreDestruct__ = &__nvoc_thunk_RsResource_swtestPreDestruct;
 
     pThis->__swtestIsDuplicate__ = &__nvoc_thunk_RsResource_swtestIsDuplicate;
+
+    pThis->__swtestControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_swtestControlSerialization_Epilogue;
 
     pThis->__swtestGetNotificationListPtr__ = &__nvoc_thunk_Notifier_swtestGetNotificationListPtr;
 
@@ -367,12 +379,15 @@ NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest **ppThis, Dynam
     SoftwareMethodTest *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(SoftwareMethodTest));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(SoftwareMethodTest), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(SoftwareMethodTest));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_SoftwareMethodTest);
+
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -393,11 +408,17 @@ NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest **ppThis, Dynam
     if (status != NV_OK) goto __nvoc_objCreate_SoftwareMethodTest_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_SoftwareMethodTest_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(SoftwareMethodTest));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

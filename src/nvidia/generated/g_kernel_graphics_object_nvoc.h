@@ -91,7 +91,7 @@ struct KernelGraphicsObject {
     NV_STATUS (*__kgrobjUnmapFrom__)(struct KernelGraphicsObject *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__kgrobjControl_Epilogue__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kgrobjControlLookup__)(struct KernelGraphicsObject *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
-    NV_STATUS (*__kgrobjGetSwMethods__)(struct KernelGraphicsObject *, METHOD **, NvU32 *);
+    NV_STATUS (*__kgrobjGetSwMethods__)(struct KernelGraphicsObject *, const METHOD **, NvU32 *);
     NvHandle (*__kgrobjGetInternalObjectHandle__)(struct KernelGraphicsObject *);
     NV_STATUS (*__kgrobjControl__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kgrobjUnmap__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -99,9 +99,11 @@ struct KernelGraphicsObject {
     NvBool (*__kgrobjIsSwMethodStalling__)(struct KernelGraphicsObject *, NvU32);
     NV_STATUS (*__kgrobjControlFilter__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kgrobjUnregisterEvent__)(struct KernelGraphicsObject *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__kgrobjControlSerialization_Prologue__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__kgrobjCanCopy__)(struct KernelGraphicsObject *);
     void (*__kgrobjPreDestruct__)(struct KernelGraphicsObject *);
     NV_STATUS (*__kgrobjIsDuplicate__)(struct KernelGraphicsObject *, NvHandle, NvBool *);
+    void (*__kgrobjControlSerialization_Epilogue__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__kgrobjGetNotificationListPtr__)(struct KernelGraphicsObject *);
     struct NotifShare *(*__kgrobjGetNotificationShare__)(struct KernelGraphicsObject *);
     NV_STATUS (*__kgrobjMap__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -162,9 +164,11 @@ NV_STATUS __nvoc_objCreate_KernelGraphicsObject(KernelGraphicsObject**, Dynamic*
 #define kgrobjIsSwMethodStalling(pChannelDescendant, hHandle) kgrobjIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define kgrobjControlFilter(pResource, pCallContext, pParams) kgrobjControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define kgrobjUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) kgrobjUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define kgrobjControlSerialization_Prologue(pResource, pCallContext, pParams) kgrobjControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define kgrobjCanCopy(pResource) kgrobjCanCopy_DISPATCH(pResource)
 #define kgrobjPreDestruct(pResource) kgrobjPreDestruct_DISPATCH(pResource)
 #define kgrobjIsDuplicate(pResource, hMemory, pDuplicate) kgrobjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define kgrobjControlSerialization_Epilogue(pResource, pCallContext, pParams) kgrobjControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kgrobjGetNotificationListPtr(pNotifier) kgrobjGetNotificationListPtr_DISPATCH(pNotifier)
 #define kgrobjGetNotificationShare(pNotifier) kgrobjGetNotificationShare_DISPATCH(pNotifier)
 #define kgrobjMap(pGpuResource, pCallContext, pParams, pCpuMapping) kgrobjMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -285,7 +289,7 @@ static inline NV_STATUS kgrobjControlLookup_DISPATCH(struct KernelGraphicsObject
     return pResource->__kgrobjControlLookup__(pResource, pParams, ppEntry);
 }
 
-static inline NV_STATUS kgrobjGetSwMethods_DISPATCH(struct KernelGraphicsObject *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS kgrobjGetSwMethods_DISPATCH(struct KernelGraphicsObject *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__kgrobjGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
@@ -317,6 +321,10 @@ static inline NV_STATUS kgrobjUnregisterEvent_DISPATCH(struct KernelGraphicsObje
     return pNotifier->__kgrobjUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS kgrobjControlSerialization_Prologue_DISPATCH(struct KernelGraphicsObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__kgrobjControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool kgrobjCanCopy_DISPATCH(struct KernelGraphicsObject *pResource) {
     return pResource->__kgrobjCanCopy__(pResource);
 }
@@ -327,6 +335,10 @@ static inline void kgrobjPreDestruct_DISPATCH(struct KernelGraphicsObject *pReso
 
 static inline NV_STATUS kgrobjIsDuplicate_DISPATCH(struct KernelGraphicsObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__kgrobjIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void kgrobjControlSerialization_Epilogue_DISPATCH(struct KernelGraphicsObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__kgrobjControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *kgrobjGetNotificationListPtr_DISPATCH(struct KernelGraphicsObject *pNotifier) {

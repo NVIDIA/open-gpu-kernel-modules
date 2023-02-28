@@ -141,7 +141,7 @@ static NV_STATUS split_span_as_needed(uvm_va_space_t *va_space,
     return split_as_needed(va_space, end_addr, split_needed_cb, data);
 }
 
-static bool preferred_location_is_split_needed(uvm_va_policy_t *policy, void *data)
+static bool preferred_location_is_split_needed(const uvm_va_policy_t *policy, void *data)
 {
     uvm_processor_id_t processor_id;
 
@@ -152,12 +152,13 @@ static bool preferred_location_is_split_needed(uvm_va_policy_t *policy, void *da
 }
 
 static NV_STATUS preferred_location_unmap_remote_pages(uvm_va_block_t *va_block,
-                                                       uvm_va_block_context_t *va_block_context)
+                                                       uvm_va_block_context_t *va_block_context,
+                                                       uvm_va_block_region_t region)
 {
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
-    uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = va_block_context->policy;
     uvm_processor_id_t preferred_location = policy->preferred_location;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     const uvm_page_mask_t *mapped_mask;
@@ -185,7 +186,7 @@ static NV_STATUS preferred_location_unmap_remote_pages(uvm_va_block_t *va_block,
     status = uvm_va_block_unmap(va_block,
                                 va_block_context,
                                 preferred_location,
-                                uvm_va_block_region_from_block(va_block),
+                                region,
                                 &va_block_context->caller_page_mask,
                                 &local_tracker);
 
@@ -200,17 +201,15 @@ done:
 }
 
 NV_STATUS uvm_va_block_set_preferred_location_locked(uvm_va_block_t *va_block,
-                                                     uvm_va_block_context_t *va_block_context)
+                                                     uvm_va_block_context_t *va_block_context,
+                                                     uvm_va_block_region_t region)
 {
     uvm_assert_mutex_locked(&va_block->lock);
-    // TODO: Bug 1750144: remove this restriction when HMM handles setting
-    // the preferred location semantics instead of just recording the policy.
-    UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
-    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
-    uvm_va_block_mark_cpu_dirty(va_block);
+    if (!uvm_va_block_is_hmm(va_block))
+        uvm_va_block_mark_cpu_dirty(va_block);
 
-    return preferred_location_unmap_remote_pages(va_block, va_block_context);
+    return preferred_location_unmap_remote_pages(va_block, va_block_context, region);
 }
 
 static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
@@ -278,7 +277,7 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
         return NV_OK;
     }
 
-    return uvm_hmm_set_preferred_location(va_space, preferred_location, base, last_address);
+    return uvm_hmm_set_preferred_location(va_space, preferred_location, base, last_address, out_tracker);
 }
 
 NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS *params, struct file *filp)
@@ -405,20 +404,22 @@ NV_STATUS uvm_api_unset_preferred_location(const UVM_UNSET_PREFERRED_LOCATION_PA
     return status == NV_OK ? tracker_status : status;
 }
 
-static NV_STATUS va_block_set_accessed_by_locked(uvm_va_block_t *va_block,
-                                                 uvm_va_block_context_t *va_block_context,
-                                                 uvm_processor_id_t processor_id,
-                                                 uvm_tracker_t *out_tracker)
+NV_STATUS uvm_va_block_set_accessed_by_locked(uvm_va_block_t *va_block,
+                                              uvm_va_block_context_t *va_block_context,
+                                              uvm_processor_id_t processor_id,
+                                              uvm_va_block_region_t region,
+                                              uvm_tracker_t *out_tracker)
 {
     NV_STATUS status;
     NV_STATUS tracker_status;
 
     uvm_assert_mutex_locked(&va_block->lock);
+    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, va_block_context->policy, region));
 
     status = uvm_va_block_add_mappings(va_block,
                                        va_block_context,
                                        processor_id,
-                                       uvm_va_block_region_from_block(va_block),
+                                       region,
                                        NULL,
                                        UvmEventMapRemoteCausePolicy);
 
@@ -432,6 +433,7 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
                                        uvm_processor_id_t processor_id)
 {
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
+    uvm_va_block_region_t region = uvm_va_block_region_from_block(va_block);
     NV_STATUS status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
 
@@ -443,11 +445,13 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
     if (uvm_va_policy_is_read_duplicate(va_block_context->policy, va_space))
         return NV_OK;
 
-    status = UVM_VA_BLOCK_LOCK_RETRY(va_block, NULL,
-                                     va_block_set_accessed_by_locked(va_block,
-                                                                     va_block_context,
-                                                                     processor_id,
-                                                                     &local_tracker));
+    status = UVM_VA_BLOCK_LOCK_RETRY(va_block,
+                                     NULL,
+                                     uvm_va_block_set_accessed_by_locked(va_block,
+                                                                         va_block_context,
+                                                                         processor_id,
+                                                                         region,
+                                                                         &local_tracker));
 
     // TODO: Bug 1767224: Combine all accessed_by operations into single tracker
     if (status == NV_OK)
@@ -463,7 +467,7 @@ typedef struct
     bool set_bit;
 } accessed_by_split_params_t;
 
-static bool accessed_by_is_split_needed(uvm_va_policy_t *policy, void *data)
+static bool accessed_by_is_split_needed(const uvm_va_policy_t *policy, void *data)
 {
     accessed_by_split_params_t *params = (accessed_by_split_params_t*)data;
 
@@ -560,7 +564,8 @@ static NV_STATUS accessed_by_set(uvm_va_space_t *va_space,
                                      processor_id,
                                      set_bit,
                                      base,
-                                     last_address);
+                                     last_address,
+                                     &local_tracker);
 
 done:
     tracker_status = uvm_tracker_wait_deinit(&local_tracker);
@@ -641,7 +646,7 @@ static NV_STATUS va_block_unset_read_duplication_locked(uvm_va_block_t *va_block
     uvm_processor_id_t processor_id;
     uvm_va_block_region_t block_region = uvm_va_block_region_from_block(va_block);
     uvm_page_mask_t *break_read_duplication_pages = &va_block_context->caller_page_mask;
-    uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = va_block_context->policy;
     uvm_processor_id_t preferred_location = policy->preferred_location;
     uvm_processor_mask_t accessed_by = policy->accessed_by;
 
@@ -703,10 +708,11 @@ static NV_STATUS va_block_unset_read_duplication_locked(uvm_va_block_t *va_block
 
     // 2- Re-establish SetAccessedBy mappings
     for_each_id_in_mask(processor_id, &accessed_by) {
-        status = va_block_set_accessed_by_locked(va_block,
-                                                 va_block_context,
-                                                 processor_id,
-                                                 out_tracker);
+        status = uvm_va_block_set_accessed_by_locked(va_block,
+                                                     va_block_context,
+                                                     processor_id,
+                                                     block_region,
+                                                     out_tracker);
         if (status != NV_OK)
             return status;
     }
@@ -738,7 +744,7 @@ NV_STATUS uvm_va_block_unset_read_duplication(uvm_va_block_t *va_block,
     return status;
 }
 
-static bool read_duplication_is_split_needed(uvm_va_policy_t *policy, void *data)
+static bool read_duplication_is_split_needed(const uvm_va_policy_t *policy, void *data)
 {
     uvm_read_duplication_policy_t new_policy;
 

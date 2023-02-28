@@ -124,7 +124,7 @@ subdeviceCtrlCmdMcChangeReplayableFaultOwnership_IMPL
     OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
 
-    if (gpuIsCCFeatureEnabled(pGpu))
+    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
         return NV_ERR_NOT_SUPPORTED;
     }

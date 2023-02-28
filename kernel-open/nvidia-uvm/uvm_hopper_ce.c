@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020 NVIDIA Corporation
+    Copyright (c) 2020-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -23,24 +23,8 @@
 
 #include "uvm_hal.h"
 #include "uvm_push.h"
+#include "uvm_mem.h"
 #include "clc8b5.h"
-
-static void hopper_membar_after_transfer(uvm_push_t *push)
-{
-    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
-
-    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE))
-        return;
-
-    // TODO: [UVM-Volta] Remove Host WFI + Membar WAR for CE flush-only bug
-    // http://nvbugs/1734761
-    gpu->parent->host_hal->wait_for_idle(push);
-
-    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU))
-        gpu->parent->host_hal->membar_gpu(push);
-    else
-        gpu->parent->host_hal->membar_sys(push);
-}
 
 static NvU32 ce_aperture(uvm_aperture_t aperture)
 {
@@ -78,45 +62,32 @@ void uvm_hal_hopper_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 of
                      OFFSET_OUT_LOWER, HWVALUE(C8B5, OFFSET_OUT_LOWER, VALUE, NvOffset_LO32(offset_out)));
 }
 
-// Perform an appropriate membar before a semaphore operation. Returns whether
-// the semaphore operation should include a flush.
-static bool hopper_membar_before_semaphore(uvm_push_t *push)
+// Return the flush type and the flush enablement.
+static NvU32 hopper_get_flush_value(uvm_push_t *push)
 {
-    uvm_gpu_t *gpu;
+    NvU32 flush_value;
+    uvm_membar_t membar = uvm_push_get_and_reset_membar_flag(push);
 
-    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE)) {
+    if (membar == UVM_MEMBAR_NONE) {
         // No MEMBAR requested, don't use a flush.
-        return false;
+        flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
+    }
+    else {
+        flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
+
+        if (membar == UVM_MEMBAR_GPU)
+            flush_value |= HWCONST(C8B5, LAUNCH_DMA, FLUSH_TYPE, GL);
+        else
+            flush_value |= HWCONST(C8B5, LAUNCH_DMA, FLUSH_TYPE, SYS);
     }
 
-    if (!uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU)) {
-        // By default do a MEMBAR SYS and for that we can just use flush on the
-        // semaphore operation.
-        return true;
-    }
-
-    // TODO: Bug 1734761: Remove the HOST WFI+membar WAR, i.e, perform the CE
-    // flush when MEMBAR GPU is requested.
-    gpu = uvm_push_get_gpu(push);
-    gpu->parent->host_hal->wait_for_idle(push);
-    gpu->parent->host_hal->membar_gpu(push);
-
-    return false;
+    return flush_value;
 }
 
 void uvm_hal_hopper_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
-    NvU32 flush_value;
     NvU32 launch_dma_plc_mode;
-    bool use_flush;
-
-    use_flush = hopper_membar_before_semaphore(push);
-
-    if (use_flush)
-        flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
-    else
-        flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
 
     NV_PUSH_3U(C8B5, SET_SEMAPHORE_A, HWVALUE(C8B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C8B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
@@ -124,7 +95,7 @@ void uvm_hal_hopper_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 p
 
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
 
-    NV_PUSH_1U(C8B5, LAUNCH_DMA, flush_value |
+    NV_PUSH_1U(C8B5, LAUNCH_DMA, hopper_get_flush_value(push) |
        HWCONST(C8B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, NONE) |
        HWCONST(C8B5, LAUNCH_DMA, SEMAPHORE_TYPE, RELEASE_ONE_WORD_SEMAPHORE) |
        launch_dma_plc_mode);
@@ -133,16 +104,7 @@ void uvm_hal_hopper_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 p
 void uvm_hal_hopper_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
-    NvU32 flush_value;
     NvU32 launch_dma_plc_mode;
-    bool use_flush;
-
-    use_flush = hopper_membar_before_semaphore(push);
-
-    if (use_flush)
-        flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
-    else
-        flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
 
     NV_PUSH_3U(C8B5, SET_SEMAPHORE_A, HWVALUE(C8B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C8B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
@@ -150,7 +112,7 @@ void uvm_hal_hopper_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, N
 
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
 
-    NV_PUSH_1U(C8B5, LAUNCH_DMA, flush_value |
+    NV_PUSH_1U(C8B5, LAUNCH_DMA, hopper_get_flush_value(push) |
        HWCONST(C8B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, NONE) |
        HWCONST(C8B5, LAUNCH_DMA, SEMAPHORE_TYPE, RELEASE_ONE_WORD_SEMAPHORE) |
        HWCONST(C8B5, LAUNCH_DMA, SEMAPHORE_REDUCTION, INC) |
@@ -162,16 +124,7 @@ void uvm_hal_hopper_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, N
 void uvm_hal_hopper_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
 {
     uvm_gpu_t *gpu;
-    NvU32 flush_value;
     NvU32 launch_dma_plc_mode;
-    bool use_flush;
-
-    use_flush = hopper_membar_before_semaphore(push);
-
-    if (use_flush)
-        flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
-    else
-        flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
 
     NV_PUSH_3U(C8B5, SET_SEMAPHORE_A, HWVALUE(C8B5, SET_SEMAPHORE_A, UPPER, NvOffset_HI32(gpu_va)),
                      SET_SEMAPHORE_B, HWVALUE(C8B5, SET_SEMAPHORE_B, LOWER, NvOffset_LO32(gpu_va)),
@@ -180,7 +133,7 @@ void uvm_hal_hopper_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
     gpu = uvm_push_get_gpu(push);
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
 
-    NV_PUSH_1U(C8B5, LAUNCH_DMA, flush_value |
+    NV_PUSH_1U(C8B5, LAUNCH_DMA, hopper_get_flush_value(push) |
        HWCONST(C8B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, NONE) |
        HWCONST(C8B5, LAUNCH_DMA, SEMAPHORE_TYPE, RELEASE_FOUR_WORD_SEMAPHORE) |
        launch_dma_plc_mode);
@@ -218,8 +171,9 @@ static void hopper_memset_common(uvm_push_t *push,
     NvU32 launch_dma_plc_mode;
     NvU32 launch_dma_remap_enable;
     NvU32 launch_dma_scrub_enable;
+    NvU32 flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
 
-    UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_validate(push, dst, memset_element_size),
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_is_valid(push, dst, memset_element_size),
                    "Memset validation failed in channel %s, GPU %s",
                    push->channel->name,
                    uvm_gpu_name(gpu));
@@ -252,6 +206,10 @@ static void hopper_memset_common(uvm_push_t *push,
     do {
         NvU32 memset_this_time = (NvU32)min(num_elements, max_single_memset);
 
+        // In the last operation, a flush/membar may be issued after the memset.
+        if (num_elements == memset_this_time)
+            flush_value = hopper_get_flush_value(push);
+
         gpu->parent->ce_hal->offset_out(push, dst.address);
 
         NV_PUSH_1U(C8B5, LINE_LENGTH_IN, memset_this_time);
@@ -260,7 +218,7 @@ static void hopper_memset_common(uvm_push_t *push,
            HWCONST(C8B5, LAUNCH_DMA, SRC_MEMORY_LAYOUT, PITCH) |
            HWCONST(C8B5, LAUNCH_DMA, DST_MEMORY_LAYOUT, PITCH) |
            HWCONST(C8B5, LAUNCH_DMA, MULTI_LINE_ENABLE, FALSE) |
-           HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE) |
+           flush_value |
            launch_dma_remap_enable |
            launch_dma_scrub_enable |
            launch_dma_dst_type |
@@ -269,10 +227,8 @@ static void hopper_memset_common(uvm_push_t *push,
 
         dst.address += memset_this_time * memset_element_size;
         num_elements -= memset_this_time;
-        pipelined_value = HWCONST(C8B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, NON_PIPELINED);
+        pipelined_value = HWCONST(C8B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);
     } while (num_elements > 0);
-
-    hopper_membar_after_transfer(push);
 }
 
 void uvm_hal_hopper_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 value, size_t size)
@@ -337,3 +293,16 @@ void uvm_hal_hopper_ce_memset_4(uvm_push_t *push, uvm_gpu_address_t dst, NvU32 v
 
     hopper_memset_common(push, dst, size, 4);
 }
+
+bool uvm_hal_hopper_ce_memset_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size)
+{
+
+    return true;
+}
+
+bool uvm_hal_hopper_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
+{
+
+    return true;
+}
+

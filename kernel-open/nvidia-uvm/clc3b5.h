@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -69,6 +69,9 @@ extern "C" {
 #define NVC3B5_LAUNCH_DMA_FLUSH_ENABLE                                          2:2
 #define NVC3B5_LAUNCH_DMA_FLUSH_ENABLE_FALSE                                    (0x00000000)
 #define NVC3B5_LAUNCH_DMA_FLUSH_ENABLE_TRUE                                     (0x00000001)
+#define NVC3B5_LAUNCH_DMA_FLUSH_TYPE                                            25:25
+#define NVC3B5_LAUNCH_DMA_FLUSH_TYPE_SYS                                        (0x00000000)
+#define NVC3B5_LAUNCH_DMA_FLUSH_TYPE_GL                                         (0x00000001)
 #define NVC3B5_LAUNCH_DMA_SEMAPHORE_TYPE                                        4:3
 #define NVC3B5_LAUNCH_DMA_SEMAPHORE_TYPE_NONE                                   (0x00000000)
 #define NVC3B5_LAUNCH_DMA_SEMAPHORE_TYPE_RELEASE_ONE_WORD_SEMAPHORE             (0x00000001)

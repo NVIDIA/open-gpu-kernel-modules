@@ -122,6 +122,7 @@ typedef struct vmiopd_SM_info {
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_1C_01                                      (0x00000030)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_1E_02                                      (0x00000032)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_21_01                                      (0x00000033)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE_22_02                                      (0x00000034)
 #define NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04                               8
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1B_05                                   256
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1E_03                                   240
@@ -132,8 +133,8 @@ typedef struct vmiopd_SM_info {
 #define NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_MAX_v1E_09                         32
 #define NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL_v1F_0E                72
 #define NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE__SIZE_v20_04                6
-#define NV2080_CTRL_MIGRATABLE_OPS_ARRAY_MAX_v21_07                             50
 #define NVB0CC_MAX_CREDIT_INFO_ENTRIES_v21_08                                   63
+#define NV2080_CTRL_MIGRATABLE_OPS_ARRAY_MAX_v21_07                             50
 #define NV2080_CTRL_MAX_PCES_v21_0A                                             32
 #define NV2080_CTRL_CE_CAPS_TBL_SIZE_v21_0A                                     2
 #define NV2080_ENGINE_TYPE_COPY_SIZE_v21_0A                                     10
@@ -212,29 +213,6 @@ typedef struct VGPU_BSP_CAPS
 {
     NvU8 capsTbl[NV0080_CTRL_BSP_CAPS_TBL_SIZE];
 } VGPU_BSP_CAPS;
-
-#define VGPU_PAGE_SIZE 4096
-#define NUM_MFN_PAGES 16
-
-typedef struct HYPERV_SHARED_MEMORY_DESCRIPTOR
-{
-    union
-    {
-        struct
-        {
-            NvU32      shm_lock;
-            NvU64      vmbus_packet_id NV_ALIGN_BYTES(8);
-        };
-
-        char control_page[VGPU_PAGE_SIZE];
-    };
-
-    NvU32 mfn_data[NUM_MFN_PAGES * VGPU_PAGE_SIZE / sizeof(NvU32)];
-
-} HYPERV_SHARED_MEMORY_DESCRIPTOR;
-
-#define HYPERV_SHM_MFN_WRITE_WAIT     0
-#define HYPERV_SHM_MFN_WRITE_COMPLETE 1
 
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v15_01 (0x00000014)
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v1A_04 (0x00000014)

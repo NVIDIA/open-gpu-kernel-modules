@@ -75,16 +75,12 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_SwIntr =
     /*pExportInfo=*/        &__nvoc_export_info_SwIntr
 };
 
-static void __nvoc_thunk_SwIntr_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceRecord pRecords[163]) {
+static void __nvoc_thunk_SwIntr_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceRecord pRecords[166]) {
     swintrRegisterIntrService(pGpu, (struct SwIntr *)(((unsigned char *)pSwIntr) - __nvoc_rtti_SwIntr_IntrService.offset), pRecords);
 }
 
 static NvU32 __nvoc_thunk_SwIntr_intrservServiceInterrupt(OBJGPU *pGpu, struct IntrService *pSwIntr, IntrServiceServiceInterruptArguments *pParams) {
     return swintrServiceInterrupt(pGpu, (struct SwIntr *)(((unsigned char *)pSwIntr) - __nvoc_rtti_SwIntr_IntrService.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrReconcileTunableState(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_SwIntr_OBJENGSTATE.offset), pTunableState);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrStateLoad(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg0) {
@@ -135,32 +131,12 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrStatePreInitUnlocked(POBJGPU pGp
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_SwIntr_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrGetTunableState(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_SwIntr_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrCompareTunableState(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_SwIntr_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_swintrFreeTunableState(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_SwIntr_OBJENGSTATE.offset), pTunableState);
-}
-
 static NvBool __nvoc_thunk_IntrService_swintrClearInterrupt(OBJGPU *pGpu, struct SwIntr *pIntrService, IntrServiceClearInterruptArguments *pParams) {
     return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_SwIntr_IntrService.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrStatePostLoad(POBJGPU pGpu, struct SwIntr *pEngstate, NvU32 arg0) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_SwIntr_OBJENGSTATE.offset), arg0);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrAllocTunableState(POBJGPU pGpu, struct SwIntr *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_SwIntr_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrSetTunableState(POBJGPU pGpu, struct SwIntr *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_SwIntr_OBJENGSTATE.offset), pTunableState);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_swintrConstructEngine(POBJGPU pGpu, struct SwIntr *pEngstate, ENGDESCRIPTOR arg0) {
@@ -219,8 +195,6 @@ static void __nvoc_init_funcTable_SwIntr_1(SwIntr *pThis) {
 
     pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_thunk_SwIntr_intrservServiceInterrupt;
 
-    pThis->__swintrReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_swintrReconcileTunableState;
-
     pThis->__swintrStateLoad__ = &__nvoc_thunk_OBJENGSTATE_swintrStateLoad;
 
     pThis->__swintrStateUnload__ = &__nvoc_thunk_OBJENGSTATE_swintrStateUnload;
@@ -245,19 +219,9 @@ static void __nvoc_init_funcTable_SwIntr_1(SwIntr *pThis) {
 
     pThis->__swintrStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_swintrStatePreInitUnlocked;
 
-    pThis->__swintrGetTunableState__ = &__nvoc_thunk_OBJENGSTATE_swintrGetTunableState;
-
-    pThis->__swintrCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_swintrCompareTunableState;
-
-    pThis->__swintrFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_swintrFreeTunableState;
-
     pThis->__swintrClearInterrupt__ = &__nvoc_thunk_IntrService_swintrClearInterrupt;
 
     pThis->__swintrStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_swintrStatePostLoad;
-
-    pThis->__swintrAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_swintrAllocTunableState;
-
-    pThis->__swintrSetTunableState__ = &__nvoc_thunk_OBJENGSTATE_swintrSetTunableState;
 
     pThis->__swintrConstructEngine__ = &__nvoc_thunk_OBJENGSTATE_swintrConstructEngine;
 
@@ -285,12 +249,15 @@ NV_STATUS __nvoc_objCreate_SwIntr(SwIntr **ppThis, Dynamic *pParent, NvU32 creat
     Object *pParentObj;
     SwIntr *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(SwIntr));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(SwIntr), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(SwIntr));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_SwIntr);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -307,11 +274,17 @@ NV_STATUS __nvoc_objCreate_SwIntr(SwIntr **ppThis, Dynamic *pParent, NvU32 creat
     if (status != NV_OK) goto __nvoc_objCreate_SwIntr_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_SwIntr_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(SwIntr));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

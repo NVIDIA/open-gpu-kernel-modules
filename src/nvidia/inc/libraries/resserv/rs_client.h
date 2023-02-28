@@ -85,6 +85,16 @@ public:
     NvBool bResourceWarning;
 
     /**
+     * True if client is disabled, awaiting free
+     */
+    NvBool bDisabled;
+
+    /**
+     * True if client's high priority resources were freed
+     */
+    NvBool bHighPriorityFreeDone;
+
+    /**
      * Maps resource handle -> RsResourceRef
      */
     RsRefMap resourceMap;
@@ -139,6 +149,11 @@ public:
      * Information about recursive resource free calls is stored here
      */
     RS_FREE_STACK *pFreeStack;
+
+    /**
+     * Node for a client's disabled client list
+     */
+    ListNode disabledClientNode;
 
     /**
      * Construct a client instance
@@ -412,6 +427,7 @@ public:
      */
     NV_STATUS clientSetRestrictedRange(RsClient *pClient, NvHandle handleRangeStart, NvU32 handleRangeSize);
 };
+MAKE_INTRUSIVE_LIST(RsDisabledClientList, RsClient, disabledClientNode);
 
 /**
  * Get an iterator to the elements in the client's resource map
@@ -454,6 +470,14 @@ RS_ORDERED_ITERATOR clientRefOrderedIter(RsClient *pClient, RsResourceRef *pScop
  */
 NvBool clientRefOrderedIterNext(RsClient *pClient, RS_ORDERED_ITERATOR *pIt);
 
+/**
+ * Release all CPU address mappings for a resource
+ *
+ * @param[in] pClient Client that owns the resource
+ * @param[in] pCallContext Caller information (which includes the resource reference whose mappings will be freed)
+ * @param[in] pLockInfo Information about which locks are already held, for recursive calls
+ */
+NV_STATUS clientUnmapResourceRefMappings(RsClient *pClient, CALL_CONTEXT *pCallContext, RS_LOCK_INFO *pLockInfo);
 
 /**
  * RsResource interface to a RsClient
@@ -488,6 +512,7 @@ struct RS_CLIENT_FREE_PARAMS_INTERNAL
     NvHandle hDomain;           ///< [in] The parent domain
     NvHandle hClient;           ///< [in] The client handle
     NvBool   bHiPriOnly;        ///< [in] Only free high priority resources
+    NvBool   bDisableOnly;      ///< [in] Only disable the listed clients, do not free them yet
     NvU32    state;             ///< [in] User-defined state
 
     RS_RES_FREE_PARAMS_INTERNAL *pResFreeParams; ///< [in] Necessary for locking state

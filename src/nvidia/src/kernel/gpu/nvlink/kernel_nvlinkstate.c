@@ -1096,7 +1096,7 @@ knvlinkSetDegradedMode_IMPL
             break;
         }
     }
-
+    
     if (pRemoteGpu == NULL)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1119,9 +1119,6 @@ knvlinkSetDegradedMode_IMPL
     if (pRemoteKernelNvlink->bIsGpuDegraded == NV_FALSE)
     {
         pKernelNvlink->bIsGpuDegraded = NV_TRUE;
-        NV_PRINTF(LEVEL_ERROR,
-                "GPU%d marked Degraded for error on linkId %d \n", 
-                pGpu->gpuInstance, linkId);
 
         // shutdown all the links on this GPU
         status = knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, NV_TRUE);

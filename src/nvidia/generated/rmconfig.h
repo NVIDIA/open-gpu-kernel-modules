@@ -244,6 +244,7 @@
 #define RMCFG_FEATURE_ORIN_PHYSICAL_RM            1  // Physical layer of RM, disabled only on Orin
 #define RMCFG_FEATURE_VGPU_GSP_PLUGIN_OFFLOAD     1  // vGPU GSP plugin offload
 #define RMCFG_FEATURE_LIBOS_3_X                   1  // Enable Libos-3.x feature
+#define RMCFG_FEATURE_SLINEXT                     1
 #define RMCFG_FEATURE_NOTEBOOK                    1  // Notebook support
 #define RMCFG_FEATURE_EXTDEV                      1  // Daughter boards connected to Quadro GPUs
 #define RMCFG_FEATURE_EXTDEV_GSYNC                1  // Quadro Sync (QSYNC) board for Quadro GPUs
@@ -253,7 +254,6 @@
 #define RMCFG_FEATURE_ONSEMI_NB7NQ621M            1  // ONSEMI_NB7NQ621M Redriver Support
 #define RMCFG_FEATURE_DCB_0X                      1  // Fallback DCB routines
 #define RMCFG_FEATURE_DCB_4X                      1  // DCB4x (used on G8x and later)
-#define RMCFG_FEATURE_XAPI                        0  // Use XAPI for resman api calls
 #define RMCFG_FEATURE_RMAPI_GRAVEYARD             1  // Use RMAPI Graveyard to translate deprecated APIs
 #define RMCFG_FEATURE_HOTPLUG_POLLING             0  // HotPlug polling
 #define RMCFG_FEATURE_MULTI_GPU                   1  // Multiple GPUs managed by same RM instance
@@ -443,6 +443,7 @@
 #define RMCFG_CLASS_MAXWELL_DMA_COPY_A            1
 #define RMCFG_CLASS_ACCESS_COUNTER_NOTIFY_BUFFER  1  // Access Cntr Buffer for Gr
 #define RMCFG_CLASS_MMU_FAULT_BUFFER              1  // Volta Fault Buffer for Gr
+#define RMCFG_CLASS_MMU_VIDMEM_ACCESS_BIT_BUFFER  1  // Ampere Vidmem Access Bit Buffer
 #define RMCFG_CLASS_TURING_A                      1  // Turing Graphics
 #define RMCFG_CLASS_TURING_COMPUTE_A              1  // Turing Graphics Compute
 #define RMCFG_CLASS_AMPERE_A                      1  // AmpereA (Graphics)
@@ -481,7 +482,8 @@
 #define RMCFG_MODULE_ENGSTATE                     1  // Base class for engines with generic constructors, StateLoad, etc.
 #define RMCFG_MODULE_HOSTENG                      1  // Base class for host engines
 #define RMCFG_MODULE_FLCNABLE                     0  // Base class for engines requiring falcon
-#define RMCFG_MODULE_PMUCLIENT                    0  // Base class for engines that use PMU engine
+#define RMCFG_MODULE_PMUCLIENT                    0  // Base class for implementations of behavior to interact with the PMU engine
+#define RMCFG_MODULE_PMU_CLIENT_IMPLEMENTER       0  // Base class for engines that use PMU engine
 #define RMCFG_MODULE_INTRABLE                     0  // Base class to generate and service top-level interrupts
 #define RMCFG_MODULE_MUTEXABLE                    0  // Base class for engines that implements mutex
 #define RMCFG_MODULE_GpuMutexMgr                  0  // GPU Mutex Manager

@@ -186,9 +186,9 @@ struct KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugWriteBatchMemory__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS *);
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugReadMMUFaultInfo__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_READ_MMU_FAULT_INFO_PARAMS *);
     NvBool (*__ksmdbgssnShareCallback__)(struct KernelSMDebuggerSession *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__ksmdbgssnMapTo__)(struct KernelSMDebuggerSession *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__ksmdbgssnGetOrAllocNotifShare__)(struct KernelSMDebuggerSession *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__ksmdbgssnCheckMemInterUnmap__)(struct KernelSMDebuggerSession *, NvBool);
+    NV_STATUS (*__ksmdbgssnGetOrAllocNotifShare__)(struct KernelSMDebuggerSession *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__ksmdbgssnMapTo__)(struct KernelSMDebuggerSession *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__ksmdbgssnGetMapAddrSpace__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__ksmdbgssnSetNotificationShare__)(struct KernelSMDebuggerSession *, struct NotifShare *);
     NvU32 (*__ksmdbgssnGetRefCount__)(struct KernelSMDebuggerSession *);
@@ -204,9 +204,11 @@ struct KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnGetMemoryMappingDescriptor__)(struct KernelSMDebuggerSession *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__ksmdbgssnControlFilter__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__ksmdbgssnUnregisterEvent__)(struct KernelSMDebuggerSession *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__ksmdbgssnControlSerialization_Prologue__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__ksmdbgssnCanCopy__)(struct KernelSMDebuggerSession *);
     void (*__ksmdbgssnPreDestruct__)(struct KernelSMDebuggerSession *);
     NV_STATUS (*__ksmdbgssnIsDuplicate__)(struct KernelSMDebuggerSession *, NvHandle, NvBool *);
+    void (*__ksmdbgssnControlSerialization_Epilogue__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__ksmdbgssnGetNotificationListPtr__)(struct KernelSMDebuggerSession *);
     struct NotifShare *(*__ksmdbgssnGetNotificationShare__)(struct KernelSMDebuggerSession *);
     NV_STATUS (*__ksmdbgssnMap__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -283,9 +285,9 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnCtrlCmdDebugWriteBatchMemory(arg0, arg1) ksmdbgssnCtrlCmdDebugWriteBatchMemory_DISPATCH(arg0, arg1)
 #define ksmdbgssnCtrlCmdDebugReadMMUFaultInfo(arg0, arg1) ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_DISPATCH(arg0, arg1)
 #define ksmdbgssnShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) ksmdbgssnShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define ksmdbgssnMapTo(pResource, pParams) ksmdbgssnMapTo_DISPATCH(pResource, pParams)
-#define ksmdbgssnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ksmdbgssnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define ksmdbgssnCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) ksmdbgssnCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define ksmdbgssnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ksmdbgssnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define ksmdbgssnMapTo(pResource, pParams) ksmdbgssnMapTo_DISPATCH(pResource, pParams)
 #define ksmdbgssnGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) ksmdbgssnGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define ksmdbgssnSetNotificationShare(pNotifier, pNotifShare) ksmdbgssnSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define ksmdbgssnGetRefCount(pResource) ksmdbgssnGetRefCount_DISPATCH(pResource)
@@ -301,9 +303,11 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnGetMemoryMappingDescriptor(pRmResource, ppMemDesc) ksmdbgssnGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define ksmdbgssnControlFilter(pResource, pCallContext, pParams) ksmdbgssnControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ksmdbgssnUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define ksmdbgssnControlSerialization_Prologue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnCanCopy(pResource) ksmdbgssnCanCopy_DISPATCH(pResource)
 #define ksmdbgssnPreDestruct(pResource) ksmdbgssnPreDestruct_DISPATCH(pResource)
 #define ksmdbgssnIsDuplicate(pResource, hMemory, pDuplicate) ksmdbgssnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define ksmdbgssnControlSerialization_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnGetNotificationListPtr(pNotifier) ksmdbgssnGetNotificationListPtr_DISPATCH(pNotifier)
 #define ksmdbgssnGetNotificationShare(pNotifier) ksmdbgssnGetNotificationShare_DISPATCH(pNotifier)
 #define ksmdbgssnMap(pGpuResource, pCallContext, pParams, pCpuMapping) ksmdbgssnMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -518,16 +522,16 @@ static inline NvBool ksmdbgssnShareCallback_DISPATCH(struct KernelSMDebuggerSess
     return pGpuResource->__ksmdbgssnShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS ksmdbgssnMapTo_DISPATCH(struct KernelSMDebuggerSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__ksmdbgssnMapTo__(pResource, pParams);
+static inline NV_STATUS ksmdbgssnCheckMemInterUnmap_DISPATCH(struct KernelSMDebuggerSession *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__ksmdbgssnCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS ksmdbgssnGetOrAllocNotifShare_DISPATCH(struct KernelSMDebuggerSession *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__ksmdbgssnGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS ksmdbgssnCheckMemInterUnmap_DISPATCH(struct KernelSMDebuggerSession *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__ksmdbgssnCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS ksmdbgssnMapTo_DISPATCH(struct KernelSMDebuggerSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__ksmdbgssnMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS ksmdbgssnGetMapAddrSpace_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -590,6 +594,10 @@ static inline NV_STATUS ksmdbgssnUnregisterEvent_DISPATCH(struct KernelSMDebugge
     return pNotifier->__ksmdbgssnUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS ksmdbgssnControlSerialization_Prologue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__ksmdbgssnControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool ksmdbgssnCanCopy_DISPATCH(struct KernelSMDebuggerSession *pResource) {
     return pResource->__ksmdbgssnCanCopy__(pResource);
 }
@@ -600,6 +608,10 @@ static inline void ksmdbgssnPreDestruct_DISPATCH(struct KernelSMDebuggerSession 
 
 static inline NV_STATUS ksmdbgssnIsDuplicate_DISPATCH(struct KernelSMDebuggerSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__ksmdbgssnIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void ksmdbgssnControlSerialization_Epilogue_DISPATCH(struct KernelSMDebuggerSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__ksmdbgssnControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *ksmdbgssnGetNotificationListPtr_DISPATCH(struct KernelSMDebuggerSession *pNotifier) {

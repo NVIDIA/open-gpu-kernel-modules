@@ -98,6 +98,8 @@ typedef struct GspStaticConfigInfo_t
     NvBool bIsTitan;
     NvBool bIsTesla;
     NvBool bIsMobile;
+    NvBool bIsGc6Rtd3Allowed;
+    NvBool bIsGcOffRtd3Allowed;
 
     NvU64 bar1PdeBase;
     NvU64 bar2PdeBase;

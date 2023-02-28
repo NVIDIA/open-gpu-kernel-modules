@@ -210,6 +210,31 @@ cliresShareCallback_IMPL
     return resShareCallback_IMPL(staticCast(pRmCliRes, RsResource), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+NV_STATUS
+cliresControl_Prologue_IMPL
+(
+    RmClientResource *pRmCliRes,
+    CALL_CONTEXT *pCallContext,
+    RS_RES_CONTROL_PARAMS_INTERNAL *pParams
+)
+{
+    NV_STATUS status = serverDeserializeCtrlDown(pCallContext, pParams->cmd, pParams->pParams, pParams->paramsSize, &pParams->flags);
+
+    return status;
+}
+
+void
+cliresControl_Epilogue_IMPL
+(
+    RmClientResource *pRmCliRes,
+    CALL_CONTEXT *pCallContext,
+    RS_RES_CONTROL_PARAMS_INTERNAL *pParams
+)
+{
+    NV_ASSERT_OK(serverSerializeCtrlUp(pCallContext, pParams->cmd, pParams->pParams, pParams->paramsSize, &pParams->flags));
+    serverFreeSerializeStructures(pCallContext, pParams->pParams);
+}
+
 // ****************************************************************************
 //                              Helper functions
 // ****************************************************************************
@@ -819,15 +844,12 @@ cliresCtrlCmdSystemExecuteAcpiMethod_IMPL
     NvBool      bDoCopyOut      = NV_FALSE;
     void*       pInOutData      = NULL;
     NV_STATUS   status          = NV_OK;
-    OBJOS      *pOS             = NULL;
 
     pGpu = gpumgrGetSomeGpu();
     if (pGpu == NULL)
     {
         return NV_ERR_INVALID_REQUEST;
     }
-    pOS = GPU_GET_OS(pGpu);
-
     inDataSize      = pAcpiMethodParams->inDataSize;
     outDataSize     = pAcpiMethodParams->outDataSize;
     inOutDataSize   = (NvU32) NV_MAX(inDataSize, outDataSize);
@@ -865,38 +887,38 @@ cliresCtrlCmdSystemExecuteAcpiMethod_IMPL
     {
         case NV0000_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DSM_NVOP_OPTIMUSCAPS:
         {
-            outStatus = pOS->osCallACPI_DSM(pGpu,
-                                            ACPI_DSM_FUNCTION_NVOP,
-                                            NVOP_FUNC_OPTIMUSCAPS,
-                                            (NvU32*) pInOutData,
-                                            &outDataSize);
+            outStatus = osCallACPI_DSM(pGpu,
+                                       ACPI_DSM_FUNCTION_NVOP,
+                                       NVOP_FUNC_OPTIMUSCAPS,
+                                       (NvU32*) pInOutData,
+                                       &outDataSize);
             break;
         }
         case NV0000_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DSM_NVOP_OPTIMUSFLAG:
         {
-            outStatus = pOS->osCallACPI_DSM(pGpu,
-                                            ACPI_DSM_FUNCTION_NVOP,
-                                            NVOP_FUNC_OPTIMUSFLAG,
-                                            (NvU32*) pInOutData,
-                                            (NvU16*) &outDataSize);
+            outStatus = osCallACPI_DSM(pGpu,
+                                       ACPI_DSM_FUNCTION_NVOP,
+                                       NVOP_FUNC_OPTIMUSFLAG,
+                                       (NvU32*) pInOutData,
+                                       (NvU16*) &outDataSize);
             break;
         }
         case NV0000_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DSM_JT_CAPS:
         {
-            outStatus = pOS->osCallACPI_DSM(pGpu,
-                                            ACPI_DSM_FUNCTION_JT,
-                                            JT_FUNC_CAPS,
-                                            (NvU32*) pInOutData,
-                                            (NvU16*) &outDataSize);
+            outStatus = osCallACPI_DSM(pGpu,
+                                       ACPI_DSM_FUNCTION_JT,
+                                       JT_FUNC_CAPS,
+                                       (NvU32*) pInOutData,
+                                       (NvU16*) &outDataSize);
             break;
         }
         case NV0000_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DSM_JT_PLATPOLICY:
         {
-            outStatus = pOS->osCallACPI_DSM(pGpu,
-                                            ACPI_DSM_FUNCTION_JT,
-                                            JT_FUNC_PLATPOLICY,
-                                            (NvU32*) pInOutData,
-                                            (NvU16*) &outDataSize);
+            outStatus = osCallACPI_DSM(pGpu,
+                                       ACPI_DSM_FUNCTION_JT,
+                                       JT_FUNC_PLATPOLICY,
+                                       (NvU32*) pInOutData,
+                                       (NvU16*) &outDataSize);
             break;
         }
         default:
@@ -2500,8 +2522,6 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
     NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *pParams
 )
 {
-    OBJSYS   *pSys = NULL;
-    OBJOS    *pOS = NULL;
     NvU32     rc = NV_OK;
     OBJGPU   *pGpu   = NULL;
     NV_STATUS status = NV_OK;
@@ -2511,20 +2531,6 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
 
     if (pParams == NULL)
     {
-        return NV_ERR_INVALID_REQUEST;
-    }
-
-    pSys = SYS_GET_INSTANCE();
-    if (pSys == NULL)
-    {
-        NV_ASSERT(pSys);
-        return NV_ERR_INVALID_REQUEST;
-    }
-
-    pOS = SYS_GET_OS(pSys);
-    if (pOS == NULL)
-    {
-        NV_ASSERT(pOS);
         return NV_ERR_INVALID_REQUEST;
     }
 
@@ -2547,11 +2553,11 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
             NvU32       supportedFuncs;
             dsmDataSize = sizeof(supportedFuncs);
 
-            if ((rc = pOS->osCallACPI_DSM(pGpu,
-                                   acpiDsmFunction,
-                                   acpiDsmSubFunction,
-                                   &supportedFuncs,
-                                   &dsmDataSize)) != NV_OK)
+            if ((rc = osCallACPI_DSM(pGpu,
+                                     acpiDsmFunction,
+                                     acpiDsmSubFunction,
+                                     &supportedFuncs,
+                                     &dsmDataSize)) != NV_OK)
             {
                 NV_PRINTF(LEVEL_WARNING,
                     "Unable to retrieve NVPCF supported functions. Possibly not supported by SBIOS "
@@ -2587,11 +2593,11 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
             dynamicTable_1x.entries[0] = NVPCF0100_CTRL_DYNAMIC_TABLE_1X_INPUT_CMD_GET_TPP;
             dsmDataSize = sizeof(dynamicTable_1x);
 
-            if ((rc = pOS->osCallACPI_DSM(pGpu,
-                                   ACPI_DSM_FUNCTION_NVPCF,
-                                   NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_PARAMS,
-                                   (NvU32*)(&dynamicTable_1x),
-                                   &dsmDataSize)) != NV_OK)
+            if ((rc = osCallACPI_DSM(pGpu,
+                                     ACPI_DSM_FUNCTION_NVPCF,
+                                     NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_PARAMS,
+                                     (NvU32*)(&dynamicTable_1x),
+                                     &dsmDataSize)) != NV_OK)
             {
                 NV_PRINTF(LEVEL_WARNING,
                     "Unable to retrieve NVPCF dynamic data. Possibly not supported by SBIOS "
@@ -2633,7 +2639,7 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
             portMemCopy(pData + sizeof(header), sizeof(common), &common, sizeof(common));
             portMemCopy(pData + sizeof(header) + sizeof(common), sizeof(entries), entries, sizeof(entries));
 
-            if ((rc = pOS->osCallACPI_DSM(pGpu,
+            if ((rc = osCallACPI_DSM(pGpu,
                             ACPI_DSM_FUNCTION_NVPCF_2X,
                             NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_PARAMS,
                             (NvU32 *)pData,
@@ -2737,7 +2743,7 @@ nvpcf2xGetDynamicParams_exit:
 
             pData = portMemAllocNonPaged(dataSize);
 
-            if ((rc = pOS->osCallACPI_DSM(pGpu,
+            if ((rc = osCallACPI_DSM(pGpu,
                             ACPI_DSM_FUNCTION_NVPCF_2X,
                             NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_STATIC_CONFIG_TABLES,
                             (NvU32 *)pData,
@@ -3151,6 +3157,7 @@ cliresCtrlCmdSystemGetP2pCapsV2_IMPL
 )
 {
     OBJGPU *pGpu;
+    NvBool bLoopback = pP2PParams->gpuCount == 2 && pP2PParams->gpuIds[0] == pP2PParams->gpuIds[1];
 
     if (RMCFG_FEATURE_PLATFORM_GSP)
     {
@@ -3171,7 +3178,7 @@ cliresCtrlCmdSystemGetP2pCapsV2_IMPL
     }
 
     return CliGetSystemP2pCaps(pP2PParams->gpuIds,
-                               pP2PParams->gpuCount,
+                               bLoopback ? 1 : pP2PParams->gpuCount,
                               &pP2PParams->p2pCaps,
                               &pP2PParams->p2pOptimalReadCEs,
                               &pP2PParams->p2pOptimalWriteCEs,
@@ -4139,6 +4146,27 @@ cliresCtrlCmdGpuDisableNvlinkInit_IMPL
     }
 
     return gpumgrSetGpuInitDisabledNvlinks(pParams->gpuId, pParams->mask, pParams->bSkipHwNvlinkDisable);
+}
+
+NV_STATUS
+cliresCtrlCmdGpuSetNvlinkBwMode_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS *pParams
+)
+{
+    return gpumgrSetGpuNvlinkBwMode(pParams->mode);
+}
+
+NV_STATUS
+cliresCtrlCmdGpuGetNvlinkBwMode_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS *pParams
+)
+{
+    pParams->mode = gpumgrGetGpuNvlinkBwMode();
+    return NV_OK;
 }
 
 /*!

@@ -75,7 +75,6 @@ enum
 {
     RM_SOE_THERM_MSG_ID_SLOWDOWN_STATUS,
     RM_SOE_THERM_MSG_ID_SHUTDOWN_STATUS,
-    RM_SOE_THERM_MSG_ID_ACK_FORCE_SLOWDOWN,
 };
 
 /*!
@@ -103,7 +102,6 @@ typedef struct
     NvBool bSlowdown;
     NvTemp maxTemperature;
     NvTemp warnThreshold;
-    NvBool bLinksL1Status;
 
     struct
     {

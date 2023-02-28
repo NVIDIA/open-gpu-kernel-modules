@@ -70,9 +70,13 @@ $(foreach _module, $(NV_KERNEL_MODULES), \
 
 EXTRA_CFLAGS += -I$(src)/common/inc
 EXTRA_CFLAGS += -I$(src)
-EXTRA_CFLAGS += -Wall -MD $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
+EXTRA_CFLAGS += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
 EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"525.89.02\"
+EXTRA_CFLAGS += -DNV_VERSION_STRING=\"530.30.02\"
+
+ifneq ($(SYSSRCHOST1X),)
+ EXTRA_CFLAGS += -I$(SYSSRCHOST1X)
+endif
 
 EXTRA_CFLAGS += -Wno-unused-function
 
@@ -259,6 +263,7 @@ NV_HEADER_PRESENCE_TESTS = \
  linux/platform/tegra/dce/dce-client-ipc.h \
  linux/nvhost.h \
  linux/nvhost_t194.h \
+ linux/host1x-next.h \
  asm/book3s/64/hash-64k.h \
  asm/set_memory.h \
  asm/prom.h \

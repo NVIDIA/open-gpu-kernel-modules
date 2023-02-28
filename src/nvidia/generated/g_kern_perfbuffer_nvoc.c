@@ -97,6 +97,54 @@ static NvBool __nvoc_thunk_GpuResource_perfbufferShareCallback(struct PerfBuffer
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_perfbufferCheckMemInterUnmap(struct PerfBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_perfbufferMapTo(struct PerfBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_perfbufferGetMapAddrSpace(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_perfbufferGetRefCount(struct PerfBuffer *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_perfbufferAddAdditionalDependants(struct RsClient *pClient, struct PerfBuffer *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_perfbufferControl_Prologue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_perfbufferGetRegBaseOffsetAndSize(struct PerfBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_perfbufferInternalControlForward(struct PerfBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), command, pParams, size);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_perfbufferUnmapFrom(struct PerfBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_perfbufferControl_Epilogue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_perfbufferControlLookup(struct PerfBuffer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_perfbufferGetInternalObjectHandle(struct PerfBuffer *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset));
+}
+
 static NV_STATUS __nvoc_thunk_GpuResource_perfbufferControl(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, pParams);
 }
@@ -113,68 +161,28 @@ static NV_STATUS __nvoc_thunk_RmResource_perfbufferGetMemoryMappingDescriptor(st
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferGetMapAddrSpace(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_perfbufferGetInternalObjectHandle(struct PerfBuffer *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_perfbufferControlFilter(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_perfbufferAddAdditionalDependants(struct RsClient *pClient, struct PerfBuffer *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_perfbufferGetRefCount(struct PerfBuffer *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_perfbufferCheckMemInterUnmap(struct PerfBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_perfbufferMapTo(struct PerfBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_perfbufferControl_Prologue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferGetRegBaseOffsetAndSize(struct PerfBuffer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), pGpu, pOffset, pSize);
+static NV_STATUS __nvoc_thunk_RmResource_perfbufferControlSerialization_Prologue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_perfbufferCanCopy(struct PerfBuffer *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_perfbufferInternalControlForward(struct PerfBuffer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset), command, pParams, size);
-}
-
 static void __nvoc_thunk_RsResource_perfbufferPreDestruct(struct PerfBuffer *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_perfbufferUnmapFrom(struct PerfBuffer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_perfbufferIsDuplicate(struct PerfBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_perfbufferControl_Epilogue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_perfbufferControlLookup(struct PerfBuffer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_perfbufferControlSerialization_Epilogue(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_perfbufferMap(struct PerfBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -236,6 +244,30 @@ static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner
 
     pThis->__perfbufferShareCallback__ = &__nvoc_thunk_GpuResource_perfbufferShareCallback;
 
+    pThis->__perfbufferCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_perfbufferCheckMemInterUnmap;
+
+    pThis->__perfbufferMapTo__ = &__nvoc_thunk_RsResource_perfbufferMapTo;
+
+    pThis->__perfbufferGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_perfbufferGetMapAddrSpace;
+
+    pThis->__perfbufferGetRefCount__ = &__nvoc_thunk_RsResource_perfbufferGetRefCount;
+
+    pThis->__perfbufferAddAdditionalDependants__ = &__nvoc_thunk_RsResource_perfbufferAddAdditionalDependants;
+
+    pThis->__perfbufferControl_Prologue__ = &__nvoc_thunk_RmResource_perfbufferControl_Prologue;
+
+    pThis->__perfbufferGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_perfbufferGetRegBaseOffsetAndSize;
+
+    pThis->__perfbufferInternalControlForward__ = &__nvoc_thunk_GpuResource_perfbufferInternalControlForward;
+
+    pThis->__perfbufferUnmapFrom__ = &__nvoc_thunk_RsResource_perfbufferUnmapFrom;
+
+    pThis->__perfbufferControl_Epilogue__ = &__nvoc_thunk_RmResource_perfbufferControl_Epilogue;
+
+    pThis->__perfbufferControlLookup__ = &__nvoc_thunk_RsResource_perfbufferControlLookup;
+
+    pThis->__perfbufferGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_perfbufferGetInternalObjectHandle;
+
     pThis->__perfbufferControl__ = &__nvoc_thunk_GpuResource_perfbufferControl;
 
     pThis->__perfbufferUnmap__ = &__nvoc_thunk_GpuResource_perfbufferUnmap;
@@ -244,37 +276,17 @@ static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner
 
     pThis->__perfbufferGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_perfbufferGetMemoryMappingDescriptor;
 
-    pThis->__perfbufferGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_perfbufferGetMapAddrSpace;
-
-    pThis->__perfbufferGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_perfbufferGetInternalObjectHandle;
-
     pThis->__perfbufferControlFilter__ = &__nvoc_thunk_RsResource_perfbufferControlFilter;
 
-    pThis->__perfbufferAddAdditionalDependants__ = &__nvoc_thunk_RsResource_perfbufferAddAdditionalDependants;
-
-    pThis->__perfbufferGetRefCount__ = &__nvoc_thunk_RsResource_perfbufferGetRefCount;
-
-    pThis->__perfbufferCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_perfbufferCheckMemInterUnmap;
-
-    pThis->__perfbufferMapTo__ = &__nvoc_thunk_RsResource_perfbufferMapTo;
-
-    pThis->__perfbufferControl_Prologue__ = &__nvoc_thunk_RmResource_perfbufferControl_Prologue;
-
-    pThis->__perfbufferGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_perfbufferGetRegBaseOffsetAndSize;
+    pThis->__perfbufferControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_perfbufferControlSerialization_Prologue;
 
     pThis->__perfbufferCanCopy__ = &__nvoc_thunk_RsResource_perfbufferCanCopy;
 
-    pThis->__perfbufferInternalControlForward__ = &__nvoc_thunk_GpuResource_perfbufferInternalControlForward;
-
     pThis->__perfbufferPreDestruct__ = &__nvoc_thunk_RsResource_perfbufferPreDestruct;
-
-    pThis->__perfbufferUnmapFrom__ = &__nvoc_thunk_RsResource_perfbufferUnmapFrom;
 
     pThis->__perfbufferIsDuplicate__ = &__nvoc_thunk_RsResource_perfbufferIsDuplicate;
 
-    pThis->__perfbufferControl_Epilogue__ = &__nvoc_thunk_RmResource_perfbufferControl_Epilogue;
-
-    pThis->__perfbufferControlLookup__ = &__nvoc_thunk_RsResource_perfbufferControlLookup;
+    pThis->__perfbufferControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_perfbufferControlSerialization_Epilogue;
 
     pThis->__perfbufferMap__ = &__nvoc_thunk_GpuResource_perfbufferMap;
 
@@ -303,12 +315,15 @@ NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer **ppThis, Dynamic *pParent, NvU
     PerfBuffer *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(PerfBuffer));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(PerfBuffer), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(PerfBuffer));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_PerfBuffer);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -329,11 +344,17 @@ NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer **ppThis, Dynamic *pParent, NvU
     if (status != NV_OK) goto __nvoc_objCreate_PerfBuffer_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_PerfBuffer_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(PerfBuffer));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

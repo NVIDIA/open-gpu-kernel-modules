@@ -47,6 +47,7 @@
 #define NV_RAMUSERD_GP_GET                     (34*32+31):(34*32+0) /* RWXUF */
 #define NV_RAMUSERD_GP_PUT                     (35*32+31):(35*32+0) /* RWXUF */
 #define NV_RAMUSERD_BASE_SHIFT                                    9 /*       */
+#define NV_RAMUSERD_CHAN_SIZE                                   512 /*       */
 #define NV_RAMUSERD_GP_TOP_LEVEL_GET           (22*32+31):(22*32+0) /* RWXUF */
 #define NV_RAMUSERD_GP_TOP_LEVEL_GET_HI        (23*32+31):(23*32+0) /* RWXUF */
 #define NV_RAMRL_BASE_SHIFT                                      12 /*       */

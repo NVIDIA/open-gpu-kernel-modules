@@ -25,7 +25,6 @@
 #define __NVKMS_VRR_H__
 
 #include "nvkms-types.h"
-#include "nvkms-modeset-types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,8 +33,7 @@ extern "C" {
 void nvAllocVrrEvo(NVDevEvoPtr pDevEvo);
 void nvFreeVrrEvo(NVDevEvoPtr pDevEvo);
 void nvDisableVrr(NVDevEvoPtr pDevEvo);
-void nvEnableVrr(NVDevEvoPtr pDevEvo,
-                 const struct NvKmsSetModeRequest *pRequest);
+void nvEnableVrr(NVDevEvoPtr pDevEvo);
 void nvCancelVrrFrameReleaseTimers(NVDevEvoPtr pDevEvo);
 void nvSetVrrActive(NVDevEvoPtr pDevEvo, NvBool active);
 void nvApplyVrrBaseFlipOverrides(const NVDispEvoRec *pDispEvo, NvU32 head,
@@ -45,7 +43,7 @@ enum NvKmsVrrFlipType nvGetActiveVrrType(const NVDevEvoRec *pDevEvo);
 NvS32 nvIncVrrSemaphoreIndex(NVDevEvoPtr pDevEvo);
 void nvTriggerVrrUnstallMoveCursor(NVDispEvoPtr pDispEvo);
 void nvTriggerVrrUnstallSetCursorImage(NVDispEvoPtr pDispEvo,
-                                       NvBool ctxDmaChanged);
+                                       NvBool elvReleased);
 void nvGetDpyMinRefreshRateValidValues(
     const NVHwModeTimingsEvo *pTimings,
     const enum NvKmsDpyVRRType vrrType,

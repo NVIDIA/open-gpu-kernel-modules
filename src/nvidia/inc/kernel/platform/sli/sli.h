@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,6 +37,8 @@
 
 // Unlinked SLI is implemented in RM clients
 #define IsUnlinkedSLIEnabled(p) ((p)->getProperty((p), PDB_PROP_GPU_RM_UNLINKED_SLI))
+
+void RmInitScalability(OBJGPU *pGpu);
 
 #define IsSLIEnabled(p)         0
 #define NumSubDevices(p)        0

@@ -117,7 +117,6 @@ struct KernelCcu {
     NV_STATUS (*__kccuStateLoad__)(OBJGPU *, struct KernelCcu *, NvU32);
     NV_STATUS (*__kccuStateUnload__)(OBJGPU *, struct KernelCcu *, NvU32);
     NV_STATUS (*__kccuMigShrBufHandler__)(OBJGPU *, struct KernelCcu *, NvBool);
-    NV_STATUS (*__kccuReconcileTunableState__)(POBJGPU, struct KernelCcu *, void *);
     NV_STATUS (*__kccuStateInitLocked__)(POBJGPU, struct KernelCcu *);
     NV_STATUS (*__kccuStatePreLoad__)(POBJGPU, struct KernelCcu *, NvU32);
     NV_STATUS (*__kccuStatePostUnload__)(POBJGPU, struct KernelCcu *, NvU32);
@@ -127,12 +126,7 @@ struct KernelCcu {
     void (*__kccuInitMissing__)(POBJGPU, struct KernelCcu *);
     NV_STATUS (*__kccuStatePreInitLocked__)(POBJGPU, struct KernelCcu *);
     NV_STATUS (*__kccuStatePreInitUnlocked__)(POBJGPU, struct KernelCcu *);
-    NV_STATUS (*__kccuGetTunableState__)(POBJGPU, struct KernelCcu *, void *);
-    NV_STATUS (*__kccuCompareTunableState__)(POBJGPU, struct KernelCcu *, void *, void *);
-    void (*__kccuFreeTunableState__)(POBJGPU, struct KernelCcu *, void *);
     NV_STATUS (*__kccuStatePostLoad__)(POBJGPU, struct KernelCcu *, NvU32);
-    NV_STATUS (*__kccuAllocTunableState__)(POBJGPU, struct KernelCcu *, void **);
-    NV_STATUS (*__kccuSetTunableState__)(POBJGPU, struct KernelCcu *, void *);
     NvBool (*__kccuIsPresent__)(POBJGPU, struct KernelCcu *);
     MEMORY_DESCRIPTOR *pMemDesc[9];
     NvBool bStreamState;
@@ -176,7 +170,6 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
 #define kccuStateUnload(arg0, arg1, flags) kccuStateUnload_DISPATCH(arg0, arg1, flags)
 #define kccuMigShrBufHandler(arg0, arg1, bMigEnabled) kccuMigShrBufHandler_DISPATCH(arg0, arg1, bMigEnabled)
 #define kccuMigShrBufHandler_HAL(arg0, arg1, bMigEnabled) kccuMigShrBufHandler_DISPATCH(arg0, arg1, bMigEnabled)
-#define kccuReconcileTunableState(pGpu, pEngstate, pTunableState) kccuReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kccuStateInitLocked(pGpu, pEngstate) kccuStateInitLocked_DISPATCH(pGpu, pEngstate)
 #define kccuStatePreLoad(pGpu, pEngstate, arg0) kccuStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kccuStatePostUnload(pGpu, pEngstate, arg0) kccuStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -186,12 +179,7 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
 #define kccuInitMissing(pGpu, pEngstate) kccuInitMissing_DISPATCH(pGpu, pEngstate)
 #define kccuStatePreInitLocked(pGpu, pEngstate) kccuStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define kccuStatePreInitUnlocked(pGpu, pEngstate) kccuStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kccuGetTunableState(pGpu, pEngstate, pTunableState) kccuGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kccuCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) kccuCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define kccuFreeTunableState(pGpu, pEngstate, pTunableState) kccuFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kccuStatePostLoad(pGpu, pEngstate, arg0) kccuStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kccuAllocTunableState(pGpu, pEngstate, ppTunableState) kccuAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define kccuSetTunableState(pGpu, pEngstate, pTunableState) kccuSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kccuIsPresent(pGpu, pEngstate) kccuIsPresent_DISPATCH(pGpu, pEngstate)
 void kccuDestruct_IMPL(struct KernelCcu *arg0);
 
@@ -223,10 +211,6 @@ NV_STATUS kccuMigShrBufHandler_GH100(OBJGPU *arg0, struct KernelCcu *arg1, NvBoo
 
 static inline NV_STATUS kccuMigShrBufHandler_DISPATCH(OBJGPU *arg0, struct KernelCcu *arg1, NvBool bMigEnabled) {
     return arg1->__kccuMigShrBufHandler__(arg0, arg1, bMigEnabled);
-}
-
-static inline NV_STATUS kccuReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, void *pTunableState) {
-    return pEngstate->__kccuReconcileTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NV_STATUS kccuStateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {
@@ -265,28 +249,8 @@ static inline NV_STATUS kccuStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct K
     return pEngstate->__kccuStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kccuGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, void *pTunableState) {
-    return pEngstate->__kccuGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kccuCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__kccuCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void kccuFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, void *pTunableState) {
-    pEngstate->__kccuFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kccuStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, NvU32 arg0) {
     return pEngstate->__kccuStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kccuAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, void **ppTunableState) {
-    return pEngstate->__kccuAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS kccuSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate, void *pTunableState) {
-    return pEngstate->__kccuSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool kccuIsPresent_DISPATCH(POBJGPU pGpu, struct KernelCcu *pEngstate) {

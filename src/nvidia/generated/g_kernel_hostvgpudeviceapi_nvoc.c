@@ -124,12 +124,15 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr **ppT
     Object *pParentObj;
     KernelHostVgpuDeviceShr *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(KernelHostVgpuDeviceShr));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelHostVgpuDeviceShr), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(KernelHostVgpuDeviceShr));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelHostVgpuDeviceShr);
+
+    pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -146,11 +149,17 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr **ppT
     if (status != NV_OK) goto __nvoc_objCreate_KernelHostVgpuDeviceShr_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_KernelHostVgpuDeviceShr_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(KernelHostVgpuDeviceShr));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 
@@ -274,16 +283,16 @@ static NvBool __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiShareCallback(stru
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_kernelhostvgpudeviceapiMapTo(struct KernelHostVgpuDeviceApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RmResource_kernelhostvgpudeviceapiCheckMemInterUnmap(struct KernelHostVgpuDeviceApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_kernelhostvgpudeviceapiGetOrAllocNotifShare(struct KernelHostVgpuDeviceApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelHostVgpuDeviceApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_kernelhostvgpudeviceapiCheckMemInterUnmap(struct KernelHostVgpuDeviceApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RmResource.offset), bSubdeviceHandleProvided);
+static NV_STATUS __nvoc_thunk_RsResource_kernelhostvgpudeviceapiMapTo(struct KernelHostVgpuDeviceApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiGetMapAddrSpace(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -354,12 +363,20 @@ static NV_STATUS __nvoc_thunk_Notifier_kernelhostvgpudeviceapiUnregisterEvent(st
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelHostVgpuDeviceApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_kernelhostvgpudeviceapiControlSerialization_Prologue(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RmResource.offset), pCallContext, pParams);
+}
+
 static void __nvoc_thunk_RsResource_kernelhostvgpudeviceapiPreDestruct(struct KernelHostVgpuDeviceApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RsResource.offset));
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_kernelhostvgpudeviceapiIsDuplicate(struct KernelHostVgpuDeviceApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_kernelhostvgpudeviceapiControlSerialization_Epilogue(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_kernelhostvgpudeviceapiGetNotificationListPtr(struct KernelHostVgpuDeviceApi *pNotifier) {
@@ -519,12 +536,27 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
         /*func=*/       "kernelhostvgpudeviceapiCtrlCmdSetGuestId"
 #endif
     },
+    {               /*  [9] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xa084010au,
+        /*paramSize=*/  sizeof(NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_KernelHostVgpuDeviceApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelHostVgpuDeviceApi = 
 {
-    /*numEntries=*/     9,
+    /*numEntries=*/     10,
     /*pExportEntries=*/ __nvoc_exported_method_def_KernelHostVgpuDeviceApi
 };
 
@@ -606,15 +638,19 @@ static void __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1(KernelHostVgpuDevice
     pThis->__kernelhostvgpudeviceapiCtrlCmdSetGuestId__ = &kernelhostvgpudeviceapiCtrlCmdSetGuestId_IMPL;
 #endif
 
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    pThis->__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__ = &kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL;
+#endif
+
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_KernelHostVgpuDeviceApi_resCanCopy;
 
     pThis->__kernelhostvgpudeviceapiShareCallback__ = &__nvoc_thunk_GpuResource_kernelhostvgpudeviceapiShareCallback;
 
-    pThis->__kernelhostvgpudeviceapiMapTo__ = &__nvoc_thunk_RsResource_kernelhostvgpudeviceapiMapTo;
+    pThis->__kernelhostvgpudeviceapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_kernelhostvgpudeviceapiCheckMemInterUnmap;
 
     pThis->__kernelhostvgpudeviceapiGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_kernelhostvgpudeviceapiGetOrAllocNotifShare;
 
-    pThis->__kernelhostvgpudeviceapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_kernelhostvgpudeviceapiCheckMemInterUnmap;
+    pThis->__kernelhostvgpudeviceapiMapTo__ = &__nvoc_thunk_RsResource_kernelhostvgpudeviceapiMapTo;
 
     pThis->__kernelhostvgpudeviceapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_kernelhostvgpudeviceapiGetMapAddrSpace;
 
@@ -650,9 +686,13 @@ static void __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1(KernelHostVgpuDevice
 
     pThis->__kernelhostvgpudeviceapiUnregisterEvent__ = &__nvoc_thunk_Notifier_kernelhostvgpudeviceapiUnregisterEvent;
 
+    pThis->__kernelhostvgpudeviceapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_kernelhostvgpudeviceapiControlSerialization_Prologue;
+
     pThis->__kernelhostvgpudeviceapiPreDestruct__ = &__nvoc_thunk_RsResource_kernelhostvgpudeviceapiPreDestruct;
 
     pThis->__kernelhostvgpudeviceapiIsDuplicate__ = &__nvoc_thunk_RsResource_kernelhostvgpudeviceapiIsDuplicate;
+
+    pThis->__kernelhostvgpudeviceapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_kernelhostvgpudeviceapiControlSerialization_Epilogue;
 
     pThis->__kernelhostvgpudeviceapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_kernelhostvgpudeviceapiGetNotificationListPtr;
 
@@ -688,12 +728,15 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi **ppT
     Object *pParentObj;
     KernelHostVgpuDeviceApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(KernelHostVgpuDeviceApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelHostVgpuDeviceApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(KernelHostVgpuDeviceApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelHostVgpuDeviceApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -710,11 +753,17 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi **ppT
     if (status != NV_OK) goto __nvoc_objCreate_KernelHostVgpuDeviceApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_KernelHostVgpuDeviceApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(KernelHostVgpuDeviceApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

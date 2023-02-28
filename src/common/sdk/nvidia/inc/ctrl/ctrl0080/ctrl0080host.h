@@ -88,7 +88,6 @@ typedef struct NV0080_CTRL_HOST_GET_CAPS_PARAMS {
 #define NV0080_CTRL_HOST_CAPS_P2P_4_WAY                             1:0x08 // Deprecated
 #define NV0080_CTRL_HOST_CAPS_P2P_8_WAY                             1:0x10 // Deprecated
 #define NV0080_CTRL_HOST_CAPS_P2P_DEADLOCK_BUG_203825               1:0x20 // Deprecated
-#define NV0080_CTRL_HOST_CAPS_VIRTUAL_P2P                           1:0x40
 #define NV0080_CTRL_HOST_CAPS_BUG_254580                            1:0x80
 #define NV0080_CTRL_HOST_CAPS_COMPRESSED_BL_P2P_BUG_257072          2:0x02 // Deprecated
 #define NV0080_CTRL_HOST_CAPS_CROSS_BLITS_BUG_270260                2:0x04 // Deprecated

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,31 +31,50 @@
 
 // Compile time asserts to make sure we don't write beyond the leaf register array
 
-ct_assert(NV_CPU_INTR_STALL_SUBTREE_START   < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF__SIZE_1);
-ct_assert(NV_CPU_INTR_STALL_SUBTREE_LAST    < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF__SIZE_1);
-ct_assert(NV_CPU_INTR_STALL_SUBTREE_START   < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET__SIZE_1);
-ct_assert(NV_CPU_INTR_STALL_SUBTREE_LAST    < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET__SIZE_1);
-ct_assert(NV_CPU_INTR_STALL_SUBTREE_START   < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR__SIZE_1);
-ct_assert(NV_CPU_INTR_STALL_SUBTREE_LAST    < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR__SIZE_1);
-
 ct_assert(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF__SIZE_1 == NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET__SIZE_1);
 ct_assert(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF__SIZE_1 == NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR__SIZE_1);
 
-/*!
- * @brief Gets the stall subtree end index
- */
-NvU32
-intrGetStallSubtreeLast_GH100(OBJGPU *pGpu, Intr *pIntr)
+
+NV_STATUS
+intrInitSubtreeMap_GH100
+(
+    OBJGPU *pGpu,
+    Intr   *pIntr
+)
 {
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
-    {
-        return NV_CPU_INTR_STALL_SUBTREE_LAST_SWRL;
-    }
-    else
-    {
-        return NV_CPU_INTR_STALL_SUBTREE_LAST;
-    }
+    NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryEngine =
+        &pIntr->subtreeMap[NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE];
+    pCategoryEngine->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_START;
+    pCategoryEngine->subtreeEnd   = NV_CPU_INTR_STALL_SUBTREE_START;
+
+    NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryEngineNotification =
+        &pIntr->subtreeMap[NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE_NOTIFICATION];
+    pCategoryEngineNotification->subtreeStart = NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0);
+    pCategoryEngineNotification->subtreeEnd   = NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0);
+
+    NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryRunlistLocked =
+        &pIntr->subtreeMap[NV2080_INTR_CATEGORY_RUNLIST];
+    pCategoryRunlistLocked->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_LAST_SWRL;
+    pCategoryRunlistLocked->subtreeEnd   = NV_CPU_INTR_STALL_SUBTREE_LAST_SWRL;
+
+    NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryRunlistNotification =
+        &pIntr->subtreeMap[NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION];
+    pCategoryRunlistNotification->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_LAST;
+    pCategoryRunlistNotification->subtreeEnd   = NV_CPU_INTR_STALL_SUBTREE_LAST;
+
+    NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryUvmOwned =
+        &pIntr->subtreeMap[NV2080_INTR_CATEGORY_UVM_OWNED];
+    pCategoryUvmOwned->subtreeStart = NV_CPU_INTR_UVM_SUBTREE_START;
+    pCategoryUvmOwned->subtreeEnd   = NV_CPU_INTR_UVM_SUBTREE_LAST;
+
+    NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryUvmShared =
+        &pIntr->subtreeMap[NV2080_INTR_CATEGORY_UVM_SHARED];
+    pCategoryUvmShared->subtreeStart = NV_CPU_INTR_UVM_SHARED_SUBTREE_START;
+    pCategoryUvmShared->subtreeEnd   = NV_CPU_INTR_UVM_SHARED_SUBTREE_LAST;
+
+    return NV_OK;
 }
+
 
 /*!
  * @brief Gets the number of leaf registers used
@@ -76,14 +95,15 @@ intrGetLeafSize_GH100(OBJGPU *pGpu, Intr *pIntr)
     return NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF__SIZE_1;
 }
 
-/*!
- * @brief Gets the mask of INTR_TOP that covers nonstall interrupts
- */
-NvU32
-intrGetIntrTopNonStallMask_GH100(OBJGPU *pGpu, Intr *pIntr)
-{
-    NvU32 nonStallMask;
 
+NvU64
+intrGetIntrTopNonStallMask_GH100
+(
+    OBJGPU *pGpu,
+    Intr   *pIntr
+)
+{
+    // TODO Bug 3823562 Remove all these asserts
     // Compile-time assert against the highest set bit that will be returned
     #define NV_CPU_INTR_NOSTALL_SUBTREE_HIGHEST NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(5)
 
@@ -91,15 +111,22 @@ intrGetIntrTopNonStallMask_GH100(OBJGPU *pGpu, Intr *pIntr)
     ct_assert(NV_CPU_INTR_NOSTALL_SUBTREE_HIGHEST < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET__SIZE_1);
     ct_assert(NV_CPU_INTR_NOSTALL_SUBTREE_HIGHEST < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR__SIZE_1);
 
-    nonStallMask = NVBIT32(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0));
+
+    NvU64 mask = 0;
+    mask |= intrGetIntrTopCategoryMask(pIntr,
+        NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE_NOTIFICATION);
 
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
     {
-        nonStallMask |= NVBIT32(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(5));
+        mask |= intrGetIntrTopCategoryMask(pIntr,
+            NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION);
     }
 
-    return nonStallMask;
+    // Sanity check that Intr.subtreeMap is initialized
+    NV_ASSERT(mask != 0);
+    return mask;
 }
+
 
 /*!
  * @brief Sanity check that the given stall engine interrupt vector is in the right tree

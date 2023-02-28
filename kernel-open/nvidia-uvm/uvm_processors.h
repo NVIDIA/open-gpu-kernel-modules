@@ -314,6 +314,14 @@ static bool uvm_id_equal(uvm_processor_id_t id1, uvm_processor_id_t id2)
     return id1.val == id2.val;
 }
 
+static int uvm_global_id_cmp(uvm_global_processor_id_t id1, uvm_global_processor_id_t id2)
+{
+    UVM_GLOBAL_ID_CHECK_BOUNDS(id1);
+    UVM_GLOBAL_ID_CHECK_BOUNDS(id2);
+
+    return UVM_CMP_DEFAULT(id1.val, id2.val);
+}
+
 static bool uvm_global_id_equal(uvm_global_processor_id_t id1, uvm_global_processor_id_t id2)
 {
     UVM_GLOBAL_ID_CHECK_BOUNDS(id1);

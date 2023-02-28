@@ -204,6 +204,11 @@ knvlinkIsNvlinkP2pSupported_IMPL
         return NV_FALSE;
     }
 
+    if (knvlinkIsBandwidthModeOff(pKernelNvlink))
+    {
+        return NV_FALSE;
+    }
+
     // Get the Nvlink P2P connections from the core library
     status = knvlinkGetP2pConnectionStatus(pGpu, pKernelNvlink, pPeerGpu);
 
@@ -367,7 +372,11 @@ knvlinkGetP2pConnectionStatus_IMPL
     }
 
     // Get the remote ends of the links of local GPU from the nvlink core
-    knvlinkCoreGetRemoteDeviceInfo(pGpu0, pKernelNvlink0);
+    status = knvlinkCoreGetRemoteDeviceInfo(pGpu0, pKernelNvlink0);
+    if (status != NV_OK)
+    {
+        return status;
+    }
 
     // Post topology link enable on links of local GPU
     status = knvlinkEnableLinksPostTopology_HAL(pGpu0, pKernelNvlink0,
@@ -404,7 +413,11 @@ knvlinkGetP2pConnectionStatus_IMPL
         if (knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0) != numPeerLinks)
         {
             // Get the remote ends of the links of remote GPU from the nvlink core
-            knvlinkCoreGetRemoteDeviceInfo(pGpu1, pKernelNvlink1);
+            status = knvlinkCoreGetRemoteDeviceInfo(pGpu1, pKernelNvlink1);
+            if (status != NV_OK)
+            {
+                return status;
+            }
 
             // Post topology link enable on links of remote GPU
             status = knvlinkEnableLinksPostTopology_HAL(pGpu1, pKernelNvlink1,
@@ -635,7 +648,7 @@ knvlinkInbandMsgCallbackDispatcher_WORKITEM
     NV_ASSERT((pRsvd[0] == 0) && portMemCmp(pRsvd, pRsvd + 1,
               sizeof(pHeader->reserved) - 1) == 0);
 
-    pKernelNvlink->inbandCallback[pHeader->type].pCallback(pGpu, pData);
+    pKernelNvlink->inbandCallback[pHeader->type].pCallback(gpuInstance, pData);
 }
 
 NV_STATUS
@@ -1156,10 +1169,6 @@ knvlinkSetPowerFeatures_IMPL
     {
         case NVLINK_VERSION_22:
         {
-            // Regkeys finally decide whether or not the power state is supported
-            pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_SINGLE_LANE_POWER_STATE_ENABLED,
-                                       (pKernelNvlink->bDisableSingleLaneMode ? NV_FALSE : NV_TRUE));
-
             // NVLink L2 is supported only on MODS and Windows LDDM
             if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM || RMCFG_FEATURE_MODS_FEATURES)
             {
@@ -1167,15 +1176,6 @@ knvlinkSetPowerFeatures_IMPL
                                            (pKernelNvlink->bDisableL2Mode ? NV_FALSE : NV_TRUE));
             }
 
-            break;
-        }
-        case NVLINK_VERSION_31:
-        case NVLINK_VERSION_30:
-        case NVLINK_VERSION_20:
-        {
-            // Regkeys finally decide whether or not the power state is supported
-            pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_SINGLE_LANE_POWER_STATE_ENABLED,
-                                       (pKernelNvlink->bDisableSingleLaneMode ? NV_FALSE : NV_TRUE));
             break;
         }
         default:

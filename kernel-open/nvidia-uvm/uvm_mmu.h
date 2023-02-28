@@ -36,7 +36,9 @@
 #define UVM_PAGE_SIZE_AGNOSTIC 0
 
 // Memory layout of UVM's kernel VA space.
-// The following memory regions are not to scale.
+// The following memory regions are not to scale. The memory layout is linear,
+// i.e., no canonical form address conversion.
+//
 // Hopper:
 // +----------------+ 128PB
 // |                |
@@ -57,7 +59,7 @@
 // |                |
 // +----------------+ 0 (rm_va_base)
 //
-// Pascal-Ampere:
+// Pascal-Ada:
 // +----------------+ 512TB
 // |                |
 // |   (not used)   |
@@ -592,13 +594,18 @@ static bool uvm_mmu_page_size_supported(uvm_page_tree_t *tree, NvU32 page_size)
 
 static NvU32 uvm_mmu_biggest_page_size_up_to(uvm_page_tree_t *tree, NvU32 max_page_size)
 {
+    NvU32 gpu_page_sizes = tree->hal->page_sizes();
+    NvU32 smallest_gpu_page_size = gpu_page_sizes & ~(gpu_page_sizes - 1);
     NvU32 page_sizes;
     NvU32 page_size;
 
     UVM_ASSERT_MSG(is_power_of_2(max_page_size), "0x%x\n", max_page_size);
 
+    if (max_page_size < smallest_gpu_page_size)
+        return 0;
+
     // Calculate the supported page sizes that are not larger than the max
-    page_sizes = tree->hal->page_sizes() & (max_page_size | (max_page_size - 1));
+    page_sizes = gpu_page_sizes & (max_page_size | (max_page_size - 1));
 
     // And pick the biggest one of them
     page_size = 1 << __fls(page_sizes);

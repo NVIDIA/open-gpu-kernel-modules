@@ -116,8 +116,12 @@ static void __nvoc_thunk_RsResource_syncgpuboostAddAdditionalDependants(struct R
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pReference);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostUnmap(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pCpuMapping);
+static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostUnmapFrom(struct SyncGpuBoost *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_syncgpuboostControlSerialization_Prologue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RmResource_syncgpuboostControl_Prologue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -128,20 +132,24 @@ static NvBool __nvoc_thunk_RsResource_syncgpuboostCanCopy(struct SyncGpuBoost *p
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostMapTo(struct SyncGpuBoost *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostUnmap(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 static void __nvoc_thunk_RsResource_syncgpuboostPreDestruct(struct SyncGpuBoost *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostUnmapFrom(struct SyncGpuBoost *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostMapTo(struct SyncGpuBoost *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_syncgpuboostIsDuplicate(struct SyncGpuBoost *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_syncgpuboostControlSerialization_Epilogue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SyncGpuBoost_RmResource.offset), pCallContext, pParams);
 }
 
 static void __nvoc_thunk_RmResource_syncgpuboostControl_Epilogue(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -215,19 +223,23 @@ static void __nvoc_init_funcTable_SyncGpuBoost_1(SyncGpuBoost *pThis) {
 
     pThis->__syncgpuboostAddAdditionalDependants__ = &__nvoc_thunk_RsResource_syncgpuboostAddAdditionalDependants;
 
-    pThis->__syncgpuboostUnmap__ = &__nvoc_thunk_RsResource_syncgpuboostUnmap;
+    pThis->__syncgpuboostUnmapFrom__ = &__nvoc_thunk_RsResource_syncgpuboostUnmapFrom;
+
+    pThis->__syncgpuboostControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_syncgpuboostControlSerialization_Prologue;
 
     pThis->__syncgpuboostControl_Prologue__ = &__nvoc_thunk_RmResource_syncgpuboostControl_Prologue;
 
     pThis->__syncgpuboostCanCopy__ = &__nvoc_thunk_RsResource_syncgpuboostCanCopy;
 
-    pThis->__syncgpuboostMapTo__ = &__nvoc_thunk_RsResource_syncgpuboostMapTo;
+    pThis->__syncgpuboostUnmap__ = &__nvoc_thunk_RsResource_syncgpuboostUnmap;
 
     pThis->__syncgpuboostPreDestruct__ = &__nvoc_thunk_RsResource_syncgpuboostPreDestruct;
 
-    pThis->__syncgpuboostUnmapFrom__ = &__nvoc_thunk_RsResource_syncgpuboostUnmapFrom;
+    pThis->__syncgpuboostMapTo__ = &__nvoc_thunk_RsResource_syncgpuboostMapTo;
 
     pThis->__syncgpuboostIsDuplicate__ = &__nvoc_thunk_RsResource_syncgpuboostIsDuplicate;
+
+    pThis->__syncgpuboostControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_syncgpuboostControlSerialization_Epilogue;
 
     pThis->__syncgpuboostControl_Epilogue__ = &__nvoc_thunk_RmResource_syncgpuboostControl_Epilogue;
 
@@ -258,12 +270,15 @@ NV_STATUS __nvoc_objCreate_SyncGpuBoost(SyncGpuBoost **ppThis, Dynamic *pParent,
     Object *pParentObj;
     SyncGpuBoost *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(SyncGpuBoost));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(SyncGpuBoost), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(SyncGpuBoost));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_SyncGpuBoost);
+
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -280,11 +295,17 @@ NV_STATUS __nvoc_objCreate_SyncGpuBoost(SyncGpuBoost **ppThis, Dynamic *pParent,
     if (status != NV_OK) goto __nvoc_objCreate_SyncGpuBoost_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_SyncGpuBoost_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(SyncGpuBoost));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

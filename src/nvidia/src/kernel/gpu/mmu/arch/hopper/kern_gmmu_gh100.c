@@ -25,6 +25,8 @@
 
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "vgpu/vgpu_events.h"
+#include "nv_sriov_defines.h"
 
 #include "mmu/gmmu_fmt.h"
 #include "published/hopper/gh100/dev_mmu.h"
@@ -339,4 +341,64 @@ kgmmuGetGraphicsEngineId_GH100
 )
 {
     return NV_PFAULT_MMU_ENG_ID_GRAPHICS;
+}
+
+NV_STATUS
+kgmmuGetFaultRegisterMappings_GH100
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32       index,
+    NvP64      *pFaultBufferGet,
+    NvP64      *pFaultBufferPut,
+    NvP64      *pFaultBufferInfo,
+    NvP64      *pHubIntr,
+    NvP64      *pHubIntrEnSet,
+    NvP64      *pHubIntrEnClear,
+    NvU32      *faultMask,
+    NvP64      *pPrefetchCtrl
+)
+{
+    return kgmmuGetFaultRegisterMappings_TU102(pGpu, pKernelGmmu, index,
+                                               pFaultBufferGet, pFaultBufferPut,
+                                               pFaultBufferInfo, pHubIntr,
+                                               pHubIntrEnSet, pHubIntrEnClear,
+                                               faultMask, pPrefetchCtrl);
+}
+
+NV_STATUS
+kgmmuFaultBufferAllocSharedMemory_GH100
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu,
+    FAULT_BUFFER_TYPE index
+)
+{
+    return NV_OK;
+}
+
+void
+kgmmuFaultBufferFreeSharedMemory_GH100
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu,
+    FAULT_BUFFER_TYPE index
+)
+{
+    return;
+}
+
+/*
+ * @brief GSP client can use this function to initiate a replayable fault buffer flush when the
+ * HW fault buffer is owned by GSP.
+ */
+NV_STATUS
+kgmmuIssueReplayableFaultBufferFlush_GH100
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+
+    return NV_OK;
 }

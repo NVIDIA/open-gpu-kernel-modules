@@ -728,7 +728,11 @@ typedef struct NV0073_CTRL_DP_LANE_DATA_PARAMS {
  *
  */
 
-#define NV0073_CTRL_CMD_DP_GET_LANE_DATA             (0x731345U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | 0x45" */
+#define NV0073_CTRL_CMD_DP_GET_LANE_DATA             (0x731345U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_GET_LANE_DATA_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DP_GET_LANE_DATA_PARAMS_MESSAGE_ID (0x45U)
+
+typedef NV0073_CTRL_DP_LANE_DATA_PARAMS NV0073_CTRL_DP_GET_LANE_DATA_PARAMS;
 
 
 /*
@@ -755,7 +759,11 @@ typedef struct NV0073_CTRL_DP_LANE_DATA_PARAMS {
  *
  */
 
-#define NV0073_CTRL_CMD_DP_SET_LANE_DATA             (0x731346U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | 0x46" */
+#define NV0073_CTRL_CMD_DP_SET_LANE_DATA (0x731346U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_SET_LANE_DATA_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DP_SET_LANE_DATA_PARAMS_MESSAGE_ID (0x46U)
+
+typedef NV0073_CTRL_DP_LANE_DATA_PARAMS NV0073_CTRL_DP_SET_LANE_DATA_PARAMS;
 
 /*
  * NV0073_CTRL_DP_CSTM
@@ -2764,4 +2772,45 @@ typedef struct NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS {
     NvBool                               bDebugValues;
     NV0073_CTRL_DP_MSA_PROPERTIES_VALUES featureDebugValues;
 } NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_V2_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_DP_EXECUTE_OVERDRIVE_POLICY
+ *
+ * This command is used to execute RM Over Drive policy and decide if TCON Overdrive needs to be enabled
+ * or not based on the panel Overdrive grade determined using the panel manufId and prodId.
+ *
+ *   subDeviceInstance [in]
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   displayId [in]
+ *     This parameter specifies the ID of the eDP display which owns
+ *     the Main Link to be adjusted.  The display ID must a eDP display
+ *     as determined with the NV0073_CTRL_CMD_SPECIFIC_GET_TYPE command.
+ *     If more than one displayId bit is set or the displayId is not an eDP,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *   manfId [in]
+ *     This parameter is an input to this command which tells the
+ *     Internal panel's manufacturer ID.
+ *   prodId [in]
+ *     This parameter is an input to this command which tells the
+ *     Internal panel's product ID.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV0073_CTRL_CMD_DP_EXECUTE_OVERDRIVE_POLICY (0x731382U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_EXECUTE_OVERDRIVE_POLICY_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DP_EXECUTE_OVERDRIVE_POLICY_PARAMS_MESSAGE_ID (0x82U)
+
+typedef struct NV0073_CTRL_DP_EXECUTE_OVERDRIVE_POLICY_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU16 manfId;
+    NvU16 prodId;
+} NV0073_CTRL_DP_EXECUTE_OVERDRIVE_POLICY_PARAMS;
 /* _ctrl0073dp_h_ */

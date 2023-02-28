@@ -317,6 +317,14 @@ NV_STATUS NV_API_CALL os_registry_init(void)
         return NV_ERR_NO_MEMORY;
     }
 
+    if (NVreg_RmNvlinkBandwidth != NULL)
+    {
+        rm_write_registry_string(sp, NULL,
+                                 "RmNvlinkBandwidth",
+                                 NVreg_RmNvlinkBandwidth,
+                                 strlen(NVreg_RmNvlinkBandwidth));
+    }
+
     if (NVreg_RmMsg != NULL)
     {
         rm_write_registry_string(sp, NULL,

@@ -44,11 +44,7 @@
 static NV_STATUS _kfifoGetCaps(OBJGPU *pGpu, NvU8 *pKfifoCaps);
 
 /*!
- *
  * @brief deviceCtrlCmdFifoGetChannelList
- *
- * Lock Requirements:
- *      Assert that API lock and GPUs lock held on entry
  */
 NV_STATUS
 deviceCtrlCmdFifoGetChannelList_IMPL
@@ -61,8 +57,6 @@ deviceCtrlCmdFifoGetChannelList_IMPL
     NvU32   *pChannelHandleList = NvP64_VALUE(pChannelParams->pChannelHandleList);
     NvU32   *pChannelList       = NvP64_VALUE(pChannelParams->pChannelList);
     NvU32    counter;
-
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     // Validate input / Size / Args / Copy args
     if (pChannelParams->numChannels == 0)
@@ -484,11 +478,15 @@ subdeviceCtrlCmdFifoGetChannelMemInfo_IMPL
 
     // Get RAMFC mem Info
     pMemDesc = NULL;
-    kfifoChannelGetFifoContextMemDesc_HAL(pGpu,
+    rmStatus = kfifoChannelGetFifoContextMemDesc_HAL(pGpu,
                                           pKernelFifo,
                                           pKernelChannel,
                                           FIFO_CTX_RAMFC,
                                           &pMemDesc);
+
+    if (rmStatus != NV_OK)
+        return rmStatus;
+
     kfifoFillMemInfo(pKernelFifo, pMemDesc, &chMemInfo.ramfc);
 
     // Get Method buffer mem info

@@ -35,6 +35,8 @@ typedef struct {
     NvU32 pageTableEntryCount;
     NvLength cmdQueueOffset;
     NvLength statQueueOffset;
+    NvLength locklessCmdQueueOffset;
+    NvLength locklessStatQueueOffset;
 } MESSAGE_QUEUE_INIT_ARGUMENTS;
 
 typedef struct {

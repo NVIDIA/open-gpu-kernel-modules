@@ -43,14 +43,9 @@ enum NvKmsSyncPtOp {
     NVKMS_SYNCPT_OP_ALLOC,
     NVKMS_SYNCPT_OP_GET,
     NVKMS_SYNCPT_OP_PUT,
-    NVKMS_SYNCPT_OP_INCR_MAX,
-    NVKMS_SYNCPT_OP_CPU_INCR,
     NVKMS_SYNCPT_OP_FD_TO_ID_AND_THRESH,
     NVKMS_SYNCPT_OP_ID_AND_THRESH_TO_FD,
     NVKMS_SYNCPT_OP_READ_MINVAL,
-    NVKMS_SYNCPT_OP_READ_MAXVAL,
-    NVKMS_SYNCPT_OP_SET_MIN_EQ_MAX,
-    NVKMS_SYNCPT_OP_SET_MAXVAL,
 };
 
 typedef struct {
@@ -62,21 +57,7 @@ typedef struct {
 
     struct {
         NvU32 id;                       /*  in   */
-    } get;
-
-    struct {
-        NvU32 id;                       /*  in   */
     } put;
-
-    struct {
-        NvU32 id;                       /*  in   */
-        NvU32 incr;                     /*  in   */
-        NvU32 value;                    /*  out  */
-    } incr_max;
-
-    struct {
-        NvU32 id;                       /*  in   */
-    } cpu_incr;
 
     struct {
         NvS32 fd;                       /*  in   */
@@ -94,20 +75,6 @@ typedef struct {
         NvU32 id;                       /*  in   */
         NvU32 minval;                   /*  out  */
     } read_minval;
-
-    struct {
-        NvU32 id;                       /*  in   */
-        NvU32 maxval;                   /*  out  */
-    } read_maxval;
-
-    struct {
-        NvU32 id;                       /*  in   */
-    } set_min_eq_max;
-
-    struct {
-        NvU32 id;                       /*  in   */
-        NvU32 val;                      /*  in   */
-    } set_maxval;
 } NvKmsSyncPtOpParams;
 
 NvBool nvkms_output_rounding_fix(void);

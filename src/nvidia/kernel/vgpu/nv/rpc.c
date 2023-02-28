@@ -33,6 +33,7 @@
 #include "core/locks.h"
 #include "gpu/gpu.h"
 #include "gpu/bif/kernel_bif.h"
+#include "gpu/subdevice/subdevice.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "nvVer.h"
 #include "nvBldVer.h"
@@ -50,7 +51,6 @@
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
 #include "virtualization/hypervisor/hypervisor.h"
-#include "finn_rm_api.h"
 #include "os/os.h"
 
 #define SDK_ALL_CLASSES_INCLUDE_FULL_HEADER
@@ -73,6 +73,7 @@
 
 #include "g_rpc_private.h"
 
+#include "g_finn_rm_api.h"
 
 #include "gpu/gsp/message_queue_priv.h"
 
@@ -100,7 +101,6 @@ typedef struct rpc_vgx_version
 } RPC_VGX_VERSION;
 
 static RPC_VGX_VERSION rpcVgxVersion;
-static NvBool bSkipRpcVersionHandshake = NV_FALSE;
 
 void rpcSetIpVersion(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 ipVersion)
 {
@@ -672,17 +672,10 @@ NV_STATUS RmRpcSetGuestSystemInfo(OBJGPU *pGpu, OBJRPC *pRpc)
     {
         if (rpcVgxVersion.majorNum != 0)
         {
-			if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH) && !bSkipRpcVersionHandshake)
-			{
-				bSkipRpcVersionHandshake = NV_TRUE;
-			}
-			else
-			{
-				NV_PRINTF(LEVEL_INFO,
-						  "NVRM_RPC: Skipping RPC version handshake for instance 0x%x\n",
-						  gpuGetInstance(pGpu));
-				goto skip_ver_handshake;
-			}
+            NV_PRINTF(LEVEL_INFO,
+                      "NVRM_RPC: Skipping RPC version handshake for instance 0x%x\n",
+                      gpuGetInstance(pGpu));
+            goto skip_ver_handshake;
         }
         else
         {
@@ -828,7 +821,7 @@ skip_ver_handshake:
     return status;
 }
 
-NV_STATUS rpcUnloadingGuestDriver_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSuspend, NvBool bGc6Entering, NvU32 newPMLevel)
+NV_STATUS rpcUnloadingGuestDriver_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bInPMTransition, NvBool bGc6Entering, NvU32 newPMLevel)
 {
     NV_STATUS status = NV_OK;
 
@@ -842,7 +835,7 @@ NV_STATUS rpcUnloadingGuestDriver_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSus
 }
 
 
-NV_STATUS rpcUnloadingGuestDriver_v1F_07(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSuspend, NvBool bGc6Entering, NvU32 newPMLevel)
+NV_STATUS rpcUnloadingGuestDriver_v1F_07(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bInPMTransition, NvBool bGc6Entering, NvU32 newPMLevel)
 {
     NV_STATUS status = NV_OK;
     NvU32 headerLength = sizeof(rpc_message_header_v) + sizeof(rpc_unloading_guest_driver_v1F_07);
@@ -859,7 +852,7 @@ NV_STATUS rpcUnloadingGuestDriver_v1F_07(OBJGPU *pGpu, OBJRPC *pRpc, NvBool bSus
     status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_UNLOADING_GUEST_DRIVER, sizeof(rpc_unloading_guest_driver_v1F_07));
     if (status != NV_OK)
         return status;
-    rpc_message->unloading_guest_driver_v1F_07.bSuspend = bSuspend;
+    rpc_message->unloading_guest_driver_v1F_07.bInPMTransition = bInPMTransition;
     rpc_message->unloading_guest_driver_v1F_07.bGc6Entering = bGc6Entering;
     rpc_message->unloading_guest_driver_v1F_07.newLevel = newPMLevel;
 
@@ -1334,7 +1327,7 @@ NV_STATUS rpcSetRegistry_v17_00
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        NvU32 regTableSize;
+        NvU32 regTableSize = 0;
         NvU32 totalSize;
         NvU32 remainingMessageSize;
         PACKED_REGISTRY_TABLE *pRegTable;
@@ -1380,18 +1373,20 @@ NV_STATUS rpcSetRegistry_v17_00
 
         status = osPackageRegistry(pGpu, pRegTable, &regTableSize);
         if (status != NV_OK)
-            return status;
+            goto fail;
 
         if (largeRpcBuffer != NULL)
         {
             status = _issueRpcAsyncLarge(pGpu, pRpc, totalSize, largeRpcBuffer);
-            portMemFree(largeRpcBuffer);
         }
         else
         {
             vgpu_rpc_message_header_v->length = totalSize;
             status = _issueRpcAsync(pGpu, pRpc);
         }
+
+    fail:
+        portMemFree(largeRpcBuffer);
     }
 
     return status;
@@ -1524,16 +1519,16 @@ NV_STATUS rpcRmApiControl_GSP
     NvU32 rpc_params_size;
     NvU32 total_size;
 
-    const NvU32 interface_id = (DRF_VAL(XXXX, _CTRL_CMD, _CLASS, cmd) << 8) |
-                               DRF_VAL(XXXX, _CTRL_CMD, _CATEGORY, cmd);
-    const NvU32 message_id = DRF_VAL(XXXX, _CTRL_CMD, _INDEX, cmd);
-    NvU8 *pSerBuffer = NULL;
-    NvU32 serializedSize = 0;
     NvU32 origParamsSize = paramsSize;
     NvU32 gpuMaskRelease = 0;
     NvU32 ctrlFlags = 0;
     NvU32 ctrlAccessRight = 0;
     NvBool bCacheable;
+
+    CALL_CONTEXT *pCallContext;
+    CALL_CONTEXT newContext;
+    NvU32 resCtrlFlags = NVOS54_FLAGS_NONE;
+    NvBool preSerialized = NV_FALSE;
 
     if (!rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
     {
@@ -1548,15 +1543,37 @@ NV_STATUS rpcRmApiControl_GSP
     rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight);
     bCacheable = rmapiControlIsCacheable(ctrlFlags, ctrlAccessRight, NV_TRUE);
 
-    // Attempt to calculate the serialized size of the param struct using FINN.
-    serializedSize = FinnRmApiGetSerializedSize(interface_id, message_id, pParamStructPtr);
-
-    // If successful, this is a serializable API and rpc_params->params is a serialized buffer.
-    // otherwise this is a flat API and paramsSize is the param struct size
-    if (serializedSize != 0)
+    pCallContext = resservGetTlsCallContext();
+    if (pCallContext == NULL || pCallContext->bReserialize)
     {
-        // Allocate twice the amount to account for the return buffer
-        paramsSize = 2 * serializedSize;
+        // This should only happen when using the internal physical RMAPI
+        NV_ASSERT_OR_RETURN(pRmApi == GPU_GET_PHYSICAL_RMAPI(pGpu), NV_ERR_INVALID_STATE);
+
+        portMemSet(&newContext, 0, sizeof(newContext));
+        pCallContext = &newContext;
+    }
+
+    if (pCallContext->pControlParams != NULL)
+    {
+        resCtrlFlags = pCallContext->pControlParams->flags;
+    }
+
+    if (resCtrlFlags & NVOS54_FLAGS_FINN_SERIALIZED)
+    {
+        preSerialized = NV_TRUE;
+    }
+    else
+    {
+        status = serverSerializeCtrlDown(pCallContext, cmd, pParamStructPtr, paramsSize, &resCtrlFlags);
+        if (status != NV_OK)
+            goto done;
+    }
+
+    // If this is a serializable API, rpc_params->params is a serialized buffer.
+    // otherwise this is a flat API and paramsSize is the param struct size
+    if (resCtrlFlags & NVOS54_FLAGS_FINN_SERIALIZED)
+    {
+        paramsSize = pCallContext->serializedSize;
         NV_ASSERT_OR_RETURN(!bCacheable, NV_ERR_INVALID_STATE);
     }
 
@@ -1593,24 +1610,11 @@ NV_STATUS rpcRmApiControl_GSP
         message_buffer_remaining = total_size - fixed_param_size;
     }
 
-    // If this is a serializable API, attempt to serialize the param struct using FINN,
-    // otherwise do a flat memcpy
-    if (serializedSize != 0)
+    if (resCtrlFlags & NVOS54_FLAGS_FINN_SERIALIZED)
     {
+        // Copy in serialized buffer from the call context
         rpc_params->serialized = NV_TRUE;
-        pSerBuffer = (NvU8 *)rpc_params->params;
-
-        // Serialize into the first half of the RPC buffer.
-        status = FinnRmApiSerializeDown(interface_id, message_id, pParamStructPtr,
-                                    &pSerBuffer, message_buffer_remaining);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "GspRmControl: Serialization failed for cmd 0x%x with status %s (0x%x) at index 0x%llx\n",
-                      cmd, nvAssertStatusToString(status), status,
-                      (NvUPtr)(pSerBuffer - (NvU8 *)rpc_params->params));
-            goto done;
-        }
+        portMemCopy(rpc_params->params, message_buffer_remaining, pCallContext->pSerializedParams, pCallContext->serializedSize);
     }
     else
     {
@@ -1677,22 +1681,21 @@ NV_STATUS rpcRmApiControl_GSP
             goto done;
         }
 
-        // If FINN was used to serialize the params, they must be deserialized on the way back,
-        // otherwise do a flat memcpy
-        if (serializedSize != 0)
+        if (resCtrlFlags & NVOS54_FLAGS_FINN_SERIALIZED)
         {
-            NvU8 *pRetBuffer = pSerBuffer;
-
-            // Deserialize from the second half of the RPC buffer.
-            status = FinnRmApiDeserializeUp(&pSerBuffer, paramsSize / 2,
-                                            pParamStructPtr, origParamsSize);
-            if (status != NV_OK)
+            //
+            // If it was preserialized, copy it to call context for deserialization by caller
+            // Otherwise deserialize it because it was serialized here
+            //
+            if (preSerialized)
             {
-                NV_PRINTF(LEVEL_ERROR,
-                          "GspRmControl: Deserialization failed for cmd 0x%x with status %s (0x%x) at index 0x%llx\n",
-                          cmd, nvAssertStatusToString(status), status,
-                          (NvUPtr)(pSerBuffer - pRetBuffer));
-                goto done;
+                portMemCopy(pCallContext->pSerializedParams, pCallContext->serializedSize, rpc_params->params, rpc_params->paramsSize);
+            }
+            else
+            {
+                status = serverDeserializeCtrlUp(pCallContext, cmd, pParamStructPtr, origParamsSize, &resCtrlFlags);
+                if (status != NV_OK)
+                    goto done;
             }
         }
         else
@@ -1732,6 +1735,15 @@ done:
     }
     // Free the local copy we might have allocated above
     portMemFree(large_message_copy);
+
+    //
+    // Free data structures if we serialized/deserialized here
+    // Also check for serialized flag here as we may be called directly from within another control call
+    //
+    if ((resCtrlFlags & NVOS54_FLAGS_FINN_SERIALIZED) && !preSerialized)
+    {
+        serverFreeSerializeStructures(pCallContext, pParamStructPtr);
+    }
 
     return status;
 }

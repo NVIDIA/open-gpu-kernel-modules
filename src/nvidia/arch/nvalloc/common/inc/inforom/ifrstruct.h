@@ -26,6 +26,7 @@
 
 #include "inforom/types.h"
 
+#include "inforom/ifrnvl.h"
 #include "inforom/ifrecc.h"
 #include "inforom/ifrdem.h"
 #include "inforom/omsdef.h"
@@ -68,7 +69,9 @@ struct INFOROM_OBD_OBJECT_V2_XX
     inforom_U032 productLength;
     inforom_U032 productWidth;
     inforom_U032 productHeight;
-    inforom_U008 reserved[89];
+    inforom_U008 vbiosFactoryVersion[5];
+    inforom_U008 board965PartNumber[20];
+    inforom_U008 reserved[64];
 };
 #define INFOROM_OBD_OBJECT_V2_XX_FMT INFOROM_OBJECT_HEADER_V1_00_FMT "d111b3d89b"
 typedef struct INFOROM_OBD_OBJECT_V2_XX INFOROM_OBD_OBJECT_V2_XX;

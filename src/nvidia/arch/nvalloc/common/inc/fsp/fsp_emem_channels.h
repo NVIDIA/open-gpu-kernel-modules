@@ -33,15 +33,7 @@
 // RM uses channel 0 for FSP EMEM.
 #define FSP_EMEM_CHANNEL_RM             0x0
 
-// PMU/SOE use channel 4 for FSP EMEM.
-#define FSP_EMEM_CHANNEL_PMU_SOE        0x4
-#define FSP_EMEM_CHANNEL_MAX            0x8
-
 // EMEM channel 0 (RM) is allocated 1K bytes.
 #define FSP_EMEM_CHANNEL_RM_SIZE        1024
-
-// EMEM channel 4 (PMU/SOE) is allocated 1K bytes.
-#define FSP_EMEM_CHANNEL_PMU_SOE_SIZE   1024
-#define FSP_EMEM_CHANNEL_PMU_SOE_OFFSET 4096
 
 #endif // _FSP_EMEM_CHANNELS_H_

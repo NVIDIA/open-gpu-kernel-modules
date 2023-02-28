@@ -54,11 +54,8 @@
 #include "class/cl5070.h"
 #include "class/cl917a.h"
 #include "class/cl917b.h"
-#include "class/cl917c.h"
-#include "class/cl917d.h"
 #include "class/cl917e.h"
 #include "class/cl927c.h"
-#include "class/cl927d.h"
 #include "class/cl947d.h"
 #include "class/cl957d.h"
 #include "class/cl977d.h"
@@ -258,9 +255,9 @@ kdispInitBrightcStateLoad_IMPL(OBJGPU *pGpu,
     {
         // Fill in the Backlight Method Data.
         pBrightcInfo->backLightDataSize = sizeof(pBrightcInfo->backLightData);
-        status = pGpu->pOS->osCallACPI_DSM(pGpu, ACPI_DSM_FUNCTION_CURRENT, NV_ACPI_GENERIC_FUNC_GETBACKLIGHT,
-                                           (NvU32 *)(pBrightcInfo->backLightData),
-                                           &pBrightcInfo->backLightDataSize);
+        status = osCallACPI_DSM(pGpu, ACPI_DSM_FUNCTION_CURRENT, NV_ACPI_GENERIC_FUNC_GETBACKLIGHT,
+                                (NvU32 *)(pBrightcInfo->backLightData),
+                                &pBrightcInfo->backLightDataSize);
         pBrightcInfo->status = status;
     }
 
@@ -449,13 +446,10 @@ kdispGetIntChnClsForHwCls_IMPL
             *pDispChnClass = dispChnClass_Ovim;
             break;
 
-        case NV917C_BASE_CHANNEL_DMA:
         case NV927C_BASE_CHANNEL_DMA:
             *pDispChnClass = dispChnClass_Base;
             break;
 
-        case NV917D_CORE_CHANNEL_DMA:
-        case NV927D_CORE_CHANNEL_DMA:
         case NV947D_CORE_CHANNEL_DMA:
         case NV957D_CORE_CHANNEL_DMA:
         case NV977D_CORE_CHANNEL_DMA:

@@ -22,6 +22,7 @@
  */
 #ifndef __gh100_dev_gsp_h__
 #define __gh100_dev_gsp_h__
+#define NV_PGSP                                                                                          0x113fff:0x110000 /* RW--D */
 #define NV_PGSP_FALCON_ENGINE                                                                            0x1103c0     /* RW-4R */
 #define NV_PGSP_FALCON_ENGINE_RESET                                                                      0:0            /* RWEVF */
 #define NV_PGSP_FALCON_ENGINE_RESET_DEASSERT                                                             0              /*       */

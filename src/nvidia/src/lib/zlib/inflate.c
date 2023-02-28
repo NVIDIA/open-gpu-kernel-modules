@@ -892,7 +892,7 @@ static
 NV_STATUS utilGzInit(const NvU8 *zArray, NvU8* oBuffer, NvU32 numTotalBytes, NvU8* window, PGZ_INFLATE_STATE pGzState)
 {
     portMemSet(pGzState, 0, sizeof(GZ_INFLATE_STATE));
-    portMemSet(window, 0, sizeof(GZ_SLIDE_WINDOW_SIZE));
+    portMemSet(window, 0, GZ_SLIDE_WINDOW_SIZE);
 
     pGzState->inbuf  = (NvU8*)zArray;
     pGzState->outbuf = oBuffer;

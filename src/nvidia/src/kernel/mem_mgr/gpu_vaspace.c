@@ -59,7 +59,7 @@
 
 #define GMMU_PD1_VADDR_BIT_LO                        29
 
-static const NvU32 pageSizes[VAS_PAGESIZE_IDX_MAX] = {
+static const NvU64 pageSizes[VAS_PAGESIZE_IDX_MAX] = {
     RM_PAGE_SIZE,
     RM_PAGE_SIZE_64K,
     RM_PAGE_SIZE_HUGE,
@@ -895,7 +895,7 @@ _gvaspaceBar1VaSpaceDestruct
 static NV_STATUS
 _gvaspaceFlaVaspaceDestruct
 (
-    POBJGVASPACE pGVAS,
+    OBJGVASPACE *pGVAS,
     OBJGPU      *pGpu
 )
 {
@@ -2021,7 +2021,7 @@ gvaspaceGetHeap_IMPL(OBJGVASPACE *pGVAS)
     return pGVAS->pHeap;
 }
 
-NvU32
+NvU64
 gvaspaceGetMapPageSize_IMPL
 (
     OBJGVASPACE *pGVAS,
@@ -2034,11 +2034,7 @@ gvaspaceGetMapPageSize_IMPL
     const NvU64          pageSizeMask = mmuFmtAllPageSizes(pRootFmtLvl);
     NvU32                i;
 
-    //
-    // Though page size mask is 64 bits, we will loop only over 32 bits as the callers
-    // do not expect a pagsize more than 2^32 bytes
-    //
-    for (i = 0; i < 32; ++i)
+    for (i = 0; i < 64; ++i)
     {
         if (pageSizeMask & NVBIT64(i))
         {
@@ -2051,7 +2047,7 @@ gvaspaceGetMapPageSize_IMPL
                                     (const MMU_WALK_MEMDESC**)&pMemDesc, &memSize);
             if (NULL != pMemDesc)
             {
-                return NVBIT32(i);
+                return NVBIT64(i);
             }
         }
     }
@@ -4100,7 +4096,7 @@ gvaspaceCopyServerRmReservedPdesToServerRm_IMPL
     NvBool                                               bFreeNeeded  = NV_FALSE;
     NvHandle                                             hDevice;
     NvHandle                                             hVASpace;
-    POBJGPUGRP                                           pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
+    OBJGPUGRP                                           *pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
 
     if (NULL != pContext)
     {

@@ -303,4 +303,12 @@
 #define NV_P2060_MOSAIC_MODE_ENABLE_TRUE                        0x01 /* RW--V */
 #define NV_P2060_MOSAIC_MODE_RESERVED                            7:4 /* RWIVF */
 
+#define NV_P2060_MULTIPLIER_DIVIDER                             0x2F /* RW-1R */
+#define NV_P2060_MULTIPLIER_DIVIDER_VALUE_MINUS_ONE              2:0 /* RWIVF */
+#define NV_P2060_MULTIPLIER_DIVIDER_VALUE_MINUS_ONE_MAX          0x7
+#define NV_P2060_MULTIPLIER_DIVIDER_MODE                         7:7 /* RWIVF */
+#define NV_P2060_MULTIPLIER_DIVIDER_MODE_MULTIPLY                0x0 /* RWIVF */
+#define NV_P2060_MULTIPLIER_DIVIDER_MODE_DIVIDE                  0x1 /* RWIVF */
+
 #endif //DEV_P2060_H
+

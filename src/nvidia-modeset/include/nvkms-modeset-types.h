@@ -38,14 +38,14 @@ typedef struct {
     NVAttributesSetEvoRec attributes;
     struct NvKmsModeValidationParams modeValidationParams;
     NvBool changed                       : 1;
-    NvBool allowGsync                    : 1;
     NvBool hs10bpcHint                   : 1;
-    enum NvKmsAllowAdaptiveSync allowAdaptiveSync;
-    NvU32 vrrOverrideMinRefreshRate;
+    NvBool colorSpaceSpecified           : 1;
+    NvBool colorRangeSpecified           : 1;
     NVDPLibModesetStatePtr pDpLibModesetState;
     NVDispHeadAudioStateEvoRec audio;
     NVDispHeadInfoFrameStateEvoRec infoFrame;
     enum NvKmsOutputTf tf;
+    NVDispStereoParamsEvoRec stereo;
 } NVProposedModeSetHwStateOneHead;
 
 typedef struct {
@@ -63,13 +63,5 @@ typedef struct {
     NVProposedModeSetHwStateOneSubDev sd[NVKMS_MAX_SUBDEVICES];
     NvBool allowHeadSurfaceInNvKms       : 1;
 } NVProposedModeSetHwState;
-
-struct _NVEvoModesetUpdateState {
-    NVEvoUpdateState updateState;
-    NVDpyIdList connectorIds;
-    const NVDPLibModesetStateRec
-        *pDpLibModesetState[NVKMS_MAX_HEADS_PER_DISP];
-    NvBool windowMappingChanged;
-};
 
 #endif /* __NVKMS_MODESET_TYPES_H__ */

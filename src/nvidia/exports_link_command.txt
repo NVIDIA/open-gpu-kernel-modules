@@ -16,7 +16,6 @@
 --undefined=rm_init_adapter
 --undefined=rm_init_private_state
 --undefined=rm_init_rm
---undefined=rm_vgpu_vfio_set_driver_vm
 --undefined=rm_ioctl
 --undefined=rm_is_supported_device
 --undefined=rm_is_supported_pci_device
@@ -85,6 +84,7 @@
 --undefined=rm_gpu_ops_destroy_fault_info
 --undefined=rm_gpu_ops_has_pending_non_replayable_faults
 --undefined=rm_gpu_ops_get_non_replayable_faults
+--undefined=rm_gpu_ops_flush_replayable_fault_buffer
 --undefined=rm_gpu_ops_init_access_cntr_info
 --undefined=rm_gpu_ops_destroy_access_cntr_info
 --undefined=rm_gpu_ops_enable_access_cntr
@@ -190,3 +190,4 @@
 --undefined=rm_is_iommu_needed_for_sriov
 --undefined=rm_disable_iomap_wc
 --undefined=rm_is_altstack_in_use
+--undefined=rm_acpi_nvpcf_notify

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,6 +27,11 @@
 #include "uvm_common.h"
 #include "uvm_pte_batch.h"
 #include "uvm_tlb_batch.h"
+#include "uvm_forward_decl.h"
+
+#if UVM_IS_CONFIG_HMM()
+#include <linux/migrate.h>
+#endif
 
 // UVM_VA_BLOCK_BITS is 21, meaning the maximum block size is 2MB. Rationale:
 // - 2MB matches the largest Pascal GPU page size so it's a natural fit
@@ -161,8 +166,12 @@ typedef struct
     {
         // Masks used internally
         uvm_page_mask_t page_mask;
-        uvm_page_mask_t copy_resident_pages_between_mask;
+        uvm_page_mask_t copy_resident_pages_mask;
         uvm_page_mask_t pages_staged;
+
+        // This is used to store which pages were successfully copied to the
+        // destination processor and used by uvm_va_block_make_resident_finish()
+        // to update the va_block state.
         uvm_page_mask_t pages_migrated;
 
         // Out mask filled in by uvm_va_block_make_resident to indicate which
@@ -225,13 +234,24 @@ typedef struct
     // the mm, such as creating CPU mappings.
     struct mm_struct *mm;
 
-    uvm_va_policy_t *policy;
+    const uvm_va_policy_t *policy;
 
 #if UVM_IS_CONFIG_HMM()
     struct
     {
+        // These are used for migrate_vma_*(), hmm_range_fault(), and
+        // make_device_exclusive_range() handling.
+        unsigned long src_pfns[PAGES_PER_UVM_VA_BLOCK];
+        union {
+            unsigned long dst_pfns[PAGES_PER_UVM_VA_BLOCK];
+            struct page *pages[PAGES_PER_UVM_VA_BLOCK];
+        };
+
         // Cached VMA pointer. This is only valid while holding the mmap_lock.
         struct vm_area_struct *vma;
+
+        // Used for migrate_vma_*() to migrate pages to/from GPU/CPU.
+        struct migrate_vma migrate_vma_args;
     } hmm;
 #endif
 
@@ -242,8 +262,7 @@ typedef struct
 typedef enum
 {
     UVM_VA_BLOCK_TRANSFER_MODE_MOVE = 1,
-    UVM_VA_BLOCK_TRANSFER_MODE_COPY = 2,
-    UVM_VA_BLOCK_TRANSFER_MODE_COPY_ONLY = 3
+    UVM_VA_BLOCK_TRANSFER_MODE_COPY = 2
 } uvm_va_block_transfer_mode_t;
 
 struct uvm_reverse_map_struct
@@ -265,5 +284,11 @@ typedef enum
     UVM_SERVICE_OPERATION_NON_REPLAYABLE_FAULTS,
     UVM_SERVICE_OPERATION_ACCESS_COUNTERS,
 } uvm_service_operation_t;
+
+typedef enum
+{
+    UVM_MIGRATE_MODE_MAKE_RESIDENT,
+    UVM_MIGRATE_MODE_MAKE_RESIDENT_AND_MAP,
+} uvm_migrate_mode_t;
 
 #endif

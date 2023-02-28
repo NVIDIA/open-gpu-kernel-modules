@@ -108,6 +108,10 @@ static void __nvoc_init_funcTable_RsResource_1(RsResource *pThis) {
 
     pThis->__resControlFilter__ = &resControlFilter_IMPL;
 
+    pThis->__resControlSerialization_Prologue__ = &resControlSerialization_Prologue_IMPL;
+
+    pThis->__resControlSerialization_Epilogue__ = &resControlSerialization_Epilogue_IMPL;
+
     pThis->__resControl_Prologue__ = &resControl_Prologue_IMPL;
 
     pThis->__resControl_Epilogue__ = &resControl_Epilogue_IMPL;
@@ -146,12 +150,15 @@ NV_STATUS __nvoc_objCreate_RsResource(RsResource **ppThis, Dynamic *pParent, NvU
     Object *pParentObj;
     RsResource *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(RsResource));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RsResource), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(RsResource));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RsResource);
+
+    pThis->__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -168,11 +175,17 @@ NV_STATUS __nvoc_objCreate_RsResource(RsResource **ppThis, Dynamic *pParent, NvU
     if (status != NV_OK) goto __nvoc_objCreate_RsResource_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_RsResource_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(RsResource));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

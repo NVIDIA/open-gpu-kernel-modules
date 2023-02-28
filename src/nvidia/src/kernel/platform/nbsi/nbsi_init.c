@@ -1346,27 +1346,32 @@ static NV_STATUS getNbsiObjFromCache
     // If we found it in cache... return it (if they have enough room)
     if (status == NV_OK)
     {
+        NvU32 rtnObjSizeWithOffset;
+
         // return the full table size
         *pTotalObjSize = tempGlobSize;
 
-        // is rtnsize larger than remaining part of table?
-        if (*pRtnObjSize >= (*pTotalObjSize - rtnObjOffset))
+        rtnObjSizeWithOffset = *pTotalObjSize - rtnObjOffset;
         {
-            // then we can return it all this time.
-            *pRtnObjSize = *pTotalObjSize - rtnObjOffset;
-            *globTypeRtnStatus = NV2080_CTRL_BIOS_GET_NBSI_SUCCESS;
-        }
-        else
-        {
-            // return what we can and indicate incomplete.
-            *globTypeRtnStatus = NV2080_CTRL_BIOS_GET_NBSI_INCOMPLETE;
-        }
+            if (*pRtnObjSize >= rtnObjSizeWithOffset)
+            {
+                // if rtnsize is larger than remaining part of table,
+                // then we can return it all this time.
+                *pRtnObjSize = rtnObjSizeWithOffset;
+                *globTypeRtnStatus = NV2080_CTRL_BIOS_GET_NBSI_SUCCESS;
+            }
+            else
+            {
+                // return what we can and indicate incomplete.
+                *globTypeRtnStatus = NV2080_CTRL_BIOS_GET_NBSI_INCOMPLETE;
+            }
 
-        if (*pRtnObjSize > 0)
-        {
-            bufPtr = (NvU8 *) pTempGlob;
-            bufPtr = &bufPtr[rtnObjOffset];
-            portMemCopy(pRtnObj, *pRtnObjSize, bufPtr, *pRtnObjSize);
+            if (*pRtnObjSize > 0)
+            {
+                bufPtr = (NvU8 *) pTempGlob;
+                bufPtr = &bufPtr[rtnObjOffset];
+                portMemCopy(pRtnObj, *pRtnObjSize, bufPtr, *pRtnObjSize);
+            }
         }
     }
     return status;
@@ -1671,11 +1676,11 @@ static NV_STATUS nbsiObjTypeCallAcpi
         *(NvU32 *) inOutData = (globTypeWanted & 0xffff) << 16 |
                                (curGlob & 0xf) << 12 |
                                ((*sizeToRead/inOutDataSz) & 0xfff);
-        status = pGpu->pOS->osCallACPI_DSM(pGpu,
-                                           acpiFunction,
-                                           NV_ACPI_GENERIC_FUNC_GETOBJBYTYPE,
-                                           (NvU32 *)inOutData,
-                                           (NvU16 *)&acpiRtnSize);
+        status = osCallACPI_DSM(pGpu,
+                                acpiFunction,
+                                NV_ACPI_GENERIC_FUNC_GETOBJBYTYPE,
+                                (NvU32 *)inOutData,
+                                (NvU16 *)&acpiRtnSize);
 
         if ((acpiRtnSize == 0) ||
             ((status == NV_OK) &&
@@ -2165,11 +2170,11 @@ static NV_STATUS getTableDataUsingAllObjectCall
     {
         // get page the data is in.
         *(NvU32 *) inOutData = curOffset / inOutDataSz;
-        status = pGpu->pOS->osCallACPI_DSM(pGpu,
-                                           acpiFunction,
-                                           NV_ACPI_GENERIC_FUNC_GETALLOBJS,
-                                           (NvU32 *)inOutData,
-                                           (NvU16 *)&rtnSize);
+        status = osCallACPI_DSM(pGpu,
+                                acpiFunction,
+                                NV_ACPI_GENERIC_FUNC_GETALLOBJS,
+                                (NvU32 *)inOutData,
+                                (NvU16 *)&rtnSize);
         if ((acpiRtnSize == 0) ||
             ((status == NV_OK) &&
              (acpiRtnSize==4) &&
@@ -2835,6 +2840,7 @@ NV_STATUS getNbsiObjByType
 
     if (globType == GLOB_TYPE_GET_NBSI_ACPI_RAW)
     {
+        // TODO: Add offset arg validation when ACPI calls get support from GSP firmware.
         NvU16 rtnSize;
         //
         // (IN) wantedRtnObjOffset = acpi function,
@@ -2842,11 +2848,11 @@ NV_STATUS getNbsiObjByType
         // (IN/OUT) pSizeOfData In = size of inoutdata, Out = size returned
         //
         rtnSize = (NvU16) (*pRtnObjSize & 0xffff);
-        status = pGpu->pOS->osCallACPI_DSM(pGpu,
-                                           acpiFunction,
-                                           wantedRtnObjOffset,
-                                           (NvU32 *)pRtnObj,
-                                           (NvU16 *)&rtnSize);
+        status = osCallACPI_DSM(pGpu,
+                                acpiFunction,
+                                wantedRtnObjOffset,
+                                (NvU32 *)pRtnObj,
+                                (NvU16 *)&rtnSize);
 
         *pRtnObjSize = rtnSize;
         *pWantedGlobSource = (NBSI_SOURCE_LOC) status;
@@ -3013,6 +3019,8 @@ NV_STATUS getNbsiObjByType
 
                 if (bFound == NV_TRUE)
                 {
+                    NvU32 rtnObjSizeWithOffset;
+
                     // Currently only NBSI and NBCI objects are cached...
                     if ((acpiFunction == ACPI_DSM_FUNCTION_NBSI) ||
                         (acpiFunction == ACPI_DSM_FUNCTION_NBCI))
@@ -3046,24 +3054,27 @@ NV_STATUS getNbsiObjByType
                     // return the full table size
                     *pTotalObjSize = testObjSize;
 
-                    // is rtnsize larger than remaining part of table?
-                    if (*pRtnObjSize >= (*pTotalObjSize - wantedRtnObjOffset))
+                    rtnObjSizeWithOffset = *pTotalObjSize - wantedRtnObjOffset;
                     {
-                        // then we can return it all this time.
-                        *pRtnObjSize = *pTotalObjSize - wantedRtnObjOffset;
-                        *pRtnGlobStatus = NV2080_CTRL_BIOS_GET_NBSI_SUCCESS;
-                    }
-                    else
-                    {
-                        // return what we can and indicate incomplete.
-                        *pRtnGlobStatus = NV2080_CTRL_BIOS_GET_NBSI_INCOMPLETE;
-                    }
+                        if (*pRtnObjSize >= rtnObjSizeWithOffset)
+                        {
+                            // if rtnsize is larger than remaining part of table,
+                            // then we can return it all this time.
+                            *pRtnObjSize = rtnObjSizeWithOffset;
+                            *pRtnGlobStatus = NV2080_CTRL_BIOS_GET_NBSI_SUCCESS;
+                        }
+                        else
+                        {
+                            // return what we can and indicate incomplete.
+                            *pRtnGlobStatus = NV2080_CTRL_BIOS_GET_NBSI_INCOMPLETE;
+                        }
 
-                    if (*pRtnObjSize > 0)
-                    {
-                        bufPtr = (NvU8 *) pTestObj;
-                        bufPtr = &bufPtr[wantedRtnObjOffset];
-                        portMemCopy(pRtnObj, *pRtnObjSize, bufPtr, *pRtnObjSize);
+                        if (*pRtnObjSize > 0)
+                        {
+                            bufPtr = (NvU8 *) pTestObj;
+                            bufPtr = &bufPtr[wantedRtnObjOffset];
+                            portMemCopy(pRtnObj, *pRtnObjSize, bufPtr, *pRtnObjSize);
+                        }
                     }
                 }
                 else

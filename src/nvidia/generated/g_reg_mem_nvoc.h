@@ -57,25 +57,27 @@ struct RegisterMemory {
     struct RegisterMemory *__nvoc_pbase_RegisterMemory;
     NvBool (*__regmemCanCopy__)(struct RegisterMemory *);
     NV_STATUS (*__regmemCheckMemInterUnmap__)(struct RegisterMemory *, NvBool);
+    NvBool (*__regmemShareCallback__)(struct RegisterMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__regmemMapTo__)(struct RegisterMemory *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__regmemGetMapAddrSpace__)(struct RegisterMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__regmemGetRefCount__)(struct RegisterMemory *);
+    void (*__regmemAddAdditionalDependants__)(struct RsClient *, struct RegisterMemory *, RsResourceRef *);
+    NV_STATUS (*__regmemControl_Prologue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__regmemIsGpuMapAllowed__)(struct RegisterMemory *, struct OBJGPU *);
+    NV_STATUS (*__regmemUnmapFrom__)(struct RegisterMemory *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__regmemControl_Epilogue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__regmemControlLookup__)(struct RegisterMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__regmemControl__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__regmemUnmap__)(struct RegisterMemory *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__regmemGetMemInterMapParams__)(struct RegisterMemory *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__regmemGetMemoryMappingDescriptor__)(struct RegisterMemory *, MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__regmemGetMapAddrSpace__)(struct RegisterMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvBool (*__regmemShareCallback__)(struct RegisterMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__regmemControlFilter__)(struct RegisterMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__regmemAddAdditionalDependants__)(struct RsClient *, struct RegisterMemory *, RsResourceRef *);
-    NvU32 (*__regmemGetRefCount__)(struct RegisterMemory *);
-    NV_STATUS (*__regmemMapTo__)(struct RegisterMemory *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__regmemControl_Prologue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvBool (*__regmemIsGpuMapAllowed__)(struct RegisterMemory *, struct OBJGPU *);
+    NV_STATUS (*__regmemControlSerialization_Prologue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__regmemIsReady__)(struct RegisterMemory *, NvBool);
     NV_STATUS (*__regmemCheckCopyPermissions__)(struct RegisterMemory *, struct OBJGPU *, NvHandle);
     void (*__regmemPreDestruct__)(struct RegisterMemory *);
     NV_STATUS (*__regmemIsDuplicate__)(struct RegisterMemory *, NvHandle, NvBool *);
-    NV_STATUS (*__regmemUnmapFrom__)(struct RegisterMemory *, RS_RES_UNMAP_FROM_PARAMS *);
-    void (*__regmemControl_Epilogue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__regmemControlLookup__)(struct RegisterMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__regmemControlSerialization_Epilogue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__regmemMap__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__regmemAccessCallback__)(struct RegisterMemory *, struct RsClient *, void *, RsAccessRight);
 };
@@ -110,25 +112,27 @@ NV_STATUS __nvoc_objCreate_RegisterMemory(RegisterMemory**, Dynamic*, NvU32, CAL
 
 #define regmemCanCopy(pRegisterMemory) regmemCanCopy_DISPATCH(pRegisterMemory)
 #define regmemCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) regmemCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
+#define regmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) regmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
+#define regmemMapTo(pResource, pParams) regmemMapTo_DISPATCH(pResource, pParams)
+#define regmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) regmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define regmemGetRefCount(pResource) regmemGetRefCount_DISPATCH(pResource)
+#define regmemAddAdditionalDependants(pClient, pResource, pReference) regmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define regmemControl_Prologue(pResource, pCallContext, pParams) regmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define regmemIsGpuMapAllowed(pMemory, pGpu) regmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define regmemUnmapFrom(pResource, pParams) regmemUnmapFrom_DISPATCH(pResource, pParams)
+#define regmemControl_Epilogue(pResource, pCallContext, pParams) regmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define regmemControlLookup(pResource, pParams, ppEntry) regmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define regmemControl(pMemory, pCallContext, pParams) regmemControl_DISPATCH(pMemory, pCallContext, pParams)
 #define regmemUnmap(pMemory, pCallContext, pCpuMapping) regmemUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define regmemGetMemInterMapParams(pMemory, pParams) regmemGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define regmemGetMemoryMappingDescriptor(pMemory, ppMemDesc) regmemGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define regmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) regmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define regmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) regmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define regmemControlFilter(pResource, pCallContext, pParams) regmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define regmemAddAdditionalDependants(pClient, pResource, pReference) regmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define regmemGetRefCount(pResource) regmemGetRefCount_DISPATCH(pResource)
-#define regmemMapTo(pResource, pParams) regmemMapTo_DISPATCH(pResource, pParams)
-#define regmemControl_Prologue(pResource, pCallContext, pParams) regmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define regmemIsGpuMapAllowed(pMemory, pGpu) regmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define regmemControlSerialization_Prologue(pResource, pCallContext, pParams) regmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define regmemIsReady(pMemory, bCopyConstructorContext) regmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define regmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) regmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define regmemPreDestruct(pResource) regmemPreDestruct_DISPATCH(pResource)
 #define regmemIsDuplicate(pMemory, hMemory, pDuplicate) regmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define regmemUnmapFrom(pResource, pParams) regmemUnmapFrom_DISPATCH(pResource, pParams)
-#define regmemControl_Epilogue(pResource, pCallContext, pParams) regmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define regmemControlLookup(pResource, pParams, ppEntry) regmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define regmemControlSerialization_Epilogue(pResource, pCallContext, pParams) regmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define regmemMap(pMemory, pCallContext, pParams, pCpuMapping) regmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
 #define regmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) regmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvBool regmemCanCopy_IMPL(struct RegisterMemory *pRegisterMemory);
@@ -139,6 +143,46 @@ static inline NvBool regmemCanCopy_DISPATCH(struct RegisterMemory *pRegisterMemo
 
 static inline NV_STATUS regmemCheckMemInterUnmap_DISPATCH(struct RegisterMemory *pMemory, NvBool bSubdeviceHandleProvided) {
     return pMemory->__regmemCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
+}
+
+static inline NvBool regmemShareCallback_DISPATCH(struct RegisterMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return pResource->__regmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline NV_STATUS regmemMapTo_DISPATCH(struct RegisterMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__regmemMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS regmemGetMapAddrSpace_DISPATCH(struct RegisterMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pMemory->__regmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 regmemGetRefCount_DISPATCH(struct RegisterMemory *pResource) {
+    return pResource->__regmemGetRefCount__(pResource);
+}
+
+static inline void regmemAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RegisterMemory *pResource, RsResourceRef *pReference) {
+    pResource->__regmemAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS regmemControl_Prologue_DISPATCH(struct RegisterMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__regmemControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool regmemIsGpuMapAllowed_DISPATCH(struct RegisterMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__regmemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS regmemUnmapFrom_DISPATCH(struct RegisterMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__regmemUnmapFrom__(pResource, pParams);
+}
+
+static inline void regmemControl_Epilogue_DISPATCH(struct RegisterMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__regmemControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS regmemControlLookup_DISPATCH(struct RegisterMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__regmemControlLookup__(pResource, pParams, ppEntry);
 }
 
 static inline NV_STATUS regmemControl_DISPATCH(struct RegisterMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -157,36 +201,12 @@ static inline NV_STATUS regmemGetMemoryMappingDescriptor_DISPATCH(struct Registe
     return pMemory->__regmemGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
 }
 
-static inline NV_STATUS regmemGetMapAddrSpace_DISPATCH(struct RegisterMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemory->__regmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvBool regmemShareCallback_DISPATCH(struct RegisterMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__regmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
-}
-
 static inline NV_STATUS regmemControlFilter_DISPATCH(struct RegisterMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__regmemControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void regmemAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RegisterMemory *pResource, RsResourceRef *pReference) {
-    pResource->__regmemAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 regmemGetRefCount_DISPATCH(struct RegisterMemory *pResource) {
-    return pResource->__regmemGetRefCount__(pResource);
-}
-
-static inline NV_STATUS regmemMapTo_DISPATCH(struct RegisterMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__regmemMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS regmemControl_Prologue_DISPATCH(struct RegisterMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__regmemControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NvBool regmemIsGpuMapAllowed_DISPATCH(struct RegisterMemory *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__regmemIsGpuMapAllowed__(pMemory, pGpu);
+static inline NV_STATUS regmemControlSerialization_Prologue_DISPATCH(struct RegisterMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__regmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS regmemIsReady_DISPATCH(struct RegisterMemory *pMemory, NvBool bCopyConstructorContext) {
@@ -205,16 +225,8 @@ static inline NV_STATUS regmemIsDuplicate_DISPATCH(struct RegisterMemory *pMemor
     return pMemory->__regmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
-static inline NV_STATUS regmemUnmapFrom_DISPATCH(struct RegisterMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__regmemUnmapFrom__(pResource, pParams);
-}
-
-static inline void regmemControl_Epilogue_DISPATCH(struct RegisterMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__regmemControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS regmemControlLookup_DISPATCH(struct RegisterMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__regmemControlLookup__(pResource, pParams, ppEntry);
+static inline void regmemControlSerialization_Epilogue_DISPATCH(struct RegisterMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__regmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS regmemMap_DISPATCH(struct RegisterMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

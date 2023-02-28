@@ -40,6 +40,15 @@ NV_STATUS uvm_pmm_sysmem_init(void)
     if (!g_reverse_page_map_cache)
         return NV_ERR_NO_MEMORY;
 
+    // Ensure that only supported CPU chunk sizes are enabled.
+    uvm_cpu_chunk_allocation_sizes &= UVM_CPU_CHUNK_SIZES;
+    if (!uvm_cpu_chunk_allocation_sizes || !(uvm_cpu_chunk_allocation_sizes & PAGE_SIZE)) {
+        pr_info("Invalid value for uvm_cpu_chunk_allocation_sizes = 0x%x, using 0x%lx instead\n",
+                uvm_cpu_chunk_allocation_sizes,
+                UVM_CPU_CHUNK_SIZES);
+        uvm_cpu_chunk_allocation_sizes = UVM_CPU_CHUNK_SIZES;
+    }
+
     return NV_OK;
 }
 
@@ -430,1031 +439,669 @@ uvm_chunk_sizes_mask_t uvm_cpu_chunk_get_allocation_sizes(void)
 
 static void uvm_cpu_chunk_set_size(uvm_cpu_chunk_t *chunk, uvm_chunk_size_t size)
 {
-#if !UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
     chunk->log2_size = ilog2(size);
-#endif
 }
 
 uvm_chunk_size_t uvm_cpu_chunk_get_size(uvm_cpu_chunk_t *chunk)
 {
-#if UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
-    return PAGE_SIZE;
-#else
     return ((uvm_chunk_size_t)1) << chunk->log2_size;
-#endif
 }
 
-#if UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
-struct page *uvm_cpu_chunk_get_cpu_page(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
+static NvU32 compute_gpu_mappings_entry_index(uvm_processor_mask_t *dma_addrs_mask, uvm_gpu_id_t id)
 {
-    UVM_ASSERT(chunk);
-    return chunk;
-}
+    uvm_processor_mask_t subset_mask;
 
-void uvm_cpu_chunk_put(uvm_cpu_chunk_t *chunk)
-{
-    UVM_ASSERT(chunk);
-    put_page(chunk);
-}
+    // Compute the array index for the given GPU ID by masking off all bits
+    // above and including the id and then counting the number of bits
+    // remaining.
+    uvm_processor_mask_zero(&subset_mask);
+    bitmap_set(subset_mask.bitmap, UVM_ID_GPU0_VALUE, uvm_id_gpu_index(id));
+    uvm_processor_mask_and(&subset_mask, dma_addrs_mask, &subset_mask);
 
-NV_STATUS uvm_cpu_chunk_gpu_mapping_alloc(uvm_va_block_t *va_block, uvm_gpu_id_t id)
-{
-    uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(va_block, id);
-    size_t num_pages = uvm_va_block_num_cpu_pages(va_block);
-
-    UVM_ASSERT(gpu_state);
-    gpu_state->cpu_chunks_dma_addrs = uvm_kvmalloc_zero(num_pages * sizeof(gpu_state->cpu_chunks_dma_addrs[0]));
-    if (!gpu_state->cpu_chunks_dma_addrs)
-        return NV_ERR_NO_MEMORY;
-
-    return NV_OK;
-}
-
-void uvm_cpu_chunk_gpu_mapping_split(uvm_va_block_t *existing, uvm_va_block_t *new, uvm_gpu_id_t id)
-{
-    uvm_va_block_gpu_state_t *existing_state = uvm_va_block_gpu_state_get(existing, id);
-    uvm_va_block_gpu_state_t *new_state = uvm_va_block_gpu_state_get(new, id);
-    size_t new_pages = uvm_va_block_num_cpu_pages(new);
-
-    memcpy(&new_state->cpu_chunks_dma_addrs[0],
-           &existing_state->cpu_chunks_dma_addrs[uvm_va_block_num_cpu_pages(existing) - new_pages],
-           new_pages * sizeof(new_state->cpu_chunks_dma_addrs[0]));
-}
-
-void uvm_cpu_chunk_gpu_mapping_free(uvm_va_block_t *va_block, uvm_gpu_id_t id)
-{
-    uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(va_block, id);
-
-    if (gpu_state)
-        uvm_kvfree(gpu_state->cpu_chunks_dma_addrs);
-}
-
-NV_STATUS uvm_cpu_chunk_set_gpu_mapping_addr(uvm_va_block_t *va_block,
-                                             uvm_page_index_t page_index,
-                                             uvm_cpu_chunk_t *chunk,
-                                             uvm_gpu_id_t id,
-                                             NvU64 dma_addr)
-{
-    uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(va_block, id);
-
-    gpu_state->cpu_chunks_dma_addrs[page_index] = dma_addr;
-    return NV_OK;
-}
-
-NvU64 uvm_cpu_chunk_get_gpu_mapping_addr(uvm_va_block_t *va_block,
-                                         uvm_page_index_t page_index,
-                                         uvm_cpu_chunk_t *chunk,
-                                         uvm_gpu_id_t id)
-{
-    uvm_va_block_gpu_state_t *gpu_state = uvm_va_block_gpu_state_get(va_block, id);
-
-    return gpu_state->cpu_chunks_dma_addrs[page_index];
-}
-
-NV_STATUS uvm_cpu_chunk_insert_in_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    if (!va_block->cpu.chunks) {
-        va_block->cpu.chunks = (unsigned long)uvm_kvmalloc_zero(uvm_va_block_num_cpu_pages(va_block) *
-                                                                sizeof(uvm_cpu_chunk_t *));
-        if (!va_block->cpu.chunks)
-            return NV_ERR_NO_MEMORY;
-    }
-
-    UVM_ASSERT(!uvm_page_mask_test(&va_block->cpu.allocated, page_index));
-    UVM_ASSERT(((uvm_cpu_chunk_t **)va_block->cpu.chunks)[page_index] == NULL);
-    ((uvm_cpu_chunk_t **)va_block->cpu.chunks)[page_index] = chunk;
-    uvm_page_mask_set(&va_block->cpu.allocated, page_index);
-    return NV_OK;
-}
-
-void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    UVM_ASSERT(uvm_page_mask_test(&va_block->cpu.allocated, page_index));
-    UVM_ASSERT(((uvm_cpu_chunk_t **)va_block->cpu.chunks)[page_index] != NULL);
-    ((uvm_cpu_chunk_t **)va_block->cpu.chunks)[page_index] = NULL;
-    uvm_page_mask_clear(&va_block->cpu.allocated, page_index);
-}
-
-uvm_cpu_chunk_t *uvm_cpu_chunk_get_chunk_for_page(uvm_va_block_t *va_block, uvm_page_index_t page_index)
-{
-    UVM_ASSERT(page_index < uvm_va_block_num_cpu_pages(va_block));
-    if (!uvm_page_mask_test(&va_block->cpu.allocated, page_index))
-        return NULL;
-
-    return ((uvm_cpu_chunk_t **)va_block->cpu.chunks)[page_index];
-}
-
-NV_STATUS uvm_cpu_chunk_alloc(uvm_va_block_t *va_block,
-                              uvm_page_index_t page_index,
-                              struct mm_struct *mm,
-                              uvm_cpu_chunk_t **new_chunk)
-{
-    uvm_cpu_chunk_t *chunk = NULL;
-    gfp_t alloc_flags;
-    NV_STATUS status;
-
-    UVM_ASSERT(!uvm_page_mask_test(&va_block->cpu.allocated, page_index));
-    UVM_ASSERT(new_chunk);
-
-    alloc_flags = (mm ? NV_UVM_GFP_FLAGS_ACCOUNT : NV_UVM_GFP_FLAGS) | GFP_HIGHUSER;
-
-    if (!uvm_va_block_page_resident_processors_count(va_block, page_index))
-        alloc_flags |= __GFP_ZERO;
-
-    chunk = alloc_pages(alloc_flags, 0);
-    if (!chunk)
-        return NV_ERR_NO_MEMORY;
-
-    if (alloc_flags & __GFP_ZERO)
-        SetPageDirty(chunk);
-
-    status = uvm_cpu_chunk_insert_in_block(va_block, chunk, page_index);
-    if (status != NV_OK) {
-        uvm_cpu_chunk_put(chunk);
-        return status;
-    }
-
-    *new_chunk = chunk;
-    return NV_OK;
-}
-
-#else
-
-struct page *uvm_cpu_chunk_get_cpu_page(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    uvm_va_block_region_t chunk_region;
-
-    UVM_ASSERT(chunk);
-    UVM_ASSERT(chunk->page);
-    chunk_region = uvm_va_block_chunk_region(va_block, uvm_cpu_chunk_get_size(chunk), page_index);
-    return chunk->page + (page_index - chunk_region.first);
-}
-
-static NvU64 uvm_cpu_chunk_get_virt_addr(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk)
-{
-    UVM_ASSERT(chunk);
-    UVM_ASSERT(chunk->region.first < chunk->region.outer);
-    return uvm_va_block_cpu_page_address(va_block, chunk->region.first);
+    return uvm_processor_mask_get_gpu_count(&subset_mask);
 }
 
 static void cpu_chunk_release(nv_kref_t *kref)
 {
     uvm_cpu_chunk_t *chunk = container_of(kref, uvm_cpu_chunk_t, refcount);
-    uvm_cpu_chunk_t *parent = chunk->parent;
+    uvm_processor_mask_t *mapping_mask;
+    uvm_processor_id_t id;
+    uvm_cpu_physical_chunk_t *phys_chunk = NULL;
+    uvm_cpu_logical_chunk_t *logical_chunk = NULL;
 
-    if (uvm_processor_mask_get_gpu_count(&chunk->gpu_mappings.dma_addrs_mask) > 1)
-        uvm_kvfree(chunk->gpu_mappings.dynamic_entries);
-
-    if (!parent) {
-        uvm_assert_spinlock_unlocked(&chunk->lock);
-        uvm_kvfree(chunk->dirty_bitmap);
-        put_page(chunk->page);
+    if (uvm_cpu_chunk_is_physical(chunk)) {
+        phys_chunk = uvm_cpu_chunk_to_physical(chunk);
+        uvm_assert_mutex_unlocked(&phys_chunk->lock);
+        mapping_mask = &phys_chunk->gpu_mappings.dma_addrs_mask;
     }
     else {
-        uvm_cpu_chunk_put(parent);
+        logical_chunk = uvm_cpu_chunk_to_logical(chunk);
+        mapping_mask = &logical_chunk->mapped_gpus;
+    }
+
+    for_each_id_in_mask(id, mapping_mask) {
+        uvm_parent_gpu_t *parent_gpu = uvm_parent_gpu_get(id);
+        uvm_cpu_chunk_unmap_gpu_phys(chunk, parent_gpu);
+    }
+
+    if (uvm_cpu_chunk_is_physical(chunk)) {
+        if (phys_chunk->gpu_mappings.max_entries > 1)
+            uvm_kvfree(phys_chunk->gpu_mappings.dynamic_entries);
+
+        if (uvm_cpu_chunk_get_size(chunk) > PAGE_SIZE &&
+            !bitmap_empty(phys_chunk->dirty_bitmap, uvm_cpu_chunk_num_pages(chunk)))
+            SetPageDirty(phys_chunk->common.page);
+
+        uvm_kvfree(phys_chunk->dirty_bitmap);
+
+        if (chunk->type != UVM_CPU_CHUNK_TYPE_HMM)
+            put_page(phys_chunk->common.page);
+    }
+    else {
+        uvm_cpu_chunk_free(logical_chunk->parent);
     }
 
     uvm_kvfree(chunk);
 }
 
-void uvm_cpu_chunk_get(uvm_cpu_chunk_t *chunk)
+static void uvm_cpu_chunk_get(uvm_cpu_chunk_t *chunk)
 {
     UVM_ASSERT(chunk);
     nv_kref_get(&chunk->refcount);
 }
 
-void uvm_cpu_chunk_put(uvm_cpu_chunk_t *chunk)
+void uvm_cpu_chunk_free(uvm_cpu_chunk_t *chunk)
 {
-    UVM_ASSERT(chunk);
+    if (!chunk)
+        return;
 
     nv_kref_put(&chunk->refcount, cpu_chunk_release);
 }
 
-NV_STATUS uvm_cpu_chunk_gpu_mapping_alloc(uvm_va_block_t *va_block, uvm_gpu_id_t id)
+static uvm_cpu_physical_chunk_t *get_physical_parent(uvm_cpu_chunk_t *chunk)
 {
-    return NV_OK;
+    UVM_ASSERT(chunk);
+    UVM_ASSERT(chunk->page);
+
+    while (!uvm_cpu_chunk_is_physical(chunk))
+        chunk = uvm_cpu_chunk_to_logical(chunk)->parent;
+
+    return uvm_cpu_chunk_to_physical(chunk);
 }
 
-void uvm_cpu_chunk_gpu_mapping_split(uvm_va_block_t *existing, uvm_va_block_t *va_block, uvm_gpu_id_t id)
+static uvm_page_index_t cpu_chunk_get_phys_index(uvm_cpu_logical_chunk_t *chunk)
 {
-    return;
+    uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(&chunk->common);
+
+    UVM_ASSERT(phys_chunk->common.page);
+    return (uvm_page_index_t)(chunk->common.page - phys_chunk->common.page);
 }
 
-void uvm_cpu_chunk_gpu_mapping_free(uvm_va_block_t *va_block, uvm_gpu_id_t id)
+static uvm_cpu_phys_mapping_t *chunk_phys_mapping_alloc(uvm_cpu_physical_chunk_t *chunk, uvm_gpu_id_t id)
 {
-    return;
-}
-
-static NvU32 compute_gpu_mappings_entry_index(uvm_processor_mask_t dma_addrs_mask, uvm_gpu_id_t id)
-{
-    uvm_processor_mask_t subset_mask;
-
-    // Compute the array index for the given GPU ID by masking off all bits
-    // above the id and then counting the number of bits remaining.
-    uvm_processor_mask_zero(&subset_mask);
-    bitmap_set(subset_mask.bitmap, 0, uvm_id_value(id) + 1);
-    uvm_processor_mask_and(&subset_mask, &dma_addrs_mask, &subset_mask);
-
-    if (uvm_processor_mask_empty(&subset_mask))
-        return 0;
-
-    return uvm_processor_mask_get_gpu_count(&subset_mask) - 1;
-}
-
-NV_STATUS uvm_cpu_chunk_set_gpu_mapping_addr(uvm_va_block_t *va_block,
-                                             uvm_page_index_t page_index,
-                                             uvm_cpu_chunk_t *chunk,
-                                             uvm_gpu_id_t id,
-                                             NvU64 dma_addr)
-{
-    NvU32 num_existing_entries = uvm_processor_mask_get_gpu_count(&chunk->gpu_mappings.dma_addrs_mask);
-    NvU32 num_new_entries;
+    NvU32 num_active_entries = uvm_processor_mask_get_gpu_count(&chunk->gpu_mappings.dma_addrs_mask);
+    uvm_cpu_phys_mapping_t *new_entries;
     NvU32 array_index;
-    NvU64 *new_entries;
 
-    if (uvm_processor_mask_empty(&chunk->gpu_mappings.dma_addrs_mask)) {
-        uvm_processor_mask_set(&chunk->gpu_mappings.dma_addrs_mask, id);
-        chunk->gpu_mappings.static_entry = dma_addr;
-        return NV_OK;
-    }
+    uvm_assert_mutex_locked(&chunk->lock);
 
-    if (uvm_processor_mask_test(&chunk->gpu_mappings.dma_addrs_mask, id)) {
-        if (num_existing_entries == 1) {
-            chunk->gpu_mappings.static_entry = dma_addr;
+    if (chunk->gpu_mappings.max_entries == 1 && num_active_entries == 0)
+        return &chunk->gpu_mappings.static_entry;
+
+    if (num_active_entries == chunk->gpu_mappings.max_entries) {
+        NvU32 num_new_entries = chunk->gpu_mappings.max_entries * 2;
+
+        if (chunk->gpu_mappings.max_entries == 1) {
+            new_entries = uvm_kvmalloc(sizeof(*new_entries) * num_new_entries);
+            if (new_entries)
+                new_entries[0] = chunk->gpu_mappings.static_entry;
         }
         else {
-            array_index = compute_gpu_mappings_entry_index(chunk->gpu_mappings.dma_addrs_mask, id);
-            chunk->gpu_mappings.dynamic_entries[array_index] = dma_addr;
+            new_entries = uvm_kvrealloc(chunk->gpu_mappings.dynamic_entries,
+                                        sizeof(*new_entries) * num_new_entries);
         }
-        return NV_OK;
+
+        if (!new_entries)
+            return NULL;
+
+        chunk->gpu_mappings.max_entries = num_new_entries;
+        chunk->gpu_mappings.dynamic_entries = new_entries;
     }
 
-    num_new_entries = num_existing_entries + 1;
-    if (num_existing_entries == 1) {
-        new_entries = uvm_kvmalloc(sizeof(*new_entries) * num_new_entries);
-
-        if (new_entries) {
-            uvm_processor_id_t first = uvm_processor_mask_find_first_id(&chunk->gpu_mappings.dma_addrs_mask);
-
-            if (uvm_id_value(first) < uvm_id_value(id))
-                new_entries[0] = chunk->gpu_mappings.static_entry;
-            else
-                new_entries[1] = chunk->gpu_mappings.static_entry;
-        }
-    }
-    else {
-        new_entries = uvm_kvrealloc(chunk->gpu_mappings.dynamic_entries,
-                                    sizeof(*new_entries) * num_new_entries);
-        if (new_entries) {
-            // Get the number of bits set below the input id.
-            num_existing_entries = compute_gpu_mappings_entry_index(chunk->gpu_mappings.dma_addrs_mask, id);
-            for (; num_existing_entries < num_new_entries - 1; num_existing_entries++)
-                new_entries[num_existing_entries + 1] = new_entries[num_existing_entries];
-        }
+    array_index = compute_gpu_mappings_entry_index(&chunk->gpu_mappings.dma_addrs_mask, id);
+    while (num_active_entries > array_index) {
+        chunk->gpu_mappings.dynamic_entries[num_active_entries] =
+            chunk->gpu_mappings.dynamic_entries[num_active_entries - 1];
+        num_active_entries--;
     }
 
-    if (!new_entries)
-        return NV_ERR_NO_MEMORY;
-
-    chunk->gpu_mappings.dynamic_entries = new_entries;
-    uvm_processor_mask_set(&chunk->gpu_mappings.dma_addrs_mask, id);
-    array_index = compute_gpu_mappings_entry_index(chunk->gpu_mappings.dma_addrs_mask, id);
-    chunk->gpu_mappings.dynamic_entries[array_index] = dma_addr;
-
-    return NV_OK;
+    return &chunk->gpu_mappings.dynamic_entries[array_index];
 }
 
-NvU64 uvm_cpu_chunk_get_gpu_mapping_addr(uvm_va_block_t *va_block,
-                                         uvm_page_index_t page_index,
-                                         uvm_cpu_chunk_t *chunk,
-                                         uvm_gpu_id_t id)
+static uvm_cpu_phys_mapping_t *chunk_phys_mapping_get(uvm_cpu_physical_chunk_t *chunk, uvm_gpu_id_t id)
 {
-    NvU64 dma_addr;
-
-    if (!uvm_processor_mask_test(&chunk->gpu_mappings.dma_addrs_mask, id))
-        return 0;
-
-    if (uvm_processor_mask_get_gpu_count(&chunk->gpu_mappings.dma_addrs_mask) == 1) {
-        dma_addr = chunk->gpu_mappings.static_entry;
-    }
-    else {
-        NvU32 array_index = compute_gpu_mappings_entry_index(chunk->gpu_mappings.dma_addrs_mask, id);
-
-        dma_addr = chunk->gpu_mappings.dynamic_entries[array_index];
+    uvm_assert_mutex_locked(&chunk->lock);
+    if (uvm_processor_mask_test(&chunk->gpu_mappings.dma_addrs_mask, id)) {
+        if (chunk->gpu_mappings.max_entries == 1) {
+            return &chunk->gpu_mappings.static_entry;
+        }
+        else {
+            NvU32 array_index = compute_gpu_mappings_entry_index(&chunk->gpu_mappings.dma_addrs_mask, id);
+            return &chunk->gpu_mappings.dynamic_entries[array_index];
+        }
     }
 
+    return NULL;
+}
+
+static void chunk_inc_gpu_mapping(uvm_cpu_physical_chunk_t *chunk, uvm_gpu_id_t id)
+{
+    uvm_cpu_phys_mapping_t *mapping;
+
+    uvm_assert_mutex_locked(&chunk->lock);
+    mapping = chunk_phys_mapping_get(chunk, id);
+    UVM_ASSERT(mapping);
+    mapping->map_count++;
+}
+
+static void chunk_dec_gpu_mapping(uvm_cpu_physical_chunk_t *chunk, uvm_gpu_id_t id)
+{
+    uvm_cpu_phys_mapping_t *mapping;
+
+    uvm_assert_mutex_locked(&chunk->lock);
+    mapping = chunk_phys_mapping_get(chunk, id);
+    UVM_ASSERT(mapping);
+    UVM_ASSERT(mapping->dma_addr && mapping->map_count);
+    mapping->map_count--;
+    if (mapping->map_count == 0) {
+        uvm_parent_gpu_t *parent_gpu = uvm_parent_gpu_get(id);
+
+        uvm_gpu_unmap_cpu_pages(parent_gpu, mapping->dma_addr, uvm_cpu_chunk_get_size(&chunk->common));
+        mapping->dma_addr = 0;
+        if (chunk->gpu_mappings.max_entries > 1) {
+            NvU32 num_active_entries = uvm_processor_mask_get_gpu_count(&chunk->gpu_mappings.dma_addrs_mask);
+            NvU32 array_index = compute_gpu_mappings_entry_index(&chunk->gpu_mappings.dma_addrs_mask, id);
+
+            // Shift any GPU mappings above this one down in the mappings array.
+            for (; array_index < num_active_entries - 1; array_index++)
+                chunk->gpu_mappings.dynamic_entries[array_index] = chunk->gpu_mappings.dynamic_entries[array_index+1];
+        }
+
+        uvm_processor_mask_clear(&chunk->gpu_mappings.dma_addrs_mask, id);
+    }
+}
+
+NvU64 uvm_cpu_chunk_get_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu)
+{
+    uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(chunk);
+    uvm_cpu_phys_mapping_t *mapping;
+    uvm_page_index_t parent_offset = 0;
+    NvU64 dma_addr = 0;
+
+    if (uvm_cpu_chunk_is_logical(chunk)) {
+        uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
+
+        if (!uvm_processor_mask_test(&logical_chunk->mapped_gpus, parent_gpu->id))
+            return 0;
+
+        parent_offset = cpu_chunk_get_phys_index(logical_chunk);
+    }
+
+    uvm_mutex_lock(&phys_chunk->lock);
+    mapping = chunk_phys_mapping_get(phys_chunk, parent_gpu->id);
+    if (mapping)
+        dma_addr = mapping->dma_addr + (parent_offset * PAGE_SIZE);
+
+    uvm_mutex_unlock(&phys_chunk->lock);
     return dma_addr;
 }
 
-// The bottom two bits of uvm_va_block_t::chunks is used to indicate how
-// CPU chunks are stored.
+// Create a DMA mapping for the chunk on the given parent GPU. This will map the
+// entire parent physical chunk on the GPU.
 //
-// CPU chunk storage is handled in three different ways depending on the
-// type of chunks the VA block owns. This is done to minimize the memory
-// required to hold metadata.
-typedef enum
+// Returns NV_OK on success. On error, any of the errors returned by
+// uvm_gpu_map_cpu_pages() can be returned. In the case that the DMA mapping
+// structure could not be allocated, NV_ERR_NO_MEMORY is returned.
+static NV_STATUS cpu_chunk_map_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu)
 {
-    // The uvm_va_block_t::chunk pointer points to a single 2MB
-    // CPU chunk.
-    UVM_CPU_CHUNK_STORAGE_CHUNK = 0,
+    uvm_cpu_physical_chunk_t *phys_chunk;
+    uvm_cpu_logical_chunk_t *logical_chunk = NULL;
+    NV_STATUS status = NV_OK;
 
-    // The uvm_va_block_t::chunks pointer points to an array of
-    // pointers to CPU chunks.
-    UVM_CPU_CHUNK_STORAGE_ARRAY,
-
-    // The uvm_va_block_t::chunks pointer points to a
-    // structure of mixed (64K and 4K) chunks.
-    UVM_CPU_CHUNK_STORAGE_MIXED,
-    UVM_CPU_CHUNK_STORAGE_COUNT,
-} uvm_cpu_chunk_storage_type_t;
-
-#define UVM_CPU_CHUNK_STORAGE_MASK 0x3
-
-#define UVM_CPU_STORAGE_GET_PTR(block) ((void *)((block)->cpu.chunks & ~UVM_CPU_CHUNK_STORAGE_MASK))
-#define UVM_CPU_STORAGE_GET_TYPE(block) \
-    ((uvm_cpu_chunk_storage_type_t)((block)->cpu.chunks & UVM_CPU_CHUNK_STORAGE_MASK))
-
-// The maximum number of slots in the mixed chunk mode (64K + 4K chunks) is one
-// more than MAX_BIG_PAGES_PER_UVM_VA_BLOCK to account for misaligned VA blocks.
-#define MAX_BIG_CPU_CHUNK_SLOTS_PER_UVM_VA_BLOCK (MAX_BIG_PAGES_PER_UVM_VA_BLOCK + 1)
-
-#define MAX_SMALL_CHUNK_PER_BIG_SLOT (UVM_CHUNK_SIZE_64K / PAGE_SIZE)
-
-// This structure is used when a VA block contains 64K or a mix of 64K and 4K
-// CPU chunks.
-// For every 64K CPU chunks, big_chunks will have its corresponding bit set
-// and the corresponding index in slots will point directly to the
-// uvm_cpu_chunk_t structure.
-//
-// For 4K CPU chunks, the corresponding bit in big_chunks will be clear and
-// the element in slots will point to an array of 16 uvm_cpu_chunk_t pointers.
-typedef struct {
-    DECLARE_BITMAP(big_chunks, MAX_BIG_CPU_CHUNK_SLOTS_PER_UVM_VA_BLOCK);
-    void *slots[MAX_BIG_CPU_CHUNK_SLOTS_PER_UVM_VA_BLOCK];
-} uvm_cpu_chunk_storage_mixed_t;
-
-static uvm_page_index_t compute_slot_index(uvm_va_block_t *va_block, uvm_page_index_t page_index)
-{
-    uvm_va_block_region_t block_region = uvm_va_block_region_from_block(va_block);
-    size_t prefix;
-    uvm_page_index_t big_page_index;
-
-    if (page_index < block_region.first || page_index >= block_region.outer)
-        return MAX_BIG_PAGES_PER_UVM_VA_BLOCK;
-
-    prefix = (UVM_ALIGN_UP(va_block->start, UVM_CHUNK_SIZE_64K) - va_block->start) / PAGE_SIZE;
-
-    if (page_index < prefix)
-        return 0;
-
-    big_page_index = ((page_index - prefix) / MAX_SMALL_CHUNK_PER_BIG_SLOT) + !!prefix;
-    UVM_ASSERT(big_page_index < MAX_BIG_CPU_CHUNK_SLOTS_PER_UVM_VA_BLOCK);
-
-    return big_page_index;
-}
-
-static size_t compute_small_index(uvm_va_block_t *va_block, uvm_page_index_t page_index)
-{
-    size_t prefix = (UVM_ALIGN_UP(va_block->start, UVM_CHUNK_SIZE_64K) - va_block->start) / PAGE_SIZE;
-
-    if (page_index < prefix)
-        return page_index;
-
-    return (page_index - prefix) % MAX_SMALL_CHUNK_PER_BIG_SLOT;
-}
-
-NV_STATUS uvm_cpu_chunk_insert_in_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    uvm_chunk_size_t chunk_size = uvm_cpu_chunk_get_size(chunk);
-    uvm_page_index_t big_page_index;
-    uvm_cpu_chunk_storage_mixed_t *mixed;
-    uvm_cpu_chunk_t **chunks = NULL;
-
-    // We only want to use the bottom two bits of a pointer.
-    BUILD_BUG_ON(UVM_CPU_CHUNK_STORAGE_COUNT > 4);
-
-    chunk->region = uvm_va_block_region(page_index, page_index + uvm_cpu_chunk_num_pages(chunk));
-    UVM_ASSERT(chunk->region.outer <= PAGES_PER_UVM_VA_BLOCK);
-
-    // We want to protect against two threads manipulating the VA block's CPU
-    // chunks at the same time. However, when a block is split, the new block's
-    // lock is locked without tracking. So, we can't use
-    // uvm_assert_mutex_locked().
-    UVM_ASSERT(mutex_is_locked(&va_block->lock.m));
-
-    if (!va_block->cpu.chunks) {
-        switch (chunk_size) {
-            case UVM_CHUNK_SIZE_2M:
-                break;
-            case UVM_CHUNK_SIZE_64K:
-                mixed = uvm_kvmalloc_zero(sizeof(*mixed));
-                if (!mixed)
-                    return NV_ERR_NO_MEMORY;
-
-                va_block->cpu.chunks = (unsigned long)mixed | UVM_CPU_CHUNK_STORAGE_MIXED;
-                break;
-            case UVM_CHUNK_SIZE_4K:
-                chunks = uvm_kvmalloc_zero(sizeof(*chunks) * uvm_va_block_num_cpu_pages(va_block));
-                if (!chunks)
-                    return NV_ERR_NO_MEMORY;
-
-                va_block->cpu.chunks = (unsigned long)chunks | UVM_CPU_CHUNK_STORAGE_ARRAY;
-                break;
-            default:
-                return NV_ERR_INVALID_ARGUMENT;
-        }
+    if (uvm_cpu_chunk_is_logical(chunk)) {
+        logical_chunk = uvm_cpu_chunk_to_logical(chunk);
+        if (uvm_processor_mask_test(&logical_chunk->mapped_gpus, parent_gpu->id))
+            return status;
     }
 
-    switch (UVM_CPU_STORAGE_GET_TYPE(va_block)) {
-        case UVM_CPU_CHUNK_STORAGE_CHUNK:
-            if (va_block->cpu.chunks)
-                return NV_ERR_INVALID_STATE;
-            UVM_ASSERT(chunk_size == UVM_CHUNK_SIZE_2M);
-            va_block->cpu.chunks = (unsigned long)chunk | UVM_CPU_CHUNK_STORAGE_CHUNK;
-            break;
-        case UVM_CPU_CHUNK_STORAGE_MIXED:
-            mixed = UVM_CPU_STORAGE_GET_PTR(va_block);
-            big_page_index = compute_slot_index(va_block, page_index);
-            UVM_ASSERT(big_page_index != MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
-            UVM_ASSERT(compute_slot_index(va_block, page_index + uvm_cpu_chunk_num_pages(chunk) - 1) == big_page_index);
+    phys_chunk = get_physical_parent(chunk);
+    uvm_mutex_lock(&phys_chunk->lock);
 
-            if (test_bit(big_page_index, mixed->big_chunks))
-                return NV_ERR_INVALID_STATE;
+    if (!uvm_processor_mask_test(&phys_chunk->gpu_mappings.dma_addrs_mask, parent_gpu->id)) {
+        uvm_chunk_size_t chunk_size = uvm_cpu_chunk_get_size(&phys_chunk->common);
+        uvm_cpu_phys_mapping_t *mapping;
+        NvU64 dma_addr;
 
-            if (chunk_size == UVM_CHUNK_SIZE_64K) {
-                mixed->slots[big_page_index] = chunk;
-                set_bit(big_page_index, mixed->big_chunks);
-            }
-            else {
-                size_t slot_index;
+        status = uvm_gpu_map_cpu_pages(parent_gpu, phys_chunk->common.page, chunk_size, &dma_addr);
+        if (status != NV_OK)
+            goto done;
 
-                UVM_ASSERT(chunk_size == UVM_CHUNK_SIZE_4K);
-                chunks = mixed->slots[big_page_index];
-
-                if (!chunks) {
-                    chunks = uvm_kvmalloc_zero(sizeof(*chunks) * MAX_SMALL_CHUNK_PER_BIG_SLOT);
-                    if (!chunks)
-                        return NV_ERR_NO_MEMORY;
-                    mixed->slots[big_page_index] = chunks;
-                }
-
-                slot_index = compute_small_index(va_block, page_index);
-                chunks[slot_index] = chunk;
-            }
-            break;
-        case UVM_CPU_CHUNK_STORAGE_ARRAY:
-            chunks = UVM_CPU_STORAGE_GET_PTR(va_block);
-            if (chunk_size == UVM_CHUNK_SIZE_64K) {
-                uvm_cpu_chunk_t **subchunks = NULL;
-                uvm_page_index_t sub_page_index;
-
-                mixed = uvm_kvmalloc_zero(sizeof(*mixed));
-                if (!mixed)
-                    return NV_ERR_NO_MEMORY;
-
-                big_page_index = compute_slot_index(va_block, page_index);
-                UVM_ASSERT(big_page_index != MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
-                UVM_ASSERT(compute_slot_index(va_block, page_index + uvm_cpu_chunk_num_pages(chunk) - 1) ==
-                           big_page_index);
-                mixed->slots[big_page_index] = chunk;
-                set_bit(big_page_index, mixed->big_chunks);
-
-                for (sub_page_index = 0; sub_page_index < uvm_va_block_num_cpu_pages(va_block); sub_page_index++) {
-                    uvm_cpu_chunk_t *subchunk = chunks[sub_page_index];
-                    size_t subchunk_index = compute_small_index(va_block, sub_page_index);
-
-                    if (!subchunk)
-                        continue;
-
-                    if (!subchunks || compute_slot_index(va_block, sub_page_index) != big_page_index) {
-                        subchunks = uvm_kvmalloc_zero(sizeof(*subchunks) * MAX_SMALL_CHUNK_PER_BIG_SLOT);
-                        if (!subchunks) {
-                            size_t i;
-
-                            for (i = 0; i < MAX_BIG_CPU_CHUNK_SLOTS_PER_UVM_VA_BLOCK; i++) {
-                                if (!test_bit(i, mixed->big_chunks) && mixed->slots[i])
-                                    uvm_kvfree(mixed->slots[i]);
-                            }
-
-                            uvm_kvfree(mixed);
-                            return NV_ERR_NO_MEMORY;
-                        }
-
-                        big_page_index = compute_slot_index(va_block, sub_page_index);
-                        UVM_ASSERT(mixed->slots[big_page_index] == NULL);
-                        mixed->slots[big_page_index] = subchunks;
-                    }
-
-                    subchunks[subchunk_index] = subchunk;
-                    if (subchunk_index == MAX_SMALL_CHUNK_PER_BIG_SLOT - 1)
-                        subchunks = NULL;
-                }
-
-                va_block->cpu.chunks = (unsigned long)mixed | UVM_CPU_CHUNK_STORAGE_MIXED;
-                uvm_kvfree(chunks);
-            }
-            else {
-                chunks[page_index] = chunk;
-            }
-
-       default:
-           break;
-    }
-
-    uvm_page_mask_region_fill(&va_block->cpu.allocated,
-                              uvm_va_block_region(page_index, page_index + uvm_cpu_chunk_num_pages(chunk)));
-
-    return NV_OK;
-}
-
-void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
-{
-    uvm_cpu_chunk_storage_mixed_t *mixed;
-    uvm_page_index_t big_page_index;
-    uvm_cpu_chunk_t **chunks;
-
-    // We want to protect against two threads manipulating the VA block's CPU
-    // chunks at the same time. However, when a block is split, the new block's
-    // lock is locked without tracking. So, we can't use
-    // uvm_assert_mutex_locked().
-    UVM_ASSERT(mutex_is_locked(&va_block->lock.m));
-    UVM_ASSERT(va_block->cpu.chunks);
-
-    switch (UVM_CPU_STORAGE_GET_TYPE(va_block)) {
-        case UVM_CPU_CHUNK_STORAGE_CHUNK:
-            UVM_ASSERT(uvm_cpu_chunk_get_size(chunk) == UVM_CHUNK_SIZE_2M);
-            UVM_ASSERT(UVM_CPU_STORAGE_GET_PTR(va_block) == chunk);
-            va_block->cpu.chunks = 0;
-            break;
-        case UVM_CPU_CHUNK_STORAGE_MIXED:
-            UVM_ASSERT(uvm_cpu_chunk_get_size(chunk) != UVM_CHUNK_SIZE_2M);
-            mixed = UVM_CPU_STORAGE_GET_PTR(va_block);
-            big_page_index = compute_slot_index(va_block, page_index);
-            UVM_ASSERT(big_page_index != MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
-            UVM_ASSERT(mixed->slots[big_page_index] != NULL);
-
-            if (test_bit(big_page_index, mixed->big_chunks)) {
-                UVM_ASSERT(uvm_cpu_chunk_get_size(chunk) == UVM_CHUNK_SIZE_64K);
-                UVM_ASSERT(mixed->slots[big_page_index] == chunk);
-                mixed->slots[big_page_index] = NULL;
-                clear_bit(big_page_index, mixed->big_chunks);
-            }
-            else {
-                size_t slot_index;
-
-                UVM_ASSERT(uvm_cpu_chunk_get_size(chunk) == UVM_CHUNK_SIZE_4K);
-                chunks = mixed->slots[big_page_index];
-                slot_index = compute_small_index(va_block, page_index);
-                UVM_ASSERT(chunks[slot_index] == chunk);
-                chunks[slot_index] = NULL;
-
-                for (slot_index = 0; slot_index < MAX_SMALL_CHUNK_PER_BIG_SLOT; slot_index++) {
-                    if (chunks[slot_index])
-                        break;
-                }
-
-                if (slot_index == MAX_SMALL_CHUNK_PER_BIG_SLOT) {
-                    uvm_kvfree(chunks);
-                    mixed->slots[big_page_index] = NULL;
-                }
-            }
-
-            break;
-        case UVM_CPU_CHUNK_STORAGE_ARRAY:
-            UVM_ASSERT(uvm_cpu_chunk_get_size(chunk) == UVM_CHUNK_SIZE_4K);
-            chunks = UVM_CPU_STORAGE_GET_PTR(va_block);
-            UVM_ASSERT(chunks[page_index] == chunk);
-            chunks[page_index] = NULL;
-            break;
-        default:
-            return;
-    };
-
-    uvm_page_mask_region_clear(&va_block->cpu.allocated, chunk->region);
-
-    if (uvm_page_mask_empty(&va_block->cpu.allocated)) {
-        if (UVM_CPU_STORAGE_GET_TYPE(va_block) != UVM_CPU_CHUNK_STORAGE_CHUNK)
-            uvm_kvfree(UVM_CPU_STORAGE_GET_PTR(va_block));
-        va_block->cpu.chunks = 0;
-    }
-}
-
-uvm_cpu_chunk_t *uvm_cpu_chunk_get_chunk_for_page(uvm_va_block_t *va_block, uvm_page_index_t page_index)
-{
-    uvm_cpu_chunk_storage_mixed_t *mixed;
-    uvm_cpu_chunk_t *chunk;
-    uvm_cpu_chunk_t **chunks;
-    uvm_page_index_t big_page_index;
-    size_t slot_index;
-
-    if (page_index >= uvm_va_block_num_cpu_pages(va_block) || !uvm_page_mask_test(&va_block->cpu.allocated, page_index))
-        return NULL;
-
-    UVM_ASSERT(va_block->cpu.chunks);
-
-    switch (UVM_CPU_STORAGE_GET_TYPE(va_block)) {
-        case UVM_CPU_CHUNK_STORAGE_CHUNK:
-            return UVM_CPU_STORAGE_GET_PTR(va_block);
-        case UVM_CPU_CHUNK_STORAGE_MIXED:
-            mixed = UVM_CPU_STORAGE_GET_PTR(va_block);
-            big_page_index = compute_slot_index(va_block, page_index);
-            UVM_ASSERT(big_page_index != MAX_BIG_PAGES_PER_UVM_VA_BLOCK);
-            UVM_ASSERT(mixed->slots[big_page_index] != NULL);
-            if (test_bit(big_page_index, mixed->big_chunks))
-                return mixed->slots[big_page_index];
-
-            chunks = mixed->slots[big_page_index];
-            slot_index = compute_small_index(va_block, page_index);
-            chunk = chunks[slot_index];
-            break;
-        case UVM_CPU_CHUNK_STORAGE_ARRAY:
-            chunks = UVM_CPU_STORAGE_GET_PTR(va_block);
-            chunk = chunks[page_index];
-            break;
-        default:
-            return NULL;
-    }
-
-    UVM_ASSERT(chunk);
-    return chunk;
-}
-
-NV_STATUS uvm_cpu_chunk_alloc(uvm_va_block_t *va_block,
-                              uvm_page_index_t page_index,
-                              struct mm_struct *mm,
-                              uvm_cpu_chunk_t **new_chunk)
-{
-    uvm_va_block_test_t *block_test = uvm_va_block_get_test(va_block);
-    uvm_cpu_chunk_t *chunk = NULL;
-    NvU32 cpu_allocation_sizes;
-    uvm_page_mask_t zero_page_mask;
-    uvm_gpu_id_t id;
-    struct page *page = NULL;
-    uvm_chunk_size_t alloc_size;
-    uvm_va_block_region_t region;
-    uvm_va_space_t *va_space;
-    uvm_processor_mask_t uvm_lite_gpus;
-    gfp_t base_alloc_flags;
-    NV_STATUS status;
-
-    UVM_ASSERT(new_chunk);
-
-    // Limit the allocation sizes only to the ones supported.
-    cpu_allocation_sizes = uvm_cpu_chunk_get_allocation_sizes();
-
-    if (block_test && block_test->cpu_chunk_allocation_size_mask)
-        cpu_allocation_sizes &= block_test->cpu_chunk_allocation_size_mask;
-
-    // Get a mask of all the block pages that are resident somewhere.
-    uvm_page_mask_zero(&zero_page_mask);
-    for_each_id_in_mask(id, &va_block->resident)
-        uvm_page_mask_or(&zero_page_mask, &zero_page_mask, uvm_va_block_resident_mask_get(va_block, id));
-
-    // If the VA space has a UVM-Lite GPU registered, only PAGE_SIZE allocations
-    // should be used in order to avoid extra copies due to dirty compound
-    // pages.
-    va_space = uvm_va_block_get_va_space(va_block);
-    uvm_processor_mask_andnot(&uvm_lite_gpus, &va_space->registered_gpus, &va_space->faultable_processors);
-    if (!uvm_processor_mask_empty(&uvm_lite_gpus))
-        cpu_allocation_sizes = PAGE_SIZE;
-
-    base_alloc_flags = (mm ? NV_UVM_GFP_FLAGS_ACCOUNT : NV_UVM_GFP_FLAGS) | GFP_HIGHUSER;
-
-    // Attempt to allocate CPU pages with the largest physically contiguous
-    // size from the set of CPU chunk sizes that we can.
-    // This is accomplished by:
-    //   1. Aligning the CPU page address down to the allocation size.
-    //   2. Ensuring that the entire allocation region fits withing the VA
-    //      block.
-    //   3. Ensuring that the region covered by the allocation is empty.
-    for_each_chunk_size_rev(alloc_size, cpu_allocation_sizes) {
-        NvU64 alloc_virt_addr;
-        uvm_page_mask_t scratch_page_mask;
-        uvm_page_index_t alloc_page_index;
-        gfp_t alloc_flags = base_alloc_flags;
-
-        if (alloc_size < PAGE_SIZE)
-            break;
-
-        alloc_virt_addr = UVM_ALIGN_DOWN(uvm_va_block_cpu_page_address(va_block, page_index), alloc_size);
-
-        if (!uvm_va_block_contains_address(va_block, alloc_virt_addr) ||
-            !uvm_va_block_contains_address(va_block, alloc_virt_addr + alloc_size - 1))
-            continue;
-
-        alloc_page_index = uvm_va_block_cpu_page_index(va_block, alloc_virt_addr);
-        region = uvm_va_block_region(alloc_page_index, alloc_page_index + (alloc_size / PAGE_SIZE));
-        uvm_page_mask_init_from_region(&scratch_page_mask, region, NULL);
-        uvm_page_mask_and(&scratch_page_mask, &va_block->cpu.allocated, &scratch_page_mask);
-
-        if (!uvm_page_mask_empty(&scratch_page_mask))
-            continue;
-
-        // For allocation sizes higher than PAGE_SIZE, use __GFP_NORETRY in
-        // order to avoid higher allocation latency from the kernel compacting
-        // memory to satisfy the request.
-        if (alloc_size > PAGE_SIZE)
-            alloc_flags |= __GFP_COMP | __GFP_NORETRY;
-
-        // If not all pages in the allocation region are resident somewhere,
-        // zero out the allocated page.
-        // This could be wasteful if only a few pages in high-order allocation
-        // need to be zero'ed out but the alternative is to map single sub-
-        // pages one-by-one.
-        if (!uvm_page_mask_region_full(&zero_page_mask, region))
-            alloc_flags |= __GFP_ZERO;
-
-        page = alloc_pages(alloc_flags, get_order(alloc_size));
-        if (page) {
-            if (alloc_flags & __GFP_ZERO)
-                SetPageDirty(page);
-            break;
-        }
-    }
-
-    if (!page) {
-        status = NV_ERR_NO_MEMORY;
-        goto error;
-    }
-
-    chunk = uvm_kvmalloc_zero(sizeof(*chunk));
-    if (!chunk) {
-        status = NV_ERR_NO_MEMORY;
-        goto error;
-    }
-
-    chunk->page = page;
-    uvm_cpu_chunk_set_size(chunk, alloc_size);
-    chunk->region = region;
-    nv_kref_init(&chunk->refcount);
-    uvm_spin_lock_init(&chunk->lock, UVM_LOCK_ORDER_LEAF);
-    if (alloc_size > PAGE_SIZE) {
-        chunk->dirty_bitmap = uvm_kvmalloc_zero(BITS_TO_LONGS(alloc_size / PAGE_SIZE) * sizeof(*chunk->dirty_bitmap));
-        if (!chunk->dirty_bitmap) {
+        mapping = chunk_phys_mapping_alloc(phys_chunk, parent_gpu->id);
+        if (!mapping) {
+            uvm_gpu_unmap_cpu_pages(parent_gpu, dma_addr, chunk_size);
             status = NV_ERR_NO_MEMORY;
-            goto error;
+            goto done;
         }
+
+        mapping->dma_addr = dma_addr;
+        mapping->map_count = 1;
+        uvm_processor_mask_set(&phys_chunk->gpu_mappings.dma_addrs_mask, parent_gpu->id);
+    }
+    else {
+        // The mapping count on the physical chunk is only increased when
+        // mapping logical chunks.
+        if (uvm_cpu_chunk_is_logical(chunk))
+            chunk_inc_gpu_mapping(phys_chunk, parent_gpu->id);
     }
 
-    status = uvm_cpu_chunk_insert_in_block(va_block, chunk, chunk->region.first);
-    if (status != NV_OK)
-        goto error;
+done:
+    uvm_mutex_unlock(&phys_chunk->lock);
 
-    if (new_chunk)
-        *new_chunk = chunk;
-
-    return NV_OK;
-
-error:
-
-    // If chunk has been allocated, uvm_cpu_chunk_put() will release the chunk
-    // and the page. Otherwise, only release the page.
-    if (chunk)
-        uvm_cpu_chunk_put(chunk);
-    else if (page)
-        __free_pages(page, get_order(alloc_size));
+    if (status == NV_OK && uvm_cpu_chunk_is_logical(chunk))
+        uvm_processor_mask_set(&logical_chunk->mapped_gpus, parent_gpu->id);
 
     return status;
 }
 
-NV_STATUS uvm_cpu_chunk_split(uvm_va_block_t *va_block,
-                              uvm_cpu_chunk_t *chunk,
-                              uvm_chunk_size_t new_size,
-                              uvm_page_index_t page_index,
-                              uvm_cpu_chunk_t **new_chunks)
+void uvm_cpu_chunk_unmap_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu)
+{
+    uvm_cpu_physical_chunk_t *phys_chunk;
+    uvm_cpu_logical_chunk_t *logical_chunk;
+
+    if (uvm_cpu_chunk_is_logical(chunk)) {
+        logical_chunk = uvm_cpu_chunk_to_logical(chunk);
+        if (!uvm_processor_mask_test_and_clear(&logical_chunk->mapped_gpus, parent_gpu->id))
+            return;
+    }
+
+    phys_chunk = get_physical_parent(chunk);
+    uvm_mutex_lock(&phys_chunk->lock);
+    if (uvm_processor_mask_test(&phys_chunk->gpu_mappings.dma_addrs_mask, parent_gpu->id))
+        chunk_dec_gpu_mapping(phys_chunk, parent_gpu->id);
+
+    uvm_mutex_unlock(&phys_chunk->lock);
+}
+
+NV_STATUS uvm_cpu_chunk_map_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
+{
+    NV_STATUS status;
+    uvm_chunk_size_t chunk_size = uvm_cpu_chunk_get_size(chunk);
+
+    status = cpu_chunk_map_gpu_phys(chunk, gpu->parent);
+    if (status != NV_OK)
+        return status;
+
+    status = uvm_mmu_sysmem_map(gpu, uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu->parent), chunk_size);
+    if (status != NV_OK)
+        uvm_cpu_chunk_unmap_gpu_phys(chunk, gpu->parent);
+
+    return status;
+}
+
+static struct page *uvm_cpu_chunk_alloc_page(uvm_chunk_size_t alloc_size,
+                                             uvm_cpu_chunk_alloc_flags_t alloc_flags)
+{
+    gfp_t kernel_alloc_flags;
+    struct page *page;
+
+    UVM_ASSERT(is_power_of_2(alloc_size));
+    UVM_ASSERT(alloc_size & uvm_cpu_chunk_get_allocation_sizes());
+
+    if (alloc_flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ACCOUNT)
+        kernel_alloc_flags = NV_UVM_GFP_FLAGS_ACCOUNT;
+    else
+        kernel_alloc_flags = NV_UVM_GFP_FLAGS;
+
+    kernel_alloc_flags |= GFP_HIGHUSER;
+
+    // For allocation sizes higher than PAGE_SIZE, use __GFP_NORETRY in
+    // order to avoid higher allocation latency from the kernel compacting
+    // memory to satisfy the request.
+    if (alloc_size > PAGE_SIZE)
+        kernel_alloc_flags |= __GFP_COMP | __GFP_NORETRY;
+
+    if (alloc_flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO)
+        kernel_alloc_flags |= __GFP_ZERO;
+
+    page = alloc_pages(kernel_alloc_flags, get_order(alloc_size));
+    if (page && (alloc_flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO))
+        SetPageDirty(page);
+
+    return page;
+}
+
+static uvm_cpu_physical_chunk_t *uvm_cpu_chunk_create(uvm_chunk_size_t alloc_size)
+{
+    uvm_cpu_physical_chunk_t *chunk;
+
+    chunk = uvm_kvmalloc_zero(sizeof(*chunk));
+    if (!chunk)
+        return NULL;
+
+    uvm_cpu_chunk_set_size(&chunk->common, alloc_size);
+    nv_kref_init(&chunk->common.refcount);
+    uvm_mutex_init(&chunk->lock, UVM_LOCK_ORDER_LEAF);
+    chunk->gpu_mappings.max_entries = 1;
+    if (alloc_size > PAGE_SIZE) {
+        chunk->dirty_bitmap = uvm_kvmalloc_zero(BITS_TO_LONGS(alloc_size / PAGE_SIZE) * sizeof(*chunk->dirty_bitmap));
+        if (!chunk->dirty_bitmap) {
+            uvm_kvfree(chunk);
+            return NULL;
+        }
+    }
+
+    return chunk;
+}
+
+NV_STATUS uvm_cpu_chunk_alloc(uvm_chunk_size_t alloc_size,
+                              uvm_cpu_chunk_alloc_flags_t alloc_flags,
+                              uvm_cpu_chunk_t **new_chunk)
+{
+    uvm_cpu_physical_chunk_t *chunk;
+    struct page *page;
+
+    UVM_ASSERT(new_chunk);
+
+    page = uvm_cpu_chunk_alloc_page(alloc_size, alloc_flags);
+    if (!page)
+        return NV_ERR_NO_MEMORY;
+
+    chunk = uvm_cpu_chunk_create(alloc_size);
+    if (!chunk) {
+        __free_pages(page, get_order(alloc_size));
+        return NV_ERR_NO_MEMORY;
+    }
+
+    chunk->common.type = UVM_CPU_CHUNK_TYPE_PHYSICAL;
+    chunk->common.page = page;
+
+    *new_chunk = &chunk->common;
+    return NV_OK;
+}
+
+NV_STATUS uvm_cpu_chunk_alloc_hmm(struct page *page,
+                                  uvm_cpu_chunk_t **new_chunk)
+{
+    uvm_cpu_physical_chunk_t *chunk;
+
+    UVM_ASSERT(new_chunk);
+
+    chunk = uvm_cpu_chunk_create(PAGE_SIZE);
+    if (!chunk)
+        return NV_ERR_NO_MEMORY;
+
+    chunk->common.type = UVM_CPU_CHUNK_TYPE_HMM;
+    chunk->common.page = page;
+
+    *new_chunk = &chunk->common;
+    return NV_OK;
+}
+
+NV_STATUS uvm_cpu_chunk_split(uvm_cpu_chunk_t *chunk, uvm_cpu_chunk_t **new_chunks)
 {
     NV_STATUS status = NV_OK;
-    uvm_cpu_chunk_t *new_chunk;
-    uvm_page_index_t running_page_index = page_index;
+    uvm_cpu_logical_chunk_t *new_chunk;
+    uvm_cpu_physical_chunk_t *phys_chunk = get_physical_parent(chunk);
+    uvm_cpu_logical_chunk_t *logical_chunk = NULL;
+    uvm_processor_id_t id;
+    uvm_processor_mask_t *dma_map_mask;
+    uvm_chunk_size_t new_size;
     size_t num_new_chunks;
     size_t num_subchunk_pages;
     size_t i;
 
     UVM_ASSERT(chunk);
-    UVM_ASSERT(is_power_of_2(new_size));
-    UVM_ASSERT(new_size < uvm_cpu_chunk_get_size(chunk));
     UVM_ASSERT(new_chunks);
+    UVM_ASSERT(chunk->type != UVM_CPU_CHUNK_TYPE_HMM);
 
+    // This should never be true as HMM chunks are currently all of size
+    // PAGE_SIZE and can't be split and attempting to won't work as it requires
+    // kernel interaction.
+    // TODO: Bug 3368756: add support for transparent huge page (THP)
+    if (chunk->type == UVM_CPU_CHUNK_TYPE_HMM)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    // Get the largest size below the size of the input chunk.
+    new_size = uvm_chunk_find_prev_size(uvm_cpu_chunk_get_allocation_sizes(), uvm_cpu_chunk_get_size(chunk));
+    UVM_ASSERT(new_size != UVM_CHUNK_SIZE_INVALID);
     num_new_chunks = uvm_cpu_chunk_get_size(chunk) / new_size;
     num_subchunk_pages = new_size / PAGE_SIZE;
 
-    for (i = 0; i < num_new_chunks; i++) {
-        uvm_page_index_t relative_page_index = running_page_index - page_index;
-        uvm_gpu_id_t id;
+    if (uvm_cpu_chunk_is_physical(chunk)) {
+        dma_map_mask = &phys_chunk->gpu_mappings.dma_addrs_mask;
+    }
+    else {
+        logical_chunk = uvm_cpu_chunk_to_logical(chunk);
+        dma_map_mask = &logical_chunk->mapped_gpus;
+    }
 
-        new_chunk = uvm_kvmalloc_zero(sizeof(*new_chunk));
+    uvm_mutex_lock(&phys_chunk->lock);
+    for (i = 0; i < num_new_chunks; i++) {
+        new_chunk = uvm_kvmalloc_zero(sizeof(*logical_chunk));
         if (!new_chunk) {
+            uvm_mutex_unlock(&phys_chunk->lock);
             status = NV_ERR_NO_MEMORY;
             goto error;
         }
 
-        new_chunk->page = chunk->page + relative_page_index;
-        new_chunk->offset = chunk->offset + relative_page_index;
-        new_chunk->region = uvm_va_block_region(running_page_index, running_page_index + num_subchunk_pages);
-        uvm_cpu_chunk_set_size(new_chunk, new_size);
-        nv_kref_init(&new_chunk->refcount);
-
-        // This lock is unused for logical chunks but initialize it for
-        // consistency.
-        uvm_spin_lock_init(&new_chunk->lock, UVM_LOCK_ORDER_LEAF);
+        new_chunk->common.type = UVM_CPU_CHUNK_TYPE_LOGICAL;
+        new_chunk->common.page = chunk->page + (i * num_subchunk_pages);
+        uvm_cpu_chunk_set_size(&new_chunk->common, new_size);
+        nv_kref_init(&new_chunk->common.refcount);
         new_chunk->parent = chunk;
         uvm_cpu_chunk_get(new_chunk->parent);
-
-        for_each_gpu_id(id) {
-            NvU64 parent_dma_addr = uvm_cpu_chunk_get_gpu_mapping_addr(va_block, running_page_index, chunk, id);
-
-            if (!parent_dma_addr)
-                continue;
-
-            uvm_cpu_chunk_set_gpu_mapping_addr(va_block,
-                                               relative_page_index,
-                                               new_chunk,
-                                               id,
-                                               parent_dma_addr + (relative_page_index * PAGE_SIZE));
-        }
-
-        new_chunks[i] = new_chunk;
-        running_page_index += num_subchunk_pages;
+        for_each_id_in_mask(id, dma_map_mask)
+            chunk_inc_gpu_mapping(phys_chunk, id);
+        uvm_processor_mask_copy(&new_chunk->mapped_gpus, dma_map_mask);
+        new_chunks[i] = &new_chunk->common;
     }
+
+    // Release the references that are held by the chunk being split.
+    for_each_id_in_mask(id, dma_map_mask)
+        chunk_dec_gpu_mapping(phys_chunk, id);
+
+    // If the chunk being split is a logical chunk clear it's mapped_gpus mask.
+    if (uvm_cpu_chunk_is_logical(chunk))
+        uvm_processor_mask_zero(&logical_chunk->mapped_gpus);
+
+    uvm_mutex_unlock(&phys_chunk->lock);
 
     // Drop the original reference count on the parent (from its creation). This
     // is done so the parent's reference count goes to 0 when all the children
     // are released.
-    uvm_cpu_chunk_put(chunk);
+    uvm_cpu_chunk_free(chunk);
 
 error:
     if (status != NV_OK) {
         while (i--)
-            uvm_cpu_chunk_put(new_chunk);
+            uvm_cpu_chunk_free(new_chunks[i]);
     }
 
     return status;
 }
 
-NV_STATUS uvm_cpu_chunk_merge(uvm_va_block_t *va_block,
-                              uvm_cpu_chunk_t **chunks,
-                              size_t num_merge_chunks,
-                              uvm_chunk_size_t merge_size,
-                              uvm_cpu_chunk_t **merged_chunk)
+static bool verify_merging_chunks(uvm_cpu_chunk_t **chunks, size_t num_chunks)
+{
+    uvm_cpu_logical_chunk_t *logical_chunk;
+    uvm_cpu_chunk_t *first_chunk_parent;
+    uvm_processor_mask_t *first_chunk_mapped_gpus;
+    uvm_chunk_size_t first_chunk_size;
+    size_t i;
+
+    logical_chunk = uvm_cpu_chunk_to_logical(chunks[0]);
+    first_chunk_size = uvm_cpu_chunk_get_size(chunks[0]);
+    first_chunk_parent = logical_chunk->parent;
+    first_chunk_mapped_gpus = &logical_chunk->mapped_gpus;
+
+    // Only chunks with the same size and parent can be merged.
+    for (i = 1; i < num_chunks; i++) {
+        UVM_ASSERT(uvm_cpu_chunk_is_logical(chunks[i]));
+
+        logical_chunk = uvm_cpu_chunk_to_logical(chunks[i]);
+        UVM_ASSERT(logical_chunk->parent);
+        UVM_ASSERT(logical_chunk->parent == first_chunk_parent);
+        UVM_ASSERT(uvm_cpu_chunk_get_size(&logical_chunk->common) == first_chunk_size);
+        UVM_ASSERT(nv_kref_read(&logical_chunk->common.refcount) == 1);
+
+        // For now, we require that all logical chunks to be merged have to be
+        // mapped on the same set of processors in order to be merged.
+        //
+        // If this requirement is relaxed in the future, the process to handle
+        // GPU mappings would be:
+        //    1. If mapped_gpus matches for all child chunks, the parent chunk's
+        //       mapped_gpus mask is set to
+        //            (child_mapped_gpus | parent_mapped_gpus).
+        //    2. If the mapped_gpus masks for the child chunks don't match:
+        //       2.1 All mappings to GPUs in each of child chunks' masks that are
+        //           not also present in the parent chunk's mask are destroyed.
+        //       2.2 mapped_gpus mask of the parent chunk remains unmodified.
+        UVM_ASSERT(uvm_processor_mask_equal(&logical_chunk->mapped_gpus, first_chunk_mapped_gpus));
+    }
+
+    return true;
+}
+
+uvm_cpu_chunk_t *uvm_cpu_chunk_merge(uvm_cpu_chunk_t **chunks)
 {
     uvm_cpu_chunk_t *parent;
+    uvm_cpu_logical_chunk_t *logical_chunk;
+    uvm_cpu_physical_chunk_t *phys_chunk;
+    uvm_processor_id_t id;
     uvm_chunk_size_t chunk_size;
+    uvm_chunk_size_t parent_chunk_size;
+    size_t num_merge_chunks;
     size_t i;
 
     UVM_ASSERT(chunks);
-    UVM_ASSERT(num_merge_chunks > 0);
-    UVM_ASSERT(merged_chunk);
+    UVM_ASSERT(!uvm_cpu_chunk_is_physical(chunks[0]));
 
-    parent = chunks[0]->parent;
-    if (!parent)
-        return NV_WARN_NOTHING_TO_DO;
+    logical_chunk = uvm_cpu_chunk_to_logical(chunks[0]);
+    parent = logical_chunk->parent;
+    UVM_ASSERT(parent);
 
     chunk_size = uvm_cpu_chunk_get_size(chunks[0]);
+    parent_chunk_size = uvm_cpu_chunk_get_size(parent);
+    UVM_ASSERT(IS_ALIGNED(parent_chunk_size, chunk_size));
+    num_merge_chunks = parent_chunk_size / chunk_size;
 
-    UVM_ASSERT(uvm_cpu_chunk_get_size(parent) == merge_size);
-    UVM_ASSERT(merge_size > chunk_size);
-
-    for (i = 1; i < num_merge_chunks; i++) {
-        if (chunks[i]->parent != parent || uvm_cpu_chunk_get_size(chunks[i]) != chunk_size)
-            return NV_ERR_INVALID_ARGUMENT;
-
-        UVM_ASSERT(nv_kref_read(&chunks[i]->refcount) == 1);
-    }
+    // This assert will never trigger since verify_merging_chunks() always
+    // returns true. However, it will eliminate the call on release builds.
+    UVM_ASSERT(verify_merging_chunks(chunks, num_merge_chunks));
 
     // Take a reference on the parent chunk so it doesn't get released when all
     // of the children are released below.
     uvm_cpu_chunk_get(parent);
+    phys_chunk = get_physical_parent(chunks[0]);
+
+    uvm_mutex_lock(&phys_chunk->lock);
+    for_each_id_in_mask(id, &logical_chunk->mapped_gpus)
+        chunk_inc_gpu_mapping(phys_chunk, id);
+
+    if (!uvm_cpu_chunk_is_physical(parent))
+        uvm_processor_mask_copy(&uvm_cpu_chunk_to_logical(parent)->mapped_gpus, &logical_chunk->mapped_gpus);
+
+    uvm_mutex_unlock(&phys_chunk->lock);
 
     for (i = 0; i < num_merge_chunks; i++)
-        uvm_cpu_chunk_put(chunks[i]);
+        uvm_cpu_chunk_free(chunks[i]);
 
-    *merged_chunk = parent;
-
-    return NV_OK;
-}
-
-static uvm_cpu_chunk_t *get_parent_cpu_chunk(uvm_cpu_chunk_t *chunk)
-{
-    UVM_ASSERT(chunk);
-
-    while (chunk->parent)
-        chunk = chunk->parent;
-
-    return chunk;
+    return parent;
 }
 
 // Check the CPU PTE dirty bit and if set, clear it and fill the
 // physical chunk's dirty bitmap.
-static void check_cpu_dirty_flag(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
+static void check_cpu_dirty_flag(uvm_cpu_physical_chunk_t *chunk, uvm_page_index_t page_index)
 {
     struct page *page;
 
-    UVM_ASSERT(!chunk->parent);
-    uvm_assert_spinlock_locked(&chunk->lock);
+    uvm_assert_mutex_locked(&chunk->lock);
 
     // Kernels prior to v4.5 used the flags within the individual pages even for
-    // compound pages.
-    page = chunk->page + page_index;
-    if (PageDirty(page)) {
-        bitmap_fill(chunk->dirty_bitmap, uvm_cpu_chunk_get_size(chunk) / PAGE_SIZE);
-        ClearPageDirty(page);
-    }
-}
-
-static uvm_cpu_chunk_t *get_parent_and_page_index(uvm_cpu_chunk_t *chunk, uvm_page_index_t *out_page_index)
-{
-    uvm_cpu_chunk_t *parent;
-    uvm_page_index_t page_index;
-
-    UVM_ASSERT(chunk);
-    UVM_ASSERT(chunk->page);
-    UVM_ASSERT(out_page_index);
-    page_index = *out_page_index;
-    UVM_ASSERT(chunk->region.first <= page_index && page_index < chunk->region.outer);
-
-    page_index = chunk->offset + (page_index - chunk->region.first);
-    parent = get_parent_cpu_chunk(chunk);
-    UVM_ASSERT(page_index < uvm_cpu_chunk_get_size(parent) / PAGE_SIZE);
-    *out_page_index = page_index;
-    return parent;
+    // compound pages. For those kernels, we don't necessarily need the bitmap
+    // but using it allows for a single implementation.
+    page = chunk->common.page + page_index;
+    if (TestClearPageDirty(page))
+        bitmap_fill(chunk->dirty_bitmap, uvm_cpu_chunk_num_pages(&chunk->common));
 }
 
 void uvm_cpu_chunk_mark_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
 {
-    uvm_cpu_chunk_t *parent;
+    uvm_cpu_physical_chunk_t *parent;
 
-    parent = get_parent_and_page_index(chunk, &page_index);
-    if (uvm_cpu_chunk_get_size(parent) == PAGE_SIZE) {
-        SetPageDirty(parent->page);
+    UVM_ASSERT(page_index < uvm_cpu_chunk_num_pages(chunk));
+    UVM_ASSERT(!uvm_cpu_chunk_is_hmm(chunk));
+
+    if (uvm_cpu_chunk_is_physical(chunk) && uvm_cpu_chunk_get_size(chunk) == PAGE_SIZE) {
+        SetPageDirty(chunk->page);
         return;
     }
 
-    uvm_spin_lock(&parent->lock);
+    parent = get_physical_parent(chunk);
+    if (uvm_cpu_chunk_is_logical(chunk)) {
+        uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
+        page_index += cpu_chunk_get_phys_index(logical_chunk);
+    }
+
+    uvm_mutex_lock(&parent->lock);
     set_bit(page_index, parent->dirty_bitmap);
-    uvm_spin_unlock(&parent->lock);
+    uvm_mutex_unlock(&parent->lock);
 }
 
 void uvm_cpu_chunk_mark_clean(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
 {
-    uvm_cpu_chunk_t *parent;
+    uvm_cpu_physical_chunk_t *parent;
 
-    parent = get_parent_and_page_index(chunk, &page_index);
-    if (uvm_cpu_chunk_get_size(parent) == PAGE_SIZE) {
-        ClearPageDirty(parent->page);
+    UVM_ASSERT(page_index < uvm_cpu_chunk_num_pages(chunk));
+    UVM_ASSERT(!uvm_cpu_chunk_is_hmm(chunk));
+
+    if (uvm_cpu_chunk_is_physical(chunk) && uvm_cpu_chunk_get_size(chunk) == PAGE_SIZE) {
+        ClearPageDirty(chunk->page);
         return;
     }
 
-    uvm_spin_lock(&parent->lock);
+    parent = get_physical_parent(chunk);
+    if (uvm_cpu_chunk_is_logical(chunk)) {
+        uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
+        page_index += cpu_chunk_get_phys_index(logical_chunk);
+    }
+
+    uvm_mutex_lock(&parent->lock);
     check_cpu_dirty_flag(parent, page_index);
     clear_bit(page_index, parent->dirty_bitmap);
-    uvm_spin_unlock(&parent->lock);
+    uvm_mutex_unlock(&parent->lock);
 }
 
 bool uvm_cpu_chunk_is_dirty(uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index)
 {
-    uvm_cpu_chunk_t *parent;
+    uvm_cpu_physical_chunk_t *parent;
     bool dirty;
 
-    parent = get_parent_and_page_index(chunk, &page_index);
-    if (uvm_cpu_chunk_get_size(parent) == PAGE_SIZE)
-        return PageDirty(parent->page);
+    UVM_ASSERT(page_index < uvm_cpu_chunk_num_pages(chunk));
+    UVM_ASSERT(!uvm_cpu_chunk_is_hmm(chunk));
 
-    uvm_spin_lock(&parent->lock);
+    if (uvm_cpu_chunk_is_physical(chunk) && uvm_cpu_chunk_get_size(chunk) == PAGE_SIZE)
+        return PageDirty(chunk->page);
+
+    parent = get_physical_parent(chunk);
+    if (uvm_cpu_chunk_is_logical(chunk)) {
+        uvm_cpu_logical_chunk_t *logical_chunk = uvm_cpu_chunk_to_logical(chunk);
+        page_index += cpu_chunk_get_phys_index(logical_chunk);
+    }
+
+    uvm_mutex_lock(&parent->lock);
     check_cpu_dirty_flag(parent, page_index);
     dirty = test_bit(page_index, parent->dirty_bitmap);
-    uvm_spin_unlock(&parent->lock);
+    uvm_mutex_unlock(&parent->lock);
 
     return dirty;
-}
-#endif // !UVM_CPU_CHUNK_SIZE_IS_PAGE_SIZE()
-
-uvm_cpu_chunk_t *uvm_cpu_chunk_first_in_block(uvm_va_block_t *va_block, uvm_page_index_t *out_page_index)
-{
-    uvm_cpu_chunk_t *chunk = NULL;
-    uvm_page_index_t page_index;
-    uvm_va_block_region_t block_region = uvm_va_block_region_from_block(va_block);
-
-    page_index = uvm_va_block_first_page_in_mask(block_region, &va_block->cpu.allocated);
-    if (page_index < block_region.outer)
-        chunk = uvm_cpu_chunk_get_chunk_for_page(va_block, page_index);
-
-    if (out_page_index)
-        *out_page_index = page_index;
-
-    return chunk;
-}
-
-uvm_cpu_chunk_t *uvm_cpu_chunk_next(uvm_va_block_t *va_block, uvm_page_index_t *previous_page_index)
-{
-    uvm_va_block_region_t block_region;
-
-    UVM_ASSERT(va_block);
-    UVM_ASSERT(previous_page_index);
-
-    block_region = uvm_va_block_region_from_block(va_block);
-    *previous_page_index = uvm_va_block_next_page_in_mask(block_region, &va_block->cpu.allocated, *previous_page_index);
-    if (*previous_page_index == block_region.outer)
-        return NULL;
-
-    return uvm_cpu_chunk_get_chunk_for_page(va_block, *previous_page_index);
 }

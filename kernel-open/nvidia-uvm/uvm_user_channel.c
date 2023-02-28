@@ -984,14 +984,13 @@ NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS
         goto out;
     }
 
-    va_space = uvm_va_space_get(va_space_filp);
-    uvm_va_space_down_read(va_space);
-
-    // We can do this query outside of the lock, but doing it within the lock
-    // simplifies error handling.
-    status = uvm_va_space_initialized(va_space);
-    if (status != NV_OK)
+    va_space = uvm_fd_va_space(va_space_filp);
+    if (!va_space) {
+        status = NV_ERR_INVALID_ARGUMENT;
         goto out;
+    }
+
+    uvm_va_space_down_read(va_space);
 
     gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
     if (!gpu || !uvm_processor_mask_test(&va_space->faultable_processors, gpu->id)) {

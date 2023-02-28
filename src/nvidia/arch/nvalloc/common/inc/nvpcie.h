@@ -24,6 +24,8 @@
 #ifndef NVPCIE_H
 #define NVPCIE_H
 
+
+
 /**************** Resource Manager Defines and Structures ******************\
 *                                                                           *
 *       Private PCI Express related defines and structures.                 *
@@ -52,6 +54,8 @@
 #define PCI_INVALID_DEVICEID    0xFFFF
 #define PCI_INVALID_SUBVENDORID 0xFFFF
 #define PCI_INVALID_SUBDEVICEID 0xFFFF
+
+#define PCI_IS_VENDORID_VALID(id)   (((id) != 0x0000) && ((id) != 0xFFFF))
 
 #define PCI_CLASS_BRIDGE_DEV    0x06
 #define PCI_SUBCLASS_BR_HOST    0x00
@@ -470,7 +474,8 @@ typedef struct
     CL_PCIE_DC_CAPABILITY_MAP_ENTRY entries[PCI_MAX_CAPS];
 } CL_PCIE_DC_CAPABILITY_MAP;
 
-struct OBJCL;
+typedef struct OBJCL OBJCL;
+typedef struct OBJGPU OBJGPU;
 // root port setup functions
 NV_STATUS Broadcom_HT2100_setupFunc(OBJGPU *, OBJCL*);
 
@@ -494,6 +499,6 @@ NV_STATUS AMD_RP1630_setupFunc(OBJGPU *, OBJCL*);
 NV_STATUS AMD_RP1483_setupFunc(OBJGPU *, OBJCL*);
 
 // Determines if the GPU is in a multi-GPU board based on devid checks
-NvBool gpuIsMultiGpuBoard(OBJGPU *, NvBool *);
+NvBool gpuIsMultiGpuBoard(OBJGPU *);
 
 #endif // NVPCIE_H

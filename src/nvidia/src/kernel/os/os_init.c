@@ -128,8 +128,6 @@ initWinNTStubOSFunctionPointers(OBJOS *pOS)
     pOS->osQueueWorkItem             = stubOsQueueWorkItem;
     pOS->osQueueWorkItemWithFlags    = stubOsQueueWorkItemWithFlags;
     pOS->osQueueSystemWorkItem       = stubOsQueueSystemWorkItem;
-    pOS->osCallACPI_MXMX             = stubOsCallACPI_MXMX;
-    pOS->osCallACPI_DDC              = stubOsCallACPI_DDC;
     pOS->osCallACPI_BCL              = stubOsCallACPI_BCL;
     pOS->osCallACPI_ON               = stubOsCallACPI_ON;
     pOS->osCallACPI_OFF              = stubOsCallACPI_OFF;
@@ -139,18 +137,12 @@ initWinNTStubOSFunctionPointers(OBJOS *pOS)
     pOS->osCallACPI_NVHG_MXDS        = stubOsCallWMI_NVHG_MXDS;
     pOS->osCallACPI_NVHG_MXMX        = stubOsCallWMI_NVHG_MXMX;
     pOS->osCallACPI_NVHG_DOS         = stubOsCallWMI_NVHG_DOS;
-    pOS->osCallACPI_NVHG_ROM         = stubOsCallWMI_NVHG_ROM;
     pOS->osCallACPI_NVHG_DCS         = stubOsCallWMI_NVHG_DCS;
-    pOS->osCallACPI_DOD              = stubOsCallWMI_DOD;
     pOS->osSetupVBlank               = stubOsSetupVBlank;
     pOS->osCallACPI_NBPS             = stubOsCallACPI_NBPS;
     pOS->osCallACPI_NBSL             = stubOsCallACPI_NBSL;
-    pOS->osCallACPI_DSM              = stubOsCallACPI_DSM;
     pOS->osCallACPI_OPTM_GPUON       = stubOsCallWMI_OPTM_GPUON;
     pOS->osGetUefiVariable           = stubOsGetUefiVariable;
-    pOS->osCallACPI_MXDS             = stubOsCallACPI_MXDS;
-    pOS->osCallACPI_MXDM             = stubOsCallACPI_MXDM;
-    pOS->osCallACPI_MXID             = stubOsCallACPI_MXID;
     pOS->osCallACPI_LRST             = stubOsCallACPI_LRST;
 }
 
@@ -163,8 +155,6 @@ initMacOSCoreOSFunctionPointers(OBJOS *pOS)
     pOS->osNv_rdmsr                      = stubOsnv_rdmsr;
     pOS->osNv_wrmsr                      = stubOsnv_wrmsr;
     pOS->osRobustChannelsDefaultState    = stubOsRobustChannelsDefaultState;
-    pOS->osCallACPI_MXMX                 = stubOsCallACPI_MXMX;
-    pOS->osCallACPI_DDC                  = stubOsCallACPI_DDC;
     pOS->osCallACPI_BCL                  = stubOsCallACPI_BCL;
     pOS->osGetUefiVariable               = stubOsGetUefiVariable;
 }

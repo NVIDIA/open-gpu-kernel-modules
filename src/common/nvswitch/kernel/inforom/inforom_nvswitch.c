@@ -516,6 +516,7 @@ _nvswitch_inforom_read_file
     fsRet = *(NvU32*)pDmaBuf;
     if (fsRet != NV_OK)
     {
+        status = -NVL_IO_ERROR;
         NVSWITCH_PRINT(device, ERROR, "%s: FS error %x. Filename: %3s\n", __FUNCTION__, fsRet,
                         pParams->fileName);
     }
@@ -613,6 +614,7 @@ _nvswitch_inforom_write_file
     fsRet = *(NvU32*)pDmaBuf;
     if (fsRet != NV_OK)
     {
+        status = -NVL_IO_ERROR;
         NVSWITCH_PRINT(device, ERROR, "%s: FS returned %x. Filename: %3s\n", __FUNCTION__, fsRet,
                         pParams->fileName);
     }
@@ -622,11 +624,6 @@ ifr_dma_unmap_and_exit:
                                         packedObjectSize, NVSWITCH_DMA_DIR_FROM_SYSMEM);
 ifr_dma_free_and_exit:
     nvswitch_os_free_contig_memory(device->os_handle, pDmaBuf, transferSize);
-
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     return status;
 }

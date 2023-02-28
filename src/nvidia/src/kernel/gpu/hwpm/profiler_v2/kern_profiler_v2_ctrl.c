@@ -22,9 +22,84 @@
  */
 
 #include "gpu/gpu.h"
+#include "nvoc/prelude.h"
+#include "nvstatuscodes.h"
 #include "rmapi/rs_utils.h"
 #include "gpu/hwpm/profiler_v2.h"
 #include "ctrl/ctrlb0cc/ctrlb0ccinternal.h"
+#include "ctrl/ctrlb0cc/ctrlb0ccprofiler.h"
+#include "mem_mgr/mem.h"
+
+NV_STATUS
+profilerBaseCtrlCmdFreePmaStream_IMPL
+(
+    ProfilerBase *pProfiler,
+    NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS *pParams
+)
+{
+    RM_API            *pRmApi     = GPU_GET_PHYSICAL_RMAPI(GPU_RES_GET_GPU(pProfiler));
+    NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS internalParams;
+
+    portMemSet(&internalParams, 0, sizeof(NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS));
+    internalParams.pmaChannelIdx = pParams->pmaChannelIdx;
+
+    return pRmApi->Control(pRmApi,
+                           RES_GET_CLIENT_HANDLE(pProfiler),
+                           RES_GET_HANDLE(pProfiler),
+                           NVB0CC_CTRL_CMD_INTERNAL_FREE_PMA_STREAM,
+                           &internalParams, sizeof(internalParams));
+}
+
+NV_STATUS
+profilerBaseCtrlCmdBindPmResources_IMPL
+(
+    ProfilerBase *pProfiler
+)
+{
+    OBJGPU        *pGpu                       = GPU_RES_GET_GPU(pProfiler);
+    RM_API        *pRmApi                     = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvHandle       hClient                    = RES_GET_CLIENT_HANDLE(pProfiler);
+    NvHandle       hObject                    = RES_GET_HANDLE(pProfiler);
+    NV_STATUS      status                     = NV_OK;
+
+    status = pRmApi->Control(pRmApi, hClient, hObject,
+                             NVB0CC_CTRL_CMD_INTERNAL_BIND_PM_RESOURCES,
+                             NULL, 0);
+    return status;
+}
+
+NV_STATUS
+profilerBaseCtrlCmdUnbindPmResources_IMPL
+(
+    ProfilerBase *pProfiler
+)
+{
+    OBJGPU   *pGpu                            = GPU_RES_GET_GPU(pProfiler);
+    RM_API   *pRmApi                          = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvHandle  hClient                         = RES_GET_CLIENT_HANDLE(pProfiler);
+    NvHandle  hObject                         = RES_GET_HANDLE(pProfiler);
+
+    return pRmApi->Control(pRmApi, hClient, hObject,
+                           NVB0CC_CTRL_CMD_INTERNAL_UNBIND_PM_RESOURCES,
+                           NULL, 0);
+}
+
+NV_STATUS
+profilerBaseCtrlCmdReserveHwpmLegacy_IMPL
+(
+    ProfilerBase *pProfiler,
+    NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS *pParams
+)
+{
+    OBJGPU   *pGpu                            = GPU_RES_GET_GPU(pProfiler);
+    RM_API   *pRmApi                          = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NvHandle  hClient                         = RES_GET_CLIENT_HANDLE(pProfiler);
+    NvHandle  hObject                         = RES_GET_HANDLE(pProfiler);
+
+    return pRmApi->Control(pRmApi, hClient, hObject,
+                           NVB0CC_CTRL_CMD_INTERNAL_RESERVE_HWPM_LEGACY,
+                           pParams, sizeof(*pParams));
+}
 
 NV_STATUS
 profilerBaseCtrlCmdAllocPmaStream_IMPL
@@ -41,39 +116,44 @@ profilerBaseCtrlCmdAllocPmaStream_IMPL
     NvHandle  hObject                         = RES_GET_HANDLE(pProfiler);
     NvBool    bMemPmaBufferRegistered         = NV_FALSE;
     NvBool    bMemPmaBytesAvailableRegistered = NV_FALSE;
-
+    NVB0CC_CTRL_INTERNAL_ALLOC_PMA_STREAM_PARAMS internalParams;
     //
     // REGISTER  MEMDESCs TO GSP
     // These are no-op with BareMetal/No GSP
     //
-    status = memdescRegisterToGSP(pGpu, hClient, hParent, pParams->hMemPmaBuffer);
-    if (status != NV_OK)
-    {
-        goto fail;
-    }
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, 
+                        memdescRegisterToGSP(pGpu, hClient, hParent, pParams->hMemPmaBuffer),
+                        fail);
     bMemPmaBufferRegistered = NV_TRUE;
 
-    status = memdescRegisterToGSP(pGpu, hClient, hParent, pParams->hMemPmaBytesAvailable);
-    if (status != NV_OK)
-    {
-        goto fail;
-    }
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, 
+                        memdescRegisterToGSP(pGpu, hClient, hParent, pParams->hMemPmaBytesAvailable),
+                        fail);
     bMemPmaBytesAvailableRegistered = NV_TRUE;
 
-    //
-    // With BareMetal/No GSP: this control is a direct call to
-    // profilerBaseCtrlCmdInternalReleaseHwpmLegacy_IMPL
-    //
-    status = pRmApi->Control(pRmApi,
-                             hClient,
-                             hObject,
-                             NVB0CC_CTRL_CMD_INTERNAL_ALLOC_PMA_STREAM,
-                             pParams, sizeof(*pParams));
-    if (status != NV_OK)
-    {
-        goto fail;
-    }
+    portMemSet(&internalParams, 0, sizeof(NVB0CC_CTRL_INTERNAL_ALLOC_PMA_STREAM_PARAMS));
+    internalParams.hMemPmaBuffer = pParams->hMemPmaBuffer;
+    internalParams.pmaBufferOffset = pParams->pmaBufferOffset;
+    internalParams.pmaBufferSize = pParams->pmaBufferSize;
+    internalParams.hMemPmaBytesAvailable = pParams->hMemPmaBytesAvailable;
+    internalParams.pmaBytesAvailableOffset = pParams->pmaBytesAvailableOffset;
+    internalParams.ctxsw = pParams->ctxsw;
+    internalParams.pmaChannelIdx = pParams->pmaChannelIdx;
+    internalParams.pmaBufferVA = pParams->pmaBufferVA;
+    internalParams.bInputPmaChIdx = NV_FALSE;
 
+     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        pRmApi->Control(pRmApi,
+                        hClient,
+                        hObject,
+                        NVB0CC_CTRL_CMD_INTERNAL_ALLOC_PMA_STREAM,
+                        &internalParams, sizeof(internalParams)), fail);
+
+    pParams->pmaChannelIdx = internalParams.pmaChannelIdx;
+
+    // Copy output params to external struct.
+    pParams->pmaBufferVA = internalParams.pmaBufferVA;
+    
     return status;
 
 fail:
@@ -91,3 +171,4 @@ fail:
 
     return status;
 }
+

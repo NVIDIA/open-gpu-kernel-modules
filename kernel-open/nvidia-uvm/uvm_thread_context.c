@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2019 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -498,6 +498,7 @@ bool uvm_thread_context_add(uvm_thread_context_t *thread_context)
         uvm_thread_context_global_init();
 
     thread_context->task = current;
+    thread_context->ignore_hmm_invalidate_va_block = NULL;
     table_entry = thread_context_non_interrupt_table_entry(&array_index);
     return thread_context_non_interrupt_add(thread_context, table_entry, array_index);
 }

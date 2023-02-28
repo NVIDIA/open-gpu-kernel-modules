@@ -133,7 +133,7 @@ knvlinkRemoveMapping_GA100
 {
     NV_STATUS status = NV_OK;
     NvU32     peerId;
-    NvBool    bBufferReady;
+    NvBool    bBufferReady = NV_FALSE;
 
     NV2080_CTRL_NVLINK_REMOVE_NVLINK_MAPPING_PARAMS params;
     portMemSet(&params, 0, sizeof(params));
@@ -166,7 +166,7 @@ knvlinkRemoveMapping_GA100
     status = knvlinkSyncLinkMasksAndVbiosInfo(pGpu, pKernelNvlink);
     if (status != NV_OK)
     {
-        NV_ASSERT(status == NV_OK);
+        NV_ASSERT(status != NV_OK);
         return status;
     }
 
@@ -184,6 +184,7 @@ knvlinkRemoveMapping_GA100
         if (!bBufferReady)
         {
             status = knvlinkUpdateCurrentConfig(pGpu, pKernelNvlink);
+
         }
     }
     else

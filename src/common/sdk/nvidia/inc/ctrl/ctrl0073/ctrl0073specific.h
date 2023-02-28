@@ -546,6 +546,44 @@ typedef struct NV0073_CTRL_SPECIFIC_CTRL_HDMI_PARAMS {
 #define NV0073_CTRL_SPECIFIC_CTRL_HDMI_DISABLE             (0x00000000U)
 #define NV0073_CTRL_SPECIFIC_CTRL_HDMI_ENABLE              (0x00000001U)
 
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM
+ *
+ * This command is used to signal the resource manager that the audio stream
+ * is to be mute off or on.
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which operation should be directed.
+ *     This parameter must specify a value between zero and the total number
+ *     of subdevices within the parent device.  This parameter should be set
+ *     to zero for default behavior.
+ *   displayId
+ *     This parameter specifies the displayId of HDMI resource to configure.
+ *     This comes as input to this command.
+ *   mute
+ *     This field specifies the legal values:
+ *       NV0073_CTRL_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_TRUE
+ *       NV0073_CTRL_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_FALSE
+ *
+ *  Possible status values returned are:
+ *    NV_OK
+ *    NV_ERR_INVALID_PARAM_STRUCT
+ *    NV_ERR_INVALID_ARGUMENT
+ *    NV_ERR_NOT_SUPPORTED
+ */
+#define NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM (0x730275U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS_MESSAGE_ID (0x75U)
+
+typedef struct NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS {
+    NvU8  subDeviceInstance;
+    NvU32 displayId;
+    NvU8  mute;
+} NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_FALSE (0x00000000U)
+#define NV0073_CTRL_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_TRUE  (0x00000001U)
+
 
 
 /*
@@ -1132,18 +1170,27 @@ typedef struct NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS {
  *   NV_OK
  *   NV_ERR_NOT_SUPPORTED
  */
-#define NV0073_CTRL_CMD_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS (0x730291U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | 0x91" */
-
-#define NV0073_CTRL_CMD_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS (0x730292U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | 0x92" */
+#define NV0073_CTRL_CMD_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS (0x730291U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID" */
 
 #define NV0073_CTRL_BACKLIGHT_BRIGHTNESS_MIN_VALUE        0U
 #define NV0073_CTRL_BACKLIGHT_BRIGHTNESS_MAX_VALUE        100U
 
 typedef struct NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS {
-    NvU32 subDeviceInstance;
-    NvU32 displayId;
-    NvU32 brightness;
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  brightness;
+    NvBool bUncalibrated;
 } NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS;
+
+#define NV0073_CTRL_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID (0x91U)
+
+typedef NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS NV0073_CTRL_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS_PARAMS;
+
+#define NV0073_CTRL_CMD_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS (0x730292U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID (0x92U)
+
+typedef NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS NV0073_CTRL_SPECIFIC_SET_BACKLIGHT_BRIGHTNESS_PARAMS;
 
 /*
  * NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_SINK_CAPS
@@ -1329,7 +1376,7 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_FRL_LINK_CONFIG_PARAMS {
 
 
 
-#define NV0073_CTRL_SPECIFIC_MAX_CRC_REGIONS                                  9U
+#define NV0073_CTRL_SPECIFIC_MAX_CRC_REGIONS 9U
 
 #define NV0073_CTRL_CMD_SPECIFIC_GET_REGIONAL_CRCS_PARAMS_MESSAGE_ID (0xA0U)
 
@@ -1905,5 +1952,31 @@ typedef struct NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS {
     NvU32 subDeviceInstance;
     NvU8  windowHeadMask[NV0073_CTRL_SPECIFIC_MAX_WINDOWS];
 } NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY
+ *
+ * This command is used to query whether the specified monitor should default
+ * to adaptive sync.
+ *
+ *   [in]manufacturerID
+ *     This parameter specifies the 16-bit EDID Manufacturer ID.
+ *   [in]productID
+ *     This parameter specifies the 16-bit EDID Product ID.
+ *   [out]bDefaultAdaptivesync;
+ *     This indicates whether the monitor should default to adaptive sync.
+ * Possible return values:
+ *  NV_OK
+ */
+
+#define NV0073_CTRL_CMD_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY (0x7302aeU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID << 8) | NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS_MESSAGE_ID (0xAEU)
+
+typedef struct NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS {
+    NvU16  manufacturerID;
+    NvU16  productID;
+    NvBool bDefaultAdaptivesync;
+} NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS;
 
 /* _ctrl0073specific_h_ */

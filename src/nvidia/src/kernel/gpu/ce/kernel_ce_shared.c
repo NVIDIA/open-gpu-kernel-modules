@@ -145,6 +145,11 @@ subdeviceCtrlCmdCeGetCapsV2_IMPL
 
     NV_PRINTF(LEVEL_INFO, "NV2080_CTRL_CE_GET_CAPS_V2 ceEngineType = %d\n", pCeCapsParams->ceEngineType);
 
+    if (!RM_ENGINE_TYPE_IS_COPY(rmEngineType))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     NV_ASSERT_OK_OR_RETURN(ceIndexFromType(pGpu, RES_GET_CLIENT_HANDLE(pSubdevice), rmEngineType, &ceNumber));
 
     {

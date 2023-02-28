@@ -65,7 +65,6 @@ struct KernelRc {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct KernelRc *__nvoc_pbase_KernelRc;
     NV_STATUS (*__krcConstructEngine__)(struct OBJGPU *, struct KernelRc *, ENGDESCRIPTOR);
-    NV_STATUS (*__krcReconcileTunableState__)(POBJGPU, struct KernelRc *, void *);
     NV_STATUS (*__krcStateLoad__)(POBJGPU, struct KernelRc *, NvU32);
     NV_STATUS (*__krcStateUnload__)(POBJGPU, struct KernelRc *, NvU32);
     NV_STATUS (*__krcStateInitLocked__)(POBJGPU, struct KernelRc *);
@@ -77,12 +76,7 @@ struct KernelRc {
     void (*__krcInitMissing__)(POBJGPU, struct KernelRc *);
     NV_STATUS (*__krcStatePreInitLocked__)(POBJGPU, struct KernelRc *);
     NV_STATUS (*__krcStatePreInitUnlocked__)(POBJGPU, struct KernelRc *);
-    NV_STATUS (*__krcGetTunableState__)(POBJGPU, struct KernelRc *, void *);
-    NV_STATUS (*__krcCompareTunableState__)(POBJGPU, struct KernelRc *, void *, void *);
-    void (*__krcFreeTunableState__)(POBJGPU, struct KernelRc *, void *);
     NV_STATUS (*__krcStatePostLoad__)(POBJGPU, struct KernelRc *, NvU32);
-    NV_STATUS (*__krcAllocTunableState__)(POBJGPU, struct KernelRc *, void **);
-    NV_STATUS (*__krcSetTunableState__)(POBJGPU, struct KernelRc *, void *);
     NvBool (*__krcIsPresent__)(POBJGPU, struct KernelRc *);
     NvBool bRobustChannelsEnabled;
     NvBool bBreakOnRc;
@@ -125,7 +119,6 @@ NV_STATUS __nvoc_objCreate_KernelRc(KernelRc**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelRc((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 #define krcConstructEngine(pGpu, pKernelRc, engDescriptor) krcConstructEngine_DISPATCH(pGpu, pKernelRc, engDescriptor)
-#define krcReconcileTunableState(pGpu, pEngstate, pTunableState) krcReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define krcStateLoad(pGpu, pEngstate, arg0) krcStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define krcStateUnload(pGpu, pEngstate, arg0) krcStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define krcStateInitLocked(pGpu, pEngstate) krcStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -137,12 +130,7 @@ NV_STATUS __nvoc_objCreate_KernelRc(KernelRc**, Dynamic*, NvU32);
 #define krcInitMissing(pGpu, pEngstate) krcInitMissing_DISPATCH(pGpu, pEngstate)
 #define krcStatePreInitLocked(pGpu, pEngstate) krcStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define krcStatePreInitUnlocked(pGpu, pEngstate) krcStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define krcGetTunableState(pGpu, pEngstate, pTunableState) krcGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define krcCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) krcCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define krcFreeTunableState(pGpu, pEngstate, pTunableState) krcFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define krcStatePostLoad(pGpu, pEngstate, arg0) krcStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define krcAllocTunableState(pGpu, pEngstate, ppTunableState) krcAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define krcSetTunableState(pGpu, pEngstate, pTunableState) krcSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define krcIsPresent(pGpu, pEngstate) krcIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS krcErrorWriteNotifier_CPU(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, struct KernelChannel *pKernelChannel, NvU32 exceptType, RM_ENGINE_TYPE localRmEngineType, NV_STATUS notifierStatus, NvU32 *pFlushFlags);
 
@@ -329,10 +317,6 @@ static inline NV_STATUS krcConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct 
     return pKernelRc->__krcConstructEngine__(pGpu, pKernelRc, engDescriptor);
 }
 
-static inline NV_STATUS krcReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, void *pTunableState) {
-    return pEngstate->__krcReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS krcStateLoad_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg0) {
     return pEngstate->__krcStateLoad__(pGpu, pEngstate, arg0);
 }
@@ -377,28 +361,8 @@ static inline NV_STATUS krcStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct Ke
     return pEngstate->__krcStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS krcGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, void *pTunableState) {
-    return pEngstate->__krcGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS krcCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__krcCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void krcFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, void *pTunableState) {
-    pEngstate->__krcFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS krcStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg0) {
     return pEngstate->__krcStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS krcAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, void **ppTunableState) {
-    return pEngstate->__krcAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS krcSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, void *pTunableState) {
-    return pEngstate->__krcSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool krcIsPresent_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate) {

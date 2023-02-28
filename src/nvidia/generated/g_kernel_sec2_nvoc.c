@@ -17,6 +17,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_IntrService;
+
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFalcon;
 
 void __nvoc_init_KernelSec2(KernelSec2*, RmHalspecOwner* );
@@ -44,6 +46,12 @@ static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_OBJENGSTATE = {
     /*offset=*/             NV_OFFSETOF(KernelSec2, __nvoc_base_OBJENGSTATE),
 };
 
+static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_IntrService = {
+    /*pClassDef=*/          &__nvoc_class_def_IntrService,
+    /*dtor=*/               &__nvoc_destructFromBase,
+    /*offset=*/             NV_OFFSETOF(KernelSec2, __nvoc_base_IntrService),
+};
+
 static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_KernelFalcon = {
     /*pClassDef=*/          &__nvoc_class_def_KernelFalcon,
     /*dtor=*/               &__nvoc_destructFromBase,
@@ -51,10 +59,11 @@ static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_KernelFalcon = {
 };
 
 static const struct NVOC_CASTINFO __nvoc_castinfo_KernelSec2 = {
-    /*numRelatives=*/       4,
+    /*numRelatives=*/       5,
     /*relatives=*/ {
         &__nvoc_rtti_KernelSec2_KernelSec2,
         &__nvoc_rtti_KernelSec2_KernelFalcon,
+        &__nvoc_rtti_KernelSec2_IntrService,
         &__nvoc_rtti_KernelSec2_OBJENGSTATE,
         &__nvoc_rtti_KernelSec2_Object,
     },
@@ -79,16 +88,16 @@ static NV_STATUS __nvoc_thunk_KernelSec2_engstateConstructEngine(struct OBJGPU *
     return ksec2ConstructEngine(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
 }
 
+static void __nvoc_thunk_KernelSec2_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelSec2, IntrServiceRecord pRecords[166]) {
+    ksec2RegisterIntrService(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_IntrService.offset), pRecords);
+}
+
+static NV_STATUS __nvoc_thunk_KernelSec2_intrservServiceNotificationInterrupt(struct OBJGPU *arg0, struct IntrService *arg1, IntrServiceServiceNotificationInterruptArguments *arg2) {
+    return ksec2ServiceNotificationInterrupt(arg0, (struct KernelSec2 *)(((unsigned char *)arg1) - __nvoc_rtti_KernelSec2_IntrService.offset), arg2);
+}
+
 static NV_STATUS __nvoc_thunk_KernelSec2_kflcnResetHw(struct OBJGPU *pGpu, struct KernelFalcon *pKernelSec2) {
     return ksec2ResetHw(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_KernelFalcon.offset));
-}
-
-static NvBool __nvoc_thunk_KernelSec2_kflcnIsEngineInReset(struct OBJGPU *pGpu, struct KernelFalcon *pKernelSec2) {
-    return ksec2IsEngineInReset(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_KernelFalcon.offset));
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2ReconcileTunableState(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), pTunableState);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StateLoad(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
@@ -135,32 +144,20 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked(POBJGPU pGpu
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2GetTunableState(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2CompareTunableState(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_ksec2FreeTunableState(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), pTunableState);
+static NvBool __nvoc_thunk_IntrService_ksec2ClearInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceClearInterruptArguments *pParams) {
+    return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_KernelSec2_IntrService.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StatePostLoad(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2AllocTunableState(POBJGPU pGpu, struct KernelSec2 *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2SetTunableState(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), pTunableState);
-}
-
 static NvBool __nvoc_thunk_OBJENGSTATE_ksec2IsPresent(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
+}
+
+static NvU32 __nvoc_thunk_IntrService_ksec2ServiceInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
+    return intrservServiceInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_KernelSec2_IntrService.offset), pParams);
 }
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelSec2 = 
@@ -170,10 +167,12 @@ const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelSec2 =
 };
 
 void __nvoc_dtor_OBJENGSTATE(OBJENGSTATE*);
+void __nvoc_dtor_IntrService(IntrService*);
 void __nvoc_dtor_KernelFalcon(KernelFalcon*);
 void __nvoc_dtor_KernelSec2(KernelSec2 *pThis) {
     __nvoc_ksec2Destruct(pThis);
     __nvoc_dtor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
+    __nvoc_dtor_IntrService(&pThis->__nvoc_base_IntrService);
     __nvoc_dtor_KernelFalcon(&pThis->__nvoc_base_KernelFalcon);
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
@@ -192,17 +191,22 @@ void __nvoc_init_dataField_KernelSec2(KernelSec2 *pThis, RmHalspecOwner *pRmhals
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
+NV_STATUS __nvoc_ctor_IntrService(IntrService* );
 NV_STATUS __nvoc_ctor_KernelFalcon(KernelFalcon* , RmHalspecOwner* );
 NV_STATUS __nvoc_ctor_KernelSec2(KernelSec2 *pThis, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelSec2_fail_OBJENGSTATE;
+    status = __nvoc_ctor_IntrService(&pThis->__nvoc_base_IntrService);
+    if (status != NV_OK) goto __nvoc_ctor_KernelSec2_fail_IntrService;
     status = __nvoc_ctor_KernelFalcon(&pThis->__nvoc_base_KernelFalcon, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_ctor_KernelSec2_fail_KernelFalcon;
     __nvoc_init_dataField_KernelSec2(pThis, pRmhalspecowner);
     goto __nvoc_ctor_KernelSec2_exit; // Success
 
 __nvoc_ctor_KernelSec2_fail_KernelFalcon:
+    __nvoc_dtor_IntrService(&pThis->__nvoc_base_IntrService);
+__nvoc_ctor_KernelSec2_fail_IntrService:
     __nvoc_dtor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
 __nvoc_ctor_KernelSec2_fail_OBJENGSTATE:
 __nvoc_ctor_KernelSec2_exit:
@@ -228,6 +232,18 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
         pThis->__ksec2ConstructEngine__ = &ksec2ConstructEngine_IMPL;
     }
 
+    // Hal function -- ksec2RegisterIntrService
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    {
+        pThis->__ksec2RegisterIntrService__ = &ksec2RegisterIntrService_IMPL;
+    }
+
+    // Hal function -- ksec2ServiceNotificationInterrupt
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    {
+        pThis->__ksec2ServiceNotificationInterrupt__ = &ksec2ServiceNotificationInterrupt_IMPL;
+    }
+
     // Hal function -- ksec2ConfigureFalcon
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
     {
@@ -239,39 +255,18 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
         {
             pThis->__ksec2ConfigureFalcon__ = &ksec2ConfigureFalcon_GA100;
         }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
         {
             pThis->__ksec2ConfigureFalcon__ = &ksec2ConfigureFalcon_GA102;
-        }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-        {
-            pThis->__ksec2ConfigureFalcon__ = &ksec2ConfigureFalcon_f2d351;
         }
     }
 
     // Hal function -- ksec2ResetHw
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
         {
             pThis->__ksec2ResetHw__ = &ksec2ResetHw_TU102;
-        }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-        {
-            pThis->__ksec2ResetHw__ = &ksec2ResetHw_5baef9;
-        }
-    }
-
-    // Hal function -- ksec2IsEngineInReset
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
-    {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
-        {
-            pThis->__ksec2IsEngineInReset__ = &ksec2IsEngineInReset_TU102;
-        }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-        {
-            pThis->__ksec2IsEngineInReset__ = &ksec2IsEngineInReset_108313;
         }
     }
 
@@ -329,11 +324,11 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelSec2_engstateConstructEngine;
 
+    pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_thunk_KernelSec2_intrservRegisterIntrService;
+
+    pThis->__nvoc_base_IntrService.__intrservServiceNotificationInterrupt__ = &__nvoc_thunk_KernelSec2_intrservServiceNotificationInterrupt;
+
     pThis->__nvoc_base_KernelFalcon.__kflcnResetHw__ = &__nvoc_thunk_KernelSec2_kflcnResetHw;
-
-    pThis->__nvoc_base_KernelFalcon.__kflcnIsEngineInReset__ = &__nvoc_thunk_KernelSec2_kflcnIsEngineInReset;
-
-    pThis->__ksec2ReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_ksec2ReconcileTunableState;
 
     pThis->__ksec2StateLoad__ = &__nvoc_thunk_OBJENGSTATE_ksec2StateLoad;
 
@@ -357,19 +352,13 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
 
     pThis->__ksec2StatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked;
 
-    pThis->__ksec2GetTunableState__ = &__nvoc_thunk_OBJENGSTATE_ksec2GetTunableState;
-
-    pThis->__ksec2CompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_ksec2CompareTunableState;
-
-    pThis->__ksec2FreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_ksec2FreeTunableState;
+    pThis->__ksec2ClearInterrupt__ = &__nvoc_thunk_IntrService_ksec2ClearInterrupt;
 
     pThis->__ksec2StatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_ksec2StatePostLoad;
 
-    pThis->__ksec2AllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_ksec2AllocTunableState;
-
-    pThis->__ksec2SetTunableState__ = &__nvoc_thunk_OBJENGSTATE_ksec2SetTunableState;
-
     pThis->__ksec2IsPresent__ = &__nvoc_thunk_OBJENGSTATE_ksec2IsPresent;
+
+    pThis->__ksec2ServiceInterrupt__ = &__nvoc_thunk_IntrService_ksec2ServiceInterrupt;
 }
 
 void __nvoc_init_funcTable_KernelSec2(KernelSec2 *pThis, RmHalspecOwner *pRmhalspecowner) {
@@ -377,13 +366,16 @@ void __nvoc_init_funcTable_KernelSec2(KernelSec2 *pThis, RmHalspecOwner *pRmhals
 }
 
 void __nvoc_init_OBJENGSTATE(OBJENGSTATE*);
+void __nvoc_init_IntrService(IntrService*);
 void __nvoc_init_KernelFalcon(KernelFalcon*, RmHalspecOwner* );
 void __nvoc_init_KernelSec2(KernelSec2 *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_pbase_KernelSec2 = pThis;
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;
     pThis->__nvoc_pbase_OBJENGSTATE = &pThis->__nvoc_base_OBJENGSTATE;
+    pThis->__nvoc_pbase_IntrService = &pThis->__nvoc_base_IntrService;
     pThis->__nvoc_pbase_KernelFalcon = &pThis->__nvoc_base_KernelFalcon;
     __nvoc_init_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
+    __nvoc_init_IntrService(&pThis->__nvoc_base_IntrService);
     __nvoc_init_KernelFalcon(&pThis->__nvoc_base_KernelFalcon, pRmhalspecowner);
     __nvoc_init_funcTable_KernelSec2(pThis, pRmhalspecowner);
 }
@@ -394,12 +386,15 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2 **ppThis, Dynamic *pParent, NvU
     KernelSec2 *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(KernelSec2));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelSec2), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(KernelSec2));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelSec2);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -420,11 +415,17 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2 **ppThis, Dynamic *pParent, NvU
     if (status != NV_OK) goto __nvoc_objCreate_KernelSec2_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_KernelSec2_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(KernelSec2));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

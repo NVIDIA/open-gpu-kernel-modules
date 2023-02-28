@@ -148,7 +148,7 @@ void gmmuFmtInitPteCompTags
 {
     NvU32                  i, compPageIndex, endCompPageIndex;
     NvU64                  offset           = surfOffset;
-    const NvU32            pageSize         = NvU64_LO32(mmuFmtLevelPageSize(pLevel));
+    const NvU64            pageSize         = mmuFmtLevelPageSize(pLevel);
     const NV_FIELD_DESC32 *pCtlSubIndexFld  = &pFmt->pPte->fldCompTagSubIndex;
     NvU32                  ctlSubIndexMask  = 0;
     NvU32                  ctlSubIndexShift = 0;

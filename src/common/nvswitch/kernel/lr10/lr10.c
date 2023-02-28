@@ -6380,6 +6380,15 @@ nvswitch_get_num_links_lr10
     return num_links;
 }
 
+static NvU8
+nvswitch_get_num_links_per_nvlipt_lr10
+(
+    nvswitch_device *device
+)
+{
+    return NVSWITCH_LINKS_PER_NVLIPT;
+}
+
 NvBool
 nvswitch_is_link_valid_lr10
 (
@@ -6403,22 +6412,8 @@ nvswitch_ctrl_get_fom_values_lr10
 {
     NvlStatus status;
     NvU32     statData;
-    nvlink_link *link;
 
-    link = nvswitch_get_link(device, p->linkId);
-    if (link == NULL)
-    {
-        NVSWITCH_PRINT(device, ERROR, "%s: link #%d invalid\n",
-            __FUNCTION__, p->linkId);
-        return -NVL_BAD_ARGS;
-    }
-
-    if (nvswitch_is_link_in_reset(device, link))
-    {
-        NVSWITCH_PRINT(device, ERROR, "%s: link #%d is in reset\n",
-            __FUNCTION__, p->linkId);
-        return -NVL_ERR_INVALID_STATE;
-    }
+    NVSWITCH_ASSERT(p->linkId < nvswitch_get_num_links(device));
 
     status = nvswitch_minion_get_dl_status(device, p->linkId,
                                         NV_NVLSTAT_TR16, 0, &statData);

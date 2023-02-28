@@ -120,7 +120,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_TimedSemaSwObject =
     /*pExportInfo=*/        &__nvoc_export_info_TimedSemaSwObject
 };
 
-static NV_STATUS __nvoc_thunk_TimedSemaSwObject_chandesGetSwMethods(struct ChannelDescendant *pTimedSemSw, METHOD **ppMethods, NvU32 *pNumMethods) {
+static NV_STATUS __nvoc_thunk_TimedSemaSwObject_chandesGetSwMethods(struct ChannelDescendant *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return tsemaGetSwMethods((struct TimedSemaSwObject *)(((unsigned char *)pTimedSemSw) - __nvoc_rtti_TimedSemaSwObject_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
@@ -212,6 +212,10 @@ static NV_STATUS __nvoc_thunk_Notifier_tsemaUnregisterEvent(struct TimedSemaSwOb
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_TimedSemaSwObject_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_tsemaControlSerialization_Prologue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_tsemaCanCopy(struct TimedSemaSwObject *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset));
 }
@@ -222,6 +226,10 @@ static void __nvoc_thunk_RsResource_tsemaPreDestruct(struct TimedSemaSwObject *p
 
 static NV_STATUS __nvoc_thunk_RsResource_tsemaIsDuplicate(struct TimedSemaSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_tsemaControlSerialization_Epilogue(struct TimedSemaSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimedSemaSwObject_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_tsemaGetNotificationListPtr(struct TimedSemaSwObject *pNotifier) {
@@ -393,11 +401,15 @@ static void __nvoc_init_funcTable_TimedSemaSwObject_1(TimedSemaSwObject *pThis) 
 
     pThis->__tsemaUnregisterEvent__ = &__nvoc_thunk_Notifier_tsemaUnregisterEvent;
 
+    pThis->__tsemaControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_tsemaControlSerialization_Prologue;
+
     pThis->__tsemaCanCopy__ = &__nvoc_thunk_RsResource_tsemaCanCopy;
 
     pThis->__tsemaPreDestruct__ = &__nvoc_thunk_RsResource_tsemaPreDestruct;
 
     pThis->__tsemaIsDuplicate__ = &__nvoc_thunk_RsResource_tsemaIsDuplicate;
+
+    pThis->__tsemaControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_tsemaControlSerialization_Epilogue;
 
     pThis->__tsemaGetNotificationListPtr__ = &__nvoc_thunk_Notifier_tsemaGetNotificationListPtr;
 
@@ -433,12 +445,15 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject **ppThis, Dynamic
     TimedSemaSwObject *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(TimedSemaSwObject));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(TimedSemaSwObject), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(TimedSemaSwObject));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_TimedSemaSwObject);
+
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -459,11 +474,17 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject **ppThis, Dynamic
     if (status != NV_OK) goto __nvoc_objCreate_TimedSemaSwObject_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_TimedSemaSwObject_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(TimedSemaSwObject));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

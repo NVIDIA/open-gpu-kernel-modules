@@ -69,26 +69,28 @@ struct UvmChannelRetainer {
     struct GpuResource *__nvoc_pbase_GpuResource;
     struct UvmChannelRetainer *__nvoc_pbase_UvmChannelRetainer;
     NvBool (*__uvmchanrtnrShareCallback__)(struct UvmChannelRetainer *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__uvmchanrtnrCheckMemInterUnmap__)(struct UvmChannelRetainer *, NvBool);
+    NV_STATUS (*__uvmchanrtnrMapTo__)(struct UvmChannelRetainer *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__uvmchanrtnrGetMapAddrSpace__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__uvmchanrtnrGetRefCount__)(struct UvmChannelRetainer *);
+    void (*__uvmchanrtnrAddAdditionalDependants__)(struct RsClient *, struct UvmChannelRetainer *, RsResourceRef *);
+    NV_STATUS (*__uvmchanrtnrControl_Prologue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__uvmchanrtnrGetRegBaseOffsetAndSize__)(struct UvmChannelRetainer *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__uvmchanrtnrInternalControlForward__)(struct UvmChannelRetainer *, NvU32, void *, NvU32);
+    NV_STATUS (*__uvmchanrtnrUnmapFrom__)(struct UvmChannelRetainer *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__uvmchanrtnrControl_Epilogue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__uvmchanrtnrControlLookup__)(struct UvmChannelRetainer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NvHandle (*__uvmchanrtnrGetInternalObjectHandle__)(struct UvmChannelRetainer *);
     NV_STATUS (*__uvmchanrtnrControl__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__uvmchanrtnrUnmap__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__uvmchanrtnrGetMemInterMapParams__)(struct UvmChannelRetainer *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__uvmchanrtnrGetMemoryMappingDescriptor__)(struct UvmChannelRetainer *, struct MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__uvmchanrtnrGetMapAddrSpace__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvHandle (*__uvmchanrtnrGetInternalObjectHandle__)(struct UvmChannelRetainer *);
     NV_STATUS (*__uvmchanrtnrControlFilter__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__uvmchanrtnrAddAdditionalDependants__)(struct RsClient *, struct UvmChannelRetainer *, RsResourceRef *);
-    NvU32 (*__uvmchanrtnrGetRefCount__)(struct UvmChannelRetainer *);
-    NV_STATUS (*__uvmchanrtnrCheckMemInterUnmap__)(struct UvmChannelRetainer *, NvBool);
-    NV_STATUS (*__uvmchanrtnrMapTo__)(struct UvmChannelRetainer *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__uvmchanrtnrControl_Prologue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__uvmchanrtnrGetRegBaseOffsetAndSize__)(struct UvmChannelRetainer *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__uvmchanrtnrControlSerialization_Prologue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__uvmchanrtnrCanCopy__)(struct UvmChannelRetainer *);
-    NV_STATUS (*__uvmchanrtnrInternalControlForward__)(struct UvmChannelRetainer *, NvU32, void *, NvU32);
     void (*__uvmchanrtnrPreDestruct__)(struct UvmChannelRetainer *);
-    NV_STATUS (*__uvmchanrtnrUnmapFrom__)(struct UvmChannelRetainer *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__uvmchanrtnrIsDuplicate__)(struct UvmChannelRetainer *, NvHandle, NvBool *);
-    void (*__uvmchanrtnrControl_Epilogue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__uvmchanrtnrControlLookup__)(struct UvmChannelRetainer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__uvmchanrtnrControlSerialization_Epilogue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__uvmchanrtnrMap__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__uvmchanrtnrAccessCallback__)(struct UvmChannelRetainer *, struct RsClient *, void *, RsAccessRight);
     MEMORY_DESCRIPTOR *pInstMemDesc;
@@ -125,26 +127,28 @@ NV_STATUS __nvoc_objCreate_UvmChannelRetainer(UvmChannelRetainer**, Dynamic*, Nv
     __nvoc_objCreate_UvmChannelRetainer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 #define uvmchanrtnrShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) uvmchanrtnrShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
+#define uvmchanrtnrCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) uvmchanrtnrCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define uvmchanrtnrMapTo(pResource, pParams) uvmchanrtnrMapTo_DISPATCH(pResource, pParams)
+#define uvmchanrtnrGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) uvmchanrtnrGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
+#define uvmchanrtnrGetRefCount(pResource) uvmchanrtnrGetRefCount_DISPATCH(pResource)
+#define uvmchanrtnrAddAdditionalDependants(pClient, pResource, pReference) uvmchanrtnrAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define uvmchanrtnrControl_Prologue(pResource, pCallContext, pParams) uvmchanrtnrControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define uvmchanrtnrGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) uvmchanrtnrGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define uvmchanrtnrInternalControlForward(pGpuResource, command, pParams, size) uvmchanrtnrInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
+#define uvmchanrtnrUnmapFrom(pResource, pParams) uvmchanrtnrUnmapFrom_DISPATCH(pResource, pParams)
+#define uvmchanrtnrControl_Epilogue(pResource, pCallContext, pParams) uvmchanrtnrControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define uvmchanrtnrControlLookup(pResource, pParams, ppEntry) uvmchanrtnrControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define uvmchanrtnrGetInternalObjectHandle(pGpuResource) uvmchanrtnrGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define uvmchanrtnrControl(pGpuResource, pCallContext, pParams) uvmchanrtnrControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define uvmchanrtnrUnmap(pGpuResource, pCallContext, pCpuMapping) uvmchanrtnrUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define uvmchanrtnrGetMemInterMapParams(pRmResource, pParams) uvmchanrtnrGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define uvmchanrtnrGetMemoryMappingDescriptor(pRmResource, ppMemDesc) uvmchanrtnrGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define uvmchanrtnrGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) uvmchanrtnrGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define uvmchanrtnrGetInternalObjectHandle(pGpuResource) uvmchanrtnrGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define uvmchanrtnrControlFilter(pResource, pCallContext, pParams) uvmchanrtnrControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define uvmchanrtnrAddAdditionalDependants(pClient, pResource, pReference) uvmchanrtnrAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define uvmchanrtnrGetRefCount(pResource) uvmchanrtnrGetRefCount_DISPATCH(pResource)
-#define uvmchanrtnrCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) uvmchanrtnrCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define uvmchanrtnrMapTo(pResource, pParams) uvmchanrtnrMapTo_DISPATCH(pResource, pParams)
-#define uvmchanrtnrControl_Prologue(pResource, pCallContext, pParams) uvmchanrtnrControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define uvmchanrtnrGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) uvmchanrtnrGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define uvmchanrtnrControlSerialization_Prologue(pResource, pCallContext, pParams) uvmchanrtnrControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define uvmchanrtnrCanCopy(pResource) uvmchanrtnrCanCopy_DISPATCH(pResource)
-#define uvmchanrtnrInternalControlForward(pGpuResource, command, pParams, size) uvmchanrtnrInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define uvmchanrtnrPreDestruct(pResource) uvmchanrtnrPreDestruct_DISPATCH(pResource)
-#define uvmchanrtnrUnmapFrom(pResource, pParams) uvmchanrtnrUnmapFrom_DISPATCH(pResource, pParams)
 #define uvmchanrtnrIsDuplicate(pResource, hMemory, pDuplicate) uvmchanrtnrIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define uvmchanrtnrControl_Epilogue(pResource, pCallContext, pParams) uvmchanrtnrControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define uvmchanrtnrControlLookup(pResource, pParams, ppEntry) uvmchanrtnrControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define uvmchanrtnrControlSerialization_Epilogue(pResource, pCallContext, pParams) uvmchanrtnrControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define uvmchanrtnrMap(pGpuResource, pCallContext, pParams, pCpuMapping) uvmchanrtnrMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define uvmchanrtnrAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) uvmchanrtnrAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvBool uvmchanrtnrIsAllocationAllowed_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer, CALL_CONTEXT *pCallContext, struct KernelChannel *pKernelChannel);
@@ -165,6 +169,54 @@ static inline NvBool uvmchanrtnrShareCallback_DISPATCH(struct UvmChannelRetainer
     return pGpuResource->__uvmchanrtnrShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static inline NV_STATUS uvmchanrtnrCheckMemInterUnmap_DISPATCH(struct UvmChannelRetainer *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__uvmchanrtnrCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+}
+
+static inline NV_STATUS uvmchanrtnrMapTo_DISPATCH(struct UvmChannelRetainer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__uvmchanrtnrMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS uvmchanrtnrGetMapAddrSpace_DISPATCH(struct UvmChannelRetainer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pGpuResource->__uvmchanrtnrGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 uvmchanrtnrGetRefCount_DISPATCH(struct UvmChannelRetainer *pResource) {
+    return pResource->__uvmchanrtnrGetRefCount__(pResource);
+}
+
+static inline void uvmchanrtnrAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct UvmChannelRetainer *pResource, RsResourceRef *pReference) {
+    pResource->__uvmchanrtnrAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS uvmchanrtnrControl_Prologue_DISPATCH(struct UvmChannelRetainer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__uvmchanrtnrControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS uvmchanrtnrGetRegBaseOffsetAndSize_DISPATCH(struct UvmChannelRetainer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return pGpuResource->__uvmchanrtnrGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+}
+
+static inline NV_STATUS uvmchanrtnrInternalControlForward_DISPATCH(struct UvmChannelRetainer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return pGpuResource->__uvmchanrtnrInternalControlForward__(pGpuResource, command, pParams, size);
+}
+
+static inline NV_STATUS uvmchanrtnrUnmapFrom_DISPATCH(struct UvmChannelRetainer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__uvmchanrtnrUnmapFrom__(pResource, pParams);
+}
+
+static inline void uvmchanrtnrControl_Epilogue_DISPATCH(struct UvmChannelRetainer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__uvmchanrtnrControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS uvmchanrtnrControlLookup_DISPATCH(struct UvmChannelRetainer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__uvmchanrtnrControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NvHandle uvmchanrtnrGetInternalObjectHandle_DISPATCH(struct UvmChannelRetainer *pGpuResource) {
+    return pGpuResource->__uvmchanrtnrGetInternalObjectHandle__(pGpuResource);
+}
+
 static inline NV_STATUS uvmchanrtnrControl_DISPATCH(struct UvmChannelRetainer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__uvmchanrtnrControl__(pGpuResource, pCallContext, pParams);
 }
@@ -181,68 +233,28 @@ static inline NV_STATUS uvmchanrtnrGetMemoryMappingDescriptor_DISPATCH(struct Uv
     return pRmResource->__uvmchanrtnrGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline NV_STATUS uvmchanrtnrGetMapAddrSpace_DISPATCH(struct UvmChannelRetainer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__uvmchanrtnrGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvHandle uvmchanrtnrGetInternalObjectHandle_DISPATCH(struct UvmChannelRetainer *pGpuResource) {
-    return pGpuResource->__uvmchanrtnrGetInternalObjectHandle__(pGpuResource);
-}
-
 static inline NV_STATUS uvmchanrtnrControlFilter_DISPATCH(struct UvmChannelRetainer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__uvmchanrtnrControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void uvmchanrtnrAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct UvmChannelRetainer *pResource, RsResourceRef *pReference) {
-    pResource->__uvmchanrtnrAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 uvmchanrtnrGetRefCount_DISPATCH(struct UvmChannelRetainer *pResource) {
-    return pResource->__uvmchanrtnrGetRefCount__(pResource);
-}
-
-static inline NV_STATUS uvmchanrtnrCheckMemInterUnmap_DISPATCH(struct UvmChannelRetainer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__uvmchanrtnrCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
-}
-
-static inline NV_STATUS uvmchanrtnrMapTo_DISPATCH(struct UvmChannelRetainer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__uvmchanrtnrMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS uvmchanrtnrControl_Prologue_DISPATCH(struct UvmChannelRetainer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__uvmchanrtnrControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS uvmchanrtnrGetRegBaseOffsetAndSize_DISPATCH(struct UvmChannelRetainer *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__uvmchanrtnrGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+static inline NV_STATUS uvmchanrtnrControlSerialization_Prologue_DISPATCH(struct UvmChannelRetainer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__uvmchanrtnrControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool uvmchanrtnrCanCopy_DISPATCH(struct UvmChannelRetainer *pResource) {
     return pResource->__uvmchanrtnrCanCopy__(pResource);
 }
 
-static inline NV_STATUS uvmchanrtnrInternalControlForward_DISPATCH(struct UvmChannelRetainer *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__uvmchanrtnrInternalControlForward__(pGpuResource, command, pParams, size);
-}
-
 static inline void uvmchanrtnrPreDestruct_DISPATCH(struct UvmChannelRetainer *pResource) {
     pResource->__uvmchanrtnrPreDestruct__(pResource);
-}
-
-static inline NV_STATUS uvmchanrtnrUnmapFrom_DISPATCH(struct UvmChannelRetainer *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__uvmchanrtnrUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS uvmchanrtnrIsDuplicate_DISPATCH(struct UvmChannelRetainer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__uvmchanrtnrIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
-static inline void uvmchanrtnrControl_Epilogue_DISPATCH(struct UvmChannelRetainer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__uvmchanrtnrControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS uvmchanrtnrControlLookup_DISPATCH(struct UvmChannelRetainer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__uvmchanrtnrControlLookup__(pResource, pParams, ppEntry);
+static inline void uvmchanrtnrControlSerialization_Epilogue_DISPATCH(struct UvmChannelRetainer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__uvmchanrtnrControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS uvmchanrtnrMap_DISPATCH(struct UvmChannelRetainer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {

@@ -41,7 +41,16 @@ typedef struct GpuSharedDataMap {
     NV00DE_SHARED_DATA data;
 } GpuSharedDataMap;
 
-// Start data write, returns data struct to write into
+typedef struct GspUserSharedData {
+    NvU32 gspAssertCount;
+} GspUserSharedData;
+
+/**
+ * Start data write, returns data struct to write into
+ *
+ * After updating data in the returned NV00DE_SHARED_DATA struct,
+ * call gpushareddataWriteFinish to push the new data into the user mapping
+ */
 NV00DE_SHARED_DATA * gpushareddataWriteStart(OBJGPU *pGpu);
 // Finish data write, pushes data cached by above into mapped data
 void gpushareddataWriteFinish(OBJGPU *pGpu);

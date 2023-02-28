@@ -150,7 +150,7 @@ kfifoStateInitLocked_IMPL
     {
         krcInitRegistryOverridesDelayed(pGpu, pKernelRc);
     }
-
+    
     return NV_OK;
 }
 

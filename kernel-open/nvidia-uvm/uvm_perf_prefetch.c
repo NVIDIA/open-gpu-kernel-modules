@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -236,7 +236,7 @@ static NvU32 uvm_perf_prefetch_prenotify_fault_migrations(uvm_va_block_t *va_blo
     const uvm_page_mask_t *resident_mask = NULL;
     const uvm_page_mask_t *thrashing_pages = NULL;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
-    uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = va_block_context->policy;
     uvm_va_block_region_t max_prefetch_region;
     NvU32 big_page_size;
     uvm_va_block_region_t big_pages_region;
@@ -372,7 +372,7 @@ void uvm_perf_prefetch_get_hint(uvm_va_block_t *va_block,
                                 uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
                                 uvm_perf_prefetch_hint_t *out_hint)
 {
-    uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = va_block_context->policy;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_page_mask_t *prefetch_pages = &out_hint->prefetch_pages_mask;
     NvU32 pending_prefetch_pages;
@@ -380,9 +380,10 @@ void uvm_perf_prefetch_get_hint(uvm_va_block_t *va_block,
     uvm_assert_rwsem_locked(&va_space->lock);
     uvm_assert_mutex_locked(&va_block->lock);
     UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, policy, faulted_region));
-    UVM_ASSERT(uvm_hmm_va_block_context_vma_is_valid(va_block, va_block_context, faulted_region));
+    UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, va_block_context, faulted_region));
 
     out_hint->residency = UVM_ID_INVALID;
+    uvm_page_mask_zero(prefetch_pages);
 
     if (!g_uvm_perf_prefetch_enable)
         return;

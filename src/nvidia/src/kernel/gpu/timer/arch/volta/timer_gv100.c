@@ -91,8 +91,8 @@ tmrSetCurrentTime_GV100
 NV_STATUS
 tmrGetGpuPtimerOffset_GV100
 (
-    POBJGPU  pGpu,
-    POBJTMR  pTmr,
+    OBJGPU  *pGpu,
+    OBJTMR  *pTmr,
     NvU32   *pGpuTimestampOffsetLo,
     NvU32   *pGpuTimestampOffsetHi
 )

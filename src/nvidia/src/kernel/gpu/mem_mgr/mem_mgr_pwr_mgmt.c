@@ -43,7 +43,6 @@ memmgrSavePowerMgmtState_KERNEL
 )
 {
     NvU32     fbsrStartMode = pMemoryManager->fbsrStartMode;
-    NvBool    bGcOffState   = NV_FALSE;
     NvU32     i;
     OBJFBSR  *pFbsr;
     NV_STATUS rmStatus = NV_OK;
@@ -63,12 +62,14 @@ memmgrSavePowerMgmtState_KERNEL
     // might fail is not enough non-paged memory available.
     //
     pMemoryManager->pActiveFbsr = NULL;
+
     //
     // Iterate the heap at top level to avoid inconsistent between
     // several pFbsr instance.
     //
 
-    rmStatus = memmgrAddMemNodes(pGpu, pMemoryManager, bGcOffState);
+    rmStatus = memmgrAddMemNodes(pGpu, pMemoryManager,
+                                 pGpu->getProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERING));
 
     if ((rmStatus == NV_OK) &&
         memmgrIsPmaInitialized(pMemoryManager))
@@ -77,7 +78,7 @@ memmgrSavePowerMgmtState_KERNEL
         RANGELISTTYPE  *pSaveList = NULL;
         RANGELISTTYPE  *pSaveCurr;
 
-        if (bGcOffState)
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERING))
         {
             rmStatus = pmaBuildAllocatedBlocksList(&pHeap->pmaObject, &pSaveList);
         }
@@ -112,7 +113,7 @@ memmgrSavePowerMgmtState_KERNEL
             }
         }
 
-        if (bGcOffState)
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERING))
         {
             pmaFreeAllocatedBlocksList(&pHeap->pmaObject, &pSaveList);
         }

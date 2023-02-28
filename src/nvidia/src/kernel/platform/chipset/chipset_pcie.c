@@ -782,6 +782,93 @@ _objClAdjustTcVcMap(OBJGPU *pGpu, OBJCL *pCl, PORTDATA *pPort)
     }
 }
 
+
+#define MAX_MULTI_GPU_BOARD_IDS   4
+typedef struct
+{
+    NvU16 gpuDevIds[MAX_MULTI_GPU_BOARD_IDS];
+    NvU16 gpuSubVenIds[MAX_MULTI_GPU_BOARD_IDS];
+    NvU16 gpuSubDevIds[MAX_MULTI_GPU_BOARD_IDS];
+} NV_MULTI_GPU_BOARD_CONFIGS;
+
+static const NV_MULTI_GPU_BOARD_CONFIGS multiGpuBoards[] =
+{
+// gpuDevIds,                       gpuSubVenIds,                   gpuSubDevIds
+
+// A16 GPUs are 4xGPU boards with no nvlink
+{{NV_PCI_DEVID_DEVICE_PG171_SKU200_PG179_SKU220, 0},
+                                    {NV_PCI_SUBID_VENDOR_NVIDIA,
+                                     0},                            {NV_PCI_SUBID_DEVICE_PG171_SKU200,
+                                                                     0}},
+};
+
+/*!
+ * Searches through multiGpuBoards[] for the specified DEVID and possibly the
+ * SSVID and SSDID to determine if the GPU is in a multi GPU board.
+ *
+ * @param[in]  gpuDevId    DEVID of the GPU
+ * @param[in]  gpuSubVenId The subdevice VENID of the GPU
+ * @param[in]  gpuSubDevId The sbudevice DEVID of the GPU
+ *
+ * @return NV_TRUE if the GPU is in a multigpu board, NV_FALSE otherwise
+ */
+static NvBool
+gpuDevIdIsMultiGpuBoard
+(
+    NvU16   gpuDevId,
+    NvU16   gpuSubVenId,
+    NvU16   gpuSubDevId
+)
+{
+    NvU32 i, j;
+    NvBool bFound = NV_FALSE, bInvalidSubIds = NV_FALSE;
+
+    for (i = 0; i < sizeof(multiGpuBoards) / sizeof(NV_MULTI_GPU_BOARD_CONFIGS);
+         i++)
+    {
+        bInvalidSubIds = NV_FALSE;
+
+        for (j = 0; j < MAX_MULTI_GPU_BOARD_IDS; j++)
+        {
+            //
+            // As soon as we see a NULL subvenid or subdevid, we stop checking them
+            // for this entry
+            //
+            if ((multiGpuBoards[i].gpuSubVenIds[j] == 0) ||
+                (multiGpuBoards[i].gpuSubDevIds[j] == 0))
+            {
+                bInvalidSubIds = NV_TRUE;
+            }
+
+            // Arrays are NULL terminated
+            if (multiGpuBoards[i].gpuDevIds[j] == 0)
+            {
+                break;
+            }
+            // If the devid matches we might have a match
+            else if (multiGpuBoards[i].gpuDevIds[j] == gpuDevId)
+            {
+                // Do we need to also compare the subdevice ids?
+                if ((bInvalidSubIds) ||
+                    ((multiGpuBoards[i].gpuSubVenIds[j] == gpuSubVenId) &&
+                     (multiGpuBoards[i].gpuSubDevIds[j] == gpuSubDevId)))
+                {
+                    bFound = NV_TRUE;
+                    break;
+                }
+            }
+        }
+
+        if (bFound)
+        {
+            break;
+        }
+    }
+
+    return bFound;
+}
+
+
 //
 // Determine if any updates are needed to the PCI Express
 //
@@ -791,7 +878,6 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     OBJSYS    *pSys       = SYS_GET_INSTANCE();
     OBJPFM    *pPfm       = SYS_GET_PFM(pSys);
     KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
-    NvBool     bIsGemini  = NV_FALSE;
     NvBool     bIsMultiGpu;
     NvU32      busIntfType = kbifGetBusIntfType_HAL(pKernelBif);
 
@@ -850,22 +936,26 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     if (!pPfm->getProperty(pPfm, PDB_PROP_PFM_NO_HOSTBRIDGE_DETECT))
     {
 
-        //
-        // MultiGpu board includes all Dagwood and Gemini boards
-        // A dagwood board would not have bIsGemini flag set but would have
-        // bIsMultiGpu flag set.
-        //
-        bIsMultiGpu = gpuIsMultiGpuBoard(pGpu, &bIsGemini);
-        if (bIsGemini)
-        {
-            pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_GEMINI, NV_TRUE);
-        }
+        bIsMultiGpu = gpuIsMultiGpuBoard(pGpu);
 
         // Update the board ID only if the Gpu is a multiGpu board
         if (bIsMultiGpu)
         {
             gpumgrUpdateBoardId(pGpu);
+
+            // All multi-GPU boards are Gemini boards.
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_GEMINI, NV_TRUE);
         }
+    }
+
+    // Initialize ASPM L1 mask state for Upstream port
+    if (clIsL1MaskEnabledForUpstreamPort(pGpu, pCl))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_ASPM_UPSTREAM_PORT_L1_MASK_ENABLED, NV_TRUE);
+    }
+    else
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_ASPM_UPSTREAM_PORT_L1_MASK_ENABLED, NV_FALSE);
     }
 
     NV_PRINTF(LEVEL_INFO,
@@ -1042,7 +1132,7 @@ objClInitGpuPortData
         if ((kbifGetBusIntfType_HAL(GPU_GET_KERNEL_BIF(pGpu)) !=
              NV2080_CTRL_BUS_INFO_TYPE_FPCI) &&
             (!pHypervisor || !pHypervisor->bDetected) &&
-            !RMCFG_FEATURE_PLATFORM_MODS)
+            !RMCFG_FEATURE_MODS_FEATURES)
         {
             DBG_BREAKPOINT();
             return NV_FALSE;
@@ -1849,16 +1939,14 @@ objClFindRootPort
 //
 // clCountBR
 //
-// Returns the count of cascaded BR03s and BR04s right under this GPU.
+// Returns the count of cascaded BR04s right under this GPU.
 //
 void
 clCountBR_IMPL
 (
     OBJGPU *pGpu,
     OBJCL *pCl,
-    NvU8 *pBR03Count,
-    NvU8 *pBR04Count,
-    NvU8 *pPLXCount
+    NvU8 *pBR04Count
 )
 {
     void *handleUp;
@@ -1866,9 +1954,7 @@ clCountBR_IMPL
     NvU8 bus = 0xff, busUp, deviceUp, funcUp;
     NvU32 domain;
     NvU8 downstreamPortBus;
-    NvU8 BR03Count = 0;
     NvU8 BR04Count = 0;
-    NvU8 PLXCount = 0;
 
     domain = gpuGetDomain(pGpu);
     handleUp = clFindBrdgUpstreamPort(pGpu, pCl, NV_TRUE,
@@ -1878,17 +1964,9 @@ clCountBR_IMPL
 
     while (handleUp)
     {
-        if ((vendorIDUp == PCI_VENDOR_ID_NVIDIA) && (deviceIDUp == NV_BR03_XVU_DEV_ID_DEVICE_ID_BR03))
-        {
-            BR03Count++;
-        }
-        else if((vendorIDUp == PCI_VENDOR_ID_NVIDIA) && IS_DEVID_BR04(deviceIDUp))
+        if ((vendorIDUp == PCI_VENDOR_ID_NVIDIA) && IS_DEVID_BR04(deviceIDUp))
         {
             BR04Count++;
-        }
-        else if((vendorIDUp == PCI_VENDOR_ID_PLX) && IS_DEVID_SUPPORTED_PLX(deviceIDUp))
-        {
-            PLXCount++;
         }
         else
         {
@@ -1908,9 +1986,7 @@ clCountBR_IMPL
         }
     }
 
-    *pBR03Count = BR03Count;
     *pBR04Count = BR04Count;
-    *pPLXCount  = PLXCount;
     return ;
 }
 
@@ -1980,6 +2056,17 @@ clSearchBR04_IMPL
                     }
                     pBusTopologyInfoBR04GPU = pBusTopologyInfoBR04GPU->next;
                 }
+                if (pBusTopologyInfoBR04GPU)
+                {
+                    // There is something
+                    if ((pBusTopologyInfoBR04GPU->busInfo.vendorID == PCI_VENDOR_ID_NVIDIA) &&
+                        (gpuDevIdIsMultiGpuBoard(pBusTopologyInfoBR04GPU->busInfo.deviceID, 0, 0)))
+                    {
+                        // This is a BR04 in a Gemini, skip this DS port
+                        pBusTopologyInfoBR04DS = pBusTopologyInfoBR04DS->next;
+                        continue;
+                    }
+                }
                 BR04DSPorts++;
             }
             pBusTopologyInfoBR04DS = pBusTopologyInfoBR04DS->next;
@@ -2020,7 +2107,7 @@ clSearchBR04_IMPL
 // Returns the bus number of a common bridge behind the 2 GPUs.
 // The returned values are 0xFF when no bridge is found.
 // This function finds the most upper bridge(s) if bScanAll is set to NV_TRUE.
-// This function finds the first recognized bridge (BR04, BR03, PLX) under the GPUs if bScanAll is set to NV_FALSE.
+// This function finds the first recognized bridge (BR04) under the GPUs if bScanAll is set to NV_FALSE.
 //
 void
 clFindCommonBR_IMPL
@@ -2028,9 +2115,7 @@ clFindCommonBR_IMPL
     OBJGPU *pGpu1,
     OBJGPU *pGpu2,
     OBJCL  *pCl,
-    NvU8   *pBR03Bus,
     NvU8   *pBR04Bus,
-    NvU8   *pPLXBus,
     NvBool  bScanAll
 )
 {
@@ -2039,9 +2124,7 @@ clFindCommonBR_IMPL
     NvU8 bus1 = 0xff, busUp1, deviceUp1, funcUp1, bus2 = 0xff, busUp2, deviceUp2, funcUp2;
     NvU32 domain1, domain2;
     NvU8 downstreamPortBus1, downstreamPortBus2;
-    NvU8 BR03Bus = 0xFF;
     NvU8 BR04Bus = 0xFF;
-    NvU8 PLXBus  = 0xFF;
 
     NV_ASSERT(pGpu1 != pGpu2);
 
@@ -2051,16 +2134,14 @@ clFindCommonBR_IMPL
     if (domain1 != domain2)
     {
         //
-        //1. If two GPUs are from different PCI domains, then there can not be a common BR03/BR04 bridge
+        //1. If two GPUs are from different PCI domains, then there can not be a common BR04 bridge
         //   that connects to both GPUs. Because a new domain will start form a host bridge.
         //2. Returning early when two GPUs are from different PCI domains save significant GPU initialization
         //   time when we have more that 6 GPUs in the system connected to different domains. This function
         //   is called multiple times while searching for 2-way 3-way and 4-way sli combination. (Bug 770154)
         //
 
-        *pBR03Bus = BR03Bus;
         *pBR04Bus = BR04Bus;
-        *pPLXBus  = PLXBus;
         return;
     }
 
@@ -2091,21 +2172,6 @@ clFindCommonBR_IMPL
                         BR04Bus = busUp2;
                         break;
                     }
-
-                    if ((vendorIDUp2 == PCI_VENDOR_ID_NVIDIA) &&
-                        (deviceIDUp1 == NV_BR03_XVU_DEV_ID_DEVICE_ID_BR03) &&
-                        (deviceIDUp2 == NV_BR03_XVU_DEV_ID_DEVICE_ID_BR03))
-                    {
-                        BR03Bus = busUp2;
-                        break;
-                    }
-                    if ((vendorIDUp2 == PCI_VENDOR_ID_PLX) &&
-                        IS_DEVID_SUPPORTED_PLX(deviceIDUp1) &&
-                        IS_DEVID_SUPPORTED_PLX(deviceIDUp2))
-                    {
-                        PLXBus = busUp2;
-                        break;
-                    }
                 }
 
                 bus2 = busUp2;
@@ -2120,8 +2186,7 @@ clFindCommonBR_IMPL
         // If we requested to not scan all the devices up to the root port,
         // and we found one, stop right here.
         //
-        if (!bScanAll &&
-            ((BR04Bus != 0xFF) || (BR03Bus != 0xFF) || (PLXBus != 0xFF)))
+        if (!bScanAll && (BR04Bus != 0xFF))
         {
             break;
         }
@@ -2133,9 +2198,7 @@ clFindCommonBR_IMPL
                                   &funcUp1, &vendorIDUp1, &deviceIDUp1);
     }
 
-    *pBR03Bus = BR03Bus;
     *pBR04Bus = BR04Bus;
-    *pPLXBus  = PLXBus;
     return ;
 }
 
@@ -2251,8 +2314,7 @@ clFindBR_IMPL
     NvU8   *pBR04Bus,
     NvBool *pBRNot3rdParty,
     NvBool *pNoUnsupportedBRFound,
-    NvBool *pNoOnboardBR04,
-    NvU8   *pPLXBus
+    NvBool *pNoOnboardBR04
 )
 {
     void *handleUp, *br04handle = NULL;
@@ -2263,7 +2325,6 @@ clFindBR_IMPL
     NvU32 regValue = 0;
     NvU32 gpuBrNot3rdPartyCount = 0, gpuBrCount = 0;
     NvBool bGpuIsMultiGpuBoard = NV_FALSE;
-    NvBool bIsGemini             = NV_FALSE;
     NvU32  gpuBR04Count          = 0;
     NvU8 BR03Bus = 0xFF;
     NvU8 BR04Bus = 0xFF;
@@ -2280,7 +2341,7 @@ clFindBR_IMPL
                                       &vendorIDUp, &deviceIDUp,
                                       &downstreamPortBus1);
 
-    bGpuIsMultiGpuBoard = gpuIsMultiGpuBoard(pGpu, &bIsGemini);
+    bGpuIsMultiGpuBoard = gpuIsMultiGpuBoard(pGpu);
 
     // Traverse the pci tree
     while (handleUp)
@@ -2321,7 +2382,7 @@ clFindBR_IMPL
             PLXBus = busUp;
         }
 
-        // Do not count the BR04A03, PLX, and the bridges behind the dagwoods.
+        // Do not count the BR04A03, PLX, and the bridges behind the multi-GPU boards.
         if ((BR04Rev != 0x3) && (PLXBus == 0xFF) && ((gpuBrCount != 1) || (bGpuIsMultiGpuBoard == NV_FALSE)))
         {
             gpuBrNot3rdPartyCount++;
@@ -2334,7 +2395,7 @@ clFindBR_IMPL
                                  &funcUp, &vendorIDUp, &deviceIDUp);
     }
 
-    if (bIsGemini && gpuBR04Count)
+    if (bGpuIsMultiGpuBoard && gpuBR04Count)
     {
         // Ignore one BR04 in case of Gemini
         gpuBR04Count--;
@@ -2352,7 +2413,6 @@ clFindBR_IMPL
     *pBRNot3rdParty = brNot3rdParty;
     *pNoOnboardBR04 = bNoOnboardBR04 ;
     *pNoUnsupportedBRFound = bNoUnsupportedBRFound;
-    *pPLXBus = PLXBus;
 
     return ;
 }
@@ -2439,7 +2499,7 @@ clStoreBusTopologyCache_IMPL
                     }
                 }
 
-                if (vendorID == PCI_INVALID_VENDORID)
+                if (!PCI_IS_VENDORID_VALID(vendorID))
                 {
                     break;           // skip to the next device
                 }
@@ -3421,76 +3481,25 @@ clPcieIsRelaxedOrderingSafe_IMPL
     return NV_OK;
 }
 
-/**
- * Compares two OBJGPUs to see if they are behind the same upstream bridge.
- *     Used for identifying GPUs behind the same lowest level BR04.
- *
- * @param[in] pGpu1 First gpu to compare
- * @param[in] pGpu2 Second gpu to compare
- *
- * @return NV_TRUE if the two GPUs are behind the same bridge.
- */
-NvBool
-clAreGpusBehindSameBridge_IMPL
-(
-    OBJCL  *pCl,
-    OBJGPU *pGpu1,
-    OBJGPU *pGpu2
-)
-{
-    NV_ASSERT((pGpu1 != NULL) &&
-              (pGpu2 != NULL));
-
-    if ((pGpu1->gpuClData.boardUpstreamPort.addr.valid) &&
-        (pGpu2->gpuClData.boardUpstreamPort.addr.valid) &&
-        (pGpu1->gpuClData.boardUpstreamPort.addr.domain
-            == pGpu2->gpuClData.boardUpstreamPort.addr.domain) &&
-        (pGpu1->gpuClData.boardUpstreamPort.addr.bus
-            == pGpu2->gpuClData.boardUpstreamPort.addr.bus) &&
-        (pGpu1->gpuClData.boardUpstreamPort.addr.device
-            == pGpu2->gpuClData.boardUpstreamPort.addr.device) &&
-        (pGpu1->gpuClData.boardUpstreamPort.addr.func
-            == pGpu2->gpuClData.boardUpstreamPort.addr.func))
-    {
-        return NV_TRUE;
-    }
-
-    return NV_FALSE;
-}
-
 /*!
  * Pulls the devid info out of the pGpu to pass to gpuDevIdIsMultiGpuBoard().
  *
  * @param[in]  pGpu       OBJGPU pointer
- * @parma[out] pbIsGemini NvBool pointer in which to store whether GPU is a
- *                        Gemini multiboard config. May be NULL if caller does
- *                        not care to receive this information.
  *
  * @return NV_TRUE if the GPU is in a multigpu board, NV_FALSE otherwise
  */
 NvBool
 gpuIsMultiGpuBoard
 (
-    OBJGPU *pGpu,
-    NvBool *pbIsGemini
+    OBJGPU *pGpu
 )
 {
 
-    if (pbIsGemini != NULL)
-        *pbIsGemini = NV_FALSE;
-
-    if ((DRF_VAL(_PCI, _DEVID, _DEVICE, pGpu->idInfo.PCIDeviceID) == NV_PCI_DEVID_DEVICE_PG171_SKU200_PG179_SKU220) &&
-        (DRF_VAL(_PCI, _SUBID, _DEVICE, pGpu->idInfo.PCISubDeviceID) == NV_PCI_SUBID_DEVICE_PG171_SKU200) &&
-        (DRF_VAL(_PCI, _SUBID, _VENDOR, pGpu->idInfo.PCISubDeviceID) == NV_PCI_SUBID_VENDOR_NVIDIA))
-    {
-        if (pbIsGemini != NULL)
-            *pbIsGemini = NV_TRUE;
-
-        return NV_TRUE;
-    }
-
-    return NV_FALSE;
-
+    return pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_PLX_PRESENT) ||
+        gpuDevIdIsMultiGpuBoard(
+            (NvU16) DRF_VAL(_PCI, _DEVID, _DEVICE, pGpu->idInfo.PCIDeviceID),
+            (NvU16) DRF_VAL(_PCI, _SUBID, _VENDOR, pGpu->idInfo.PCISubDeviceID),
+            (NvU16) DRF_VAL(_PCI, _SUBID, _DEVICE, pGpu->idInfo.PCISubDeviceID));
 }
 
 /*

@@ -113,36 +113,20 @@ static NvBool __nvoc_thunk_GpuResource_kccuapiShareCallback(struct KernelCcuApi 
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kccuapiControl(struct KernelCcuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kccuapiGetMemInterMapParams(struct KernelCcuApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_kccuapiGetInternalObjectHandle(struct KernelCcuApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kccuapiControlFilter(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_kccuapiAddAdditionalDependants(struct RsClient *pClient, struct KernelCcuApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_kccuapiGetRefCount(struct KernelCcuApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RmResource_kccuapiCheckMemInterUnmap(struct KernelCcuApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_kccuapiMapTo(struct KernelCcuApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pParams);
+}
+
+static NvU32 __nvoc_thunk_RsResource_kccuapiGetRefCount(struct KernelCcuApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_kccuapiAddAdditionalDependants(struct RsClient *pClient, struct KernelCcuApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pReference);
 }
 
 static NV_STATUS __nvoc_thunk_RmResource_kccuapiControl_Prologue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -153,24 +137,12 @@ static NV_STATUS __nvoc_thunk_GpuResource_kccuapiGetRegBaseOffsetAndSize(struct 
     return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
-static NvBool __nvoc_thunk_RsResource_kccuapiCanCopy(struct KernelCcuApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_GpuResource_kccuapiInternalControlForward(struct KernelCcuApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
     return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), command, pParams, size);
 }
 
-static void __nvoc_thunk_RsResource_kccuapiPreDestruct(struct KernelCcuApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_kccuapiUnmapFrom(struct KernelCcuApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kccuapiIsDuplicate(struct KernelCcuApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), hMemory, pDuplicate);
 }
 
 static void __nvoc_thunk_RmResource_kccuapiControl_Epilogue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -179,6 +151,42 @@ static void __nvoc_thunk_RmResource_kccuapiControl_Epilogue(struct KernelCcuApi 
 
 static NV_STATUS __nvoc_thunk_RsResource_kccuapiControlLookup(struct KernelCcuApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
     return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_kccuapiGetInternalObjectHandle(struct KernelCcuApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_kccuapiControl(struct KernelCcuApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelCcuApi_GpuResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_kccuapiGetMemInterMapParams(struct KernelCcuApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_kccuapiControlFilter(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_kccuapiControlSerialization_Prologue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_RsResource_kccuapiCanCopy(struct KernelCcuApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_kccuapiPreDestruct(struct KernelCcuApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_kccuapiIsDuplicate(struct KernelCcuApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_kccuapiControlSerialization_Epilogue(struct KernelCcuApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCcuApi_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RmResource_kccuapiAccessCallback(struct KernelCcuApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
@@ -327,39 +335,43 @@ static void __nvoc_init_funcTable_KernelCcuApi_1(KernelCcuApi *pThis) {
 
     pThis->__kccuapiShareCallback__ = &__nvoc_thunk_GpuResource_kccuapiShareCallback;
 
-    pThis->__kccuapiControl__ = &__nvoc_thunk_GpuResource_kccuapiControl;
-
-    pThis->__kccuapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_kccuapiGetMemInterMapParams;
-
-    pThis->__kccuapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_kccuapiGetInternalObjectHandle;
-
-    pThis->__kccuapiControlFilter__ = &__nvoc_thunk_RsResource_kccuapiControlFilter;
-
-    pThis->__kccuapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_kccuapiAddAdditionalDependants;
-
-    pThis->__kccuapiGetRefCount__ = &__nvoc_thunk_RsResource_kccuapiGetRefCount;
-
     pThis->__kccuapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_kccuapiCheckMemInterUnmap;
 
     pThis->__kccuapiMapTo__ = &__nvoc_thunk_RsResource_kccuapiMapTo;
+
+    pThis->__kccuapiGetRefCount__ = &__nvoc_thunk_RsResource_kccuapiGetRefCount;
+
+    pThis->__kccuapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_kccuapiAddAdditionalDependants;
 
     pThis->__kccuapiControl_Prologue__ = &__nvoc_thunk_RmResource_kccuapiControl_Prologue;
 
     pThis->__kccuapiGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_kccuapiGetRegBaseOffsetAndSize;
 
-    pThis->__kccuapiCanCopy__ = &__nvoc_thunk_RsResource_kccuapiCanCopy;
-
     pThis->__kccuapiInternalControlForward__ = &__nvoc_thunk_GpuResource_kccuapiInternalControlForward;
 
-    pThis->__kccuapiPreDestruct__ = &__nvoc_thunk_RsResource_kccuapiPreDestruct;
-
     pThis->__kccuapiUnmapFrom__ = &__nvoc_thunk_RsResource_kccuapiUnmapFrom;
-
-    pThis->__kccuapiIsDuplicate__ = &__nvoc_thunk_RsResource_kccuapiIsDuplicate;
 
     pThis->__kccuapiControl_Epilogue__ = &__nvoc_thunk_RmResource_kccuapiControl_Epilogue;
 
     pThis->__kccuapiControlLookup__ = &__nvoc_thunk_RsResource_kccuapiControlLookup;
+
+    pThis->__kccuapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_kccuapiGetInternalObjectHandle;
+
+    pThis->__kccuapiControl__ = &__nvoc_thunk_GpuResource_kccuapiControl;
+
+    pThis->__kccuapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_kccuapiGetMemInterMapParams;
+
+    pThis->__kccuapiControlFilter__ = &__nvoc_thunk_RsResource_kccuapiControlFilter;
+
+    pThis->__kccuapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_kccuapiControlSerialization_Prologue;
+
+    pThis->__kccuapiCanCopy__ = &__nvoc_thunk_RsResource_kccuapiCanCopy;
+
+    pThis->__kccuapiPreDestruct__ = &__nvoc_thunk_RsResource_kccuapiPreDestruct;
+
+    pThis->__kccuapiIsDuplicate__ = &__nvoc_thunk_RsResource_kccuapiIsDuplicate;
+
+    pThis->__kccuapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_kccuapiControlSerialization_Epilogue;
 
     pThis->__kccuapiAccessCallback__ = &__nvoc_thunk_RmResource_kccuapiAccessCallback;
 }
@@ -385,12 +397,15 @@ NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi **ppThis, Dynamic *pParent,
     Object *pParentObj;
     KernelCcuApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(KernelCcuApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelCcuApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(KernelCcuApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelCcuApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -407,11 +422,17 @@ NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi **ppThis, Dynamic *pParent,
     if (status != NV_OK) goto __nvoc_objCreate_KernelCcuApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_KernelCcuApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(KernelCcuApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

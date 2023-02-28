@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,7 +50,6 @@ typedef struct _def_client_dma_alloc_map_info           CLI_DMA_ALLOC_MAP_INFO;
 //
 struct _def_client_dma_mapping_info
 {
-    NvHandle              hDevice;
     NvU64                 DmaOffset;
     void*                 KernelVAddr[NV_MAX_SUBDEVICES];   // Kernel's virtual address, if required
     void*                 KernelPriv;                       // Token required to unmap the kernel mapping
@@ -60,11 +59,11 @@ struct _def_client_dma_mapping_info
     NvU32                 Flags;
     NvBool                bP2P;
     NvU32                 gpuMask;
+    NvU64                 mapPageSize;                      // Page size at which the memory is mapped.
     ADDRESS_TRANSLATION   addressTranslation;
     MEMORY_DESCRIPTOR    *pBar1P2PVirtMemDesc;              // The peer GPU mapped BAR1 region
     MEMORY_DESCRIPTOR    *pBar1P2PPhysMemDesc;              // The peer GPU vidmem sub region
-    PCLI_DMA_MAPPING_INFO Next;
-    PCLI_DMA_MAPPING_INFO Prev;
+    CLI_DMA_MAPPING_INFO *pNext;
 };
 
 //
@@ -72,8 +71,7 @@ struct _def_client_dma_mapping_info
 //
 struct _def_client_dma_mapping_info_iterator
 {
-    PNODE          pDmaMappingList;        // list of hDevices
-    PNODE          pCurrentList;           // current hDevice list entry, is list of pDmaMappings
+    PNODE          pDmaMappingList;        // list of pDmaMappings
     PNODE          pNextDmaMapping;        // next pDmaMapping while iterating over the DmaOffsets
 };
 
@@ -159,16 +157,14 @@ CliUpdateDeviceMemoryMapping
 RsCpuMapping       *CliFindMappingInClient          (NvHandle, NvHandle, NvP64);
 
 // DMA Mappings
-NV_STATUS           intermapCreateDmaMapping        (RsClient *, RsResourceRef *, NvHandle, NvHandle, PCLI_DMA_MAPPING_INFO *, NvU32);
-NV_STATUS           intermapRegisterDmaMapping      (RsClient *, NvHandle, NvHandle, PCLI_DMA_MAPPING_INFO,  NvU64, NvU32);
-NV_STATUS           intermapDelDmaMapping           (RsClient *, NvHandle, NvHandle, NvU64, NvU32, NvBool*);
+NV_STATUS           intermapCreateDmaMapping        (RsClient *, VirtualMemory *, PCLI_DMA_MAPPING_INFO *, NvU32);
+NV_STATUS           intermapRegisterDmaMapping      (RsClient *, VirtualMemory *, PCLI_DMA_MAPPING_INFO,  NvU64, NvU32);
+NV_STATUS           intermapDelDmaMapping           (RsClient *, VirtualMemory *, NvU64, NvU32);
 void                intermapFreeDmaMapping          (PCLI_DMA_MAPPING_INFO);
+CLI_DMA_MAPPING_INFO *intermapGetDmaMapping         (VirtualMemory *pVirtualMemory, NvU64 dmaOffset, NvU32 gpuMask);
 
 NvBool              CliGetDmaMappingInfo            (NvHandle, NvHandle, NvHandle, NvU64, NvU32, PCLI_DMA_MAPPING_INFO*);
 void                CliGetDmaMappingIterator        (PCLI_DMA_MAPPING_INFO *, PCLI_DMA_MAPPING_INFO_ITERATOR, PNODE pDmaMappingList);
 void                CliGetDmaMappingNext            (PCLI_DMA_MAPPING_INFO *, PCLI_DMA_MAPPING_INFO_ITERATOR);
-
-// Unmap all DMA mappings between a memory resource and any DynamicMemory
-NV_STATUS           intermapUnmapDeviceMemoryDma    (RsClient *, RsResourceRef *, NvHandle);
 
 #endif

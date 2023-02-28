@@ -124,16 +124,6 @@ struct uvm_gpu_va_space_struct
     // because multiple threads may set it to 1 concurrently.
     atomic_t disallow_new_channels;
 
-    // On VMA destruction, the fault buffer needs to be flushed for all the GPUs
-    // registered in the VA space to avoid leaving stale entries of the VA range
-    // that is going to be destroyed. Otherwise, these fault entries can be
-    // attributed to new VA ranges reallocated at the same addresses. However,
-    // uvm_vm_close is called with mm->mmap_lock taken and we cannot take the ISR
-    // lock. Therefore, we use a flag no notify the GPU fault handler that the
-    // fault buffer needs to be flushed, before servicing the faults that belong
-    // to the va_space.
-    bool needs_fault_buffer_flush;
-
     // Node for the deferred free list where this GPU VA space is stored upon
     // being unregistered.
     uvm_deferred_free_object_t deferred_free;
@@ -189,7 +179,7 @@ struct uvm_va_space_struct
 
     // Kernel mapping structure passed to unmap_mapping range to unmap CPU PTEs
     // in this process.
-    struct address_space mapping;
+    struct address_space *mapping;
 
     // Storage in g_uvm_global.va_spaces.list
     struct list_head list_node;
@@ -262,6 +252,17 @@ struct uvm_va_space_struct
     // corrupting state.
     uvm_processor_mask_t gpu_unregister_in_progress;
 
+    // On VMA destruction, the fault buffer needs to be flushed for all the GPUs
+    // registered in the VA space to avoid leaving stale entries of the VA range
+    // that is going to be destroyed. Otherwise, these fault entries can be
+    // attributed to new VA ranges reallocated at the same addresses. However,
+    // uvm_vm_close is called with mm->mmap_lock taken and we cannot take the
+    // ISR lock. Therefore, we use a flag to notify the GPU fault handler that
+    // the fault buffer needs to be flushed, before servicing the faults that
+    // belong to the va_space. The bits are set and cleared atomically so no
+    // va_space lock is required.
+    uvm_processor_mask_t needs_fault_buffer_flush;
+
     // Mask of processors that are participating in system-wide atomics
     uvm_processor_mask_t system_wide_atomics_enabled_processors;
 
@@ -330,10 +331,6 @@ struct uvm_va_space_struct
     // lock is held in write mode. Access using uvm_va_space_block_context().
     uvm_va_block_context_t va_block_context;
 
-    // UVM_INITIALIZE has been called. Until this is set, the VA space is
-    // inoperable. Use uvm_va_space_initialized() to check whether the VA space
-    // has been initialized.
-    atomic_t initialized;
     NvU64 initialization_flags;
 
     // The mm currently associated with this VA space, if any.
@@ -409,34 +406,7 @@ static bool uvm_va_space_processor_has_memory(uvm_va_space_t *va_space, uvm_proc
     return uvm_va_space_get_gpu(va_space, id)->mem_info.size > 0;
 }
 
-// Checks if the VA space has been fully initialized (UVM_INITIALIZE has been
-// called). Returns NV_OK if so, NV_ERR_ILLEGAL_ACTION otherwise.
-//
-// Locking: No requirements. The VA space lock does NOT need to be held when
-//          calling this function, though it is allowed.
-static NV_STATUS uvm_va_space_initialized(uvm_va_space_t *va_space)
-{
-    // The common case by far is for the VA space to have already been
-    // initialized. This combined with the fact that some callers may never hold
-    // the VA space lock means we don't want the VA space lock to be taken to
-    // perform this check.
-    //
-    // Instead of locks, we rely on acquire/release memory ordering semantics.
-    // The release is done at the end of uvm_api_initialize() when the
-    // UVM_INITIALIZE ioctl completes. That opens the gate for any other
-    // threads.
-    //
-    // Using acquire semantics as opposed to a normal read will add slight
-    // overhead to every entry point on platforms with relaxed ordering. Should
-    // that overhead become noticeable we could have UVM_INITIALIZE use
-    // on_each_cpu to broadcast memory barriers.
-    if (likely(atomic_read_acquire(&va_space->initialized)))
-        return NV_OK;
-
-    return NV_ERR_ILLEGAL_ACTION;
-}
-
-NV_STATUS uvm_va_space_create(struct inode *inode, struct file *filp);
+NV_STATUS uvm_va_space_create(struct address_space *mapping, uvm_va_space_t **va_space_ptr, NvU64 flags);
 void uvm_va_space_destroy(uvm_va_space_t *va_space);
 
 // All VA space locking should be done with these wrappers. They're macros so
@@ -496,10 +466,6 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space);
         uvm_up_read(&(__va_space)->lock);                               \
         uvm_mutex_unlock(&(__va_space)->serialize_writers_lock);        \
     } while (0)
-
-// Initialize the VA space with the user-provided flags, enabling ioctls and
-// mmap.
-NV_STATUS uvm_va_space_initialize(uvm_va_space_t *va_space, NvU64 flags);
 
 // Get a registered gpu by uuid. This restricts the search for GPUs, to those that
 // have been registered with a va_space. This returns NULL if the GPU is not present, or not
@@ -571,12 +537,30 @@ void uvm_va_space_detach_all_user_channels(uvm_va_space_t *va_space, struct list
 // VA space. Both GPUs must be registered in the VA space.
 bool uvm_va_space_peer_enabled(uvm_va_space_t *va_space, uvm_gpu_t *gpu1, uvm_gpu_t *gpu2);
 
+// Returns the va_space this file points to. Returns NULL if this file
+// does not point to a va_space.
+static uvm_va_space_t *uvm_fd_va_space(struct file *filp)
+{
+    uvm_va_space_t *va_space;
+    uvm_fd_type_t type;
+
+    type = uvm_fd_type(filp, (void **) &va_space);
+    if (type != UVM_FD_VA_SPACE)
+        return NULL;
+
+    return va_space;
+}
+
 static uvm_va_space_t *uvm_va_space_get(struct file *filp)
 {
-    UVM_ASSERT(uvm_file_is_nvidia_uvm(filp));
-    UVM_ASSERT_MSG(filp->private_data != NULL, "filp: 0x%llx", (NvU64)filp);
+    uvm_fd_type_t fd_type;
+    uvm_va_space_t *va_space;
 
-    return (uvm_va_space_t *)filp->private_data;
+    fd_type = uvm_fd_type(filp, (void **)&va_space);
+    UVM_ASSERT(uvm_file_is_nvidia_uvm(filp));
+    UVM_ASSERT_MSG(fd_type == UVM_FD_VA_SPACE, "filp: 0x%llx", (NvU64)filp);
+
+    return va_space;
 }
 
 static uvm_va_block_context_t *uvm_va_space_block_context(uvm_va_space_t *va_space, struct mm_struct *mm)
@@ -867,5 +851,21 @@ NV_STATUS uvm_test_destroy_gpu_va_space_delay(UVM_TEST_DESTROY_GPU_VA_SPACE_DELA
 vm_fault_t uvm_va_space_cpu_fault_managed(uvm_va_space_t *va_space,
                                           struct vm_area_struct *vma,
                                           struct vm_fault *vmf);
+
+// Handle a CPU fault in the given VA space for a HMM allocation,
+// performing any operations necessary to establish a coherent CPU mapping
+// (migrations, cache invalidates, etc.).
+//
+// Locking:
+//  - vma->vm_mm->mmap_lock must be held in at least read mode. Note, that
+//    might not be the same as current->mm->mmap_lock.
+// Returns:
+// VM_FAULT_NOPAGE: if page was faulted in OK
+//     (possibly or'ed with VM_FAULT_MAJOR if a migration was needed).
+// VM_FAULT_OOM: if system memory wasn't available.
+// VM_FAULT_SIGBUS: if a CPU mapping to fault_addr cannot be accessed.
+vm_fault_t uvm_va_space_cpu_fault_hmm(uvm_va_space_t *va_space,
+                                      struct vm_area_struct *vma,
+                                      struct vm_fault *vmf);
 
 #endif // __UVM_VA_SPACE_H__

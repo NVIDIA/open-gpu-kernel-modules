@@ -44,7 +44,8 @@ typedef struct
     NvU64               timestamp;
     LOCK_TRACE_INFO     traceInfo;
     NvU64               tlsEntryId;
-
+    volatile NvU32      contentionCount;
+    NvU32               lowPriorityAging;
 } RMAPI_LOCK;
 
 RsServer          g_resServ;
@@ -178,8 +179,8 @@ _rmapiInitInterface
     pRmApi->AllocWithHandle = rmapiAllocWithHandle;
     pRmApi->AllocWithSecInfo = pRmApi->bTlsInternal ? rmapiAllocWithSecInfo : rmapiAllocWithSecInfoTls;
 
-    pRmApi->FreeClientList = rmapiFreeClientList;
-    pRmApi->FreeClientListWithSecInfo = pRmApi->bTlsInternal ? rmapiFreeClientListWithSecInfo : rmapiFreeClientListWithSecInfoTls;
+    pRmApi->DisableClients = rmapiDisableClients;
+    pRmApi->DisableClientsWithSecInfo = pRmApi->bTlsInternal ? rmapiDisableClientsWithSecInfo : rmapiDisableClientsWithSecInfoTls;
 
     pRmApi->Free = rmapiFree;
     pRmApi->FreeWithSecInfo = pRmApi->bTlsInternal ? rmapiFreeWithSecInfo : rmapiFreeWithSecInfoTls;
@@ -291,6 +292,14 @@ _rmapiLockAlloc(void)
     g_resServ.bUnlockedParamCopy = NV_TRUE;
 
     NvU32 val = 0;
+
+    if ((osReadRegistryDword(NULL,
+                            NV_REG_STR_RM_LOCKING_LOW_PRIORITY_AGING,
+                            &val) == NV_OK))
+    {
+        g_RmApiLock.lowPriorityAging = val;
+    }
+
     if ((osReadRegistryDword(NULL,
                             NV_REG_STR_RM_PARAM_COPY_NO_LOCK,
                             &val) == NV_OK))
@@ -356,6 +365,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
         }
         else
         {
+            // Conditional acquires don't care about contention or priority
             if (portSyncRwLockAcquireWriteConditional(g_RmApiLock.pLock))
             {
                 g_RmApiLock.threadId = threadId;
@@ -375,7 +385,23 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
         else
         {
 
-            portSyncRwLockAcquireWrite(g_RmApiLock.pLock);
+            if (flags & RMAPI_LOCK_FLAGS_LOW_PRIORITY)
+            {
+                NvS32 age = g_RmApiLock.lowPriorityAging;
+                portSyncRwLockAcquireWrite(g_RmApiLock.pLock);
+                while ((g_RmApiLock.contentionCount > 0) && (age--))
+                {
+                    portSyncRwLockReleaseWrite(g_RmApiLock.pLock);
+                    osDelay(10);
+                    portSyncRwLockAcquireWrite(g_RmApiLock.pLock);
+                }
+            }
+            else
+            {
+                portAtomicIncrementU32(&g_RmApiLock.contentionCount);
+                portSyncRwLockAcquireWrite(g_RmApiLock.pLock);
+                portAtomicDecrementU32(&g_RmApiLock.contentionCount);
+            }
             g_RmApiLock.threadId = threadId;
         }
     }

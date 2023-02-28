@@ -215,7 +215,7 @@ typedef struct MEMORY_DESCRIPTOR
     NvU64 _flags;
 
     // Size of mapping used for this allocation.  Multiple mappings on Fermi must always use the same page size.
-    NvU32 _pageSize;
+    NvU64 _pageSize;
 
     // Size of the memory allocation in pages
     NvU64 PageCount;
@@ -497,7 +497,7 @@ void memdescDescribe(MEMORY_DESCRIPTOR *pMemDesc,
 // Fill in a MEMORY_DESCRIPTOR with the physical page addresses returned by PMA.
 // It should already be initialized with memdescCreate*().
 void memdescFillPages(MEMORY_DESCRIPTOR *pMemDesc, NvU32 offset,
-                      NvU64 *pPages, NvU32 pageCount, NvU32 pageSize);
+                      NvU64 *pPages, NvU32 pageCount, NvU64 pageSize);
 
 // Create a MEMORY_DESCRIPTOR for a subset of an existing memory allocation.
 // The new MEMORY_DESCRIPTOR must be freed with memdescDestroy.
@@ -574,7 +574,7 @@ MEMORY_DESCRIPTOR *memdescGetMemDescFromIndex(MEMORY_DESCRIPTOR *pMemDesc, NvU32
 void memdescPrintMemdesc(MEMORY_DESCRIPTOR *pMemDesc, NvBool bPrintIndividualPages, const char *pPrefixMessage);
 
 // Get the page offset for an arbitrary power of two page size
-NvU64 memdescGetPageOffset(MEMORY_DESCRIPTOR *pMemDesc, NvU32 pageSize);
+NvU64 memdescGetPageOffset(MEMORY_DESCRIPTOR *pMemDesc, NvU64 pageSize);
 
 //
 // Internal APIs for the IOVASPACE to manage IOMMU mappings in a memdesc.
@@ -645,10 +645,13 @@ void memdescSetContiguity(PMEMORY_DESCRIPTOR pMemDesc, ADDRESS_TRANSLATION addre
 NvBool memdescCheckContiguity(PMEMORY_DESCRIPTOR pMemDesc, ADDRESS_TRANSLATION addressTranslation);
 NV_ADDRESS_SPACE memdescGetAddressSpace(PMEMORY_DESCRIPTOR pMemDesc);
 NvU32 memdescGetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation);
-void  memdescSetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU32 pageSize);
+void  memdescSetPageSize(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation, NvU64 pageSize);
 PMEMORY_DESCRIPTOR memdescGetRootMemDesc(PMEMORY_DESCRIPTOR pMemDesc, NvU64 *pRootOffset);
 void memdescSetCustomHeap(PMEMORY_DESCRIPTOR);
 NvBool memdescGetCustomHeap(PMEMORY_DESCRIPTOR);
+
+// Temporary function for 64-bit pageSize transition
+NvU64 memdescGetPageSize64(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation);
 
 /*!
  *  @brief Get PTE kind

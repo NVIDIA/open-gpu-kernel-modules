@@ -104,7 +104,6 @@ struct VirtMemAllocator {
     NV_STATUS (*__dmaAllocBar1P2PMapping__)(struct OBJGPU *, struct VirtMemAllocator *, DMA_BAR1P2P_MAPPING_PRARAMS *);
     void (*__dmaFreeBar1P2PMapping__)(struct VirtMemAllocator *, CLI_DMA_MAPPING_INFO *);
     NV_STATUS (*__dmaStatePostLoad__)(struct OBJGPU *, struct VirtMemAllocator *, NvU32);
-    NV_STATUS (*__dmaReconcileTunableState__)(POBJGPU, struct VirtMemAllocator *, void *);
     NV_STATUS (*__dmaStateLoad__)(POBJGPU, struct VirtMemAllocator *, NvU32);
     NV_STATUS (*__dmaStateUnload__)(POBJGPU, struct VirtMemAllocator *, NvU32);
     NV_STATUS (*__dmaStatePreLoad__)(POBJGPU, struct VirtMemAllocator *, NvU32);
@@ -115,11 +114,6 @@ struct VirtMemAllocator {
     void (*__dmaInitMissing__)(POBJGPU, struct VirtMemAllocator *);
     NV_STATUS (*__dmaStatePreInitLocked__)(POBJGPU, struct VirtMemAllocator *);
     NV_STATUS (*__dmaStatePreInitUnlocked__)(POBJGPU, struct VirtMemAllocator *);
-    NV_STATUS (*__dmaGetTunableState__)(POBJGPU, struct VirtMemAllocator *, void *);
-    NV_STATUS (*__dmaCompareTunableState__)(POBJGPU, struct VirtMemAllocator *, void *, void *);
-    void (*__dmaFreeTunableState__)(POBJGPU, struct VirtMemAllocator *, void *);
-    NV_STATUS (*__dmaAllocTunableState__)(POBJGPU, struct VirtMemAllocator *, void **);
-    NV_STATUS (*__dmaSetTunableState__)(POBJGPU, struct VirtMemAllocator *, void *);
     NvBool (*__dmaIsPresent__)(POBJGPU, struct VirtMemAllocator *);
     NvBool PDB_PROP_DMA_MMU_INVALIDATE_DISABLE;
     NvBool PDB_PROP_DMA_ENFORCE_32BIT_POINTER;
@@ -189,7 +183,6 @@ NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator**, Dynamic*, NvU32)
 #define dmaFreeBar1P2PMapping_HAL(pDma, arg0) dmaFreeBar1P2PMapping_DISPATCH(pDma, arg0)
 #define dmaStatePostLoad(pGpu, pDma, arg0) dmaStatePostLoad_DISPATCH(pGpu, pDma, arg0)
 #define dmaStatePostLoad_HAL(pGpu, pDma, arg0) dmaStatePostLoad_DISPATCH(pGpu, pDma, arg0)
-#define dmaReconcileTunableState(pGpu, pEngstate, pTunableState) dmaReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define dmaStateLoad(pGpu, pEngstate, arg0) dmaStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define dmaStateUnload(pGpu, pEngstate, arg0) dmaStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define dmaStatePreLoad(pGpu, pEngstate, arg0) dmaStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -200,11 +193,6 @@ NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator**, Dynamic*, NvU32)
 #define dmaInitMissing(pGpu, pEngstate) dmaInitMissing_DISPATCH(pGpu, pEngstate)
 #define dmaStatePreInitLocked(pGpu, pEngstate) dmaStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define dmaStatePreInitUnlocked(pGpu, pEngstate) dmaStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define dmaGetTunableState(pGpu, pEngstate, pTunableState) dmaGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define dmaCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) dmaCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define dmaFreeTunableState(pGpu, pEngstate, pTunableState) dmaFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define dmaAllocTunableState(pGpu, pEngstate, ppTunableState) dmaAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define dmaSetTunableState(pGpu, pEngstate, pTunableState) dmaSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define dmaIsPresent(pGpu, pEngstate) dmaIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS dmaInit_GM107(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma);
 
@@ -284,11 +272,11 @@ static inline NV_STATUS dmaFreeMapping(struct OBJGPU *pGpu, struct VirtMemAlloca
 
 #define dmaFreeMapping_HAL(pGpu, pDma, arg0, arg1, arg2, arg3, arg4) dmaFreeMapping(pGpu, pDma, arg0, arg1, arg2, arg3, arg4)
 
-NV_STATUS dmaUpdateVASpace_GF100(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, NvU32 aperture, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU32 pageSize);
+NV_STATUS dmaUpdateVASpace_GF100(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, NvU32 aperture, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU64 pageSize);
 
 
 #ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NV_STATUS dmaUpdateVASpace(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, NvU32 aperture, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU32 pageSize) {
+static inline NV_STATUS dmaUpdateVASpace(struct OBJGPU *pGpu, struct VirtMemAllocator *pDma, struct OBJVASPACE *pVAS, MEMORY_DESCRIPTOR *pMemDesc, NvU8 *tgtPteMem, NvU64 vAddr, NvU64 vAddrLimit, NvU32 flags, DMA_PAGE_ARRAY *pPageArray, NvU32 overmapPteMod, COMPR_INFO *pComprInfo, NvU64 surfaceOffset, NvU32 valid, NvU32 aperture, NvU32 peer, NvU64 fabricAddr, NvU32 deferInvalidate, NvBool bSparse, NvU64 pageSize) {
     NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -421,10 +409,6 @@ static inline NV_STATUS dmaStatePostLoad_DISPATCH(struct OBJGPU *pGpu, struct Vi
     return pDma->__dmaStatePostLoad__(pGpu, pDma, arg0);
 }
 
-static inline NV_STATUS dmaReconcileTunableState_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunableState) {
-    return pEngstate->__dmaReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS dmaStateLoad_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg0) {
     return pEngstate->__dmaStateLoad__(pGpu, pEngstate, arg0);
 }
@@ -463,26 +447,6 @@ static inline NV_STATUS dmaStatePreInitLocked_DISPATCH(POBJGPU pGpu, struct Virt
 
 static inline NV_STATUS dmaStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
     return pEngstate->__dmaStatePreInitUnlocked__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS dmaGetTunableState_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunableState) {
-    return pEngstate->__dmaGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS dmaCompareTunableState_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__dmaCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void dmaFreeTunableState_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunableState) {
-    pEngstate->__dmaFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS dmaAllocTunableState_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void **ppTunableState) {
-    return pEngstate->__dmaAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS dmaSetTunableState_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunableState) {
-    return pEngstate->__dmaSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool dmaIsPresent_DISPATCH(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {

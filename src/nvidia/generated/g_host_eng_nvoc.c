@@ -76,11 +76,7 @@ __nvoc_ctor_OBJHOSTENG_exit:
 static void __nvoc_init_funcTable_OBJHOSTENG_1(OBJHOSTENG *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-    pThis->__hostengHaltEngine__ = &hostengHaltEngine_IMPL;
-
     pThis->__hostengHaltAndReset__ = &hostengHaltAndReset_IMPL;
-
-    pThis->__hostengReset__ = &hostengReset_IMPL;
 }
 
 void __nvoc_init_funcTable_OBJHOSTENG(OBJHOSTENG *pThis) {

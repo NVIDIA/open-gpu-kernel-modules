@@ -891,7 +891,7 @@ memCopyConstruct_IMPL
 
         gpuSetThreadBcState(pDstGpu, NV_TRUE);
         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
-        if (memdescGetPageSize(memdescGetMemDescFromGpu(pMemoryDst->pMemDesc, pGpu), AT_GPU) == 0)
+        if (memdescGetPageSize64(memdescGetMemDescFromGpu(pMemoryDst->pMemDesc, pGpu), AT_GPU) == 0)
         {
             status = memmgrSetMemDescPageSize_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu),
                                                   memdescGetMemDescFromGpu(pMemoryDst->pMemDesc, pGpu),

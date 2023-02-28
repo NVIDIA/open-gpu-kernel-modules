@@ -35,6 +35,8 @@ NvBool nv3dAllocChannelObject(
     NvPushChannelPtr pPushChannel = pParams->pPushChannel;
     NvPushDevicePtr pPushDevice = pPushChannel->pDevice;
     const NvU32 classNumber = p3dChannel->p3dDevice->classNumber;
+    const NvU32 numChannels =
+        pPushDevice->clientSli ? pPushDevice->numSubDevices : 1;
     int sd;
 
     /*
@@ -44,15 +46,13 @@ NvBool nv3dAllocChannelObject(
     nvAssert(p3dChannel->p3dDevice->pPushDevice ==
              pParams->pPushChannel->pDevice);
 
-    for (sd = 0;
-         sd < ARRAY_LEN(pPushChannel->channelHandle) &&
-            pPushChannel->channelHandle[sd] != 0;
-         sd++) {
+    for (sd = 0; sd < numChannels; sd++) {
 
         if (nvPushIsAModel(pPushDevice)) {
             nvAssert(sd == 0);
         } else {
             const NvPushImports *pImports = pPushDevice->pImports;
+            nvAssert(pPushChannel->channelHandle[sd] != 0);
             nvAssert(pParams->handle[sd] != 0);
             NvU32 ret = pImports->rmApiAlloc(pPushDevice,
                                              pPushChannel->channelHandle[sd],

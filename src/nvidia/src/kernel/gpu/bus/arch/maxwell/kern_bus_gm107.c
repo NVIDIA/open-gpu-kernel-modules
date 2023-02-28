@@ -189,6 +189,7 @@ kbusSetupDefaultBar0Window
         kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
     NvU64 offsetBar0;
 
+    NV_ASSERT_OR_RETURN_VOID(!KBUS_BAR0_PRAMIN_DISABLED(pGpu));
     //
     // Initialize BAR0 window to the last 1MB of FB. Since this is where it
     // should already be positioned by the vbios, this should not be an issue.
@@ -282,7 +283,10 @@ kbusStateInitLockedKernel_GM107
         }
     }
 
-    kbusSetupDefaultBar0Window(pGpu, pKernelBus);
+    if (!KBUS_BAR0_PRAMIN_DISABLED(pGpu))
+    {
+        kbusSetupDefaultBar0Window(pGpu, pKernelBus);
+    }
 
     //
     // Initialize BAR2 before initializing BAR1.  That way, we can use BAR2
@@ -322,6 +326,32 @@ kbusStateInitLocked_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus)
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
         return NV_OK;
+    }
+
+    if (KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO, "C2C is being used, so disable CPU visible BAR1/2 now before they are setup\n");
+
+        pKernelBus->pciBarSizes[BUS_BAR_1] = 0;
+        pKernelBus->pciBarSizes[BUS_BAR_2] = 0;
+
+        pKernelBus->bar1[GPU_GFID_PF].physAddr = 0;
+        pKernelBus->bar2[GPU_GFID_PF].physAddr = 0;
+
+        pKernelBus->bar1[GPU_GFID_PF].apertureLength  = 0;
+        pKernelBus->bar2[GPU_GFID_PF].cpuVisibleLimit = 0;
+        pKernelBus->bar2[GPU_GFID_PF].rmApertureLimit = 0;
+
+        //
+        // For C2C case, there is no CPU visible BAR2. So CPU visible BAR2
+        // window is removed and appended to CPU invisible BAR2 window.
+        // Only need to handle PF, since VF BAR1/2 is disabled for C2C case.
+        //
+        NV_ASSERT(pKernelBus->bar2[GPU_GFID_PF].cpuVisibleBase == 0);
+        pKernelBus->bar2[GPU_GFID_PF].cpuInvisibleBase = pKernelBus->bar2[GPU_GFID_PF].cpuVisibleBase;
+        pKernelBus->bar2[GPU_GFID_PF].cpuInvisibleBase = 0;
+
+        pKernelBus->bUsePhysicalBar2InitPagetable = NV_FALSE;
     }
 
     if (RMCFG_FEATURE_PLATFORM_GSP)
@@ -365,7 +395,8 @@ kbusStateLoad_GM107
 
         if (!(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
         {
-            if (NULL == pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping)
+            if (NULL == pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping &&
+                 !KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu))
             {
                 NV_ASSERT_OK_OR_RETURN(kbusSetupBar2CpuAperture_HAL(pGpu, pKernelBus, GPU_GFID_PF));
             }
@@ -378,7 +409,7 @@ kbusStateLoad_GM107
         // a hit on the GC6 exit times, so this verif only feature does not
         // come for free.
         //
-        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) && 
+        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
             !(IS_GPU_GC6_STATE_EXITING(pGpu) && pKernelBus->bSkipBar2TestOnGc6Exit))
         {
             // Verify that BAR2 and the MMU actually works
@@ -402,7 +433,8 @@ kbusStatePostLoad_GM107
     NV_STATUS  status     = NV_OK;
     KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
 
-    if ( ! IS_GPU_GC6_STATE_EXITING(pGpu))
+    if ( ! IS_GPU_GC6_STATE_EXITING(pGpu) &&
+         !KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu))
     {
         // Bar1 is created once per Gpu on each Gpu call to kbusStatePostLoad_GM107
         if ((status = kbusInitBar1_HAL(pGpu, pKernelBus, GPU_GFID_PF)) != NV_OK)
@@ -460,9 +492,6 @@ kbusStateUnload_GM107
     NV_STATUS          status     = NV_OK;
     KernelBif         *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
 
-    if (IS_VIRTUAL(pGpu) && !(flags & GPU_STATE_FLAGS_PRESERVING))
-        return NV_OK;
-
     if ((pKernelBif != NULL)
         &&
         (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
@@ -479,12 +508,9 @@ kbusStateUnload_GM107
     {
         if (!IS_GPU_GC6_STATE_ENTERING(pGpu))
         {
-			status = kbusTeardownBar2CpuAperture_HAL(pGpu, pKernelBus, GPU_GFID_PF);
-			if (!IS_VIRTUAL_WITH_SRIOV(pGpu))
-            {
-                // Do not use BAR2 physical mode for bootstrapping BAR2 across S/R.
-                pKernelBus->bUsePhysicalBar2InitPagetable = NV_FALSE;
-            }
+            status = kbusTeardownBar2CpuAperture_HAL(pGpu, pKernelBus, GPU_GFID_PF);
+            // Do not use BAR2 physical mode for bootstrapping BAR2 across S/R.
+            pKernelBus->bUsePhysicalBar2InitPagetable = NV_FALSE;
         }
     }
     else
@@ -538,6 +564,9 @@ kbusInitBar1_GM107(OBJGPU *pGpu, KernelBus *pKernelBus, NvU32 gfid)
     {
         return rmStatus;
     }
+
+    if (IsT234(pGpu) && pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+        return NV_OK;
 
     //
     // For BAR address spaces, leave a valid PTE pointed to page 0.
@@ -960,8 +989,11 @@ kbusInitBar2_GM107
         return NV_OK;
     }
 
-    status = kbusSetupBar2CpuAperture_HAL(pGpu, pKernelBus, gfid);
-    NV_ASSERT_OR_GOTO(status == NV_OK,  cleanup);
+    if (!KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu))
+    {
+        status = kbusSetupBar2CpuAperture_HAL(pGpu, pKernelBus, gfid);
+        NV_ASSERT_OR_GOTO(status == NV_OK,  cleanup);
+    }
 
     if (KBUS_BAR2_ENABLED(pKernelBus))
     {
@@ -1279,6 +1311,7 @@ kbusSetupBar2GpuVaSpace_GM107
     OBJEHEAP               *pVASpaceHeap;
     MEMORY_DESCRIPTOR      *pPageLevelsMemDesc = NULL;
     NvU32                   allocSize;
+    NvBool                  bUseStagingBuffer = NV_FALSE;
 
     //
     // Nothing to be done in guest in the paravirtualization case or if
@@ -1326,7 +1359,8 @@ kbusSetupBar2GpuVaSpace_GM107
             pKernelBus->bar2[gfid].pteBase += memmgrGetRsvdMemoryBase(pMemoryManager);
     }
 
-    if (IS_GFID_PF(gfid))
+    if (IS_GFID_PF(gfid) &&
+        !KBUS_BAR0_PRAMIN_DISABLED(pGpu))
     {
         // Setup BAR0 window for page directory/table updates during BAR2 bootstrap
         status = kbusSetupBar0WindowBeforeBar2Bootstrap_HAL(pGpu, pKernelBus, &origVidOffset);
@@ -1395,80 +1429,6 @@ kbusSetupBar2GpuVaSpace_GM107
         }
     }
 
-    // Get the MMU format for BAR2.
-    pKernelBus->bar2[gfid].pFmt = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0);
-    NV_ASSERT_OR_GOTO(NULL != pKernelBus->bar2[gfid].pFmt, cleanup);
-    walkFlags.bUseIterative = gpuIsIterativeMmuWalkerEnabled(pGpu);
-
-    //
-    // Initialize/allocate walker staging buffer only if PTEs in FBMEM
-    // and we are currently bootstrapping BAR2.
-    //
-    if (pKernelBus->bar2[gfid].pWalkStagingBuffer == NULL &&
-        pKernelBus->PTEBAR2Aperture == ADDR_FBMEM &&
-        pKernelBus->bar2[gfid].bBootstrap)
-    {
-        pKernelBus->bar2[gfid].pWalkStagingBuffer = kbusCreateStagingMemdesc(pGpu);
-    }
-
-    // Create the MMU_WALKER state
-    status = mmuWalkCreate(pKernelBus->bar2[gfid].pFmt->pRoot,
-                           NULL,
-                           &g_bar2WalkCallbacks,
-                           walkFlags,
-                           &pWalk,
-                           (struct MMU_WALK_MEMDESC *) pKernelBus->bar2[gfid].pWalkStagingBuffer);
-    NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
-    pKernelBus->bar2[gfid].pWalk = pWalk;
-
-    // We want to lock the small page table
-    pLevelFmt = mmuFmtFindLevelWithPageShift(pKernelBus->bar2[gfid].pFmt->pRoot,
-                                             RM_PAGE_SHIFT);
-
-    // Setup walk user context.
-    userCtx.pGpu = pGpu;
-    userCtx.gfid = gfid;
-
-    NV_ASSERT_OR_RETURN(pWalk != NULL, NV_ERR_INVALID_STATE);
-
-    // Pre-reserve and init 4K tables through BAR0 window (bBootstrap) mode.
-    mmuWalkSetUserCtx(pWalk, &userCtx);
-
-    if (pKernelBus->bar2[gfid].cpuVisibleLimit != 0)
-    {
-        status = mmuWalkReserveEntries(pWalk, pLevelFmt, pKernelBus->bar2[gfid].cpuVisibleBase,
-                                       pKernelBus->bar2[gfid].cpuVisibleLimit, NV_FALSE);
-        NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
-        status = mmuWalkSparsify(pWalk, pKernelBus->bar2[gfid].cpuVisibleBase, pKernelBus->bar2[gfid].cpuVisibleLimit, NV_TRUE);
-        NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
-    }
-
-    if (pKernelBus->bar2[gfid].cpuInvisibleLimit != 0)
-    {
-        status = mmuWalkReserveEntries(pWalk, pLevelFmt, pKernelBus->bar2[gfid].cpuInvisibleBase,
-                                       pKernelBus->bar2[gfid].cpuInvisibleLimit, NV_FALSE);
-        NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
-        status = mmuWalkSparsify(pWalk, pKernelBus->bar2[gfid].cpuInvisibleBase, pKernelBus->bar2[gfid].cpuInvisibleLimit, NV_TRUE);
-        NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
-    }
-
-    NV_PRINTF(LEVEL_INFO, "(BAR2 0x%llx, PDB 0x%llx): vaLimit = 0x%llx\n",
-              pKernelBus->bar2[gfid].instBlockBase, pKernelBus->bar2[gfid].pdeBase,
-              pKernelBus->bar2[gfid].vaLimit);
-
-    if (NULL != pKernelBus->bar2[gfid].pPDEMemDescForBootstrap)
-    {
-        memdescSetPageSize(pKernelBus->bar2[gfid].pPDEMemDescForBootstrap, AT_GPU,
-                       FERMI_SMALL_PAGESIZE);
-        pKernelBus->virtualBar2[gfid].pPDB = pKernelBus->bar2[gfid].pPDEMemDescForBootstrap;
-    }
-    else
-    {
-        memdescSetPageSize(pKernelBus->bar2[gfid].pPDEMemDesc, AT_GPU,
-                       FERMI_SMALL_PAGESIZE);
-        pKernelBus->virtualBar2[gfid].pPDB = pKernelBus->bar2[gfid].pPDEMemDesc;
-    }
-
     //
     // Setup a memdesc that covers all of BAR2's page levels.
     //
@@ -1500,6 +1460,92 @@ kbusSetupBar2GpuVaSpace_GM107
                 break;
         }
         pKernelBus->virtualBar2[gfid].pPageLevelsMemDesc = pPageLevelsMemDesc;
+
+        if (KBUS_BAR0_PRAMIN_DISABLED(pGpu))
+        {
+            NV_ASSERT_OK_OR_GOTO(status, kbusInitVirtualBar2_HAL(pGpu, pKernelBus), cleanup);
+        }
+    }
+
+    // Get the MMU format for BAR2.
+    pKernelBus->bar2[gfid].pFmt = kgmmuFmtGet(pKernelGmmu, GMMU_FMT_VERSION_DEFAULT, 0);
+    NV_ASSERT_OR_GOTO(NULL != pKernelBus->bar2[gfid].pFmt, cleanup);
+    walkFlags.bUseIterative = gpuIsIterativeMmuWalkerEnabled(pGpu);
+
+    //
+    // Initialize/allocate walker staging buffer only if PTEs in FBMEM
+    // and we are currently bootstrapping BAR2.
+    //
+    if (pKernelBus->bar2[gfid].pWalkStagingBuffer == NULL &&
+        pKernelBus->PTEBAR2Aperture == ADDR_FBMEM &&
+        pKernelBus->bar2[gfid].bBootstrap)
+    {
+        bUseStagingBuffer = NV_TRUE;
+        pKernelBus->bar2[gfid].pWalkStagingBuffer = kbusCreateStagingMemdesc(pGpu);
+    }
+
+    // Create the MMU_WALKER state
+    status = mmuWalkCreate(pKernelBus->bar2[gfid].pFmt->pRoot,
+                           NULL,
+                           &g_bar2WalkCallbacks,
+                           walkFlags,
+                           &pWalk,
+                           (struct MMU_WALK_MEMDESC *) pKernelBus->bar2[gfid].pWalkStagingBuffer);
+    NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+    pKernelBus->bar2[gfid].pWalk = pWalk;
+
+    // We want to lock the small page table
+    pLevelFmt = mmuFmtFindLevelWithPageShift(pKernelBus->bar2[gfid].pFmt->pRoot,
+                                             RM_PAGE_SHIFT);
+
+    // Setup walk user context.
+    userCtx.pGpu = pGpu;
+    userCtx.gfid = gfid;
+
+    NV_ASSERT_OR_RETURN(pWalk != NULL, NV_ERR_INVALID_STATE);
+
+    // Pre-reserve and init 4K tables through BAR0 window (bBootstrap) mode.
+    mmuWalkSetUserCtx(pWalk, &userCtx);
+
+    if (pKernelBus->bar2[gfid].cpuVisibleLimit != 0)
+    {
+        status = mmuWalkReserveEntries(pWalk, pLevelFmt, pKernelBus->bar2[gfid].cpuVisibleBase,
+                                       pKernelBus->bar2[gfid].cpuVisibleLimit, NV_FALSE);
+        NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+        status = mmuWalkSparsify(pWalk,
+                                 pKernelBus->bar2[gfid].cpuVisibleBase,
+                                 pKernelBus->bar2[gfid].cpuVisibleLimit,
+                                 bUseStagingBuffer);
+        NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+    }
+
+    if (pKernelBus->bar2[gfid].cpuInvisibleLimit != 0)
+    {
+        status = mmuWalkReserveEntries(pWalk, pLevelFmt, pKernelBus->bar2[gfid].cpuInvisibleBase,
+                                       pKernelBus->bar2[gfid].cpuInvisibleLimit, NV_FALSE);
+        NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+        status = mmuWalkSparsify(pWalk,
+                                 pKernelBus->bar2[gfid].cpuInvisibleBase,
+                                 pKernelBus->bar2[gfid].cpuInvisibleLimit,
+                                 bUseStagingBuffer);
+        NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+    }
+
+    NV_PRINTF(LEVEL_INFO, "(BAR2 0x%llx, PDB 0x%llx): vaLimit = 0x%llx\n",
+              pKernelBus->bar2[gfid].instBlockBase, pKernelBus->bar2[gfid].pdeBase,
+              pKernelBus->bar2[gfid].vaLimit);
+
+    if (NULL != pKernelBus->bar2[gfid].pPDEMemDescForBootstrap)
+    {
+        memdescSetPageSize(pKernelBus->bar2[gfid].pPDEMemDescForBootstrap, AT_GPU,
+                       FERMI_SMALL_PAGESIZE);
+        pKernelBus->virtualBar2[gfid].pPDB = pKernelBus->bar2[gfid].pPDEMemDescForBootstrap;
+    }
+    else
+    {
+        memdescSetPageSize(pKernelBus->bar2[gfid].pPDEMemDesc, AT_GPU,
+                       FERMI_SMALL_PAGESIZE);
+        pKernelBus->virtualBar2[gfid].pPDB = pKernelBus->bar2[gfid].pPDEMemDesc;
     }
 
     kbusPatchBar2Pdb_HAL(pGpu, pKernelBus);
@@ -1519,7 +1565,8 @@ cleanup:
         mmuWalkSetUserCtx(pWalk, NULL);
     }
 
-    if (!kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus) && IS_GFID_PF(gfid))
+    if (!kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus) && IS_GFID_PF(gfid) &&
+        !KBUS_BAR0_PRAMIN_DISABLED(pGpu))
     {
         // Restore BAR0 window after BAR2 bootstrap
         kbusRestoreBar0WindowAfterBar2Bootstrap_HAL(pGpu, pKernelBus, origVidOffset);
@@ -1583,7 +1630,9 @@ kbusTeardownBar2GpuVaSpace_GM107
 
         mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx);
 
-        if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus) || IS_GFID_VF(gfid))
+        if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus) ||
+            IS_GFID_VF(gfid) ||
+            KBUS_BAR0_PRAMIN_DISABLED(pGpu))
         {
             mmuWalkLevelInstancesForceFree(pKernelBus->bar2[gfid].pWalk);
         }
@@ -1696,6 +1745,8 @@ kbusSetupBar0WindowBeforeBar2Bootstrap_GM107
 {
     NV_STATUS         status  = NV_OK;
 
+    NV_ASSERT_OR_RETURN(!KBUS_BAR0_PRAMIN_DISABLED(pGpu),
+                        NV_ERR_INVALID_STATE);
     // Check that Bar2 Page Dir starts at or after bar0 window vid offset
     if (ADDR_FBMEM == pKernelBus->PDEBAR2Aperture ||
         ADDR_FBMEM == pKernelBus->PTEBAR2Aperture)
@@ -1741,6 +1792,8 @@ kbusRestoreBar0WindowAfterBar2Bootstrap_GM107
     NvU64        origVidOffset
 )
 {
+    NV_ASSERT_OR_RETURN_VOID(!KBUS_BAR0_PRAMIN_DISABLED(pGpu));
+
     NV_ASSERT(pKernelBus->bar2[GPU_GFID_PF].bBootstrap);
     pKernelBus->bar2[GPU_GFID_PF].bBootstrap = NV_FALSE;
 
@@ -1941,25 +1994,22 @@ _kbusWalkCBMapNextEntries_RmAperture
                 else
                 {
                     // Use BAR0 or nvlink if available
-                    sizeInDWord = (NvU32)NV_CEIL(pLevelFmt->entrySize, sizeof(NvU32));
                     NvU64 entryStart = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU), entryOffset);
-                    NvU32 i;
                     NvU8 *pMapping = NULL;
 
-                    if (pKernelBus->coherentCpuMapping.bCoherentCpuMapping)
+                    if (KBUS_BAR0_PRAMIN_DISABLED(pGpu))
                     {
-                        NV_ASSERT_OR_RETURN_VOID(pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING));
                         pMapping = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc);
                         NV_ASSERT_OR_RETURN_VOID(pMapping != NULL);
-                        for (i = 0; i < sizeInDWord; i++)
-                        {
-                            MEM_WR32(pMapping + entryOffset + sizeof(NvU32)*i,
-                                    entryValue.v32[i]);
-                        }
+                        portMemCopy(pMapping + entryStart,
+                                    pLevelFmt->entrySize, entryValue.v8,
+                                    pLevelFmt->entrySize);
                         kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc);
                     }
                     else
                     {
+                        sizeInDWord = (NvU32)NV_CEIL(pLevelFmt->entrySize, sizeof(NvU32));
+                        NvU32 i;
                         for (i = 0; i < sizeInDWord; i++)
                         {
                             // BAR0 write.
@@ -3700,7 +3750,15 @@ NV_STATUS kbusSetBarsApertureSize_GM107
         else
         {
             pKernelBus->bar2[gfid].cpuVisibleLimit = (BUS_BAR2_APERTURE_MB << 20) - 1;
-            pKernelBus->bar2[gfid].rmApertureLimit = (BUS_BAR2_RM_APERTURE_MB << 20) - 1;
+
+            if (pKernelBus->bIsEntireBar2RegionVirtuallyAddressible)
+            {
+                pKernelBus->bar2[gfid].rmApertureLimit = pKernelBus->bar2[gfid].cpuVisibleLimit;
+            }
+            else
+            {
+                pKernelBus->bar2[gfid].rmApertureLimit = (BUS_BAR2_RM_APERTURE_MB << 20) - 1;
+            }
         }
     }
 

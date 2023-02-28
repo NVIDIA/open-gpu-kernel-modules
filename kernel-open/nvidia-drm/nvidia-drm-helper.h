@@ -35,6 +35,35 @@
 #include <drm/drm_drv.h>
 #endif
 
+#if defined(NV_DRM_ALPHA_BLENDING_AVAILABLE) || defined(NV_DRM_ROTATION_AVAILABLE)
+/* For DRM_ROTATE_* , DRM_REFLECT_* */
+#include <drm/drm_blend.h>
+#endif
+
+#if defined(NV_DRM_ROTATION_AVAILABLE)
+/* For DRM_MODE_ROTATE_* and DRM_MODE_REFLECT_* */
+#include <uapi/drm/drm_mode.h>
+#endif
+
+#if defined(NV_DRM_ROTATION_AVAILABLE)
+/*
+ * 19-05-2017 c2c446ad29437bb92b157423c632286608ebd3ec has added
+ * DRM_MODE_ROTATE_* and DRM_MODE_REFLECT_* to UAPI and removed
+ * DRM_ROTATE_* and DRM_REFLECT_*
+ */
+#if !defined(DRM_MODE_ROTATE_0)
+#define DRM_MODE_ROTATE_0       DRM_ROTATE_0
+#define DRM_MODE_ROTATE_90      DRM_ROTATE_90
+#define DRM_MODE_ROTATE_180     DRM_ROTATE_180
+#define DRM_MODE_ROTATE_270     DRM_ROTATE_270
+#define DRM_MODE_REFLECT_X      DRM_REFLECT_X
+#define DRM_MODE_REFLECT_Y      DRM_REFLECT_Y
+#define DRM_MODE_ROTATE_MASK    DRM_ROTATE_MASK
+#define DRM_MODE_REFLECT_MASK   DRM_REFLECT_MASK
+#endif
+
+#endif //NV_DRM_ROTATION_AVAILABLE
+
 /*
  * drm_dev_put() is added by commit 9a96f55034e41b4e002b767e9218d55f03bdff7d
  * (2017-09-26) and drm_dev_unref() is removed by
@@ -277,11 +306,33 @@ int nv_drm_atomic_helper_disable_all(struct drm_device *dev,
     for_each_plane_in_state(__state, plane, plane_state, __i)
 #endif
 
-static inline struct drm_crtc *nv_drm_crtc_find(struct drm_device *dev,
-    uint32_t id)
+static inline struct drm_connector *
+nv_drm_connector_lookup(struct drm_device *dev, struct drm_file *filep,
+                        uint32_t id)
+{
+#if !defined(NV_DRM_CONNECTOR_LOOKUP_PRESENT)
+    return drm_connector_find(dev, id);
+#elif defined(NV_DRM_MODE_OBJECT_FIND_HAS_FILE_PRIV_ARG)
+    return drm_connector_lookup(dev, filep, id);
+#else
+    return drm_connector_lookup(dev, id);
+#endif
+}
+
+static inline void nv_drm_connector_put(struct drm_connector *connector)
+{
+#if defined(NV_DRM_CONNECTOR_PUT_PRESENT)
+    drm_connector_put(connector);
+#elif defined(NV_DRM_CONNECTOR_LOOKUP_PRESENT)
+    drm_connector_unreference(connector);
+#endif
+}
+
+static inline struct drm_crtc *
+nv_drm_crtc_find(struct drm_device *dev, struct drm_file *filep, uint32_t id)
 {
 #if defined(NV_DRM_MODE_OBJECT_FIND_HAS_FILE_PRIV_ARG)
-    return drm_crtc_find(dev, NULL /* file_priv */, id);
+    return drm_crtc_find(dev, filep, id);
 #else
     return drm_crtc_find(dev, id);
 #endif
@@ -294,6 +345,30 @@ static inline struct drm_encoder *nv_drm_encoder_find(struct drm_device *dev,
     return drm_encoder_find(dev, NULL /* file_priv */, id);
 #else
     return drm_encoder_find(dev, id);
+#endif
+}
+
+#if defined(NV_DRM_DRM_AUTH_H_PRESENT)
+#include <drm/drm_auth.h>
+#endif
+#if defined(NV_DRM_DRM_FILE_H_PRESENT)
+#include <drm/drm_file.h>
+#endif
+
+/*
+ * drm_file_get_master() added by commit 56f0729a510f ("drm: protect drm_master
+ * pointers in drm_lease.c") in v5.15 (2021-07-20)
+ */
+static inline struct drm_master *nv_drm_file_get_master(struct drm_file *filep)
+{
+#if defined(NV_DRM_FILE_GET_MASTER_PRESENT)
+    return drm_file_get_master(filep);
+#else
+    if (filep->master) {
+        return drm_master_get(filep->master);
+    } else {
+        return NULL;
+    }
 #endif
 }
 

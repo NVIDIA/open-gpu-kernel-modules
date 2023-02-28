@@ -262,7 +262,7 @@ NvU32 tlsEntryUnreference(NvU64 entryId);
 #define TLS_ISR_ALLOCATOR_SIZE 512
 #else
 #if defined(LOCK_VAL_ENABLED)
-    #define TLS_ISR_ALLOCATOR_SIZE 400
+    #define TLS_ISR_ALLOCATOR_SIZE 512
 #else
     #define TLS_ISR_ALLOCATOR_SIZE 256
 #endif

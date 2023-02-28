@@ -116,6 +116,7 @@ struct DACP2060EXTERNALDEVICE
     NvU32 tSwapRdyHiLsrMinTime; /* Value of LSR_MIN_TIME in accordance to the time (in us)
                                  * swap ready line will remain high.(Provided via a regkey)
                                 */
+    NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS mulDivSettings;   // Cached multiplier-divider settings
 
     NvU32 syncSkewResolutionInNs; // resolution in ns
     NvU32 syncSkewMax;            // max syncSkew setting in raw units
@@ -248,6 +249,8 @@ NV_STATUS gsyncGetStereoLockMode_P2060       (OBJGPU *, PDACEXTERNALDEVICE, NvU3
 NV_STATUS gsyncSetStereoLockMode_P2060       (OBJGPU *, PDACEXTERNALDEVICE, NvU32);
 NV_STATUS gsyncSetMosaic_P2060               (OBJGPU *, PDACEXTERNALDEVICE, NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS *);
 NV_STATUS gsyncConfigFlashGsync_P2060        (OBJGPU *, PDACEXTERNALDEVICE, NvU32);
+NV_STATUS gsyncGetMulDiv_P2060               (OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
+NV_STATUS gsyncSetMulDiv_P2060               (OBJGPU *, DACEXTERNALDEVICE *, NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *);
 NvBool    gsyncSupportsLargeSyncSkew_P2060   (DACEXTERNALDEVICE *);
 
 #endif

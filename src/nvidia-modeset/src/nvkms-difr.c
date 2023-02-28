@@ -145,13 +145,32 @@ typedef struct _NVDIFRStateEvoRec {
     NvU32 prefetchPass;
 } NVDIFRStateEvoRec;
 
+/*
+ * Prefetch parameters for DMA copy.
+ */
+typedef struct {
+    NvUPtr surfGpuAddress;
+    size_t surfSizeBytes;
+    enum NvKmsSurfaceMemoryFormat surfFormat;
+    NvU32 surfPitchBytes;
+} NVDIFRPrefetchParams;
+
 static NvBool AllocDIFRPushChannel(NVDIFRStateEvoPtr pDifr);
 static void FreeDIFRPushChannel(NVDIFRStateEvoPtr pDifr);
 static NvBool AllocDIFRCopyEngine(NVDIFRStateEvoPtr pDifr);
 static void FreeDIFRCopyEngine(NVDIFRStateEvoPtr pDifr);
+
 static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
-                                   NVSurfaceEvoPtr pSurfaceEvo,
+                                   NVDIFRPrefetchParams *pParams,
                                    size_t *remainingCache);
+static NvBool PrefetchHelperSurfaceEvo(NVDIFRStateEvoPtr pDifr,
+                                       size_t *cacheRemaining,
+                                       NVSurfaceEvoPtr pSurfaceEvo,
+                                       NvU32 *status);
+static NvBool PrefetchHelperLutSurface(NVDIFRStateEvoPtr pDifr,
+                                       size_t *cacheRemaining,
+                                       NVLutSurfaceEvoPtr pLutSurface,
+                                       NvU32 *status);
 
 static NvBool SetDisabledState(NVDIFRStateEvoPtr pDifr,
                                NvBool shouldDisable);
@@ -247,11 +266,12 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
     NVDevEvoPtr pDevEvo = pDifr->pDevEvo;
     NVEvoSubDevPtr pSubDev;
     NVEvoSubDevHeadStatePtr pHeadState;
-    NVSurfaceEvoPtr pSurface;
     size_t cacheRemaining = l2CacheSize;
     NvU32 layer;
     NvU32 head;
+    NvU32 apiHead;
     NvU32 eye;
+    NvU32 i;
     NvU32 status;
 
     /* If DIFR is disabled it's because we know we were or will be flipping. */
@@ -266,45 +286,73 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
     /* Get new prefetch pass counter for this iteration. */
     pDifr->prefetchPass++;
 
+    /*
+     * Start by prefetching the cursor surface and image surfaces from
+     * present layers.
+     */
     for (head = 0; head < pDevEvo->numHeads; head++) {
-        for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+        pHeadState = &pSubDev->headState[head];
+
+        if (!PrefetchHelperSurfaceEvo(pDifr,
+                                      &cacheRemaining,
+                                      pHeadState->cursor.pSurfaceEvo,
+                                      &status)) {
+            goto out;
+        }
+
+        for (layer = 0; layer <= pDevEvo->head[head].numLayers; layer++) {
             for (eye = 0; eye < NVKMS_MAX_EYES; eye++) {
-                NvU32 prefetchStatus;
 
-                pHeadState = &pSubDev->headState[head];
-                pSurface = pHeadState->layer[layer].pSurfaceEvo[eye];
-
-                if (!pSurface) {
-                    continue;
+                if (!PrefetchHelperSurfaceEvo(pDifr,
+                                              &cacheRemaining,
+                                              pHeadState->layer[layer].pSurfaceEvo[eye],
+                                              &status)) {
+                    goto out;
                 }
+            }
 
-                if (pSurface->noDisplayCaching) {
-                    status =
-                        NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_OS_FLIPS_ENABLED;
-                    break;
-                }
+            /*
+             * Prefetch per-layer LUTs, if any, but skip null LUTs and
+             * duplicates already prefetched.
+             */
+            if (!PrefetchHelperLutSurface(pDifr,
+                                          &cacheRemaining,
+                                          pHeadState->layer[layer].inputLut.pLutSurfaceEvo,
+                                          &status)) {
+                goto out;
+            }
 
-                /*
-                 * If we see the same pSurface twice (UBB, multi-head X
-                 * screens, etc) we only ever want to prefetch it once
-                 * within a single nvDIFRPrefetchSurfaces() call.
-                 */
-                if (pSurface->difrLastPrefetchPass == pDifr->prefetchPass) {
-                    continue;
-                }
-
-                pSurface->difrLastPrefetchPass = pDifr->prefetchPass;
-                prefetchStatus = PrefetchSingleSurface(pDevEvo->pDifrState,
-                                                       pSurface,
-                                                       &cacheRemaining);
-                if (prefetchStatus != NV2080_CTRL_LPWR_DIFR_PREFETCH_SUCCESS) {
-                    status = prefetchStatus;
-                    break;
-                }
+            if (!PrefetchHelperLutSurface(pDifr,
+                                          &cacheRemaining,
+                                          pHeadState->layer[layer].tmoLut.pLutSurfaceEvo,
+                                          &status)) {
+                goto out;
             }
         }
     }
 
+    /*
+     * Finally prefetch the known main LUTs.
+     */
+    if (!PrefetchHelperLutSurface(pDifr,
+                                  &cacheRemaining,
+                                  pDevEvo->lut.defaultLut,
+                                  &status)) {
+        goto out;
+    }
+
+    for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        for (i = 0; i < ARRAY_LEN(pDevEvo->lut.apiHead[apiHead].LUT); i++) {
+            if (!PrefetchHelperLutSurface(pDifr,
+                                          &cacheRemaining,
+                                          pDevEvo->lut.apiHead[apiHead].LUT[i],
+                                          &status)) {
+                goto out;
+            }
+        }
+    }
+
+out:
     return status;
 }
 
@@ -429,7 +477,7 @@ static void FreeDIFRCopyEngine(NVDIFRStateEvoPtr pDifr)
 }
 
 static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
-                                   NVSurfaceEvoPtr pSurfaceEvo,
+                                   NVDIFRPrefetchParams *pParams,
                                    size_t *cacheRemaining)
 {
     NvPushChannelPtr p = &pDifr->prefetchPushChannel;
@@ -437,12 +485,10 @@ static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
     NvGpuSemaphore *semaphore = (NvGpuSemaphore *)
         nvPushGetNotifierCpuAddress(p, 0, 0);
     const NvKmsSurfaceMemoryFormatInfo *finfo =
-        nvKmsGetSurfaceMemoryFormatInfo(pSurfaceEvo->format);
+        nvKmsGetSurfaceMemoryFormatInfo(pParams->surfFormat);
     NvU32 componentSizes;
-    NvU32 pitch;
     NvU32 line_length_in;
     NvU32 line_count;
-    size_t surfaceSize;
     NvU64 starttime;
     NvU64 endtime;
 
@@ -487,37 +533,25 @@ static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
 
     /*
      * Compute some dimensional values to obtain correct blob size for
-     * prefetching.
+     * prefetching. Use the given pitch and calculate the number of lines
+     * needed to cover the whole memory region.
      */
-    pitch = pSurfaceEvo->planes[0].pitch;
-    line_length_in = pSurfaceEvo->widthInPixels;
-    line_count = pSurfaceEvo->heightInPixels;
+    nvAssert(pParams->surfPitchBytes % finfo->rgb.bytesPerPixel == 0);
+    line_length_in = pParams->surfPitchBytes / finfo->rgb.bytesPerPixel;
 
-    if (pSurfaceEvo->layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
-        pitch *= NVKMS_BLOCK_LINEAR_GOB_WIDTH;
-    }
-
-    surfaceSize = pitch * line_count;
+    nvAssert(pParams->surfSizeBytes % pParams->surfPitchBytes == 0);
+    line_count = pParams->surfSizeBytes / pParams->surfPitchBytes;
 
     /*
      * Greedy strategy: assume all surfaces will fit in the supplied L2 size but
      * the first one that doesn't will cause the prefetch request to fail. If we
      * run out of cache then DIFR will disable itself until the next modeset.
      */
-    if (*cacheRemaining < surfaceSize) {
+    if (*cacheRemaining < pParams->surfSizeBytes) {
         return NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_INSUFFICIENT_L2_SIZE;
     }
 
-    /*
-     * TODO: we should probably round up to the nearest cacheline size or maybe
-     * up to pSurfaceEvo->planes[0].rmObjectSizeInBytes, if greater?
-     *
-     * Using the total size of the surface pixel data (in bytes) seems to work
-     * but surface allocations can be larger than that and I'm not sure if DIFR
-     * needs only surfaceSize bytes in the cache or if the h/w will end up
-     * reading some non-visible alignment/padding areas as well.
-     */
-    *cacheRemaining -= surfaceSize;
+    *cacheRemaining -= pParams->surfSizeBytes;
 
     /*
      * Push buffer DMA copy and semaphore programming.
@@ -534,18 +568,27 @@ static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
     nvPushImmedVal(p, NVA06F_SUBCHANNEL_COPY_ENGINE,
                    NVA0B5_SET_REMAP_CONST_A, 0);
     nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVA0B5_OFFSET_IN_UPPER, 2);
-    nvPushSetMethodDataU64(p, pSurfaceEvo->gpuAddress);
+    nvPushSetMethodDataU64(p, pParams->surfGpuAddress);
     nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVA0B5_OFFSET_OUT_UPPER, 2);
-    nvPushSetMethodDataU64(p, pSurfaceEvo->gpuAddress);
+    nvPushSetMethodDataU64(p, pParams->surfGpuAddress);
+
+    /*
+     * We don't expect phenomally large pitches but the .mfs for DMA copy
+     * defines PitchIn/PitchOut to be of signed 32-bit type for all
+     * architectures so assert that the value will be what h/w understands.
+     */
+    nvAssert(pParams->surfPitchBytes <= NV_S32_MAX);
+
     nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVA0B5_PITCH_IN, 1);
-    nvPushSetMethodData(p, pitch);
+    nvPushSetMethodData(p, pParams->surfPitchBytes);
     nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVA0B5_PITCH_OUT, 1);
-    nvPushSetMethodData(p, pitch);
+    nvPushSetMethodData(p, pParams->surfPitchBytes);
 
     nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVA0B5_LINE_LENGTH_IN, 1);
     nvPushSetMethodData(p, line_length_in);
     nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVA0B5_LINE_COUNT, 1);
     nvPushSetMethodData(p, line_count);
+    nvAssert(pParams->surfPitchBytes * line_count == pParams->surfSizeBytes);
 
     nvPushMethod(p, NVA06F_SUBCHANNEL_COPY_ENGINE, NVA0B5_LAUNCH_DMA, 1);
     nvPushSetMethodData
@@ -603,6 +646,88 @@ static NvU32 PrefetchSingleSurface(NVDIFRStateEvoPtr pDifr,
     } while (endtime - starttime < DIFR_PREFETCH_WAIT_PERIOD_US); /* 10ms */
 
     return NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_CE_HW_ERROR;
+}
+
+static NvBool PrefetchHelperSurfaceEvo(NVDIFRStateEvoPtr pDifr,
+                                       size_t *cacheRemaining,
+                                       NVSurfaceEvoPtr pSurfaceEvo,
+                                       NvU32 *status)
+{
+    NVDIFRPrefetchParams params;
+
+    nvAssert(*status == NV2080_CTRL_LPWR_DIFR_PREFETCH_SUCCESS);
+
+    if (!pSurfaceEvo) {
+        return TRUE;
+    }
+
+    if (pSurfaceEvo->noDisplayCaching) {
+        *status = NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_OS_FLIPS_ENABLED;
+        return FALSE;
+    }
+
+    /*
+     * If we see the same SurfaceEvo twice (UBB, multi-head X screens, etc)
+     * we only ever want to prefetch it once within a single
+     * nvDIFRPrefetchSurfaces() call.
+     */
+    if (pSurfaceEvo->difrLastPrefetchPass == pDifr->prefetchPass) {
+        return TRUE;
+    }
+
+    /*
+     * Update pass counter even if we fail later: we want to try each
+     * surface only once.
+     */
+    pSurfaceEvo->difrLastPrefetchPass = pDifr->prefetchPass;
+
+    /* Collect copy parameters and do the prefetch. */
+    params.surfGpuAddress = pSurfaceEvo->gpuAddress;
+    params.surfSizeBytes = pSurfaceEvo->planes[0].rmObjectSizeInBytes;
+    params.surfPitchBytes = pSurfaceEvo->planes[0].pitch;
+    params.surfFormat = pSurfaceEvo->format;
+
+    if (pSurfaceEvo->layout == NvKmsSurfaceMemoryLayoutBlockLinear) {
+        params.surfPitchBytes *= NVKMS_BLOCK_LINEAR_GOB_WIDTH;
+    }
+
+    *status = PrefetchSingleSurface(pDifr, &params, cacheRemaining);
+
+    return *status == NV2080_CTRL_LPWR_DIFR_PREFETCH_SUCCESS;
+}
+
+static NvBool PrefetchHelperLutSurface(NVDIFRStateEvoPtr pDifr,
+                                       size_t *cacheRemaining,
+                                       NVLutSurfaceEvoPtr pLutSurface,
+                                       NvU32 *status)
+{
+    NVDIFRPrefetchParams params;
+
+    nvAssert(*status == NV2080_CTRL_LPWR_DIFR_PREFETCH_SUCCESS);
+
+    if (!pLutSurface) {
+        return TRUE;
+    }
+
+    /*
+     * LUTs are often shared so we only want to prefetch (or consider) each
+     * LUT at most once during the prefetch process.
+     */
+    if (pLutSurface->difrLastPrefetchPass == pDifr->prefetchPass) {
+        return TRUE;
+    }
+
+    pLutSurface->difrLastPrefetchPass = pDifr->prefetchPass;
+
+    /* Collect copy parameters and do the prefetch. */
+    params.surfGpuAddress = (NvUPtr)pLutSurface->gpuAddress;
+    params.surfSizeBytes = pLutSurface->size;
+    params.surfPitchBytes = pLutSurface->size;
+    params.surfFormat = NvKmsSurfaceMemoryFormatI8;
+
+    *status = PrefetchSingleSurface(pDifr, &params, cacheRemaining);
+
+    return *status == NV2080_CTRL_LPWR_DIFR_PREFETCH_SUCCESS;
 }
 
 /*

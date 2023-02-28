@@ -64,10 +64,9 @@ static NV_STATUS check_alignment(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, NvU64 ali
 {
     // Alignment requirements only apply to mappings in the UVM-owned VA space
     if (alignment != 0) {
-        bool is_proxy_va_space = false;
-        NvU64 gpu_va = uvm_rm_mem_get_gpu_va(rm_mem, gpu, is_proxy_va_space);
+        NvU64 gpu_uvm_va = uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu);
 
-        TEST_CHECK_RET(IS_ALIGNED(gpu_va, alignment));
+        TEST_CHECK_RET(IS_ALIGNED(gpu_uvm_va, alignment));
     }
 
     return NV_OK;
@@ -76,20 +75,51 @@ static NV_STATUS check_alignment(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, NvU64 ali
 static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem, NvU64 alignment)
 {
     uvm_gpu_t *gpu = rm_mem->gpu_owner;
+    NvU64 gpu_uvm_va;
+    NvU64 gpu_proxy_va = 0;
 
     // The memory should have been automatically mapped in the GPU owner
     TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu(rm_mem, gpu));
 
+    gpu_uvm_va = uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu);
+
     // In SR-IOV heavy, there are two VA spaces per GPU, so there are two
     // mappings for a single rm_mem object on a GPU, even if the memory is
     // located in vidmem.
-    TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) == uvm_gpu_uses_proxy_channel_pool(gpu));
+    if (uvm_gpu_uses_proxy_channel_pool(gpu)) {
+        TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
+
+        gpu_proxy_va = uvm_rm_mem_get_gpu_proxy_va(rm_mem, gpu);
+    }
+    else {
+        TEST_CHECK_RET(!uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
+    }
 
     TEST_NV_CHECK_RET(check_alignment(rm_mem, gpu, alignment));
 
-    // Explicitly mapping or unmapping to the GPU that owns the allocation is
-    // not allowed, so the testing related to GPU owners is simpler than that of
-    // other GPUs.
+    // Mappings are not ref counted, so additional map calls are no-ops; the
+    // GPU VA should remain the same for all the applicable VA spaces.
+    TEST_NV_CHECK_RET(uvm_rm_mem_map_gpu(rm_mem, gpu, alignment));
+
+    TEST_CHECK_RET(gpu_uvm_va == uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu));
+
+    if (uvm_gpu_uses_proxy_channel_pool(gpu))
+        TEST_CHECK_RET(gpu_proxy_va == uvm_rm_mem_get_gpu_proxy_va(rm_mem, gpu));
+
+    // Unmapping the GPU owner is a no-op
+    uvm_rm_mem_unmap_gpu(rm_mem, gpu);
+
+    TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu(rm_mem, gpu));
+    TEST_CHECK_RET(gpu_uvm_va == uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu));
+
+    if (uvm_gpu_uses_proxy_channel_pool(gpu)) {
+        TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
+        TEST_CHECK_RET(gpu_proxy_va == uvm_rm_mem_get_gpu_proxy_va(rm_mem, gpu));
+    }
+    else {
+        TEST_CHECK_RET(!uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
+    }
+
     return NV_OK;
 }
 

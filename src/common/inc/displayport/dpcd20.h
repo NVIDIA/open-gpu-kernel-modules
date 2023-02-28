@@ -21,17 +21,16 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#define NV_DPCD20_DSC_SUPPORT                                                   (0x00000060) /* R-XUR */
+#include "nvcfg_sdk.h"
+
+// DSC Pass Through related DPCD. New bits in DPCD 0x0060h defined in DPCD2.0.
 #define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH_SUPPORT                                       1:1 /* R-XUF */
 #define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH_SUPPORT_NO                           (0x00000000) /* R-XUV */
 #define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH_SUPPORT_YES                          (0x00000001) /* R-XUV */
-
-#define NV_DPCD20_DSC_PASS_THROUGH                                              (0x00000160) /* R-XUR */
-#define NV_DPCD20_DSC_PASS_THROUGH_ENABLE                                                1:1 /* R-XUF */
-#define NV_DPCD20_DSC_PASS_THROUGH_ENABLE_NO                                    (0x00000000) /* R-XUV */
-#define NV_DPCD20_DSC_PASS_THROUGH_ENABLE_YES                                   (0x00000001) /* R-XUV */
-
-#define NV_DPCD20_GUID_2                                                        (0x00000040) /* R-XUR */
+// DSC Pass Through related DPCD. New bits in DPCD 0x0160h defined in DPCD2.0.
+#define NV_DPCD20_DSC_ENABLE_PASS_THROUGH                                                1:1 /* R-XUF */
+#define NV_DPCD20_DSC_ENABLE_PASS_THROUGH_NO                                    (0x00000000) /* R-XUV */
+#define NV_DPCD20_DSC_ENABLE_PASS_THROUGH_YES                                   (0x00000001) /* R-XUV */
 
 // PANEL REPLAY RELATED DPCD
 #define NV_DPCD20_PANEL_REPLAY_CAPABILITY                                         (0x000000B0)
@@ -59,12 +58,3 @@
 #define NV_DPCD20_PANEL_REPLAY_AND_FRAME_LOCK_STATUS_SINK_FRAME_LOCKED_GOVERNING  (0x00000002)
 #define NV_DPCD20_PANEL_REPLAY_AND_FRAME_LOCK_STATUS_SINK_FRAME_LOCKED_RELOCKING  (0x00000003)
 
-// BRANCH SPECIFIC DSC CAPS
-#define NV_DPCD20_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_0                            (0x000000A0)
-#define NV_DPCD20_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_0_VALUE                              7:0
-
-#define NV_DPCD20_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_1                            (0x000000A1)
-#define NV_DPCD20_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_1_VALUE                              7:0
-
-#define NV_DPCD20_BRANCH_DSC_MAXIMUM_LINE_BUFFER_WIDTH                            (0x000000A2)
-#define NV_DPCD20_BRANCH_DSC_MAXIMUM_LINE_BUFFER_WIDTH_VALUE                              7:0

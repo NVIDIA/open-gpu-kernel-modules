@@ -744,7 +744,7 @@ objClSetupBR03
             needRes[dev+1] = 1;
             total++;
         } else
-        if (!handle || vendorID == PCI_INVALID_VENDORID)
+        if (!handle || !PCI_IS_VENDORID_VALID(vendorID))
             totalDevices--;
     }
 

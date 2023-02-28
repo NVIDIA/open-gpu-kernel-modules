@@ -31,17 +31,28 @@
 #include "nvidia-drm-priv.h"
 #include "nvidia-drm-ioctl.h"
 #include "nvidia-drm-gem.h"
-#include "nvidia-drm-prime-fence.h"
+#include "nvidia-drm-fence.h"
 #include "nvidia-dma-resv-helper.h"
 
 #if defined(NV_DRM_FENCE_AVAILABLE)
 
 #include "nvidia-dma-fence-helper.h"
 
-struct nv_drm_fence_context {
-    struct nv_drm_device *nv_dev;
+struct nv_drm_fence_context;
 
+struct nv_drm_fence_context_ops {
+    void (*destroy)(struct nv_drm_fence_context *nv_fence_context);
+};
+
+struct nv_drm_fence_context {
+    const struct nv_drm_fence_context_ops *ops;
+
+    struct nv_drm_device *nv_dev;
     uint32_t context;
+};
+
+struct nv_drm_prime_fence_context {
+    struct nv_drm_fence_context base;
 
     NvU64 fenceSemIndex; /* Index into semaphore surface */
 
@@ -53,10 +64,10 @@ struct nv_drm_fence_context {
     spinlock_t lock;
 
     /*
-     * Software signaling structures. __nv_drm_fence_context_new()
-     * allocates channel event and __nv_drm_fence_context_destroy() frees it.
-     * There are no simultaneous read/write access to 'cb', therefore it does
-     * not require spin-lock protection.
+     * Software signaling structures. __nv_drm_prime_fence_context_new()
+     * allocates channel event and __nv_drm_prime_fence_context_destroy() frees
+     * it. There are no simultaneous read/write access to 'cb', therefore it
+     * does not require spin-lock protection.
      */
     struct NvKmsKapiChannelEvent *cb;
 
@@ -79,7 +90,7 @@ struct nv_drm_prime_fence *to_nv_drm_prime_fence(nv_dma_fence_t *fence)
 }
 
 static const char*
-nv_drm_gem_prime_fence_op_get_driver_name(nv_dma_fence_t *fence)
+nv_drm_gem_fence_op_get_driver_name(nv_dma_fence_t *fence)
 {
     return "NVIDIA";
 }
@@ -122,7 +133,7 @@ nv_drm_gem_prime_fence_op_wait(nv_dma_fence_t *fence,
 }
 
 static const nv_dma_fence_ops_t nv_drm_gem_prime_fence_ops = {
-    .get_driver_name = nv_drm_gem_prime_fence_op_get_driver_name,
+    .get_driver_name = nv_drm_gem_fence_op_get_driver_name,
     .get_timeline_name = nv_drm_gem_prime_fence_op_get_timeline_name,
     .enable_signaling = nv_drm_gem_prime_fence_op_enable_signaling,
     .release = nv_drm_gem_prime_fence_op_release,
@@ -138,7 +149,7 @@ __nv_drm_prime_fence_signal(struct nv_drm_prime_fence *nv_fence)
 }
 
 static void nv_drm_gem_prime_force_fence_signal(
-    struct nv_drm_fence_context *nv_fence_context)
+    struct nv_drm_prime_fence_context *nv_fence_context)
 {
     WARN_ON(!spin_is_locked(&nv_fence_context->lock));
 
@@ -158,7 +169,7 @@ static void nv_drm_gem_prime_fence_event
     NvU32 dataU32
 )
 {
-    struct nv_drm_fence_context *nv_fence_context = dataPtr;
+    struct nv_drm_prime_fence_context *nv_fence_context = dataPtr;
 
     spin_lock(&nv_fence_context->lock);
 
@@ -187,11 +198,53 @@ static void nv_drm_gem_prime_fence_event
     spin_unlock(&nv_fence_context->lock);
 }
 
-static inline struct nv_drm_fence_context *__nv_drm_fence_context_new(
-    struct nv_drm_device *nv_dev,
-    struct drm_nvidia_fence_context_create_params *p)
+static inline struct nv_drm_prime_fence_context*
+to_prime_fence_context(struct nv_drm_fence_context *nv_fence_context) {
+    return (struct nv_drm_prime_fence_context *)nv_fence_context;
+}
+
+static void __nv_drm_prime_fence_context_destroy(
+    struct nv_drm_fence_context *nv_fence_context)
 {
-    struct nv_drm_fence_context *nv_fence_context;
+    struct nv_drm_device *nv_dev = nv_fence_context->nv_dev;
+    struct nv_drm_prime_fence_context *nv_prime_fence_context =
+        to_prime_fence_context(nv_fence_context);
+
+    /*
+     * Free channel event before destroying the fence context, otherwise event
+     * callback continue to get called.
+     */
+    nvKms->freeChannelEvent(nv_dev->pDevice, nv_prime_fence_context->cb);
+
+    /* Force signal all pending fences and empty pending list */
+    spin_lock(&nv_prime_fence_context->lock);
+
+    nv_drm_gem_prime_force_fence_signal(nv_prime_fence_context);
+
+    spin_unlock(&nv_prime_fence_context->lock);
+
+    /* Free nvkms resources */
+
+    nvKms->unmapMemory(nv_dev->pDevice,
+                       nv_prime_fence_context->pSemSurface,
+                       NVKMS_KAPI_MAPPING_TYPE_KERNEL,
+                       (void *) nv_prime_fence_context->pLinearAddress);
+
+    nvKms->freeMemory(nv_dev->pDevice, nv_prime_fence_context->pSemSurface);
+
+    nv_drm_free(nv_fence_context);
+}
+
+static struct nv_drm_fence_context_ops nv_drm_prime_fence_context_ops = {
+    .destroy = __nv_drm_prime_fence_context_destroy,
+};
+
+static inline struct nv_drm_prime_fence_context *
+__nv_drm_prime_fence_context_new(
+    struct nv_drm_device *nv_dev,
+    struct drm_nvidia_prime_fence_context_create_params *p)
+{
+    struct nv_drm_prime_fence_context *nv_prime_fence_context;
     struct NvKmsKapiMemory *pSemSurface;
     NvU32 *pLinearAddress;
 
@@ -225,9 +278,9 @@ static inline struct nv_drm_fence_context *__nv_drm_fence_context_new(
      * event for it.
      */
 
-    if ((nv_fence_context = nv_drm_calloc(
+    if ((nv_prime_fence_context = nv_drm_calloc(
                     1,
-                    sizeof(*nv_fence_context))) == NULL) {
+                    sizeof(*nv_prime_fence_context))) == NULL) {
         goto failed_alloc_fence_context;
     }
 
@@ -236,17 +289,18 @@ static inline struct nv_drm_fence_context *__nv_drm_fence_context_new(
      * to check a return value.
      */
 
-    *nv_fence_context = (struct nv_drm_fence_context) {
-        .nv_dev = nv_dev,
-        .context = nv_dma_fence_context_alloc(1),
+    *nv_prime_fence_context = (struct nv_drm_prime_fence_context) {
+        .base.ops = &nv_drm_prime_fence_context_ops,
+        .base.nv_dev = nv_dev,
+        .base.context = nv_dma_fence_context_alloc(1),
         .pSemSurface = pSemSurface,
         .pLinearAddress = pLinearAddress,
         .fenceSemIndex = p->index,
     };
 
-    INIT_LIST_HEAD(&nv_fence_context->pending);
+    INIT_LIST_HEAD(&nv_prime_fence_context->pending);
 
-    spin_lock_init(&nv_fence_context->lock);
+    spin_lock_init(&nv_prime_fence_context->lock);
 
     /*
      * Except 'cb', the fence context should be completely initialized
@@ -256,22 +310,22 @@ static inline struct nv_drm_fence_context *__nv_drm_fence_context_new(
      * There are no simultaneous read/write access to 'cb', therefore it does
      * not require spin-lock protection.
      */
-    nv_fence_context->cb =
+    nv_prime_fence_context->cb =
         nvKms->allocateChannelEvent(nv_dev->pDevice,
                                     nv_drm_gem_prime_fence_event,
-                                    nv_fence_context,
+                                    nv_prime_fence_context,
                                     p->event_nvkms_params_ptr,
                                     p->event_nvkms_params_size);
-    if (!nv_fence_context->cb) {
+    if (!nv_prime_fence_context->cb) {
         NV_DRM_DEV_LOG_ERR(nv_dev,
                            "Failed to allocate fence signaling event");
         goto failed_to_allocate_channel_event;
     }
 
-    return nv_fence_context;
+    return nv_prime_fence_context;
 
 failed_to_allocate_channel_event:
-    nv_drm_free(nv_fence_context);
+    nv_drm_free(nv_prime_fence_context);
 
 failed_alloc_fence_context:
 
@@ -287,38 +341,8 @@ failed:
     return NULL;
 }
 
-static void __nv_drm_fence_context_destroy(
-    struct nv_drm_fence_context *nv_fence_context)
-{
-    struct nv_drm_device *nv_dev = nv_fence_context->nv_dev;
-
-    /*
-     * Free channel event before destroying the fence context, otherwise event
-     * callback continue to get called.
-     */
-    nvKms->freeChannelEvent(nv_dev->pDevice, nv_fence_context->cb);
-
-    /* Force signal all pending fences and empty pending list */
-    spin_lock(&nv_fence_context->lock);
-
-    nv_drm_gem_prime_force_fence_signal(nv_fence_context);
-
-    spin_unlock(&nv_fence_context->lock);
-
-    /* Free nvkms resources */
-
-    nvKms->unmapMemory(nv_dev->pDevice,
-                       nv_fence_context->pSemSurface,
-                       NVKMS_KAPI_MAPPING_TYPE_KERNEL,
-                       (void *) nv_fence_context->pLinearAddress);
-
-    nvKms->freeMemory(nv_dev->pDevice, nv_fence_context->pSemSurface);
-
-    nv_drm_free(nv_fence_context);
-}
-
-static nv_dma_fence_t *__nv_drm_fence_context_create_fence(
-    struct nv_drm_fence_context *nv_fence_context,
+static nv_dma_fence_t *__nv_drm_prime_fence_context_create_fence(
+    struct nv_drm_prime_fence_context *nv_prime_fence_context,
     unsigned int seqno)
 {
     struct nv_drm_prime_fence *nv_fence;
@@ -329,14 +353,14 @@ static nv_dma_fence_t *__nv_drm_fence_context_create_fence(
         goto out;
     }
 
-    spin_lock(&nv_fence_context->lock);
+    spin_lock(&nv_prime_fence_context->lock);
 
     /*
      * If seqno wrapped, force signal fences to make sure none of them
      * get stuck.
      */
-    if (seqno < nv_fence_context->last_seqno) {
-        nv_drm_gem_prime_force_fence_signal(nv_fence_context);
+    if (seqno < nv_prime_fence_context->last_seqno) {
+        nv_drm_gem_prime_force_fence_signal(nv_prime_fence_context);
     }
 
     INIT_LIST_HEAD(&nv_fence->list_entry);
@@ -344,17 +368,17 @@ static nv_dma_fence_t *__nv_drm_fence_context_create_fence(
     spin_lock_init(&nv_fence->lock);
 
     nv_dma_fence_init(&nv_fence->base, &nv_drm_gem_prime_fence_ops,
-                      &nv_fence->lock, nv_fence_context->context,
+                      &nv_fence->lock, nv_prime_fence_context->base.context,
                       seqno);
 
     /* The context maintains a reference to any pending fences. */
     nv_dma_fence_get(&nv_fence->base);
 
-    list_add_tail(&nv_fence->list_entry, &nv_fence_context->pending);
+    list_add_tail(&nv_fence->list_entry, &nv_prime_fence_context->pending);
 
-    nv_fence_context->last_seqno = seqno;
+    nv_prime_fence_context->last_seqno = seqno;
 
-    spin_unlock(&nv_fence_context->lock);
+    spin_unlock(&nv_prime_fence_context->lock);
 
 out:
     return ret != 0 ? ERR_PTR(ret) : &nv_fence->base;
@@ -388,12 +412,15 @@ static inline struct nv_drm_gem_fence_context *to_gem_fence_context(
  * because tear down sequence calls to flush all existing
  * worker thread.
  */
-static void __nv_drm_gem_fence_context_free(struct nv_drm_gem_object *nv_gem)
+static void
+__nv_drm_gem_fence_context_free(struct nv_drm_gem_object *nv_gem)
 {
     struct nv_drm_gem_fence_context *nv_gem_fence_context =
         to_gem_fence_context(nv_gem);
+    struct nv_drm_fence_context *nv_fence_context =
+        nv_gem_fence_context->nv_fence_context;
 
-    __nv_drm_fence_context_destroy(nv_gem_fence_context->nv_fence_context);
+    nv_fence_context->ops->destroy(nv_fence_context);
 
     nv_drm_free(nv_gem_fence_context);
 }
@@ -403,7 +430,8 @@ const struct nv_drm_gem_object_funcs nv_gem_fence_context_ops = {
 };
 
 static inline
-struct nv_drm_gem_fence_context *__nv_drm_gem_object_fence_context_lookup(
+struct nv_drm_gem_fence_context *
+__nv_drm_gem_object_fence_context_lookup(
     struct drm_device *dev,
     struct drm_file *filp,
     u32 handle)
@@ -419,11 +447,13 @@ struct nv_drm_gem_fence_context *__nv_drm_gem_object_fence_context_lookup(
     return to_gem_fence_context(nv_gem);
 }
 
-int nv_drm_fence_context_create_ioctl(struct drm_device *dev,
-                                      void *data, struct drm_file *filep)
+static int
+__nv_drm_gem_fence_context_create(struct drm_device *dev,
+                                  struct nv_drm_fence_context *nv_fence_context,
+                                  u32 *handle,
+                                  struct drm_file *filep)
 {
     struct nv_drm_device *nv_dev = to_nv_device(dev);
-    struct drm_nvidia_fence_context_create_params *p = data;
     struct nv_drm_gem_fence_context *nv_gem_fence_context = NULL;
 
     if ((nv_gem_fence_context = nv_drm_calloc(
@@ -432,10 +462,7 @@ int nv_drm_fence_context_create_ioctl(struct drm_device *dev,
         goto done;
     }
 
-    if ((nv_gem_fence_context->nv_fence_context =
-                __nv_drm_fence_context_new(nv_dev, p)) == NULL) {
-        goto fence_context_new_failed;
-    }
+    nv_gem_fence_context->nv_fence_context = nv_fence_context;
 
     nv_drm_gem_object_init(nv_dev,
                            &nv_gem_fence_context->base,
@@ -445,21 +472,45 @@ int nv_drm_fence_context_create_ioctl(struct drm_device *dev,
 
     return nv_drm_gem_handle_create_drop_reference(filep,
                                                    &nv_gem_fence_context->base,
-                                                   &p->handle);
-
-fence_context_new_failed:
-    nv_drm_free(nv_gem_fence_context);
+                                                   handle);
 
 done:
     return -ENOMEM;
 }
 
-int nv_drm_gem_fence_attach_ioctl(struct drm_device *dev,
-                                  void *data, struct drm_file *filep)
+int nv_drm_prime_fence_context_create_ioctl(struct drm_device *dev,
+                                            void *data, struct drm_file *filep)
+{
+    struct nv_drm_device *nv_dev = to_nv_device(dev);
+    struct drm_nvidia_prime_fence_context_create_params *p = data;
+    struct nv_drm_prime_fence_context *nv_prime_fence_context =
+        __nv_drm_prime_fence_context_new(nv_dev, p);
+    int err;
+
+    if (!nv_prime_fence_context) {
+        goto done;
+    }
+
+    err = __nv_drm_gem_fence_context_create(dev,
+                                            &nv_prime_fence_context->base,
+                                            &p->handle,
+                                            filep);
+    if (err) {
+        __nv_drm_prime_fence_context_destroy(&nv_prime_fence_context->base);
+    }
+
+    return err;
+
+done:
+    return -ENOMEM;
+}
+
+int nv_drm_gem_prime_fence_attach_ioctl(struct drm_device *dev,
+                                        void *data, struct drm_file *filep)
 {
     int ret = -EINVAL;
     struct nv_drm_device *nv_dev = to_nv_device(dev);
-    struct drm_nvidia_gem_fence_attach_params *p = data;
+    struct drm_nvidia_gem_prime_fence_attach_params *p = data;
 
     struct nv_drm_gem_object *nv_gem;
     struct nv_drm_gem_fence_context *nv_gem_fence_context;
@@ -490,9 +541,22 @@ int nv_drm_gem_fence_attach_ioctl(struct drm_device *dev,
         goto fence_context_lookup_failed;
     }
 
-    if (IS_ERR(fence = __nv_drm_fence_context_create_fence(
-                            nv_gem_fence_context->nv_fence_context,
-                            p->sem_thresh))) {
+    if (nv_gem_fence_context->nv_fence_context->ops !=
+        &nv_drm_prime_fence_context_ops) {
+
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "Wrong fence context type: 0x%08x",
+            p->fence_context_handle);
+
+        goto fence_context_create_fence_failed;
+    }
+
+    fence = __nv_drm_prime_fence_context_create_fence(
+                to_prime_fence_context(nv_gem_fence_context->nv_fence_context),
+                p->sem_thresh);
+
+    if (IS_ERR(fence)) {
         ret = PTR_ERR(fence);
 
         NV_DRM_DEV_LOG_ERR(

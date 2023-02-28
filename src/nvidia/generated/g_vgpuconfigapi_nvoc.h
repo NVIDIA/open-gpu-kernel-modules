@@ -81,9 +81,9 @@ struct VgpuConfigApi {
     NV_STATUS (*__vgpuconfigapiCtrlCmdGetVgpuDriversCaps__)(struct VgpuConfigApi *, NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_SET_PGPU_INFO_PARAMS *);
     NvBool (*__vgpuconfigapiShareCallback__)(struct VgpuConfigApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__vgpuconfigapiMapTo__)(struct VgpuConfigApi *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__vgpuconfigapiGetOrAllocNotifShare__)(struct VgpuConfigApi *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__vgpuconfigapiCheckMemInterUnmap__)(struct VgpuConfigApi *, NvBool);
+    NV_STATUS (*__vgpuconfigapiGetOrAllocNotifShare__)(struct VgpuConfigApi *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__vgpuconfigapiMapTo__)(struct VgpuConfigApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__vgpuconfigapiGetMapAddrSpace__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__vgpuconfigapiSetNotificationShare__)(struct VgpuConfigApi *, struct NotifShare *);
     NvU32 (*__vgpuconfigapiGetRefCount__)(struct VgpuConfigApi *);
@@ -101,9 +101,11 @@ struct VgpuConfigApi {
     NV_STATUS (*__vgpuconfigapiGetMemoryMappingDescriptor__)(struct VgpuConfigApi *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__vgpuconfigapiControlFilter__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vgpuconfigapiUnregisterEvent__)(struct VgpuConfigApi *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__vgpuconfigapiControlSerialization_Prologue__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__vgpuconfigapiCanCopy__)(struct VgpuConfigApi *);
     void (*__vgpuconfigapiPreDestruct__)(struct VgpuConfigApi *);
     NV_STATUS (*__vgpuconfigapiIsDuplicate__)(struct VgpuConfigApi *, NvHandle, NvBool *);
+    void (*__vgpuconfigapiControlSerialization_Epilogue__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__vgpuconfigapiGetNotificationListPtr__)(struct VgpuConfigApi *);
     struct NotifShare *(*__vgpuconfigapiGetNotificationShare__)(struct VgpuConfigApi *);
     NV_STATUS (*__vgpuconfigapiMap__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -158,9 +160,9 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struc
 #define vgpuconfigapiCtrlCmdGetVgpuDriversCaps(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdGetVgpuDriversCaps_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) vgpuconfigapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define vgpuconfigapiMapTo(pResource, pParams) vgpuconfigapiMapTo_DISPATCH(pResource, pParams)
-#define vgpuconfigapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) vgpuconfigapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define vgpuconfigapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vgpuconfigapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define vgpuconfigapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) vgpuconfigapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define vgpuconfigapiMapTo(pResource, pParams) vgpuconfigapiMapTo_DISPATCH(pResource, pParams)
 #define vgpuconfigapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) vgpuconfigapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define vgpuconfigapiSetNotificationShare(pNotifier, pNotifShare) vgpuconfigapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define vgpuconfigapiGetRefCount(pResource) vgpuconfigapiGetRefCount_DISPATCH(pResource)
@@ -178,9 +180,11 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struc
 #define vgpuconfigapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) vgpuconfigapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define vgpuconfigapiControlFilter(pResource, pCallContext, pParams) vgpuconfigapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define vgpuconfigapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) vgpuconfigapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define vgpuconfigapiControlSerialization_Prologue(pResource, pCallContext, pParams) vgpuconfigapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define vgpuconfigapiCanCopy(pResource) vgpuconfigapiCanCopy_DISPATCH(pResource)
 #define vgpuconfigapiPreDestruct(pResource) vgpuconfigapiPreDestruct_DISPATCH(pResource)
 #define vgpuconfigapiIsDuplicate(pResource, hMemory, pDuplicate) vgpuconfigapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define vgpuconfigapiControlSerialization_Epilogue(pResource, pCallContext, pParams) vgpuconfigapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vgpuconfigapiGetNotificationListPtr(pNotifier) vgpuconfigapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define vgpuconfigapiGetNotificationShare(pNotifier) vgpuconfigapiGetNotificationShare_DISPATCH(pNotifier)
 #define vgpuconfigapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) vgpuconfigapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -297,16 +301,16 @@ static inline NvBool vgpuconfigapiShareCallback_DISPATCH(struct VgpuConfigApi *p
     return pGpuResource->__vgpuconfigapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS vgpuconfigapiMapTo_DISPATCH(struct VgpuConfigApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__vgpuconfigapiMapTo__(pResource, pParams);
+static inline NV_STATUS vgpuconfigapiCheckMemInterUnmap_DISPATCH(struct VgpuConfigApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__vgpuconfigapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS vgpuconfigapiGetOrAllocNotifShare_DISPATCH(struct VgpuConfigApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__vgpuconfigapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS vgpuconfigapiCheckMemInterUnmap_DISPATCH(struct VgpuConfigApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__vgpuconfigapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS vgpuconfigapiMapTo_DISPATCH(struct VgpuConfigApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__vgpuconfigapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS vgpuconfigapiGetMapAddrSpace_DISPATCH(struct VgpuConfigApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -377,6 +381,10 @@ static inline NV_STATUS vgpuconfigapiUnregisterEvent_DISPATCH(struct VgpuConfigA
     return pNotifier->__vgpuconfigapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS vgpuconfigapiControlSerialization_Prologue_DISPATCH(struct VgpuConfigApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__vgpuconfigapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool vgpuconfigapiCanCopy_DISPATCH(struct VgpuConfigApi *pResource) {
     return pResource->__vgpuconfigapiCanCopy__(pResource);
 }
@@ -387,6 +395,10 @@ static inline void vgpuconfigapiPreDestruct_DISPATCH(struct VgpuConfigApi *pReso
 
 static inline NV_STATUS vgpuconfigapiIsDuplicate_DISPATCH(struct VgpuConfigApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__vgpuconfigapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void vgpuconfigapiControlSerialization_Epilogue_DISPATCH(struct VgpuConfigApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__vgpuconfigapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *vgpuconfigapiGetNotificationListPtr_DISPATCH(struct VgpuConfigApi *pNotifier) {

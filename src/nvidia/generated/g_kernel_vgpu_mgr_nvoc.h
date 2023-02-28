@@ -112,11 +112,11 @@ typedef struct KERNEL_HOST_VGPU_DEVICE
     NvU32                            swizzId;
     NvU32                            numPluginChannels;
     NvU32                            chidOffset[RM_ENGINE_TYPE_LAST];
+    NvU32                            channelCount[RM_ENGINE_TYPE_LAST]; /*Number of channels available to the VF*/
     NvU8                             vgpuUuid[RM_SHA1_GID_SIZE];
     void                            *pVgpuVfioRef;
     struct REQUEST_VGPU_INFO_NODE   *pRequestVgpuInfoNode;
     struct PhysMemSubAlloc                 *pPhysMemSubAlloc;
-    NvU32                            gpuInstance;
     struct HOST_VGPU_DEVICE         *pHostVgpuDevice;
     // Legacy fields
     NvHandle                         hPluginFBAllocationClient;

@@ -108,7 +108,7 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #endif
 }
 
-    #if defined(CONFIG_HMM_MIRROR) && defined(CONFIG_DEVICE_PRIVATE) && defined(NV_MAKE_DEVICE_EXCLUSIVE_RANGE_PRESENT)
+    #if defined(CONFIG_HMM_MIRROR) && defined(CONFIG_DEVICE_PRIVATE) && defined(NV_MIGRATE_DEVICE_RANGE_PRESENT)
         #define UVM_IS_CONFIG_HMM() 1
     #else
         #define UVM_IS_CONFIG_HMM() 0
@@ -404,6 +404,7 @@ static inline NvU64 NV_GETTIME(void)
 // 654672d4ba1a6001c365833be895f9477c4d5eab ("locking/atomics:
 // Add _{acquire|release|relaxed}() variants of some atomic operations") in v4.3
 // (2015-08-06).
+// TODO: Bug 3849079: We always use this definition on newer kernels.
 #ifndef atomic_read_acquire
     #define atomic_read_acquire(p) smp_load_acquire(&(p)->counter)
 #endif
@@ -412,6 +413,24 @@ static inline NvU64 NV_GETTIME(void)
     #define atomic_set_release(p, v) smp_store_release(&(p)->counter, v)
 #endif
 
+// atomic_long_read_acquire and atomic_long_set_release were added in commit
+// b5d47ef9ea5c5fe31d7eabeb79f697629bd9e2cb ("locking/atomics: Switch to
+// generated atomic-long") in v5.1 (2019-05-05).
+// TODO: Bug 3849079: We always use these definitions on newer kernels.
+#define atomic_long_read_acquire uvm_atomic_long_read_acquire
+static inline long uvm_atomic_long_read_acquire(atomic_long_t *p)
+{
+    long val = atomic_long_read(p);
+    smp_mb();
+    return val;
+}
+
+#define atomic_long_set_release uvm_atomic_long_set_release
+static inline void uvm_atomic_long_set_release(atomic_long_t *p, long v)
+{
+    smp_mb();
+    atomic_long_set(p, v);
+}
 
 // Added in 3.11
 #ifndef PAGE_ALIGNED

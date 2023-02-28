@@ -62,25 +62,27 @@ struct DispCapabilities {
     struct DispCapabilities *__nvoc_pbase_DispCapabilities;
     NV_STATUS (*__dispcapGetRegBaseOffsetAndSize__)(struct DispCapabilities *, struct OBJGPU *, NvU32 *, NvU32 *);
     NvBool (*__dispcapShareCallback__)(struct DispCapabilities *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__dispcapCheckMemInterUnmap__)(struct DispCapabilities *, NvBool);
+    NV_STATUS (*__dispcapMapTo__)(struct DispCapabilities *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__dispcapGetMapAddrSpace__)(struct DispCapabilities *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__dispcapGetRefCount__)(struct DispCapabilities *);
+    void (*__dispcapAddAdditionalDependants__)(struct RsClient *, struct DispCapabilities *, RsResourceRef *);
+    NV_STATUS (*__dispcapControl_Prologue__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__dispcapInternalControlForward__)(struct DispCapabilities *, NvU32, void *, NvU32);
+    NV_STATUS (*__dispcapUnmapFrom__)(struct DispCapabilities *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__dispcapControl_Epilogue__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__dispcapControlLookup__)(struct DispCapabilities *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NvHandle (*__dispcapGetInternalObjectHandle__)(struct DispCapabilities *);
     NV_STATUS (*__dispcapControl__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispcapUnmap__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__dispcapGetMemInterMapParams__)(struct DispCapabilities *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__dispcapGetMemoryMappingDescriptor__)(struct DispCapabilities *, struct MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__dispcapGetMapAddrSpace__)(struct DispCapabilities *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvHandle (*__dispcapGetInternalObjectHandle__)(struct DispCapabilities *);
     NV_STATUS (*__dispcapControlFilter__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__dispcapAddAdditionalDependants__)(struct RsClient *, struct DispCapabilities *, RsResourceRef *);
-    NvU32 (*__dispcapGetRefCount__)(struct DispCapabilities *);
-    NV_STATUS (*__dispcapCheckMemInterUnmap__)(struct DispCapabilities *, NvBool);
-    NV_STATUS (*__dispcapMapTo__)(struct DispCapabilities *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__dispcapControl_Prologue__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__dispcapControlSerialization_Prologue__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispcapCanCopy__)(struct DispCapabilities *);
-    NV_STATUS (*__dispcapInternalControlForward__)(struct DispCapabilities *, NvU32, void *, NvU32);
     void (*__dispcapPreDestruct__)(struct DispCapabilities *);
-    NV_STATUS (*__dispcapUnmapFrom__)(struct DispCapabilities *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__dispcapIsDuplicate__)(struct DispCapabilities *, NvHandle, NvBool *);
-    void (*__dispcapControl_Epilogue__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispcapControlLookup__)(struct DispCapabilities *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__dispcapControlSerialization_Epilogue__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispcapMap__)(struct DispCapabilities *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__dispcapAccessCallback__)(struct DispCapabilities *, struct RsClient *, void *, RsAccessRight);
     NvU32 ControlOffset;
@@ -117,25 +119,27 @@ NV_STATUS __nvoc_objCreate_DispCapabilities(DispCapabilities**, Dynamic*, NvU32,
 
 #define dispcapGetRegBaseOffsetAndSize(pDispCapabilities, pGpu, pOffset, pSize) dispcapGetRegBaseOffsetAndSize_DISPATCH(pDispCapabilities, pGpu, pOffset, pSize)
 #define dispcapShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) dispcapShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
+#define dispcapCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispcapCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define dispcapMapTo(pResource, pParams) dispcapMapTo_DISPATCH(pResource, pParams)
+#define dispcapGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) dispcapGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
+#define dispcapGetRefCount(pResource) dispcapGetRefCount_DISPATCH(pResource)
+#define dispcapAddAdditionalDependants(pClient, pResource, pReference) dispcapAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define dispcapControl_Prologue(pResource, pCallContext, pParams) dispcapControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define dispcapInternalControlForward(pGpuResource, command, pParams, size) dispcapInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
+#define dispcapUnmapFrom(pResource, pParams) dispcapUnmapFrom_DISPATCH(pResource, pParams)
+#define dispcapControl_Epilogue(pResource, pCallContext, pParams) dispcapControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define dispcapControlLookup(pResource, pParams, ppEntry) dispcapControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define dispcapGetInternalObjectHandle(pGpuResource) dispcapGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define dispcapControl(pGpuResource, pCallContext, pParams) dispcapControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define dispcapUnmap(pGpuResource, pCallContext, pCpuMapping) dispcapUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define dispcapGetMemInterMapParams(pRmResource, pParams) dispcapGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define dispcapGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispcapGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define dispcapGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) dispcapGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define dispcapGetInternalObjectHandle(pGpuResource) dispcapGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define dispcapControlFilter(pResource, pCallContext, pParams) dispcapControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define dispcapAddAdditionalDependants(pClient, pResource, pReference) dispcapAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define dispcapGetRefCount(pResource) dispcapGetRefCount_DISPATCH(pResource)
-#define dispcapCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispcapCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define dispcapMapTo(pResource, pParams) dispcapMapTo_DISPATCH(pResource, pParams)
-#define dispcapControl_Prologue(pResource, pCallContext, pParams) dispcapControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define dispcapControlSerialization_Prologue(pResource, pCallContext, pParams) dispcapControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispcapCanCopy(pResource) dispcapCanCopy_DISPATCH(pResource)
-#define dispcapInternalControlForward(pGpuResource, command, pParams, size) dispcapInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dispcapPreDestruct(pResource) dispcapPreDestruct_DISPATCH(pResource)
-#define dispcapUnmapFrom(pResource, pParams) dispcapUnmapFrom_DISPATCH(pResource, pParams)
 #define dispcapIsDuplicate(pResource, hMemory, pDuplicate) dispcapIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define dispcapControl_Epilogue(pResource, pCallContext, pParams) dispcapControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispcapControlLookup(pResource, pParams, ppEntry) dispcapControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define dispcapControlSerialization_Epilogue(pResource, pCallContext, pParams) dispcapControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define dispcapMap(pGpuResource, pCallContext, pParams, pCpuMapping) dispcapMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define dispcapAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) dispcapAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NV_STATUS dispcapGetRegBaseOffsetAndSize_IMPL(struct DispCapabilities *pDispCapabilities, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize);
@@ -146,6 +150,50 @@ static inline NV_STATUS dispcapGetRegBaseOffsetAndSize_DISPATCH(struct DispCapab
 
 static inline NvBool dispcapShareCallback_DISPATCH(struct DispCapabilities *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pGpuResource->__dispcapShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline NV_STATUS dispcapCheckMemInterUnmap_DISPATCH(struct DispCapabilities *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__dispcapCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+}
+
+static inline NV_STATUS dispcapMapTo_DISPATCH(struct DispCapabilities *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__dispcapMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS dispcapGetMapAddrSpace_DISPATCH(struct DispCapabilities *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pGpuResource->__dispcapGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 dispcapGetRefCount_DISPATCH(struct DispCapabilities *pResource) {
+    return pResource->__dispcapGetRefCount__(pResource);
+}
+
+static inline void dispcapAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DispCapabilities *pResource, RsResourceRef *pReference) {
+    pResource->__dispcapAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS dispcapControl_Prologue_DISPATCH(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__dispcapControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS dispcapInternalControlForward_DISPATCH(struct DispCapabilities *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return pGpuResource->__dispcapInternalControlForward__(pGpuResource, command, pParams, size);
+}
+
+static inline NV_STATUS dispcapUnmapFrom_DISPATCH(struct DispCapabilities *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__dispcapUnmapFrom__(pResource, pParams);
+}
+
+static inline void dispcapControl_Epilogue_DISPATCH(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__dispcapControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS dispcapControlLookup_DISPATCH(struct DispCapabilities *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__dispcapControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NvHandle dispcapGetInternalObjectHandle_DISPATCH(struct DispCapabilities *pGpuResource) {
+    return pGpuResource->__dispcapGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NV_STATUS dispcapControl_DISPATCH(struct DispCapabilities *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -164,64 +212,28 @@ static inline NV_STATUS dispcapGetMemoryMappingDescriptor_DISPATCH(struct DispCa
     return pRmResource->__dispcapGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline NV_STATUS dispcapGetMapAddrSpace_DISPATCH(struct DispCapabilities *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__dispcapGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvHandle dispcapGetInternalObjectHandle_DISPATCH(struct DispCapabilities *pGpuResource) {
-    return pGpuResource->__dispcapGetInternalObjectHandle__(pGpuResource);
-}
-
 static inline NV_STATUS dispcapControlFilter_DISPATCH(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__dispcapControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void dispcapAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct DispCapabilities *pResource, RsResourceRef *pReference) {
-    pResource->__dispcapAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 dispcapGetRefCount_DISPATCH(struct DispCapabilities *pResource) {
-    return pResource->__dispcapGetRefCount__(pResource);
-}
-
-static inline NV_STATUS dispcapCheckMemInterUnmap_DISPATCH(struct DispCapabilities *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__dispcapCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
-}
-
-static inline NV_STATUS dispcapMapTo_DISPATCH(struct DispCapabilities *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__dispcapMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS dispcapControl_Prologue_DISPATCH(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__dispcapControl_Prologue__(pResource, pCallContext, pParams);
+static inline NV_STATUS dispcapControlSerialization_Prologue_DISPATCH(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__dispcapControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool dispcapCanCopy_DISPATCH(struct DispCapabilities *pResource) {
     return pResource->__dispcapCanCopy__(pResource);
 }
 
-static inline NV_STATUS dispcapInternalControlForward_DISPATCH(struct DispCapabilities *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__dispcapInternalControlForward__(pGpuResource, command, pParams, size);
-}
-
 static inline void dispcapPreDestruct_DISPATCH(struct DispCapabilities *pResource) {
     pResource->__dispcapPreDestruct__(pResource);
-}
-
-static inline NV_STATUS dispcapUnmapFrom_DISPATCH(struct DispCapabilities *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__dispcapUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS dispcapIsDuplicate_DISPATCH(struct DispCapabilities *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__dispcapIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
-static inline void dispcapControl_Epilogue_DISPATCH(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__dispcapControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS dispcapControlLookup_DISPATCH(struct DispCapabilities *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispcapControlLookup__(pResource, pParams, ppEntry);
+static inline void dispcapControlSerialization_Epilogue_DISPATCH(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__dispcapControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS dispcapMap_DISPATCH(struct DispCapabilities *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {

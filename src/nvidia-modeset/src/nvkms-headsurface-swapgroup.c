@@ -414,7 +414,7 @@ static NvBool HsSwapGroupValidateConfig(
     const NVDevEvoRec *pDevEvo,
     const struct NvKmsSwapGroupConfig *pConfig)
 {
-    const NvU32 validHeadMask = NVBIT(pDevEvo->numHeads) - 1;
+    const NvU32 validHeadMask = NVBIT(pDevEvo->numApiHeads) - 1;
     NvU32 dispIndex;
 
     for (dispIndex = 0; dispIndex < ARRAY_LEN(pConfig->disp); dispIndex++) {
@@ -460,9 +460,8 @@ NVSwapGroupRec* nvHsAllocSwapGroup(
     /* Are there heads requested that already belong to another SwapGroup? */
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        NvU32 head;
-        FOR_ALL_HEADS(head, pRequest->config.disp[dispIndex].headMask) {
-            const NvU32 apiHead = nvHardwareHeadToApiHead(head);
+        NvU32 apiHead;
+        FOR_ALL_HEADS(apiHead, pRequest->config.disp[dispIndex].headMask) {
             if (pDispEvo->pSwapGroup[apiHead] != NULL) {
                 return NULL;
             }
@@ -483,9 +482,8 @@ NVSwapGroupRec* nvHsAllocSwapGroup(
     nvListInit(&pSwapGroup->deferredRequestFifoList);
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        NvU32 head;
-        FOR_ALL_HEADS(head, pRequest->config.disp[dispIndex].headMask) {
-            const NvU32 apiHead = nvHardwareHeadToApiHead(head);
+        NvU32 apiHead;
+        FOR_ALL_HEADS(apiHead, pRequest->config.disp[dispIndex].headMask) {
             pDispEvo->pSwapGroup[apiHead] = pSwapGroup;
         }
     }

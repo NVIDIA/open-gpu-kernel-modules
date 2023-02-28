@@ -721,6 +721,19 @@ subdeviceCtrlCmdGpuGetNvencSwSessionStats_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+_subdeviceCtrlCmdGpuGetNvencSwSessionInfo
+(
+    OBJGPU                              *pGpu,
+    NvU32                               sessionInfoTblEntry,
+    NV2080_CTRL_NVENC_SW_SESSION_INFO   *pSessionInfo,
+    NvU32                               *entryCount
+)
+{
+
+    return NV_OK;
+}
+
 //
 // subdeviceCtrlCmdGpuGetNvencSwSessionInfo
 //
@@ -735,9 +748,23 @@ subdeviceCtrlCmdGpuGetNvencSwSessionInfo_IMPL
     NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS *pParams
 )
 {
+    NV_STATUS               status = NV_OK;
     pParams->sessionInfoTblEntry = 0;
 
-    return NV_OK;
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS *pParams
+)
+{
+    NV_STATUS               status = NV_OK;
+    pParams->sessionInfoTblEntry = 0;
+
+    return status;
 }
 
 //
@@ -1288,7 +1315,7 @@ subdeviceCtrlCmdGpuGetFermiZcullInfo_IMPL
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     NvHandle  hSubdevice = RES_GET_HANDLE(pSubdevice);
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
 
     portMemSet(&zcullMaskParams, 0, sizeof(zcullMaskParams));
     zcullMaskParams.gpcId = pParams->gpcId;
@@ -2036,9 +2063,6 @@ subdeviceCtrlCmdGpuGetNumMmusPerGpc_IMPL
 /*
  * @brief Update/Set the compute policy config for a GPU
  *
- * Lock Requirements:
- *      Assert that API and GPUs lock held on entry
- *
  * @param[in] pSubdevice
  * @param[in] pParams    pointer to control parameters
  *
@@ -2059,8 +2083,6 @@ subdeviceCtrlCmdGpuSetComputePolicyConfig_IMPL
     GPU_COMPUTE_POLICY_INFO policyInfo;
     NvU32 gidFlags;
     NV_STATUS status = NV_OK;
-
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     switch(pParams->config.type)
     {
@@ -2113,9 +2135,6 @@ ct_assert(NV2080_CTRL_GPU_COMPUTE_POLICY_MAX <= NV2080_CTRL_GPU_COMPUTE_POLICY_C
 /*
  * @brief Get all compute policy configs for a GPU
  *
- * Lock Requirements:
- *      Assert that API and GPUs lock held on entry
- *
  * @param[in] pSubdevice
  * @param[in] pParams    pointer to control parameters
  *
@@ -2135,8 +2154,6 @@ subdeviceCtrlCmdGpuGetComputePolicyConfig_IMPL
     NvU32 policyId;
     NvU32 gidFlags;
     NV_STATUS status = NV_OK;
-
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     gidFlags = DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1) |
                DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT, _BINARY);
@@ -2240,7 +2257,7 @@ NV_STATUS subdeviceCtrlCmdValidateMemMapRequest_IMPL
     NvU32         bar0MapSize;
     NvU64         bar0MapOffset;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
 
     pParams->protection = NV_PROTECT_READ_WRITE;
 

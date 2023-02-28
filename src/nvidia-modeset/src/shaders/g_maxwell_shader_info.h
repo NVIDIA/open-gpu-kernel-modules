@@ -1,4 +1,4 @@
-// Generated using 'Offline GLSL Shader Compiler Version 13.0.0.0.465.00.dev/gpu_drv/dev_a-14542'
+// Generated using 'Offline GLSL Shader Compiler Version 13.0.0.0.530.00.dev/gpu_drv/dev_a-15624'
 // WARNING: This file is auto-generated!  Do not hand-edit!
 // Instead, edit the GLSL shaders and run 'unix-build nvmake @generate'.
 
@@ -9,7 +9,7 @@ ct_assert(NUM_PROGRAMS == 34);
 static const Nv3dProgramInfo MaxwellProgramInfo[NUM_PROGRAMS] = {
     // nvidia_headsurface_vertex
     { .offset = 0x00000030,
-      .registerCount = 11,
+      .registerCount = 13,
       .type = NV3D_SHADER_TYPE_VERTEX,
       .constIndex = -1,
       .stage = NV3D_HW_SHADER_STAGE_VERTEX_B,
@@ -322,9 +322,9 @@ static const NvU32 MaxwellConstantBuf0[] = {
     0x000012f8, // 6.80471e-42
     0x00001478, // 7.3428e-42
     0x00001630, // 7.95938e-42
-    0x00001a40, // 9.41673e-42
-    0x00001de0, // 1.07171e-41
-    0x000022e0, // 1.25108e-41
+    0x00001a38, // 9.40552e-42
+    0x00001df0, // 1.07396e-41
+    0x000022f0, // 1.25332e-41
     0x00002880, // 1.45287e-41
     0x00002a00, // 1.50668e-41
     0x00002bb8, // 1.56833e-41
@@ -346,9 +346,9 @@ static const NvU32 MaxwellConstantBuf2[] = {
     0x000012f8, // 6.80471e-42
     0x00001478, // 7.3428e-42
     0x00001630, // 7.95938e-42
-    0x00001a70, // 9.48399e-42
-    0x00001e10, // 1.07844e-41
-    0x00002310, // 1.25781e-41
+    0x00001a60, // 9.46157e-42
+    0x00001e18, // 1.07956e-41
+    0x00002318, // 1.25893e-41
     0x000028b0, // 1.45959e-41
     0x00002a30, // 1.5134e-41
     0x00002be0, // 1.57394e-41
@@ -361,9 +361,9 @@ static const NvU32 MaxwellConstantBuf3[] = {
     0x000012f8, // 6.80471e-42
     0x00001478, // 7.3428e-42
     0x00001630, // 7.95938e-42
-    0x00001ab0, // 9.57367e-42
-    0x00001e50, // 1.08741e-41
-    0x00002350, // 1.26677e-41
+    0x00001aa0, // 9.55125e-42
+    0x00001e58, // 1.08853e-41
+    0x00002358, // 1.26789e-41
     0x000028f0, // 1.46856e-41
     0x00002a70, // 1.52237e-41
     0x00002c20, // 1.58291e-41
@@ -376,9 +376,9 @@ static const NvU32 MaxwellConstantBuf4[] = {
     0x00001300, // 6.81592e-42
     0x00001480, // 7.35401e-42
     0x00001638, // 7.97059e-42
-    0x00001a90, // 9.52883e-42
-    0x00001e30, // 1.08292e-41
-    0x00002330, // 1.26229e-41
+    0x00001a80, // 9.50641e-42
+    0x00001e38, // 1.08404e-41
+    0x00002338, // 1.26341e-41
     0x000028d0, // 1.46408e-41
     0x00002a50, // 1.51789e-41
     0x00002c00, // 1.57842e-41
@@ -391,9 +391,9 @@ static const NvU32 MaxwellConstantBuf5[] = {
     0x00001300, // 6.81592e-42
     0x00001480, // 7.35401e-42
     0x00001638, // 7.97059e-42
-    0x00001ad0, // 9.61851e-42
-    0x00001e70, // 1.09189e-41
-    0x00002370, // 1.27126e-41
+    0x00001ac0, // 9.59609e-42
+    0x00001e78, // 1.09301e-41
+    0x00002378, // 1.27238e-41
     0x00002910, // 1.47304e-41
     0x00002a90, // 1.52685e-41
     0x00002c40, // 1.58739e-41

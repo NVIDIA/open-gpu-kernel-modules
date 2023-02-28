@@ -227,7 +227,7 @@ struct OBJGVASPACE {
     NV_STATUS (*__gvaspaceMap__)(struct OBJGVASPACE *, struct OBJGPU *, const NvU64, const NvU64, const MMU_MAP_TARGET *, const VAS_MAP_FLAGS);
     void (*__gvaspaceUnmap__)(struct OBJGVASPACE *, struct OBJGPU *, const NvU64, const NvU64);
     struct OBJEHEAP *(*__gvaspaceGetHeap__)(struct OBJGVASPACE *);
-    NvU32 (*__gvaspaceGetMapPageSize__)(struct OBJGVASPACE *, struct OBJGPU *, EMEMBLOCK *);
+    NvU64 (*__gvaspaceGetMapPageSize__)(struct OBJGVASPACE *, struct OBJGPU *, EMEMBLOCK *);
     NvU32 (*__gvaspaceGetBigPageSize__)(struct OBJGVASPACE *);
     NvU32 (*__gvaspaceGetFlags__)(struct OBJGVASPACE *);
     NvBool (*__gvaspaceIsMirrored__)(struct OBJGVASPACE *);
@@ -386,9 +386,9 @@ static inline struct OBJEHEAP *gvaspaceGetHeap_DISPATCH(struct OBJGVASPACE *pVAS
     return pVAS->__gvaspaceGetHeap__(pVAS);
 }
 
-NvU32 gvaspaceGetMapPageSize_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock);
+NvU64 gvaspaceGetMapPageSize_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock);
 
-static inline NvU32 gvaspaceGetMapPageSize_DISPATCH(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
+static inline NvU64 gvaspaceGetMapPageSize_DISPATCH(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
     return pVAS->__gvaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 

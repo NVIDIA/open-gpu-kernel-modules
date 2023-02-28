@@ -137,10 +137,9 @@ nvswitch_init_lpwr_regs_ls10
     bLpEnable = NV_TRUE;
     softwareDesired = (bLpEnable) ? 0x1 : 0x0;
 
-    // TO-DO: The write to the AN1 register is not working. The logic here needs to be re-visited.
-    tempRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_AN1_CTRL);
-    tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_CTRL_SYSTEM_LINK_AN1_CTRL, _PWRM_L1_ENABLE, softwareDesired, tempRegVal);
-    NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_AN1_CTRL, tempRegVal);
+    tempRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_CTRL);
+    tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_CTRL, _L1_SOFTWARE_DESIRED, softwareDesired, tempRegVal);
+    NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_CTRL, tempRegVal);
 }
 
 void
@@ -1080,6 +1079,29 @@ nvswitch_store_topology_information_ls10
 }
 
 void
+nvswitch_get_error_rate_threshold_ls10
+(
+    nvlink_link *link
+)
+{
+    nvswitch_device *device = link->dev->pDevInfo;
+    NvU32 linkNumber = link->linkNumber;
+    NvU32 crcRegVal;
+
+    crcRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, 
+                                         _NVLDL_RX, _ERROR_RATE_CTRL);
+
+    link->errorThreshold.thresholdMan = DRF_VAL(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_THRESHOLD_MAN,
+                                                crcRegVal);
+    link->errorThreshold.thresholdExp = DRF_VAL(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_THRESHOLD_EXP,
+                                                crcRegVal);
+    link->errorThreshold.timescaleMan = DRF_VAL(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_TIMESCALE_MAN,
+                                                crcRegVal);
+    link->errorThreshold.timescaleExp = DRF_VAL(_NVLDL_RX, _ERROR_RATE_CTRL, _SHORT_TIMESCALE_EXP,
+                                                crcRegVal);
+}
+
+void
 nvswitch_set_error_rate_threshold_ls10
 (
     nvlink_link *link,
@@ -1131,7 +1153,6 @@ nvswitch_set_error_rate_threshold_ls10
         
         crcRegVal  &= ~shortRateMask;
         crcRegVal  |= crcShortRegkeyVal;
-
 
         link->errorThreshold.bUserConfig = NV_FALSE;
         link->errorThreshold.bInterruptTrigerred = NV_FALSE;
@@ -1204,13 +1225,11 @@ nvswitch_configure_error_rate_threshold_interrupt_ls10
     if (bEnable)
     {
         link->errorThreshold.bInterruptTrigerred = NV_FALSE;
-        intrRegVal = FLD_SET_DRF_NUM(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_SHORT_ERROR_RATE, 1, 
-                                     intrRegVal);
+        intrRegVal |= DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_SHORT_ERROR_RATE, _ENABLE);
     }
     else
     {
-        intrRegVal = FLD_SET_DRF_NUM(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_SHORT_ERROR_RATE, 0, 
-                                     intrRegVal);
+        intrRegVal |= DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_SHORT_ERROR_RATE, _DISABLE);
     }
 
     NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, 
@@ -1414,7 +1433,7 @@ nvswitch_execute_unilateral_link_shutdown_ls10
     NvU32 link_state_request;
     NvU32 link_state;
     NvU32 stat_data = 0;
-    NvU32 link_intr_subcode = 0;
+    NvU32 link_intr_subcode;
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NVLDL, link->linkNumber))
     {

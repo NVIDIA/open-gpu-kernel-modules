@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,7 +42,7 @@ static NVT_STATUS parseDisplayId20SectionDataBlocks(const DISPLAYID_2_0_SECTION 
 static NVT_STATUS parseDisplayId20ExtensionSection(const DISPLAYID_2_0_SECTION *pSection, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);
 
 // DisplayID20 Data Block Tag Alloction
-static NVT_STATUS parseDisplayId20ProductIdentity(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                // 0x20 Product Identificaton                                                                                                                    Block Tag
+static NVT_STATUS parseDisplayId20ProductIdentity(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                // 0x20 Product Identificaton
 static NVT_STATUS parseDisplayId20DisplayParam(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                   // 0x21 Display Parameters
 static NVT_STATUS parseDisplayId20Timing7(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x22 Type VII Timing - Detailed Timing
 static NVT_STATUS parseDisplayId20Timing8(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x23 Type VIII Timing - Enumerated Timing
@@ -52,10 +52,10 @@ static NVT_STATUS parseDisplayId20DisplayInterfaceFeatures(const DISPLAYID_2_0_D
 static NVT_STATUS parseDisplayId20Stereo(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                         // 0x27 Stereo Display Interface
 static NVT_STATUS parseDisplayId20TiledDisplay(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                   // 0x28 Tiled Display Topology
 static NVT_STATUS parseDisplayId20ContainerId(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                    // 0x29 ContainerID
-static NVT_STATUS parseDisplayId20Timing10(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                       // 0x2A Type X Timing - Formula-based RR up to 1024Hz
+static NVT_STATUS parseDisplayId20Timing10(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                       // 0x2A Type X Timing - Formula-based Timing
 static NVT_STATUS parseDisplayId20AdaptiveSync(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                   // 0x2B Adaptive-Sync
-static NVT_STATUS parseDisplayId20ARVRHMD(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                   // 0x2C ARVR HMD
-static NVT_STATUS parseDisplayId20ARVRLayer(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                   // 0x2D ARVR Layer
+static NVT_STATUS parseDisplayId20ARVRHMD(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x2C ARVR HMD
+static NVT_STATUS parseDisplayId20ARVRLayer(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                      // 0x2D ARVR Layer
 static NVT_STATUS parseDisplayId20VendorSpecific(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                 // 0x7E Vendor-specific
 static NVT_STATUS parseDisplayId20CtaData(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x81 CTA DisplayID
 
@@ -63,7 +63,6 @@ static NVT_STATUS parseDisplayId20CtaData(const DISPLAYID_2_0_DATA_BLOCK_HEADER 
 static NVT_STATUS getPrimaryUseCase(NvU8 product_type, NVT_DISPLAYID_PRODUCT_PRIMARY_USE_CASE *primary_use_case);
 static NVT_STATUS parseDisplayId20Timing7Descriptor(const DISPLAYID_2_0_TIMING_7_DESCRIPTOR *pDescriptor, NVT_TIMING *pTiming, NvU8 revision, NvU8 count);
 static NVT_STATUS parseDisplayId20Timing9Descriptor(const DISPLAYID_2_0_TIMING_9_DESCRIPTOR *pDescriptor, NVT_TIMING *pTiming, NvU8 count);
-static NVT_STATUS parseDisplayId20Timing10Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 payloadbytes, NvU8 count);
 static NvU32      greatestCommonDenominator(NvU32 x, NvU32 y);
 static NvU8       getExistedTimingSeqNumber(NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo, enum NVT_TIMING_TYPE);
 
@@ -812,11 +811,13 @@ parseDisplayId20Timing10(
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
 {
     NVT_STATUS  status = NVT_STATUS_SUCCESS;
-    const DISPLAYID_2_0_TIMING_10_BLOCK *pTiming10Block = NULL;
-    NvU32  descriptorCount                              = 0;
-    NvU8   startSeqNumber                               = 0;
-    NvU8   i                                            = 0;
-    NvU8   eachOfDescriptorsSize                        = sizeof(DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR);
+    NvU32  descriptorCount       = 0;
+    NvU8   startSeqNumber        = 0;
+    NvU8   i                     = 0;
+    NvU8   eachOfDescriptorsSize = sizeof(DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR);
+
+    const DISPLAYID_2_0_TIMING_10_BLOCK *pTiming10Block                = NULL;
+    const DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR *p6bytesDescriptor = NULL;
 
     NVT_TIMING   newTiming;
 
@@ -858,10 +859,44 @@ parseDisplayId20Timing10(
 
     for (i = 0; i < descriptorCount; i++)
     {
+        startSeqNumber += i;
         NVMISC_MEMSET(&newTiming, 0, sizeof(newTiming));
-
-        if (NVT_STATUS_SUCCESS == parseDisplayId20Timing10Descriptor(&pTiming10Block->descriptors[i*eachOfDescriptorsSize], &newTiming, pTiming10Block->header.payload_bytes_len, startSeqNumber+i))
+        if (NVT_STATUS_SUCCESS == parseDisplayId20Timing10Descriptor(&pTiming10Block->descriptors[i*eachOfDescriptorsSize], 
+                                                                     &newTiming, 
+                                                                     pTiming10Block->header.payload_bytes_len))
         {
+            p6bytesDescriptor = (const DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR *)&pTiming10Block->descriptors[i*eachOfDescriptorsSize];
+
+            if (p6bytesDescriptor->options.ycc420_support)
+            {
+                UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1, 1, 1, 0, 1);
+            }
+
+            if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD)
+            {
+                NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "DID20-Type10:#%3d:%dx%dx%3d.%03dHz/%s",
+                                                                                     (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),
+                                                                                     (int)newTiming.HVisible, 
+                                                                                     (int)newTiming.VVisible,
+                                                                                     (int)newTiming.etc.rrx1k/1000, 
+                                                                                     (int)newTiming.etc.rrx1k%1000, 
+                                                                                     (newTiming.interlaced ? "I":"P"));
+            }
+            else
+            {
+                NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "DID20-Type10RB%d:#%3d:%dx%dx%3d.%03dHz/%s",
+                                                                                     p6bytesDescriptor->options.timing_formula,
+                                                                                     (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),
+                                                                                     (int)newTiming.HVisible, 
+                                                                                     (int)newTiming.VVisible,
+                                                                                     (int)newTiming.etc.rrx1k/1000, 
+                                                                                     (int)newTiming.etc.rrx1k%1000, 
+                                                                                     (newTiming.interlaced ? "I":"P"));
+
+            }
+            newTiming.etc.status = NVT_STATUS_DISPLAYID_10N(++startSeqNumber);
+            newTiming.etc.name[sizeof(newTiming.etc.name) - 1] = '\0';
+
             if (!assignNextAvailableDisplayId20Timing(pDisplayIdInfo, &newTiming))
             {
                 break;
@@ -869,7 +904,11 @@ parseDisplayId20Timing10(
         }
         else
         {
-            if (pDisplayIdInfo == NULL) return NVT_STATUS_ERR;
+            if (pDisplayIdInfo == NULL)
+            {
+                return NVT_STATUS_ERR;
+            }
+            continue;
         }
     }
 
@@ -1306,14 +1345,18 @@ parseDisplayId20VendorSpecific(
         // TODO: below parser shall be updated if DID21 changed in the future
         if (pDataBlock->data_bytes == NVT_VESA_VENDOR_SPECIFIC_LENGTH)
         {
-            pVendorSpecific->vesaVsdb.data_struct_type.type = block->vendor_specific_data[3] & NVT_VESA_ORG_VSDB_DATA_TYPE_MASK;
-            pVendorSpecific->vesaVsdb.data_struct_type.color_space_and_eotf = (block->vendor_specific_data[3] & NVT_VESA_ORG_VSDB_COLOR_SPACE_AND_EOTF_MASK) >> NVT_VESA_ORG_VSDB_COLOR_SPACE_AND_EOTF_SHIFT;
-
-            pVendorSpecific->vesaVsdb.overlapping.pixels_overlapping_count = block->vendor_specific_data[4] & NVT_VESA_ORG_VSDB_PIXELS_OVERLAPPING_MASK;
-            pVendorSpecific->vesaVsdb.overlapping.multi_sst = (block->vendor_specific_data[4] & NVT_VESA_ORG_VSDB_MULTI_SST_MODE_MASK) >> NVT_VESA_ORG_VSDB_MULTI_SST_MODE_SHIFT;
-
-            pVendorSpecific->vesaVsdb.pass_through_integer.pass_through_integer_dsc = block->vendor_specific_data[5] & NVT_VESA_ORG_VSDB_PASS_THROUGH_INTEGER_MASK;
-            pVendorSpecific->vesaVsdb.pass_through_fractional.pass_through_fraction_dsc = block->vendor_specific_data[6] & NVT_VESA_ORG_VSDB_PASS_THROUGH_FRACTIOINAL_MASK;
+            pVendorSpecific->vesaVsdb.data_struct_type.type = 
+                block->vendor_specific_data[3] & NVT_VESA_ORG_VSDB_DATA_TYPE_MASK;
+            pVendorSpecific->vesaVsdb.data_struct_type.color_space_and_eotf = 
+                (block->vendor_specific_data[3] & NVT_VESA_ORG_VSDB_COLOR_SPACE_AND_EOTF_MASK) >> NVT_VESA_ORG_VSDB_COLOR_SPACE_AND_EOTF_SHIFT;
+            pVendorSpecific->vesaVsdb.overlapping.pixels_overlapping_count = 
+                block->vendor_specific_data[4] & NVT_VESA_ORG_VSDB_PIXELS_OVERLAPPING_MASK;
+            pVendorSpecific->vesaVsdb.overlapping.multi_sst = 
+                (block->vendor_specific_data[4] & NVT_VESA_ORG_VSDB_MULTI_SST_MODE_MASK) >> NVT_VESA_ORG_VSDB_MULTI_SST_MODE_SHIFT;
+            pVendorSpecific->vesaVsdb.pass_through_integer.pass_through_integer_dsc = 
+                block->vendor_specific_data[5] & NVT_VESA_ORG_VSDB_PASS_THROUGH_INTEGER_MASK;
+            pVendorSpecific->vesaVsdb.pass_through_fractional.pass_through_fraction_dsc = 
+                block->vendor_specific_data[6] & NVT_VESA_ORG_VSDB_PASS_THROUGH_FRACTIOINAL_MASK;
         }
         else
         {
@@ -1655,18 +1698,21 @@ parseDisplayId20Timing9Descriptor(
         status = NvTiming_CalcCVT_RB2(width, height, rr, pDescriptor->options.rr_1000div1001_support, pTiming);
     break;
     default:
+    {
+        nvt_assert(0 && "Unknown timing formula"); 
         status = NVT_STATUS_ERR;
+    }
     break;
     }
 
     if (status == NVT_STATUS_SUCCESS)
-    {        
+    {
         NVMISC_MEMSET(pTiming->etc.name, 0, sizeof(pTiming->etc.name));
         pTiming->etc.status = NVT_STATUS_DISPLAYID_9N(++count);
 
-        if ( pDescriptor->options.timing_formula== DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD)
+        if (pDescriptor->options.timing_formula ==  DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD)
         {
-            NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type9:#%3d:%dx%dx%3d.%03dHz/%s", 
+            NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type9:#%3d:%dx%dx%3d.%03dHz/%s",
                                                                                 (int)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status),
                                                                                 (int)pTiming->HVisible, 
                                                                                 (int)pTiming->VVisible,
@@ -1674,19 +1720,10 @@ parseDisplayId20Timing9Descriptor(
                                                                                 (int)pTiming->etc.rrx1k%1000, 
                                                                                 (pTiming->interlaced ? "I":"P"));
         }
-        else if (pDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_REDUCED_BLANKING_1)
+        else
         {
-            NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type9-RB1:#%3d:%dx%dx%3d.%03dHz/%s", 
-                                                                                (int)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status),
-                                                                                (int)pTiming->HVisible,
-                                                                                (int)pTiming->VVisible,
-                                                                                (int)pTiming->etc.rrx1k/1000, 
-                                                                                (int)pTiming->etc.rrx1k%1000, 
-                                                                                (pTiming->interlaced ? "I":"P"));
-        }
-        else if (pDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_2)
-        {
-            NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type9-RB2:#%3d:%dx%dx%3d.%03dHz/%s",
+            NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type9RB%d:#%3d:%dx%dx%3d.%03dHz/%s",
+                                                                                pDescriptor->options.timing_formula,
                                                                                 (int)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status),
                                                                                 (int)pTiming->HVisible, 
                                                                                 (int)pTiming->VVisible,
@@ -1695,19 +1732,17 @@ parseDisplayId20Timing9Descriptor(
                                                                                 (pTiming->interlaced ? "I":"P"));
         }
     }
-
     pTiming->etc.name[sizeof(pTiming->etc.name) - 1] = '\0';
 
     return status;
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20Timing10Descriptor(
     const void *pDescriptor,
     NVT_TIMING *pTiming,
-    NvU8 payloadbytes, 
-    NvU8 count)
+    NvU8 payloadBytes)
 {
     NVT_STATUS  status = NVT_STATUS_SUCCESS;
     const DISPLAYID_2_0_TIMING_10_6BYTES_DESCRIPTOR* p6bytesDescriptor = NULL;
@@ -1722,7 +1757,7 @@ parseDisplayId20Timing10Descriptor(
     height = (p6bytesDescriptor->vertical_active_lines[1] << 8    | p6bytesDescriptor->vertical_active_lines[0]) + 1;
     rr     = p6bytesDescriptor->refresh_rate + 1;
 
-    if (payloadbytes == DISPLAYID_2_0_TIMING_10_PAYLOAD_BYTES_7)
+    if (payloadBytes == DISPLAYID_2_0_TIMING_10_PAYLOAD_BYTES_7)
     {
         p7bytesDescriptor = (const DISPLAYID_2_0_TIMING_10_7BYTES_DESCRIPTOR *)pDescriptor;
                        rr = (p7bytesDescriptor->descriptor_6_bytes.refresh_rate | p7bytesDescriptor->refresh_rate_high << 8) + 1;
@@ -1740,92 +1775,42 @@ parseDisplayId20Timing10Descriptor(
         status = NvTiming_CalcCVT_RB2(width, height, rr, p6bytesDescriptor->options.rr1000div1001_or_hblank, pTiming);
     break;
     case DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_3:
-        {
-            NvU32 deltaHBlank = 0;
-            
-            if (p7bytesDescriptor != NULL)
-            {
-                if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 0)     // Horizontal Blank in Pixels = [Field Value] * 8 + 80
-                {
-                    deltaHBlank = p7bytesDescriptor->delta_hblank * 8;
-                }
-                else if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 1)
-                {
-                    if (p7bytesDescriptor->delta_hblank <= 5)
-                        deltaHBlank = (p7bytesDescriptor->delta_hblank * 8 + 160) - 80;
-                    else // if 5 < Field Value <=7
-                        deltaHBlank = (160 - ((p7bytesDescriptor->delta_hblank - 5) * 8)) - 80;
-                }
-
-                status = NvTiming_CalcCVT_RB3(width, height, rr, deltaHBlank, p7bytesDescriptor->additional_vblank_timing * 35, p6bytesDescriptor->options.early_vsync, pTiming);
-            }
-            else // 6 bytes descriptor
-            {
-                if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 1)
-                    deltaHBlank = 80;
-
-                status = NvTiming_CalcCVT_RB3(width, height, rr, deltaHBlank, 0, p6bytesDescriptor->options.early_vsync, pTiming);
-            }
-
-            break;
-        }
-    }
-
-    if ( status == NVT_STATUS_SUCCESS )
     {
-        NVMISC_MEMSET(pTiming->etc.name, 0, sizeof(pTiming->etc.name));
-        pTiming->etc.status = NVT_STATUS_DISPLAYID_10N(++count);
+        NvU32 deltaHBlank = 0;
+        if (p7bytesDescriptor != NULL)
+        {
+            if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 0)     // Horizontal Blank in Pixels = [Field Value] * 8 + 80
+            {
+                deltaHBlank = p7bytesDescriptor->delta_hblank * 8;
+            }
+            else if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 1)
+            {
+                if (p7bytesDescriptor->delta_hblank <= 5)
+                    deltaHBlank = (p7bytesDescriptor->delta_hblank * 8 + 160) - 80;
+                else // if 5 < Field Value <=7
+                    deltaHBlank = (160 - ((p7bytesDescriptor->delta_hblank - 5) * 8)) - 80;
+            }
 
-        if (p6bytesDescriptor->options.ycc420_support)
-        {
-            // YCC 420 support
-            UPDATE_BPC_FOR_COLORFORMAT(pTiming->etc.yuv420, 0, 1, 1, 1, 0, 1);
+            status = NvTiming_CalcCVT_RB3(width, height, rr, deltaHBlank, p7bytesDescriptor->additional_vblank_timing * 35, p6bytesDescriptor->options.early_vsync, pTiming);
         }
+        else // 6 bytes descriptor
+        {
+            if (p6bytesDescriptor->options.rr1000div1001_or_hblank == 1)
+                deltaHBlank = 80;
 
-        if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_STANDARD)
-        {
-            NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type10:#%3d:%dx%dx%3d.%03dHz/%s", 
-                                                                                (int)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status),
-                                                                                (int)pTiming->HVisible, 
-                                                                                (int)pTiming->VVisible,
-                                                                                (int)pTiming->etc.rrx1k/1000, 
-                                                                                (int)pTiming->etc.rrx1k%1000, 
-                                                                                (pTiming->interlaced ? "I":"P"));
-
-        }
-        else if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_1_2_REDUCED_BLANKING_1)
-        {
-             NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type10RB1:#%3d:%dx%dx%3d.%03dHz/%s",
-                                                                                (int)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status),
-                                                                                (int)pTiming->HVisible, 
-                                                                                (int)pTiming->VVisible,
-                                                                                (int)pTiming->etc.rrx1k/1000, 
-                                                                                (int)pTiming->etc.rrx1k%1000, 
-                                                                                (pTiming->interlaced ? "I":"P"));
-        }
-        else if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_2)
-        {
-            NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type10RB2:#%3d:%dx%dx%3d.%03dHz/%s", 
-                                                                                (int)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status),
-                                                                                (int)pTiming->HVisible,
-                                                                                (int)pTiming->VVisible,
-                                                                                (int)pTiming->etc.rrx1k/1000,
-                                                                                (int)pTiming->etc.rrx1k%1000, 
-                                                                                (pTiming->interlaced ? "I":"P"));
-        }
-        else if (p6bytesDescriptor->options.timing_formula == DISPLAYID_2_0_TIMING_FORMULA_CVT_2_0_REDUCED_BLANKING_3)
-        {
-            NVT_SNPRINTF((char *)pTiming->etc.name, sizeof(pTiming->etc.name), "DID20-Type10RB3:#%3d:%dx%dx%3d.%03dHz/%s", 
-                                                                                (int)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status),
-                                                                                (int)pTiming->HVisible,
-                                                                                (int)pTiming->VVisible,
-                                                                                (int)pTiming->etc.rrx1k/1000,
-                                                                                (int)pTiming->etc.rrx1k%1000, 
-                                                                                (pTiming->interlaced ? "I":"P"));
+            status = NvTiming_CalcCVT_RB3(width, height, rr, deltaHBlank, 0, p6bytesDescriptor->options.early_vsync, pTiming);
         }
     }
+    break;
+    default: 
+    {
+        nvt_assert(0 && "Unknown timing formula"); 
+        status = NVT_STATUS_ERR;
+    }
+    break;
+    }
 
-    pTiming->etc.name[sizeof(pTiming->etc.name) - 1] = '\0';
+    if (status == NVT_STATUS_SUCCESS) return status;
 
     return status;
 }
@@ -1842,7 +1827,7 @@ getExistedTimingSeqNumber(
 
     switch (timingType)
     {
-    case NVT_TYPE_DISPLAYID_7:               
+    case NVT_TYPE_DISPLAYID_7:
     case NVT_TYPE_DISPLAYID_8:
     case NVT_TYPE_DISPLAYID_9:
     case NVT_TYPE_DISPLAYID_10:

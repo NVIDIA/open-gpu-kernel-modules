@@ -57,7 +57,7 @@ faultbufCtrlCmdFaultbufferGetRegisterMappings_IMPL
     OBJGPU  *pGpu  = GPU_RES_GET_GPU(pMmuFaultBuffer);
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
 
-    return kgmmuGetFaultRegisterMappings_HAL(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER,
+    return kgmmuGetFaultRegisterMappings_HAL(pGpu, pKernelGmmu, pParams->faultBufferType,
                                             &pParams->pFaultBufferGet,
                                             &pParams->pFaultBufferPut,
                                             &pParams->pFaultBufferInfo,

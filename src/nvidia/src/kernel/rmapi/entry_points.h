@@ -106,7 +106,7 @@ rmapiFreeWithSecInfoTls
 );
 
 NV_STATUS
-rmapiFreeClientList
+rmapiDisableClients
 (
     RM_API   *pRmApi,
     NvHandle *phClientList,
@@ -114,7 +114,7 @@ rmapiFreeClientList
 );
 
 NV_STATUS
-rmapiFreeClientListWithSecInfo
+rmapiDisableClientsWithSecInfo
 (
     RM_API   *pRmApi,
     NvHandle *phClientList,
@@ -123,7 +123,7 @@ rmapiFreeClientListWithSecInfo
 );
 
 NV_STATUS
-rmapiFreeClientListWithSecInfoTls
+rmapiDisableClientsWithSecInfoTls
 (
     RM_API   *pRmApi,
     NvHandle *phClientList,

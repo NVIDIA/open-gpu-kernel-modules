@@ -149,7 +149,8 @@ struct uvm_push_info_struct
     char description[128];
 
     // Procedure to be called when the corresponding push is complete.
-    // This procedure is called with the UVM_LOCK_ORDER_CHANNEL spin lock held.
+    // This procedure is called with the channel pool lock held, which
+    // may be a spinlock.
     void (*on_complete)(void *);
     void *on_complete_data;
 };
@@ -438,7 +439,7 @@ static uvm_gpu_t *uvm_push_get_gpu(uvm_push_t *push)
 
 // Validate that the given method can be pushed to the underlying channel. The
 // method contents can be used to further validate individual fields.
-bool uvm_push_method_validate(uvm_push_t *push, NvU8 subch, NvU32 method_address, NvU32 method_data);
+bool uvm_push_method_is_valid(uvm_push_t *push, NvU8 subch, NvU32 method_address, NvU32 method_data);
 
 // Retrieve the push info object for a push that has already started
 static uvm_push_info_t *uvm_push_info_from_push(uvm_push_t *push)

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021 NVIDIA Corporation
+    Copyright (c) 2021-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -50,38 +50,12 @@ void uvm_hal_maxwell_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 o
                      OFFSET_OUT_LOWER, HWVALUE(B0B5, OFFSET_OUT_LOWER, VALUE, NvOffset_LO32(offset_out)));
 }
 
-// Perform an appropriate membar before a semaphore operation. Returns whether
-// the semaphore operation should include a flush.
-static bool maxwell_membar_before_semaphore(uvm_push_t *push)
-{
-    uvm_gpu_t *gpu;
-
-    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE)) {
-        // No MEMBAR requested, don't use a flush.
-        return false;
-    }
-
-    if (!uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU)) {
-        // By default do a MEMBAR SYS and for that we can just use flush on the
-        // semaphore operation.
-        return true;
-    }
-
-    // MEMBAR GPU requested, do it on the HOST and skip the CE flush as CE
-    // doesn't have this capability.
-    gpu = uvm_push_get_gpu(push);
-    gpu->parent->host_hal->wait_for_idle(push);
-    gpu->parent->host_hal->membar_gpu(push);
-
-    return false;
-}
-
 void uvm_hal_maxwell_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     NvU32 flush_value;
     bool use_flush;
 
-    use_flush = maxwell_membar_before_semaphore(push);
+    use_flush = uvm_hal_membar_before_semaphore(push);
 
     if (use_flush)
         flush_value = HWCONST(B0B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
@@ -102,7 +76,7 @@ void uvm_hal_maxwell_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, 
     NvU32 flush_value;
     bool use_flush;
 
-    use_flush = maxwell_membar_before_semaphore(push);
+    use_flush = uvm_hal_membar_before_semaphore(push);
 
     if (use_flush)
         flush_value = HWCONST(B0B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
@@ -126,7 +100,7 @@ void uvm_hal_maxwell_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
     NvU32 flush_value;
     bool use_flush;
 
-    use_flush = maxwell_membar_before_semaphore(push);
+    use_flush = uvm_hal_membar_before_semaphore(push);
 
     if (use_flush)
         flush_value = HWCONST(B0B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
@@ -221,10 +195,9 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
     NvU32 pipelined_value;
     NvU32 launch_dma_src_dst_type;
     NvU32 launch_dma_plc_mode;
-    bool first_operation = true;
 
-    UVM_ASSERT_MSG(gpu->parent->ce_hal->memcopy_validate(push, dst, src),
-                   "Memcopy validation failed in channel %s, GPU %s",
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->memcopy_is_valid(push, dst, src),
+                   "Memcopy validation failed in channel %s, GPU %s.\n",
                    push->channel->name,
                    uvm_gpu_name(gpu));
 
@@ -233,13 +206,13 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
     launch_dma_src_dst_type = gpu->parent->ce_hal->phys_mode(push, dst, src);
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
 
+    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED))
+        pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);
+    else
+        pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, NON_PIPELINED);
+
     do {
         NvU32 copy_this_time = (NvU32)min(size, max_single_copy_size);
-
-        if (first_operation && uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED))
-            pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);
-        else
-            pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, NON_PIPELINED);
 
         gpu->parent->ce_hal->offset_in_out(push, src.address, dst.address);
 
@@ -255,10 +228,10 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
            launch_dma_plc_mode |
            pipelined_value);
 
+        pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);
         dst.address += copy_this_time;
         src.address += copy_this_time;
         size -= copy_this_time;
-        first_operation = false;
     } while (size > 0);
 
     maxwell_membar_after_transfer(push);
@@ -266,11 +239,14 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
 
 void uvm_hal_maxwell_ce_memcopy_v_to_v(uvm_push_t *push, NvU64 dst_va, NvU64 src_va, size_t size)
 {
-    uvm_hal_maxwell_ce_memcopy(push, uvm_gpu_address_virtual(dst_va), uvm_gpu_address_virtual(src_va), size);
+    uvm_push_get_gpu(push)->parent->ce_hal->memcopy(push,
+                                                    uvm_gpu_address_virtual(dst_va),
+                                                    uvm_gpu_address_virtual(src_va),
+                                                    size);
 }
 
 // Push SET_DST_PHYS mode if needed and return LAUNCH_DMA_DST_TYPE flags
-static NvU32 memset_push_phys_mode(uvm_push_t *push, uvm_gpu_address_t dst)
+static NvU32 maxwell_memset_push_phys_mode(uvm_push_t *push, uvm_gpu_address_t dst)
 {
     if (dst.is_virtual)
         return HWCONST(B0B5, LAUNCH_DMA, DST_TYPE, VIRTUAL);
@@ -290,12 +266,12 @@ static void memset_common(uvm_push_t *push, uvm_gpu_address_t dst, size_t size, 
     NvU32 launch_dma_dst_type;
     NvU32 launch_dma_plc_mode;
 
-    UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_validate(push, dst, memset_element_size),
-                   "Memset validation failed in channel %s, GPU %s",
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_is_valid(push, dst, memset_element_size),
+                   "Memset validation failed in channel %s, GPU %s.\n",
                    push->channel->name,
                    uvm_gpu_name(gpu));
 
-    launch_dma_dst_type = memset_push_phys_mode(push, dst);
+    launch_dma_dst_type = maxwell_memset_push_phys_mode(push, dst);
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
 
     if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED))
@@ -322,7 +298,7 @@ static void memset_common(uvm_push_t *push, uvm_gpu_address_t dst, size_t size, 
 
         dst.address += memset_this_time * memset_element_size;
         size -= memset_this_time;
-        pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, NON_PIPELINED);
+        pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);
     } while (size > 0);
 
     maxwell_membar_after_transfer(push);
@@ -373,5 +349,6 @@ void uvm_hal_maxwell_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 
 
 void uvm_hal_maxwell_ce_memset_v_4(uvm_push_t *push, NvU64 dst_va, NvU32 value, size_t size)
 {
-    uvm_hal_maxwell_ce_memset_4(push, uvm_gpu_address_virtual(dst_va), value, size);
+    uvm_push_get_gpu(push)->parent->ce_hal->memset_4(push, uvm_gpu_address_virtual(dst_va), value, size);
 }
+

@@ -72,7 +72,7 @@ struct NvjpgContext {
     NV_STATUS (*__nvjpgctxUnmapFrom__)(struct NvjpgContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__nvjpgctxControl_Epilogue__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nvjpgctxControlLookup__)(struct NvjpgContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
-    NV_STATUS (*__nvjpgctxGetSwMethods__)(struct NvjpgContext *, METHOD **, NvU32 *);
+    NV_STATUS (*__nvjpgctxGetSwMethods__)(struct NvjpgContext *, const METHOD **, NvU32 *);
     NvHandle (*__nvjpgctxGetInternalObjectHandle__)(struct NvjpgContext *);
     NV_STATUS (*__nvjpgctxControl__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nvjpgctxUnmap__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -81,9 +81,11 @@ struct NvjpgContext {
     NvBool (*__nvjpgctxIsSwMethodStalling__)(struct NvjpgContext *, NvU32);
     NV_STATUS (*__nvjpgctxControlFilter__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nvjpgctxUnregisterEvent__)(struct NvjpgContext *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__nvjpgctxControlSerialization_Prologue__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__nvjpgctxCanCopy__)(struct NvjpgContext *);
     void (*__nvjpgctxPreDestruct__)(struct NvjpgContext *);
     NV_STATUS (*__nvjpgctxIsDuplicate__)(struct NvjpgContext *, NvHandle, NvBool *);
+    void (*__nvjpgctxControlSerialization_Epilogue__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__nvjpgctxGetNotificationListPtr__)(struct NvjpgContext *);
     struct NotifShare *(*__nvjpgctxGetNotificationShare__)(struct NvjpgContext *);
     NV_STATUS (*__nvjpgctxMap__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -141,9 +143,11 @@ NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct 
 #define nvjpgctxIsSwMethodStalling(pChannelDescendant, hHandle) nvjpgctxIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define nvjpgctxControlFilter(pResource, pCallContext, pParams) nvjpgctxControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define nvjpgctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) nvjpgctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define nvjpgctxControlSerialization_Prologue(pResource, pCallContext, pParams) nvjpgctxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define nvjpgctxCanCopy(pResource) nvjpgctxCanCopy_DISPATCH(pResource)
 #define nvjpgctxPreDestruct(pResource) nvjpgctxPreDestruct_DISPATCH(pResource)
 #define nvjpgctxIsDuplicate(pResource, hMemory, pDuplicate) nvjpgctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define nvjpgctxControlSerialization_Epilogue(pResource, pCallContext, pParams) nvjpgctxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define nvjpgctxGetNotificationListPtr(pNotifier) nvjpgctxGetNotificationListPtr_DISPATCH(pNotifier)
 #define nvjpgctxGetNotificationShare(pNotifier) nvjpgctxGetNotificationShare_DISPATCH(pNotifier)
 #define nvjpgctxMap(pGpuResource, pCallContext, pParams, pCpuMapping) nvjpgctxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -231,7 +235,7 @@ static inline NV_STATUS nvjpgctxControlLookup_DISPATCH(struct NvjpgContext *pRes
     return pResource->__nvjpgctxControlLookup__(pResource, pParams, ppEntry);
 }
 
-static inline NV_STATUS nvjpgctxGetSwMethods_DISPATCH(struct NvjpgContext *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS nvjpgctxGetSwMethods_DISPATCH(struct NvjpgContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__nvjpgctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
@@ -267,6 +271,10 @@ static inline NV_STATUS nvjpgctxUnregisterEvent_DISPATCH(struct NvjpgContext *pN
     return pNotifier->__nvjpgctxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS nvjpgctxControlSerialization_Prologue_DISPATCH(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__nvjpgctxControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool nvjpgctxCanCopy_DISPATCH(struct NvjpgContext *pResource) {
     return pResource->__nvjpgctxCanCopy__(pResource);
 }
@@ -277,6 +285,10 @@ static inline void nvjpgctxPreDestruct_DISPATCH(struct NvjpgContext *pResource) 
 
 static inline NV_STATUS nvjpgctxIsDuplicate_DISPATCH(struct NvjpgContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__nvjpgctxIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void nvjpgctxControlSerialization_Epilogue_DISPATCH(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__nvjpgctxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *nvjpgctxGetNotificationListPtr_DISPATCH(struct NvjpgContext *pNotifier) {

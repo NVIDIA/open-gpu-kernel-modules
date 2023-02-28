@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,7 +47,15 @@ namespace DisplayPort
         NvU8 element[NV_DPCD_SUPPORTED_LINK_RATES__SIZE];
         NvU8 entries;
 
-        LinkRates() : entries(0) {}
+        LinkRates()
+        {
+            entries = 0;
+
+            for (int i = 0; i < NV_DPCD_SUPPORTED_LINK_RATES__SIZE; i++)
+            {
+                element[i] = 0;
+            }
+        }
 
         void clear()
         {

@@ -44,6 +44,43 @@ NvlStatus nvswitch_inforom_nvl_update_link_correctable_error_info_ls10
     NvBool *bDirty
 );
 
+NvlStatus
+nvswitch_inforom_nvl_get_max_correctable_error_rate_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_NVLINK_MAX_CORRECTABLE_ERROR_RATES_PARAMS *params
+);
+
+NvlStatus
+nvswitch_inforom_nvl_get_errors_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_NVLINK_ERROR_COUNTS_PARAMS *params
+);
+
+NvlStatus nvswitch_inforom_nvl_setL1Threshold_ls10
+(
+    nvswitch_device *device,
+    void *pNvlGeneric,
+    NvU32 word1,
+    NvU32 word2
+);
+
+NvlStatus nvswitch_inforom_nvl_getL1Threshold_ls10
+(
+    nvswitch_device *device,
+    void *pNvlGeneric,
+    NvU32 *word1,
+    NvU32 *word2
+);
+
+NvlStatus nvswitch_inforom_nvl_setup_nvlink_state_ls10
+(
+    nvswitch_device *device,
+    INFOROM_NVLINK_STATE *pNvlinkState,
+    NvU8 version
+);
+
 void
 nvswitch_initialize_oms_state_ls10
 (

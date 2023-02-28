@@ -70,7 +70,7 @@ struct OfaContext {
     NV_STATUS (*__ofactxUnmapFrom__)(struct OfaContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__ofactxControl_Epilogue__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__ofactxControlLookup__)(struct OfaContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
-    NV_STATUS (*__ofactxGetSwMethods__)(struct OfaContext *, METHOD **, NvU32 *);
+    NV_STATUS (*__ofactxGetSwMethods__)(struct OfaContext *, const METHOD **, NvU32 *);
     NvHandle (*__ofactxGetInternalObjectHandle__)(struct OfaContext *);
     NV_STATUS (*__ofactxControl__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__ofactxUnmap__)(struct OfaContext *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -79,9 +79,11 @@ struct OfaContext {
     NvBool (*__ofactxIsSwMethodStalling__)(struct OfaContext *, NvU32);
     NV_STATUS (*__ofactxControlFilter__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__ofactxUnregisterEvent__)(struct OfaContext *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__ofactxControlSerialization_Prologue__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__ofactxCanCopy__)(struct OfaContext *);
     void (*__ofactxPreDestruct__)(struct OfaContext *);
     NV_STATUS (*__ofactxIsDuplicate__)(struct OfaContext *, NvHandle, NvBool *);
+    void (*__ofactxControlSerialization_Epilogue__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__ofactxGetNotificationListPtr__)(struct OfaContext *);
     struct NotifShare *(*__ofactxGetNotificationShare__)(struct OfaContext *);
     NV_STATUS (*__ofactxMap__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -139,9 +141,11 @@ NV_STATUS __nvoc_objCreate_OfaContext(OfaContext**, Dynamic*, NvU32, struct CALL
 #define ofactxIsSwMethodStalling(pChannelDescendant, hHandle) ofactxIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define ofactxControlFilter(pResource, pCallContext, pParams) ofactxControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define ofactxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ofactxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define ofactxControlSerialization_Prologue(pResource, pCallContext, pParams) ofactxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ofactxCanCopy(pResource) ofactxCanCopy_DISPATCH(pResource)
 #define ofactxPreDestruct(pResource) ofactxPreDestruct_DISPATCH(pResource)
 #define ofactxIsDuplicate(pResource, hMemory, pDuplicate) ofactxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define ofactxControlSerialization_Epilogue(pResource, pCallContext, pParams) ofactxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define ofactxGetNotificationListPtr(pNotifier) ofactxGetNotificationListPtr_DISPATCH(pNotifier)
 #define ofactxGetNotificationShare(pNotifier) ofactxGetNotificationShare_DISPATCH(pNotifier)
 #define ofactxMap(pGpuResource, pCallContext, pParams, pCpuMapping) ofactxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -229,7 +233,7 @@ static inline NV_STATUS ofactxControlLookup_DISPATCH(struct OfaContext *pResourc
     return pResource->__ofactxControlLookup__(pResource, pParams, ppEntry);
 }
 
-static inline NV_STATUS ofactxGetSwMethods_DISPATCH(struct OfaContext *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS ofactxGetSwMethods_DISPATCH(struct OfaContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__ofactxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
@@ -265,6 +269,10 @@ static inline NV_STATUS ofactxUnregisterEvent_DISPATCH(struct OfaContext *pNotif
     return pNotifier->__ofactxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS ofactxControlSerialization_Prologue_DISPATCH(struct OfaContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__ofactxControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool ofactxCanCopy_DISPATCH(struct OfaContext *pResource) {
     return pResource->__ofactxCanCopy__(pResource);
 }
@@ -275,6 +283,10 @@ static inline void ofactxPreDestruct_DISPATCH(struct OfaContext *pResource) {
 
 static inline NV_STATUS ofactxIsDuplicate_DISPATCH(struct OfaContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__ofactxIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void ofactxControlSerialization_Epilogue_DISPATCH(struct OfaContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__ofactxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *ofactxGetNotificationListPtr_DISPATCH(struct OfaContext *pNotifier) {

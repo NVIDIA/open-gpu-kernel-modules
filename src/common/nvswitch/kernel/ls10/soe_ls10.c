@@ -31,6 +31,7 @@
 #include "common_nvswitch.h"
 #include "ls10/ls10.h"
 #include "ls10/soe_ls10.h"
+#include "lr10/soe_lr10.h"
 
 #include "nvswitch/ls10/dev_soe_ip.h"
 #include "nvswitch/ls10/dev_soe_ip_addendum.h"
@@ -38,9 +39,6 @@
 #include "nvswitch/ls10/dev_nvlsaw_ip.h"
 #include "nvswitch/ls10/dev_nvlsaw_ip_addendum.h"
 #include "nvswitch/ls10/dev_riscv_pri.h"
-
-#include "nvswitch/ls10/dev_nport_ip.h"
-#include "nvswitch/ls10/dev_npg_ip.h"
 
 #include "flcn/flcnable_nvswitch.h"
 #include "flcn/flcn_nvswitch.h"
@@ -182,7 +180,7 @@ dumpDebugRegisters
     NVSWITCH_PRINT(device, ERROR, "RESET_PLM             : 0x%08x\n", regRESET_PLM);
     NVSWITCH_PRINT(device, ERROR, "EXE_PLM               : 0x%08x\n", regEXE_PLM);
 }
-#endif // defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
+#endif  // defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
 
 /*
  * @Brief : Attach or Detach driver to SOE Queues
@@ -232,7 +230,12 @@ _nvswitch_is_soe_attached_ls10
     return FLD_TEST_DRF(_NVLSAW, _SOE_ATTACH_DETACH, _STATUS, _ATTACHED, val);
 }
 
-// BACK UP Nport state and reset NPORT
+/*
+ * @Brief : Backup NPORT state and issue NPORT reset
+ *
+ * @param[in] device
+ * @param[in] nport
+ */
 NvlStatus
 nvswitch_soe_issue_nport_reset_ls10
 (
@@ -240,7 +243,7 @@ nvswitch_soe_issue_nport_reset_ls10
     NvU32 nport
 )
 {
-    FLCN *pFlcn       = device->pSoe->pFlcn;
+    FLCN *pFlcn = device->pSoe->pFlcn;
     NvU32               cmdSeqDesc = 0;
     NV_STATUS           status;
     RM_FLCN_CMD_SOE     cmd;
@@ -256,7 +259,7 @@ nvswitch_soe_issue_nport_reset_ls10
     pNportReset->nport = nport;
     pNportReset->cmdType = RM_SOE_CORE_CMD_ISSUE_NPORT_RESET;
 
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_1SEC_IN_NS * 5, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn,
                                       (PRM_FLCN_CMD)&cmd,
                                       NULL,                 // pMsg
@@ -274,7 +277,12 @@ nvswitch_soe_issue_nport_reset_ls10
     return NVL_SUCCESS;
 }
 
-// De-reset NPORT and restore NPORT state
+/*
+ * @Brief : De-Assert NPORT reset and restore NPORT state
+ *
+ * @param[in] device
+ * @param[in] nport
+ */
 NvlStatus
 nvswitch_soe_restore_nport_state_ls10
 (
@@ -292,13 +300,13 @@ nvswitch_soe_restore_nport_state_ls10
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 
     cmd.hdr.unitId = RM_SOE_UNIT_CORE;
-    cmd.hdr.size   = sizeof(cmd);
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, NPORT_STATE);
 
     pNportState = &cmd.cmd.core.nportState;
     pNportState->nport = nport;
     pNportState->cmdType = RM_SOE_CORE_CMD_RESTORE_NPORT_STATE;
 
-    nvswitch_timeout_create(NVSWITCH_INTERVAL_1SEC_IN_NS * 5, &timeout);
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
     status = flcnQueueCmdPostBlocking(device, pFlcn,
                                       (PRM_FLCN_CMD)&cmd,
                                       NULL,                 // pMsg
@@ -336,17 +344,10 @@ nvswitch_set_nport_tprod_state_ls10
     NVSWITCH_TIMEOUT    timeout;
     RM_SOE_CORE_CMD_NPORT_TPROD_STATE *nportTprodState;
 
-    if (!NVSWITCH_ENG_IS_VALID(device, NPORT, nport))
-    {
-         NVSWITCH_PRINT(device, ERROR, "%s: NPORT #%d invalid\n",
-                        __FUNCTION__, nport);
-        return -NVL_BAD_ARGS;
-    }
-
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
 
     cmd.hdr.unitId = RM_SOE_UNIT_CORE;
-    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, NPORT_STATE);
+    cmd.hdr.size   = sizeof(cmd);
 
     nportTprodState = &cmd.cmd.core.nportTprodState;
     nportTprodState->nport = nport;
@@ -391,7 +392,7 @@ nvswitch_soe_init_l2_state_ls10
 
     if (!nvswitch_is_soe_supported(device))
     {
-        NVSWITCH_PRINT(device, INFO, "%s: SOE is not supported. skipping!\n",
+        NVSWITCH_PRINT(device, INFO, "%s: SOE is not supported\n",
                        __FUNCTION__);
         return;
     }
@@ -419,6 +420,7 @@ nvswitch_soe_init_l2_state_ls10
                        __FUNCTION__, status);
     }
 }
+
 
 /*
  * @Brief : Init sequence for SOE FSP RISCV image
@@ -529,7 +531,6 @@ nvswitch_unload_soe_ls10
     // Detach driver from SOE Queues
     _nvswitch_soe_attach_detach_driver_ls10(device, NV_FALSE);
 
-
     return NVL_SUCCESS;
 }
 
@@ -554,7 +555,7 @@ nvswitch_soe_register_event_callbacks_ls10
                  device, pFlcn,
                  RM_SOE_UNIT_THERM,
                  NULL,
-                 nvswitch_therm_soe_callback_ls10,
+                 nvswitch_therm_soe_callback_lr10,
                  NULL,
                  &pSoe->thermEvtDesc);
     if (status != NV_OK)

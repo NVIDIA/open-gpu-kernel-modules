@@ -114,12 +114,15 @@ NV_STATUS __nvoc_objCreate_RsShared(RsShared **ppThis, Dynamic *pParent, NvU32 c
     Object *pParentObj;
     RsShared *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(RsShared));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RsShared), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(RsShared));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RsShared);
+
+    pThis->__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -136,11 +139,17 @@ NV_STATUS __nvoc_objCreate_RsShared(RsShared **ppThis, Dynamic *pParent, NvU32 c
     if (status != NV_OK) goto __nvoc_objCreate_RsShared_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_RsShared_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(RsShared));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 
@@ -273,12 +282,15 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession **ppThis, Dynamic *pParent, NvU32
     Object *pParentObj;
     RsSession *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(RsSession));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RsSession), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(RsSession));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RsSession);
+
+    pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -295,11 +307,17 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession **ppThis, Dynamic *pParent, NvU32
     if (status != NV_OK) goto __nvoc_objCreate_RsSession_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_RsSession_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(RsSession));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

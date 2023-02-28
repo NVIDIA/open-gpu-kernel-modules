@@ -390,14 +390,14 @@ typedef NV_STATUS  OSQueueWorkItemWithFlags(OBJGPU *, OSWorkItemFunction, void *
 typedef NV_STATUS  OSQueueSystemWorkItem(OSSystemWorkItemFunction, void *);
 
 // MXM ACPI calls
-typedef NV_STATUS  OSCallACPI_MXMX(OBJGPU *, NvU32, NvU8 *);
-typedef NV_STATUS  OSCallACPI_DDC(OBJGPU *, NvU32, NvU8*,NvU32*, NvBool);
+NV_STATUS  osCallACPI_MXMX(OBJGPU *, NvU32, NvU8 *);
+NV_STATUS  osCallACPI_DDC(OBJGPU *, NvU32, NvU8*,NvU32*, NvBool);
 typedef NV_STATUS  OSCallACPI_BCL(OBJGPU *, NvU32, NvU32 *, NvU16 *);
 
 // Display MUX ACPI calls
-typedef NV_STATUS  OSCallACPI_MXDS(OBJGPU *, NvU32, NvU32 *);
-typedef NV_STATUS  OSCallACPI_MXDM(OBJGPU *, NvU32, NvU32 *);
-typedef NV_STATUS  OSCallACPI_MXID(OBJGPU *, NvU32, NvU32 *);
+NV_STATUS  osCallACPI_MXDS(OBJGPU *, NvU32, NvU32 *);
+NV_STATUS  osCallACPI_MXDM(OBJGPU *, NvU32, NvU32 *);
+NV_STATUS  osCallACPI_MXID(OBJGPU *, NvU32, NvU32 *);
 typedef NV_STATUS  OSCallACPI_LRST(OBJGPU *, NvU32, NvU32 *);
 
 // Hybrid GPU ACPI calls
@@ -407,9 +407,9 @@ typedef NV_STATUS  OSCallACPI_NVHG_GPUSTA(OBJGPU *, NvU32 *);
 typedef NV_STATUS  OSCallACPI_NVHG_MXDS(OBJGPU *, NvU32, NvU32 *);
 typedef NV_STATUS  OSCallACPI_NVHG_MXMX(OBJGPU *, NvU32, NvU32 *);
 typedef NV_STATUS  OSCallACPI_NVHG_DOS(OBJGPU *, NvU32, NvU32 *);
-typedef NV_STATUS  OSCallACPI_NVHG_ROM(OBJGPU *, NvU32 *, NvU32 *);
+NV_STATUS  osCallACPI_NVHG_ROM(OBJGPU *, NvU32 *, NvU32 *);
 typedef NV_STATUS  OSCallACPI_NVHG_DCS(OBJGPU *, NvU32, NvU32 *);
-typedef NV_STATUS  OSCallACPI_DOD(OBJGPU *, NvU32 *, NvU32 *);
+NV_STATUS  osCallACPI_DOD(OBJGPU *, NvU32 *, NvU32 *);
 
 // Tegra ACPI calls
 typedef NV_STATUS  OSCallACPI_SUB(OBJGPU *, NvU8 *, NvU32 *);
@@ -424,8 +424,8 @@ typedef NV_STATUS  OSCallACPI_NBSL(OBJGPU *, NvU32);
 typedef NV_STATUS  OSCallACPI_OPTM_GPUON(OBJGPU *);
 
 // Generic ACPI _DSM call
-typedef NV_STATUS  OSCallACPI_DSM(OBJGPU *pGpu, ACPI_DSM_FUNCTION acpiDSMFunction,
-                                  NvU32 NVHGDSMSubfunction, NvU32 *pInOut, NvU16 *size);
+NV_STATUS  osCallACPI_DSM(OBJGPU *pGpu, ACPI_DSM_FUNCTION acpiDSMFunction,
+                          NvU32 NVHGDSMSubfunction, NvU32 *pInOut, NvU16 *size);
 
 // UEFI variable calls
 typedef NV_STATUS  OSGetUefiVariable(OBJGPU *, char *, LPGUID, NvU8 *, NvU32 *, NvU32 *);
@@ -631,12 +631,7 @@ struct OBJOS {
     OSSimEscapeReadBuffer *osSimEscapeReadBuffer;
     OSRmInitRm *osRmInitRm;
     OSGetSimulationMode *osGetSimulationMode;
-    OSCallACPI_MXMX *osCallACPI_MXMX;
-    OSCallACPI_DDC *osCallACPI_DDC;
     OSCallACPI_BCL *osCallACPI_BCL;
-    OSCallACPI_MXDS *osCallACPI_MXDS;
-    OSCallACPI_MXDM *osCallACPI_MXDM;
-    OSCallACPI_MXID *osCallACPI_MXID;
     OSCallACPI_LRST *osCallACPI_LRST;
     OSCallACPI_NVHG_GPUON *osCallACPI_NVHG_GPUON;
     OSCallACPI_NVHG_GPUOFF *osCallACPI_NVHG_GPUOFF;
@@ -644,13 +639,10 @@ struct OBJOS {
     OSCallACPI_NVHG_MXDS *osCallACPI_NVHG_MXDS;
     OSCallACPI_NVHG_MXMX *osCallACPI_NVHG_MXMX;
     OSCallACPI_NVHG_DOS *osCallACPI_NVHG_DOS;
-    OSCallACPI_NVHG_ROM *osCallACPI_NVHG_ROM;
     OSCallACPI_NVHG_DCS *osCallACPI_NVHG_DCS;
-    OSCallACPI_DOD *osCallACPI_DOD;
     OSCallACPI_SUB *osCallACPI_SUB;
     OSCallACPI_ON *osCallACPI_ON;
     OSCallACPI_OFF *osCallACPI_OFF;
-    OSCallACPI_DSM *osCallACPI_DSM;
     OSGetUefiVariable *osGetUefiVariable;
     OSCheckCallback *osCheckCallback;
     OSRCCallback *osRCCallback;
@@ -840,8 +832,6 @@ NV_STATUS osVgpuVfioWake(void *waitQueue);
 NV_STATUS osVgpuInjectInterrupt(void *pArg1);
 NV_STATUS osVgpuRegisterMdev(OS_GPU_INFO  *pArg1);
 NV_STATUS osIsVgpuVfioPresent(void);
-NV_STATUS osVgpuAllocVmbusEventDpc(void **ppArg1);
-void osVgpuScheduleVmbusEventDpc(void *pArg1, void *pArg2);
 NV_STATUS rm_is_vgpu_supported_device(OS_GPU_INFO *pNv, NvU32 pmc_boot_1);
 NV_STATUS osLockPageableDataSection(RM_PAGEABLE_SECTION   *pSection);
 NV_STATUS osUnlockPageableDataSection(RM_PAGEABLE_SECTION   *pSection);
@@ -1014,6 +1004,9 @@ NV_STATUS osGetAcpiTable(NvU32 tableSignature,
 
 NV_STATUS osInitGetAcpiTable(void);
 
+// Read NvGlobal regkey
+NV_STATUS osGetNvGlobalRegistryDword(OBJGPU *, const char *pRegParmStr, NvU32 *pData);
+
 NV_STATUS osGetIbmnpuGenregInfo(OS_GPU_INFO *pArg1,
                                 NvU64 *pArg2,
                                 NvU64 *pArg3);
@@ -1108,6 +1101,8 @@ NV_STATUS osGetTegraNumDpAuxInstances(OS_GPU_INFO *pArg1,
                                  NvU32 *pArg2);
 
 NvU32     osTegraSocFuseRegRead(NvU32 addr);
+
+NV_STATUS osTegraSocHspSemaphoreAcquire(NvU32 ownerId, NvBool bAcquire, NvU64 timeout);
 
 NV_STATUS osTegraSocDpUphyPllInit(OS_GPU_INFO *pArg1, NvU32, NvU32);
 

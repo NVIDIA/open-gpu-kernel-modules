@@ -193,6 +193,8 @@ struct RmResource {
     NV_STATUS (*__rmresGetMemInterMapParams__)(struct RmResource *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__rmresCheckMemInterUnmap__)(struct RmResource *, NvBool);
     NV_STATUS (*__rmresGetMemoryMappingDescriptor__)(struct RmResource *, struct MEMORY_DESCRIPTOR **);
+    NV_STATUS (*__rmresControlSerialization_Prologue__)(struct RmResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    void (*__rmresControlSerialization_Epilogue__)(struct RmResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__rmresControl_Prologue__)(struct RmResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__rmresControl_Epilogue__)(struct RmResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__rmresControl__)(struct RmResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -244,6 +246,8 @@ NV_STATUS __nvoc_objCreate_RmResource(RmResource**, Dynamic*, NvU32, struct CALL
 #define rmresGetMemInterMapParams(pRmResource, pParams) rmresGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define rmresCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) rmresCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define rmresGetMemoryMappingDescriptor(pRmResource, ppMemDesc) rmresGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
+#define rmresControlSerialization_Prologue(pResource, pCallContext, pParams) rmresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define rmresControlSerialization_Epilogue(pResource, pCallContext, pParams) rmresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define rmresControl_Prologue(pResource, pCallContext, pParams) rmresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define rmresControl_Epilogue(pResource, pCallContext, pParams) rmresControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define rmresControl(pResource, pCallContext, pParams) rmresControl_DISPATCH(pResource, pCallContext, pParams)
@@ -286,6 +290,18 @@ NV_STATUS rmresGetMemoryMappingDescriptor_IMPL(struct RmResource *pRmResource, s
 
 static inline NV_STATUS rmresGetMemoryMappingDescriptor_DISPATCH(struct RmResource *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
     return pRmResource->__rmresGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+}
+
+NV_STATUS rmresControlSerialization_Prologue_IMPL(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+static inline NV_STATUS rmresControlSerialization_Prologue_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__rmresControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+void rmresControlSerialization_Epilogue_IMPL(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+static inline void rmresControlSerialization_Epilogue_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__rmresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 NV_STATUS rmresControl_Prologue_IMPL(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);

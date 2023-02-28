@@ -24,6 +24,7 @@
 #include "uvm_channel.h"
 #include "uvm_global.h"
 #include "uvm_hal.h"
+#include "uvm_kvmalloc.h"
 #include "uvm_push.h"
 #include "uvm_test.h"
 #include "uvm_tracker.h"
@@ -655,9 +656,11 @@ static NV_STATUS test_ce(uvm_va_space_t *va_space, bool skipTimestampTest)
         TEST_NV_CHECK_RET(test_memcpy_and_memset(gpu));
         TEST_NV_CHECK_RET(test_semaphore_reduction_inc(gpu));
         TEST_NV_CHECK_RET(test_semaphore_release(gpu));
+
         if (!skipTimestampTest)
             TEST_NV_CHECK_RET(test_semaphore_timestamp(gpu));
-    }
+
+   }
 
     return NV_OK;
 }

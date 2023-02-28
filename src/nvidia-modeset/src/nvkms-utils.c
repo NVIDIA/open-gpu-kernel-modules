@@ -489,12 +489,19 @@ void nvEvoDestroyApiHandles(NVEvoApiHandlesPtr pEvoApiHandles)
 
 NvU8 nvPixelDepthToBitsPerComponent(enum nvKmsPixelDepth pixelDepth)
 {
+    /*
+     * Note: The 444 formats have three components per pixel, thus we compute
+     * bpc as depth/3. The 422 formats effectively store two components per
+     * pixel, so we compute bpc for those as depth/2.
+     */
     switch (pixelDepth) {
     case NVKMS_PIXEL_DEPTH_18_444:
         return 6;
     case NVKMS_PIXEL_DEPTH_24_444:
+    case NVKMS_PIXEL_DEPTH_16_422:
         return 8;
     case NVKMS_PIXEL_DEPTH_30_444:
+    case NVKMS_PIXEL_DEPTH_20_422:
         return 10;
     }
     nvAssert(!"Unknown NVKMS_PIXEL_DEPTH");

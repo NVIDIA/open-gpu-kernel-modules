@@ -177,8 +177,6 @@ engstateDestruct_IMPL
     OBJENGSTATE *pEngstate
 )
 {
-    portMemFree(pEngstate->pOriginalTunableState);
-    pEngstate->pOriginalTunableState = NULL;
 }
 
 /*!
@@ -382,117 +380,6 @@ engstateStateDestroy_IMPL
     OBJENGSTATE *pEngstate
 )
 {
-}
-
-/*!
- * @brief allocates a tunable state structure
- *
- * @param[in]   pGpu
- * @param[in]   pEngstate
- * @param[out]  ppTunableState
- */
-NV_STATUS
-engstateAllocTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void **ppTunableState
-)
-{
-    *ppTunableState = NULL;
-    return NV_OK;
-}
-
-/*!
- * @brief frees a tunable state structure
- *
- * @param[in]   pGpu
- * @param[in]   pEngstate
- * @param[in]   pTunableState
- */
-void
-engstateFreeTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunableState
-)
-{
-    portMemFree(pTunableState);
-}
-
-/*!
- * @brief fills pTunableState with the current state
- *
- * @param[in]   pGpu
- * @param[in]   pEngstate
- * @param[out]  pTunableState
- */
-NV_STATUS
-engstateGetTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunableState
-)
-{
-    return NV_OK;
-}
-
-/*!
- * @brief sets the current state to values in pTunableState
- *
- * @param[in]      pGpu
- * @param[in,out]  pEngstate
- * @param[in]      pTunableState
- */
-NV_STATUS
-engstateSetTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunableState
-)
-{
-    return NV_OK;
-}
-
-/*!
- * @brief modifies pTunableState to be compatible with pEngstate->pOriginalTunableState
- *
- * @param[in]      pGpu
- * @param[in]      pEngstate
- * @param[in,out]  pTunableState
- */
-NV_STATUS
-engstateReconcileTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunableState
-)
-{
-    return NV_OK;
-}
-
-/*!
- * @brief returns NV_ERR_GENERIC if two tunable states are incompatible
- *
- * @param[in]   pGpu
- * @param[in]   pEngstate
- * @param[in]   pTunables1
- * @param[in]   pTunables2
- */
-NV_STATUS
-engstateCompareTunableState_IMPL
-(
-    OBJGPU *pGpu,
-    OBJENGSTATE *pEngstate,
-    void *pTunables1,
-    void *pTunables2
-)
-{
-    return NV_OK;
 }
 
 /*!

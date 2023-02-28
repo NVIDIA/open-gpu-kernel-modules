@@ -401,7 +401,6 @@ struct OBJSYS {
     NvU32 gpuLockModuleMask;
     NvBool PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS;
     NvU32 pwrTransitionTimeoutOverride;
-    NvBool bMulticastFlaEnabled;
     SYS_STATIC_CONFIG staticConfig;
     NvU32 debugFlags;
     NvU32 backtraceStackDepth;
@@ -415,6 +414,8 @@ struct OBJSYS {
     NvBool PDB_PROP_SYS_IS_QSYNC_FW_REVISION_CHECK_DISABLED;
     NvU64 rmInstanceId;
     NvU32 currentCid;
+    NvBool bUseDeferredClientListFree;
+    NvU32 clientListDeferredFreeLimit;
     OS_RM_CAPS *pOsRmCaps;
     struct OBJGPUMGR *pGpuMgr;
     struct OBJGSYNCMGR *pGsyncMgr;

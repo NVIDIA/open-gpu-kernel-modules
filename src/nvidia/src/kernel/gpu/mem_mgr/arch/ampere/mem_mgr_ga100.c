@@ -488,3 +488,18 @@ memmgrInsertUnprotectedRegionAtBottomOfFb_GA100
 
     return NV_OK;
 }
+
+NvBool
+memmgrIsApertureSupportedByFla_GA100
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager,
+    NV_ADDRESS_SPACE aperture
+)
+{
+    if (aperture == ADDR_FBMEM)
+    {
+        return NV_TRUE;
+    }
+    return NV_FALSE;
+}

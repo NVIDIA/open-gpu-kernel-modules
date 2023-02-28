@@ -120,7 +120,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_UvmSwObject =
     /*pExportInfo=*/        &__nvoc_export_info_UvmSwObject
 };
 
-static NV_STATUS __nvoc_thunk_UvmSwObject_chandesGetSwMethods(struct ChannelDescendant *pUvmSw, METHOD **ppMethods, NvU32 *pNumMethods) {
+static NV_STATUS __nvoc_thunk_UvmSwObject_chandesGetSwMethods(struct ChannelDescendant *pUvmSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return uvmswGetSwMethods((struct UvmSwObject *)(((unsigned char *)pUvmSw) - __nvoc_rtti_UvmSwObject_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
@@ -212,6 +212,10 @@ static NV_STATUS __nvoc_thunk_Notifier_uvmswUnregisterEvent(struct UvmSwObject *
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_UvmSwObject_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_uvmswControlSerialization_Prologue(struct UvmSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_uvmswCanCopy(struct UvmSwObject *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RsResource.offset));
 }
@@ -222,6 +226,10 @@ static void __nvoc_thunk_RsResource_uvmswPreDestruct(struct UvmSwObject *pResour
 
 static NV_STATUS __nvoc_thunk_RsResource_uvmswIsDuplicate(struct UvmSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_uvmswControlSerialization_Epilogue(struct UvmSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_uvmswGetNotificationListPtr(struct UvmSwObject *pNotifier) {
@@ -341,11 +349,15 @@ static void __nvoc_init_funcTable_UvmSwObject_1(UvmSwObject *pThis, RmHalspecOwn
 
     pThis->__uvmswUnregisterEvent__ = &__nvoc_thunk_Notifier_uvmswUnregisterEvent;
 
+    pThis->__uvmswControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_uvmswControlSerialization_Prologue;
+
     pThis->__uvmswCanCopy__ = &__nvoc_thunk_RsResource_uvmswCanCopy;
 
     pThis->__uvmswPreDestruct__ = &__nvoc_thunk_RsResource_uvmswPreDestruct;
 
     pThis->__uvmswIsDuplicate__ = &__nvoc_thunk_RsResource_uvmswIsDuplicate;
+
+    pThis->__uvmswControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_uvmswControlSerialization_Epilogue;
 
     pThis->__uvmswGetNotificationListPtr__ = &__nvoc_thunk_Notifier_uvmswGetNotificationListPtr;
 
@@ -381,12 +393,15 @@ NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject **ppThis, Dynamic *pParent, N
     UvmSwObject *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(UvmSwObject));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(UvmSwObject), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(UvmSwObject));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_UvmSwObject);
+
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -407,11 +422,17 @@ NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject **ppThis, Dynamic *pParent, N
     if (status != NV_OK) goto __nvoc_objCreate_UvmSwObject_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_UvmSwObject_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(UvmSwObject));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

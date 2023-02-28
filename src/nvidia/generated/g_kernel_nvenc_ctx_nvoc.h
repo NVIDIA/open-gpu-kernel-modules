@@ -72,7 +72,7 @@ struct MsencContext {
     NV_STATUS (*__msencctxUnmapFrom__)(struct MsencContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__msencctxControl_Epilogue__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__msencctxControlLookup__)(struct MsencContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
-    NV_STATUS (*__msencctxGetSwMethods__)(struct MsencContext *, METHOD **, NvU32 *);
+    NV_STATUS (*__msencctxGetSwMethods__)(struct MsencContext *, const METHOD **, NvU32 *);
     NvHandle (*__msencctxGetInternalObjectHandle__)(struct MsencContext *);
     NV_STATUS (*__msencctxControl__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__msencctxUnmap__)(struct MsencContext *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -81,9 +81,11 @@ struct MsencContext {
     NvBool (*__msencctxIsSwMethodStalling__)(struct MsencContext *, NvU32);
     NV_STATUS (*__msencctxControlFilter__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__msencctxUnregisterEvent__)(struct MsencContext *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__msencctxControlSerialization_Prologue__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__msencctxCanCopy__)(struct MsencContext *);
     void (*__msencctxPreDestruct__)(struct MsencContext *);
     NV_STATUS (*__msencctxIsDuplicate__)(struct MsencContext *, NvHandle, NvBool *);
+    void (*__msencctxControlSerialization_Epilogue__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__msencctxGetNotificationListPtr__)(struct MsencContext *);
     struct NotifShare *(*__msencctxGetNotificationShare__)(struct MsencContext *);
     NV_STATUS (*__msencctxMap__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -141,9 +143,11 @@ NV_STATUS __nvoc_objCreate_MsencContext(MsencContext**, Dynamic*, NvU32, struct 
 #define msencctxIsSwMethodStalling(pChannelDescendant, hHandle) msencctxIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define msencctxControlFilter(pResource, pCallContext, pParams) msencctxControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define msencctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) msencctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define msencctxControlSerialization_Prologue(pResource, pCallContext, pParams) msencctxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define msencctxCanCopy(pResource) msencctxCanCopy_DISPATCH(pResource)
 #define msencctxPreDestruct(pResource) msencctxPreDestruct_DISPATCH(pResource)
 #define msencctxIsDuplicate(pResource, hMemory, pDuplicate) msencctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define msencctxControlSerialization_Epilogue(pResource, pCallContext, pParams) msencctxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define msencctxGetNotificationListPtr(pNotifier) msencctxGetNotificationListPtr_DISPATCH(pNotifier)
 #define msencctxGetNotificationShare(pNotifier) msencctxGetNotificationShare_DISPATCH(pNotifier)
 #define msencctxMap(pGpuResource, pCallContext, pParams, pCpuMapping) msencctxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -231,7 +235,7 @@ static inline NV_STATUS msencctxControlLookup_DISPATCH(struct MsencContext *pRes
     return pResource->__msencctxControlLookup__(pResource, pParams, ppEntry);
 }
 
-static inline NV_STATUS msencctxGetSwMethods_DISPATCH(struct MsencContext *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS msencctxGetSwMethods_DISPATCH(struct MsencContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__msencctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
@@ -267,6 +271,10 @@ static inline NV_STATUS msencctxUnregisterEvent_DISPATCH(struct MsencContext *pN
     return pNotifier->__msencctxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS msencctxControlSerialization_Prologue_DISPATCH(struct MsencContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__msencctxControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool msencctxCanCopy_DISPATCH(struct MsencContext *pResource) {
     return pResource->__msencctxCanCopy__(pResource);
 }
@@ -277,6 +285,10 @@ static inline void msencctxPreDestruct_DISPATCH(struct MsencContext *pResource) 
 
 static inline NV_STATUS msencctxIsDuplicate_DISPATCH(struct MsencContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__msencctxIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void msencctxControlSerialization_Epilogue_DISPATCH(struct MsencContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__msencctxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *msencctxGetNotificationListPtr_DISPATCH(struct MsencContext *pNotifier) {

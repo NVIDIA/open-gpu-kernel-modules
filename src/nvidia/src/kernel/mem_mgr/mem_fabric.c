@@ -61,10 +61,10 @@ _memoryfabricMemDescGetNumAddr
 )
 {
     OBJGPU *pGpu     = pMemDesc->pGpu;
-    NvU32   pageSize = 0;
+    NvU64   pageSize = 0;
 
     // Get the page size from the memory descriptor.
-    pageSize = memdescGetPageSize(pMemDesc,
+    pageSize = memdescGetPageSize64(pMemDesc,
                             VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
 
     // Get the number of addresses associated with this memory descriptor.
@@ -88,9 +88,10 @@ _memoryfabricValidatePhysMem
     MEMORY_DESCRIPTOR **ppPhysMemDesc
 )
 {
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pOwnerGpu);
     RsResourceRef *pPhysmemRef;
     MEMORY_DESCRIPTOR *pPhysMemDesc;
-    NvU32 physPageSize;
+    NvU64 physPageSize;
     NV_STATUS status;
 
     if (hPhysMem == 0)
@@ -111,7 +112,7 @@ _memoryfabricValidatePhysMem
 
     pPhysMemDesc = (dynamicCast(pPhysmemRef->pResource, Memory))->pMemDesc;
 
-    if ((memdescGetAddressSpace(pPhysMemDesc) != ADDR_FBMEM) ||
+    if (!memmgrIsApertureSupportedByFla_HAL(pOwnerGpu, pMemoryManager, memdescGetAddressSpace(pPhysMemDesc)) ||
         (pOwnerGpu != pPhysMemDesc->pGpu))
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid physmem handle passed\n");
@@ -119,7 +120,7 @@ _memoryfabricValidatePhysMem
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    physPageSize = memdescGetPageSize(pPhysMemDesc, AT_GPU);
+    physPageSize = memdescGetPageSize64(pPhysMemDesc, AT_GPU);
     if ((physPageSize != NV_MEMORY_FABRIC_PAGE_SIZE_2M) &&
         (physPageSize != NV_MEMORY_FABRIC_PAGE_SIZE_512M))
     {
@@ -260,6 +261,7 @@ _memoryFabricAttachMem
 
     pNode->node.keyStart = pAttachInfo->offset;
     pNode->node.keyEnd   = pAttachInfo->offset;
+    pNode->physMapOffset = pAttachInfo->mapOffset;
     pNode->physMapLength = pAttachInfo->mapLength;
     pNode->pPhysMemDesc  = pPhysMemDesc;
     pNode->hDupedPhysMem = hDupedPhysMem;
@@ -300,7 +302,7 @@ _memoryfabricMemDescDestroyCallback
     RmPhysAddr          *pteArray;
     FABRIC_MEMDESC_DATA *pMemdescData;
     NvU32                numAddr;
-    NvU32                pageSize;
+    NvU64                pageSize;
 
     NV_ASSERT_OR_RETURN_VOID(pGpu->pFabricVAS != NULL);
 
@@ -309,7 +311,7 @@ _memoryfabricMemDescDestroyCallback
     pteArray = memdescGetPteArrayForGpu(pMemDesc, pGpu, VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
     numAddr = _memoryfabricMemDescGetNumAddr(pMemDesc);
     // Get the page size from the memory descriptor.
-    pageSize = memdescGetPageSize(pMemDesc, VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
+    pageSize = memdescGetPageSize64(pMemDesc, VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
 
     // Remove the fabric memory allocations from the map.
     fabricvaspaceVaToGpaMapRemove(pFabricVAS, pteArray[0]);
@@ -575,15 +577,6 @@ memoryfabricConstruct_IMPL
     }
 
     bFlexible = !!(pAllocParams->allocFlags & NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA);
-
-    // We don't support flexible mappings yet.
-    if (bFlexible)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Only sticky mappings are supported\n");
-
-        return NV_ERR_INVALID_ARGUMENT;
-    }
 
     if (pAllocParams->allocFlags & NV00F8_ALLOC_FLAGS_READ_ONLY)
     {
@@ -1019,4 +1012,97 @@ memoryfabricCtrlDetachMem_IMPL
     }
 
     return NV_OK;
+}
+
+NV_STATUS
+memoryfabricCtrlGetNumAttachedMem_IMPL
+(
+    MemoryFabric                            *pMemoryFabric,
+    NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *pParams
+)
+{
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
+    FABRIC_MEMDESC_DATA *pMemdescData = \
+                    (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
+    NODE *pNode = NULL;
+
+    pParams->numMemInfos = 0;
+
+    btreeEnumStart(pParams->offsetStart, &pNode, pMemdescData->pAttachMemInfoTree);
+    while ((pNode != NULL) && (pNode->keyStart <= pParams->offsetEnd))
+    {
+        pParams->numMemInfos++;
+        btreeEnumNext(&pNode, pMemdescData->pAttachMemInfoTree);
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+memoryfabricCtrlGetAttachedMem_IMPL
+(
+    MemoryFabric                        *pMemoryFabric,
+    NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *pParams
+)
+{
+    NV_STATUS status;
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
+    FABRIC_MEMDESC_DATA *pMemdescData = \
+                    (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
+    OBJGPU *pGpu = pMemory->pGpu;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    FABRIC_ATTCH_MEM_INFO_NODE *pAttachMemInfoNode;
+    NODE *pNode = NULL;
+    NvU16 i, count = 0;
+
+    if ((pParams->numMemInfos == 0) ||
+        (pParams->numMemInfos > NV00F8_MAX_ATTACHED_MEM_INFOS))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    btreeEnumStart(pParams->offsetStart, &pNode, pMemdescData->pAttachMemInfoTree);
+    while (count < pParams->numMemInfos)
+    {
+        if (pNode == NULL)
+        {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto cleanup;
+        }
+
+        pAttachMemInfoNode = (FABRIC_ATTCH_MEM_INFO_NODE *)pNode->Data;
+
+        status = pRmApi->DupObject(pRmApi, RES_GET_CLIENT_HANDLE(pMemory),
+                                   RES_GET_HANDLE(pMemory->pDevice),
+                                   &pParams->memInfos[count].hMemory,
+                                   pFabricVAS->hClient,
+                                   pAttachMemInfoNode->hDupedPhysMem, 0);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to dup physmem handle\n");
+            goto cleanup;
+        }
+
+        pParams->memInfos[count].offset = pNode->keyStart;
+        pParams->memInfos[count].mapOffset = pAttachMemInfoNode->physMapOffset;
+        pParams->memInfos[count].mapLength = pAttachMemInfoNode->physMapLength;
+
+        btreeEnumNext(&pNode, pMemdescData->pAttachMemInfoTree);
+        count++;
+    }
+
+    return NV_OK;
+
+cleanup:
+    for (i = 0; i < count; i++)
+    {
+        NV_ASSERT_OK(pRmApi->Free(pRmApi, RES_GET_CLIENT_HANDLE(pMemory),
+                                  pParams->memInfos[i].hMemory));
+        pParams->memInfos[i].offset = 0;
+        pParams->memInfos[i].mapOffset = 0;
+        pParams->memInfos[i].mapLength = 0;
+    }
+
+    return status;
 }

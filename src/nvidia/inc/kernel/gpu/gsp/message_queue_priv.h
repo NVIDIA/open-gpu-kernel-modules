@@ -50,20 +50,13 @@ typedef struct GSP_MSG_QUEUE_ELEMENT
 typedef struct _message_queue_info
 {
     // Parameters
-    NvLength               pageTableEntryCount;
-    NvLength               pageTableSize;
     NvLength               commandQueueSize;
     NvLength               statusQueueSize;
 
     // Shared memory area.
-    MEMORY_DESCRIPTOR     *pSharedMemDesc;
-    RmPhysAddr             sharedMemPA;   // Page table for all of shared mem.
     void                  *pCommandQueue;
     void                  *pStatusQueue;
     rpc_message_header_v  *pRpcMsgBuf;    // RPC message buffer VA.
-
-    void                  *pInitMsgBuf;   // RPC message buffer VA.
-    RmPhysAddr             initMsgBufPA;  // RPC message buffer PA.
 
     // Other CPU-side fields
     void                  *pWorkArea;
@@ -72,7 +65,21 @@ typedef struct _message_queue_info
     msgqHandle             hQueue;              // Do not allow requests when hQueue is null.
     NvU32                  txSeqNum;            // Next sequence number for tx.
     NvU32                  rxSeqNum;            // Next sequence number for rx.
+    NvU32                  queueIdx;            // QueueIndex used to identify which task the message is supposed to be sent to.
 } MESSAGE_QUEUE_INFO;
+
+typedef struct MESSAGE_QUEUE_COLLECTION
+{
+    // Parameters
+    NvLength               pageTableEntryCount;
+    NvLength               pageTableSize;
+
+    // Shared memory area.
+    MEMORY_DESCRIPTOR     *pSharedMemDesc;
+    RmPhysAddr             sharedMemPA;   // Page table for all of shared mem.
+
+    MESSAGE_QUEUE_INFO rpcQueues[RPC_QUEUE_COUNT];
+} MESSAGE_QUEUE_COLLECTION;
 
 //
 // Most of the following defines resolve to compile-time constants.

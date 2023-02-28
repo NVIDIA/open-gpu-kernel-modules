@@ -106,6 +106,9 @@ static NV_STATUS uvm_pte_buffer_init(uvm_va_range_t *va_range,
     pte_buffer->mapping_info.formatType = map_rm_params->format_type;
     pte_buffer->mapping_info.elementBits = map_rm_params->element_bits;
     pte_buffer->mapping_info.compressionType = map_rm_params->compression_type;
+    if (va_range->type == UVM_VA_RANGE_TYPE_EXTERNAL)
+        pte_buffer->mapping_info.mappingPageSize = page_size;
+
     pte_buffer->page_size = page_size;
     pte_buffer->pte_size = uvm_mmu_pte_size(tree, page_size);
     num_all_ptes = uvm_div_pow2_64(length, page_size);
@@ -341,9 +344,8 @@ static NV_STATUS map_rm_pt_range(uvm_page_tree_t *tree,
 static uvm_membar_t va_range_downgrade_membar(uvm_va_range_t *va_range, uvm_ext_gpu_map_t *ext_gpu_map)
 {
     if (va_range->type == UVM_VA_RANGE_TYPE_CHANNEL) {
-        if (va_range->channel.aperture == UVM_APERTURE_VID)
-            return UVM_MEMBAR_GPU;
-        return UVM_MEMBAR_SYS;
+        return uvm_hal_downgrade_membar_type(va_range->channel.gpu_va_space->gpu,
+                                             va_range->channel.aperture == UVM_APERTURE_VID);
     }
 
     // If there is no mem_handle, this is a sparse mapping.
@@ -353,9 +355,8 @@ static uvm_membar_t va_range_downgrade_membar(uvm_va_range_t *va_range, uvm_ext_
     if (!ext_gpu_map->mem_handle)
         return UVM_MEMBAR_GPU;
 
-    if (ext_gpu_map->is_sysmem || ext_gpu_map->gpu != ext_gpu_map->owning_gpu)
-            return UVM_MEMBAR_SYS;
-    return UVM_MEMBAR_GPU;
+    return uvm_hal_downgrade_membar_type(ext_gpu_map->gpu,
+                                         !ext_gpu_map->is_sysmem && ext_gpu_map->gpu == ext_gpu_map->owning_gpu);
 }
 
 NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
@@ -398,9 +399,7 @@ NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
 
     page_tree = &gpu_va_space->page_tables;
 
-    // Verify that the GPU VA space supports this page size
-    if ((mem_info->pageSize & page_tree->hal->page_sizes()) == 0)
-        return NV_ERR_INVALID_ADDRESS;
+    UVM_ASSERT(uvm_mmu_page_size_supported(page_tree, mem_info->pageSize));
 
     if (va_range->type == UVM_VA_RANGE_TYPE_EXTERNAL) {
         // We should be never called with ext_gpu_map == NULL
@@ -414,13 +413,12 @@ NV_STATUS uvm_va_range_map_rm_allocation(uvm_va_range_t *va_range,
         pt_range_vec = &va_range->channel.pt_range_vec;
     }
 
-    if (!IS_ALIGNED(map_offset, mem_info->pageSize) ||
-        map_offset + uvm_range_tree_node_size(node) > mem_info->size)
+    if (map_offset + uvm_range_tree_node_size(node) > mem_info->size)
         return NV_ERR_INVALID_OFFSET;
 
-    // Consolidate input checks for API-level callers
-    if (!IS_ALIGNED(node->start, mem_info->pageSize) || !IS_ALIGNED(node->end + 1, mem_info->pageSize))
-        return NV_ERR_INVALID_ADDRESS;
+    UVM_ASSERT(IS_ALIGNED(node->start, mem_info->pageSize) &&
+               IS_ALIGNED(node->end + 1, mem_info->pageSize) &&
+               IS_ALIGNED(map_offset, mem_info->pageSize));
 
     status = uvm_pte_buffer_init(va_range,
                                  mapping_gpu,
@@ -845,6 +843,10 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_t *va_range,
     uvm_ext_gpu_map_t *ext_gpu_map = NULL;
     uvm_ext_gpu_range_tree_t *range_tree = uvm_ext_gpu_range_tree(va_range, mapping_gpu);
     UvmGpuMemoryInfo mem_info;
+    uvm_gpu_va_space_t *gpu_va_space = uvm_gpu_va_space_get(va_space, mapping_gpu);
+    NvU32 mapping_page_size;
+    NvU64 alignments;
+    NvU32 smallest_alignment;
     NV_STATUS status;
 
     uvm_assert_rwsem_locked_read(&va_space->lock);
@@ -915,12 +917,25 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_t *va_range,
     if (status != NV_OK)
         goto error;
 
-    status = uvm_va_range_map_rm_allocation(va_range,
-                                            mapping_gpu,
-                                            &mem_info,
-                                            map_rm_params,
-                                            ext_gpu_map,
-                                            out_tracker);
+    // Determine the proper mapping page size.
+    // This will be the largest supported page size less than or equal to the
+    // smallest of the base VA address, length, offset, and allocation page size
+    // alignments.
+    alignments = mem_info.pageSize | base | length | map_rm_params->map_offset;
+    smallest_alignment = alignments & ~(alignments - 1);
+
+    // Check that alignment bits did not get truncated.
+    UVM_ASSERT(smallest_alignment);
+
+    mapping_page_size = uvm_mmu_biggest_page_size_up_to(&gpu_va_space->page_tables, smallest_alignment);
+    if (!mapping_page_size) {
+        status = NV_ERR_INVALID_ADDRESS;
+        goto error;
+    }
+
+    mem_info.pageSize = mapping_page_size;
+
+    status = uvm_va_range_map_rm_allocation(va_range, mapping_gpu, &mem_info, map_rm_params, ext_gpu_map, out_tracker);
     if (status != NV_OK)
         goto error;
 

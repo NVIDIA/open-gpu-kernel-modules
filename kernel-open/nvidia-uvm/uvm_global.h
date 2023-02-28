@@ -191,6 +191,16 @@ static void uvm_global_remove_parent_gpu(uvm_parent_gpu_t *parent_gpu)
     g_uvm_global.parent_gpus[gpu_index] = NULL;
 }
 
+// Get a parent gpu by its id.
+// Returns a pointer to the parent GPU object, or NULL if not found.
+//
+// LOCKING: requires that you hold the gpu_table_lock, the global lock, or have
+// retained at least one of the child GPUs.
+static uvm_parent_gpu_t *uvm_parent_gpu_get(uvm_gpu_id_t id)
+{
+    return g_uvm_global.parent_gpus[uvm_id_gpu_index(id)];
+}
+
 // Get a gpu by its global id.
 // Returns a pointer to the GPU object, or NULL if not found.
 //

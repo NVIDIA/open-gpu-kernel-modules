@@ -1070,9 +1070,10 @@ subdeviceCtrlCmdFbSetZbcReferenced_IMPL
     NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS *pParams
 )
 {
-    OBJGPU       *pGpu          = GPU_RES_GET_GPU(pSubdevice);
-    CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
+    OBJGPU       *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
     NvU32         gfid;
+    NV_STATUS     status = NV_OK;
 
     NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
 
@@ -1081,7 +1082,6 @@ subdeviceCtrlCmdFbSetZbcReferenced_IMPL
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-        NV_STATUS     status        = NV_OK;
 
         NV_RM_RPC_CONTROL(pGpu,
                           pRmCtrlParams->hClient,
@@ -1094,7 +1094,7 @@ subdeviceCtrlCmdFbSetZbcReferenced_IMPL
         return status;
     }
 
-    return NV_OK;
+    return status;
 }
 
 /*!

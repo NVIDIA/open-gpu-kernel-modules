@@ -74,25 +74,27 @@ struct VaSpaceApi {
     NV_STATUS (*__vaspaceapiCtrlCmdVaspaceReleaseEntries__)(struct VaSpaceApi *, NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS *);
     NV_STATUS (*__vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes__)(struct VaSpaceApi *, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *);
     NvBool (*__vaspaceapiShareCallback__)(struct VaSpaceApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__vaspaceapiCheckMemInterUnmap__)(struct VaSpaceApi *, NvBool);
+    NV_STATUS (*__vaspaceapiMapTo__)(struct VaSpaceApi *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__vaspaceapiGetMapAddrSpace__)(struct VaSpaceApi *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__vaspaceapiGetRefCount__)(struct VaSpaceApi *);
+    void (*__vaspaceapiAddAdditionalDependants__)(struct RsClient *, struct VaSpaceApi *, RsResourceRef *);
+    NV_STATUS (*__vaspaceapiControl_Prologue__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__vaspaceapiGetRegBaseOffsetAndSize__)(struct VaSpaceApi *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__vaspaceapiInternalControlForward__)(struct VaSpaceApi *, NvU32, void *, NvU32);
+    NV_STATUS (*__vaspaceapiUnmapFrom__)(struct VaSpaceApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__vaspaceapiControl_Epilogue__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__vaspaceapiControlLookup__)(struct VaSpaceApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NvHandle (*__vaspaceapiGetInternalObjectHandle__)(struct VaSpaceApi *);
     NV_STATUS (*__vaspaceapiControl__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vaspaceapiUnmap__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__vaspaceapiGetMemInterMapParams__)(struct VaSpaceApi *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__vaspaceapiGetMemoryMappingDescriptor__)(struct VaSpaceApi *, struct MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__vaspaceapiGetMapAddrSpace__)(struct VaSpaceApi *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvHandle (*__vaspaceapiGetInternalObjectHandle__)(struct VaSpaceApi *);
     NV_STATUS (*__vaspaceapiControlFilter__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__vaspaceapiAddAdditionalDependants__)(struct RsClient *, struct VaSpaceApi *, RsResourceRef *);
-    NvU32 (*__vaspaceapiGetRefCount__)(struct VaSpaceApi *);
-    NV_STATUS (*__vaspaceapiCheckMemInterUnmap__)(struct VaSpaceApi *, NvBool);
-    NV_STATUS (*__vaspaceapiMapTo__)(struct VaSpaceApi *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__vaspaceapiControl_Prologue__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__vaspaceapiGetRegBaseOffsetAndSize__)(struct VaSpaceApi *, struct OBJGPU *, NvU32 *, NvU32 *);
-    NV_STATUS (*__vaspaceapiInternalControlForward__)(struct VaSpaceApi *, NvU32, void *, NvU32);
+    NV_STATUS (*__vaspaceapiControlSerialization_Prologue__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__vaspaceapiPreDestruct__)(struct VaSpaceApi *);
-    NV_STATUS (*__vaspaceapiUnmapFrom__)(struct VaSpaceApi *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__vaspaceapiIsDuplicate__)(struct VaSpaceApi *, NvHandle, NvBool *);
-    void (*__vaspaceapiControl_Epilogue__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__vaspaceapiControlLookup__)(struct VaSpaceApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__vaspaceapiControlSerialization_Epilogue__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vaspaceapiMap__)(struct VaSpaceApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__vaspaceapiAccessCallback__)(struct VaSpaceApi *, struct RsClient *, void *, RsAccessRight);
     struct OBJVASPACE *pVASpace;
@@ -134,25 +136,27 @@ NV_STATUS __nvoc_objCreate_VaSpaceApi(VaSpaceApi**, Dynamic*, NvU32, struct CALL
 #define vaspaceapiCtrlCmdVaspaceReleaseEntries(pVaspaceApi, pReleaseEntriesParams) vaspaceapiCtrlCmdVaspaceReleaseEntries_DISPATCH(pVaspaceApi, pReleaseEntriesParams)
 #define vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes(pVaspaceApi, pCopyServerReservedPdesParams) vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_DISPATCH(pVaspaceApi, pCopyServerReservedPdesParams)
 #define vaspaceapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) vaspaceapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
+#define vaspaceapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vaspaceapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define vaspaceapiMapTo(pResource, pParams) vaspaceapiMapTo_DISPATCH(pResource, pParams)
+#define vaspaceapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) vaspaceapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
+#define vaspaceapiGetRefCount(pResource) vaspaceapiGetRefCount_DISPATCH(pResource)
+#define vaspaceapiAddAdditionalDependants(pClient, pResource, pReference) vaspaceapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define vaspaceapiControl_Prologue(pResource, pCallContext, pParams) vaspaceapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define vaspaceapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) vaspaceapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define vaspaceapiInternalControlForward(pGpuResource, command, pParams, size) vaspaceapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
+#define vaspaceapiUnmapFrom(pResource, pParams) vaspaceapiUnmapFrom_DISPATCH(pResource, pParams)
+#define vaspaceapiControl_Epilogue(pResource, pCallContext, pParams) vaspaceapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define vaspaceapiControlLookup(pResource, pParams, ppEntry) vaspaceapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define vaspaceapiGetInternalObjectHandle(pGpuResource) vaspaceapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define vaspaceapiControl(pGpuResource, pCallContext, pParams) vaspaceapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define vaspaceapiUnmap(pGpuResource, pCallContext, pCpuMapping) vaspaceapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define vaspaceapiGetMemInterMapParams(pRmResource, pParams) vaspaceapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define vaspaceapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) vaspaceapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define vaspaceapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) vaspaceapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define vaspaceapiGetInternalObjectHandle(pGpuResource) vaspaceapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define vaspaceapiControlFilter(pResource, pCallContext, pParams) vaspaceapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define vaspaceapiAddAdditionalDependants(pClient, pResource, pReference) vaspaceapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define vaspaceapiGetRefCount(pResource) vaspaceapiGetRefCount_DISPATCH(pResource)
-#define vaspaceapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vaspaceapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define vaspaceapiMapTo(pResource, pParams) vaspaceapiMapTo_DISPATCH(pResource, pParams)
-#define vaspaceapiControl_Prologue(pResource, pCallContext, pParams) vaspaceapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vaspaceapiGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) vaspaceapiGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
-#define vaspaceapiInternalControlForward(pGpuResource, command, pParams, size) vaspaceapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
+#define vaspaceapiControlSerialization_Prologue(pResource, pCallContext, pParams) vaspaceapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define vaspaceapiPreDestruct(pResource) vaspaceapiPreDestruct_DISPATCH(pResource)
-#define vaspaceapiUnmapFrom(pResource, pParams) vaspaceapiUnmapFrom_DISPATCH(pResource, pParams)
 #define vaspaceapiIsDuplicate(pResource, hMemory, pDuplicate) vaspaceapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define vaspaceapiControl_Epilogue(pResource, pCallContext, pParams) vaspaceapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define vaspaceapiControlLookup(pResource, pParams, ppEntry) vaspaceapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define vaspaceapiControlSerialization_Epilogue(pResource, pCallContext, pParams) vaspaceapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vaspaceapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) vaspaceapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define vaspaceapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) vaspaceapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvBool vaspaceapiCanCopy_IMPL(struct VaSpaceApi *pResource);
@@ -195,6 +199,54 @@ static inline NvBool vaspaceapiShareCallback_DISPATCH(struct VaSpaceApi *pGpuRes
     return pGpuResource->__vaspaceapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static inline NV_STATUS vaspaceapiCheckMemInterUnmap_DISPATCH(struct VaSpaceApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__vaspaceapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+}
+
+static inline NV_STATUS vaspaceapiMapTo_DISPATCH(struct VaSpaceApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__vaspaceapiMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS vaspaceapiGetMapAddrSpace_DISPATCH(struct VaSpaceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pGpuResource->__vaspaceapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 vaspaceapiGetRefCount_DISPATCH(struct VaSpaceApi *pResource) {
+    return pResource->__vaspaceapiGetRefCount__(pResource);
+}
+
+static inline void vaspaceapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct VaSpaceApi *pResource, RsResourceRef *pReference) {
+    pResource->__vaspaceapiAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS vaspaceapiControl_Prologue_DISPATCH(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__vaspaceapiControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS vaspaceapiGetRegBaseOffsetAndSize_DISPATCH(struct VaSpaceApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return pGpuResource->__vaspaceapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+}
+
+static inline NV_STATUS vaspaceapiInternalControlForward_DISPATCH(struct VaSpaceApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return pGpuResource->__vaspaceapiInternalControlForward__(pGpuResource, command, pParams, size);
+}
+
+static inline NV_STATUS vaspaceapiUnmapFrom_DISPATCH(struct VaSpaceApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__vaspaceapiUnmapFrom__(pResource, pParams);
+}
+
+static inline void vaspaceapiControl_Epilogue_DISPATCH(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__vaspaceapiControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS vaspaceapiControlLookup_DISPATCH(struct VaSpaceApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__vaspaceapiControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NvHandle vaspaceapiGetInternalObjectHandle_DISPATCH(struct VaSpaceApi *pGpuResource) {
+    return pGpuResource->__vaspaceapiGetInternalObjectHandle__(pGpuResource);
+}
+
 static inline NV_STATUS vaspaceapiControl_DISPATCH(struct VaSpaceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__vaspaceapiControl__(pGpuResource, pCallContext, pParams);
 }
@@ -211,64 +263,24 @@ static inline NV_STATUS vaspaceapiGetMemoryMappingDescriptor_DISPATCH(struct VaS
     return pRmResource->__vaspaceapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline NV_STATUS vaspaceapiGetMapAddrSpace_DISPATCH(struct VaSpaceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__vaspaceapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvHandle vaspaceapiGetInternalObjectHandle_DISPATCH(struct VaSpaceApi *pGpuResource) {
-    return pGpuResource->__vaspaceapiGetInternalObjectHandle__(pGpuResource);
-}
-
 static inline NV_STATUS vaspaceapiControlFilter_DISPATCH(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__vaspaceapiControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void vaspaceapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct VaSpaceApi *pResource, RsResourceRef *pReference) {
-    pResource->__vaspaceapiAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 vaspaceapiGetRefCount_DISPATCH(struct VaSpaceApi *pResource) {
-    return pResource->__vaspaceapiGetRefCount__(pResource);
-}
-
-static inline NV_STATUS vaspaceapiCheckMemInterUnmap_DISPATCH(struct VaSpaceApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__vaspaceapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
-}
-
-static inline NV_STATUS vaspaceapiMapTo_DISPATCH(struct VaSpaceApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__vaspaceapiMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS vaspaceapiControl_Prologue_DISPATCH(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__vaspaceapiControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS vaspaceapiGetRegBaseOffsetAndSize_DISPATCH(struct VaSpaceApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__vaspaceapiGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
-}
-
-static inline NV_STATUS vaspaceapiInternalControlForward_DISPATCH(struct VaSpaceApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__vaspaceapiInternalControlForward__(pGpuResource, command, pParams, size);
+static inline NV_STATUS vaspaceapiControlSerialization_Prologue_DISPATCH(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__vaspaceapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline void vaspaceapiPreDestruct_DISPATCH(struct VaSpaceApi *pResource) {
     pResource->__vaspaceapiPreDestruct__(pResource);
 }
 
-static inline NV_STATUS vaspaceapiUnmapFrom_DISPATCH(struct VaSpaceApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__vaspaceapiUnmapFrom__(pResource, pParams);
-}
-
 static inline NV_STATUS vaspaceapiIsDuplicate_DISPATCH(struct VaSpaceApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__vaspaceapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
-static inline void vaspaceapiControl_Epilogue_DISPATCH(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__vaspaceapiControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS vaspaceapiControlLookup_DISPATCH(struct VaSpaceApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__vaspaceapiControlLookup__(pResource, pParams, ppEntry);
+static inline void vaspaceapiControlSerialization_Epilogue_DISPATCH(struct VaSpaceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__vaspaceapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS vaspaceapiMap_DISPATCH(struct VaSpaceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {

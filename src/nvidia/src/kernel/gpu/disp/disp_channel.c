@@ -129,6 +129,13 @@ dispchnConstruct_IMPL
                   "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n", 
                   pParams->externalClassId);
 
+        //
+        // GPUSWSEC-1560 introduced a central object privilege check in RS. Please mark derived external classes
+        // of DispChannel privileged in their RS_ENTRY. Since DispChannel doesn't have an external class of its own
+        // and is used as a base class, leaving this check inline to catch future derivations.
+        //
+        osAssertFailed();
+
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 

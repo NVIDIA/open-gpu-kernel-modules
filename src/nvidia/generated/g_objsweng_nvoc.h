@@ -59,7 +59,6 @@ struct OBJSWENG {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct OBJSWENG *__nvoc_pbase_OBJSWENG;
     NV_STATUS (*__swengConstructEngine__)(struct OBJGPU *, struct OBJSWENG *, ENGDESCRIPTOR);
-    NV_STATUS (*__swengReconcileTunableState__)(POBJGPU, struct OBJSWENG *, void *);
     NV_STATUS (*__swengStateLoad__)(POBJGPU, struct OBJSWENG *, NvU32);
     NV_STATUS (*__swengStateUnload__)(POBJGPU, struct OBJSWENG *, NvU32);
     NV_STATUS (*__swengStateInitLocked__)(POBJGPU, struct OBJSWENG *);
@@ -71,12 +70,7 @@ struct OBJSWENG {
     void (*__swengInitMissing__)(POBJGPU, struct OBJSWENG *);
     NV_STATUS (*__swengStatePreInitLocked__)(POBJGPU, struct OBJSWENG *);
     NV_STATUS (*__swengStatePreInitUnlocked__)(POBJGPU, struct OBJSWENG *);
-    NV_STATUS (*__swengGetTunableState__)(POBJGPU, struct OBJSWENG *, void *);
-    NV_STATUS (*__swengCompareTunableState__)(POBJGPU, struct OBJSWENG *, void *, void *);
-    void (*__swengFreeTunableState__)(POBJGPU, struct OBJSWENG *, void *);
     NV_STATUS (*__swengStatePostLoad__)(POBJGPU, struct OBJSWENG *, NvU32);
-    NV_STATUS (*__swengAllocTunableState__)(POBJGPU, struct OBJSWENG *, void **);
-    NV_STATUS (*__swengSetTunableState__)(POBJGPU, struct OBJSWENG *, void *);
     NvBool (*__swengIsPresent__)(POBJGPU, struct OBJSWENG *);
 };
 
@@ -111,7 +105,6 @@ NV_STATUS __nvoc_objCreate_OBJSWENG(OBJSWENG**, Dynamic*, NvU32);
     __nvoc_objCreate_OBJSWENG((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 #define swengConstructEngine(pGpu, pSweng, arg0) swengConstructEngine_DISPATCH(pGpu, pSweng, arg0)
-#define swengReconcileTunableState(pGpu, pEngstate, pTunableState) swengReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define swengStateLoad(pGpu, pEngstate, arg0) swengStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define swengStateUnload(pGpu, pEngstate, arg0) swengStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define swengStateInitLocked(pGpu, pEngstate) swengStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -123,21 +116,12 @@ NV_STATUS __nvoc_objCreate_OBJSWENG(OBJSWENG**, Dynamic*, NvU32);
 #define swengInitMissing(pGpu, pEngstate) swengInitMissing_DISPATCH(pGpu, pEngstate)
 #define swengStatePreInitLocked(pGpu, pEngstate) swengStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define swengStatePreInitUnlocked(pGpu, pEngstate) swengStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define swengGetTunableState(pGpu, pEngstate, pTunableState) swengGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define swengCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) swengCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define swengFreeTunableState(pGpu, pEngstate, pTunableState) swengFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define swengStatePostLoad(pGpu, pEngstate, arg0) swengStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define swengAllocTunableState(pGpu, pEngstate, ppTunableState) swengAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define swengSetTunableState(pGpu, pEngstate, pTunableState) swengSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define swengIsPresent(pGpu, pEngstate) swengIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS swengConstructEngine_IMPL(struct OBJGPU *pGpu, struct OBJSWENG *pSweng, ENGDESCRIPTOR arg0);
 
 static inline NV_STATUS swengConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct OBJSWENG *pSweng, ENGDESCRIPTOR arg0) {
     return pSweng->__swengConstructEngine__(pGpu, pSweng, arg0);
-}
-
-static inline NV_STATUS swengReconcileTunableState_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, void *pTunableState) {
-    return pEngstate->__swengReconcileTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NV_STATUS swengStateLoad_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg0) {
@@ -184,28 +168,8 @@ static inline NV_STATUS swengStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct 
     return pEngstate->__swengStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS swengGetTunableState_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, void *pTunableState) {
-    return pEngstate->__swengGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS swengCompareTunableState_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__swengCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void swengFreeTunableState_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, void *pTunableState) {
-    pEngstate->__swengFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS swengStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, NvU32 arg0) {
     return pEngstate->__swengStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS swengAllocTunableState_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, void **ppTunableState) {
-    return pEngstate->__swengAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS swengSetTunableState_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate, void *pTunableState) {
-    return pEngstate->__swengSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool swengIsPresent_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEngstate) {

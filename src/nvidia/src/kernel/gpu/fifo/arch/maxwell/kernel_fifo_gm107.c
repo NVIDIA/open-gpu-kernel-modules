@@ -37,11 +37,16 @@
 #include "published/maxwell/gm107/dev_ram.h"
 #include "published/maxwell/gm107/dev_mmu.h"
 
+
+static inline NvBool
+_isEngineInfoTypeValidForOnlyHostDriven(ENGINE_INFO_TYPE type);
+
+
 /*! Construct kfifo object */
 NV_STATUS
 kfifoConstructHal_GM107
 (
-    OBJGPU     *pGpu, 
+    OBJGPU     *pGpu,
     KernelFifo *pKernelFifo
 )
 {
@@ -380,15 +385,19 @@ kfifoGetDefaultRunlist_GM107
         // if translation fails, defualt is ENG_GR(0)
         NV_ASSERT_OK(
             kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                    ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32)rmEngineType,
-                                    ENGINE_INFO_TYPE_ENG_DESC, &engDesc));
+                ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32)rmEngineType,
+                ENGINE_INFO_TYPE_ENG_DESC,       &engDesc));
     }
 
-    // if translation fails, defualt is INVALID_RUNLIST_ID
-    NV_ASSERT_OK(
-        kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                ENGINE_INFO_TYPE_ENG_DESC, engDesc,
-                                ENGINE_INFO_TYPE_RUNLIST, &runlistId));
+    // if translation fails, default is INVALID_RUNLIST_ID
+    if (kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
+                                 ENGINE_INFO_TYPE_ENG_DESC,
+                                 engDesc,
+                                 ENGINE_INFO_TYPE_RUNLIST,
+                                 &runlistId) != NV_OK)
+    {
+        runlistId = INVALID_RUNLIST_ID;
+    }
 
     return runlistId;
 }
@@ -661,34 +670,54 @@ kfifoConvertInstToKernelChannel_GM107
     return NV_ERR_INVALID_CHANNEL;
 }
 
-/**
- * @brief Translates between 2 engine values
- *
- * To iterate through a value for all engines call with inType of
- * ENGINE_INFO_TYPE_INVALID for 0 through fifoGetNumEngines().
- *
- * @param pGpu
- * @param pKernelFifo
- * @param[in] inType ENGINE_INFO_TYPE_*
- * @param[in] inVal
- * @param[in] outType ENGINE_INFO_TYPE_*
- * @param[out] pOutVal
- */
+static inline NvBool
+_isEngineInfoTypeValidForOnlyHostDriven(ENGINE_INFO_TYPE type)
+{
+    switch (type)
+    {
+        case ENGINE_INFO_TYPE_RUNLIST:
+        case ENGINE_INFO_TYPE_RUNLIST_PRI_BASE:
+        case ENGINE_INFO_TYPE_RUNLIST_ENGINE_ID:
+        case ENGINE_INFO_TYPE_PBDMA_ID:
+        case ENGINE_INFO_TYPE_CHRAM_PRI_BASE:
+        case ENGINE_INFO_TYPE_FIFO_TAG:
+            return NV_TRUE;
+        case ENGINE_INFO_TYPE_ENG_DESC:
+        case ENGINE_INFO_TYPE_RM_ENGINE_TYPE:
+        case ENGINE_INFO_TYPE_MMU_FAULT_ID:
+        case ENGINE_INFO_TYPE_RC_MASK:
+        case ENGINE_INFO_TYPE_RESET:
+        case ENGINE_INFO_TYPE_INTR:
+        case ENGINE_INFO_TYPE_MC:
+        case ENGINE_INFO_TYPE_DEV_TYPE_ENUM:
+        case ENGINE_INFO_TYPE_INSTANCE_ID:
+        case ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE:
+            // The bool itself is valid for non-host-driven engines too.
+        case ENGINE_INFO_TYPE_INVALID:
+            return NV_FALSE;
+        default:
+            // Ensure that this function covers every value in ENGINE_INFO_TYPE
+            NV_ASSERT(0 && "check all ENGINE_INFO_TYPE are classified as host-driven or not");
+            return NV_FALSE;
+    }
+}
+
+
 NV_STATUS
 kfifoEngineInfoXlate_GM107
 (
-    OBJGPU *pGpu,
-    KernelFifo *pKernelFifo,
-    ENGINE_INFO_TYPE inType,
-    NvU32 inVal,
-    ENGINE_INFO_TYPE outType,
-    NvU32 *pOutVal
+    OBJGPU           *pGpu,
+    KernelFifo       *pKernelFifo,
+    ENGINE_INFO_TYPE  inType,
+    NvU32             inVal,
+    ENGINE_INFO_TYPE  outType,
+    NvU32            *pOutVal
 )
 {
-    const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
-    NvU32 i;
+    const ENGINE_INFO *pEngineInfo       = kfifoGetEngineInfo(pKernelFifo);
+    FIFO_ENGINE_LIST  *pFoundInputEngine = NULL;
 
-    NV_ASSERT_OR_RETURN(pOutVal, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pOutVal != NULL, NV_ERR_INVALID_ARGUMENT);
 
     // PBDMA_ID can only be inType
     NV_ASSERT_OR_RETURN(outType != ENGINE_INFO_TYPE_PBDMA_ID,
@@ -697,49 +726,70 @@ kfifoEngineInfoXlate_GM107
     if (pEngineInfo == NULL)
     {
         NV_ASSERT_OK_OR_RETURN(kfifoConstructEngineList_HAL(pGpu, pKernelFifo));
-
         pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
-        NV_ASSERT_OR_RETURN(pEngineInfo != NULL, NV_ERR_INVALID_STATE);
     }
+    NV_ASSERT_OR_RETURN(pEngineInfo != NULL, NV_ERR_INVALID_STATE);
 
     if (inType == ENGINE_INFO_TYPE_INVALID)
     {
         NV_ASSERT_OR_RETURN(inVal < pEngineInfo->engineInfoListSize,
                             NV_ERR_INVALID_ARGUMENT);
-        *pOutVal = pEngineInfo->engineInfoList[inVal].engineData[outType];
-        return NV_OK;
+        pFoundInputEngine = &pEngineInfo->engineInfoList[inVal];
     }
-
-    for (i = 0; i < pEngineInfo->engineInfoListSize; ++i)
+    else
     {
-        FIFO_ENGINE_LIST *pFifoEngineList = &pEngineInfo->engineInfoList[i];
-        NvBool bFound = NV_FALSE;
-
-        if (inType == ENGINE_INFO_TYPE_PBDMA_ID)
+        NvU32 i;
+        for (i = 0;
+             (i < pEngineInfo->engineInfoListSize) &&
+             (pFoundInputEngine == NULL);
+             ++i)
         {
-            NvU32 j;
-            for (j = 0; j < pFifoEngineList->numPbdmas; ++j)
+            FIFO_ENGINE_LIST *pThisEngine = &pEngineInfo->engineInfoList[i];
+
+            if (inType == ENGINE_INFO_TYPE_PBDMA_ID)
             {
-                if (pFifoEngineList->pbdmaIds[j] == inVal)
+                NvU32 j;
+                for (j = 0; j < pThisEngine->numPbdmas; ++j)
                 {
-                    bFound = NV_TRUE;
-                    break;
+                    if (pThisEngine->pbdmaIds[j] == inVal)
+                    {
+                        pFoundInputEngine = pThisEngine;
+                        break;
+                    }
                 }
             }
-        }
-        else if (pFifoEngineList->engineData[inType] == inVal)
-        {
-            bFound = NV_TRUE;
-        }
-
-        if (bFound)
-        {
-            *pOutVal = pFifoEngineList->engineData[outType];
-            return NV_OK;
+            else if (pThisEngine->engineData[inType] == inVal)
+            {
+                pFoundInputEngine = pThisEngine;
+            }
         }
     }
 
-    return NV_ERR_INVALID_ARGUMENT;
+    if (pFoundInputEngine == NULL)
+    {
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
+    if (_isEngineInfoTypeValidForOnlyHostDriven(outType) &&
+        !pFoundInputEngine->engineData[ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE])
+    {
+        //
+        // Bug 3748452 TODO
+        // Bug 3772199 TODO
+        //
+        // We can't easily just return an error here because hundreds of
+        // callsites would fail their asserts. The above two bugs track fixing
+        // all callsites after which, we can uncomment this.
+        //
+        // return NV_ERR_OBJECT_NOT_FOUND;
+        //
+        NV_PRINTF(LEVEL_ERROR,
+            "Asked for host-specific type(0x%x) for non-host engine type(0x%x),val(0x%08x)\n",
+            outType, inType, inVal);
+    }
+
+    *pOutVal = pFoundInputEngine->engineData[outType];
+    return NV_OK;
 }
 
 /**
@@ -761,22 +811,15 @@ kfifoChannelGroupGetLocalMaxSubcontext_GM107
 void
 kfifoSetupUserD_GM107
 (
+    OBJGPU *pGpu,
     KernelFifo *pKernelFifo,
-    NvU8       *pUserD
+    MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    NV_ASSERT_OR_RETURN_VOID(pUserD != NULL);
+    TRANSFER_SURFACE tSurf = {.pMemDesc = pMemDesc, .offset = 0};
 
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_PUT ),                  0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GET ),                  0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_REF ),                  0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_PUT_HI ),               0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_REF_THRESHOLD ),        0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GP_TOP_LEVEL_GET ),     0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GP_TOP_LEVEL_GET_HI ),  0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GET_HI ),               0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GP_GET ),               0 );
-    MEM_WR32( pUserD + SF_OFFSET( NV_RAMUSERD_GP_PUT ),               0 );
+    NV_ASSERT_OK(memmgrMemSet(GPU_GET_MEMORY_MANAGER(pGpu), &tSurf, 0,
+        NV_RAMUSERD_CHAN_SIZE, TRANSFER_FLAGS_NONE));
 }
 /**
  * @brief return number of HW engines
@@ -1492,14 +1535,14 @@ kfifoCheckEngine_GM107
     NvBool     *pPresent
 )
 {
-    NvU32 tmp;
+    NvU32 bEschedDriven = NV_FALSE;
     NV_STATUS status;
 
     status = kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo,
-                                      ENGINE_INFO_TYPE_ENG_DESC, engDesc,
-                                      ENGINE_INFO_TYPE_FIFO_TAG, &tmp);
+        ENGINE_INFO_TYPE_ENG_DESC,              engDesc,
+        ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE, &bEschedDriven);
 
-    *pPresent = (status == NV_OK);
+    *pPresent = (status == NV_OK) && bEschedDriven;
 
     return NV_OK;
 }

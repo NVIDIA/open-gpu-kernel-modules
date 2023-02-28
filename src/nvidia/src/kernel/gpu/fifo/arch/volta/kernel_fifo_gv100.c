@@ -92,19 +92,6 @@ kfifoRmctrlGetWorkSubmitToken_GV100
     return NV_OK;
 }
 
-/**
- * @brief Translates between 2 engine values
- *
- * To iterate through a value for all engines call with inType of
- * ENGINE_INFO_TYPE_INVALID for 0 through fifoGetNumEngines().
- *
- * @param pGpu
- * @param pKernelFifo
- * @param[in] inType ENGINE_INFO_TYPE_*
- * @param[in] inVal
- * @param[in] outType ENGINE_INFO_TYPE_*
- * @param[out] pOutVal
- */
 NV_STATUS
 kfifoEngineInfoXlate_GV100
 (

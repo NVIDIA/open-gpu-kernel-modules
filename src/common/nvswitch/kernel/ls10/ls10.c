@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,7 +65,7 @@
 #include "ls10/minion_nvlink_defines_public_ls10.h"
 
 #define NVSWITCH_IFR_MIN_BIOS_VER_LS10      0x9610170000ull
-#define NVSWITCH_SMBPBI_MIN_BIOS_VER_LS10   0x9610220000ull
+#define NVSWITCH_SMBPBI_MIN_BIOS_VER_LS10   0x9610170000ull
 
 void *
 nvswitch_alloc_chipdevice_ls10
@@ -113,7 +113,7 @@ nvswitch_pri_ring_init_ls10
         {
             keepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
 
-            command = NVSWITCH_REG_RD32(device, _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS);
+        command = NVSWITCH_REG_RD32(device, _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS);
             if (FLD_TEST_DRF(_GFW_GLOBAL, _BOOT_PARTITION_PROGRESS, _VALUE, _SUCCESS, command))
             {
                 break;
@@ -1353,10 +1353,10 @@ nvswitch_reset_and_drain_links_ls10
     NvU32        link;
     NvU32        data32;
     NvU32        retry_count = 3;
-    NvU32 link_state_request;
-    NvU32 link_state;
-    NvU32 stat_data;
-    NvU32 link_intr_subcode;
+    NvU32        link_state_request;
+    NvU32        link_state;
+    NvU32        stat_data;
+    NvU32        link_intr_subcode;
 
     if (link_mask == 0)
     {
@@ -1575,7 +1575,6 @@ nvswitch_set_nport_port_config_ls10
 )
 {
     NvU32   val;
-    NvlStatus status = NVL_SUCCESS;
 
     if (p->requesterLinkID >= NVBIT(
         DRF_SIZE(NV_NPORT_REQLINKID_REQROUTINGID) +
@@ -1625,162 +1624,156 @@ nvswitch_set_nport_port_config_ls10
 
     if (p->type == CONNECT_TRUNK_SWITCH)
     {
-        if (!nvswitch_is_soe_supported(device))
+        if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
         {
             // Set trunk specific settings (TPROD) on PRE-SILION
 
-            // NPORT
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _NPORT, _CTRL);
-            val = FLD_SET_DRF(_NPORT, _CTRL, _EGDRAINENB, _DISABLE, val);
-            val = FLD_SET_DRF(_NPORT, _CTRL, _ENEGRESSDBI, _ENABLE, val);
-            val = FLD_SET_DRF(_NPORT, _CTRL, _ENROUTEDBI, _ENABLE, val);
-            val = FLD_SET_DRF(_NPORT, _CTRL, _RTDRAINENB, _DISABLE, val);
-            val = FLD_SET_DRF(_NPORT, _CTRL, _SPARE, _INIT, val);
-            val = FLD_SET_DRF(_NPORT, _CTRL, _TRUNKLINKENB, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _NPORT, _CTRL, val);
+        // NPORT
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _NPORT, _CTRL);
+        val = FLD_SET_DRF(_NPORT, _CTRL, _EGDRAINENB, _DISABLE, val);
+        val = FLD_SET_DRF(_NPORT, _CTRL, _ENEGRESSDBI, _ENABLE, val);
+        val = FLD_SET_DRF(_NPORT, _CTRL, _ENROUTEDBI, _ENABLE, val);
+        val = FLD_SET_DRF(_NPORT, _CTRL, _RTDRAINENB, _DISABLE, val);
+        val = FLD_SET_DRF(_NPORT, _CTRL, _SPARE, _INIT, val);
+        val = FLD_SET_DRF(_NPORT, _CTRL, _TRUNKLINKENB, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _NPORT, _CTRL, val);
 
-            // EGRESS
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _CTRL);
-            val = FLD_SET_DRF(_EGRESS, _CTRL, _CTO_ENB, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _CTRL, val);
+        // EGRESS
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _CTRL);
+        val = FLD_SET_DRF(_EGRESS, _CTRL, _CTO_ENB, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _CTRL, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _ERR_CONTAIN_EN_0);
-            val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _CREDIT_TIME_OUT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _HWRSPERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _INVALIDVCSET_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _REQTGTIDMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _RSPREQIDMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _URRSPERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _ERR_CONTAIN_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _ERR_CONTAIN_EN_0);
+        val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _CREDIT_TIME_OUT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _HWRSPERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _INVALIDVCSET_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _REQTGTIDMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _RSPREQIDMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_CONTAIN_EN_0, _URRSPERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _ERR_CONTAIN_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _ERR_FATAL_REPORT_EN_0);
-            val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _CREDIT_TIME_OUT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _HWRSPERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _INVALIDVCSET_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _REQTGTIDMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _RSPREQIDMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _URRSPERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _ERR_FATAL_REPORT_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _ERR_FATAL_REPORT_EN_0);
+        val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _CREDIT_TIME_OUT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _HWRSPERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _INVALIDVCSET_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _REQTGTIDMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _RSPREQIDMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_FATAL_REPORT_EN_0, _URRSPERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _ERR_FATAL_REPORT_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _ERR_LOG_EN_0);
-            val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _CREDIT_TIME_OUT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _HWRSPERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _INVALIDVCSET_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _REQTGTIDMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _RSPREQIDMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _URRSPERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _ERR_LOG_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _ERR_LOG_EN_0);
+        val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _CREDIT_TIME_OUT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _HWRSPERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _INVALIDVCSET_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _REQTGTIDMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _RSPREQIDMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_EGRESS, _ERR_LOG_EN_0, _URRSPERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _ERR_LOG_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _ERR_NON_FATAL_REPORT_EN_0);
-            val = FLD_SET_DRF(_EGRESS, _ERR_NON_FATAL_REPORT_EN_0, _PRIVRSPERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _ERR_NON_FATAL_REPORT_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _EGRESS, _ERR_NON_FATAL_REPORT_EN_0);
+        val = FLD_SET_DRF(_EGRESS, _ERR_NON_FATAL_REPORT_EN_0, _PRIVRSPERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _EGRESS, _ERR_NON_FATAL_REPORT_EN_0, val);
 
-            // INGRESS
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_CONTAIN_EN_0);
-            val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _EXTAREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _EXTBREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _INVALIDVCSET, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _MCREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _REMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_CONTAIN_EN_0, val);
+        // INGRESS
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_CONTAIN_EN_0);
+        val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _EXTAREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _EXTBREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _INVALIDVCSET, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _MCREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_CONTAIN_EN_0, _REMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_CONTAIN_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_FATAL_REPORT_EN_0);
-            val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _EXTAREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _EXTBREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _INVALIDVCSET, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _MCREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _REMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_FATAL_REPORT_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_FATAL_REPORT_EN_0);
+        val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _EXTAREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _EXTBREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _INVALIDVCSET, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _MCREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_FATAL_REPORT_EN_0, _REMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_FATAL_REPORT_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_LOG_EN_0);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _EXTAREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _EXTBREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _INVALIDVCSET, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _MCREMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _REMAPTAB_ECC_DBE_ERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_LOG_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_LOG_EN_0);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _EXTAREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _EXTBREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _INVALIDVCSET, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _MCREMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_0, _REMAPTAB_ECC_DBE_ERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_LOG_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_LOG_EN_1);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _EXTAREMAPTAB_ADDRTYPEERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _EXTAREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _EXTBREMAPTAB_ADDRTYPEERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _EXTBREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _MCCMDTOUCADDRERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _MCREMAPTAB_ADDRTYPEERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _MCREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _READMCREFLECTMEMERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_LOG_EN_1, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_LOG_EN_1);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _EXTAREMAPTAB_ADDRTYPEERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _EXTAREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _EXTBREMAPTAB_ADDRTYPEERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _EXTBREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _MCCMDTOUCADDRERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _MCREMAPTAB_ADDRTYPEERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _MCREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_LOG_EN_1, _READMCREFLECTMEMERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_LOG_EN_1, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_NON_FATAL_REPORT_EN_0);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _ACLFAIL, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _ADDRBOUNDSERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _ADDRTYPEERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTAREMAPTAB_ACLFAIL, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTAREMAPTAB_ADDRBOUNDSERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTAREMAPTAB_INDEX_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTAREMAPTAB_REQCONTEXTMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTBREMAPTAB_ACLFAIL, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTBREMAPTAB_ADDRBOUNDSERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTBREMAPTAB_INDEX_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTBREMAPTAB_REQCONTEXTMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _MCREMAPTAB_ACLFAIL, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _MCREMAPTAB_ADDRBOUNDSERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _MCREMAPTAB_INDEX_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _MCREMAPTAB_REQCONTEXTMISMATCHERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _REMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _REQCONTEXTMISMATCHERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_NON_FATAL_REPORT_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_NON_FATAL_REPORT_EN_0);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _ACLFAIL, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _ADDRBOUNDSERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _ADDRTYPEERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTAREMAPTAB_ACLFAIL, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTAREMAPTAB_ADDRBOUNDSERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTAREMAPTAB_INDEX_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTAREMAPTAB_REQCONTEXTMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTBREMAPTAB_ACLFAIL, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTBREMAPTAB_ADDRBOUNDSERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTBREMAPTAB_INDEX_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _EXTBREMAPTAB_REQCONTEXTMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _MCREMAPTAB_ACLFAIL, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _MCREMAPTAB_ADDRBOUNDSERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _MCREMAPTAB_INDEX_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _MCREMAPTAB_REQCONTEXTMISMATCHERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _REMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_0, _REQCONTEXTMISMATCHERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_NON_FATAL_REPORT_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_NON_FATAL_REPORT_EN_1);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _EXTAREMAPTAB_ADDRTYPEERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _EXTAREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _EXTBREMAPTAB_ADDRTYPEERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _EXTBREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _MCCMDTOUCADDRERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _MCREMAPTAB_ADDRTYPEERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _MCREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _READMCREFLECTMEMERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_NON_FATAL_REPORT_EN_1, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _INGRESS, _ERR_NON_FATAL_REPORT_EN_1);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _EXTAREMAPTAB_ADDRTYPEERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _EXTAREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _EXTBREMAPTAB_ADDRTYPEERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _EXTBREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _MCCMDTOUCADDRERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _MCREMAPTAB_ADDRTYPEERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _MCREMAPTAB_ECC_LIMIT_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_INGRESS, _ERR_NON_FATAL_REPORT_EN_1, _READMCREFLECTMEMERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _INGRESS, _ERR_NON_FATAL_REPORT_EN_1, val);
 
-            // SOURCETRACK
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_CONTAIN_EN_0);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _CREQ_TCEN0_CRUMBSTORE_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _DUP_CREQ_TCEN0_TAG_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _INVALID_TCEN0_RSP_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _INVALID_TCEN1_RSP_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _SOURCETRACK_TIME_OUT_ERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_CONTAIN_EN_0, val);
+        // SOURCETRACK
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_CONTAIN_EN_0);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _CREQ_TCEN0_CRUMBSTORE_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _DUP_CREQ_TCEN0_TAG_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _INVALID_TCEN0_RSP_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _INVALID_TCEN1_RSP_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_CONTAIN_EN_0, _SOURCETRACK_TIME_OUT_ERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_CONTAIN_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_FATAL_REPORT_EN_0);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _CREQ_TCEN0_CRUMBSTORE_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _DUP_CREQ_TCEN0_TAG_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _INVALID_TCEN0_RSP_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _INVALID_TCEN1_RSP_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _SOURCETRACK_TIME_OUT_ERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_FATAL_REPORT_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_FATAL_REPORT_EN_0);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _CREQ_TCEN0_CRUMBSTORE_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _DUP_CREQ_TCEN0_TAG_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _INVALID_TCEN0_RSP_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _INVALID_TCEN1_RSP_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_FATAL_REPORT_EN_0, _SOURCETRACK_TIME_OUT_ERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_FATAL_REPORT_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_LOG_EN_0);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _CREQ_TCEN0_CRUMBSTORE_ECC_DBE_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _DUP_CREQ_TCEN0_TAG_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _INVALID_TCEN0_RSP_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _INVALID_TCEN1_RSP_ERR, __TPROD, val);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _SOURCETRACK_TIME_OUT_ERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_LOG_EN_0, val);
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_LOG_EN_0);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _CREQ_TCEN0_CRUMBSTORE_ECC_DBE_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _DUP_CREQ_TCEN0_TAG_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _INVALID_TCEN0_RSP_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _INVALID_TCEN1_RSP_ERR, __TPROD, val);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_LOG_EN_0, _SOURCETRACK_TIME_OUT_ERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_LOG_EN_0, val);
 
-            val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_NON_FATAL_REPORT_EN_0);
-            val = FLD_SET_DRF(_SOURCETRACK, _ERR_NON_FATAL_REPORT_EN_0, _CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR, __TPROD, val);
-            NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_NON_FATAL_REPORT_EN_0, val);
-        }
-        else
-        {
+        val = NVSWITCH_LINK_RD32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_NON_FATAL_REPORT_EN_0);
+        val = FLD_SET_DRF(_SOURCETRACK, _ERR_NON_FATAL_REPORT_EN_0, _CREQ_TCEN0_CRUMBSTORE_ECC_LIMIT_ERR, __TPROD, val);
+        NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _SOURCETRACK, _ERR_NON_FATAL_REPORT_EN_0, val);
+    }
+    else
+    {
             // Set trunk specific settings (TPROD) in SOE
-            status = nvswitch_set_nport_tprod_state_ls10(device, p->portNum);
-            if (status != NVL_SUCCESS)
-            {
-                NVSWITCH_PRINT(device, ERROR,
-                    "%s: Failed to set NPORT TPROD state\n",
-                    __FUNCTION__);
-            }
+            // nvswitch_set_nport_tprod_state_ls10(device, p->portNum);
         }
     }
     else
@@ -1791,7 +1784,7 @@ nvswitch_set_nport_port_config_ls10
     NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _NPORT, _SRC_PORT_TYPE0, NvU64_LO32(p->trunkSrcMask));
     NVSWITCH_LINK_WR32(device, p->portNum, NPORT, _NPORT, _SRC_PORT_TYPE1, NvU64_HI32(p->trunkSrcMask));
 
-    return status;
+    return NVL_SUCCESS;
 }
 
 /*
@@ -2647,6 +2640,14 @@ nvswitch_get_num_links_ls10
     return NVSWITCH_NUM_LINKS_LS10;
 }
 
+static NvU8
+nvswitch_get_num_links_per_nvlipt_ls10
+(
+    nvswitch_device *device
+)
+{
+    return NVSWITCH_LINKS_PER_NVLIPT_LS10;
+}
 
 void
 nvswitch_set_fatal_error_ls10
@@ -2797,7 +2798,7 @@ nvswitch_is_inforom_supported_ls10
     {
         NVSWITCH_PRINT(device, INFO,
             "INFOROM is not supported since SOE is not supported\n");
-        return NV_FALSE; 
+        return NV_FALSE;
     }
 
     status = _nvswitch_get_bios_version(device, &version);
@@ -2805,8 +2806,8 @@ nvswitch_is_inforom_supported_ls10
     {
         NVSWITCH_PRINT(device, ERROR, "%s: Error getting BIOS version\n",
             __FUNCTION__);
-        return NV_FALSE;
-    }
+    return NV_FALSE;
+}
 
     if (version >= NVSWITCH_IFR_MIN_BIOS_VER_LS10)
     {
@@ -2848,13 +2849,20 @@ nvswitch_is_smbpbi_supported_ls10
     nvswitch_device *device
 )
 {
-    NvU64       version;
-    NvlStatus   status;
-
     if (!nvswitch_is_smbpbi_supported_lr10(device))
     {
         return NV_FALSE;
     }
+
+    //
+    // Temporary driver WAR to disable SMBPBI on the LS10 NVSwitch driver.
+    // This should be removed once 3875091 is resolved.
+    //
+    return NV_FALSE;
+
+#if 0
+    NvU64       version;
+    NvlStatus   status;
 
     status = _nvswitch_get_bios_version(device, &version);
     if (status != NVL_SUCCESS)
@@ -2874,6 +2882,7 @@ nvswitch_is_smbpbi_supported_ls10
             "SMBPBI is not supported on NVSwitch BIOS version %llx.\n", version);
         return NV_FALSE;
     }
+#endif
 }
 
 /*
@@ -2906,8 +2915,17 @@ NvlStatus nvswitch_get_link_public_id_ls10
     NvU32 *publicId
 )
 {
-    NVSWITCH_PRINT(device, WARN, "%s: Function not implemented\n", __FUNCTION__);
-    return -NVL_ERR_NOT_IMPLEMENTED;
+    if (!device->hal.nvswitch_is_link_valid(device, linkId) ||
+        (publicId == NULL))
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    *publicId = NVSWITCH_NVLIPT_GET_PUBLIC_ID_LS10(linkId);
+
+
+    return (NVSWITCH_ENG_VALID_LS10(device, NVLIPT, *publicId)) ?
+                NVL_SUCCESS : -NVL_BAD_ARGS;
 }
 
 /*
@@ -4920,7 +4938,7 @@ nvswitch_launch_ALI_ls10
         }
 
         nvswitch_launch_ALI_link_training(device, link, NV_FALSE);
-    }
+        }
     FOR_EACH_INDEX_IN_MASK_END;
 
     return NVL_SUCCESS;
@@ -5047,29 +5065,29 @@ nvswitch_set_training_mode_ls10
             {
 
                 regVal = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber, NVLIPT_LNK, _NVLIPT_LNK,
-                            _CTRL_CAP_LOCAL_LINK_CHANNEL);
+                        _CTRL_CAP_LOCAL_LINK_CHANNEL);
 
-                if (!FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CAP_LOCAL_LINK_CHANNEL, _ALI_SUPPORT, _SUPPORTED, regVal))
-                {
-                    NVSWITCH_PRINT(device, ERROR,
-                        "%s: ALI training not supported! Non-ALI will be used as the default.\n",__FUNCTION__);
+            if (!FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CAP_LOCAL_LINK_CHANNEL, _ALI_SUPPORT, _SUPPORTED, regVal))
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: ALI training not supported! Non-ALI will be used as the default.\n",__FUNCTION__);
 #ifdef INCLUDE_NVLINK_LIB
                     device->nvlink_device->enableALI = NV_FALSE;
 #endif
-                    return NVL_SUCCESS;
-                }
+                return NVL_SUCCESS;
+            }
 #ifdef INCLUDE_NVLINK_LIB
                 device->nvlink_device->enableALI = NV_TRUE;
 #endif
-            }
+        }
             else
             {
-                    NVSWITCH_PRINT(device, ERROR,
+                NVSWITCH_PRINT(device, ERROR,
                         "%s: ALI training not enabled! Non-ALI will be used as the default.\n",__FUNCTION__);
 #ifdef INCLUDE_NVLINK_LIB
-                    device->nvlink_device->enableALI = NV_FALSE;
+                device->nvlink_device->enableALI = NV_FALSE;
 #endif
-                    return NVL_SUCCESS;
+                return NVL_SUCCESS;
             }
         }
         FOR_EACH_INDEX_IN_MASK_END;
@@ -5567,7 +5585,7 @@ nvswitch_ctrl_set_nvlink_error_threshold_ls10
 
             // Configure the interrupt
             nvswitch_configure_error_rate_threshold_interrupt_ls10(link,
-                                                                   link->errorThreshold.bInterruptEn);
+                                            pParams->errorThreshold[link->linkNumber].bInterruptEn);
         }
     }
     FOR_EACH_INDEX_IN_MASK_END;
@@ -5592,6 +5610,9 @@ nvswitch_ctrl_get_nvlink_error_threshold_ls10
         {
             continue;
         }
+
+        // Get the Error threshold
+        nvswitch_get_error_rate_threshold_ls10(link);
 
         pParams->errorThreshold[link->linkNumber].thresholdMan =
             link->errorThreshold.thresholdMan;

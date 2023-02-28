@@ -50,6 +50,8 @@ subdeviceCtrlCmdKPerfBoost_IMPL
     KernelPerf  *pKernelPerf     = GPU_GET_KERNEL_PERF(pGpu);
     NV_STATUS    status          = NV_OK;
 
+    NV_CHECK_OR_RETURN(LEVEL_INFO, (pKernelPerf != NULL), NV_ERR_NOT_SUPPORTED);
+
     status = kperfBoostSet_HAL(pKernelPerf, pSubdevice, pBoostParams);
     return status;
 }

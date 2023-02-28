@@ -1790,11 +1790,6 @@ NV_STATUS NV_API_CALL os_numa_memblock_size
     return NV_OK;
 }
 
-NV_STATUS NV_API_CALL os_call_nv_vmbus(NvU32 vmbus_cmd, void *input)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS NV_API_CALL os_open_temporary_file
 (
     void **ppFile

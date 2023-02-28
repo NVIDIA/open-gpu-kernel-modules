@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <nvtypes.h>
+
 //
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file: ctrl/ctrlxxxx.finn
@@ -65,3 +67,8 @@
 
 #define NVxxxx_CTRL_LEGACY_PRIVILEGED     (0xC0)
 #define NVxxxx_CTRL_LEGACY_NON_PRIVILEGED (0x80)
+
+typedef struct NVXXXX_CTRL_XXX_INFO {
+    NvU32 index;
+    NvU32 data;
+} NVXXXX_CTRL_XXX_INFO;

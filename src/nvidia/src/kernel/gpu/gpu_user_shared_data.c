@@ -62,7 +62,7 @@ gpushareddataConstruct_IMPL
         }
 
         status = memdescMap(pMemDesc, 0, pMemDesc->Size,
-                            NV_TRUE, NV_PROTECT_READABLE,
+                            NV_TRUE, NV_PROTECT_READ_WRITE,
                             &pGpu->userSharedData.pMapBuffer,
                             &pGpu->userSharedData.pMapBufferPriv);
         if (status != NV_OK)
@@ -79,7 +79,7 @@ gpushareddataConstruct_IMPL
         portMemSet(pSharedData, 0, sizeof(*pSharedData));
 
         // Initial write from cached data
-        gpushareddataWriteFinish(pGpu);
+        gpuUpdateUserSharedData_KERNEL(pGpu);
     }
 
     memdescAddRef(pGpu->userSharedData.pMemDesc);
@@ -135,9 +135,9 @@ gpushareddataMap_IMPL
     if (status != NV_OK)
         return status;
 
-    // Only support read-only, fail early if writeable
-    if (pCpuMapping->pPrivate->protect & NV_PROTECT_WRITEABLE)
-        return NV_ERR_INVALID_PARAMETER;
+    // Only support read-only, fail early if flag is unset somehow
+    if (!(pGpu->userSharedData.pMemDesc->_flags & MEMDESC_FLAGS_USER_READ_ONLY))
+        return NV_ERR_INVALID_STATE;
 
     pCpuMapping->processId = osGetCurrentProcess();
 
@@ -146,7 +146,7 @@ gpushareddataMap_IMPL
                         0,
                         pGpu->userSharedData.pMemDesc->Size,
                         NV_FALSE,
-                        pCpuMapping->pPrivate->protect,
+                        NV_PROTECT_READABLE,
                         &pCpuMapping->pLinearAddress,
                         &pCpuMapping->pPrivate->pPriv);
 
@@ -227,6 +227,11 @@ NV00DE_SHARED_DATA * gpushareddataWriteStart(OBJGPU *pGpu)
 }
 
 void gpushareddataWriteFinish(OBJGPU *pGpu)
+{
+    gpuUpdateUserSharedData_HAL(pGpu);
+}
+
+void gpuUpdateUserSharedData_KERNEL(OBJGPU *pGpu)
 {
     NV00DE_SHARED_DATA *pSharedData = (NV00DE_SHARED_DATA*)(pGpu->userSharedData.pMapBuffer);
     const NvU32 data_offset = sizeof(pSharedData->seq);

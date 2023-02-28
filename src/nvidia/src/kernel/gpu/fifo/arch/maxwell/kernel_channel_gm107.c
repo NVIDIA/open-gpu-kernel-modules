@@ -48,41 +48,29 @@ static NV_STATUS _kchannelDestroyRMUserdMemDesc(OBJGPU *pGpu, KernelChannel *pKe
 NV_STATUS
 kchannelGetClassEngineID_GM107
 (
-    OBJGPU        *pGpu,
-    KernelChannel *pKernelChannel,
-    NvHandle       handle,
-    NvU32         *pClassEngineID,
-    NvU32         *pClassID,
+    OBJGPU         *pGpu,
+    KernelChannel  *pKernelChannel,
+    NvHandle        handle,
+    NvU32          *pClassEngineID,
+    NvU32          *pClassID,
     RM_ENGINE_TYPE *pRmEngineID
 )
 {
-    NV_STATUS   status         =  NV_OK;
-    NvU32       halEngineTag   =  0;
-    NvU32       hwEngineID     =  0;
-    NvU32       classID;
-    KernelFifo *pKernelFifo    = GPU_GET_KERNEL_FIFO(pGpu);
-    ChannelDescendant *pObject =  NULL;
+    NV_STATUS          status = NV_OK;
+    NvU32              halEngineTag;
+    NvU32              classID;
+    ChannelDescendant *pObject = NULL;
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, kchannelFindChildByHandle(pKernelChannel, handle, &pObject));
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+        kchannelFindChildByHandle(pKernelChannel, handle, &pObject));
     NV_ASSERT_OR_RETURN(pObject != NULL, NV_ERR_OBJECT_NOT_FOUND);
 
     *pClassID = classID = RES_GET_EXT_CLASS_ID(pObject);
     halEngineTag = pObject->resourceDesc.engDesc;
 
-    status = kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo, ENGINE_INFO_TYPE_ENG_DESC,
-                                      halEngineTag, ENGINE_INFO_TYPE_FIFO_TAG, &hwEngineID);
-
     if (halEngineTag == ENG_SW)
     {
         classID = pObject->classID;
-    }
-
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  ": Invalid Engine Tag %x associated with object handle = %x\n",
-                  halEngineTag, handle);
-        return NV_ERR_OBJECT_NOT_FOUND;
     }
 
     status = gpuXlateEngDescToClientEngineId(pGpu, halEngineTag, pRmEngineID);
@@ -93,8 +81,8 @@ kchannelGetClassEngineID_GM107
     }
 
     NV_PRINTF(LEVEL_INFO,
-              "class ID: 0x%08x engine id 0x%08x classEngine ID: 0x%08x\n",
-              classID, hwEngineID, *pClassEngineID);
+              "class ID: 0x%08x classEngine ID: 0x%08x\n",
+              classID, *pClassEngineID);
 
     return status;
 }

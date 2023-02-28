@@ -43,6 +43,7 @@
 #include "dp_vrr.h"
 #include "../../modeset/timing/nvt_dsc_pps.h"
 #include "ctrl/ctrl0073/ctrl0073dp.h"
+#include "nvcfg_sdk.h"
 
 namespace DisplayPort
 {
@@ -202,6 +203,7 @@ namespace DisplayPort
         virtual bool getDpcdRevision(unsigned * major, unsigned * minor) = 0;  // get the dpcd revision (maybe cached)
 
         virtual bool getSDPExtnForColorimetrySupported() = 0;
+        virtual bool getAsyncSDPSupported() = 0;
 
         virtual bool getPanelFwRevision(NvU16 *revision) = 0;
 
@@ -261,7 +263,6 @@ namespace DisplayPort
         // If the sink support MSA override in MST environment.
         virtual bool isMSAOverMSTCapable() = 0;
         virtual bool isFakedMuxDevice() = 0;
-
         virtual bool setPanelReplayConfig(panelReplayConfig prcfg) = 0;
         virtual bool isPanelReplaySupported() = 0;
         virtual bool getPanelReplayStatus(PanelReplayStatus *pPrStatus) = 0;

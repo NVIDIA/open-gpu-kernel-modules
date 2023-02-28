@@ -97,6 +97,54 @@ static NvBool __nvoc_thunk_GpuResource_i2capiShareCallback(struct I2cApi *pGpuRe
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_i2capiCheckMemInterUnmap(struct I2cApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_I2cApi_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_i2capiMapTo(struct I2cApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_i2capiGetMapAddrSpace(struct I2cApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_i2capiGetRefCount(struct I2cApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_i2capiAddAdditionalDependants(struct RsClient *pClient, struct I2cApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_i2capiControl_Prologue(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_i2capiGetRegBaseOffsetAndSize(struct I2cApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_i2capiInternalControlForward(struct I2cApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset), command, pParams, size);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_i2capiUnmapFrom(struct I2cApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_i2capiControl_Epilogue(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_i2capiControlLookup(struct I2cApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_i2capiGetInternalObjectHandle(struct I2cApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset));
+}
+
 static NV_STATUS __nvoc_thunk_GpuResource_i2capiControl(struct I2cApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset), pCallContext, pParams);
 }
@@ -113,68 +161,28 @@ static NV_STATUS __nvoc_thunk_RmResource_i2capiGetMemoryMappingDescriptor(struct
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_I2cApi_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_i2capiGetMapAddrSpace(struct I2cApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_i2capiGetInternalObjectHandle(struct I2cApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_i2capiControlFilter(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_i2capiAddAdditionalDependants(struct RsClient *pClient, struct I2cApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_i2capiGetRefCount(struct I2cApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_i2capiCheckMemInterUnmap(struct I2cApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_I2cApi_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_i2capiMapTo(struct I2cApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_i2capiControl_Prologue(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_i2capiGetRegBaseOffsetAndSize(struct I2cApi *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset), pGpu, pOffset, pSize);
+static NV_STATUS __nvoc_thunk_RmResource_i2capiControlSerialization_Prologue(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_i2capiCanCopy(struct I2cApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_i2capiInternalControlForward(struct I2cApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_I2cApi_GpuResource.offset), command, pParams, size);
-}
-
 static void __nvoc_thunk_RsResource_i2capiPreDestruct(struct I2cApi *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_i2capiUnmapFrom(struct I2cApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_i2capiIsDuplicate(struct I2cApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_i2capiControl_Epilogue(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_i2capiControlLookup(struct I2cApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_i2capiControlSerialization_Epilogue(struct I2cApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_I2cApi_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_i2capiMap(struct I2cApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -330,6 +338,30 @@ static void __nvoc_init_funcTable_I2cApi_1(I2cApi *pThis) {
 
     pThis->__i2capiShareCallback__ = &__nvoc_thunk_GpuResource_i2capiShareCallback;
 
+    pThis->__i2capiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_i2capiCheckMemInterUnmap;
+
+    pThis->__i2capiMapTo__ = &__nvoc_thunk_RsResource_i2capiMapTo;
+
+    pThis->__i2capiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_i2capiGetMapAddrSpace;
+
+    pThis->__i2capiGetRefCount__ = &__nvoc_thunk_RsResource_i2capiGetRefCount;
+
+    pThis->__i2capiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_i2capiAddAdditionalDependants;
+
+    pThis->__i2capiControl_Prologue__ = &__nvoc_thunk_RmResource_i2capiControl_Prologue;
+
+    pThis->__i2capiGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_i2capiGetRegBaseOffsetAndSize;
+
+    pThis->__i2capiInternalControlForward__ = &__nvoc_thunk_GpuResource_i2capiInternalControlForward;
+
+    pThis->__i2capiUnmapFrom__ = &__nvoc_thunk_RsResource_i2capiUnmapFrom;
+
+    pThis->__i2capiControl_Epilogue__ = &__nvoc_thunk_RmResource_i2capiControl_Epilogue;
+
+    pThis->__i2capiControlLookup__ = &__nvoc_thunk_RsResource_i2capiControlLookup;
+
+    pThis->__i2capiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_i2capiGetInternalObjectHandle;
+
     pThis->__i2capiControl__ = &__nvoc_thunk_GpuResource_i2capiControl;
 
     pThis->__i2capiUnmap__ = &__nvoc_thunk_GpuResource_i2capiUnmap;
@@ -338,37 +370,17 @@ static void __nvoc_init_funcTable_I2cApi_1(I2cApi *pThis) {
 
     pThis->__i2capiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_i2capiGetMemoryMappingDescriptor;
 
-    pThis->__i2capiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_i2capiGetMapAddrSpace;
-
-    pThis->__i2capiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_i2capiGetInternalObjectHandle;
-
     pThis->__i2capiControlFilter__ = &__nvoc_thunk_RsResource_i2capiControlFilter;
 
-    pThis->__i2capiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_i2capiAddAdditionalDependants;
-
-    pThis->__i2capiGetRefCount__ = &__nvoc_thunk_RsResource_i2capiGetRefCount;
-
-    pThis->__i2capiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_i2capiCheckMemInterUnmap;
-
-    pThis->__i2capiMapTo__ = &__nvoc_thunk_RsResource_i2capiMapTo;
-
-    pThis->__i2capiControl_Prologue__ = &__nvoc_thunk_RmResource_i2capiControl_Prologue;
-
-    pThis->__i2capiGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_i2capiGetRegBaseOffsetAndSize;
+    pThis->__i2capiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_i2capiControlSerialization_Prologue;
 
     pThis->__i2capiCanCopy__ = &__nvoc_thunk_RsResource_i2capiCanCopy;
 
-    pThis->__i2capiInternalControlForward__ = &__nvoc_thunk_GpuResource_i2capiInternalControlForward;
-
     pThis->__i2capiPreDestruct__ = &__nvoc_thunk_RsResource_i2capiPreDestruct;
-
-    pThis->__i2capiUnmapFrom__ = &__nvoc_thunk_RsResource_i2capiUnmapFrom;
 
     pThis->__i2capiIsDuplicate__ = &__nvoc_thunk_RsResource_i2capiIsDuplicate;
 
-    pThis->__i2capiControl_Epilogue__ = &__nvoc_thunk_RmResource_i2capiControl_Epilogue;
-
-    pThis->__i2capiControlLookup__ = &__nvoc_thunk_RsResource_i2capiControlLookup;
+    pThis->__i2capiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_i2capiControlSerialization_Epilogue;
 
     pThis->__i2capiMap__ = &__nvoc_thunk_GpuResource_i2capiMap;
 
@@ -396,12 +408,15 @@ NV_STATUS __nvoc_objCreate_I2cApi(I2cApi **ppThis, Dynamic *pParent, NvU32 creat
     Object *pParentObj;
     I2cApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(I2cApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(I2cApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(I2cApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_I2cApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -418,11 +433,17 @@ NV_STATUS __nvoc_objCreate_I2cApi(I2cApi **ppThis, Dynamic *pParent, NvU32 creat
     if (status != NV_OK) goto __nvoc_objCreate_I2cApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_I2cApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(I2cApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

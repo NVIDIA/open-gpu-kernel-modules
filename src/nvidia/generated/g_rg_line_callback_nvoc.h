@@ -68,26 +68,28 @@ struct RgLineCallback {
     struct GpuResource *__nvoc_pbase_GpuResource;
     struct RgLineCallback *__nvoc_pbase_RgLineCallback;
     NvBool (*__rglcbShareCallback__)(struct RgLineCallback *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__rglcbCheckMemInterUnmap__)(struct RgLineCallback *, NvBool);
+    NV_STATUS (*__rglcbMapTo__)(struct RgLineCallback *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__rglcbGetMapAddrSpace__)(struct RgLineCallback *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__rglcbGetRefCount__)(struct RgLineCallback *);
+    void (*__rglcbAddAdditionalDependants__)(struct RsClient *, struct RgLineCallback *, RsResourceRef *);
+    NV_STATUS (*__rglcbControl_Prologue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__rglcbGetRegBaseOffsetAndSize__)(struct RgLineCallback *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__rglcbInternalControlForward__)(struct RgLineCallback *, NvU32, void *, NvU32);
+    NV_STATUS (*__rglcbUnmapFrom__)(struct RgLineCallback *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__rglcbControl_Epilogue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__rglcbControlLookup__)(struct RgLineCallback *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NvHandle (*__rglcbGetInternalObjectHandle__)(struct RgLineCallback *);
     NV_STATUS (*__rglcbControl__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__rglcbUnmap__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__rglcbGetMemInterMapParams__)(struct RgLineCallback *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__rglcbGetMemoryMappingDescriptor__)(struct RgLineCallback *, struct MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__rglcbGetMapAddrSpace__)(struct RgLineCallback *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvHandle (*__rglcbGetInternalObjectHandle__)(struct RgLineCallback *);
     NV_STATUS (*__rglcbControlFilter__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__rglcbAddAdditionalDependants__)(struct RsClient *, struct RgLineCallback *, RsResourceRef *);
-    NvU32 (*__rglcbGetRefCount__)(struct RgLineCallback *);
-    NV_STATUS (*__rglcbCheckMemInterUnmap__)(struct RgLineCallback *, NvBool);
-    NV_STATUS (*__rglcbMapTo__)(struct RgLineCallback *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__rglcbControl_Prologue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__rglcbGetRegBaseOffsetAndSize__)(struct RgLineCallback *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__rglcbControlSerialization_Prologue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__rglcbCanCopy__)(struct RgLineCallback *);
-    NV_STATUS (*__rglcbInternalControlForward__)(struct RgLineCallback *, NvU32, void *, NvU32);
     void (*__rglcbPreDestruct__)(struct RgLineCallback *);
-    NV_STATUS (*__rglcbUnmapFrom__)(struct RgLineCallback *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__rglcbIsDuplicate__)(struct RgLineCallback *, NvHandle, NvBool *);
-    void (*__rglcbControl_Epilogue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__rglcbControlLookup__)(struct RgLineCallback *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__rglcbControlSerialization_Epilogue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__rglcbMap__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__rglcbAccessCallback__)(struct RgLineCallback *, struct RsClient *, void *, RsAccessRight);
     NvU32 subDeviceInstance;
@@ -128,30 +130,80 @@ NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback**, Dynamic*, NvU32, str
     __nvoc_objCreate_RgLineCallback((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 #define rglcbShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) rglcbShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
+#define rglcbCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) rglcbCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define rglcbMapTo(pResource, pParams) rglcbMapTo_DISPATCH(pResource, pParams)
+#define rglcbGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) rglcbGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
+#define rglcbGetRefCount(pResource) rglcbGetRefCount_DISPATCH(pResource)
+#define rglcbAddAdditionalDependants(pClient, pResource, pReference) rglcbAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define rglcbControl_Prologue(pResource, pCallContext, pParams) rglcbControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define rglcbGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) rglcbGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define rglcbInternalControlForward(pGpuResource, command, pParams, size) rglcbInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
+#define rglcbUnmapFrom(pResource, pParams) rglcbUnmapFrom_DISPATCH(pResource, pParams)
+#define rglcbControl_Epilogue(pResource, pCallContext, pParams) rglcbControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define rglcbControlLookup(pResource, pParams, ppEntry) rglcbControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define rglcbGetInternalObjectHandle(pGpuResource) rglcbGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define rglcbControl(pGpuResource, pCallContext, pParams) rglcbControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define rglcbUnmap(pGpuResource, pCallContext, pCpuMapping) rglcbUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define rglcbGetMemInterMapParams(pRmResource, pParams) rglcbGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define rglcbGetMemoryMappingDescriptor(pRmResource, ppMemDesc) rglcbGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define rglcbGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) rglcbGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define rglcbGetInternalObjectHandle(pGpuResource) rglcbGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define rglcbControlFilter(pResource, pCallContext, pParams) rglcbControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define rglcbAddAdditionalDependants(pClient, pResource, pReference) rglcbAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define rglcbGetRefCount(pResource) rglcbGetRefCount_DISPATCH(pResource)
-#define rglcbCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) rglcbCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define rglcbMapTo(pResource, pParams) rglcbMapTo_DISPATCH(pResource, pParams)
-#define rglcbControl_Prologue(pResource, pCallContext, pParams) rglcbControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define rglcbGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) rglcbGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define rglcbControlSerialization_Prologue(pResource, pCallContext, pParams) rglcbControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define rglcbCanCopy(pResource) rglcbCanCopy_DISPATCH(pResource)
-#define rglcbInternalControlForward(pGpuResource, command, pParams, size) rglcbInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define rglcbPreDestruct(pResource) rglcbPreDestruct_DISPATCH(pResource)
-#define rglcbUnmapFrom(pResource, pParams) rglcbUnmapFrom_DISPATCH(pResource, pParams)
 #define rglcbIsDuplicate(pResource, hMemory, pDuplicate) rglcbIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define rglcbControl_Epilogue(pResource, pCallContext, pParams) rglcbControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define rglcbControlLookup(pResource, pParams, ppEntry) rglcbControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define rglcbControlSerialization_Epilogue(pResource, pCallContext, pParams) rglcbControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define rglcbMap(pGpuResource, pCallContext, pParams, pCpuMapping) rglcbMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define rglcbAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) rglcbAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 static inline NvBool rglcbShareCallback_DISPATCH(struct RgLineCallback *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pGpuResource->__rglcbShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline NV_STATUS rglcbCheckMemInterUnmap_DISPATCH(struct RgLineCallback *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__rglcbCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+}
+
+static inline NV_STATUS rglcbMapTo_DISPATCH(struct RgLineCallback *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__rglcbMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS rglcbGetMapAddrSpace_DISPATCH(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pGpuResource->__rglcbGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 rglcbGetRefCount_DISPATCH(struct RgLineCallback *pResource) {
+    return pResource->__rglcbGetRefCount__(pResource);
+}
+
+static inline void rglcbAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RgLineCallback *pResource, RsResourceRef *pReference) {
+    pResource->__rglcbAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS rglcbControl_Prologue_DISPATCH(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__rglcbControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS rglcbGetRegBaseOffsetAndSize_DISPATCH(struct RgLineCallback *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return pGpuResource->__rglcbGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+}
+
+static inline NV_STATUS rglcbInternalControlForward_DISPATCH(struct RgLineCallback *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return pGpuResource->__rglcbInternalControlForward__(pGpuResource, command, pParams, size);
+}
+
+static inline NV_STATUS rglcbUnmapFrom_DISPATCH(struct RgLineCallback *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__rglcbUnmapFrom__(pResource, pParams);
+}
+
+static inline void rglcbControl_Epilogue_DISPATCH(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__rglcbControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS rglcbControlLookup_DISPATCH(struct RgLineCallback *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__rglcbControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NvHandle rglcbGetInternalObjectHandle_DISPATCH(struct RgLineCallback *pGpuResource) {
+    return pGpuResource->__rglcbGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NV_STATUS rglcbControl_DISPATCH(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -170,68 +222,28 @@ static inline NV_STATUS rglcbGetMemoryMappingDescriptor_DISPATCH(struct RgLineCa
     return pRmResource->__rglcbGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline NV_STATUS rglcbGetMapAddrSpace_DISPATCH(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__rglcbGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvHandle rglcbGetInternalObjectHandle_DISPATCH(struct RgLineCallback *pGpuResource) {
-    return pGpuResource->__rglcbGetInternalObjectHandle__(pGpuResource);
-}
-
 static inline NV_STATUS rglcbControlFilter_DISPATCH(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__rglcbControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void rglcbAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct RgLineCallback *pResource, RsResourceRef *pReference) {
-    pResource->__rglcbAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 rglcbGetRefCount_DISPATCH(struct RgLineCallback *pResource) {
-    return pResource->__rglcbGetRefCount__(pResource);
-}
-
-static inline NV_STATUS rglcbCheckMemInterUnmap_DISPATCH(struct RgLineCallback *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__rglcbCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
-}
-
-static inline NV_STATUS rglcbMapTo_DISPATCH(struct RgLineCallback *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__rglcbMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS rglcbControl_Prologue_DISPATCH(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__rglcbControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS rglcbGetRegBaseOffsetAndSize_DISPATCH(struct RgLineCallback *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__rglcbGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+static inline NV_STATUS rglcbControlSerialization_Prologue_DISPATCH(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__rglcbControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool rglcbCanCopy_DISPATCH(struct RgLineCallback *pResource) {
     return pResource->__rglcbCanCopy__(pResource);
 }
 
-static inline NV_STATUS rglcbInternalControlForward_DISPATCH(struct RgLineCallback *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__rglcbInternalControlForward__(pGpuResource, command, pParams, size);
-}
-
 static inline void rglcbPreDestruct_DISPATCH(struct RgLineCallback *pResource) {
     pResource->__rglcbPreDestruct__(pResource);
-}
-
-static inline NV_STATUS rglcbUnmapFrom_DISPATCH(struct RgLineCallback *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__rglcbUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS rglcbIsDuplicate_DISPATCH(struct RgLineCallback *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__rglcbIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
-static inline void rglcbControl_Epilogue_DISPATCH(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__rglcbControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS rglcbControlLookup_DISPATCH(struct RgLineCallback *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__rglcbControlLookup__(pResource, pParams, ppEntry);
+static inline void rglcbControlSerialization_Epilogue_DISPATCH(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__rglcbControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS rglcbMap_DISPATCH(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {

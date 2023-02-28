@@ -607,7 +607,6 @@ typedef void (*BindResultFunc)(void * pVoid, NvU32 gpuMask, NvU32 bState, NvU32 
 #define NVOS32_DESCRIPTOR_TYPE_OS_SGT_PTR               6
 #define NVOS32_DESCRIPTOR_TYPE_KERNEL_VIRTUAL_ADDRESS   7
 // NVOS32 function
-#define NVOS32_FUNCTION_ALLOC_DEPTH_WIDTH_HEIGHT        1
 #define NVOS32_FUNCTION_ALLOC_SIZE                      2
 #define NVOS32_FUNCTION_FREE                            3
 // #define NVOS32_FUNCTION_HEAP_PURGE                   4
@@ -684,32 +683,6 @@ typedef struct
 
   union
   {
-      // NVOS32_FUNCTION_ALLOC_DEPTH_WIDTH_HEIGHT
-      struct
-      {
-          NvU32     owner;              // [IN]  - memory owner ID
-          NvHandle  hMemory;            // [IN/OUT] - unique memory handle - IN only if MEMORY_HANDLE_PROVIDED is set (otherwise generated)
-          NvU32     type;               // [IN]  - surface type, see below TYPE* defines
-          NvU32     flags;              // [IN]  - allocation modifier flags, see below ALLOC_FLAGS* defines
-          NvU32     depth;              // [IN]  - depth of surface in bits
-          NvU32     width;              // [IN]  - width of surface in pixels
-          NvU32     height;             // [IN]  - height of surface in pixels
-          NvU32     attr;               // [IN/OUT] - surface attributes requested, and surface attributes allocated
-          NvU32     format;             // [IN/OUT] - format requested, and format allocated
-          NvU32     comprCovg;          // [IN/OUT] - compr covg requested, and allocated
-          NvU32     zcullCovg;          // [OUT] - zcull covg allocated
-          NvU32     partitionStride;    // [IN/OUT] - 0 means "RM" chooses
-          NvU64     size      NV_ALIGN_BYTES(8); // [IN/OUT]  - size of allocation - also returns the actual size allocated
-          NvU64     alignment NV_ALIGN_BYTES(8); // [IN]  - requested alignment - NVOS32_ALLOC_FLAGS_ALIGNMENT* must be on
-          NvU64     offset    NV_ALIGN_BYTES(8); // [IN/OUT]  - desired offset if NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE is on AND returned offset
-          NvU64     limit     NV_ALIGN_BYTES(8); // [OUT] - returned surface limit
-          NvP64     address NV_ALIGN_BYTES(8);// [OUT] - returned address
-          NvU64     rangeBegin NV_ALIGN_BYTES(8); // [IN]  - allocated memory will be limited to the range
-          NvU64     rangeEnd   NV_ALIGN_BYTES(8); // [IN]  - from rangeBegin to rangeEnd, inclusive.
-          NvU32     attr2;              // [IN/OUT] - surface attributes requested, and surface attributes allocated
-          NvU32     ctagOffset;         // [IN] - comptag offset for this surface (see NVOS32_ALLOC_COMPTAG_OFFSET)
-      } AllocDepthWidthHeight;
-
       // NVOS32_FUNCTION_ALLOC_SIZE
       struct
       {
@@ -1800,15 +1773,6 @@ typedef struct
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP_DISABLE                      (0x00000000)
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP_ENABLE                       (0x00000001)
 
-// Systems with a coherent NVLINK2 connection between the CPU and GPU
-// have the option of directly mapping video memory over that connection.
-// During mapping you may specify a preference.
-//
-#define NVOS33_FLAGS_BUS                                           21:20
-#define NVOS33_FLAGS_BUS_ANY                                       0
-#define NVOS33_FLAGS_BUS_NVLINK_COHERENT                           1
-#define NVOS33_FLAGS_BUS_PCIE                                      2
-
 // Internal use only
 #define NVOS33_FLAGS_OS_DESCRIPTOR                                 22:22
 #define NVOS33_FLAGS_OS_DESCRIPTOR_DISABLE                         (0x00000000)
@@ -2884,6 +2848,43 @@ typedef struct
     NvU32 notifyIndex;                  // [IN] notifier index
     NvV32 status;                       // [OUT] status of call
 } NV_GSP_TEST_SEND_EVENT_NOTIFICATION_PARAMETERS;
+
+/*
+ * NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_COH
+ * NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_DEFAULT
+ *           Location is Coherent System memory (also the default option)
+ * NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_NCOH
+ *           Location is Non-Coherent System memory
+ * NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_VID
+ *           Location is FB
+ *
+ * Currently only used by MODS for the V1 VAB interface. To be deleted.
+ */
+typedef enum
+{
+    NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_DEFAULT = 0,
+    NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_COH,
+    NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_NCOH,
+    NV_VIDMEM_ACCESS_BIT_BUFFER_ADDR_SPACE_VID
+} NV_VIDMEM_ACCESS_BIT_ALLOCATION_PARAMS_ADDR_SPACE;
+
+/**
+ * @brief Multiclient vidmem access bit allocation params
+ */
+typedef struct
+{
+    /* [OUT] Dirty/Access tracking */
+    NvBool bDirtyTracking;
+    /* [OUT] Current tracking granularity */
+    NvU32 granularity;
+    /* [OUT] 512B Access bit mask with 1s set on
+       bits that are reserved for this client */
+    NV_DECLARE_ALIGNED(NvU64 accessBitMask[64], 8);
+    /* Number of entries of vidmem access buffer. Used by VAB v1 - to be deleted */
+    NvU32 noOfEntries;
+    /* Address space of the vidmem access bit buffer. Used by VAB v1 - to be deleted */
+    NV_VIDMEM_ACCESS_BIT_ALLOCATION_PARAMS_ADDR_SPACE addrSpace;
+} NV_VIDMEM_ACCESS_BIT_ALLOCATION_PARAMS;
 
 /**
  * @brief HopperUsermodeAParams

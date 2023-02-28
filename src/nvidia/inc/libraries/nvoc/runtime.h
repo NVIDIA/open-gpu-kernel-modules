@@ -44,6 +44,8 @@ const NVOC_CLASS_INFO *__nvoc_objGetClassInfo(Dynamic *pObj);
 
 void __nvoc_objDelete(Dynamic *pDynamic);
 
+NV_STATUS __nvoc_handleObjCreateMemAlloc(NvU32 createFlags, NvU32 allocSize, void **ppLocalPtr, void **ppThis);
+
 NV_STATUS __nvoc_objCreateDynamic(
         Dynamic               **pNewObject,
         Dynamic                *pParent,

@@ -101,6 +101,50 @@ static NvBool __nvoc_thunk_GpuResource_dispcapShareCallback(struct DispCapabilit
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispCapabilities_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_dispcapCheckMemInterUnmap(struct DispCapabilities *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_dispcapMapTo(struct DispCapabilities *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_dispcapGetMapAddrSpace(struct DispCapabilities *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispCapabilities_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_dispcapGetRefCount(struct DispCapabilities *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_dispcapAddAdditionalDependants(struct RsClient *pClient, struct DispCapabilities *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_dispcapControl_Prologue(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_dispcapInternalControlForward(struct DispCapabilities *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispCapabilities_GpuResource.offset), command, pParams, size);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_dispcapUnmapFrom(struct DispCapabilities *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_dispcapControl_Epilogue(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_dispcapControlLookup(struct DispCapabilities *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_dispcapGetInternalObjectHandle(struct DispCapabilities *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispCapabilities_GpuResource.offset));
+}
+
 static NV_STATUS __nvoc_thunk_GpuResource_dispcapControl(struct DispCapabilities *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispCapabilities_GpuResource.offset), pCallContext, pParams);
 }
@@ -117,64 +161,28 @@ static NV_STATUS __nvoc_thunk_RmResource_dispcapGetMemoryMappingDescriptor(struc
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispcapGetMapAddrSpace(struct DispCapabilities *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispCapabilities_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_dispcapGetInternalObjectHandle(struct DispCapabilities *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispCapabilities_GpuResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_dispcapControlFilter(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_dispcapAddAdditionalDependants(struct RsClient *pClient, struct DispCapabilities *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_dispcapGetRefCount(struct DispCapabilities *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_dispcapCheckMemInterUnmap(struct DispCapabilities *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_dispcapMapTo(struct DispCapabilities *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_dispcapControl_Prologue(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), pCallContext, pParams);
+static NV_STATUS __nvoc_thunk_RmResource_dispcapControlSerialization_Prologue(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_dispcapCanCopy(struct DispCapabilities *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dispcapInternalControlForward(struct DispCapabilities *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispCapabilities_GpuResource.offset), command, pParams, size);
-}
-
 static void __nvoc_thunk_RsResource_dispcapPreDestruct(struct DispCapabilities *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_dispcapUnmapFrom(struct DispCapabilities *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_dispcapIsDuplicate(struct DispCapabilities *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_dispcapControl_Epilogue(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_dispcapControlLookup(struct DispCapabilities *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_dispcapControlSerialization_Epilogue(struct DispCapabilities *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispCapabilities_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_dispcapMap(struct DispCapabilities *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -229,6 +237,28 @@ static void __nvoc_init_funcTable_DispCapabilities_1(DispCapabilities *pThis) {
 
     pThis->__dispcapShareCallback__ = &__nvoc_thunk_GpuResource_dispcapShareCallback;
 
+    pThis->__dispcapCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispcapCheckMemInterUnmap;
+
+    pThis->__dispcapMapTo__ = &__nvoc_thunk_RsResource_dispcapMapTo;
+
+    pThis->__dispcapGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_dispcapGetMapAddrSpace;
+
+    pThis->__dispcapGetRefCount__ = &__nvoc_thunk_RsResource_dispcapGetRefCount;
+
+    pThis->__dispcapAddAdditionalDependants__ = &__nvoc_thunk_RsResource_dispcapAddAdditionalDependants;
+
+    pThis->__dispcapControl_Prologue__ = &__nvoc_thunk_RmResource_dispcapControl_Prologue;
+
+    pThis->__dispcapInternalControlForward__ = &__nvoc_thunk_GpuResource_dispcapInternalControlForward;
+
+    pThis->__dispcapUnmapFrom__ = &__nvoc_thunk_RsResource_dispcapUnmapFrom;
+
+    pThis->__dispcapControl_Epilogue__ = &__nvoc_thunk_RmResource_dispcapControl_Epilogue;
+
+    pThis->__dispcapControlLookup__ = &__nvoc_thunk_RsResource_dispcapControlLookup;
+
+    pThis->__dispcapGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dispcapGetInternalObjectHandle;
+
     pThis->__dispcapControl__ = &__nvoc_thunk_GpuResource_dispcapControl;
 
     pThis->__dispcapUnmap__ = &__nvoc_thunk_GpuResource_dispcapUnmap;
@@ -237,35 +267,17 @@ static void __nvoc_init_funcTable_DispCapabilities_1(DispCapabilities *pThis) {
 
     pThis->__dispcapGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_dispcapGetMemoryMappingDescriptor;
 
-    pThis->__dispcapGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_dispcapGetMapAddrSpace;
-
-    pThis->__dispcapGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dispcapGetInternalObjectHandle;
-
     pThis->__dispcapControlFilter__ = &__nvoc_thunk_RsResource_dispcapControlFilter;
 
-    pThis->__dispcapAddAdditionalDependants__ = &__nvoc_thunk_RsResource_dispcapAddAdditionalDependants;
-
-    pThis->__dispcapGetRefCount__ = &__nvoc_thunk_RsResource_dispcapGetRefCount;
-
-    pThis->__dispcapCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispcapCheckMemInterUnmap;
-
-    pThis->__dispcapMapTo__ = &__nvoc_thunk_RsResource_dispcapMapTo;
-
-    pThis->__dispcapControl_Prologue__ = &__nvoc_thunk_RmResource_dispcapControl_Prologue;
+    pThis->__dispcapControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispcapControlSerialization_Prologue;
 
     pThis->__dispcapCanCopy__ = &__nvoc_thunk_RsResource_dispcapCanCopy;
 
-    pThis->__dispcapInternalControlForward__ = &__nvoc_thunk_GpuResource_dispcapInternalControlForward;
-
     pThis->__dispcapPreDestruct__ = &__nvoc_thunk_RsResource_dispcapPreDestruct;
-
-    pThis->__dispcapUnmapFrom__ = &__nvoc_thunk_RsResource_dispcapUnmapFrom;
 
     pThis->__dispcapIsDuplicate__ = &__nvoc_thunk_RsResource_dispcapIsDuplicate;
 
-    pThis->__dispcapControl_Epilogue__ = &__nvoc_thunk_RmResource_dispcapControl_Epilogue;
-
-    pThis->__dispcapControlLookup__ = &__nvoc_thunk_RsResource_dispcapControlLookup;
+    pThis->__dispcapControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_dispcapControlSerialization_Epilogue;
 
     pThis->__dispcapMap__ = &__nvoc_thunk_GpuResource_dispcapMap;
 
@@ -293,12 +305,15 @@ NV_STATUS __nvoc_objCreate_DispCapabilities(DispCapabilities **ppThis, Dynamic *
     Object *pParentObj;
     DispCapabilities *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(DispCapabilities));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DispCapabilities), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(DispCapabilities));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispCapabilities);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -315,11 +330,17 @@ NV_STATUS __nvoc_objCreate_DispCapabilities(DispCapabilities **ppThis, Dynamic *
     if (status != NV_OK) goto __nvoc_objCreate_DispCapabilities_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_DispCapabilities_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(DispCapabilities));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

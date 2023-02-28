@@ -74,14 +74,13 @@ enum
 
     /*!
      * Read VRs
-     * Needed to be in sync with chips_a defines
      */
     RM_SOE_CORE_CMD_GET_VOLTAGE_VALUES,
 
     /*!
      * Init PLM2 protected registers
      */
-    RM_SOE_CORE_CMD_INIT_L2_STATE
+    RM_SOE_CORE_CMD_INIT_L2_STATE,
 };
 
 // Timeout for SOE reset callback function

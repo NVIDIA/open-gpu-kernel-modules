@@ -27,77 +27,19 @@
 
 #include "nvkms-types.h"
 
-void nvClearFlipEvoHwState(
-    NVFlipEvoHwState *pFlipState);
-
-void nvInitFlipEvoHwState(
-    const NVDevEvoRec *pDevEvo,
-    const NvU32 sd,
-    const NvU32 head,
-    NVFlipEvoHwState *pFlipState);
-
-NvBool nvAssignSurfaceArray(
-    const NVDevEvoRec *pDevEvo,
-    const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
-    const NvKmsSurfaceHandle surfaceHandles[NVKMS_MAX_EYES],
-    const NvBool isUsedByCursorChannel,
-    const NvBool isUsedByLayerChannel,
-    NVSurfaceEvoPtr pSurfaceEvos[NVKMS_MAX_EYES]);
-
-NvBool
-nvAssignCursorSurface(const struct NvKmsPerOpenDev *pOpenDev,
-                      const NVDevEvoRec *pDevEvo,
-                      const struct NvKmsSetCursorImageCommonParams *pImgParams,
-                      NVSurfaceEvoPtr *pSurfaceEvo);
-
-NvBool nvUpdateFlipEvoHwState(
+NvBool nvCheckFlipPermissions(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NVDevEvoRec *pDevEvo,
     const NvU32 sd,
-    const NvU32 head,
-    const struct NvKmsFlipCommonParams *pParams,
-    NVFlipEvoHwState *pFlipState,
-    NvBool allowVrr);
-
-void
-nvOverrideScalingUsageBounds(const NVDevEvoRec *pDevEvo,
-                             NvU32 head,
-                             NVFlipEvoHwState *pFlipState,
-                             const struct NvKmsUsageBounds *pPossibleUsage);
-
-NvBool nvValidateFlipEvoHwState(
-    const NVDevEvoRec *pDevEvo,
-    const NvU32 head,
-    const NVHwModeTimingsEvo *pTimings,
-    const NVFlipEvoHwState *pFlipState);
-
-void
-nvUpdateSurfacesFlipRefCount(
-    NVDevEvoPtr pDevEvo,
-    const NvU32 head,
-    NVFlipEvoHwState *pFlipState,
-    NvBool increase);
-
-void nvFlipEvoOneHead(
-    NVDevEvoPtr pDevEvo,
-    const NvU32 sd,
-    const NvU32 head,
-    const NVFlipEvoHwState *pFlipState,
-    NvBool allowFlipLock,
-    NVEvoUpdateState *updateState);
-
-void nvEvoCancelPostFlipIMPTimer(
-    NVDevEvoPtr pDevEvo);
-
-void nvFillPostSyncptReplyOneChannel(
-    NVEvoChannel *pChannel,
-    enum NvKmsSyncptType postType,
-    struct NvKmsSyncpt *postSyncpt,
-    const NVFlipSyncObjectEvoHwState *pHwSyncObject);
+    const NvU32 apiHead,
+    const struct NvKmsFlipCommonParams *pParams);
 
 NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
                  const struct NvKmsPerOpenDev *pOpenDev,
-                 const struct NvKmsFlipRequest *request,
+                 const struct NvKmsFlipRequestOneHead *pFlipHead,
+                 NvU32 numFlipHeads,
+                 NvBool commit,
+                 NvBool allowVrr,
                  struct NvKmsFlipReply *reply,
                  NvBool skipUpdate,
                  NvBool allowFlipLock);
@@ -116,5 +58,48 @@ void nvApiHeadSetViewportPointIn(const NVDispEvoRec *pDispEvo,
                                  const NvU32 apiHead,
                                  const NvU16 x,
                                  const NvU16 y);
+
+NvU32 nvApiHeadGetActiveViewportOffset(NVDispEvoRec *pDispEvo,
+                                       NvU32 apiHead);
+
+void nvApiHeadIdleMainLayerChannels(NVDevEvoRec *pDevEvo,
+    const NvU32 apiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES]);
+
+void nvApiHeadUpdateFlipLock(NVDevEvoRec *pDevEvo,
+                             const NvU32 apiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES],
+                             const NvBool enable);
+
+void nvCancelSDRTransitionTimer(NVDispApiHeadStateEvoRec *pApiHeadState);
+
+NvBool nvIdleMainLayerChannelCheckIdleOneApiHead(NVDispEvoPtr pDispEvo,
+                                                 NvU32 apiHead);
+
+#define NV_SURFACE_USAGE_MASK_CURSOR                                0:0
+#define NV_SURFACE_USAGE_MASK_CURSOR_DISABLE                          0
+#define NV_SURFACE_USAGE_MASK_CURSOR_ENABLE                           1
+#define NV_SURFACE_USAGE_MASK_LAYER(_n)       (3+(3*(_n))):(1+(3*(_n)))
+
+#define NV_SURFACE_USAGE_MASK_LAYER_SEMAPHORE          1:1
+#define NV_SURFACE_USAGE_MASK_LAYER_SEMAPHORE_DISABLE    0
+#define NV_SURFACE_USAGE_MASK_LAYER_SEMAPHORE_ENABLE     1
+#define NV_SURFACE_USAGE_MASK_LAYER_NOTIFIER           2:2
+#define NV_SURFACE_USAGE_MASK_LAYER_NOTIFIER_DISABLE     0
+#define NV_SURFACE_USAGE_MASK_LAYER_NOTIFIER_ENABLE      1
+#define NV_SURFACE_USAGE_MASK_LAYER_SCANOUT            0:0
+#define NV_SURFACE_USAGE_MASK_LAYER_SCANOUT_DISABLE      0
+#define NV_SURFACE_USAGE_MASK_LAYER_SCANOUT_ENABLE       1
+
+NvU32 nvCollectSurfaceUsageMaskOneApiHead(const NVDispEvoRec *pDispEvo,
+                                          const NvU32 apiHead,
+                                          NVSurfaceEvoPtr pSurfaceEvo);
+
+void nvIdleLayerChannels(NVDevEvoRec *pDevEvo,
+    NvU32 layerMaskPerSdApiHead[NVKMS_MAX_SUBDEVICES][NVKMS_MAX_HEADS_PER_DISP]);
+
+void nvEvoClearSurfaceUsage(NVDevEvoRec *pDevEvo,
+                            NVSurfaceEvoPtr pSurfaceEvo);
+
+NvBool nvIdleBaseChannelOneApiHead(NVDispEvoRec *pDispEvo, NvU32 apiHead,
+                                   NvBool *pStoppedBase);
 
 #endif /* __NVKMS_FLIP_H__ */

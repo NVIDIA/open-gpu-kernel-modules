@@ -119,16 +119,16 @@ static NvBool __nvoc_thunk_GpuResource_dispchnShareCallback(struct DispChannel *
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnMapTo(struct DispChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RmResource_dispchnCheckMemInterUnmap(struct DispChannel *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannel_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_dispchnGetOrAllocNotifShare(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnCheckMemInterUnmap(struct DispChannel *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannel_RmResource.offset), bSubdeviceHandleProvided);
+static NV_STATUS __nvoc_thunk_RsResource_dispchnMapTo(struct DispChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_dispchnGetMapAddrSpace(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -195,6 +195,10 @@ static NV_STATUS __nvoc_thunk_Notifier_dispchnUnregisterEvent(struct DispChannel
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannel_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_dispchnControlSerialization_Prologue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_dispchnCanCopy(struct DispChannel *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
 }
@@ -205,6 +209,10 @@ static void __nvoc_thunk_RsResource_dispchnPreDestruct(struct DispChannel *pReso
 
 static NV_STATUS __nvoc_thunk_RsResource_dispchnIsDuplicate(struct DispChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_dispchnControlSerialization_Epilogue(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchnGetNotificationListPtr(struct DispChannel *pNotifier) {
@@ -275,11 +283,11 @@ static void __nvoc_init_funcTable_DispChannel_1(DispChannel *pThis) {
 
     pThis->__dispchnShareCallback__ = &__nvoc_thunk_GpuResource_dispchnShareCallback;
 
-    pThis->__dispchnMapTo__ = &__nvoc_thunk_RsResource_dispchnMapTo;
+    pThis->__dispchnCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchnCheckMemInterUnmap;
 
     pThis->__dispchnGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_dispchnGetOrAllocNotifShare;
 
-    pThis->__dispchnCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchnCheckMemInterUnmap;
+    pThis->__dispchnMapTo__ = &__nvoc_thunk_RsResource_dispchnMapTo;
 
     pThis->__dispchnGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_dispchnGetMapAddrSpace;
 
@@ -313,11 +321,15 @@ static void __nvoc_init_funcTable_DispChannel_1(DispChannel *pThis) {
 
     pThis->__dispchnUnregisterEvent__ = &__nvoc_thunk_Notifier_dispchnUnregisterEvent;
 
+    pThis->__dispchnControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchnControlSerialization_Prologue;
+
     pThis->__dispchnCanCopy__ = &__nvoc_thunk_RsResource_dispchnCanCopy;
 
     pThis->__dispchnPreDestruct__ = &__nvoc_thunk_RsResource_dispchnPreDestruct;
 
     pThis->__dispchnIsDuplicate__ = &__nvoc_thunk_RsResource_dispchnIsDuplicate;
+
+    pThis->__dispchnControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_dispchnControlSerialization_Epilogue;
 
     pThis->__dispchnGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchnGetNotificationListPtr;
 
@@ -353,12 +365,15 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, N
     Object *pParentObj;
     DispChannel *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(DispChannel));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DispChannel), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(DispChannel));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannel);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -375,11 +390,17 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, N
     if (status != NV_OK) goto __nvoc_objCreate_DispChannel_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_DispChannel_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(DispChannel));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 
@@ -511,16 +532,16 @@ static NvBool __nvoc_thunk_GpuResource_dispchnpioShareCallback(struct DispChanne
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnpioMapTo(struct DispChannelPio *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RmResource_dispchnpioCheckMemInterUnmap(struct DispChannelPio *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_dispchnpioGetOrAllocNotifShare(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchnpioCheckMemInterUnmap(struct DispChannelPio *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), bSubdeviceHandleProvided);
+static NV_STATUS __nvoc_thunk_RsResource_dispchnpioMapTo(struct DispChannelPio *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_dispchnpioGetMapAddrSpace(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -591,6 +612,10 @@ static NV_STATUS __nvoc_thunk_Notifier_dispchnpioUnregisterEvent(struct DispChan
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelPio_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_dispchnpioControlSerialization_Prologue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_dispchnpioCanCopy(struct DispChannelPio *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
 }
@@ -601,6 +626,10 @@ static void __nvoc_thunk_RsResource_dispchnpioPreDestruct(struct DispChannelPio 
 
 static NV_STATUS __nvoc_thunk_RsResource_dispchnpioIsDuplicate(struct DispChannelPio *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_dispchnpioControlSerialization_Epilogue(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchnpioGetNotificationListPtr(struct DispChannelPio *pNotifier) {
@@ -659,11 +688,11 @@ static void __nvoc_init_funcTable_DispChannelPio_1(DispChannelPio *pThis) {
 
     pThis->__dispchnpioShareCallback__ = &__nvoc_thunk_GpuResource_dispchnpioShareCallback;
 
-    pThis->__dispchnpioMapTo__ = &__nvoc_thunk_RsResource_dispchnpioMapTo;
+    pThis->__dispchnpioCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchnpioCheckMemInterUnmap;
 
     pThis->__dispchnpioGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_dispchnpioGetOrAllocNotifShare;
 
-    pThis->__dispchnpioCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchnpioCheckMemInterUnmap;
+    pThis->__dispchnpioMapTo__ = &__nvoc_thunk_RsResource_dispchnpioMapTo;
 
     pThis->__dispchnpioGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_dispchnpioGetMapAddrSpace;
 
@@ -699,11 +728,15 @@ static void __nvoc_init_funcTable_DispChannelPio_1(DispChannelPio *pThis) {
 
     pThis->__dispchnpioUnregisterEvent__ = &__nvoc_thunk_Notifier_dispchnpioUnregisterEvent;
 
+    pThis->__dispchnpioControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchnpioControlSerialization_Prologue;
+
     pThis->__dispchnpioCanCopy__ = &__nvoc_thunk_RsResource_dispchnpioCanCopy;
 
     pThis->__dispchnpioPreDestruct__ = &__nvoc_thunk_RsResource_dispchnpioPreDestruct;
 
     pThis->__dispchnpioIsDuplicate__ = &__nvoc_thunk_RsResource_dispchnpioIsDuplicate;
+
+    pThis->__dispchnpioControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_dispchnpioControlSerialization_Epilogue;
 
     pThis->__dispchnpioGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchnpioGetNotificationListPtr;
 
@@ -738,12 +771,15 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pPar
     Object *pParentObj;
     DispChannelPio *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(DispChannelPio));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DispChannelPio), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(DispChannelPio));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannelPio);
+
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -760,11 +796,17 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pPar
     if (status != NV_OK) goto __nvoc_objCreate_DispChannelPio_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_DispChannelPio_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(DispChannelPio));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 
@@ -895,16 +937,16 @@ static NvBool __nvoc_thunk_GpuResource_dispchndmaShareCallback(struct DispChanne
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchndmaMapTo(struct DispChannelDma *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RmResource_dispchndmaCheckMemInterUnmap(struct DispChannelDma *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_dispchndmaGetOrAllocNotifShare(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_dispchndmaCheckMemInterUnmap(struct DispChannelDma *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), bSubdeviceHandleProvided);
+static NV_STATUS __nvoc_thunk_RsResource_dispchndmaMapTo(struct DispChannelDma *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_dispchndmaGetMapAddrSpace(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -975,6 +1017,10 @@ static NV_STATUS __nvoc_thunk_Notifier_dispchndmaUnregisterEvent(struct DispChan
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DispChannelDma_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_dispchndmaControlSerialization_Prologue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_dispchndmaCanCopy(struct DispChannelDma *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
 }
@@ -985,6 +1031,10 @@ static void __nvoc_thunk_RsResource_dispchndmaPreDestruct(struct DispChannelDma 
 
 static NV_STATUS __nvoc_thunk_RsResource_dispchndmaIsDuplicate(struct DispChannelDma *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_dispchndmaControlSerialization_Epilogue(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_dispchndmaGetNotificationListPtr(struct DispChannelDma *pNotifier) {
@@ -1043,11 +1093,11 @@ static void __nvoc_init_funcTable_DispChannelDma_1(DispChannelDma *pThis) {
 
     pThis->__dispchndmaShareCallback__ = &__nvoc_thunk_GpuResource_dispchndmaShareCallback;
 
-    pThis->__dispchndmaMapTo__ = &__nvoc_thunk_RsResource_dispchndmaMapTo;
+    pThis->__dispchndmaCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchndmaCheckMemInterUnmap;
 
     pThis->__dispchndmaGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_dispchndmaGetOrAllocNotifShare;
 
-    pThis->__dispchndmaCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dispchndmaCheckMemInterUnmap;
+    pThis->__dispchndmaMapTo__ = &__nvoc_thunk_RsResource_dispchndmaMapTo;
 
     pThis->__dispchndmaGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_dispchndmaGetMapAddrSpace;
 
@@ -1083,11 +1133,15 @@ static void __nvoc_init_funcTable_DispChannelDma_1(DispChannelDma *pThis) {
 
     pThis->__dispchndmaUnregisterEvent__ = &__nvoc_thunk_Notifier_dispchndmaUnregisterEvent;
 
+    pThis->__dispchndmaControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchndmaControlSerialization_Prologue;
+
     pThis->__dispchndmaCanCopy__ = &__nvoc_thunk_RsResource_dispchndmaCanCopy;
 
     pThis->__dispchndmaPreDestruct__ = &__nvoc_thunk_RsResource_dispchndmaPreDestruct;
 
     pThis->__dispchndmaIsDuplicate__ = &__nvoc_thunk_RsResource_dispchndmaIsDuplicate;
+
+    pThis->__dispchndmaControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_dispchndmaControlSerialization_Epilogue;
 
     pThis->__dispchndmaGetNotificationListPtr__ = &__nvoc_thunk_Notifier_dispchndmaGetNotificationListPtr;
 
@@ -1122,12 +1176,15 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pPar
     Object *pParentObj;
     DispChannelDma *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(DispChannelDma));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DispChannelDma), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(DispChannelDma));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannelDma);
+
+    pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -1144,11 +1201,17 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pPar
     if (status != NV_OK) goto __nvoc_objCreate_DispChannelDma_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_DispChannelDma_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(DispChannelDma));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

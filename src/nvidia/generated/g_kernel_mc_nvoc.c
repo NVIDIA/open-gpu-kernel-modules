@@ -74,10 +74,6 @@ static NV_STATUS __nvoc_thunk_KernelMc_engstateStateLoad(struct OBJGPU *pGpu, st
     return kmcStateLoad(pGpu, (struct KernelMc *)(((unsigned char *)pKernelMc) - __nvoc_rtti_KernelMc_OBJENGSTATE.offset), arg0);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcReconcileTunableState(POBJGPU pGpu, struct KernelMc *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcStateUnload(POBJGPU pGpu, struct KernelMc *pEngstate, NvU32 arg0) {
     return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), arg0);
 }
@@ -114,28 +110,8 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcStatePreInitUnlocked(POBJGPU pGpu, 
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcGetTunableState(POBJGPU pGpu, struct KernelMc *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcCompareTunableState(POBJGPU pGpu, struct KernelMc *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_kmcFreeTunableState(POBJGPU pGpu, struct KernelMc *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcStatePostLoad(POBJGPU pGpu, struct KernelMc *pEngstate, NvU32 arg0) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), arg0);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcAllocTunableState(POBJGPU pGpu, struct KernelMc *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcSetTunableState(POBJGPU pGpu, struct KernelMc *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMc_OBJENGSTATE.offset), pTunableState);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmcConstructEngine(POBJGPU pGpu, struct KernelMc *pEngstate, ENGDESCRIPTOR arg0) {
@@ -217,8 +193,6 @@ static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pR
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_KernelMc_engstateStateLoad;
 
-    pThis->__kmcReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_kmcReconcileTunableState;
-
     pThis->__kmcStateUnload__ = &__nvoc_thunk_OBJENGSTATE_kmcStateUnload;
 
     pThis->__kmcStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kmcStatePreLoad;
@@ -237,17 +211,7 @@ static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pR
 
     pThis->__kmcStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kmcStatePreInitUnlocked;
 
-    pThis->__kmcGetTunableState__ = &__nvoc_thunk_OBJENGSTATE_kmcGetTunableState;
-
-    pThis->__kmcCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_kmcCompareTunableState;
-
-    pThis->__kmcFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_kmcFreeTunableState;
-
     pThis->__kmcStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_kmcStatePostLoad;
-
-    pThis->__kmcAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_kmcAllocTunableState;
-
-    pThis->__kmcSetTunableState__ = &__nvoc_thunk_OBJENGSTATE_kmcSetTunableState;
 
     pThis->__kmcConstructEngine__ = &__nvoc_thunk_OBJENGSTATE_kmcConstructEngine;
 
@@ -273,12 +237,15 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc **ppThis, Dynamic *pParent, NvU32 c
     KernelMc *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(KernelMc));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelMc), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(KernelMc));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelMc);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -299,11 +266,17 @@ NV_STATUS __nvoc_objCreate_KernelMc(KernelMc **ppThis, Dynamic *pParent, NvU32 c
     if (status != NV_OK) goto __nvoc_objCreate_KernelMc_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_KernelMc_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(KernelMc));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

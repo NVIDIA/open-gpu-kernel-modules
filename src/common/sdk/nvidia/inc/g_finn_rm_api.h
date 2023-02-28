@@ -40,7 +40,7 @@
  * FINN compiler version
  */
 #define FINN_VERSION_MAJOR 1
-#define FINN_VERSION_MINOR 15
+#define FINN_VERSION_MINOR 17
 #define FINN_VERSION_PATCH 0
 
 typedef struct FINN_RM_API
@@ -50,6 +50,17 @@ typedef struct FINN_RM_API
     NV_DECLARE_ALIGNED(NvU64 interface, 8);
     NV_DECLARE_ALIGNED(NvU64 message, 8);
 } FINN_RM_API;
+
+
+
+
+/*!
+ * @brief Private functions not to be called directly
+ */
+/**@{*/
+NV_STATUS finnSerializeInternal_FINN_RM_API(NvU64 interface, NvU64 message, const char *api, char **dst, NvLength dst_size, NvBool seri_up);
+NV_STATUS finnDeserializeInternal_FINN_RM_API(const char **src, NvLength src_size, char *api, NvLength api_size, NvBool deser_up);
+/**@}*/
 
 
 /*!
@@ -67,7 +78,7 @@ typedef struct FINN_RM_API
  *
  * @param[in]      interface  FINN interface ID of the param struct.
  * @param[in]      message    FINN message ID of the param struct.
- * @param[in]      src        Pointer to the source param struct from which to
+ * @param[in]      api        Pointer to the source param struct from which to
  *                            copy the data.
  * @param[in, out] dst        Double pointer to the destination buffer into
  *                            which to copy the data. *dst will be set to
@@ -85,8 +96,14 @@ typedef struct FINN_RM_API
  * @retval NV_ERR_BUFFER_TOO_SMALL  Destination buffer size too small.
  */
 /**@{*/
-NV_STATUS FinnRmApiSerializeUp(NvU64 interface, NvU64 message, const void *src, NvU8 **dst, NvLength dst_size);
-NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message, const void *src, NvU8 **dst, NvLength dst_size);
+static NV_INLINE NV_STATUS FinnRmApiSerializeUp(NvU64 interface, NvU64 message, const void *api, NvU8 **dst, NvLength dst_size)
+{
+    return finnSerializeInternal_FINN_RM_API(interface, message, (const char *) api, (char **) dst, dst_size, NV_TRUE);
+}
+static NV_INLINE NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message, const void *api, NvU8 **dst, NvLength dst_size)
+{
+    return finnSerializeInternal_FINN_RM_API(interface, message, (const char *) api, (char **) dst, dst_size, NV_FALSE);
+}
 /**@}*/
 
 
@@ -113,9 +130,9 @@ NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message, const void *src
  *                            deserialization on failure.
  * @param[in]      src_size   Maximum size of the source buffer measured in
  *                            `NvU8` units.
- * @param[in, out] dst        Pointer to the destination param struct into which
+ * @param[in, out] api        Pointer to the destination param struct into which
  *                            to copy the data.
- * @param[in]      dst_size   Size of the destination param struct measured in
+ * @param[in]      api_size   Size of the destination param struct measured in
  *                            `char` units per `sizeof` operator.
  *
  * @retval NV_OK                          Deserialization successful.
@@ -129,9 +146,16 @@ NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message, const void *src
  * @retval NV_ERR_LIB_RM_VERSION_MISMATCH Version mismatch.
  */
 /**@{*/
-NV_STATUS FinnRmApiDeserializeDown(NvU8 **src, NvLength src_size, void *dst, NvLength dst_size);
-NV_STATUS FinnRmApiDeserializeUp(NvU8 **src, NvLength src_size, void *dst, NvLength dst_size);
+static NV_INLINE NV_STATUS FinnRmApiDeserializeDown(NvU8 **src, NvLength src_size, void *api, NvLength api_size)
+{
+    return finnDeserializeInternal_FINN_RM_API((const char **) src, src_size / sizeof(NvU8), (char *) api, api_size, NV_FALSE);
+}
+static NV_INLINE NV_STATUS FinnRmApiDeserializeUp(NvU8 **src, NvLength src_size, void *api, NvLength api_size)
+{
+    return finnDeserializeInternal_FINN_RM_API((const char **) src, src_size / sizeof(NvU8), (char *) api, api_size, NV_TRUE);
+}
 /**@}*/
+
 
 /*!
  * @brief Calculates the serialized size of an RM API param struct.
@@ -145,6 +169,7 @@ NV_STATUS FinnRmApiDeserializeUp(NvU8 **src, NvLength src_size, void *dst, NvLen
  */
 NvU64 FinnRmApiGetSerializedSize(NvU64 interface, NvU64 message, const NvP64 src);
 
+
 /*!
  * @brief Fetches the unserialized size of an API param struct.
  *
@@ -157,6 +182,7 @@ NvU64 FinnRmApiGetSerializedSize(NvU64 interface, NvU64 message, const NvP64 src
  * @retval          0 if the API is unsupported by serialization.
  */
 NvU64 FinnRmApiGetUnserializedSize(NvU64 interface, NvU64 message);
+
 
 #define NV_RM_ALLOC_INTERFACE_INTERFACE_ID (0xA000U)
 typedef FINN_RM_API NV_RM_ALLOC_INTERFACE;
@@ -217,6 +243,8 @@ typedef FINN_RM_API FINN_NV01_ROOT_USER_RESERVED;
 typedef FINN_RM_API FINN_NV01_ROOT_USER_MEMORY;
 #define FINN_NV04_DISPLAY_COMMON_RESERVED_INTERFACE_ID (0x7300U)
 typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_RESERVED;
+#define FINN_NV04_DISPLAY_COMMON_COMMON_INTERFACE_ID (0x7305U)
+typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_COMMON;
 #define FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID (0x7311U)
 typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_DFP;
 #define FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID (0x7313U)
@@ -224,7 +252,8 @@ typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_DP;
 
 #define FINN_NV04_DISPLAY_COMMON_INTERNAL_INTERFACE_ID (0x7304U)
 typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_INTERNAL;
-
+#define FINN_NV04_DISPLAY_COMMON_PSR_INTERFACE_ID (0x7316U)
+typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_PSR;
 #define FINN_NV04_DISPLAY_COMMON_SPECIFIC_INTERFACE_ID (0x7302U)
 typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_SPECIFIC;
 #define FINN_NV04_DISPLAY_COMMON_STEREO_INTERFACE_ID (0x7317U)
@@ -363,6 +392,8 @@ typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_LPWR;
 
 #define FINN_NV20_SUBDEVICE_0_MC_INTERFACE_ID (0x208017U)
 typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_MC;
+#define FINN_NV20_SUBDEVICE_0_NNE_INTERFACE_ID (0x208037U)
+typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_NNE;
 
 #define FINN_NV20_SUBDEVICE_0_NVD_INTERFACE_ID (0x208024U)
 typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_NVD;

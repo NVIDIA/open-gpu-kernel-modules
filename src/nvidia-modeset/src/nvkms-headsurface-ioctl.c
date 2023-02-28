@@ -22,11 +22,14 @@
  */
 
 #include "nvkms-types.h"
+#include "nvkms-private.h"
 #include "nvkms-headsurface.h"
 #include "nvkms-headsurface-ioctl.h"
 #include "nvkms-headsurface-priv.h"
+#include "nvkms-ioctl.h"
 #include "nvkms-cursor.h"
 #include "nvkms-utils.h"
+#include "nvkms-utils-flip.h"
 #include "nvkms-flip.h"
 
 /*
@@ -51,50 +54,20 @@
  * - Apply the request to the headSurface-ful heads.
  */
 
-/*!
- * Assign headSurface bitmasks.
- *
- * Given requestedHeadsBitMask and a disp, assign a head bitmasks of the
- * headSurface-ful heads and headSurface-less heads.
- *
- * Fail if requestedHeadsBitMask contains invalid heads.
- */
-static NvBool HsIoctlGetBitMasks(
-    const NVDispEvoRec *pDispEvo,
-    const NvU32 requestedHeadsBitMask,
-    NvU32 *pHsMask,
-    NvU32 *pNonHsMask)
-{
-    NvU32 hsMask = 0;
-    NvU32 nonHsMask = 0;
-    NvU32 head;
+typedef struct _NVHsRequestedFlipState {
+    struct NvKmsPoint viewPortPointIn;
+    NVFlipCursorEvoHwState cursor;
+    NVHsLayerRequestedFlipState layer[NVKMS_MAX_LAYERS_PER_HEAD];
 
-    if (nvHasBitAboveMax(requestedHeadsBitMask, pDispEvo->pDevEvo->numHeads)) {
-        return FALSE;
-    }
+    struct {
+        NvBool viewPortPointIn   : 1;
+        NvBool cursorSurface     : 1;
+        NvBool cursorPosition    : 1;
 
-    FOR_EACH_INDEX_IN_MASK(32, head, requestedHeadsBitMask) {
-        const NvU32 apiHead = nvHardwareHeadToApiHead(head);
-        if (pDispEvo->pHsChannel[apiHead] == NULL) {
-            nonHsMask |= NVBIT(head);
-        } else {
-            hsMask |= NVBIT(head);
-        }
+        NvBool layer[NVKMS_MAX_LAYERS_PER_HEAD];
+    } dirty;
 
-    } FOR_EACH_INDEX_IN_MASK_END;
-
-    /*
-     * Each bit from the original mask should be in exactly one of hsMask or
-     * nonHsMask.
-     */
-    nvAssert((hsMask | nonHsMask) == requestedHeadsBitMask);
-    nvAssert((hsMask & nonHsMask) == 0);
-
-    *pHsMask = hsMask;
-    *pNonHsMask = nonHsMask;
-
-    return TRUE;
-}
+} NVHsRequestedFlipState;
 
 /*!
  * Validate the NvKmsMoveCursorCommonParams for headSurface.
@@ -132,10 +105,9 @@ static void HsIoctlMoveCursor(
  */
 NvBool nvHsIoctlMoveCursor(
     NVDispEvoPtr pDispEvo,
-    NvU32 head,
+    NvU32 apiHead,
     const struct NvKmsMoveCursorCommonParams *pParams)
 {
-    const NvU32 apiHead = nvHardwareHeadToApiHead(head);
     NVHsChannelEvoRec *pHsChannel;
 
     if (apiHead > ARRAY_LEN(pDispEvo->pHsChannel)) {
@@ -147,7 +119,7 @@ NvBool nvHsIoctlMoveCursor(
     /* If headSurface is not used on this head, call down. */
 
     if (pHsChannel == NULL) {
-        nvEvoMoveCursor(pDispEvo, head, pParams);
+        nvMoveCursor(pDispEvo, apiHead, pParams);
         return TRUE;
     }
 
@@ -226,10 +198,9 @@ NvBool nvHsIoctlSetCursorImage(
     NVDispEvoPtr pDispEvo,
     const struct NvKmsPerOpenDev *pOpenDevice,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
-    NvU32 head,
+    NvU32 apiHead,
     const struct NvKmsSetCursorImageCommonParams *pParams)
 {
-    const NvU32 apiHead = nvHardwareHeadToApiHead(head);
     NVHsChannelEvoRec *pHsChannel;
     NVSurfaceEvoRec *pSurfaceEvo = NULL;
 
@@ -245,7 +216,7 @@ NvBool nvHsIoctlSetCursorImage(
         return nvSetCursorImage(pDispEvo,
                                 pOpenDevice,
                                 pOpenDevSurfaceHandles,
-                                head,
+                                apiHead,
                                 pParams);
     }
 
@@ -278,36 +249,34 @@ static void HsIoctlPan(
 }
 
 /*!
- * Create a copy of NvKmsFlipRequest with the headSurface-ful heads removed.
+ * Create a copy of pFlipHead[] array with the headSurface-ful heads removed.
  */
-static struct NvKmsFlipRequest *HsIoctlRemoveHsHeadsFromNvKmsFlipRequest(
+static struct NvKmsFlipRequestOneHead *HsIoctlRemoveHsHeadsFromNvKmsFlipHead(
     NVDevEvoPtr pDevEvo,
-    const struct NvKmsFlipRequest *pRequestOriginal,
-    const NvU32 hsMask[NVKMS_MAX_SUBDEVICES])
+    const struct NvKmsFlipRequestOneHead *pFlipHeadOriginal,
+    const NvU32 numFlipHeadsOriginal,
+    const NvU32 numFlipHeads,
+    const NvU8 hsMask[NVKMS_MAX_SUBDEVICES])
 {
-    NVDispEvoPtr pDispEvo;
-    NvU32 head, sd;
+    struct NvKmsFlipRequestOneHead *pFlipHead = NULL;
+    NvU32 i, j;
 
-    struct NvKmsFlipRequest *pRequest = nvAlloc(sizeof(*pRequest));
-
-    if (pRequest == NULL) {
-        return FALSE;
+    pFlipHead = nvAlloc(sizeof(*pFlipHead) * numFlipHeads);
+    if (pFlipHead == NULL) {
+        return NULL;
     }
 
-    *pRequest = *pRequestOriginal;
-
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        FOR_EACH_INDEX_IN_MASK(32, head, hsMask[sd]) {
-
-            nvkms_memset(&pRequest->sd[sd].head[head], 0,
-                         sizeof(pRequest->sd[sd].head[head]));
-
-            pRequest->sd[sd].requestedHeadsBitMask &= ~NVBIT(head);
-
-        } FOR_EACH_INDEX_IN_MASK_END;
+    j = 0;
+    for (i = 0; i < numFlipHeadsOriginal; i++) {
+        const NvU32 apiHead = pFlipHeadOriginal[i].head;
+        const NvU32 sd = pFlipHeadOriginal[i].sd;
+        if ((hsMask[sd] & NVBIT(apiHead)) == 0) {
+            pFlipHead[j++] = pFlipHeadOriginal[i];
+        }
     }
+    nvAssert(j == numFlipHeads);
 
-    return pRequest;
+    return pFlipHead;
 }
 
 static void HsIoctlAssignSurfacesMaxEyes(
@@ -322,7 +291,7 @@ static void HsIoctlAssignSurfacesMaxEyes(
 }
 
 static NvBool HsIoctlFlipValidateOneHwState(
-    const NVFlipChannelEvoHwState *pHwState,
+    const NVHsLayerRequestedFlipState *pHwState,
     const NvU32 sd)
 {
     /* The semaphore surface must have a CPU mapping. */
@@ -341,73 +310,151 @@ static NvBool HsIoctlFlipValidateOneHwState(
         }
     }
 
-    /* HeadSurface does not support timeStamp flips, yet. */
-
-    if (pHwState->timeStamp != 0) {
-        return FALSE;
-    }
-
     return TRUE;
 }
 
 /*!
- * Assign NVFlipEvoHwState.
+ * Assign NVHsRequestedFlipState.
  *
- * Return TRUE if the NVFlipEvoHwState could be assigned and is valid for use by
+ * Return TRUE if the NVHsRequestedFlipState could be assigned and is valid for use by
  * headSurface.
  */
 static NvBool HsIoctlFlipAssignHwStateOneHead(
     NVHsChannelEvoRec *pHsChannel,
     NVDevEvoPtr pDevEvo,
     const NvU32 sd,
-    const NvU32 head,
+    const NvU32 apiHead,
     const struct NvKmsPerOpenDev *pOpenDev,
-    const struct NvKmsFlipCommonParams *pRequestOneHead,
-    NVFlipEvoHwState *pFlipState)
+    const struct NvKmsFlipCommonParams *pParams,
+    NVHsRequestedFlipState *pFlipState)
 {
+    const NVEvoApiHandlesRec *pOpenDevSurfaceHandles =
+        nvGetSurfaceHandlesFromOpenDevConst(pOpenDev);
     NvU32 layer;
-    const struct NvKmsUsageBounds *pPossibleUsage =
-        &pDevEvo->gpus[sd].pDispEvo->headState[head].timings.viewPort.possibleUsage;
 
     nvAssert(pHsChannel != NULL);
 
     /* Init pFlipState using current pHsChannel state. */
 
-    nvClearFlipEvoHwState(pFlipState);
+    nvkms_memset(pFlipState, 0, sizeof(*pFlipState));
 
     pFlipState->cursor = pHsChannel->config.cursor;
 
     pFlipState->viewPortPointIn.x = pHsChannel->config.viewPortIn.x;
     pFlipState->viewPortPointIn.y = pHsChannel->config.viewPortIn.y;
 
-    for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+    for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
         pFlipState->layer[layer] = *HsGetLastFlipQueueEntry(pHsChannel, layer);
     }
 
-    /* Apply pRequestOneHead to pFlipState. */
-
-    if (!nvUpdateFlipEvoHwState(pOpenDev, pDevEvo, sd, head, pRequestOneHead,
-                                pFlipState, FALSE /* allowVrr */)) {
+    /* Apply pParams to pFlipState. */
+    if (!nvCheckFlipPermissions(pOpenDev, pDevEvo, sd, apiHead, pParams)) {
         return FALSE;
     }
 
-    nvOverrideScalingUsageBounds(pDevEvo, head, pFlipState, pPossibleUsage);
+    if (pParams->viewPortIn.specified) {
+        pFlipState->dirty.viewPortPointIn = TRUE;
+        pFlipState->viewPortPointIn = pParams->viewPortIn.point;
+    }
 
-    /* Validate that the requested changes can be performed by headSurface. */
-    for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-        if (!pFlipState->dirty.layer[layer]) {
-            continue;
+    if (pParams->cursor.imageSpecified) {
+        if (!nvAssignCursorSurface(pOpenDev, pDevEvo, &pParams->cursor.image,
+                                   &pFlipState->cursor.pSurfaceEvo)) {
+            return FALSE;
         }
 
-        /*
-         * HeadSurface only supports client notifiers when running in
-         * swapgroup mode where each flip IOCTL will result in a real
-         * flip in HW.
-         */
-        if (((pFlipState->layer[layer].completionNotifier.surface.pSurfaceEvo != NULL) ||
-             pFlipState->layer[layer].completionNotifier.awaken) &&
-            !pHsChannel->config.neededForSwapGroup) {
+        if (pFlipState->cursor.pSurfaceEvo != NULL) {
+            pFlipState->cursor.cursorCompParams =
+                pParams->cursor.image.cursorCompParams;
+        }
+
+        pFlipState->dirty.cursorSurface = TRUE;
+    }
+
+    if (pParams->cursor.positionSpecified) {
+        pFlipState->cursor.x = pParams->cursor.position.x;
+        pFlipState->cursor.y = pParams->cursor.position.y;
+
+        pFlipState->dirty.cursorPosition = TRUE;
+    }
+
+    for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
+        if (pParams->layer[layer].surface.specified) {
+            NvBool ret =
+                nvAssignSurfaceArray(pDevEvo,
+                                     pOpenDevSurfaceHandles,
+                                     pParams->layer[layer].surface.handle,
+                                     FALSE /* isUsedByCursorChannel */,
+                                     TRUE /* isUsedByLayerChannel */,
+                                     pFlipState->layer[layer].pSurfaceEvo);
+            if (!ret) {
+                return FALSE;
+            }
+
+            pFlipState->dirty.layer[layer] = TRUE;
+        }
+
+        if (pParams->layer[layer].syncObjects.specified) {
+            NvBool ret;
+
+            if (pParams->layer[layer].syncObjects.val.useSyncpt) {
+                return FALSE;
+            }
+
+            nvkms_memset(&pFlipState->layer[layer].syncObject,
+                         0,
+                         sizeof(pFlipState->layer[layer].syncObject));
+
+            ret = nvAssignSemaphoreEvoHwState(pDevEvo,
+                                              pOpenDevSurfaceHandles,
+                                              layer,
+                                              sd,
+                                              &pParams->layer[layer].syncObjects.val,
+                                              &pFlipState->layer[layer].syncObject);
+            if (!ret) {
+                return FALSE;
+            }
+
+            pFlipState->dirty.layer[layer] = TRUE;
+        }
+
+        if (pParams->layer[layer].completionNotifier.specified &&
+            (pParams->layer[layer].completionNotifier.val.surface.surfaceHandle != 0)) {
+
+            /*
+             * HeadSurface only supports client notifiers when running in
+             * swapgroup mode where each flip IOCTL will result in a real
+             * flip in HW.
+             */
+            if (!pHsChannel->config.neededForSwapGroup) {
+                return FALSE;
+            }
+
+            NvBool ret = nvAssignCompletionNotifierEvoHwState(
+                      pDevEvo,
+                      pOpenDevSurfaceHandles,
+                      &pParams->layer[layer].completionNotifier.val,
+                      layer,
+                      &pFlipState->layer[layer].completionNotifier);
+            if (!ret) {
+                return FALSE;
+            }
+
+            pFlipState->dirty.layer[layer] = TRUE;
+        }
+
+        /* HeadSurface does not support timeStamp flips, yet. */
+        if (pParams->layer[layer].timeStamp != 0) {
             return FALSE;
+        }
+    }
+
+    /* XXX Reject all unhandled flip parameters */
+
+    /* Validate that the requested changes can be performed by headSurface. */
+    for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
+        if (!pFlipState->dirty.layer[layer]) {
+            continue;
         }
 
         if (!HsIoctlFlipValidateOneHwState(&pFlipState->layer[layer], sd)) {
@@ -427,54 +474,60 @@ static NvBool HsIoctlFlipAssignHwStateOneHead(
 NvBool nvHsIoctlFlip(
     NVDevEvoPtr pDevEvo,
     const struct NvKmsPerOpenDev *pOpenDev,
-    const struct NvKmsFlipRequest *pRequest,
+    const struct NvKmsFlipRequestOneHead *pFlipHead,
+    NvU32 numFlipHeads,
+    NvBool commit,
+    NvBool allowVrr,
     struct NvKmsFlipReply *pReply)
 {
-    NvU32 head, sd;
-    NVDispEvoPtr pDispEvo;
-    NvU32 nHsHeads = 0;
-    NvU32 nNonHsHeads = 0;
+    NvU32 i;
+    ct_assert(NVKMS_MAX_HEADS_PER_DISP <= 8);
+    NvU8 hsMask[NVKMS_MAX_SUBDEVICES] = { };
+    NvU8 nonHsMask[NVKMS_MAX_SUBDEVICES] = { };
+    NvU32 nHsApiHeads = 0;
+    NvU32 nNonHsApiHeads = 0;
     NvBool ret = FALSE;
 
     struct {
-        NvU32 hsMask[NVKMS_MAX_SUBDEVICES];
-        NvU32 nonHsMask[NVKMS_MAX_SUBDEVICES];
 
-        NVFlipEvoHwState flipState
+        NVHsRequestedFlipState flipState
             [NVKMS_MAX_SUBDEVICES][NVKMS_MAX_HEADS_PER_DISP];
 
-    } *pWorkArea = nvCalloc(1, sizeof(*pWorkArea));
-
-    if (pWorkArea == NULL) {
-        goto done;
-    }
+    } *pWorkArea = NULL;
 
     /* Take inventory of which heads are touched by the request. */
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+    for (i = 0; i < numFlipHeads; i++) {
+        const NvU32 apiHead = pFlipHead[i].head;
+        const NvU32 sd = pFlipHead[i].sd;
+        NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
 
-        if (!HsIoctlGetBitMasks(pDispEvo,
-                                pRequest->sd[sd].requestedHeadsBitMask,
-                                &pWorkArea->hsMask[sd],
-                                &pWorkArea->nonHsMask[sd])) {
-            goto done;
+        if (pDispEvo->pHsChannel[apiHead] == NULL) {
+            nonHsMask[sd] |= NVBIT(apiHead);
+            nNonHsApiHeads++;
+        } else {
+            hsMask[sd] |= NVBIT(apiHead);
+            nHsApiHeads++;
         }
-
-        nHsHeads += nvPopCount32(pWorkArea->hsMask[sd]);
-        nNonHsHeads += nvPopCount32(pWorkArea->nonHsMask[sd]);
     }
+    nvAssert(numFlipHeads == nNonHsApiHeads + nHsApiHeads);
 
     /*
      * Handle the common case: if there are no headSurface-ful heads touched by
      * the request, call down and return.
      */
-    if (nHsHeads == 0) {
+    if (nHsApiHeads == 0) {
         ret = nvFlipEvo(pDevEvo,
                         pOpenDev,
-                        pRequest,
+                        pFlipHead, numFlipHeads, commit, allowVrr,
                         pReply,
                         FALSE /* skipUpdate */,
                         TRUE /* allowFlipLock */);
+        goto done;
+    }
+
+    pWorkArea = nvCalloc(1, sizeof(*pWorkArea));
+    if (pWorkArea == NULL) {
         goto done;
     }
 
@@ -482,21 +535,25 @@ NvBool nvHsIoctlFlip(
      * Assign and validate flipState for any headSurface heads in the
      * request.
      */
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        FOR_EACH_INDEX_IN_MASK(32, head, pWorkArea->hsMask[sd]) {
-            const NvU32 apiHead = nvHardwareHeadToApiHead(head);
-            if (!HsIoctlFlipAssignHwStateOneHead(
-                    pDispEvo->pHsChannel[apiHead],
-                    pDevEvo,
-                    sd,
-                    head,
-                    pOpenDev,
-                    &pRequest->sd[sd].head[head],
-                    &pWorkArea->flipState[sd][head])) {
-                goto done;
-            }
+    for (i = 0; i < numFlipHeads; i++) {
+        const NvU32 apiHead = pFlipHead[i].head;
+        const NvU32 sd = pFlipHead[i].sd;
+        NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
 
-        } FOR_EACH_INDEX_IN_MASK_END;
+        if ((hsMask[sd] & NVBIT(apiHead)) == 0) {
+            continue;
+        }
+
+        if (!HsIoctlFlipAssignHwStateOneHead(
+                pDispEvo->pHsChannel[apiHead],
+                pDevEvo,
+                sd,
+                apiHead,
+                pOpenDev,
+                &pFlipHead[i].flip,
+                &pWorkArea->flipState[sd][apiHead])) {
+            goto done;
+        }
     }
 
     /*
@@ -505,25 +562,59 @@ NvBool nvHsIoctlFlip(
      * headSurface-ful heads removed and call down.
      */
 
-    if (nNonHsHeads != 0) {
+    if (nNonHsApiHeads != 0) {
 
         NvBool tmp;
-        struct NvKmsFlipRequest *pRequestLocal =
-            HsIoctlRemoveHsHeadsFromNvKmsFlipRequest(
-                pDevEvo, pRequest, pWorkArea->hsMask);
+        struct NvKmsFlipRequestOneHead *pFlipHeadLocal =
+            HsIoctlRemoveHsHeadsFromNvKmsFlipHead(
+                pDevEvo, pFlipHead, numFlipHeads, nNonHsApiHeads, hsMask);
 
-        if (pRequestLocal == NULL) {
+        if (pFlipHeadLocal == NULL) {
             goto done;
         }
 
         tmp = nvFlipEvo(pDevEvo,
                         pOpenDev,
-                        pRequestLocal,
+                        pFlipHeadLocal, nNonHsApiHeads, commit, allowVrr,
                         pReply,
                         FALSE /* skipUpdate */,
                         TRUE /* allowFlipLock */);
 
-        nvFree(pRequestLocal);
+        // nvFlipEvo filled in pReply for the heads in pFlipHeadLocal.
+        // Move those replies to the right location for pFlipHead.
+        //
+        // Due to how HsIoctlRemoveHsHeadsFromNvKmsFlipHead() created
+        // pFlipHeadLocal, the entries will be in the same order as the
+        // original pFlipHead request, but some of the entries have been
+        // removed so the original array is longer.
+        //
+        // Iterate backwards through the local array (headLocal), which points
+        // to where the reply data was filled in by nvFlipEvo().
+        // Keep an index into the original array (headOriginal) which points to
+        // the entry where the reply *should* be.  This should always be >=
+        // headLocal.
+        // If the expected location for the reply is not the same as the local
+        // index, copy the reply to the right location and clear the local data
+        // (which was in the wrong place).
+        {
+            NvS32 headOriginal = numFlipHeads - 1;
+            NvS32 headLocal;
+            for (headLocal = nNonHsApiHeads - 1; headLocal >= 0; headLocal--) {
+                while (pFlipHead[headOriginal].sd != pFlipHeadLocal[headLocal].sd ||
+                       pFlipHead[headOriginal].head != pFlipHeadLocal[headLocal].head) {
+                    headOriginal--;
+                    nvAssert(headOriginal >= 0);
+                }
+                if (headOriginal != headLocal) {
+                    nvAssert(headOriginal > headLocal);
+                    pReply->flipHead[headOriginal] = pReply->flipHead[headLocal];
+                    nvkms_memset(&pReply->flipHead[headLocal], 0,
+                                 sizeof(pReply->flipHead[headLocal]));
+                }
+            }
+        }
+
+        nvFree(pFlipHeadLocal);
 
         if (!tmp) {
             goto done;
@@ -537,85 +628,95 @@ NvBool nvHsIoctlFlip(
 
     /* If this is a validation-only request, we are done. */
 
-    if (!pRequest->commit) {
+    if (!commit) {
         goto done;
     }
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        FOR_EACH_INDEX_IN_MASK(32, head, pWorkArea->hsMask[sd]) {
-            const NvU32 apiHead = nvHardwareHeadToApiHead(head);
-            NVHsChannelEvoRec *pHsChannel = pDispEvo->pHsChannel[apiHead];
-            const struct NvKmsFlipCommonParams *pParams =
-                &pRequest->sd[sd].head[head];
-            NVFlipEvoHwState *pFlipState =
-                &pWorkArea->flipState[sd][head];
+    for (i = 0; i < numFlipHeads; i++) {
+        const NvU32 apiHead = pFlipHead[i].head;
+        const NvU32 sd = pFlipHead[i].sd;
+        NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
 
-            if (!nvHeadIsActive(pDispEvo, head)) {
-                continue;
-            }
+        if ((hsMask[sd] & NVBIT(apiHead)) == 0) {
+            continue;
+        }
 
-            if (pParams->layer[NVKMS_MAIN_LAYER].skipPendingFlips &&
-                pFlipState->dirty.layer[NVKMS_MAIN_LAYER]) {
-                nvHsIdleFlipQueue(pHsChannel, TRUE /* force */);
-            }
-        } FOR_EACH_INDEX_IN_MASK_END;
+        NVHsChannelEvoRec *pHsChannel = pDispEvo->pHsChannel[apiHead];
+        const struct NvKmsFlipCommonParams *pParams =
+            &pFlipHead[i].flip;
+        NVHsRequestedFlipState *pFlipState =
+            &pWorkArea->flipState[sd][apiHead];
+
+        if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+            continue;
+        }
+
+        if (pParams->layer[NVKMS_MAIN_LAYER].skipPendingFlips &&
+            pFlipState->dirty.layer[NVKMS_MAIN_LAYER]) {
+            nvHsIdleFlipQueue(pHsChannel, TRUE /* force */);
+        }
     }
 
     /* Finally, update the headSurface-ful heads in the request. */
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        FOR_EACH_INDEX_IN_MASK(32, head, pWorkArea->hsMask[sd]) {
-            const NvU32 apiHead = nvHardwareHeadToApiHead(head);
-            const NVFlipEvoHwState *pFlipState =
-                &pWorkArea->flipState[sd][head];
+    for (i = 0; i < numFlipHeads; i++) {
+        const NvU32 apiHead = pFlipHead[i].head;
+        const NvU32 sd = pFlipHead[i].sd;
+        NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
 
-            NVHsChannelEvoRec *pHsChannel = pDispEvo->pHsChannel[apiHead];
-            NvU32 layer;
+        if ((hsMask[sd] & NVBIT(apiHead)) == 0) {
+            continue;
+        }
 
-            nvAssert(pHsChannel != NULL);
+        const NVHsRequestedFlipState *pFlipState =
+            &pWorkArea->flipState[sd][apiHead];
 
-            if (pFlipState->dirty.cursorPosition) {
-                HsIoctlMoveCursor(
-                    pHsChannel,
-                    pFlipState->cursor.x,
-                    pFlipState->cursor.y);
+        NVHsChannelEvoRec *pHsChannel = pDispEvo->pHsChannel[apiHead];
+        NvU32 layer;
+
+        nvAssert(pHsChannel != NULL);
+
+        if (pFlipState->dirty.cursorPosition) {
+            HsIoctlMoveCursor(
+                pHsChannel,
+                pFlipState->cursor.x,
+                pFlipState->cursor.y);
+        }
+
+        if (pFlipState->dirty.cursorSurface) {
+            HsIoctlSetCursorImage(
+                pHsChannel,
+                pFlipState->cursor.pSurfaceEvo);
+        }
+
+        if (pFlipState->dirty.viewPortPointIn) {
+            HsIoctlPan(pHsChannel, &pFlipState->viewPortPointIn);
+        }
+
+        /*
+         * XXX NVKMS HEADSURFACE TODO: Layers that are specified as part
+         * of the same NVKMS_IOCTL_FLIP request should be flipped
+         * atomically.  But, layers that are specified separately should
+         * be allowed to flip separately.  Update the headSurface flip
+         * queue handling to coordinate multi-layer atomic flips.
+         */
+        for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
+            if (!pFlipState->dirty.layer[layer]) {
+                continue;
             }
 
-            if (pFlipState->dirty.cursorSurface) {
-                HsIoctlSetCursorImage(
-                    pHsChannel,
-                    pFlipState->cursor.pSurfaceEvo);
+            if (layer == NVKMS_MAIN_LAYER) {
+                HsIoctlAssignSurfacesMaxEyes(
+                    pHsChannel->flipQueueMainLayerState.pSurfaceEvo,
+                    pFlipState->layer[layer].pSurfaceEvo);
             }
 
-            if (pFlipState->dirty.viewPortPointIn) {
-                HsIoctlPan(pHsChannel, &pFlipState->viewPortPointIn);
+            nvHsPushFlipQueueEntry(pHsChannel, layer, &pFlipState->layer[layer]);
+
+            if (pHsChannel->config.neededForSwapGroup) {
+                pHsChannel->swapGroupFlipping = NV_TRUE;
             }
-
-            /*
-             * XXX NVKMS HEADSURFACE TODO: Layers that are specified as part
-             * of the same NVKMS_IOCTL_FLIP request should be flipped
-             * atomically.  But, layers that are specified separately should
-             * be allowed to flip separately.  Update the headSurface flip
-             * queue handling to coordinate multi-layer atomic flips.
-             */
-            for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-                if (!pFlipState->dirty.layer[layer]) {
-                    continue;
-                }
-
-                if (layer == NVKMS_MAIN_LAYER) {
-                    HsIoctlAssignSurfacesMaxEyes(
-                        pHsChannel->flipQueueMainLayerState.pSurfaceEvo,
-                        pFlipState->layer[layer].pSurfaceEvo);
-                }
-
-                nvHsPushFlipQueueEntry(pHsChannel, layer, &pFlipState->layer[layer]);
-
-                if (pHsChannel->config.neededForSwapGroup) {
-                    pHsChannel->swapGroupFlipping = NV_TRUE;
-                }
-            }
-        } FOR_EACH_INDEX_IN_MASK_END;
+        }
     }
 
 done:

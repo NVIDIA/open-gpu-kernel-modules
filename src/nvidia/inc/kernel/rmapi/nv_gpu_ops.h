@@ -76,26 +76,26 @@ NV_STATUS nvGpuOpsMemoryAllocSys (gpuAddressSpaceHandle vaSpace,
 
 NV_STATUS nvGpuOpsPmaAllocPages(void *pPma,
                                 NvLength pageCount,
-                                NvU32 pageSize,
+                                NvU64 pageSize,
                                 gpuPmaAllocationOptions *pPmaAllocOptions,
                                 NvU64 *pPages);
 
 void nvGpuOpsPmaFreePages(void *pPma,
                           NvU64 *pPages,
                           NvLength pageCount,
-                          NvU32 pageSize,
+                          NvU64 pageSize,
                           NvU32 flags);
 
 NV_STATUS nvGpuOpsPmaPinPages(void *pPma,
                               NvU64 *pPages,
                               NvLength pageCount,
-                              NvU32 pageSize,
+                              NvU64 pageSize,
                               NvU32 flags);
 
 NV_STATUS nvGpuOpsPmaUnpinPages(void *pPma,
                                 NvU64 *pPages,
                                 NvLength pageCount,
-                                NvU32 pageSize);
+                                NvU64 pageSize);
 
 NV_STATUS nvGpuOpsChannelAllocate(gpuAddressSpaceHandle vaSpace,
                                   const gpuChannelAllocParams *params,
@@ -112,7 +112,7 @@ void nvGpuOpsMemoryFree(gpuAddressSpaceHandle vaSpace,
 
 NV_STATUS  nvGpuOpsMemoryCpuMap(gpuAddressSpaceHandle vaSpace,
                                 NvU64 memory, NvLength length,
-                                void **cpuPtr, NvU32 pageSize);
+                                void **cpuPtr, NvU64 pageSize);
 
 void nvGpuOpsMemoryCpuUnMap(gpuAddressSpaceHandle vaSpace,
      void* cpuPtr);
@@ -269,5 +269,7 @@ void nvGpuOpsPagingChannelsUnmap(struct gpuAddressSpace *srcVaSpace,
 NV_STATUS nvGpuOpsPagingChannelPushStream(UvmGpuPagingChannel *channel,
                                           char *methodStream,
                                           NvU32 methodStreamSize);
+
+NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(struct gpuDevice *device);
 
 #endif /* _NV_GPU_OPS_H_*/

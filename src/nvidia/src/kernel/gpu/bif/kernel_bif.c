@@ -704,7 +704,6 @@ _kbifInitRegistryOverrides
         NV_PRINTF(LEVEL_INFO, "allow peermapping reg key = %d\n", data32);
         pKernelBif->peerMappingOverride = !!data32;
     }
-
 }
 
 /*!
@@ -780,7 +779,7 @@ kbifGetGpuLinkControlStatus
 static NvBool
 _doesBoardHaveMultipleGpusAndSwitch(OBJGPU *pGpu)
 {
-    if (((gpuIsMultiGpuBoard(pGpu, NULL)) ||
+    if (((gpuIsMultiGpuBoard(pGpu)) ||
         (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_GEMINI)))&&
         ((pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_PLX_PRESENT))  ||
          (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_BR03_PRESENT)) ||
@@ -1114,3 +1113,41 @@ kbifControlGetPCIEInfo_IMPL
     pBusInfo->data = data;
     return NV_OK;
 }
+
+/*!
+ * @brief To ensure GPU is back on bus and accessible by polling device ID
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel BIF object pointer
+ *
+ * @returns NV_OK
+ * @returns NV_ERR_TIMEOUT
+ */
+NV_STATUS
+kbifPollDeviceOnBus_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelBif  *pKernelBif
+)
+{
+    NV_STATUS status = NV_OK;
+    RMTIMEOUT timeout;
+
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+
+    while (osPciInitHandle(gpuGetDomain(pGpu),
+                           gpuGetBus(pGpu),
+                           gpuGetDevice(pGpu), 0, NULL, NULL) == NULL)
+    {
+        if (gpuCheckTimeout(pGpu, &timeout) == NV_ERR_TIMEOUT)
+        {
+            status = NV_ERR_TIMEOUT;
+            NV_PRINTF(LEVEL_ERROR, "Timeout polling GPU back on bus\n");
+            DBG_BREAKPOINT();
+        }
+        osDelayUs(100);
+    }
+
+    return status;
+}
+

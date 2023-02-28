@@ -76,10 +76,12 @@ void nvDpyUpdateCurrentAttributes(NVDpyEvoRec *pDpyEvo);
 
 NvBool nvDpyIsAdaptiveSync(const NVDpyEvoRec *pDpyEvo);
 
-NvBool nvDpyIsAdaptiveSyncDefaultlisted(const NVParsedEdidEvoRec *pParsedEdid);
+NvBool nvDpyIsAdaptiveSyncDefaultlisted(const NVDpyEvoRec *pDpyEvo);
 
 enum NvKmsDpyAttributeDigitalSignalValue
 nvGetDefaultDpyAttributeDigitalSignalValue(const NVConnectorEvoRec *pConnectorEvo);
+
+NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo);
 
 #ifdef __cplusplus
 };

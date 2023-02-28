@@ -113,36 +113,20 @@ static NvBool __nvoc_thunk_GpuResource_dbgbufShareCallback(struct DebugBufferApi
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DebugBufferApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_dbgbufControl(struct DebugBufferApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DebugBufferApi_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_dbgbufGetMemInterMapParams(struct DebugBufferApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DebugBufferApi_RmResource.offset), pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_dbgbufGetInternalObjectHandle(struct DebugBufferApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DebugBufferApi_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_dbgbufControlFilter(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_dbgbufAddAdditionalDependants(struct RsClient *pClient, struct DebugBufferApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_dbgbufGetRefCount(struct DebugBufferApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RmResource_dbgbufCheckMemInterUnmap(struct DebugBufferApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DebugBufferApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_dbgbufMapTo(struct DebugBufferApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), pParams);
+}
+
+static NvU32 __nvoc_thunk_RsResource_dbgbufGetRefCount(struct DebugBufferApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_dbgbufAddAdditionalDependants(struct RsClient *pClient, struct DebugBufferApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), pReference);
 }
 
 static NV_STATUS __nvoc_thunk_RmResource_dbgbufControl_Prologue(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -153,24 +137,12 @@ static NV_STATUS __nvoc_thunk_GpuResource_dbgbufGetRegBaseOffsetAndSize(struct D
     return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DebugBufferApi_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
-static NvBool __nvoc_thunk_RsResource_dbgbufCanCopy(struct DebugBufferApi *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_GpuResource_dbgbufInternalControlForward(struct DebugBufferApi *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
     return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DebugBufferApi_GpuResource.offset), command, pParams, size);
 }
 
-static void __nvoc_thunk_RsResource_dbgbufPreDestruct(struct DebugBufferApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_dbgbufUnmapFrom(struct DebugBufferApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_dbgbufIsDuplicate(struct DebugBufferApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), hMemory, pDuplicate);
 }
 
 static void __nvoc_thunk_RmResource_dbgbufControl_Epilogue(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -179,6 +151,42 @@ static void __nvoc_thunk_RmResource_dbgbufControl_Epilogue(struct DebugBufferApi
 
 static NV_STATUS __nvoc_thunk_RsResource_dbgbufControlLookup(struct DebugBufferApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
     return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_dbgbufGetInternalObjectHandle(struct DebugBufferApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DebugBufferApi_GpuResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_dbgbufControl(struct DebugBufferApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DebugBufferApi_GpuResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_dbgbufGetMemInterMapParams(struct DebugBufferApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DebugBufferApi_RmResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_dbgbufControlFilter(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_dbgbufControlSerialization_Prologue(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_RsResource_dbgbufCanCopy(struct DebugBufferApi *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_dbgbufPreDestruct(struct DebugBufferApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_dbgbufIsDuplicate(struct DebugBufferApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_dbgbufControlSerialization_Epilogue(struct DebugBufferApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DebugBufferApi_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RmResource_dbgbufAccessCallback(struct DebugBufferApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
@@ -242,39 +250,43 @@ static void __nvoc_init_funcTable_DebugBufferApi_1(DebugBufferApi *pThis) {
 
     pThis->__dbgbufShareCallback__ = &__nvoc_thunk_GpuResource_dbgbufShareCallback;
 
-    pThis->__dbgbufControl__ = &__nvoc_thunk_GpuResource_dbgbufControl;
-
-    pThis->__dbgbufGetMemInterMapParams__ = &__nvoc_thunk_RmResource_dbgbufGetMemInterMapParams;
-
-    pThis->__dbgbufGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dbgbufGetInternalObjectHandle;
-
-    pThis->__dbgbufControlFilter__ = &__nvoc_thunk_RsResource_dbgbufControlFilter;
-
-    pThis->__dbgbufAddAdditionalDependants__ = &__nvoc_thunk_RsResource_dbgbufAddAdditionalDependants;
-
-    pThis->__dbgbufGetRefCount__ = &__nvoc_thunk_RsResource_dbgbufGetRefCount;
-
     pThis->__dbgbufCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_dbgbufCheckMemInterUnmap;
 
     pThis->__dbgbufMapTo__ = &__nvoc_thunk_RsResource_dbgbufMapTo;
+
+    pThis->__dbgbufGetRefCount__ = &__nvoc_thunk_RsResource_dbgbufGetRefCount;
+
+    pThis->__dbgbufAddAdditionalDependants__ = &__nvoc_thunk_RsResource_dbgbufAddAdditionalDependants;
 
     pThis->__dbgbufControl_Prologue__ = &__nvoc_thunk_RmResource_dbgbufControl_Prologue;
 
     pThis->__dbgbufGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_dbgbufGetRegBaseOffsetAndSize;
 
-    pThis->__dbgbufCanCopy__ = &__nvoc_thunk_RsResource_dbgbufCanCopy;
-
     pThis->__dbgbufInternalControlForward__ = &__nvoc_thunk_GpuResource_dbgbufInternalControlForward;
 
-    pThis->__dbgbufPreDestruct__ = &__nvoc_thunk_RsResource_dbgbufPreDestruct;
-
     pThis->__dbgbufUnmapFrom__ = &__nvoc_thunk_RsResource_dbgbufUnmapFrom;
-
-    pThis->__dbgbufIsDuplicate__ = &__nvoc_thunk_RsResource_dbgbufIsDuplicate;
 
     pThis->__dbgbufControl_Epilogue__ = &__nvoc_thunk_RmResource_dbgbufControl_Epilogue;
 
     pThis->__dbgbufControlLookup__ = &__nvoc_thunk_RsResource_dbgbufControlLookup;
+
+    pThis->__dbgbufGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dbgbufGetInternalObjectHandle;
+
+    pThis->__dbgbufControl__ = &__nvoc_thunk_GpuResource_dbgbufControl;
+
+    pThis->__dbgbufGetMemInterMapParams__ = &__nvoc_thunk_RmResource_dbgbufGetMemInterMapParams;
+
+    pThis->__dbgbufControlFilter__ = &__nvoc_thunk_RsResource_dbgbufControlFilter;
+
+    pThis->__dbgbufControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dbgbufControlSerialization_Prologue;
+
+    pThis->__dbgbufCanCopy__ = &__nvoc_thunk_RsResource_dbgbufCanCopy;
+
+    pThis->__dbgbufPreDestruct__ = &__nvoc_thunk_RsResource_dbgbufPreDestruct;
+
+    pThis->__dbgbufIsDuplicate__ = &__nvoc_thunk_RsResource_dbgbufIsDuplicate;
+
+    pThis->__dbgbufControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_dbgbufControlSerialization_Epilogue;
 
     pThis->__dbgbufAccessCallback__ = &__nvoc_thunk_RmResource_dbgbufAccessCallback;
 }
@@ -300,12 +312,15 @@ NV_STATUS __nvoc_objCreate_DebugBufferApi(DebugBufferApi **ppThis, Dynamic *pPar
     Object *pParentObj;
     DebugBufferApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(DebugBufferApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DebugBufferApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(DebugBufferApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DebugBufferApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -322,11 +337,17 @@ NV_STATUS __nvoc_objCreate_DebugBufferApi(DebugBufferApi **ppThis, Dynamic *pPar
     if (status != NV_OK) goto __nvoc_objCreate_DebugBufferApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_DebugBufferApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(DebugBufferApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

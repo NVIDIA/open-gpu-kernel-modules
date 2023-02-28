@@ -145,7 +145,6 @@
 #define PCI_VENDOR_ID_CADENCE       0x17CD
 #define PCI_VENDOR_ID_ARM           0x13B5
 #define PCI_VENDOR_ID_HYGON         0x1D94
-#define PCI_VENDOR_ID_ALIBABA       0x1DED
 
 #define NV_PCI_DEVID_DEVICE                    31:16  /* RW--F */
 #define NV_PCI_SUBID_DEVICE                    31:16  /* RW--F */
@@ -400,18 +399,12 @@
 #define PURLEY_P720_SSDEVID                 0x1037
 #define PURLEY_P520_SSDEVID                 0x1036
 
-// Lenovo P520c
-#define LENOVO_P520C_SSDEVID                0x103C
-
 // Dell Purley(Matira)
 #define PURLEY_MATIRA3X_DEVID               0xA2D2
 #define PURLEY_MATIRA3X_SSDEVID             0x08B1
 #define PURLEY_MATIRA3_SSDEVID              0x0738
 #define PURLEY_MATIRA5_SSDEVID              0x0739
 #define PURLEY_MATIRA7_SSDEVID              0x073A
-
-//FTS Grantley
-#define GRANTLEY_R940_SSDEVID               0x1201
 
 //FTS Purley
 #define PURLEY_R970_SSDEVID                 0x1230
@@ -429,14 +422,6 @@
 // Supermicro Quadro VCA definitions
 #define SUPERMICRO_QUADRO_VCA_DEVID         0x8D44
 #define SUPERMICRO_QUADRO_VCA_SSDEVID       0x7270
-
-// Supermicro SYS-4027GR-TRT
-#define SUPERMICRO_SYS_4027GR_TRT_DEVID    0x1D41
-#define SUPERMICRO_SYS_4027GR_TRT_SSDEVID  0x0732
-
-// Supermicro SYS-4029GP-TRT2
-#define SUPERMICRO_SYS_4029GP_TRT2_DEVID    0xA1C2
-#define SUPERMICRO_SYS_4029GP_TRT2_SSDEVID  0x7270
 
 // Asus Quadro BOXX definitions
 #define ASUS_QUADRO_BOXX_DEVID              0x8D44
@@ -459,14 +444,6 @@
 // Foxconn Einstein 64 [8086:a1c1][105b:7270]
 #define FOXCONN_EINSTEIN_64_DEVID           0xA1C1
 #define FOXCONN_EINSTEIN_64_SSDEVID         0x7270
-
-// Tyan Workstation
-#define TYAN_B7100_DEVID                    0xA1C1
-#define TYAN_B7100_SSDEVID                  0x7270
-
-// ESC 4000 Series Workstation
-#define ESC_4000_G4_DEVID                  0xA1C1
-#define ESC_4000_G4_SSDEVID                0x871E
 
 
 // NVIDIA C51
@@ -643,7 +620,6 @@ enum {
 ,     CS_HYGON_C86
 ,     CS_PHYTIUM_S2500
 ,     CS_MELLANOX_BLUEFIELD2
-,     CS_ALIBABA_YITIAN
 ,     CS_INTEL_1B81
 ,     CS_INTEL_18DC
 ,     CS_INTEL_7A04

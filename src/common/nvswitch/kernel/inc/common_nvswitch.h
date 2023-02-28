@@ -125,12 +125,21 @@ static NV_INLINE void nvswitch_clear_flags(NvU32 *val, NvU32 flags)
 // This macro should be used to check assertion statements and print Error messages.
 //
 #if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
-#define NVSWITCH_ASSERT(_cond)                                                       \
-    nvswitch_os_assert_log((_cond), "NVSwitch: Assertion failed in %s() at %s:%d\n", \
-         __FUNCTION__ , __FILE__, __LINE__)
+void nvswitch_assert_log
+(
+    const char *function,
+    const char *file,
+    NvU32 line
+);
+
+#define NVSWITCH_ASSERT(_cond)                                      \
+    ((void)((!(_cond)) ? nvswitch_assert_log(__FUNCTION__, __FILE__, __LINE__) : 0))
+
 #else
-#define NVSWITCH_ASSERT(_cond)                                       \
-    nvswitch_os_assert_log((_cond), "NVSwitch: Assertion failed \n")
+void nvswitch_assert_log(void);
+
+#define NVSWITCH_ASSERT(_cond) \
+    ((void)((!(_cond)) ? nvswitch_assert_log() : 0))
 #endif
 
 #define NVSWITCH_ASSERT_ERROR_INFO(errorCategory, errorInfo) NVSWITCH_ASSERT(0x0)

@@ -505,13 +505,11 @@ kctxshareDestroyCommon_IMPL
 )
 {
     NV_STATUS               status = NV_OK;
-    NvU32                   subctxId, i;
+    NvU32                   subctxId;
+    NvU32                   i;
     KernelChannelGroup     *pKernelChannelGroup;
-    NvU32                   subDevInst;
-    ENGINE_CTX_DESCRIPTOR  *pEngCtxDesc = NULL;
     NvU64                   numMax = 0;
     NvBool                  bRelease = NV_TRUE;
-    NvU64                   vaddr = 0;
     RsShared               *pShared = NULL;
     NvS32                   refcnt = 0;
 
@@ -559,54 +557,6 @@ kctxshareDestroyCommon_IMPL
             }
         }
     }
-
-    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
-    RsResourceRef *pParentRef = RES_GET_REF(pKernelCtxShareApi)->pParentRef; 
-    KernelChannelGroupApi *pKernelChannelGroupApi = dynamicCast(pParentRef->pResource, KernelChannelGroupApi);
-    KernelGraphicsContext *pKernelGraphicsContext;
-
-    subDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-    if ((pKernelChannelGroup->ppEngCtxDesc != NULL) &&
-         kgrctxFromKernelChannelGroupApi(pKernelChannelGroupApi, &pKernelGraphicsContext) == NV_OK)
-    {
-        if (bRelease)
-        {
-            KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
-            NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelGraphicsContext);
-            NvHandle hParent = RES_GET_PARENT_HANDLE(pKernelGraphicsContext);
-            NV2080_CTRL_GR_ROUTE_INFO grRouteInfo;
-            KernelGraphics *pKernelGraphics;
-
-            portMemSet(&grRouteInfo, 0, sizeof(grRouteInfo));
-            kgrmgrCtrlSetChannelHandle(hParent, &grRouteInfo);
-
-            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics);
-
-            pEngCtxDesc = pKernelChannelGroup->ppEngCtxDesc[subDevInst];
-            if (pEngCtxDesc != NULL)
-            {
-                vaddr = 0;
-                if (vaListFindVa(&pEngCtxDesc->vaList, pKernelCtxShare->pVAS, &vaddr) == NV_OK)
-                {
-                    NvU64 tmpVaddr = 0;
-                    while (vaListFindVa(&pEngCtxDesc->vaList, pKernelCtxShare->pVAS, &tmpVaddr) == NV_OK)
-                    {
-                        status = vaListRemoveVa(&pEngCtxDesc->vaList, pKernelCtxShare->pVAS);
-                        NV_ASSERT(status == NV_OK);
-                    }
-
-                    if (vaListGetManaged(&pEngCtxDesc->vaList))
-                    {
-                        dmaUnmapBuffer_HAL(pGpu, GPU_GET_DMA(pGpu), pKernelCtxShare->pVAS, vaddr);
-                    }
-                }
-            }
-        }
-    }
-    SLI_LOOP_END
-
-
-    subDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
     status = kctxshareDestroy_HAL(pKernelCtxShare, pKernelCtxShareApi, pGpu, pKernelChannelGroupApi, bRelease);
     if (status != NV_OK)

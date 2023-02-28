@@ -268,40 +268,6 @@ typedef struct NV2080_CTRL_EVENT_SET_SEMA_MEM_VALIDATION_PARAMS {
 
 
 /*
- * NV2080_CTRL_CMD_EVENT_SET_VMBUS_CHANNEL
- *
- *     hSemMemory
- *       This parameter specifies the handle of the memory object that
- *       identifies the semaphore memory associated with this subdevice
- *       event notification.  Once this is set RM will generate an event
- *       only when there is a change in the semaphore value.  It is
- *       expected that the semaphore memory value will be updated by
- *       the GPU indicating that there is an event pending. This
- *       command is used by VGX plugin to determine which virtual
- *       machine has generated a particular event.
- *
- *     vmIdType
- *       This parameter specifies the type of guest virtual machine identifier
- *
- *     guestVmId
- *       This parameter specifies the guest virtual machine identifier
- *
- * Possible status values returned are:
- *      NV_OK
- *      NV_ERR_INVALID_ARGUMENT
- */
-#define NV2080_CTRL_CMD_EVENT_SET_VMBUS_CHANNEL (0x20800307) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_EVENT_INTERFACE_ID << 8) | NV2080_CTRL_EVENT_SET_VMBUS_CHANNEL_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_EVENT_SET_VMBUS_CHANNEL_PARAMS_MESSAGE_ID (0x7U)
-
-typedef struct NV2080_CTRL_EVENT_SET_VMBUS_CHANNEL_PARAMS {
-    NvHandle   hSemMemory;
-    VM_ID_TYPE vmIdType;
-    NV_DECLARE_ALIGNED(VM_ID guestVmId, 8);
-} NV2080_CTRL_EVENT_SET_VMBUS_CHANNEL_PARAMS;
-
-
-/*
  * NV2080_CTRL_CMD_EVENT_SET_TRIGGER_FIFO
  *
  * This command triggers a FIFO event for the associated subdevice.

@@ -125,6 +125,11 @@ typedef struct MIG_RESOURCE_ALLOCATION
     NvU32 gpcCount;
 
     /*!
+     * Number of GFX GPCs associated with this instance. This should be a subset of gpcs included in gpcCount.
+     */
+    NvU32 gfxGpcCount;
+
+    /*!
      * VEID start offset for this instance
      */
     NvU32 veidOffset;
@@ -473,7 +478,6 @@ struct KernelMIGManager {
     NvBool (*__kmigmgrIsMemoryPartitioningRequested__)(OBJGPU *, struct KernelMIGManager *, NvU32);
     NvBool (*__kmigmgrIsMemoryPartitioningNeeded__)(OBJGPU *, struct KernelMIGManager *, NvU32);
     struct NV_RANGE (*__kmigmgrMemSizeFlagToSwizzIdRange__)(OBJGPU *, struct KernelMIGManager *, NvU32);
-    NV_STATUS (*__kmigmgrReconcileTunableState__)(POBJGPU, struct KernelMIGManager *, void *);
     NV_STATUS (*__kmigmgrStateLoad__)(POBJGPU, struct KernelMIGManager *, NvU32);
     NV_STATUS (*__kmigmgrStatePreLoad__)(POBJGPU, struct KernelMIGManager *, NvU32);
     NV_STATUS (*__kmigmgrStatePostUnload__)(POBJGPU, struct KernelMIGManager *, NvU32);
@@ -483,12 +487,7 @@ struct KernelMIGManager {
     void (*__kmigmgrInitMissing__)(POBJGPU, struct KernelMIGManager *);
     NV_STATUS (*__kmigmgrStatePreInitLocked__)(POBJGPU, struct KernelMIGManager *);
     NV_STATUS (*__kmigmgrStatePreInitUnlocked__)(POBJGPU, struct KernelMIGManager *);
-    NV_STATUS (*__kmigmgrGetTunableState__)(POBJGPU, struct KernelMIGManager *, void *);
-    NV_STATUS (*__kmigmgrCompareTunableState__)(POBJGPU, struct KernelMIGManager *, void *, void *);
-    void (*__kmigmgrFreeTunableState__)(POBJGPU, struct KernelMIGManager *, void *);
     NV_STATUS (*__kmigmgrStatePostLoad__)(POBJGPU, struct KernelMIGManager *, NvU32);
-    NV_STATUS (*__kmigmgrAllocTunableState__)(POBJGPU, struct KernelMIGManager *, void **);
-    NV_STATUS (*__kmigmgrSetTunableState__)(POBJGPU, struct KernelMIGManager *, void *);
     NvBool (*__kmigmgrIsPresent__)(POBJGPU, struct KernelMIGManager *);
     NvBool bIsA100ReducedConfig;
     KERNEL_MIG_MANAGER_PRIVATE_DATA *pPrivate;
@@ -549,7 +548,6 @@ NV_STATUS __nvoc_objCreate_KernelMIGManager(KernelMIGManager**, Dynamic*, NvU32)
 #define kmigmgrIsMemoryPartitioningNeeded_HAL(arg0, arg1, swizzId) kmigmgrIsMemoryPartitioningNeeded_DISPATCH(arg0, arg1, swizzId)
 #define kmigmgrMemSizeFlagToSwizzIdRange(arg0, arg1, memSizeFlag) kmigmgrMemSizeFlagToSwizzIdRange_DISPATCH(arg0, arg1, memSizeFlag)
 #define kmigmgrMemSizeFlagToSwizzIdRange_HAL(arg0, arg1, memSizeFlag) kmigmgrMemSizeFlagToSwizzIdRange_DISPATCH(arg0, arg1, memSizeFlag)
-#define kmigmgrReconcileTunableState(pGpu, pEngstate, pTunableState) kmigmgrReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kmigmgrStateLoad(pGpu, pEngstate, arg0) kmigmgrStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kmigmgrStatePreLoad(pGpu, pEngstate, arg0) kmigmgrStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kmigmgrStatePostUnload(pGpu, pEngstate, arg0) kmigmgrStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -559,12 +557,7 @@ NV_STATUS __nvoc_objCreate_KernelMIGManager(KernelMIGManager**, Dynamic*, NvU32)
 #define kmigmgrInitMissing(pGpu, pEngstate) kmigmgrInitMissing_DISPATCH(pGpu, pEngstate)
 #define kmigmgrStatePreInitLocked(pGpu, pEngstate) kmigmgrStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define kmigmgrStatePreInitUnlocked(pGpu, pEngstate) kmigmgrStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kmigmgrGetTunableState(pGpu, pEngstate, pTunableState) kmigmgrGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kmigmgrCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) kmigmgrCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define kmigmgrFreeTunableState(pGpu, pEngstate, pTunableState) kmigmgrFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kmigmgrStatePostLoad(pGpu, pEngstate, arg0) kmigmgrStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kmigmgrAllocTunableState(pGpu, pEngstate, ppTunableState) kmigmgrAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define kmigmgrSetTunableState(pGpu, pEngstate, pTunableState) kmigmgrSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kmigmgrIsPresent(pGpu, pEngstate) kmigmgrIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kmigmgrLoadStaticInfo_KERNEL(OBJGPU *arg0, struct KernelMIGManager *arg1);
 
@@ -832,10 +825,6 @@ static inline struct NV_RANGE kmigmgrMemSizeFlagToSwizzIdRange_DISPATCH(OBJGPU *
     return arg1->__kmigmgrMemSizeFlagToSwizzIdRange__(arg0, arg1, memSizeFlag);
 }
 
-static inline NV_STATUS kmigmgrReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate, void *pTunableState) {
-    return pEngstate->__kmigmgrReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kmigmgrStateLoad_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate, NvU32 arg0) {
     return pEngstate->__kmigmgrStateLoad__(pGpu, pEngstate, arg0);
 }
@@ -872,28 +861,8 @@ static inline NV_STATUS kmigmgrStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struc
     return pEngstate->__kmigmgrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kmigmgrGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate, void *pTunableState) {
-    return pEngstate->__kmigmgrGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kmigmgrCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__kmigmgrCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void kmigmgrFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate, void *pTunableState) {
-    pEngstate->__kmigmgrFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kmigmgrStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate, NvU32 arg0) {
     return pEngstate->__kmigmgrStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kmigmgrAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate, void **ppTunableState) {
-    return pEngstate->__kmigmgrAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS kmigmgrSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate, void *pTunableState) {
-    return pEngstate->__kmigmgrSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool kmigmgrIsPresent_DISPATCH(POBJGPU pGpu, struct KernelMIGManager *pEngstate) {
@@ -1409,6 +1378,17 @@ static inline NV_STATUS kmigmgrEnableAllLCEs(OBJGPU *arg0, struct KernelMIGManag
 #define kmigmgrEnableAllLCEs(arg0, arg1, bEnableAllLCEs) kmigmgrEnableAllLCEs_IMPL(arg0, arg1, bEnableAllLCEs)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
+NV_STATUS kmigmgrGetInstanceRefFromDevice_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvHandle hDevice, struct MIG_INSTANCE_REF *arg2);
+
+#ifdef __nvoc_kernel_mig_manager_h_disabled
+static inline NV_STATUS kmigmgrGetInstanceRefFromDevice(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvHandle hDevice, struct MIG_INSTANCE_REF *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_mig_manager_h_disabled
+#define kmigmgrGetInstanceRefFromDevice(arg0, arg1, hClient, hDevice, arg2) kmigmgrGetInstanceRefFromDevice_IMPL(arg0, arg1, hClient, hDevice, arg2)
+#endif //__nvoc_kernel_mig_manager_h_disabled
+
 NV_STATUS kmigmgrGetInstanceRefFromClient_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, struct MIG_INSTANCE_REF *arg2);
 
 #ifdef __nvoc_kernel_mig_manager_h_disabled
@@ -1418,6 +1398,17 @@ static inline NV_STATUS kmigmgrGetInstanceRefFromClient(OBJGPU *arg0, struct Ker
 }
 #else //__nvoc_kernel_mig_manager_h_disabled
 #define kmigmgrGetInstanceRefFromClient(arg0, arg1, hClient, arg2) kmigmgrGetInstanceRefFromClient_IMPL(arg0, arg1, hClient, arg2)
+#endif //__nvoc_kernel_mig_manager_h_disabled
+
+NV_STATUS kmigmgrGetMemoryPartitionHeapFromDevice_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvHandle hDevice, struct Heap **arg2);
+
+#ifdef __nvoc_kernel_mig_manager_h_disabled
+static inline NV_STATUS kmigmgrGetMemoryPartitionHeapFromDevice(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvHandle hDevice, struct Heap **arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_mig_manager_h_disabled
+#define kmigmgrGetMemoryPartitionHeapFromDevice(arg0, arg1, hClient, hDevice, arg2) kmigmgrGetMemoryPartitionHeapFromDevice_IMPL(arg0, arg1, hClient, hDevice, arg2)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
 NV_STATUS kmigmgrGetMemoryPartitionHeapFromClient_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, struct Heap **arg2);

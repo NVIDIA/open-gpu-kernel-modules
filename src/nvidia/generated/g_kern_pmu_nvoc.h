@@ -66,8 +66,6 @@ struct KernelPmu {
     struct KernelPmu *__nvoc_pbase_KernelPmu;
     NV_STATUS (*__kpmuConstructEngine__)(struct OBJGPU *, struct KernelPmu *, ENGDESCRIPTOR);
     NV_STATUS (*__kpmuStateInitLocked__)(struct OBJGPU *, struct KernelPmu *);
-    NV_STATUS (*__kpmuPreOsGlobalErotGrantRequest__)(struct OBJGPU *, struct KernelPmu *);
-    NV_STATUS (*__kpmuReconcileTunableState__)(POBJGPU, struct KernelPmu *, void *);
     NV_STATUS (*__kpmuStateLoad__)(POBJGPU, struct KernelPmu *, NvU32);
     NV_STATUS (*__kpmuStateUnload__)(POBJGPU, struct KernelPmu *, NvU32);
     NV_STATUS (*__kpmuStatePreLoad__)(POBJGPU, struct KernelPmu *, NvU32);
@@ -78,12 +76,7 @@ struct KernelPmu {
     void (*__kpmuInitMissing__)(POBJGPU, struct KernelPmu *);
     NV_STATUS (*__kpmuStatePreInitLocked__)(POBJGPU, struct KernelPmu *);
     NV_STATUS (*__kpmuStatePreInitUnlocked__)(POBJGPU, struct KernelPmu *);
-    NV_STATUS (*__kpmuGetTunableState__)(POBJGPU, struct KernelPmu *, void *);
-    NV_STATUS (*__kpmuCompareTunableState__)(POBJGPU, struct KernelPmu *, void *, void *);
-    void (*__kpmuFreeTunableState__)(POBJGPU, struct KernelPmu *, void *);
     NV_STATUS (*__kpmuStatePostLoad__)(POBJGPU, struct KernelPmu *, NvU32);
-    NV_STATUS (*__kpmuAllocTunableState__)(POBJGPU, struct KernelPmu *, void **);
-    NV_STATUS (*__kpmuSetTunableState__)(POBJGPU, struct KernelPmu *, void *);
     NvBool (*__kpmuIsPresent__)(POBJGPU, struct KernelPmu *);
     LIBOS_LOG_DECODE logDecode;
     NvU32 printBufSize;
@@ -124,9 +117,6 @@ NV_STATUS __nvoc_objCreate_KernelPmu(KernelPmu**, Dynamic*, NvU32);
 
 #define kpmuConstructEngine(pGpu, pKernelPmu, engDesc) kpmuConstructEngine_DISPATCH(pGpu, pKernelPmu, engDesc)
 #define kpmuStateInitLocked(pGpu, pKernelPmu) kpmuStateInitLocked_DISPATCH(pGpu, pKernelPmu)
-#define kpmuPreOsGlobalErotGrantRequest(pGpu, pKernelPmu) kpmuPreOsGlobalErotGrantRequest_DISPATCH(pGpu, pKernelPmu)
-#define kpmuPreOsGlobalErotGrantRequest_HAL(pGpu, pKernelPmu) kpmuPreOsGlobalErotGrantRequest_DISPATCH(pGpu, pKernelPmu)
-#define kpmuReconcileTunableState(pGpu, pEngstate, pTunableState) kpmuReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kpmuStateLoad(pGpu, pEngstate, arg0) kpmuStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kpmuStateUnload(pGpu, pEngstate, arg0) kpmuStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kpmuStatePreLoad(pGpu, pEngstate, arg0) kpmuStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -137,12 +127,7 @@ NV_STATUS __nvoc_objCreate_KernelPmu(KernelPmu**, Dynamic*, NvU32);
 #define kpmuInitMissing(pGpu, pEngstate) kpmuInitMissing_DISPATCH(pGpu, pEngstate)
 #define kpmuStatePreInitLocked(pGpu, pEngstate) kpmuStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define kpmuStatePreInitUnlocked(pGpu, pEngstate) kpmuStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kpmuGetTunableState(pGpu, pEngstate, pTunableState) kpmuGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kpmuCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) kpmuCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define kpmuFreeTunableState(pGpu, pEngstate, pTunableState) kpmuFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kpmuStatePostLoad(pGpu, pEngstate, arg0) kpmuStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kpmuAllocTunableState(pGpu, pEngstate, ppTunableState) kpmuAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define kpmuSetTunableState(pGpu, pEngstate, pTunableState) kpmuSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kpmuIsPresent(pGpu, pEngstate) kpmuIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kpmuConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu, ENGDESCRIPTOR engDesc);
 
@@ -154,20 +139,6 @@ NV_STATUS kpmuStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKerne
 
 static inline NV_STATUS kpmuStateInitLocked_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu) {
     return pKernelPmu->__kpmuStateInitLocked__(pGpu, pKernelPmu);
-}
-
-NV_STATUS kpmuPreOsGlobalErotGrantRequest_AD102(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
-
-static inline NV_STATUS kpmuPreOsGlobalErotGrantRequest_56cd7a(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu) {
-    return NV_OK;
-}
-
-static inline NV_STATUS kpmuPreOsGlobalErotGrantRequest_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu) {
-    return pKernelPmu->__kpmuPreOsGlobalErotGrantRequest__(pGpu, pKernelPmu);
-}
-
-static inline NV_STATUS kpmuReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, void *pTunableState) {
-    return pEngstate->__kpmuReconcileTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NV_STATUS kpmuStateLoad_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg0) {
@@ -210,28 +181,8 @@ static inline NV_STATUS kpmuStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct K
     return pEngstate->__kpmuStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kpmuGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, void *pTunableState) {
-    return pEngstate->__kpmuGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kpmuCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__kpmuCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void kpmuFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, void *pTunableState) {
-    pEngstate->__kpmuFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kpmuStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg0) {
     return pEngstate->__kpmuStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kpmuAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, void **ppTunableState) {
-    return pEngstate->__kpmuAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS kpmuSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, void *pTunableState) {
-    return pEngstate->__kpmuSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool kpmuIsPresent_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate) {

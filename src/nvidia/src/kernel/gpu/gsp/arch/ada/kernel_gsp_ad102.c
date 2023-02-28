@@ -85,27 +85,3 @@ kgspExecuteScrubberIfNeeded_AD102
     return status;
 }
 
-NvU64
-kgspGetWprHeapSize_AD102
-(
-    OBJGPU *pGpu,
-    KernelGsp *pKernelGsp
-)
-{
-    if (pGpu->bVgpuGspPluginOffloadEnabled)
-    {
-        //
-        // Memory calculations which we used to size the WPR heap:
-        // Memory needed for libOS kernel - 10MB(RM) + 32MB(VF partitions) + 8MB(global page) = 50MB
-        // Memory needed from FW's Heap - 17MB for RM + 15MB * 32(VF) = 497MB
-        // Total Memory needed = 497MB + 50MB = 547MB
-        // (Added extra 2 Mb due to alignment)
-        // @TODO: Change total Heap size to 546MB once fix for making global page to 4MB submitted.
-        //
-        return 550 * 1024 * 1024;
-    }
-    else
-    {
-        return 80 * 1024 * 1024;
-    }
-}

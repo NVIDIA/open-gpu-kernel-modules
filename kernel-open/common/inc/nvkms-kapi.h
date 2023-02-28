@@ -520,14 +520,23 @@ struct NvKmsKapiFunctionsTable {
     );
 
     /*!
-     * Revoke modeset permissions previously granted. This currently applies for all
-     * previous grant requests for this device.
+     * Revoke permissions previously granted. Only one (dispIndex, head,
+     * display) is currently supported.
      *
-     * \param [in]  device                  A device returned by allocateDevice().
+     * \param [in]  device     A device returned by allocateDevice().
+     *
+     * \param [in]  head       head of display.
+     *
+     * \param [in]  display    The display to revoke.
      *
      * \return NV_TRUE on success, NV_FALSE on failure.
      */
-    NvBool (*revokePermissions)(struct NvKmsKapiDevice *device);
+    NvBool (*revokePermissions)
+    (
+        struct NvKmsKapiDevice *device,
+        NvU32 head,
+        NvKmsKapiDisplay display
+    );
 
     /*!
      * Registers for notification, via

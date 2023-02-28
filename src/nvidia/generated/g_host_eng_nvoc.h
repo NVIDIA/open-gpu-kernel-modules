@@ -57,9 +57,7 @@ typedef struct OBJHOSTENG *POBJHOSTENG;
 struct OBJHOSTENG {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJHOSTENG *__nvoc_pbase_OBJHOSTENG;
-    NV_STATUS (*__hostengHaltEngine__)(struct OBJGPU *, struct OBJHOSTENG *);
     NV_STATUS (*__hostengHaltAndReset__)(struct OBJGPU *, struct OBJHOSTENG *, RMTIMEOUT *);
-    NV_STATUS (*__hostengReset__)(struct OBJGPU *, struct OBJHOSTENG *, NvBool, struct KernelChannel *, struct KernelChannel **);
 };
 
 #ifndef __NVOC_CLASS_OBJHOSTENG_TYPEDEF__
@@ -90,25 +88,11 @@ NV_STATUS __nvoc_objCreate_OBJHOSTENG(OBJHOSTENG**, Dynamic*, NvU32);
 #define __objCreate_OBJHOSTENG(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJHOSTENG((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
-#define hostengHaltEngine(pGpu, pHosteng) hostengHaltEngine_DISPATCH(pGpu, pHosteng)
 #define hostengHaltAndReset(pGpu, pHosteng, pRmTimeout) hostengHaltAndReset_DISPATCH(pGpu, pHosteng, pRmTimeout)
-#define hostengReset(pGpu, pHosteng, bReload, pKernelChannel, ppCurrentKernelChannel) hostengReset_DISPATCH(pGpu, pHosteng, bReload, pKernelChannel, ppCurrentKernelChannel)
-NV_STATUS hostengHaltEngine_IMPL(struct OBJGPU *pGpu, struct OBJHOSTENG *pHosteng);
-
-static inline NV_STATUS hostengHaltEngine_DISPATCH(struct OBJGPU *pGpu, struct OBJHOSTENG *pHosteng) {
-    return pHosteng->__hostengHaltEngine__(pGpu, pHosteng);
-}
-
 NV_STATUS hostengHaltAndReset_IMPL(struct OBJGPU *pGpu, struct OBJHOSTENG *pHosteng, RMTIMEOUT *pRmTimeout);
 
 static inline NV_STATUS hostengHaltAndReset_DISPATCH(struct OBJGPU *pGpu, struct OBJHOSTENG *pHosteng, RMTIMEOUT *pRmTimeout) {
     return pHosteng->__hostengHaltAndReset__(pGpu, pHosteng, pRmTimeout);
-}
-
-NV_STATUS hostengReset_IMPL(struct OBJGPU *pGpu, struct OBJHOSTENG *pHosteng, NvBool bReload, struct KernelChannel *pKernelChannel, struct KernelChannel **ppCurrentKernelChannel);
-
-static inline NV_STATUS hostengReset_DISPATCH(struct OBJGPU *pGpu, struct OBJHOSTENG *pHosteng, NvBool bReload, struct KernelChannel *pKernelChannel, struct KernelChannel **ppCurrentKernelChannel) {
-    return pHosteng->__hostengReset__(pGpu, pHosteng, bReload, pKernelChannel, ppCurrentKernelChannel);
 }
 
 #undef PRIVATE_FIELD

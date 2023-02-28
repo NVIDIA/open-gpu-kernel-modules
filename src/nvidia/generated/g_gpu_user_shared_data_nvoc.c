@@ -113,36 +113,20 @@ static NvBool __nvoc_thunk_GpuResource_gpushareddataShareCallback(struct GpuUser
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GpuUserSharedData_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_gpushareddataControl(struct GpuUserSharedData *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GpuUserSharedData_GpuResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_gpushareddataGetMemInterMapParams(struct GpuUserSharedData *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GpuUserSharedData_RmResource.offset), pParams);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_gpushareddataGetInternalObjectHandle(struct GpuUserSharedData *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GpuUserSharedData_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpushareddataControlFilter(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_gpushareddataAddAdditionalDependants(struct RsClient *pClient, struct GpuUserSharedData *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_gpushareddataGetRefCount(struct GpuUserSharedData *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RmResource_gpushareddataCheckMemInterUnmap(struct GpuUserSharedData *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GpuUserSharedData_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_gpushareddataMapTo(struct GpuUserSharedData *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), pParams);
+}
+
+static NvU32 __nvoc_thunk_RsResource_gpushareddataGetRefCount(struct GpuUserSharedData *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_gpushareddataAddAdditionalDependants(struct RsClient *pClient, struct GpuUserSharedData *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), pReference);
 }
 
 static NV_STATUS __nvoc_thunk_RmResource_gpushareddataControl_Prologue(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -153,24 +137,12 @@ static NV_STATUS __nvoc_thunk_GpuResource_gpushareddataGetRegBaseOffsetAndSize(s
     return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GpuUserSharedData_GpuResource.offset), pGpu, pOffset, pSize);
 }
 
-static NvBool __nvoc_thunk_RsResource_gpushareddataCanCopy(struct GpuUserSharedData *pResource) {
-    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_GpuResource_gpushareddataInternalControlForward(struct GpuUserSharedData *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
     return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GpuUserSharedData_GpuResource.offset), command, pParams, size);
 }
 
-static void __nvoc_thunk_RsResource_gpushareddataPreDestruct(struct GpuUserSharedData *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_gpushareddataUnmapFrom(struct GpuUserSharedData *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_gpushareddataIsDuplicate(struct GpuUserSharedData *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), hMemory, pDuplicate);
 }
 
 static void __nvoc_thunk_RmResource_gpushareddataControl_Epilogue(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -179,6 +151,42 @@ static void __nvoc_thunk_RmResource_gpushareddataControl_Epilogue(struct GpuUser
 
 static NV_STATUS __nvoc_thunk_RsResource_gpushareddataControlLookup(struct GpuUserSharedData *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
     return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_gpushareddataGetInternalObjectHandle(struct GpuUserSharedData *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GpuUserSharedData_GpuResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_gpushareddataControl(struct GpuUserSharedData *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_GpuUserSharedData_GpuResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_gpushareddataGetMemInterMapParams(struct GpuUserSharedData *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_GpuUserSharedData_RmResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_gpushareddataControlFilter(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_gpushareddataControlSerialization_Prologue(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_RsResource_gpushareddataCanCopy(struct GpuUserSharedData *pResource) {
+    return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_gpushareddataPreDestruct(struct GpuUserSharedData *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_gpushareddataIsDuplicate(struct GpuUserSharedData *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_gpushareddataControlSerialization_Epilogue(struct GpuUserSharedData *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RmResource_gpushareddataAccessCallback(struct GpuUserSharedData *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
@@ -242,39 +250,43 @@ static void __nvoc_init_funcTable_GpuUserSharedData_1(GpuUserSharedData *pThis) 
 
     pThis->__gpushareddataShareCallback__ = &__nvoc_thunk_GpuResource_gpushareddataShareCallback;
 
-    pThis->__gpushareddataControl__ = &__nvoc_thunk_GpuResource_gpushareddataControl;
-
-    pThis->__gpushareddataGetMemInterMapParams__ = &__nvoc_thunk_RmResource_gpushareddataGetMemInterMapParams;
-
-    pThis->__gpushareddataGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_gpushareddataGetInternalObjectHandle;
-
-    pThis->__gpushareddataControlFilter__ = &__nvoc_thunk_RsResource_gpushareddataControlFilter;
-
-    pThis->__gpushareddataAddAdditionalDependants__ = &__nvoc_thunk_RsResource_gpushareddataAddAdditionalDependants;
-
-    pThis->__gpushareddataGetRefCount__ = &__nvoc_thunk_RsResource_gpushareddataGetRefCount;
-
     pThis->__gpushareddataCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_gpushareddataCheckMemInterUnmap;
 
     pThis->__gpushareddataMapTo__ = &__nvoc_thunk_RsResource_gpushareddataMapTo;
+
+    pThis->__gpushareddataGetRefCount__ = &__nvoc_thunk_RsResource_gpushareddataGetRefCount;
+
+    pThis->__gpushareddataAddAdditionalDependants__ = &__nvoc_thunk_RsResource_gpushareddataAddAdditionalDependants;
 
     pThis->__gpushareddataControl_Prologue__ = &__nvoc_thunk_RmResource_gpushareddataControl_Prologue;
 
     pThis->__gpushareddataGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_gpushareddataGetRegBaseOffsetAndSize;
 
-    pThis->__gpushareddataCanCopy__ = &__nvoc_thunk_RsResource_gpushareddataCanCopy;
-
     pThis->__gpushareddataInternalControlForward__ = &__nvoc_thunk_GpuResource_gpushareddataInternalControlForward;
 
-    pThis->__gpushareddataPreDestruct__ = &__nvoc_thunk_RsResource_gpushareddataPreDestruct;
-
     pThis->__gpushareddataUnmapFrom__ = &__nvoc_thunk_RsResource_gpushareddataUnmapFrom;
-
-    pThis->__gpushareddataIsDuplicate__ = &__nvoc_thunk_RsResource_gpushareddataIsDuplicate;
 
     pThis->__gpushareddataControl_Epilogue__ = &__nvoc_thunk_RmResource_gpushareddataControl_Epilogue;
 
     pThis->__gpushareddataControlLookup__ = &__nvoc_thunk_RsResource_gpushareddataControlLookup;
+
+    pThis->__gpushareddataGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_gpushareddataGetInternalObjectHandle;
+
+    pThis->__gpushareddataControl__ = &__nvoc_thunk_GpuResource_gpushareddataControl;
+
+    pThis->__gpushareddataGetMemInterMapParams__ = &__nvoc_thunk_RmResource_gpushareddataGetMemInterMapParams;
+
+    pThis->__gpushareddataControlFilter__ = &__nvoc_thunk_RsResource_gpushareddataControlFilter;
+
+    pThis->__gpushareddataControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_gpushareddataControlSerialization_Prologue;
+
+    pThis->__gpushareddataCanCopy__ = &__nvoc_thunk_RsResource_gpushareddataCanCopy;
+
+    pThis->__gpushareddataPreDestruct__ = &__nvoc_thunk_RsResource_gpushareddataPreDestruct;
+
+    pThis->__gpushareddataIsDuplicate__ = &__nvoc_thunk_RsResource_gpushareddataIsDuplicate;
+
+    pThis->__gpushareddataControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_gpushareddataControlSerialization_Epilogue;
 
     pThis->__gpushareddataAccessCallback__ = &__nvoc_thunk_RmResource_gpushareddataAccessCallback;
 }
@@ -300,12 +312,15 @@ NV_STATUS __nvoc_objCreate_GpuUserSharedData(GpuUserSharedData **ppThis, Dynamic
     Object *pParentObj;
     GpuUserSharedData *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(GpuUserSharedData));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(GpuUserSharedData), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(GpuUserSharedData));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GpuUserSharedData);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -322,11 +337,17 @@ NV_STATUS __nvoc_objCreate_GpuUserSharedData(GpuUserSharedData **ppThis, Dynamic
     if (status != NV_OK) goto __nvoc_objCreate_GpuUserSharedData_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_GpuUserSharedData_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(GpuUserSharedData));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

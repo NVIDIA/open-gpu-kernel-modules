@@ -70,7 +70,7 @@ static NvBool RmIsDeviceRefNeeded(NVOS54_PARAMETERS *pApi)
 {
     switch(pApi->cmd)
     {
-        case NV00FD_CTRL_CMD_ATTACH_MEM:
+        case NV00FD_CTRL_CMD_ATTACH_GPU:
             return NV_TRUE;
         default:
             return NV_FALSE;
@@ -88,8 +88,8 @@ static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd)
 
     switch(pApi->cmd)
     {
-        case NV00FD_CTRL_CMD_ATTACH_MEM:
-            paramSize = sizeof(NV00FD_CTRL_ATTACH_MEM_PARAMS);
+        case NV00FD_CTRL_CMD_ATTACH_GPU:
+            paramSize = sizeof(NV00FD_CTRL_ATTACH_GPU_PARAMS);
             break;
         default:
             return NV_ERR_INVALID_ARGUMENT;
@@ -103,8 +103,8 @@ static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd)
 
     switch(pApi->cmd)
     {
-        case NV00FD_CTRL_CMD_ATTACH_MEM:
-            *pFd = (NvS32)((NV00FD_CTRL_ATTACH_MEM_PARAMS *)pKernelParams)->devDescriptor;
+        case NV00FD_CTRL_CMD_ATTACH_GPU:
+            *pFd = (NvS32)((NV00FD_CTRL_ATTACH_GPU_PARAMS *)pKernelParams)->devDescriptor;
             break;
         default:
             NV_ASSERT(0);

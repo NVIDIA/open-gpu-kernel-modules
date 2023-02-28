@@ -91,25 +91,27 @@ struct GSyncApi {
     NV_STATUS (*__gsyncapiCtrlCmdGsyncSetHouseSyncMode__)(struct GSyncApi *, NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS *);
     NvBool (*__gsyncapiShareCallback__)(struct GSyncApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__gsyncapiCheckMemInterUnmap__)(struct GSyncApi *, NvBool);
+    NV_STATUS (*__gsyncapiMapTo__)(struct GSyncApi *, RS_RES_MAP_TO_PARAMS *);
     NvBool (*__gsyncapiAccessCallback__)(struct GSyncApi *, struct RsClient *, void *, RsAccessRight);
+    void (*__gsyncapiSetNotificationShare__)(struct GSyncApi *, struct NotifShare *);
+    NvU32 (*__gsyncapiGetRefCount__)(struct GSyncApi *);
+    void (*__gsyncapiAddAdditionalDependants__)(struct RsClient *, struct GSyncApi *, RsResourceRef *);
+    NV_STATUS (*__gsyncapiControl_Prologue__)(struct GSyncApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__gsyncapiUnmapFrom__)(struct GSyncApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__gsyncapiControl_Epilogue__)(struct GSyncApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__gsyncapiControlLookup__)(struct GSyncApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NV_STATUS (*__gsyncapiUnmap__)(struct GSyncApi *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__gsyncapiGetMemInterMapParams__)(struct GSyncApi *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__gsyncapiGetMemoryMappingDescriptor__)(struct GSyncApi *, struct MEMORY_DESCRIPTOR **);
-    void (*__gsyncapiSetNotificationShare__)(struct GSyncApi *, struct NotifShare *);
     NV_STATUS (*__gsyncapiControlFilter__)(struct GSyncApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvU32 (*__gsyncapiGetRefCount__)(struct GSyncApi *);
     NV_STATUS (*__gsyncapiUnregisterEvent__)(struct GSyncApi *, NvHandle, NvHandle, NvHandle, NvHandle);
-    NV_STATUS (*__gsyncapiUnmap__)(struct GSyncApi *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__gsyncapiControlSerialization_Prologue__)(struct GSyncApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__gsyncapiCanCopy__)(struct GSyncApi *);
-    NV_STATUS (*__gsyncapiControl_Prologue__)(struct GSyncApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__gsyncapiMapTo__)(struct GSyncApi *, RS_RES_MAP_TO_PARAMS *);
-    void (*__gsyncapiAddAdditionalDependants__)(struct RsClient *, struct GSyncApi *, RsResourceRef *);
     void (*__gsyncapiPreDestruct__)(struct GSyncApi *);
-    NV_STATUS (*__gsyncapiUnmapFrom__)(struct GSyncApi *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__gsyncapiIsDuplicate__)(struct GSyncApi *, NvHandle, NvBool *);
+    void (*__gsyncapiControlSerialization_Epilogue__)(struct GSyncApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__gsyncapiGetNotificationListPtr__)(struct GSyncApi *);
-    void (*__gsyncapiControl_Epilogue__)(struct GSyncApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__gsyncapiGetNotificationShare__)(struct GSyncApi *);
-    NV_STATUS (*__gsyncapiControlLookup__)(struct GSyncApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__gsyncapiMap__)(struct GSyncApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NV_STATUS (*__gsyncapiGetOrAllocNotifShare__)(struct GSyncApi *, NvHandle, NvHandle, struct NotifShare **);
     NvU32 instance;
@@ -180,25 +182,27 @@ NV_STATUS __nvoc_objCreate_GSyncApi(GSyncApi**, Dynamic*, NvU32, struct CALL_CON
 #define gsyncapiCtrlCmdGsyncSetHouseSyncMode(pGsyncApi, pParams) gsyncapiCtrlCmdGsyncSetHouseSyncMode_DISPATCH(pGsyncApi, pParams)
 #define gsyncapiShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) gsyncapiShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define gsyncapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) gsyncapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define gsyncapiMapTo(pResource, pParams) gsyncapiMapTo_DISPATCH(pResource, pParams)
 #define gsyncapiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) gsyncapiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
+#define gsyncapiSetNotificationShare(pNotifier, pNotifShare) gsyncapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
+#define gsyncapiGetRefCount(pResource) gsyncapiGetRefCount_DISPATCH(pResource)
+#define gsyncapiAddAdditionalDependants(pClient, pResource, pReference) gsyncapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define gsyncapiControl_Prologue(pResource, pCallContext, pParams) gsyncapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define gsyncapiUnmapFrom(pResource, pParams) gsyncapiUnmapFrom_DISPATCH(pResource, pParams)
+#define gsyncapiControl_Epilogue(pResource, pCallContext, pParams) gsyncapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define gsyncapiControlLookup(pResource, pParams, ppEntry) gsyncapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define gsyncapiUnmap(pResource, pCallContext, pCpuMapping) gsyncapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define gsyncapiGetMemInterMapParams(pRmResource, pParams) gsyncapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define gsyncapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) gsyncapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define gsyncapiSetNotificationShare(pNotifier, pNotifShare) gsyncapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define gsyncapiControlFilter(pResource, pCallContext, pParams) gsyncapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define gsyncapiGetRefCount(pResource) gsyncapiGetRefCount_DISPATCH(pResource)
 #define gsyncapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) gsyncapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define gsyncapiUnmap(pResource, pCallContext, pCpuMapping) gsyncapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define gsyncapiControlSerialization_Prologue(pResource, pCallContext, pParams) gsyncapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define gsyncapiCanCopy(pResource) gsyncapiCanCopy_DISPATCH(pResource)
-#define gsyncapiControl_Prologue(pResource, pCallContext, pParams) gsyncapiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define gsyncapiMapTo(pResource, pParams) gsyncapiMapTo_DISPATCH(pResource, pParams)
-#define gsyncapiAddAdditionalDependants(pClient, pResource, pReference) gsyncapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define gsyncapiPreDestruct(pResource) gsyncapiPreDestruct_DISPATCH(pResource)
-#define gsyncapiUnmapFrom(pResource, pParams) gsyncapiUnmapFrom_DISPATCH(pResource, pParams)
 #define gsyncapiIsDuplicate(pResource, hMemory, pDuplicate) gsyncapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define gsyncapiControlSerialization_Epilogue(pResource, pCallContext, pParams) gsyncapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define gsyncapiGetNotificationListPtr(pNotifier) gsyncapiGetNotificationListPtr_DISPATCH(pNotifier)
-#define gsyncapiControl_Epilogue(pResource, pCallContext, pParams) gsyncapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define gsyncapiGetNotificationShare(pNotifier) gsyncapiGetNotificationShare_DISPATCH(pNotifier)
-#define gsyncapiControlLookup(pResource, pParams, ppEntry) gsyncapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define gsyncapiMap(pResource, pCallContext, pParams, pCpuMapping) gsyncapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define gsyncapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) gsyncapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NV_STATUS gsyncapiControl_IMPL(struct GSyncApi *pGsyncApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
@@ -389,8 +393,44 @@ static inline NV_STATUS gsyncapiCheckMemInterUnmap_DISPATCH(struct GSyncApi *pRm
     return pRmResource->__gsyncapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
+static inline NV_STATUS gsyncapiMapTo_DISPATCH(struct GSyncApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__gsyncapiMapTo__(pResource, pParams);
+}
+
 static inline NvBool gsyncapiAccessCallback_DISPATCH(struct GSyncApi *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
     return pResource->__gsyncapiAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+}
+
+static inline void gsyncapiSetNotificationShare_DISPATCH(struct GSyncApi *pNotifier, struct NotifShare *pNotifShare) {
+    pNotifier->__gsyncapiSetNotificationShare__(pNotifier, pNotifShare);
+}
+
+static inline NvU32 gsyncapiGetRefCount_DISPATCH(struct GSyncApi *pResource) {
+    return pResource->__gsyncapiGetRefCount__(pResource);
+}
+
+static inline void gsyncapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct GSyncApi *pResource, RsResourceRef *pReference) {
+    pResource->__gsyncapiAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS gsyncapiControl_Prologue_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__gsyncapiControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS gsyncapiUnmapFrom_DISPATCH(struct GSyncApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__gsyncapiUnmapFrom__(pResource, pParams);
+}
+
+static inline void gsyncapiControl_Epilogue_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__gsyncapiControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS gsyncapiControlLookup_DISPATCH(struct GSyncApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__gsyncapiControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NV_STATUS gsyncapiUnmap_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__gsyncapiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline NV_STATUS gsyncapiGetMemInterMapParams_DISPATCH(struct GSyncApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
@@ -401,68 +441,40 @@ static inline NV_STATUS gsyncapiGetMemoryMappingDescriptor_DISPATCH(struct GSync
     return pRmResource->__gsyncapiGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline void gsyncapiSetNotificationShare_DISPATCH(struct GSyncApi *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__gsyncapiSetNotificationShare__(pNotifier, pNotifShare);
-}
-
 static inline NV_STATUS gsyncapiControlFilter_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__gsyncapiControlFilter__(pResource, pCallContext, pParams);
-}
-
-static inline NvU32 gsyncapiGetRefCount_DISPATCH(struct GSyncApi *pResource) {
-    return pResource->__gsyncapiGetRefCount__(pResource);
 }
 
 static inline NV_STATUS gsyncapiUnregisterEvent_DISPATCH(struct GSyncApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return pNotifier->__gsyncapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static inline NV_STATUS gsyncapiUnmap_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__gsyncapiUnmap__(pResource, pCallContext, pCpuMapping);
+static inline NV_STATUS gsyncapiControlSerialization_Prologue_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__gsyncapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool gsyncapiCanCopy_DISPATCH(struct GSyncApi *pResource) {
     return pResource->__gsyncapiCanCopy__(pResource);
 }
 
-static inline NV_STATUS gsyncapiControl_Prologue_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__gsyncapiControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS gsyncapiMapTo_DISPATCH(struct GSyncApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__gsyncapiMapTo__(pResource, pParams);
-}
-
-static inline void gsyncapiAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct GSyncApi *pResource, RsResourceRef *pReference) {
-    pResource->__gsyncapiAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
 static inline void gsyncapiPreDestruct_DISPATCH(struct GSyncApi *pResource) {
     pResource->__gsyncapiPreDestruct__(pResource);
-}
-
-static inline NV_STATUS gsyncapiUnmapFrom_DISPATCH(struct GSyncApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__gsyncapiUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS gsyncapiIsDuplicate_DISPATCH(struct GSyncApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__gsyncapiIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
+static inline void gsyncapiControlSerialization_Epilogue_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__gsyncapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+}
+
 static inline PEVENTNOTIFICATION *gsyncapiGetNotificationListPtr_DISPATCH(struct GSyncApi *pNotifier) {
     return pNotifier->__gsyncapiGetNotificationListPtr__(pNotifier);
 }
 
-static inline void gsyncapiControl_Epilogue_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__gsyncapiControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
 static inline struct NotifShare *gsyncapiGetNotificationShare_DISPATCH(struct GSyncApi *pNotifier) {
     return pNotifier->__gsyncapiGetNotificationShare__(pNotifier);
-}
-
-static inline NV_STATUS gsyncapiControlLookup_DISPATCH(struct GSyncApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__gsyncapiControlLookup__(pResource, pParams, ppEntry);
 }
 
 static inline NV_STATUS gsyncapiMap_DISPATCH(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

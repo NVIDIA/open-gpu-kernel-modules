@@ -151,6 +151,7 @@
 #include <class/clb0b5.h>               // MAXWELL_DMA_COPY_A
 #include <class/clc365.h>               // ACCESS_COUNTER_NOTIFY_BUFFER
 #include <class/clc369.h>               // MMU_FAULT_BUFFER
+#include <class/clc763.h>               // MMU_VIDMEM_ACCESS_BIT_BUFFER
 #include <class/clc597.h>               // TURING_A
 #include <class/clc5c0.h>               // TURING_COMPUTE_A
 #include <class/clc697.h>               // AMPERE_A
@@ -717,6 +718,10 @@
 
 #ifndef MMU_FAULT_BUFFER
 #define MMU_FAULT_BUFFER                         (0x0000c369)
+#endif
+
+#ifndef MMU_VIDMEM_ACCESS_BIT_BUFFER
+#define MMU_VIDMEM_ACCESS_BIT_BUFFER             (0x0000c763)
 #endif
 
 #ifndef TURING_A

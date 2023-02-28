@@ -57,7 +57,7 @@ struct UvmSwObject {
     struct Notifier *__nvoc_pbase_Notifier;
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;
     struct UvmSwObject *__nvoc_pbase_UvmSwObject;
-    NV_STATUS (*__uvmswGetSwMethods__)(struct UvmSwObject *, METHOD **, NvU32 *);
+    NV_STATUS (*__uvmswGetSwMethods__)(struct UvmSwObject *, const METHOD **, NvU32 *);
     NV_STATUS (*__uvmswCheckMemInterUnmap__)(struct UvmSwObject *, NvBool);
     NvBool (*__uvmswShareCallback__)(struct UvmSwObject *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NvBool (*__uvmswAccessCallback__)(struct UvmSwObject *, struct RsClient *, void *, RsAccessRight);
@@ -80,9 +80,11 @@ struct UvmSwObject {
     NvBool (*__uvmswIsSwMethodStalling__)(struct UvmSwObject *, NvU32);
     NV_STATUS (*__uvmswControlFilter__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__uvmswUnregisterEvent__)(struct UvmSwObject *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__uvmswControlSerialization_Prologue__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__uvmswCanCopy__)(struct UvmSwObject *);
     void (*__uvmswPreDestruct__)(struct UvmSwObject *);
     NV_STATUS (*__uvmswIsDuplicate__)(struct UvmSwObject *, NvHandle, NvBool *);
+    void (*__uvmswControlSerialization_Epilogue__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__uvmswGetNotificationListPtr__)(struct UvmSwObject *);
     struct NotifShare *(*__uvmswGetNotificationShare__)(struct UvmSwObject *);
     NV_STATUS (*__uvmswMap__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -146,18 +148,20 @@ NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject**, Dynamic*, NvU32, struct CA
 #define uvmswIsSwMethodStalling(pChannelDescendant, hHandle) uvmswIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define uvmswControlFilter(pResource, pCallContext, pParams) uvmswControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define uvmswUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) uvmswUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define uvmswControlSerialization_Prologue(pResource, pCallContext, pParams) uvmswControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define uvmswCanCopy(pResource) uvmswCanCopy_DISPATCH(pResource)
 #define uvmswPreDestruct(pResource) uvmswPreDestruct_DISPATCH(pResource)
 #define uvmswIsDuplicate(pResource, hMemory, pDuplicate) uvmswIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define uvmswControlSerialization_Epilogue(pResource, pCallContext, pParams) uvmswControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define uvmswGetNotificationListPtr(pNotifier) uvmswGetNotificationListPtr_DISPATCH(pNotifier)
 #define uvmswGetNotificationShare(pNotifier) uvmswGetNotificationShare_DISPATCH(pNotifier)
 #define uvmswMap(pGpuResource, pCallContext, pParams, pCpuMapping) uvmswMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define uvmswGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) uvmswGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
-static inline NV_STATUS uvmswGetSwMethods_56cd7a(struct UvmSwObject *pUvmSw, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS uvmswGetSwMethods_56cd7a(struct UvmSwObject *pUvmSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return NV_OK;
 }
 
-static inline NV_STATUS uvmswGetSwMethods_DISPATCH(struct UvmSwObject *pUvmSw, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS uvmswGetSwMethods_DISPATCH(struct UvmSwObject *pUvmSw, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pUvmSw->__uvmswGetSwMethods__(pUvmSw, ppMethods, pNumMethods);
 }
 
@@ -249,6 +253,10 @@ static inline NV_STATUS uvmswUnregisterEvent_DISPATCH(struct UvmSwObject *pNotif
     return pNotifier->__uvmswUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS uvmswControlSerialization_Prologue_DISPATCH(struct UvmSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__uvmswControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool uvmswCanCopy_DISPATCH(struct UvmSwObject *pResource) {
     return pResource->__uvmswCanCopy__(pResource);
 }
@@ -259,6 +267,10 @@ static inline void uvmswPreDestruct_DISPATCH(struct UvmSwObject *pResource) {
 
 static inline NV_STATUS uvmswIsDuplicate_DISPATCH(struct UvmSwObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__uvmswIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void uvmswControlSerialization_Epilogue_DISPATCH(struct UvmSwObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__uvmswControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *uvmswGetNotificationListPtr_DISPATCH(struct UvmSwObject *pNotifier) {

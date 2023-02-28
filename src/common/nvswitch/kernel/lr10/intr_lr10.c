@@ -3492,10 +3492,15 @@ _nvswitch_service_nvltlc_rx_lnk_nonfatal_0_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event;
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_NON_FATAL_REPORT_EN_0);
     report.mask = report.raw_enable;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     pending = report.raw_pending & report.mask;
     if (pending == 0)
@@ -3505,6 +3510,7 @@ _nvswitch_service_nvltlc_rx_lnk_nonfatal_0_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_FIRST_0);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXRSPSTATUS_PRIV_ERR, 1);
     if (nvswitch_test_flags(pending, bit))
@@ -3512,6 +3518,11 @@ _nvswitch_service_nvltlc_rx_lnk_nonfatal_0_lr10
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_RX_LNK_RXRSPSTATUS_PRIV_ERR, "RX Rsp Status PRIV Error");
         nvswitch_clear_flags(&unhandled, bit);
 
+        if (FLD_TEST_DRF_NUM(_NVLTLC_RX_LNK, _ERR_REPORT_INJECT_0, _RXRSPSTATUS_PRIV_ERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_RSP_STATUS_PRIV_ERR_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -3544,11 +3555,16 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event;
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     if (pending == 0)
     {
@@ -3557,12 +3573,20 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FIRST_0);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _CREQ_RAM_DAT_ECC_DBE_ERR, 1);
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_CREQ_RAM_DAT_ECC_DBE_ERR, "CREQ RAM DAT ECC DBE Error");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC_TX_LNK, _ERR_REPORT_INJECT_0, _CREQ_RAM_DAT_ECC_DBE_ERR, 0x0, injected))
+        {
+            // TODO 3014908 log these in the NVL object until we have ECC object support
+            error_event.error = INFOROM_NVLINK_TLC_TX_CREQ_DAT_RAM_ECC_DBE_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _CREQ_RAM_ECC_LIMIT_ERR, 1);
@@ -3591,6 +3615,13 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_COM_RAM_DAT_ECC_DBE_ERR, "COM RAM DAT ECC DBE Error");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC_TX_LNK, _ERR_REPORT_INJECT_0, _COM_RAM_DAT_ECC_DBE_ERR, 0x0, injected))
+        {
+            // TODO 3014908 log these in the NVL object until we have ECC object support
+            error_event.error = INFOROM_NVLINK_TLC_TX_COM_DAT_RAM_ECC_DBE_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _COM_RAM_ECC_LIMIT_ERR, 1);
@@ -3642,13 +3673,18 @@ _nvswitch_service_nvltlc_rx_lnk_nonfatal_1_lr10
     NvU32 link
 )
 {
-    NvU32 pending, bit, unhandled, injected;
+    NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event;
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_STATUS_1);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_NON_FATAL_REPORT_EN_1);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     if (pending == 0)
     {
@@ -3667,6 +3703,8 @@ _nvswitch_service_nvltlc_rx_lnk_nonfatal_1_lr10
 
         if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_1, _AN1_HEARTBEAT_TIMEOUT_ERR, 0x0, injected))
         {
+            error_event.error = INFOROM_NVLINK_TLC_RX_AN1_HEARTBEAT_TIMEOUT_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
             //
             // WAR Bug 200627368: Mask off HBTO to avoid a storm
             // During the start of reset_and_drain, all links on the GPU
@@ -3719,11 +3757,16 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_STATUS_1);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_1);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     if (pending == 0)
     {
@@ -3732,12 +3775,19 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FIRST_1);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_REPORT_INJECT_1);
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_1, _AN1_TIMEOUT_VC0, 1);
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_AN1_TIMEOUT_VC0, "AN1 Timeout VC0");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_1, _AN1_TIMEOUT_VC0, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_AN1_TIMEOUT_VC0_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_1, _AN1_TIMEOUT_VC1, 1);
@@ -3745,6 +3795,12 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_AN1_TIMEOUT_VC1, "AN1 Timeout VC1");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_1, _AN1_TIMEOUT_VC1, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_AN1_TIMEOUT_VC1_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_1, _AN1_TIMEOUT_VC2, 1);
@@ -3752,6 +3808,12 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_AN1_TIMEOUT_VC2, "AN1 Timeout VC2");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_1, _AN1_TIMEOUT_VC2, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_AN1_TIMEOUT_VC2_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_1, _AN1_TIMEOUT_VC3, 1);
@@ -3760,6 +3822,11 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_AN1_TIMEOUT_VC3, "AN1 Timeout VC3");
         nvswitch_clear_flags(&unhandled, bit);
 
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_1, _AN1_TIMEOUT_VC3, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_AN1_TIMEOUT_VC3_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_1, _AN1_TIMEOUT_VC4, 1);
@@ -3768,6 +3835,11 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_AN1_TIMEOUT_VC4, "AN1 Timeout VC4");
         nvswitch_clear_flags(&unhandled, bit);
 
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_1, _AN1_TIMEOUT_VC4, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_AN1_TIMEOUT_VC4_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_1, _AN1_TIMEOUT_VC5, 1);
@@ -3775,6 +3847,12 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_AN1_TIMEOUT_VC5, "AN1 Timeout VC5");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_1, _AN1_TIMEOUT_VC5, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_AN1_TIMEOUT_VC5_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_1, _AN1_TIMEOUT_VC6, 1);
@@ -3782,6 +3860,12 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_AN1_TIMEOUT_VC6, "AN1 Timeout VC6");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_1, _AN1_TIMEOUT_VC6, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_AN1_TIMEOUT_VC6_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_1, _AN1_TIMEOUT_VC7, 1);
@@ -3789,6 +3873,12 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLTLC_TX_LNK_AN1_TIMEOUT_VC7, "AN1 Timeout VC7");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_1, _AN1_TIMEOUT_VC7, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_AN1_TIMEOUT_VC7_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -3890,10 +3980,15 @@ _nvswitch_service_nvlipt_lnk_nonfatal_lr10
 {
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, unhandled;
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_NON_FATAL_REPORT_EN_0);
     report.mask = report.raw_enable;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     pending = report.raw_pending & report.mask;
     if (pending == 0)
@@ -3903,12 +3998,19 @@ _nvswitch_service_nvlipt_lnk_nonfatal_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_FIRST_0);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _ILLEGALLINKSTATEREQUEST, 1);
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLIPT_LNK_ILLEGALLINKSTATEREQUEST, "_HW_NVLIPT_LNK_ILLEGALLINKSTATEREQUEST");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _ILLEGALLINKSTATEREQUEST, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_ILLEGAL_LINK_STATE_REQUEST_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _FAILEDMINIONREQUEST, 1);
@@ -3916,6 +4018,12 @@ _nvswitch_service_nvlipt_lnk_nonfatal_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLIPT_LNK_FAILEDMINIONREQUEST, "_FAILEDMINIONREQUEST");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _FAILEDMINIONREQUEST, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_FAILED_MINION_REQUEST_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _RESERVEDREQUESTVALUE, 1);
@@ -3923,6 +4031,12 @@ _nvswitch_service_nvlipt_lnk_nonfatal_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLIPT_LNK_RESERVEDREQUESTVALUE, "_RESERVEDREQUESTVALUE");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _RESERVEDREQUESTVALUE, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_RESERVED_REQUEST_VALUE_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _LINKSTATEWRITEWHILEBUSY, 1);
@@ -3930,6 +4044,12 @@ _nvswitch_service_nvlipt_lnk_nonfatal_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLIPT_LNK_LINKSTATEWRITEWHILEBUSY, "_LINKSTATEWRITEWHILEBUSY");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _LINKSTATEWRITEWHILEBUSY, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_LINK_STATE_WRITE_WHILE_BUSY_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _LINK_STATE_REQUEST_TIMEOUT, 1);
@@ -3937,6 +4057,12 @@ _nvswitch_service_nvlipt_lnk_nonfatal_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLIPT_LNK_LINK_STATE_REQUEST_TIMEOUT, "_LINK_STATE_REQUEST_TIMEOUT");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _LINK_STATE_REQUEST_TIMEOUT, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_LINK_STATE_REQUEST_TIMEOUT_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _WRITE_TO_LOCKED_SYSTEM_REG_ERR, 1);
@@ -3944,6 +4070,12 @@ _nvswitch_service_nvlipt_lnk_nonfatal_lr10
     {
         NVSWITCH_REPORT_NONFATAL(_HW_NVLIPT_LNK_WRITE_TO_LOCKED_SYSTEM_REG_ERR, "_WRITE_TO_LOCKED_SYSTEM_REG_ERR");
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _WRITE_TO_LOCKED_SYSTEM_REG_ERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_WRITE_TO_LOCKED_SYSTEM_REG_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -4456,11 +4588,15 @@ nvswitch_service_nvldl_fatal_link_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLDL, _NVLDL_TOP, _INTR);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLDL, _NVLDL_TOP, _INTR_STALL_EN);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     if (pending == 0)
     {
@@ -4474,6 +4610,8 @@ nvswitch_service_nvldl_fatal_link_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_DLPL_TX_FAULT_RAM, "TX Fault Ram", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+        error_event.error = INFOROM_NVLINK_DL_TX_FAULT_RAM_FATAL;
+        nvswitch_inforom_nvlink_log_error_event(device, &error_event);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _TX_FAULT_INTERFACE, 1);
@@ -4481,6 +4619,8 @@ nvswitch_service_nvldl_fatal_link_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_DLPL_TX_FAULT_INTERFACE, "TX Fault Interface", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+        error_event.error = INFOROM_NVLINK_DL_TX_FAULT_INTERFACE_FATAL;
+        nvswitch_inforom_nvlink_log_error_event(device, &error_event);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _TX_FAULT_SUBLINK_CHANGE, 1);
@@ -4488,6 +4628,8 @@ nvswitch_service_nvldl_fatal_link_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_DLPL_TX_FAULT_SUBLINK_CHANGE, "TX Fault Sublink Change", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+        error_event.error = INFOROM_NVLINK_DL_TX_FAULT_SUBLINK_CHANGE_FATAL;
+        nvswitch_inforom_nvlink_log_error_event(device, &error_event);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _RX_FAULT_SUBLINK_CHANGE, 1);
@@ -4495,6 +4637,8 @@ nvswitch_service_nvldl_fatal_link_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_DLPL_RX_FAULT_SUBLINK_CHANGE, "RX Fault Sublink Change", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+        error_event.error = INFOROM_NVLINK_DL_RX_FAULT_SUBLINK_CHANGE_FATAL;
+        nvswitch_inforom_nvlink_log_error_event(device, &error_event);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _RX_FAULT_DL_PROTOCOL, 1);
@@ -4502,6 +4646,8 @@ nvswitch_service_nvldl_fatal_link_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_DLPL_RX_FAULT_DL_PROTOCOL, "RX Fault DL Protocol", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+        error_event.error = INFOROM_NVLINK_DL_RX_FAULT_DL_PROTOCOL_FATAL;
+        nvswitch_inforom_nvlink_log_error_event(device, &error_event);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _LTSSM_FAULT_DOWN, 1);
@@ -4509,6 +4655,8 @@ nvswitch_service_nvldl_fatal_link_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_DLPL_LTSSM_FAULT_DOWN, "LTSSM Fault Down", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+        error_event.error = INFOROM_NVLINK_DL_LTSSM_FAULT_DOWN_FATAL;
+        nvswitch_inforom_nvlink_log_error_event(device, &error_event);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _LTSSM_FAULT_UP, 1);
@@ -4516,6 +4664,8 @@ nvswitch_service_nvldl_fatal_link_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_DLPL_LTSSM_FAULT_UP, "LTSSM Fault Up", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+        error_event.error = INFOROM_NVLINK_DL_LTSSM_FAULT_UP_FATAL;
+        nvswitch_inforom_nvlink_log_error_event(device, &error_event);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _LTSSM_PROTOCOL, 1);
@@ -4621,11 +4771,16 @@ _nvswitch_service_nvltlc_tx_sys_fatal_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_FATAL_REPORT_EN_0);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     if (pending == 0)
     {
@@ -4634,12 +4789,19 @@ _nvswitch_service_nvltlc_tx_sys_fatal_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_FIRST_0);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _NCISOC_PARITY_ERR, 1);
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_TX_SYS_NCISOC_PARITY_ERR, "NCISOC Parity Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_SYS_ERR_REPORT_INJECT_0, _NCISOC_PARITY_ERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_NCISOC_PARITY_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _NCISOC_HDR_ECC_DBE_ERR, 1);
@@ -4647,6 +4809,12 @@ _nvswitch_service_nvltlc_tx_sys_fatal_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_TX_SYS_NCISOC_HDR_ECC_DBE_ERR, "NCISOC HDR ECC DBE Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_SYS_ERR_REPORT_INJECT_0, _NCISOC_HDR_ECC_DBE_ERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_NCISOC_HDR_ECC_DBE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_SYS, _ERR_STATUS_0, _NCISOC_DAT_ECC_DBE_ERR, 1);
@@ -4729,11 +4897,16 @@ _nvswitch_service_nvltlc_rx_sys_fatal_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     if (pending == 0)
     {
@@ -4742,6 +4915,7 @@ _nvswitch_service_nvltlc_rx_sys_fatal_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FIRST_0);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _NCISOC_PARITY_ERR, 1);
     if (nvswitch_test_flags(pending, bit))
@@ -4755,6 +4929,13 @@ _nvswitch_service_nvltlc_rx_sys_fatal_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_HDR_RAM_ECC_DBE_ERR, "HDR RAM ECC DBE Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC_RX_SYS, _ERR_REPORT_INJECT_0, _HDR_RAM_ECC_DBE_ERR, 0x0, injected))
+        {
+            // TODO 3014908 log these in the NVL object until we have ECC object support
+            error_event.error = INFOROM_NVLINK_TLC_RX_HDR_RAM_ECC_DBE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _HDR_RAM_ECC_LIMIT_ERR, 1);
@@ -4769,6 +4950,13 @@ _nvswitch_service_nvltlc_rx_sys_fatal_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_DAT0_RAM_ECC_DBE_ERR, "DAT0 RAM ECC DBE Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC_RX_SYS, _ERR_REPORT_INJECT_0, _DAT0_RAM_ECC_DBE_ERR, 0x0, injected))
+        {
+            // TODO 3014908 log these in the NVL object until we have ECC object support
+            error_event.error = INFOROM_NVLINK_TLC_RX_DAT0_RAM_ECC_DBE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _DAT0_RAM_ECC_LIMIT_ERR, 1);
@@ -4783,6 +4971,13 @@ _nvswitch_service_nvltlc_rx_sys_fatal_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_SYS_DAT1_RAM_ECC_DBE_ERR, "DAT1 RAM ECC DBE Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC_RX_SYS, _ERR_REPORT_INJECT_0, _DAT1_RAM_ECC_DBE_ERR, 0x0, injected))
+        {
+            // TODO 3014908 log these in the NVL object until we have ECC object support
+            error_event.error = INFOROM_NVLINK_TLC_RX_DAT1_RAM_ECC_DBE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_SYS, _ERR_STATUS_0, _DAT1_RAM_ECC_LIMIT_ERR, 1);
@@ -4830,11 +5025,16 @@ _nvswitch_service_nvltlc_tx_lnk_fatal_0_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     if (pending == 0)
     {
@@ -4843,12 +5043,19 @@ _nvswitch_service_nvltlc_tx_lnk_fatal_0_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FIRST_0);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _TXDLCREDITPARITYERR, 1);
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_TXDLCREDITPARITYERR, "TX DL Credit Parity Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _TX_LNK_ERR_REPORT_INJECT_0, _TXDLCREDITPARITYERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_TX_DL_CREDIT_PARITY_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_TX_LNK, _ERR_STATUS_0, _CREQ_RAM_HDR_ECC_DBE_ERR, 1);
@@ -4884,6 +5091,13 @@ _nvswitch_service_nvltlc_tx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_TX_LNK_RSP1_RAM_DAT_ECC_DBE_ERR, "RSP1 RAM DAT ECC DBE Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC_TX_LNK, _ERR_REPORT_INJECT_0, _RSP1_RAM_DAT_ECC_DBE_ERR, 0x0, injected))
+        {
+            // TODO 3014908 log these in the NVL object until we have ECC object support
+            error_event.error = INFOROM_NVLINK_TLC_TX_RSP1_DAT_RAM_ECC_DBE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -4923,11 +5137,17 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_FATAL_REPORT_EN_0);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
+
     if (pending == 0)
     {
         return -NVL_NOT_FOUND;
@@ -4935,12 +5155,19 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_FIRST_0);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXDLHDRPARITYERR, 1);
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXDLHDRPARITYERR, "RX DL HDR Parity Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXDLHDRPARITYERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_DL_HDR_PARITY_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXDLDATAPARITYERR, 1);
@@ -4948,6 +5175,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXDLDATAPARITYERR, "RX DL Data Parity Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXDLDATAPARITYERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_DL_DATA_PARITY_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXDLCTRLPARITYERR, 1);
@@ -4955,6 +5188,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXDLCTRLPARITYERR, "RX DL Ctrl Parity Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXDLCTRLPARITYERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_DL_CTRL_PARITY_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXINVALIDAEERR, 1);
@@ -4962,6 +5201,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXINVALIDAEERR, "RX Invalid DAE Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXINVALIDAEERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_INVALID_AE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXINVALIDBEERR, 1);
@@ -4969,6 +5214,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXINVALIDBEERR, "RX Invalid BE Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXINVALIDBEERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_INVALID_BE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXINVALIDADDRALIGNERR, 1);
@@ -4976,6 +5227,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXINVALIDADDRALIGNERR, "RX Invalid Addr Align Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXINVALIDADDRALIGNERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_INVALID_ADDR_ALIGN_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXPKTLENERR, 1);
@@ -4983,6 +5240,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXPKTLENERR, "RX Packet Length Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXPKTLENERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_PKTLEN_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RSVCMDENCERR, 1);
@@ -4990,6 +5253,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RSVCMDENCERR, "RSV Cmd Encoding Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RSVCMDENCERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_RSVD_CMD_ENC_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RSVDATLENENCERR, 1);
@@ -4997,6 +5266,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RSVDATLENENCERR, "RSV Data Length Encoding Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RSVDATLENENCERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_RSVD_DAT_LEN_ENC_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RSVPKTSTATUSERR, 1);
@@ -5004,6 +5279,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RSVPKTSTATUSERR, "RSV Packet Status Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RSVPKTSTATUSERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_RSVD_PACKET_STATUS_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RSVCACHEATTRPROBEREQERR, 1);
@@ -5011,6 +5292,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RSVCACHEATTRPROBEREQERR, "RSV Packet Status Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RSVCACHEATTRPROBEREQERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_RSVD_CACHE_ATTR_PROBE_REQ_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RSVCACHEATTRPROBERSPERR, 1);
@@ -5018,6 +5305,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RSVCACHEATTRPROBERSPERR, "RSV CacheAttr Probe Rsp Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RSVCACHEATTRPROBERSPERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_RSVD_CACHE_ATTR_PROBE_RSP_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _DATLENGTRMWREQMAXERR, 1);
@@ -5025,6 +5318,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_DATLENGTRMWREQMAXERR, "Data Length RMW Req Max Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _DATLENGTRMWREQMAXERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_DATLEN_GT_RMW_REQ_MAX_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _DATLENLTATRRSPMINERR, 1);
@@ -5032,6 +5331,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_DATLENLTATRRSPMINERR, "Data Len Lt ATR RSP Min Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _DATLENLTATRRSPMINERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_DATLEN_LT_ATR_RSP_MIN_ERR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _INVALIDCACHEATTRPOERR, 1);
@@ -5039,6 +5344,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_INVALIDCACHEATTRPOERR, "Invalid Cache Attr PO Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _INVALIDCACHEATTRPOERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_INVALID_PO_FOR_CACHE_ATTR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _INVALIDCRERR, 1);
@@ -5046,6 +5357,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_INVALIDCRERR, "Invalid CR Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _INVALIDCRERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_INVALID_CR_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXRSPSTATUS_HW_ERR, 1);
@@ -5053,6 +5370,13 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_LNK_RXRSPSTATUS_HW_ERR, "RX Rsp Status HW Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        // TODO 200564153 _RX_RSPSTATUS_HW_ERR should be reported as non-fatal
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXRSPSTATUS_HW_ERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_RSP_STATUS_HW_ERR_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _RXRSPSTATUS_UR_ERR, 1);
@@ -5060,6 +5384,13 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_LNK_RXRSPSTATUS_UR_ERR, "RX Rsp Status UR Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        // TODO 200564153 _RX_RSPSTATUS_UR_ERR should be reported as non-fatal
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _RXRSPSTATUS_UR_ERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_RSP_STATUS_UR_ERR_NONFATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_0, _INVALID_COLLAPSED_RESPONSE_ERR, 1);
@@ -5067,6 +5398,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RX_LNK_INVALID_COLLAPSED_RESPONSE_ERR, "Invalid Collapsed Response Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_0, _INVALID_COLLAPSED_RESPONSE_ERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_INVALID_COLLAPSED_RESPONSE_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -5106,11 +5443,16 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_1_lr10
 {
     NvU32 pending, bit, unhandled;
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_STATUS_1);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_FATAL_REPORT_EN_1);
     report.mask = report.raw_enable;
     pending = report.raw_pending & report.mask;
+
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
 
     if (pending == 0)
     {
@@ -5119,12 +5461,19 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_1_lr10
 
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_FIRST_1);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_REPORT_INJECT_1);
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_1, _RXHDROVFERR, 1);
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXHDROVFERR, "RX HDR OVF Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_1, _RXHDROVFERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_HDR_OVERFLOW_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_1, _RXDATAOVFERR, 1);
@@ -5132,6 +5481,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_1_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_RXDATAOVFERR, "RX Data OVF Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_1, _RXDATAOVFERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_DATA_OVERFLOW_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_1, _STOMPDETERR, 1);
@@ -5139,6 +5494,12 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_1_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLTLC_STOMPDETERR, "Stomp Det Error", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLTLC, _RX_LNK_ERR_REPORT_INJECT_1, _STOMPDETERR, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_TLC_RX_STOMP_DETECTED_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLTLC_RX_LNK, _ERR_STATUS_1, _RXPOISONERR, 1);
@@ -5253,6 +5614,8 @@ _nvswitch_service_nvlipt_common_fatal_lr10
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, contain, unhandled;
     NvU32 link, local_link_idx;
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_NVLIPT_RD32_LR10(device, instance, _NVLIPT_COMMON, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_NVLIPT_RD32_LR10(device, instance, _NVLIPT_COMMON, _ERR_FATAL_REPORT_EN_0);
@@ -5267,9 +5630,12 @@ _nvswitch_service_nvlipt_common_fatal_lr10
         return -NVL_NOT_FOUND;
     }
 
+    error_event.nvliptInstance = (NvU8) instance;
+
     unhandled = pending;
     report.raw_first = NVSWITCH_NVLIPT_RD32_LR10(device, instance, _NVLIPT_COMMON, _ERR_FIRST_0);
     contain = NVSWITCH_NVLIPT_RD32_LR10(device, instance, _NVLIPT_COMMON, _ERR_CONTAIN_EN_0);
+    injected = NVSWITCH_NVLIPT_RD32_LR10(device, instance, _NVLIPT_COMMON, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLIPT_COMMON, _ERR_STATUS_0, _CLKCTL_ILLEGAL_REQUEST, 1);
     if (nvswitch_test_flags(pending, bit))
@@ -5284,6 +5650,12 @@ _nvswitch_service_nvlipt_common_fatal_lr10
         }
 
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_COMMON, _ERR_REPORT_INJECT_0, _CLKCTL_ILLEGAL_REQUEST, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_CLKCTL_ILLEGAL_REQUEST_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_COMMON, _ERR_STATUS_0, _RSTSEQ_PLL_TIMEOUT, 1);
@@ -5299,6 +5671,12 @@ _nvswitch_service_nvlipt_common_fatal_lr10
         }
 
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_COMMON, _ERR_REPORT_INJECT_0, _RSTSEQ_PLL_TIMEOUT, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_RSTSEQ_PLL_TIMEOUT_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_COMMON, _ERR_STATUS_0, _RSTSEQ_PHYARB_TIMEOUT, 1);
@@ -5314,6 +5692,12 @@ _nvswitch_service_nvlipt_common_fatal_lr10
         }
 
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_COMMON, _ERR_REPORT_INJECT_0, _RSTSEQ_PHYARB_TIMEOUT, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_RSTSEQ_PHYARB_TIMEOUT_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);
@@ -5360,6 +5744,8 @@ _nvswitch_service_nvlipt_lnk_fatal_lr10
 {
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, bit, unhandled;
+    INFOROM_NVLINK_ERROR_EVENT error_event = { 0 };
+    NvU32 injected;
 
     report.raw_pending = NVSWITCH_LINK_RD32_LR10(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_STATUS_0);
     report.raw_enable = NVSWITCH_LINK_RD32_LR10(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_FATAL_REPORT_EN_0);
@@ -5371,14 +5757,24 @@ _nvswitch_service_nvlipt_lnk_fatal_lr10
         return -NVL_NOT_FOUND;
     }
 
+    error_event.nvliptInstance = (NvU8) nvlipt_instance;
+    error_event.localLinkIdx   = (NvU8) NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LR10(link);
+
     unhandled = pending;
     report.raw_first = NVSWITCH_LINK_RD32_LR10(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_FIRST_0);
+    injected = NVSWITCH_LINK_RD32_LR10(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_REPORT_INJECT_0);
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _SLEEPWHILEACTIVELINK, 1);
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLIPT_LNK_SLEEPWHILEACTIVELINK, "No non-empty link is detected", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _SLEEPWHILEACTIVELINK, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_SLEEP_WHILE_ACTIVE_LINK_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _RSTSEQ_PHYCTL_TIMEOUT, 1);
@@ -5386,6 +5782,12 @@ _nvswitch_service_nvlipt_lnk_fatal_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLIPT_LNK_RSTSEQ_PHYCTL_TIMEOUT, "Reset sequencer timed out waiting for a handshake from PHYCTL", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _RSTSEQ_PHYCTL_TIMEOUT, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_RSTSEQ_PHYCTL_TIMEOUT_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _RSTSEQ_CLKCTL_TIMEOUT, 1);
@@ -5393,6 +5795,12 @@ _nvswitch_service_nvlipt_lnk_fatal_lr10
     {
         NVSWITCH_REPORT_FATAL(_HW_NVLIPT_LNK_RSTSEQ_CLKCTL_TIMEOUT, "Reset sequencer timed out waiting for a handshake from CLKCTL", NV_FALSE);
         nvswitch_clear_flags(&unhandled, bit);
+
+        if (FLD_TEST_DRF_NUM(_NVLIPT_LNK, _ERR_REPORT_INJECT_0, _RSTSEQ_CLKCTL_TIMEOUT, 0x0, injected))
+        {
+            error_event.error = INFOROM_NVLINK_NVLIPT_RSTSEQ_CLKCTL_TIMEOUT_FATAL;
+            nvswitch_inforom_nvlink_log_error_event(device, &error_event);
+        }
     }
 
     NVSWITCH_UNHANDLED_CHECK(device, unhandled);

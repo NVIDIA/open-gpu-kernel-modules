@@ -70,10 +70,6 @@ static NV_STATUS __nvoc_thunk_KernelGraphicsManager_engstateConstructEngine(stru
     return kgrmgrConstructEngine(arg0, (struct KernelGraphicsManager *)(((unsigned char *)arg1) - __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), arg2);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgrmgrReconcileTunableState(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgrmgrStateLoad(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg0) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), arg0);
 }
@@ -118,28 +114,8 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgrmgrStatePreInitUnlocked(POBJGPU pGp
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgrmgrGetTunableState(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgrmgrCompareTunableState(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_kgrmgrFreeTunableState(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgrmgrStatePostLoad(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, NvU32 arg0) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), arg0);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgrmgrAllocTunableState(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgrmgrSetTunableState(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), pTunableState);
 }
 
 static NvBool __nvoc_thunk_OBJENGSTATE_kgrmgrIsPresent(POBJGPU pGpu, struct KernelGraphicsManager *pEngstate) {
@@ -184,8 +160,6 @@ static void __nvoc_init_funcTable_KernelGraphicsManager_1(KernelGraphicsManager 
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelGraphicsManager_engstateConstructEngine;
 
-    pThis->__kgrmgrReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrReconcileTunableState;
-
     pThis->__kgrmgrStateLoad__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrStateLoad;
 
     pThis->__kgrmgrStateUnload__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrStateUnload;
@@ -208,17 +182,7 @@ static void __nvoc_init_funcTable_KernelGraphicsManager_1(KernelGraphicsManager 
 
     pThis->__kgrmgrStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrStatePreInitUnlocked;
 
-    pThis->__kgrmgrGetTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrGetTunableState;
-
-    pThis->__kgrmgrCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrCompareTunableState;
-
-    pThis->__kgrmgrFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrFreeTunableState;
-
     pThis->__kgrmgrStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrStatePostLoad;
-
-    pThis->__kgrmgrAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrAllocTunableState;
-
-    pThis->__kgrmgrSetTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrSetTunableState;
 
     pThis->__kgrmgrIsPresent__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrIsPresent;
 }
@@ -241,12 +205,15 @@ NV_STATUS __nvoc_objCreate_KernelGraphicsManager(KernelGraphicsManager **ppThis,
     Object *pParentObj;
     KernelGraphicsManager *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(KernelGraphicsManager));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelGraphicsManager), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(KernelGraphicsManager));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelGraphicsManager);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -263,11 +230,17 @@ NV_STATUS __nvoc_objCreate_KernelGraphicsManager(KernelGraphicsManager **ppThis,
     if (status != NV_OK) goto __nvoc_objCreate_KernelGraphicsManager_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_KernelGraphicsManager_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(KernelGraphicsManager));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

@@ -34,8 +34,8 @@
 #define DRM_NVIDIA_GEM_IMPORT_USERSPACE_MEMORY      0x02
 #define DRM_NVIDIA_GET_DEV_INFO                     0x03
 #define DRM_NVIDIA_FENCE_SUPPORTED                  0x04
-#define DRM_NVIDIA_FENCE_CONTEXT_CREATE             0x05
-#define DRM_NVIDIA_GEM_FENCE_ATTACH                 0x06
+#define DRM_NVIDIA_PRIME_FENCE_CONTEXT_CREATE       0x05
+#define DRM_NVIDIA_GEM_PRIME_FENCE_ATTACH           0x06
 #define DRM_NVIDIA_GET_CLIENT_CAPABILITY            0x08
 #define DRM_NVIDIA_GEM_EXPORT_NVKMS_MEMORY          0x09
 #define DRM_NVIDIA_GEM_MAP_OFFSET                   0x0a
@@ -43,6 +43,11 @@
 #define DRM_NVIDIA_GET_CRTC_CRC32_V2                0x0c
 #define DRM_NVIDIA_GEM_EXPORT_DMABUF_MEMORY         0x0d
 #define DRM_NVIDIA_GEM_IDENTIFY_OBJECT              0x0e
+#define DRM_NVIDIA_DMABUF_SUPPORTED                 0x0f
+#define DRM_NVIDIA_GET_DPY_ID_FOR_CONNECTOR_ID      0x10
+#define DRM_NVIDIA_GET_CONNECTOR_ID_FOR_DPY_ID      0x11
+#define DRM_NVIDIA_GRANT_PERMISSIONS                0x12
+#define DRM_NVIDIA_REVOKE_PERMISSIONS               0x13
 
 #define DRM_IOCTL_NVIDIA_GEM_IMPORT_NVKMS_MEMORY                           \
     DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_IMPORT_NVKMS_MEMORY),      \
@@ -65,49 +70,68 @@
 #if defined(NV_LINUX)
 #define DRM_IOCTL_NVIDIA_FENCE_SUPPORTED                         \
     DRM_IO(DRM_COMMAND_BASE + DRM_NVIDIA_FENCE_SUPPORTED)
+#define DRM_IOCTL_NVIDIA_DMABUF_SUPPORTED                        \
+    DRM_IO(DRM_COMMAND_BASE + DRM_NVIDIA_DMABUF_SUPPORTED)
 #else
 #define DRM_IOCTL_NVIDIA_FENCE_SUPPORTED 0
+#define DRM_IOCTL_NVIDIA_DMABUF_SUPPORTED 0
 #endif
 
-#define DRM_IOCTL_NVIDIA_FENCE_CONTEXT_CREATE                        \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_FENCE_CONTEXT_CREATE),   \
-             struct drm_nvidia_fence_context_create_params)
+#define DRM_IOCTL_NVIDIA_PRIME_FENCE_CONTEXT_CREATE                     \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_PRIME_FENCE_CONTEXT_CREATE),\
+             struct drm_nvidia_prime_fence_context_create_params)
 
-#define DRM_IOCTL_NVIDIA_GEM_FENCE_ATTACH                            \
-    DRM_IOW((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_FENCE_ATTACH),        \
-            struct drm_nvidia_gem_fence_attach_params)
+#define DRM_IOCTL_NVIDIA_GEM_PRIME_FENCE_ATTACH                         \
+    DRM_IOW((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_PRIME_FENCE_ATTACH),     \
+            struct drm_nvidia_gem_prime_fence_attach_params)
 
-#define DRM_IOCTL_NVIDIA_GET_CLIENT_CAPABILITY                       \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_CLIENT_CAPABILITY),  \
+#define DRM_IOCTL_NVIDIA_GET_CLIENT_CAPABILITY                          \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_CLIENT_CAPABILITY),     \
              struct drm_nvidia_get_client_capability_params)
 
-#define DRM_IOCTL_NVIDIA_GET_CRTC_CRC32                              \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_CRTC_CRC32),         \
+#define DRM_IOCTL_NVIDIA_GET_CRTC_CRC32                                 \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_CRTC_CRC32),            \
              struct drm_nvidia_get_crtc_crc32_params)
 
-#define DRM_IOCTL_NVIDIA_GET_CRTC_CRC32_V2                           \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_CRTC_CRC32_V2),      \
+#define DRM_IOCTL_NVIDIA_GET_CRTC_CRC32_V2                              \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_CRTC_CRC32_V2),         \
               struct drm_nvidia_get_crtc_crc32_v2_params)
 
-#define DRM_IOCTL_NVIDIA_GEM_EXPORT_NVKMS_MEMORY                           \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_EXPORT_NVKMS_MEMORY),      \
+#define DRM_IOCTL_NVIDIA_GEM_EXPORT_NVKMS_MEMORY                        \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_EXPORT_NVKMS_MEMORY),   \
               struct drm_nvidia_gem_export_nvkms_memory_params)
 
-#define DRM_IOCTL_NVIDIA_GEM_MAP_OFFSET                              \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_MAP_OFFSET),         \
+#define DRM_IOCTL_NVIDIA_GEM_MAP_OFFSET                                 \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_MAP_OFFSET),            \
              struct drm_nvidia_gem_map_offset_params)
 
-#define DRM_IOCTL_NVIDIA_GEM_ALLOC_NVKMS_MEMORY                      \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_ALLOC_NVKMS_MEMORY), \
+#define DRM_IOCTL_NVIDIA_GEM_ALLOC_NVKMS_MEMORY                         \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_ALLOC_NVKMS_MEMORY),    \
               struct drm_nvidia_gem_alloc_nvkms_memory_params)
 
-#define DRM_IOCTL_NVIDIA_GEM_EXPORT_DMABUF_MEMORY                      \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_EXPORT_DMABUF_MEMORY), \
+#define DRM_IOCTL_NVIDIA_GEM_EXPORT_DMABUF_MEMORY                       \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_EXPORT_DMABUF_MEMORY),  \
               struct drm_nvidia_gem_export_dmabuf_memory_params)
 
-#define DRM_IOCTL_NVIDIA_GEM_IDENTIFY_OBJECT                      \
-    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_IDENTIFY_OBJECT), \
+#define DRM_IOCTL_NVIDIA_GEM_IDENTIFY_OBJECT                            \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_IDENTIFY_OBJECT),       \
               struct drm_nvidia_gem_identify_object_params)
+
+#define DRM_IOCTL_NVIDIA_GET_DPY_ID_FOR_CONNECTOR_ID                     \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_DPY_ID_FOR_CONNECTOR_ID),\
+             struct drm_nvidia_get_dpy_id_for_connector_id_params)
+
+#define DRM_IOCTL_NVIDIA_GET_CONNECTOR_ID_FOR_DPY_ID                     \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GET_CONNECTOR_ID_FOR_DPY_ID),\
+             struct drm_nvidia_get_connector_id_for_dpy_id_params)
+
+#define DRM_IOCTL_NVIDIA_GRANT_PERMISSIONS                              \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GRANT_PERMISSIONS),         \
+             struct drm_nvidia_grant_permissions_params)
+
+#define DRM_IOCTL_NVIDIA_REVOKE_PERMISSIONS                             \
+    DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_REVOKE_PERMISSIONS),        \
+             struct drm_nvidia_revoke_permissions_params)
 
 struct drm_nvidia_gem_import_nvkms_memory_params {
     uint64_t mem_size;           /* IN */
@@ -136,7 +160,7 @@ struct drm_nvidia_get_dev_info_params {
     uint32_t sector_layout;        /* OUT */
 };
 
-struct drm_nvidia_fence_context_create_params {
+struct drm_nvidia_prime_fence_context_create_params {
     uint32_t handle;            /* OUT GEM handle to fence context */
 
     uint32_t index;             /* IN Index of semaphore to use for fencing */
@@ -151,7 +175,7 @@ struct drm_nvidia_fence_context_create_params {
     uint64_t event_nvkms_params_size; /* IN */
 };
 
-struct drm_nvidia_gem_fence_attach_params {
+struct drm_nvidia_gem_prime_fence_attach_params {
     uint32_t handle;                /* IN GEM handle to attach fence to */
     uint32_t fence_context_handle;  /* IN GEM handle to fence context on which fence is run on */
     uint32_t sem_thresh;            /* IN Semaphore value to reach before signal */
@@ -230,6 +254,25 @@ typedef enum {
 struct drm_nvidia_gem_identify_object_params {
     uint32_t                    handle;         /* IN GEM handle*/
     drm_nvidia_gem_object_type  object_type;    /* OUT GEM object type */
+};
+
+struct drm_nvidia_get_dpy_id_for_connector_id_params {
+    uint32_t connectorId; /* IN */
+    uint32_t dpyId;       /* OUT */
+};
+
+struct drm_nvidia_get_connector_id_for_dpy_id_params {
+    uint32_t dpyId;       /* IN */
+    uint32_t connectorId; /* OUT */
+};
+
+struct drm_nvidia_grant_permissions_params {
+    int32_t fd;           /* IN */
+    uint32_t dpyId;       /* IN */
+};
+
+struct drm_nvidia_revoke_permissions_params {
+    uint32_t dpyId;       /* IN */
 };
 
 #endif /* _UAPI_NVIDIA_DRM_IOCTL_H_ */

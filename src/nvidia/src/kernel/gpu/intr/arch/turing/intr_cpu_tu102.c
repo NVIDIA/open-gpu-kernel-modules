@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -70,6 +70,12 @@ intrReadRegTopEnSet_TU102
     THREAD_STATE_NODE  *pThreadState
 )
 {
+    // SW assumptions that there are two top-levels.
+    ct_assert(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_SET__SIZE_1 <= 2);
+    if (regIndex >= NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_SET__SIZE_1)
+    {
+        return 0x0;
+    }
     return GPU_VREG_RD32_EX(pGpu,
                             NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_SET(regIndex),
                             pThreadState);
@@ -84,6 +90,12 @@ intrReadRegTop_TU102
     THREAD_STATE_NODE  *pThreadState
 )
 {
+    // SW assumptions that there are two top-levels.
+    ct_assert(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP__SIZE_1 <= 2);
+    if (regIndex >= NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP__SIZE_1)
+    {
+        return 0x0;
+    }
     return GPU_VREG_RD32_EX(pGpu,
                             NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP(regIndex),
                             pThreadState);
@@ -147,6 +159,12 @@ intrWriteRegTopEnSet_TU102
     THREAD_STATE_NODE  *pThreadState
 )
 {
+    // SW assumptions that there are two top-levels.
+    ct_assert(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_SET__SIZE_1 <= 2);
+    if (regIndex >= NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_SET__SIZE_1)
+    {
+        return;
+    }
     GPU_VREG_WR32_EX(pGpu,
                      NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_SET(regIndex),
                      value,
@@ -163,6 +181,12 @@ intrWriteRegTopEnClear_TU102
     THREAD_STATE_NODE  *pThreadState
 )
 {
+    // SW assumptions that there are two top-levels.
+    ct_assert(NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_CLEAR__SIZE_1 <= 2);
+    if (regIndex >= NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_CLEAR__SIZE_1)
+    {
+        return;
+    }
     GPU_VREG_WR32_EX(pGpu,
                      NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_CLEAR(regIndex),
                      value,

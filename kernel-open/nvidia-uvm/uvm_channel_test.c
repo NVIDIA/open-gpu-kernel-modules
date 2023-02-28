@@ -153,7 +153,6 @@ done:
 
 static NV_STATUS test_unexpected_completed_values(uvm_va_space_t *va_space)
 {
-    NV_STATUS status;
     uvm_gpu_t *gpu;
 
     for_each_va_space_gpu(gpu, va_space) {
@@ -168,11 +167,12 @@ static NV_STATUS test_unexpected_completed_values(uvm_va_space_t *va_space)
         completed_value = uvm_channel_update_completed_value(channel);
         uvm_gpu_semaphore_set_payload(&channel->tracking_sem.semaphore, (NvU32)completed_value + 1);
 
-        TEST_CHECK_RET(uvm_global_get_status() == NV_OK);
+        TEST_NV_CHECK_RET(uvm_global_get_status());
         uvm_channel_update_progress_all(channel);
         TEST_CHECK_RET(uvm_global_reset_fatal_error() == NV_ERR_INVALID_STATE);
 
         uvm_channel_manager_destroy(gpu->channel_manager);
+
         // Destruction will hit the error again, so clear one more time.
         uvm_global_reset_fatal_error();
 
@@ -743,22 +743,6 @@ NV_STATUS test_write_ctrl_gpfifo_and_pushes(uvm_va_space_t *va_space)
     return NV_OK;
 }
 
-static NvU32 get_available_gpfifo_entries(uvm_channel_t *channel)
-{
-    NvU32 pending_entries;
-
-    uvm_channel_pool_lock(channel->pool);
-
-    if (channel->cpu_put >= channel->gpu_get)
-        pending_entries = channel->cpu_put - channel->gpu_get;
-    else
-        pending_entries = channel->cpu_put + channel->num_gpfifo_entries - channel->gpu_get;
-
-    uvm_channel_pool_unlock(channel->pool);
-
-    return channel->num_gpfifo_entries - pending_entries - 1;
-}
-
 NV_STATUS test_write_ctrl_gpfifo_tight(uvm_va_space_t *va_space)
 {
     NV_STATUS status = NV_OK;
@@ -771,9 +755,10 @@ NV_STATUS test_write_ctrl_gpfifo_tight(uvm_va_space_t *va_space)
     NvU64 entry;
     uvm_push_t push;
 
+    gpu = uvm_va_space_find_first_gpu(va_space);
+
     for_each_va_space_gpu(gpu, va_space) {
         uvm_channel_manager_t *manager = gpu->channel_manager;
-        gpu = manager->gpu;
 
         TEST_NV_CHECK_RET(uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, sizeof(*cpu_ptr), 0, &mem));
         cpu_ptr = uvm_rm_mem_get_cpu_va(mem);
@@ -791,6 +776,12 @@ NV_STATUS test_write_ctrl_gpfifo_tight(uvm_va_space_t *va_space)
         gpu->parent->host_hal->semaphore_acquire(&push, gpu_va, 1);
         uvm_push_end(&push);
 
+        // Flush all completed entries from the GPFIFO ring buffer. This test
+        // requires this flush because we verify (below with
+        // uvm_channel_get_available_gpfifo_entries) the number of free entries
+        // in the channel.
+        uvm_channel_update_progress_all(channel);
+
         // Populate the remaining GPFIFO entries, leaving 2 slots available.
         // 2 available entries + 1 semaphore acquire (above) + 1 spare entry to
         // indicate a terminal condition for the GPFIFO ringbuffer, therefore we
@@ -800,7 +791,7 @@ NV_STATUS test_write_ctrl_gpfifo_tight(uvm_va_space_t *va_space)
             uvm_push_end(&push);
         }
 
-        TEST_CHECK_GOTO(get_available_gpfifo_entries(channel) == 2, error);
+        TEST_CHECK_GOTO(uvm_channel_get_available_gpfifo_entries(channel) == 2, error);
 
         // We should have room for the control GPFIFO and the subsequent
         // semaphore release.
@@ -936,7 +927,7 @@ done:
 static NV_STATUS uvm_test_channel_stress_stream(uvm_va_space_t *va_space,
                                                 const UVM_TEST_CHANNEL_STRESS_PARAMS *params)
 {
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
 
     if (params->iterations == 0 || params->num_streams == 0)
         return NV_ERR_INVALID_PARAMETER;
@@ -951,10 +942,7 @@ static NV_STATUS uvm_test_channel_stress_stream(uvm_va_space_t *va_space,
                                         params->iterations,
                                         params->seed,
                                         params->verbose);
-    if (status != NV_OK)
-        goto done;
 
-done:
     uvm_va_space_up_read_rm(va_space);
     uvm_mutex_unlock(&g_uvm_global.global_lock);
 

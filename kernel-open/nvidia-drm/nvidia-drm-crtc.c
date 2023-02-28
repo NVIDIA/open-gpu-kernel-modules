@@ -1181,6 +1181,7 @@ static struct drm_crtc *__nv_drm_crtc_create(struct nv_drm_device *nv_dev,
     nv_crtc->head = head;
     INIT_LIST_HEAD(&nv_crtc->flip_list);
     spin_lock_init(&nv_crtc->flip_list_lock);
+    nv_crtc->modeset_permission_filep = NULL;
 
     ret = drm_crtc_init_with_planes(nv_dev->dev,
                                     &nv_crtc->base,
@@ -1329,7 +1330,7 @@ int nv_drm_get_crtc_crc32_v2_ioctl(struct drm_device *dev,
         return -ENOENT;
     }
 
-    crtc = nv_drm_crtc_find(dev, params->crtc_id);
+    crtc = nv_drm_crtc_find(dev, filep, params->crtc_id);
     if (!crtc) {
         return -ENOENT;
     }
@@ -1357,7 +1358,7 @@ int nv_drm_get_crtc_crc32_ioctl(struct drm_device *dev,
         return -ENOENT;
     }
 
-    crtc = nv_drm_crtc_find(dev, params->crtc_id);
+    crtc = nv_drm_crtc_find(dev, filep, params->crtc_id);
     if (!crtc) {
         return -ENOENT;
     }

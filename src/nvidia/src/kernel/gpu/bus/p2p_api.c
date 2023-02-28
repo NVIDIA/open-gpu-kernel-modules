@@ -36,6 +36,166 @@
 #include "class/cl503b.h"
 #include <class/cl90f1.h> //FERMI_VASPACE_A
 
+/*!
+ * @brief Helper function to reserve peer ids in non-GSP offload vGPU case.
+ */
+static
+NV_STATUS
+_p2papiReservePeerID
+(
+    OBJGPU                  *pLocalGpu,
+    KernelBus               *pLocalKernelBus,
+    OBJGPU                  *pRemoteGpu,
+    KernelBus               *pRemoteKernelBus,
+    NV503B_ALLOC_PARAMETERS *pNv503bAllocParams,
+    P2PApi                  *pP2PApi,
+    NvU32                   *peer1,
+    NvU32                   *peer2,
+    NvBool                   bSpaAccessOnly
+)
+{
+    NvU32 gpu0Instance = gpuGetInstance(pLocalGpu);
+    NvU32 gpu1Instance = gpuGetInstance(pRemoteGpu);
+
+    // loopback request
+    if ((pNv503bAllocParams->hSubDevice == pNv503bAllocParams->hPeerSubDevice))
+    {
+        *peer1 = *peer2 = 0;
+    }
+    else
+    {
+        // Check if a peer ID is already allocated for P2P from pLocalGpu to pRemoteGpu
+        *peer1 = kbusGetPeerId_HAL(pLocalGpu, pLocalKernelBus, pRemoteGpu);
+
+        // Check  if a peer ID is already allocated for P2P from pRemoteGpu to pLocalGpu
+        *peer2 = kbusGetPeerId_HAL(pRemoteGpu, pRemoteKernelBus, pLocalGpu);
+    }
+
+    if (*peer1 != BUS_INVALID_PEER && *peer2 != BUS_INVALID_PEER)
+    {
+        goto update_mask;
+    }
+    else if (*peer1 == BUS_INVALID_PEER && *peer2 == BUS_INVALID_PEER)
+    {
+        // Get the peer ID pGpu0 should use for P2P over NVLINK to pGpu1i
+        *peer1 = kbusGetUnusedPeerId_HAL(pLocalGpu, pLocalKernelBus);
+        // If could not find a free peer ID, return error
+        if (*peer1 == BUS_INVALID_PEER)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "GPU%d: peerID not available for NVLink P2P\n",
+                      gpu0Instance);
+            return NV_ERR_GENERIC;
+        }
+
+        // Reserve the peer ID for NVLink use
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              kbusReserveP2PPeerIds_HAL(pLocalGpu, pLocalKernelBus, NVBIT(*peer1)));
+
+        // Get the peer ID pGpu1 should use for P2P over NVLINK to pGpu0
+        *peer2 = kbusGetUnusedPeerId_HAL(pRemoteGpu, pRemoteKernelBus);
+        // If could not find a free peer ID, return error
+        if (*peer2 == BUS_INVALID_PEER)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "GPU%d: peerID not available for NVLink P2P\n",
+                      gpu1Instance);
+            return NV_ERR_GENERIC;
+        }
+
+        // Reserve the peer ID for NVLink use
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              kbusReserveP2PPeerIds_HAL(pRemoteGpu, pRemoteKernelBus, NVBIT(*peer2)));
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Unexpected state, either of the peer ID is invalid \n");
+        return NV_ERR_GENERIC;
+    }
+
+update_mask:
+    //
+    // Does the mapping already exist between the given pair of GPUs using the peerIDs
+    // peer1 and peer2 respectively ?
+    //
+    if ((pLocalKernelBus->p2p.busNvlinkPeerNumberMask[gpu1Instance] & NVBIT(*peer1)) &&
+        (pRemoteKernelBus->p2p.busNvlinkPeerNumberMask[gpu0Instance] & NVBIT(*peer2)))
+    {
+        //
+        // Increment the mapping refcount per peerID - since there is another usage
+        // of a mapping that is using this peerID
+        //
+        pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[*peer1]++;
+        pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[*peer2]++;
+
+        //
+        // Increment the mapping refcount per GPU - since there is another usage of
+        // the mapping to the given remote GPU
+        //
+        pLocalKernelBus->p2p.busNvlinkMappingRefcountPerGpu[gpu1Instance]++;
+        pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerGpu[gpu0Instance]++;
+
+        if (bSpaAccessOnly)
+        {
+            pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerIdSpa[*peer1]++;
+            pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[*peer2]++;
+        }
+
+        NV_PRINTF(LEVEL_INFO,
+                  "- P2P: Peer mapping is already in use for gpu instances %x and %x "
+                  "with peer id's %d and %d. Increasing the mapping refcounts for the"
+                  " peer IDs to %d and %d respectively.\n",
+                  gpu0Instance, gpu1Instance, *peer1, *peer2,
+                  pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[*peer1],
+                  pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[*peer2]);
+        goto update_params;
+    }
+
+    //
+    // Reached here implies the mapping between the given pair of GPUs using the peerIDs
+    // peer1 and peer2 does not exist. Create the mapping
+    //
+
+    // Set the peer IDs in the corresponding peer number masks
+    pLocalKernelBus->p2p.busNvlinkPeerNumberMask[gpu1Instance] |= NVBIT(*peer1);
+    pRemoteKernelBus->p2p.busNvlinkPeerNumberMask[gpu0Instance] |= NVBIT(*peer2);
+
+    //
+    // Increment the mapping refcount per peerID - since there is a new mapping that
+    // will use this peerID
+    //
+    pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[*peer1]++;
+    pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[*peer2]++;
+
+    if (bSpaAccessOnly)
+    {
+        pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerIdSpa[*peer1]++;
+        pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[*peer2]++;
+    }
+
+    //
+    // Increment the mapping refcount per GPU - since there a new mapping now to the
+    // given remote GPU
+    //
+    pLocalKernelBus->p2p.busNvlinkMappingRefcountPerGpu[gpu1Instance]++;
+    pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerGpu[gpu0Instance]++;
+
+    NV_PRINTF(LEVEL_INFO,
+              "added NVLink P2P mapping between GPU%u (peer %u) and GPU%u (peer %u)\n",
+              gpu0Instance, *peer1, gpu1Instance, *peer2);
+
+update_params:
+    pNv503bAllocParams->subDevicePeerIdMask = NVBIT(*peer1);
+    pNv503bAllocParams->peerSubDevicePeerIdMask = NVBIT(*peer2);
+
+    // Update connection type for SRIOV.
+    pP2PApi->attributes = FLD_SET_DRF(_P2PAPI, _ATTRIBUTES, _CONNECTION_TYPE, _NVLINK, pP2PApi->attributes);
+
+    return NV_OK;
+}
+
+
 NV_STATUS
 p2papiConstruct_IMPL
 (
@@ -322,144 +482,10 @@ p2papiConstruct_IMPL
         IS_VIRTUAL_WITH_SRIOV(pGpu) &&
         gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
     {
-        NvU32              gpu0Instance = gpuGetInstance(pLocalGpu);
-        NvU32              gpu1Instance = gpuGetInstance(pRemoteGpu);
-
-        // loopback request
-        if (pNv503bAllocParams->hSubDevice == pNv503bAllocParams->hPeerSubDevice)
-        {
-            peer1 = peer2 = 0;
-        }
-        else
-        {
-            // Check if a peer ID is already allocated for P2P from pLocalGpu to pRemoteGpu
-            peer1 = kbusGetPeerId_HAL(pLocalGpu, pLocalKernelBus, pRemoteGpu);
-
-            // Check  if a peer ID is already allocated for P2P from pRemoteGpu to pLocalGpu
-            peer2 = kbusGetPeerId_HAL(pRemoteGpu, pRemoteKernelBus, pLocalGpu);
-        }
-
-        if (peer1 != BUS_INVALID_PEER && peer2 != BUS_INVALID_PEER)
-        {
-            goto update_mask;
-        }
-        else if (peer1 == BUS_INVALID_PEER && peer2 == BUS_INVALID_PEER)
-        {
-            // Get the peer ID pGpu0 should use for P2P over NVLINK to pGpu1i
-            peer1 = kbusGetUnusedPeerId_HAL(pLocalGpu, pLocalKernelBus);
-            // If could not find a free peer ID, return error
-            if (peer1 == BUS_INVALID_PEER)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                           "GPU%d: peerID not available for NVLink P2P\n",
-                           gpu0Instance);
-                return NV_ERR_GENERIC;
-            }
-
-            // Reserve the peer ID for NVLink use
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                  kbusReserveP2PPeerIds_HAL(pLocalGpu, pLocalKernelBus, NVBIT(peer1)));
-
-            // Get the peer ID pGpu1 should use for P2P over NVLINK to pGpu0
-            peer2 = kbusGetUnusedPeerId_HAL(pRemoteGpu, pRemoteKernelBus);
-            // If could not find a free peer ID, return error
-            if (peer2 == BUS_INVALID_PEER)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                           "GPU%d: peerID not available for NVLink P2P\n",
-                           gpu1Instance);
-                return NV_ERR_GENERIC;
-            }
-
-            // Reserve the peer ID for NVLink use
-            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                                  kbusReserveP2PPeerIds_HAL(pRemoteGpu, pRemoteKernelBus, NVBIT(peer2)));
-        }
-        else
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Unexpected state, either of the peer ID is invalid \n");
-            return NV_ERR_GENERIC;
-        }
-
-update_mask:
-        //
-        // Does the mapping already exist between the given pair of GPUs using the peerIDs
-        // peer1 and peer2 respectively ?
-        //
-        if ((pLocalKernelBus->p2p.busNvlinkPeerNumberMask[gpu1Instance] & NVBIT(peer1)) &&
-            (pRemoteKernelBus->p2p.busNvlinkPeerNumberMask[gpu0Instance] & NVBIT(peer2)))
-        {
-            //
-            // Increment the mapping refcount per peerID - since there is another usage
-            // of a mapping that is using this peerID
-            //
-            pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[peer1]++;
-            pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[peer2]++;
-
-            //
-            // Increment the mapping refcount per GPU - since there is another usage of
-            // the mapping to the given remote GPU
-            //
-            pLocalKernelBus->p2p.busNvlinkMappingRefcountPerGpu[gpu1Instance]++;
-            pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerGpu[gpu0Instance]++;
-
-            if (bSpaAccessOnly)
-            {
-                pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerIdSpa[peer1]++;
-                pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[peer2]++;
-            }
-
-            NV_PRINTF(LEVEL_INFO,
-                      "- P2P: Peer mapping is already in use for gpu instances %x and %x "
-                      "with peer id's %d and %d. Increasing the mapping refcounts for the"
-                      " peer IDs to %d and %d respectively.\n",
-                      gpu0Instance, gpu1Instance, peer1, peer2,
-                      pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[peer1],
-                      pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[peer2]);
-
-            goto update_params;
-        }
-
-        //
-        // Reached here implies the mapping between the given pair of GPUs using the peerIDs
-        // peer1 and peer2 does not exist. Create the mapping
-        //
-
-        // Set the peer IDs in the corresponding peer number masks
-        pLocalKernelBus->p2p.busNvlinkPeerNumberMask[gpu1Instance] |= NVBIT(peer1);
-        pRemoteKernelBus->p2p.busNvlinkPeerNumberMask[gpu0Instance] |= NVBIT(peer2);
-
-        //
-        // Increment the mapping refcount per peerID - since there is a new mapping that
-        // will use this peerID
-        //
-        pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[peer1]++;
-        pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[peer2]++;
-            
-        if (bSpaAccessOnly)
-        {
-            pLocalKernelBus->p2p.busNvlinkMappingRefcountPerPeerIdSpa[peer1]++;
-            pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerPeerId[peer2]++;
-        }
-
-        //
-        // Increment the mapping refcount per GPU - since there a new mapping now to the
-        // given remote GPU
-        //
-        pLocalKernelBus->p2p.busNvlinkMappingRefcountPerGpu[gpu1Instance]++;
-        pRemoteKernelBus->p2p.busNvlinkMappingRefcountPerGpu[gpu0Instance]++;
-
-        NV_PRINTF(LEVEL_INFO,
-              "added NVLink P2P mapping between GPU%u (peer %u) and GPU%u (peer %u)\n",
-              gpu0Instance, peer1, gpu1Instance, peer2);
-
-update_params:
-        pNv503bAllocParams->subDevicePeerIdMask = NVBIT(peer1);
-        pNv503bAllocParams->peerSubDevicePeerIdMask = NVBIT(peer2);
-
-        // Update connection type for SRIOV.
-        pP2PApi->attributes = FLD_SET_DRF(_P2PAPI, _ATTRIBUTES, _CONNECTION_TYPE, _NVLINK, pP2PApi->attributes);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              _p2papiReservePeerID(pLocalGpu, pLocalKernelBus, pRemoteGpu,
+                                                   pRemoteKernelBus, pNv503bAllocParams, pP2PApi,
+                                                   &peer1, &peer2, bSpaAccessOnly));
     }
 
     pP2PApi->peerId1 = peer1;

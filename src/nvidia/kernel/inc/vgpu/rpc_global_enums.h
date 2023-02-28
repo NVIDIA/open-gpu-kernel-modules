@@ -205,7 +205,7 @@ enum {
     X(RM, CTRL_GET_TOTAL_HS_CREDITS)            // 196
     X(RM, CTRL_GET_HS_CREDITS)                  // 197
     X(RM, CTRL_SET_HS_CREDITS)                  // 198
-    X(RM, CTRL_PM_AREA_PC_SAMPLER)              // 199    
+    X(RM, CTRL_PM_AREA_PC_SAMPLER)              // 199
     X(RM, NUM_FUNCTIONS)                        //END
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
@@ -246,6 +246,7 @@ enum {
     E(TIMED_SEMAPHORE_RELEASE)                   // 0x1018
     E(NVLINK_IS_GPU_DEGRADED)                    // 0x1019
     E(PFM_REQ_HNDLR_STATE_SYNC_CALLBACK)         // 0x101a
+    E(GSP_SEND_USER_SHARED_DATA)                 // 0x101b
     E(NVLINK_FAULT_UP)                           // 0x101c
     E(GSP_LOCKDOWN_NOTICE)                       // 0x101d
     E(NUM_EVENTS)                                // END

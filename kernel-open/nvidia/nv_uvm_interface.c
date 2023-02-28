@@ -957,6 +957,18 @@ NV_STATUS nvUvmInterfaceGetNonReplayableFaults(UvmGpuFaultInfo *pFaultInfo,
 }
 EXPORT_SYMBOL(nvUvmInterfaceGetNonReplayableFaults);
 
+NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(uvmGpuDeviceHandle device)
+{
+    nvidia_stack_t *sp = nvUvmGetSafeStack();
+    NV_STATUS status;
+
+    status = rm_gpu_ops_flush_replayable_fault_buffer(sp, (gpuDeviceHandle)device);
+
+    nvUvmFreeSafeStack(sp);
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceFlushReplayableFaultBuffer);
+
 NV_STATUS nvUvmInterfaceDestroyAccessCntrInfo(uvmGpuDeviceHandle device,
                                               UvmGpuAccessCntrInfo *pAccessCntrInfo)
 {

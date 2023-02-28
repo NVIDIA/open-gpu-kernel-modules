@@ -25,7 +25,6 @@
 #define __NVKMS_H__
 
 #include "nvkms-types.h"
-#include "nvkms-modeset-types.h"
 #include "nvkms-api.h"
 
 #ifdef __cplusplus
@@ -113,7 +112,7 @@ void nvEvoHeadSetControlOR(NVDispEvoPtr pDispEvo,
 
 void nvChooseDitheringEvo(
     const NVConnectorEvoRec *pConnectorEvo,
-    const enum nvKmsPixelDepth pixelDepth,
+    enum NvKmsDpyAttributeColorBpcValue bpc,
     const NVDpyAttributeRequestedDitheringConfig *pReqDithering,
     NVDpyAttributeCurrentDitheringConfig *pCurrDithering);
 
@@ -161,14 +160,17 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
 NvBool nvConstructHwModeTimingsImpCheckEvo(
     const NVConnectorEvoRec                *pConnectorEvo,
     NVHwModeTimingsEvoPtr                   pTimings,
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
     const struct NvKmsModeValidationParams *pParams,
     NVEvoInfoStringPtr                      pInfoString,
     const int                               head);
 
-NvBool nvDowngradeHwModeTimingsDpPixelDepthEvo(
-    NVHwModeTimingsEvoPtr pTimings,
-    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
-    const enum NvKmsDpyAttributeColorRangeValue colorRange);
+NvBool nvDowngradeColorSpaceAndBpc(
+    const NVColorFormatInfoRec *pSupportedColorFormats,
+    enum NvKmsDpyAttributeCurrentColorSpaceValue *pColorSpace,
+    enum NvKmsDpyAttributeColorBpcValue *pColorBpc,
+    enum NvKmsDpyAttributeColorRangeValue *pColorRange);
 
 NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                            NVHwModeTimingsEvoPtr pTimings,
@@ -186,6 +188,7 @@ typedef struct _NVValidateImpOneDispHeadParamsRec
     const NVConnectorEvoRec *pConnectorEvo;
     const struct NvKmsUsageBounds *pUsage;
     NvU32                 activeRmId;
+    enum nvKmsPixelDepth  pixelDepth;
     NVHwModeTimingsEvoPtr pTimings;
 } NVValidateImpOneDispHeadParamsRec;
 
@@ -212,19 +215,20 @@ NvBool nvValidateImpOneDispDowngrade(
 NvBool nvFrameLockServerPossibleEvo(const NVDpyEvoRec *pDpyEvo);
 NvBool nvFrameLockClientPossibleEvo(const NVDpyEvoRec *pDpyEvo);
 
-void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 head, NvBool kickoff,
+void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 apiHead, NvBool kickoff,
                  const struct NvKmsSetLutCommonParams *pParams);
 NvBool nvValidateSetLutCommonParams(
     const NVDevEvoRec *pDevEvo,
     const struct NvKmsSetLutCommonParams *pParams);
 
-void nvChooseCurrentColorSpaceAndRangeEvo(
-    enum nvKmsPixelDepth pixelDepth,
+NvBool nvChooseCurrentColorSpaceAndRangeEvo(
+    const NVDpyEvoRec *pDpyEvo,
     enum NvYuv420Mode yuv420Mode,
     enum NvKmsOutputTf tf,
     const enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     enum NvKmsDpyAttributeCurrentColorSpaceValue *pCurrentColorSpace,
+    enum NvKmsDpyAttributeColorBpcValue *pCurrentColorBpc,
     enum NvKmsDpyAttributeColorRangeValue *pCurrentColorRange);
 
 void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
@@ -253,8 +257,8 @@ NvBool nvUpdateFlipLockEvoOneHead(NVDispEvoPtr pDispEvo, const NvU32 head,
                                   NvBool *needsEarlyUpdate,
                                   NVEvoUpdateState *updateState);
 
-void nvEvoUpdateCurrentPalette(NVDispEvoPtr pDispEvo,
-                               NvU32 head, NvBool kickOff);
+void nvEvoSetLUTContextDma(NVDispEvoPtr pDispEvo,
+                           const NvU32 head, NVEvoUpdateState *pUpdateState);
 
 NvBool nvEvoPollForNoMethodPending(NVDevEvoPtr pDevEvo,
                                    const NvU32 sd,
@@ -293,7 +297,7 @@ void nvDPSerializerPostSetMode(NVDispEvoPtr pDispEvo,
 NvBool nvFramelockSetControlUnsyncEvo(NVDispEvoPtr pDispEvo, const NvU32 headMask,
                                       NvBool server);
 
-NvBool nvIsHDRCapableHead(NVDispEvoPtr pDispEvo,
+NvBool nvIsHDRCapableHead(const NVDispEvoRec *pDispEvo,
                           NvU32 apiHead);
 
 NvU32 nvGetHDRSrcMaxLum(const NVFlipChannelEvoHwState *pHwState);
@@ -306,8 +310,17 @@ NvBool nvNeedsTmoLut(NVDevEvoPtr pDevEvo,
 
 NvBool nvIsCscMatrixIdentity(const struct NvKmsCscMatrix *matrix);
 
+enum nvKmsPixelDepth nvEvoColorSpaceBpcToPixelDepth(
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc);
+
 void nvSuspendDevEvo(NVDevEvoRec *pDevEvo);
 NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo);
+
+NvBool nvGetDefaultColorSpace(
+    const NVColorFormatInfoRec *pColorFormatsInfo,
+    enum NvKmsDpyAttributeCurrentColorSpaceValue *pColorSpace,
+    enum NvKmsDpyAttributeColorBpcValue *pColorBpc);
 
 #ifdef __cplusplus
 };

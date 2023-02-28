@@ -97,6 +97,54 @@ static NvBool __nvoc_thunk_GpuResource_hdacodecShareCallback(struct Hdacodec *pG
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_hdacodecCheckMemInterUnmap(struct Hdacodec *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_Hdacodec_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_hdacodecMapTo(struct Hdacodec *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_hdacodecGetMapAddrSpace(struct Hdacodec *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_hdacodecGetRefCount(struct Hdacodec *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_hdacodecAddAdditionalDependants(struct RsClient *pClient, struct Hdacodec *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_hdacodecControl_Prologue(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_hdacodecGetRegBaseOffsetAndSize(struct Hdacodec *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_hdacodecInternalControlForward(struct Hdacodec *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset), command, pParams, size);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_hdacodecUnmapFrom(struct Hdacodec *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_hdacodecControl_Epilogue(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_hdacodecControlLookup(struct Hdacodec *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_hdacodecGetInternalObjectHandle(struct Hdacodec *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset));
+}
+
 static NV_STATUS __nvoc_thunk_GpuResource_hdacodecControl(struct Hdacodec *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset), pCallContext, pParams);
 }
@@ -113,68 +161,28 @@ static NV_STATUS __nvoc_thunk_RmResource_hdacodecGetMemoryMappingDescriptor(stru
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_Hdacodec_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_hdacodecGetMapAddrSpace(struct Hdacodec *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_hdacodecGetInternalObjectHandle(struct Hdacodec *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_hdacodecControlFilter(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_hdacodecAddAdditionalDependants(struct RsClient *pClient, struct Hdacodec *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_hdacodecGetRefCount(struct Hdacodec *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_hdacodecCheckMemInterUnmap(struct Hdacodec *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_Hdacodec_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_hdacodecMapTo(struct Hdacodec *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_hdacodecControl_Prologue(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_hdacodecGetRegBaseOffsetAndSize(struct Hdacodec *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset), pGpu, pOffset, pSize);
+static NV_STATUS __nvoc_thunk_RmResource_hdacodecControlSerialization_Prologue(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_hdacodecCanCopy(struct Hdacodec *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_hdacodecInternalControlForward(struct Hdacodec *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_Hdacodec_GpuResource.offset), command, pParams, size);
-}
-
 static void __nvoc_thunk_RsResource_hdacodecPreDestruct(struct Hdacodec *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_hdacodecUnmapFrom(struct Hdacodec *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_hdacodecIsDuplicate(struct Hdacodec *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_hdacodecControl_Epilogue(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_hdacodecControlLookup(struct Hdacodec *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_hdacodecControlSerialization_Epilogue(struct Hdacodec *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Hdacodec_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_hdacodecMap(struct Hdacodec *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -225,6 +233,30 @@ static void __nvoc_init_funcTable_Hdacodec_1(Hdacodec *pThis) {
 
     pThis->__hdacodecShareCallback__ = &__nvoc_thunk_GpuResource_hdacodecShareCallback;
 
+    pThis->__hdacodecCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_hdacodecCheckMemInterUnmap;
+
+    pThis->__hdacodecMapTo__ = &__nvoc_thunk_RsResource_hdacodecMapTo;
+
+    pThis->__hdacodecGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_hdacodecGetMapAddrSpace;
+
+    pThis->__hdacodecGetRefCount__ = &__nvoc_thunk_RsResource_hdacodecGetRefCount;
+
+    pThis->__hdacodecAddAdditionalDependants__ = &__nvoc_thunk_RsResource_hdacodecAddAdditionalDependants;
+
+    pThis->__hdacodecControl_Prologue__ = &__nvoc_thunk_RmResource_hdacodecControl_Prologue;
+
+    pThis->__hdacodecGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_hdacodecGetRegBaseOffsetAndSize;
+
+    pThis->__hdacodecInternalControlForward__ = &__nvoc_thunk_GpuResource_hdacodecInternalControlForward;
+
+    pThis->__hdacodecUnmapFrom__ = &__nvoc_thunk_RsResource_hdacodecUnmapFrom;
+
+    pThis->__hdacodecControl_Epilogue__ = &__nvoc_thunk_RmResource_hdacodecControl_Epilogue;
+
+    pThis->__hdacodecControlLookup__ = &__nvoc_thunk_RsResource_hdacodecControlLookup;
+
+    pThis->__hdacodecGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_hdacodecGetInternalObjectHandle;
+
     pThis->__hdacodecControl__ = &__nvoc_thunk_GpuResource_hdacodecControl;
 
     pThis->__hdacodecUnmap__ = &__nvoc_thunk_GpuResource_hdacodecUnmap;
@@ -233,37 +265,17 @@ static void __nvoc_init_funcTable_Hdacodec_1(Hdacodec *pThis) {
 
     pThis->__hdacodecGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_hdacodecGetMemoryMappingDescriptor;
 
-    pThis->__hdacodecGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_hdacodecGetMapAddrSpace;
-
-    pThis->__hdacodecGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_hdacodecGetInternalObjectHandle;
-
     pThis->__hdacodecControlFilter__ = &__nvoc_thunk_RsResource_hdacodecControlFilter;
 
-    pThis->__hdacodecAddAdditionalDependants__ = &__nvoc_thunk_RsResource_hdacodecAddAdditionalDependants;
-
-    pThis->__hdacodecGetRefCount__ = &__nvoc_thunk_RsResource_hdacodecGetRefCount;
-
-    pThis->__hdacodecCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_hdacodecCheckMemInterUnmap;
-
-    pThis->__hdacodecMapTo__ = &__nvoc_thunk_RsResource_hdacodecMapTo;
-
-    pThis->__hdacodecControl_Prologue__ = &__nvoc_thunk_RmResource_hdacodecControl_Prologue;
-
-    pThis->__hdacodecGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_hdacodecGetRegBaseOffsetAndSize;
+    pThis->__hdacodecControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_hdacodecControlSerialization_Prologue;
 
     pThis->__hdacodecCanCopy__ = &__nvoc_thunk_RsResource_hdacodecCanCopy;
 
-    pThis->__hdacodecInternalControlForward__ = &__nvoc_thunk_GpuResource_hdacodecInternalControlForward;
-
     pThis->__hdacodecPreDestruct__ = &__nvoc_thunk_RsResource_hdacodecPreDestruct;
-
-    pThis->__hdacodecUnmapFrom__ = &__nvoc_thunk_RsResource_hdacodecUnmapFrom;
 
     pThis->__hdacodecIsDuplicate__ = &__nvoc_thunk_RsResource_hdacodecIsDuplicate;
 
-    pThis->__hdacodecControl_Epilogue__ = &__nvoc_thunk_RmResource_hdacodecControl_Epilogue;
-
-    pThis->__hdacodecControlLookup__ = &__nvoc_thunk_RsResource_hdacodecControlLookup;
+    pThis->__hdacodecControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_hdacodecControlSerialization_Epilogue;
 
     pThis->__hdacodecMap__ = &__nvoc_thunk_GpuResource_hdacodecMap;
 
@@ -291,12 +303,15 @@ NV_STATUS __nvoc_objCreate_Hdacodec(Hdacodec **ppThis, Dynamic *pParent, NvU32 c
     Object *pParentObj;
     Hdacodec *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(Hdacodec));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(Hdacodec), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(Hdacodec));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_Hdacodec);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -313,11 +328,17 @@ NV_STATUS __nvoc_objCreate_Hdacodec(Hdacodec **ppThis, Dynamic *pParent, NvU32 c
     if (status != NV_OK) goto __nvoc_objCreate_Hdacodec_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_Hdacodec_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(Hdacodec));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

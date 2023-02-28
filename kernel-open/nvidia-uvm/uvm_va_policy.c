@@ -29,23 +29,23 @@
 #include "uvm_va_space.h"
 #include "uvm_va_range.h"
 
-uvm_va_policy_t uvm_va_policy_default __read_mostly = {
+const uvm_va_policy_t uvm_va_policy_default = {
     .preferred_location = UVM_ID_INVALID,
     .read_duplication = UVM_READ_DUPLICATION_UNSET,
 };
 
-bool uvm_va_policy_is_read_duplicate(uvm_va_policy_t *policy, uvm_va_space_t *va_space)
+bool uvm_va_policy_is_read_duplicate(const uvm_va_policy_t *policy, uvm_va_space_t *va_space)
 {
     return policy->read_duplication == UVM_READ_DUPLICATION_ENABLED &&
            uvm_va_space_can_read_duplicate(va_space, NULL);
 }
 
-uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr)
+const uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr)
 {
     uvm_assert_mutex_locked(&va_block->lock);
 
     if (uvm_va_block_is_hmm(va_block)) {
-        uvm_va_policy_node_t *node = uvm_va_policy_node_find(va_block, addr);
+        const uvm_va_policy_node_t *node = uvm_va_policy_node_find(va_block, addr);
 
         return node ? &node->policy : &uvm_va_policy_default;
     }
@@ -61,14 +61,6 @@ static struct kmem_cache *g_uvm_va_policy_node_cache __read_mostly;
 static uvm_va_policy_node_t *uvm_va_policy_node_container(uvm_range_tree_node_t *tree_node)
 {
     return container_of(tree_node, uvm_va_policy_node_t, node);
-}
-
-static uvm_va_policy_t *uvm_va_policy_container(uvm_range_tree_node_t *tree_node)
-{
-    if (!tree_node)
-        return NULL;
-
-    return &uvm_va_policy_node_container(tree_node)->policy;
 }
 
 NV_STATUS uvm_va_policy_init(void)
@@ -173,15 +165,15 @@ uvm_va_policy_node_t *uvm_va_policy_node_iter_next(uvm_va_block_t *va_block,
     return uvm_va_policy_node_container(tree_node);
 }
 
-uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
-                                          NvU64 start,
-                                          NvU64 end,
-                                          uvm_va_policy_node_t **out_node,
-                                          uvm_va_block_region_t *out_region)
+const uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
+                                                NvU64 start,
+                                                NvU64 end,
+                                                uvm_va_policy_node_t **out_node,
+                                                uvm_va_block_region_t *out_region)
 {
     uvm_range_tree_node_t *tree_node;
     uvm_va_policy_node_t *node;
-    uvm_va_policy_t *policy;
+    const uvm_va_policy_t *policy;
     uvm_va_block_region_t region;
 
     UVM_ASSERT(uvm_va_block_is_hmm(va_block));
@@ -219,11 +211,11 @@ uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
     return policy;
 }
 
-uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
-                                         uvm_va_policy_t *policy,
-                                         NvU64 end,
-                                         uvm_va_policy_node_t **inout_node,
-                                         uvm_va_block_region_t *inout_region)
+const uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
+                                               const uvm_va_policy_t *policy,
+                                               NvU64 end,
+                                               uvm_va_policy_node_t **inout_node,
+                                               uvm_va_block_region_t *inout_region)
 {
     uvm_va_policy_node_t *node = *inout_node;
     uvm_va_policy_node_t *next;
@@ -234,7 +226,7 @@ uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
 
     next = uvm_va_policy_node_iter_next(va_block, node, end);
 
-    if (policy == &uvm_va_policy_default) {
+    if (uvm_va_policy_is_default(policy)) {
         // We haven't used the current policy node yet so use it now.
         next = node;
         policy = &node->policy;
@@ -561,6 +553,41 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
     }
 
     return NV_OK;
+}
+
+const uvm_va_policy_t *uvm_va_policy_set_preferred_location(uvm_va_block_t *va_block,
+                                                            uvm_va_block_region_t region,
+                                                            uvm_processor_id_t processor_id,
+                                                            const uvm_va_policy_t *old_policy)
+{
+    NvU64 start = uvm_va_block_region_start(va_block, region);
+    NvU64 end = uvm_va_block_region_end(va_block, region);
+    uvm_va_policy_node_t *node;
+
+    if (uvm_va_policy_is_default(old_policy)) {
+
+        UVM_ASSERT(!UVM_ID_IS_INVALID(processor_id));
+        UVM_ASSERT(!uvm_range_tree_iter_first(&va_block->hmm.va_policy_tree, start, end));
+
+        node = uvm_va_policy_node_create(va_block, start, end);
+        if (!node)
+            return NULL;
+    }
+    else {
+        // Since the old_policy isn't the constant default policy, we know it
+        // is an allocated uvm_va_policy_node_t and can be cast.
+        node = container_of((uvm_va_policy_t *)old_policy, uvm_va_policy_node_t, policy);
+
+        // The caller guarantees that the policy node doesn't require splitting
+        // and that the policy is changing.
+        UVM_ASSERT(node->node.start >= start);
+        UVM_ASSERT(node->node.end <= end);
+        UVM_ASSERT(!uvm_id_equal(node->policy.preferred_location, processor_id));
+    }
+
+    node->policy.preferred_location = processor_id;
+
+    return &node->policy;
 }
 
 #endif // UVM_IS_CONFIG_HMM()

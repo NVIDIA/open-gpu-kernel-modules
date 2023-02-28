@@ -97,6 +97,54 @@ static NvBool __nvoc_thunk_GpuResource_rglcbShareCallback(struct RgLineCallback 
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_rglcbCheckMemInterUnmap(struct RgLineCallback *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_rglcbMapTo(struct RgLineCallback *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_rglcbGetMapAddrSpace(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_rglcbGetRefCount(struct RgLineCallback *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_rglcbAddAdditionalDependants(struct RsClient *pClient, struct RgLineCallback *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_rglcbControl_Prologue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_rglcbGetRegBaseOffsetAndSize(struct RgLineCallback *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_rglcbInternalControlForward(struct RgLineCallback *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), command, pParams, size);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_rglcbUnmapFrom(struct RgLineCallback *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_rglcbControl_Epilogue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_rglcbControlLookup(struct RgLineCallback *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_rglcbGetInternalObjectHandle(struct RgLineCallback *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset));
+}
+
 static NV_STATUS __nvoc_thunk_GpuResource_rglcbControl(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, pParams);
 }
@@ -113,68 +161,28 @@ static NV_STATUS __nvoc_thunk_RmResource_rglcbGetMemoryMappingDescriptor(struct 
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbGetMapAddrSpace(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_rglcbGetInternalObjectHandle(struct RgLineCallback *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_rglcbControlFilter(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_rglcbAddAdditionalDependants(struct RsClient *pClient, struct RgLineCallback *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_rglcbGetRefCount(struct RgLineCallback *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_rglcbCheckMemInterUnmap(struct RgLineCallback *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_rglcbMapTo(struct RgLineCallback *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_rglcbControl_Prologue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbGetRegBaseOffsetAndSize(struct RgLineCallback *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), pGpu, pOffset, pSize);
+static NV_STATUS __nvoc_thunk_RmResource_rglcbControlSerialization_Prologue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_rglcbCanCopy(struct RgLineCallback *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_rglcbInternalControlForward(struct RgLineCallback *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset), command, pParams, size);
-}
-
 static void __nvoc_thunk_RsResource_rglcbPreDestruct(struct RgLineCallback *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_rglcbUnmapFrom(struct RgLineCallback *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_rglcbIsDuplicate(struct RgLineCallback *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_rglcbControl_Epilogue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_rglcbControlLookup(struct RgLineCallback *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_rglcbControlSerialization_Epilogue(struct RgLineCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_rglcbMap(struct RgLineCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -226,6 +234,30 @@ static void __nvoc_init_funcTable_RgLineCallback_1(RgLineCallback *pThis) {
 
     pThis->__rglcbShareCallback__ = &__nvoc_thunk_GpuResource_rglcbShareCallback;
 
+    pThis->__rglcbCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_rglcbCheckMemInterUnmap;
+
+    pThis->__rglcbMapTo__ = &__nvoc_thunk_RsResource_rglcbMapTo;
+
+    pThis->__rglcbGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_rglcbGetMapAddrSpace;
+
+    pThis->__rglcbGetRefCount__ = &__nvoc_thunk_RsResource_rglcbGetRefCount;
+
+    pThis->__rglcbAddAdditionalDependants__ = &__nvoc_thunk_RsResource_rglcbAddAdditionalDependants;
+
+    pThis->__rglcbControl_Prologue__ = &__nvoc_thunk_RmResource_rglcbControl_Prologue;
+
+    pThis->__rglcbGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_rglcbGetRegBaseOffsetAndSize;
+
+    pThis->__rglcbInternalControlForward__ = &__nvoc_thunk_GpuResource_rglcbInternalControlForward;
+
+    pThis->__rglcbUnmapFrom__ = &__nvoc_thunk_RsResource_rglcbUnmapFrom;
+
+    pThis->__rglcbControl_Epilogue__ = &__nvoc_thunk_RmResource_rglcbControl_Epilogue;
+
+    pThis->__rglcbControlLookup__ = &__nvoc_thunk_RsResource_rglcbControlLookup;
+
+    pThis->__rglcbGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_rglcbGetInternalObjectHandle;
+
     pThis->__rglcbControl__ = &__nvoc_thunk_GpuResource_rglcbControl;
 
     pThis->__rglcbUnmap__ = &__nvoc_thunk_GpuResource_rglcbUnmap;
@@ -234,37 +266,17 @@ static void __nvoc_init_funcTable_RgLineCallback_1(RgLineCallback *pThis) {
 
     pThis->__rglcbGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_rglcbGetMemoryMappingDescriptor;
 
-    pThis->__rglcbGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_rglcbGetMapAddrSpace;
-
-    pThis->__rglcbGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_rglcbGetInternalObjectHandle;
-
     pThis->__rglcbControlFilter__ = &__nvoc_thunk_RsResource_rglcbControlFilter;
 
-    pThis->__rglcbAddAdditionalDependants__ = &__nvoc_thunk_RsResource_rglcbAddAdditionalDependants;
-
-    pThis->__rglcbGetRefCount__ = &__nvoc_thunk_RsResource_rglcbGetRefCount;
-
-    pThis->__rglcbCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_rglcbCheckMemInterUnmap;
-
-    pThis->__rglcbMapTo__ = &__nvoc_thunk_RsResource_rglcbMapTo;
-
-    pThis->__rglcbControl_Prologue__ = &__nvoc_thunk_RmResource_rglcbControl_Prologue;
-
-    pThis->__rglcbGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_rglcbGetRegBaseOffsetAndSize;
+    pThis->__rglcbControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_rglcbControlSerialization_Prologue;
 
     pThis->__rglcbCanCopy__ = &__nvoc_thunk_RsResource_rglcbCanCopy;
 
-    pThis->__rglcbInternalControlForward__ = &__nvoc_thunk_GpuResource_rglcbInternalControlForward;
-
     pThis->__rglcbPreDestruct__ = &__nvoc_thunk_RsResource_rglcbPreDestruct;
-
-    pThis->__rglcbUnmapFrom__ = &__nvoc_thunk_RsResource_rglcbUnmapFrom;
 
     pThis->__rglcbIsDuplicate__ = &__nvoc_thunk_RsResource_rglcbIsDuplicate;
 
-    pThis->__rglcbControl_Epilogue__ = &__nvoc_thunk_RmResource_rglcbControl_Epilogue;
-
-    pThis->__rglcbControlLookup__ = &__nvoc_thunk_RsResource_rglcbControlLookup;
+    pThis->__rglcbControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_rglcbControlSerialization_Epilogue;
 
     pThis->__rglcbMap__ = &__nvoc_thunk_GpuResource_rglcbMap;
 
@@ -292,12 +304,15 @@ NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback **ppThis, Dynamic *pPar
     Object *pParentObj;
     RgLineCallback *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(RgLineCallback));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RgLineCallback), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(RgLineCallback));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RgLineCallback);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -314,11 +329,17 @@ NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback **ppThis, Dynamic *pPar
     if (status != NV_OK) goto __nvoc_objCreate_RgLineCallback_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_RgLineCallback_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(RgLineCallback));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

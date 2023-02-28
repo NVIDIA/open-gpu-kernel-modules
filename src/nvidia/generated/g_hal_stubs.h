@@ -550,10 +550,22 @@ NV_STATUS gpioWritePinHwEnum_MISSING(
     return NV_ERR_NOT_SUPPORTED;
 }
 
-// GPIO:hal:CHECK_PROTECTION  -  GPIO disabled
-NV_STATUS gpioCheckProtection_MISSING(
+// GPIO:hal:OUTPUT_CNTL_CHECK_PROTECTION  -  GPIO disabled
+NV_STATUS gpioOutputCntlCheckProtection_MISSING(
+    POBJGPU       pGpu,
     POBJGPIO      pGpio,
     NvU32         gpioPin,
+    NvBool       *pbIsProtected
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+// GPIO:hal:INPUT_CNTL_CHECK_PROTECTION  -  GPIO disabled
+NV_STATUS gpioInputCntlCheckProtection_MISSING(
+    POBJGPU       pGpu,
+    POBJGPIO      pGpio,
+    NvU32         inputHwEnum,
     NvBool       *pbIsProtected
 )
 {
@@ -886,6 +898,17 @@ NV_STATUS rpcRmfsTest_STUB(
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS  -  RPCSTRUCTURECOPY disabled
+NV_STATUS deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_STUB(
+    NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
 }
 
 // RPCSTRUCTURECOPY:hal:NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS  -  RPCSTRUCTURECOPY disabled

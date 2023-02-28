@@ -119,7 +119,7 @@
 #define INFOROM_FS_ERROR                                (125)
 #define ALI_TRAINING_FAIL                               (136)
 #define ROBUST_CHANNEL_LAST_ERROR                       (ALI_TRAINING_FAIL)
-
+#define NVLINK_FLA_PRIV_ERR                             (137)
 
 
 // Indexed CE reference

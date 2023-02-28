@@ -119,12 +119,12 @@ static NvBool __nvoc_thunk_GpuResource_chandesShareCallback(struct ChannelDescen
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ChannelDescendant_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_chandesMapTo(struct ChannelDescendant *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset), pParams);
-}
-
 static NV_STATUS __nvoc_thunk_Notifier_chandesGetOrAllocNotifShare(struct ChannelDescendant *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ChannelDescendant_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_chandesMapTo(struct ChannelDescendant *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_chandesGetMapAddrSpace(struct ChannelDescendant *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -195,6 +195,10 @@ static NV_STATUS __nvoc_thunk_Notifier_chandesUnregisterEvent(struct ChannelDesc
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ChannelDescendant_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_chandesControlSerialization_Prologue(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_chandesCanCopy(struct ChannelDescendant *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset));
 }
@@ -205,6 +209,10 @@ static void __nvoc_thunk_RsResource_chandesPreDestruct(struct ChannelDescendant 
 
 static NV_STATUS __nvoc_thunk_RsResource_chandesIsDuplicate(struct ChannelDescendant *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_chandesControlSerialization_Epilogue(struct ChannelDescendant *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_chandesGetNotificationListPtr(struct ChannelDescendant *pNotifier) {
@@ -289,9 +297,9 @@ static void __nvoc_init_funcTable_ChannelDescendant_1(ChannelDescendant *pThis, 
 
     pThis->__chandesShareCallback__ = &__nvoc_thunk_GpuResource_chandesShareCallback;
 
-    pThis->__chandesMapTo__ = &__nvoc_thunk_RsResource_chandesMapTo;
-
     pThis->__chandesGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_chandesGetOrAllocNotifShare;
+
+    pThis->__chandesMapTo__ = &__nvoc_thunk_RsResource_chandesMapTo;
 
     pThis->__chandesGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_chandesGetMapAddrSpace;
 
@@ -327,11 +335,15 @@ static void __nvoc_init_funcTable_ChannelDescendant_1(ChannelDescendant *pThis, 
 
     pThis->__chandesUnregisterEvent__ = &__nvoc_thunk_Notifier_chandesUnregisterEvent;
 
+    pThis->__chandesControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_chandesControlSerialization_Prologue;
+
     pThis->__chandesCanCopy__ = &__nvoc_thunk_RsResource_chandesCanCopy;
 
     pThis->__chandesPreDestruct__ = &__nvoc_thunk_RsResource_chandesPreDestruct;
 
     pThis->__chandesIsDuplicate__ = &__nvoc_thunk_RsResource_chandesIsDuplicate;
+
+    pThis->__chandesControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_chandesControlSerialization_Epilogue;
 
     pThis->__chandesGetNotificationListPtr__ = &__nvoc_thunk_Notifier_chandesGetNotificationListPtr;
 
@@ -368,12 +380,15 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant **ppThis, Dynamic
     ChannelDescendant *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(ChannelDescendant));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ChannelDescendant), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(ChannelDescendant));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ChannelDescendant);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -394,11 +409,17 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant **ppThis, Dynamic
     if (status != NV_OK) goto __nvoc_objCreate_ChannelDescendant_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_ChannelDescendant_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(ChannelDescendant));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

@@ -1030,8 +1030,11 @@ kchannelDestruct_IMPL
         KernelGraphicsContext *pKernelGraphicsContext;
 
         // Perform GR ctx cleanup tasks on channel destruction
-        if (kgrctxFromKernelChannel(pKernelChannel, &pKernelGraphicsContext) == NV_OK)
+        if ((kgrctxFromKernelChannel(pKernelChannel, &pKernelGraphicsContext) == NV_OK) &&
+            kgrctxIsValid(pGpu, pKernelGraphicsContext, pKernelChannel))
+        {
             shrkgrctxDetach(pGpu, pKernelGraphicsContext->pShared, pKernelGraphicsContext, pKernelChannel);
+        }
     }
 
     _kchannelCleanupNotifyActions(pKernelChannel);
@@ -2057,41 +2060,13 @@ _kchannelAllocOrDescribeInstMem
         NvBool bFullSriov = IS_VIRTUAL_WITH_SRIOV(pGpu) &&
             !gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
 
-        if (pUserdSubDeviceMemDesc &&
-            (memdescGetAddressSpace(pUserdSubDeviceMemDesc) == ADDR_SYSMEM))
+        // Clear Userd if it is in FB for SRIOV environment without BUG 200577889 or if in SYSMEM
+        if (pUserdSubDeviceMemDesc != NULL &&
+                ((memdescGetAddressSpace(pUserdSubDeviceMemDesc) == ADDR_SYSMEM)
+                || ((memdescGetAddressSpace(pUserdSubDeviceMemDesc) == ADDR_FBMEM) && bFullSriov)))
         {
-            NvP64 pUserDMem = NvP64_NULL;
-            NvP64 pPriv     = NvP64_NULL;
-
-            NV_ASSERT_OK_OR_GOTO(status,
-                    memdescMap(pUserdSubDeviceMemDesc, 0,
-                        memdescGetSize(pUserdSubDeviceMemDesc), NV_TRUE,
-                        NV_PROTECT_READ_WRITE, &pUserDMem, &pPriv),
-                    failed);
-
-            kfifoSetupUserD_HAL(pKernelFifo, KERNEL_POINTER_FROM_NvP64(NvU8 *, pUserDMem));
-
-            memdescUnmap(pUserdSubDeviceMemDesc,
-                         NV_TRUE,
-                         osGetCurrentProcess(),
-                         pUserDMem,
-                         pPriv);
-        } // Clear Userd if it is in FB for SRIOV environment without BUG 200577889
-        else if (pUserdSubDeviceMemDesc && (memdescGetAddressSpace(pUserdSubDeviceMemDesc) == ADDR_FBMEM)
-                 && bFullSriov)
-        {
-            NvU8 *pUserDMem;
-
-            pUserDMem = kbusMapRmAperture_HAL(pGpu,
-                                              pKernelChannel->pUserdSubDeviceMemDesc[gpumgrGetSubDeviceInstanceFromGpu(pGpu)]);
-
-            NV_ASSERT_OR_ELSE(pUserDMem != NULL, status = NV_ERR_INSUFFICIENT_RESOURCES; goto failed);
-
-            kfifoSetupUserD_HAL(pKernelFifo, pUserDMem);
-
-            kbusUnmapRmAperture_HAL(pGpu, pUserdSubDeviceMemDesc, &pUserDMem,
-                                    NV_TRUE);
-        }
+            kfifoSetupUserD_HAL(pGpu, pKernelFifo, pUserdSubDeviceMemDesc);
+        } 
     }
     return NV_OK;
 
@@ -3479,25 +3454,6 @@ kchannelSetEngineContextMemDesc_IMPL
         }
 
         //
-        // If the VAList is not managed by RM, remove all VAs here.
-        // If the VAList is managed by RM, unmap and remove all VAs in kchannelUnmapEngineCtxBuf()
-        //
-        if (!vaListGetManaged(&pEngCtxDesc->vaList))
-        {
-            status = _kchannelClearVAList(pGpu, &pEngCtxDesc->vaList, NV_FALSE);
-            NV_ASSERT_OR_ELSE(status == NV_OK, SLI_LOOP_GOTO(fail));
-        }
-
-        //
-        // Free all subcontext headers in TSG. This usually happens while last channel in TSG is being freed.
-        // we make sure all GR objects have already been freed before this point(see kgrctxUnmapAssociatedCtxBuffers).
-        // Other cases where this is exercised are special cases like golden image init where ctx buffers are swapped,
-        // control calls which force ctx buffer unmap, re-initializing of virtual ctxs, evicting a ctx, fifoStateDestroy etc.
-        //
-        if(IS_GR(engDesc))
-        {
-            status = kchangrpFreeGrSubcontextHdrs_HAL(pGpu, pKernelChannelGroup);
-        }
     }
     else
     {
@@ -3580,15 +3536,8 @@ kchannelUnmapEngineCtxBuf_IMPL
         SLI_LOOP_CONTINUE;
     }
 
-    // Only unmaps if RM manages this VAList
-    if (!vaListGetManaged(&pEngCtxDesc->vaList))
-    {
-        SLI_LOOP_CONTINUE;
-    }
-
-    // Clear VA list, including unmap
-    NV_ASSERT(memdescGetAddressSpace(memdescGetMemDescFromGpu(pEngCtxDesc->pMemDesc, pGpu)) != ADDR_VIRTUAL);
-    status = _kchannelClearVAList(pGpu, &pEngCtxDesc->vaList, NV_TRUE);
+    // Clear VA list, including unmap if managed
+    status = _kchannelClearVAList(pGpu, &pEngCtxDesc->vaList, vaListGetManaged(&pEngCtxDesc->vaList));
     NV_ASSERT_OR_ELSE(status == NV_OK, SLI_LOOP_GOTO(fail));
 
     SLI_LOOP_END

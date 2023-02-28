@@ -1235,7 +1235,7 @@ static NvBool ValidateModeTimings(
 
         NvU32 maxPixelClockKHz = pDpyEvo->maxPixelClockKHz;
         NvU32 realPixelClock = HzToKHz(pModeTimings->pixelClockHz);
-        if (pModeTimings->yuv420Mode == NV_YUV420_MODE_SW) {
+        if (pModeTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
             realPixelClock /= 2;
         }
 
@@ -1275,7 +1275,7 @@ static NvBool ValidateModeTimings(
     if ((overrides & NVKMS_MODE_VALIDATION_NO_EDID_MAX_PCLK_CHECK) == 0) {
 
         NvU32 realPixelClock = HzToKHz(pModeTimings->pixelClockHz);
-        if (pModeTimings->yuv420Mode == NV_YUV420_MODE_SW) {
+        if (pModeTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
             realPixelClock /= 2;
         }
 
@@ -1677,13 +1677,24 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
 
 
     /* Run the raster timings through IMP checking. */
+    {
+        const NVColorFormatInfoRec colorFormats =
+            nvGetColorFormatInfo(pDpyEvo);
+        enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
+        enum NvKmsDpyAttributeColorBpcValue colorBpc;
 
-    if (!nvConstructHwModeTimingsImpCheckEvo(pDpyEvo->pConnectorEvo,
-                                             pTimingsEvo, pParams, pInfoString,
-                                             0 /* head */)) {
-        LogModeValidationEnd(pDispEvo, pInfoString,
-                             "GPU extended capability check failed");
-        goto done;
+        if (!nvGetDefaultColorSpace(&colorFormats, &colorSpace, &colorBpc) ||
+                !nvConstructHwModeTimingsImpCheckEvo(pDpyEvo->pConnectorEvo,
+                                                     pTimingsEvo,
+                                                     colorSpace,
+                                                     colorBpc,
+                                                     pParams,
+                                                     pInfoString,
+                                                     0 /* head */)) {
+            LogModeValidationEnd(pDispEvo, pInfoString,
+                                 "GPU extended capability check failed");
+            goto done;
+        }
     }
 
     /* Log modevalidation information about the viewport. */

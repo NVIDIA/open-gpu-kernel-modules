@@ -350,9 +350,15 @@ int nv_encode_caching(
             return 1;
 #endif
         case NV_MEMORY_CACHED:
-            if (NV_ALLOW_CACHING(memory_type))
-                break;
-            // Intentional fallthrough.
+            if (!NV_ALLOW_CACHING(memory_type))
+            {
+                nv_printf(NV_DBG_ERRORS,
+                    "NVRM: VM: memory type %d does not allow caching!\n",
+                    memory_type);
+                return 1;
+            }
+            break;
+
         default:
             nv_printf(NV_DBG_ERRORS,
                 "NVRM: VM: cache type %d not supported for memory type %d!\n",
@@ -529,6 +535,7 @@ int nvidia_mmap_helper(
         {
             return -ENXIO;
         }
+
         if (IS_REG_OFFSET(nv, access_start, access_len))
         {
             if (nv_encode_caching(&vma->vm_page_prot, NV_MEMORY_UNCACHED,

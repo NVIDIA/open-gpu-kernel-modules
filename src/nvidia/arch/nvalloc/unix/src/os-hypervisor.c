@@ -447,11 +447,14 @@ NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     const NvU8 *pMdevUuid,
     NvU32 vgpuTypeId,
     NvU16 *vgpuId,
-    NvU32 gpuPciBdf
+    NvU32 gpuPciBdf,
+    NvBool *is_driver_vm
 )
 {
     THREAD_STATE_NODE threadState;
+    OBJSYS        *pSys        = SYS_GET_INSTANCE();
     void          *fp          = NULL;
+    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     NV_STATUS     rmStatus     = NV_OK;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
@@ -462,6 +465,8 @@ NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     {
         rmStatus = kvgpumgrCreateRequestVgpu(pNv->gpu_id, pMdevUuid,
                                              vgpuTypeId, vgpuId, gpuPciBdf);
+
+        *is_driver_vm = pHypervisor->getProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -979,6 +984,9 @@ NV_STATUS osIsVgpuVfioPresent(void)
 void initVGXSpecificRegistry(OBJGPU *pGpu)
 {
     NvU32 data32;
+    osWriteRegistryDword(pGpu, NV_REG_STR_RM_POWER_FEATURES, 0x55455555);
+    osWriteRegistryDword(pGpu, NV_REG_STR_RM_INFOROM_DISABLE_BBX,
+                               NV_REG_STR_RM_INFOROM_DISABLE_BBX_YES);
 #if !defined(NVCPU_X86_64)
     osWriteRegistryDword(pGpu, NV_REG_STR_RM_BAR2_APERTURE_SIZE_MB, 4);
 #endif

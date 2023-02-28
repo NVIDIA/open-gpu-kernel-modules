@@ -52,7 +52,7 @@ uvmswConstruct_IMPL
     RS_PRIV_LEVEL privLevel = pCallContext->secInfo.privLevel;
 
     if (!(rmclientIsAdmin(pRmClient, privLevel) || hypervisorCheckForObjectAccess(hClient)))
-        return NV_ERR_INVALID_CLIENT;
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
 
     uvmswInitSwMethodState(pUvmSw);
 

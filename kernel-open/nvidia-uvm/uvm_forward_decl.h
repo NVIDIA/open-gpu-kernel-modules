@@ -28,6 +28,8 @@ typedef struct uvm_global_struct uvm_global_t;
 
 typedef struct uvm_gpu_struct uvm_gpu_t;
 typedef struct uvm_parent_gpu_struct uvm_parent_gpu_t;
+typedef struct uvm_gpu_chunk_struct uvm_gpu_chunk_t;
+typedef struct uvm_cpu_chunk_struct uvm_cpu_chunk_t;
 typedef struct uvm_rm_mem_struct uvm_rm_mem_t;
 typedef struct uvm_mem_struct uvm_mem_t;
 typedef struct uvm_host_hal_struct uvm_host_hal_t;
@@ -56,6 +58,7 @@ typedef struct uvm_va_range_struct uvm_va_range_t;
 typedef struct uvm_va_block_struct uvm_va_block_t;
 typedef struct uvm_va_block_test_struct uvm_va_block_test_t;
 typedef struct uvm_va_block_wrapper_struct uvm_va_block_wrapper_t;
+typedef struct uvm_va_block_retry_struct uvm_va_block_retry_t;
 typedef struct uvm_va_space_struct uvm_va_space_t;
 typedef struct uvm_va_space_mm_struct uvm_va_space_mm_t;
 

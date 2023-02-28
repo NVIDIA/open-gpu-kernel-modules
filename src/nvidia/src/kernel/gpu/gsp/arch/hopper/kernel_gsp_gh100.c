@@ -142,13 +142,14 @@ kgspAllocBootArgs_GH100
     NvP64 pVa = NvP64_NULL;
     NvP64 pPriv = NvP64_NULL;
     NV_STATUS nvStatus = NV_OK;
+    NvU64 flags = MEMDESC_FLAGS_NONE;
 
     // Allocate GSP-FMC arguments
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                           memdescCreate(&pKernelGsp->pGspFmcArgumentsDescriptor,
                                         pGpu, sizeof(GSP_FMC_BOOT_PARAMS), 0x1000,
                                         NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
-                                        MEMDESC_FLAGS_NONE),
+                                        flags),
                           _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
@@ -302,6 +303,10 @@ kgspCalculateFbLayout_GH100
     //
     pWprMeta->gspFwHeapSize = kgspGetWprHeapSize(pGpu, pKernelGsp);
 
+    // Number of VF partitions allocating sub-heaps from the WPR heap
+    pWprMeta->gspFwHeapVfPartitionCount =
+        pGpu->bVgpuGspPluginOffloadEnabled ? MAX_PARTITIONS_WITH_GFID : 0;
+
     // Fill in the meta-metadata
     pWprMeta->revision = GSP_FW_WPR_META_REVISION;
     pWprMeta->magic = GSP_FW_WPR_META_MAGIC;
@@ -372,38 +377,7 @@ _kgspIsLockdownReleased
                         _UNLOCK, reg);
 }
 
-/*!
- * Determine if PRIV target mask is unlocked for GSP and BAR0 Decoupler allows GSP access.
- *
- * This is temporary WAR for the PRIV target mask bug 3640831 until we have notification
- * protocol in place (there is no HW mechanism for CPU to check if GSP is open other than
- * reading 0xBADF41YY code).
- *
- * Until the programmed BAR0 decoupler settings are cleared, GSP access is blocked from
- * the CPU so all reads will return 0.
- */
-static NvBool
-_kgspIsTargetMaskReleased
-(
-    OBJGPU  *pGpu,
-    void    *pVoid
-)
-{
-    KernelGsp *pKernelGsp               = reinterpretCast(pVoid, KernelGsp *);
-    KernelFalcon *pKernelFalcon         = staticCast(pKernelGsp, KernelFalcon);
-    const NvU32 privErrTargetLocked     = 0xBADF4100U;
-    const NvU32 privErrTargetLockedMask = 0xFFFFFF00U; // Ignore LSB - it has extra error information
-    NvU32 reg;
 
-    //
-    // This register is read with the raw OS read to avoid the 0xbadf sanity checking
-    // done by the usual register read utilities.
-    //
-    reg = osDevReadReg032(pGpu, gpuGetDeviceMapping(pGpu, DEVICE_INDEX_GPU, 0),
-                          pKernelFalcon->registerBase + NV_PFALCON_FALCON_HWCFG2);
-
-    return ((reg != 0) && ((reg & privErrTargetLockedMask) != privErrTargetLocked));
-}
 
 
 static void
@@ -538,7 +512,7 @@ kgspBootstrapRiscvOSEarly_GH100
     }
 
     // Wait for target mask to be released.
-    status = gpuTimeoutCondWait(pGpu, _kgspIsTargetMaskReleased, pKernelGsp, NULL);
+    status = kfspWaitForGspTargetMaskReleased_HAL(pGpu, pKernelFsp);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Timeout waiting for GSP target mask release. "

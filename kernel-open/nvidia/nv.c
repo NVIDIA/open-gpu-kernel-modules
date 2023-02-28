@@ -280,11 +280,12 @@ void nv_sev_init(
 static
 nv_alloc_t *nvos_create_alloc(
     struct device *dev,
-    int num_pages
+    int            num_pages
 )
 {
-    nv_alloc_t *at;
-    unsigned int pt_size, i;
+    nv_alloc_t  *at;
+    unsigned int pt_size;
+    unsigned int i;
 
     NV_KZALLOC(at, sizeof(nv_alloc_t));
     if (at == NULL)
@@ -295,6 +296,7 @@ nv_alloc_t *nvos_create_alloc(
 
     at->dev = dev;
     pt_size = num_pages *  sizeof(nvidia_pte_t *);
+
     if (os_alloc_mem((void **)&at->page_table, pt_size) != NV_OK)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate page table\n");
@@ -3303,6 +3305,7 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
     NvU32       cache_type,
     NvBool      zeroed,
     NvBool      unencrypted,
+    NvS32       node_id,
     NvU64      *pte_array,
     void      **priv_data
 )
@@ -3314,7 +3317,7 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
     NvU32 i;
     struct device *dev = NULL;
 
-    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_alloc_pages: %d pages\n", page_count);
+    nv_printf(NV_DBG_MEMINFO, "NVRM: VM: nv_alloc_pages: %d pages, nodeid %d\n", page_count, node_id);
     nv_printf(NV_DBG_MEMINFO, "NVRM: VM:    contig %d  cache_type %d\n",
         contiguous, cache_type);
 
@@ -3372,8 +3375,17 @@ NV_STATUS NV_API_CALL nv_alloc_pages(
      * See Bug 1920398 for more details.
      */
     if (nv && nvl->npu && !nvl->dma_dev.nvlink)
-        at->flags.node0 = NV_TRUE;
+    {
+        at->flags.node = NV_TRUE;
+        at->node_id = 0;
+    }
 #endif
+
+    if (node_id != NUMA_NO_NODE)
+    {
+        at->flags.node = NV_TRUE;
+        at->node_id = node_id;
+    }
 
     if (at->flags.contig)
         status = nv_alloc_contig_pages(nv, at);
@@ -5069,23 +5081,36 @@ void nv_linux_remove_device_locked(nv_linux_state_t *nvl)
 void NV_API_CALL nv_control_soc_irqs(nv_state_t *nv, NvBool bEnable)
 {
     int count;
+    unsigned long flags;
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
 
+    if (nv->current_soc_irq != -1)
+        return;
+
+    NV_SPIN_LOCK_IRQSAVE(&nvl->soc_isr_lock, flags);
     if (bEnable)
     {
         for (count = 0; count < nv->num_soc_irqs; count++)
         {
-            nv->soc_irq_info[count].bh_pending = NV_FALSE;
-            nv->current_soc_irq = -1;
-            enable_irq(nv->soc_irq_info[count].irq_num);
+            if (nv->soc_irq_info[count].ref_count == 0)
+            {
+                nv->soc_irq_info[count].ref_count++;
+                enable_irq(nv->soc_irq_info[count].irq_num);
+            }
         }
     }
     else
     {
         for (count = 0; count < nv->num_soc_irqs; count++)
         {
-            disable_irq_nosync(nv->soc_irq_info[count].irq_num);
+            if (nv->soc_irq_info[count].ref_count == 1)
+            {
+                nv->soc_irq_info[count].ref_count--;
+                disable_irq_nosync(nv->soc_irq_info[count].irq_num);
+            }
         }
     }
+    NV_SPIN_UNLOCK_IRQRESTORE(&nvl->soc_isr_lock, flags);
 }
 
 NvU32 NV_API_CALL nv_get_dev_minor(nv_state_t *nv)
@@ -5509,3 +5534,4 @@ void NV_API_CALL nv_get_updated_emu_seg(
         *end = min((resource_size_t)*end, p->end);
     }
 }
+

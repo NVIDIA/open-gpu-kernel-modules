@@ -41,6 +41,7 @@
 
 #include "nv_ref.h"
 #include "nvRmReg.h"
+#include "nvmisc.h"
 
 
 //
@@ -55,6 +56,23 @@ static struct
 
 static NvBool _intrServiceStallExactList(OBJGPU *pGpu, Intr *pIntr, MC_ENGINE_BITVECTOR *pEngines);
 static void _intrInitServiceTable(OBJGPU *pGpu, Intr *pIntr);
+
+
+NV_STATUS
+intrGetSubtreeRange_IMPL
+(
+    Intr                             *pIntr,
+    NV2080_INTR_CATEGORY              category,
+    NV2080_INTR_CATEGORY_SUBTREE_MAP *pRange
+)
+{
+    NV_ASSERT_OR_RETURN(pRange != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(category < NV2080_INTR_CATEGORY_ENUM_COUNT,
+                        NV_ERR_INVALID_ARGUMENT);
+    *pRange = pIntr->subtreeMap[category];
+    return NV_OK;
+}
+
 
 void
 intrServiceStall_IMPL(OBJGPU *pGpu, Intr *pIntr)
@@ -741,24 +759,35 @@ intrDestruct_IMPL
 NV_STATUS
 intrStateInitUnlocked_IMPL
 (
-    OBJGPU     *pGpu,
-    Intr       *pIntr)
+    OBJGPU *pGpu,
+    Intr   *pIntr
+)
 {
     NvU32 data = 0;
+    NvU32 i;
 
     if (osReadRegistryDword(pGpu,
                             NV_REG_STR_RM_INTR_DETAILED_LOGS, &data) == NV_OK)
     {
         if (data == NV_REG_STR_RM_INTR_DETAILED_LOGS_ENABLE)
         {
-            pIntr->setProperty(pIntr, PDB_PROP_INTR_ENABLE_DETAILED_LOGS, NV_TRUE);
+            pIntr->setProperty(pIntr,
+                               PDB_PROP_INTR_ENABLE_DETAILED_LOGS,
+                               NV_TRUE);
         }
     }
 
     _intrInitRegistryOverrides(pGpu, pIntr);
 
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pIntr->subtreeMap); ++i)
+    {
+        pIntr->subtreeMap[i].subtreeStart = NV2080_INTR_INVALID_SUBTREE;
+        pIntr->subtreeMap[i].subtreeEnd   = NV2080_INTR_INVALID_SUBTREE;
+    }
+
     return NV_OK;
 }
+
 
 NV_STATUS
 intrStateInitLocked_IMPL
@@ -992,6 +1021,10 @@ intrInitInterruptTable_KERNEL
     pIntr->pIntrTable = pIntrTable;
     pIntr->intrTableSz = pParams->tableLen;
     pIntrTable = NULL;
+
+    portMemCopy(pIntr->subtreeMap,   sizeof pIntr->subtreeMap,
+                pParams->subtreeMap, sizeof pParams->subtreeMap);
+
     status = NV_OK;
 
 exit:
@@ -1649,4 +1682,79 @@ intrIsIntrEnabled_IMPL
     }
 
     return NV_TRUE;
+}
+
+
+NvU64
+intrGetIntrTopCategoryMask_IMPL
+(
+    Intr *pIntr,
+    NV2080_INTR_CATEGORY category
+)
+{
+    NvU32 subtreeStart = pIntr->subtreeMap[category].subtreeStart;
+    NvU32 subtreeEnd   = pIntr->subtreeMap[category].subtreeStart;
+    NvU64 ret = 0x0;
+    NvU32 i;
+
+    if (subtreeStart == NV2080_INTR_INVALID_SUBTREE ||
+        subtreeEnd   == NV2080_INTR_INVALID_SUBTREE)
+    {
+        return 0x0;
+    }
+
+    for (i = subtreeStart; i <= subtreeEnd; ++i)
+    {
+        ret |= NVBIT64(i);
+    }
+
+    return ret;
+}
+
+
+NvU64
+intrGetIntrTopLegacyStallMask_IMPL
+(
+    Intr   *pIntr
+)
+{
+    OBJGPU *pGpu = ENG_GET_GPU(pIntr);
+    NvU64 ret =
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE) |
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_RUNLIST) |
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_UVM_OWNED) |
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_UVM_SHARED);
+
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+    {
+        ret |= intrGetIntrTopCategoryMask(pIntr,
+            NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION);
+    }
+
+    // Sanity check that Intr.subtreeMap is initialized
+    NV_ASSERT(ret != 0);
+    return ret;
+}
+
+
+NvU64
+intrGetIntrTopLockedMask_IMPL
+(
+    OBJGPU *pGpu,
+    Intr   *pIntr
+)
+{
+    NvU64 ret =
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_ESCHED_DRIVEN_ENGINE) |
+        intrGetIntrTopCategoryMask(pIntr, NV2080_INTR_CATEGORY_RUNLIST);
+
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_SWRL_GRANULAR_LOCKING))
+    {
+        ret |= intrGetIntrTopCategoryMask(pIntr,
+            NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION);
+    }
+
+    // Sanity check that Intr.subtreeMap is initialized
+    NV_ASSERT(ret != 0);
+    return ret;
 }

@@ -96,23 +96,25 @@ struct ContextDma {
     NvBool (*__ctxdmaShareCallback__)(struct ContextDma *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__ctxdmaCheckMemInterUnmap__)(struct ContextDma *, NvBool);
     NvBool (*__ctxdmaAccessCallback__)(struct ContextDma *, struct RsClient *, void *, RsAccessRight);
+    void (*__ctxdmaSetNotificationShare__)(struct ContextDma *, struct NotifShare *);
+    NvU32 (*__ctxdmaGetRefCount__)(struct ContextDma *);
+    void (*__ctxdmaAddAdditionalDependants__)(struct RsClient *, struct ContextDma *, RsResourceRef *);
+    NV_STATUS (*__ctxdmaControl_Prologue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    void (*__ctxdmaControl_Epilogue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__ctxdmaControlLookup__)(struct ContextDma *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NV_STATUS (*__ctxdmaControl__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__ctxdmaUnmap__)(struct ContextDma *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__ctxdmaGetMemInterMapParams__)(struct ContextDma *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__ctxdmaGetMemoryMappingDescriptor__)(struct ContextDma *, struct MEMORY_DESCRIPTOR **);
-    void (*__ctxdmaSetNotificationShare__)(struct ContextDma *, struct NotifShare *);
-    NV_STATUS (*__ctxdmaControl__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__ctxdmaControlFilter__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvU32 (*__ctxdmaGetRefCount__)(struct ContextDma *);
     NV_STATUS (*__ctxdmaUnregisterEvent__)(struct ContextDma *, NvHandle, NvHandle, NvHandle, NvHandle);
-    NV_STATUS (*__ctxdmaUnmap__)(struct ContextDma *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__ctxdmaControlSerialization_Prologue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__ctxdmaCanCopy__)(struct ContextDma *);
-    NV_STATUS (*__ctxdmaControl_Prologue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__ctxdmaAddAdditionalDependants__)(struct RsClient *, struct ContextDma *, RsResourceRef *);
     void (*__ctxdmaPreDestruct__)(struct ContextDma *);
     NV_STATUS (*__ctxdmaIsDuplicate__)(struct ContextDma *, NvHandle, NvBool *);
+    void (*__ctxdmaControlSerialization_Epilogue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__ctxdmaGetNotificationListPtr__)(struct ContextDma *);
-    void (*__ctxdmaControl_Epilogue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__ctxdmaGetNotificationShare__)(struct ContextDma *);
-    NV_STATUS (*__ctxdmaControlLookup__)(struct ContextDma *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__ctxdmaMap__)(struct ContextDma *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NV_STATUS (*__ctxdmaGetOrAllocNotifShare__)(struct ContextDma *, NvHandle, NvHandle, struct NotifShare **);
     NvU32 Class;
@@ -173,23 +175,25 @@ NV_STATUS __nvoc_objCreate_ContextDma(ContextDma**, Dynamic*, NvU32, struct CALL
 #define ctxdmaShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) ctxdmaShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define ctxdmaCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) ctxdmaCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define ctxdmaAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) ctxdmaAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
+#define ctxdmaSetNotificationShare(pNotifier, pNotifShare) ctxdmaSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
+#define ctxdmaGetRefCount(pResource) ctxdmaGetRefCount_DISPATCH(pResource)
+#define ctxdmaAddAdditionalDependants(pClient, pResource, pReference) ctxdmaAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define ctxdmaControl_Prologue(pResource, pCallContext, pParams) ctxdmaControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define ctxdmaControl_Epilogue(pResource, pCallContext, pParams) ctxdmaControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define ctxdmaControlLookup(pResource, pParams, ppEntry) ctxdmaControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define ctxdmaControl(pResource, pCallContext, pParams) ctxdmaControl_DISPATCH(pResource, pCallContext, pParams)
+#define ctxdmaUnmap(pResource, pCallContext, pCpuMapping) ctxdmaUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define ctxdmaGetMemInterMapParams(pRmResource, pParams) ctxdmaGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define ctxdmaGetMemoryMappingDescriptor(pRmResource, ppMemDesc) ctxdmaGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define ctxdmaSetNotificationShare(pNotifier, pNotifShare) ctxdmaSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
-#define ctxdmaControl(pResource, pCallContext, pParams) ctxdmaControl_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaControlFilter(pResource, pCallContext, pParams) ctxdmaControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define ctxdmaGetRefCount(pResource) ctxdmaGetRefCount_DISPATCH(pResource)
 #define ctxdmaUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ctxdmaUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
-#define ctxdmaUnmap(pResource, pCallContext, pCpuMapping) ctxdmaUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define ctxdmaControlSerialization_Prologue(pResource, pCallContext, pParams) ctxdmaControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaCanCopy(pResource) ctxdmaCanCopy_DISPATCH(pResource)
-#define ctxdmaControl_Prologue(pResource, pCallContext, pParams) ctxdmaControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define ctxdmaAddAdditionalDependants(pClient, pResource, pReference) ctxdmaAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define ctxdmaPreDestruct(pResource) ctxdmaPreDestruct_DISPATCH(pResource)
 #define ctxdmaIsDuplicate(pResource, hMemory, pDuplicate) ctxdmaIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define ctxdmaControlSerialization_Epilogue(pResource, pCallContext, pParams) ctxdmaControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaGetNotificationListPtr(pNotifier) ctxdmaGetNotificationListPtr_DISPATCH(pNotifier)
-#define ctxdmaControl_Epilogue(pResource, pCallContext, pParams) ctxdmaControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaGetNotificationShare(pNotifier) ctxdmaGetNotificationShare_DISPATCH(pNotifier)
-#define ctxdmaControlLookup(pResource, pParams, ppEntry) ctxdmaControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define ctxdmaMap(pResource, pCallContext, pParams, pCpuMapping) ctxdmaMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define ctxdmaGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) ctxdmaGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NV_STATUS ctxdmaValidate_IMPL(struct ContextDma *pContextDma, NvU64 start, NvU64 len);
@@ -246,6 +250,38 @@ static inline NvBool ctxdmaAccessCallback_DISPATCH(struct ContextDma *pResource,
     return pResource->__ctxdmaAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
+static inline void ctxdmaSetNotificationShare_DISPATCH(struct ContextDma *pNotifier, struct NotifShare *pNotifShare) {
+    pNotifier->__ctxdmaSetNotificationShare__(pNotifier, pNotifShare);
+}
+
+static inline NvU32 ctxdmaGetRefCount_DISPATCH(struct ContextDma *pResource) {
+    return pResource->__ctxdmaGetRefCount__(pResource);
+}
+
+static inline void ctxdmaAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ContextDma *pResource, RsResourceRef *pReference) {
+    pResource->__ctxdmaAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS ctxdmaControl_Prologue_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__ctxdmaControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline void ctxdmaControl_Epilogue_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__ctxdmaControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS ctxdmaControlLookup_DISPATCH(struct ContextDma *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__ctxdmaControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NV_STATUS ctxdmaControl_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__ctxdmaControl__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS ctxdmaUnmap_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__ctxdmaUnmap__(pResource, pCallContext, pCpuMapping);
+}
+
 static inline NV_STATUS ctxdmaGetMemInterMapParams_DISPATCH(struct ContextDma *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return pRmResource->__ctxdmaGetMemInterMapParams__(pRmResource, pParams);
 }
@@ -254,40 +290,20 @@ static inline NV_STATUS ctxdmaGetMemoryMappingDescriptor_DISPATCH(struct Context
     return pRmResource->__ctxdmaGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline void ctxdmaSetNotificationShare_DISPATCH(struct ContextDma *pNotifier, struct NotifShare *pNotifShare) {
-    pNotifier->__ctxdmaSetNotificationShare__(pNotifier, pNotifShare);
-}
-
-static inline NV_STATUS ctxdmaControl_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__ctxdmaControl__(pResource, pCallContext, pParams);
-}
-
 static inline NV_STATUS ctxdmaControlFilter_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__ctxdmaControlFilter__(pResource, pCallContext, pParams);
-}
-
-static inline NvU32 ctxdmaGetRefCount_DISPATCH(struct ContextDma *pResource) {
-    return pResource->__ctxdmaGetRefCount__(pResource);
 }
 
 static inline NV_STATUS ctxdmaUnregisterEvent_DISPATCH(struct ContextDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return pNotifier->__ctxdmaUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static inline NV_STATUS ctxdmaUnmap_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__ctxdmaUnmap__(pResource, pCallContext, pCpuMapping);
+static inline NV_STATUS ctxdmaControlSerialization_Prologue_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__ctxdmaControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool ctxdmaCanCopy_DISPATCH(struct ContextDma *pResource) {
     return pResource->__ctxdmaCanCopy__(pResource);
-}
-
-static inline NV_STATUS ctxdmaControl_Prologue_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__ctxdmaControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline void ctxdmaAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct ContextDma *pResource, RsResourceRef *pReference) {
-    pResource->__ctxdmaAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
 static inline void ctxdmaPreDestruct_DISPATCH(struct ContextDma *pResource) {
@@ -298,20 +314,16 @@ static inline NV_STATUS ctxdmaIsDuplicate_DISPATCH(struct ContextDma *pResource,
     return pResource->__ctxdmaIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
+static inline void ctxdmaControlSerialization_Epilogue_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__ctxdmaControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+}
+
 static inline PEVENTNOTIFICATION *ctxdmaGetNotificationListPtr_DISPATCH(struct ContextDma *pNotifier) {
     return pNotifier->__ctxdmaGetNotificationListPtr__(pNotifier);
 }
 
-static inline void ctxdmaControl_Epilogue_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__ctxdmaControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
 static inline struct NotifShare *ctxdmaGetNotificationShare_DISPATCH(struct ContextDma *pNotifier) {
     return pNotifier->__ctxdmaGetNotificationShare__(pNotifier);
-}
-
-static inline NV_STATUS ctxdmaControlLookup_DISPATCH(struct ContextDma *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__ctxdmaControlLookup__(pResource, pParams, ppEntry);
 }
 
 static inline NV_STATUS ctxdmaMap_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

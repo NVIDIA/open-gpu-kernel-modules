@@ -112,6 +112,10 @@
  * Changes to the define needs to be reflected in path [1]
  * For new Falcon Id adding, we need to append to the end;
  * don't insert the new falcon Id in the middle.
+ *
+ * @note If a newly added Falcon has multiple instances sharing
+ * the same Falcon Id, the LSF_FALCON_USES_INSTANCE macro
+ * need to be updated.
  */
 #define LSF_FALCON_ID_PMU              (0U)
 #define LSF_FALCON_ID_DPU              (1U)
@@ -136,12 +140,15 @@
 #define LSF_FALCON_ID_NVDEC_RISCV      (18U)
 #define LSF_FALCON_ID_NVDEC_RISCV_EB   (19U)
 #define LSF_FALCON_ID_NVJPG            (20U)
-#define LSF_FALCON_ID_END              (21U)
+#define LSF_FALCON_ID_FECS_RISCV       (21U)
+#define LSF_FALCON_ID_GPCCS_RISCV      (22U)
+#define LSF_FALCON_ID_NVJPG_RISCV_EB   (23U)
+#define LSF_FALCON_ID_END              (24U)
 
 #define LSF_FALCON_ID_INVALID   (0xFFFFFFFFU)
 
 //
-// ************************ NOTIFICATION ********************************* 
+// ************************ NOTIFICATION *********************************
 // In case anyone needs to add new LSF falconId, please must calculate
 // WPR header size per LSF_FALCON_ID_END. RM needs to call lsfmGetWprHeaderSizeMax_HAL
 // to align with acrReadSubWprHeader_HAL in ACR. Otherwise, ACR can't get correct
@@ -162,7 +169,14 @@
 #define LSF_FALCON_INSTANCE_INVALID             (0xFFFFFFFFU)
 #define LSF_FALCON_INDEX_MASK_DEFAULT_0         (0x0)
 
-
+/*!
+ * Checks if the LSF Falcon specified by falconId uses a falconInstance to uniquely identify itself.
+ * Some Falcons (eg: NVENC) use separate FalconId for each instance while some (eg: NVJPG)
+ * shares the same falconId across all instances of that engine. Those engines require a falconInstance
+ * to uniquely identify it.
+ * @note this macro should be updated as needed whenever LSF_FALCON_ID* defines are added. See Bug: 3833461
+ */
+#define LSF_FALCON_USES_INSTANCE(falconId)  ((falconId == LSF_FALCON_ID_NVDEC_RISCV_EB) || (falconId == LSF_FALCON_ID_NVJPG) || (falconId == LSF_FALCON_ID_NVJPG_RISCV_EB))
 
 /*!
  * Size in entries of the ucode descriptor's dependency map.
@@ -358,8 +372,8 @@ typedef struct
 // The PMU supports the ACR task on GM20X_thru_VOLTA profiles only.
 // In order to prevent LSF_FALCON_ID_END changes to affect older / shipped PMU ucodes (increase of DMEM footprint)
 // adding PMU specific ***_END define capturing value covering all PMU profiles that this with the ACR task.
-// 
-#define LSF_FALCON_ID_END_PMU               (LSF_FALCON_ID_FBFALCON + 1) 
+//
+#define LSF_FALCON_ID_END_PMU               (LSF_FALCON_ID_FBFALCON + 1)
 #define LSF_WPR_HEADERS_TOTAL_SIZE_MAX_PMU  (NV_ALIGN_UP((sizeof(LSF_WPR_HEADER) * LSF_FALCON_ID_END_PMU), LSF_WPR_HEADER_ALIGNMENT))
 
 // Maximum SUB WPR header size

@@ -105,44 +105,24 @@ static NvBool __nvoc_thunk_GpuResource_kchangrpapiShareCallback(struct KernelCha
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelChannelGroupApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kchangrpapiUnmap(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
-    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelChannelGroupApi_GpuResource.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kchangrpapiGetMemInterMapParams(struct KernelChannelGroupApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelChannelGroupApi_RmResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_kchangrpapiGetMemoryMappingDescriptor(struct KernelChannelGroupApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
-    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelChannelGroupApi_RmResource.offset), ppMemDesc);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_kchangrpapiGetMapAddrSpace(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelChannelGroupApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_kchangrpapiGetInternalObjectHandle(struct KernelChannelGroupApi *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelChannelGroupApi_GpuResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiControlFilter(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_kchangrpapiAddAdditionalDependants(struct RsClient *pClient, struct KernelChannelGroupApi *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_kchangrpapiGetRefCount(struct KernelChannelGroupApi *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RmResource_kchangrpapiCheckMemInterUnmap(struct KernelChannelGroupApi *pRmResource, NvBool bSubdeviceHandleProvided) {
     return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelChannelGroupApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiMapTo(struct KernelChannelGroupApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_kchangrpapiGetMapAddrSpace(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelChannelGroupApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_kchangrpapiGetRefCount(struct KernelChannelGroupApi *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_kchangrpapiAddAdditionalDependants(struct RsClient *pClient, struct KernelChannelGroupApi *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), pReference);
 }
 
 static NV_STATUS __nvoc_thunk_RmResource_kchangrpapiControl_Prologue(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -157,16 +137,8 @@ static NV_STATUS __nvoc_thunk_GpuResource_kchangrpapiInternalControlForward(stru
     return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelChannelGroupApi_GpuResource.offset), command, pParams, size);
 }
 
-static void __nvoc_thunk_RsResource_kchangrpapiPreDestruct(struct KernelChannelGroupApi *pResource) {
-    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiUnmapFrom(struct KernelChannelGroupApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
     return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiIsDuplicate(struct KernelChannelGroupApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
-    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), hMemory, pDuplicate);
 }
 
 static void __nvoc_thunk_RmResource_kchangrpapiControl_Epilogue(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -175,6 +147,42 @@ static void __nvoc_thunk_RmResource_kchangrpapiControl_Epilogue(struct KernelCha
 
 static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiControlLookup(struct KernelChannelGroupApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
     return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_kchangrpapiGetInternalObjectHandle(struct KernelChannelGroupApi *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelChannelGroupApi_GpuResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_kchangrpapiUnmap(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelChannelGroupApi_GpuResource.offset), pCallContext, pCpuMapping);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_kchangrpapiGetMemInterMapParams(struct KernelChannelGroupApi *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelChannelGroupApi_RmResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_kchangrpapiGetMemoryMappingDescriptor(struct KernelChannelGroupApi *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_KernelChannelGroupApi_RmResource.offset), ppMemDesc);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiControlFilter(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_kchangrpapiControlSerialization_Prologue(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RmResource.offset), pCallContext, pParams);
+}
+
+static void __nvoc_thunk_RsResource_kchangrpapiPreDestruct(struct KernelChannelGroupApi *pResource) {
+    resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset));
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_kchangrpapiIsDuplicate(struct KernelChannelGroupApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_kchangrpapiControlSerialization_Epilogue(struct KernelChannelGroupApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelChannelGroupApi_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_kchangrpapiMap(struct KernelChannelGroupApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -549,25 +557,15 @@ static void __nvoc_init_funcTable_KernelChannelGroupApi_1(KernelChannelGroupApi 
 
     pThis->__kchangrpapiShareCallback__ = &__nvoc_thunk_GpuResource_kchangrpapiShareCallback;
 
-    pThis->__kchangrpapiUnmap__ = &__nvoc_thunk_GpuResource_kchangrpapiUnmap;
-
-    pThis->__kchangrpapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_kchangrpapiGetMemInterMapParams;
-
-    pThis->__kchangrpapiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_kchangrpapiGetMemoryMappingDescriptor;
-
-    pThis->__kchangrpapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_kchangrpapiGetMapAddrSpace;
-
-    pThis->__kchangrpapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_kchangrpapiGetInternalObjectHandle;
-
-    pThis->__kchangrpapiControlFilter__ = &__nvoc_thunk_RsResource_kchangrpapiControlFilter;
-
-    pThis->__kchangrpapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_kchangrpapiAddAdditionalDependants;
-
-    pThis->__kchangrpapiGetRefCount__ = &__nvoc_thunk_RsResource_kchangrpapiGetRefCount;
-
     pThis->__kchangrpapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_kchangrpapiCheckMemInterUnmap;
 
     pThis->__kchangrpapiMapTo__ = &__nvoc_thunk_RsResource_kchangrpapiMapTo;
+
+    pThis->__kchangrpapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_kchangrpapiGetMapAddrSpace;
+
+    pThis->__kchangrpapiGetRefCount__ = &__nvoc_thunk_RsResource_kchangrpapiGetRefCount;
+
+    pThis->__kchangrpapiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_kchangrpapiAddAdditionalDependants;
 
     pThis->__kchangrpapiControl_Prologue__ = &__nvoc_thunk_RmResource_kchangrpapiControl_Prologue;
 
@@ -575,15 +573,29 @@ static void __nvoc_init_funcTable_KernelChannelGroupApi_1(KernelChannelGroupApi 
 
     pThis->__kchangrpapiInternalControlForward__ = &__nvoc_thunk_GpuResource_kchangrpapiInternalControlForward;
 
-    pThis->__kchangrpapiPreDestruct__ = &__nvoc_thunk_RsResource_kchangrpapiPreDestruct;
-
     pThis->__kchangrpapiUnmapFrom__ = &__nvoc_thunk_RsResource_kchangrpapiUnmapFrom;
-
-    pThis->__kchangrpapiIsDuplicate__ = &__nvoc_thunk_RsResource_kchangrpapiIsDuplicate;
 
     pThis->__kchangrpapiControl_Epilogue__ = &__nvoc_thunk_RmResource_kchangrpapiControl_Epilogue;
 
     pThis->__kchangrpapiControlLookup__ = &__nvoc_thunk_RsResource_kchangrpapiControlLookup;
+
+    pThis->__kchangrpapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_kchangrpapiGetInternalObjectHandle;
+
+    pThis->__kchangrpapiUnmap__ = &__nvoc_thunk_GpuResource_kchangrpapiUnmap;
+
+    pThis->__kchangrpapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_kchangrpapiGetMemInterMapParams;
+
+    pThis->__kchangrpapiGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_kchangrpapiGetMemoryMappingDescriptor;
+
+    pThis->__kchangrpapiControlFilter__ = &__nvoc_thunk_RsResource_kchangrpapiControlFilter;
+
+    pThis->__kchangrpapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_kchangrpapiControlSerialization_Prologue;
+
+    pThis->__kchangrpapiPreDestruct__ = &__nvoc_thunk_RsResource_kchangrpapiPreDestruct;
+
+    pThis->__kchangrpapiIsDuplicate__ = &__nvoc_thunk_RsResource_kchangrpapiIsDuplicate;
+
+    pThis->__kchangrpapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_kchangrpapiControlSerialization_Epilogue;
 
     pThis->__kchangrpapiMap__ = &__nvoc_thunk_GpuResource_kchangrpapiMap;
 
@@ -611,12 +623,15 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi **ppThis,
     Object *pParentObj;
     KernelChannelGroupApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(KernelChannelGroupApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelChannelGroupApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(KernelChannelGroupApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelChannelGroupApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -633,11 +648,17 @@ NV_STATUS __nvoc_objCreate_KernelChannelGroupApi(KernelChannelGroupApi **ppThis,
     if (status != NV_OK) goto __nvoc_objCreate_KernelChannelGroupApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_KernelChannelGroupApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(KernelChannelGroupApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

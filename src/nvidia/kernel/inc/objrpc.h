@@ -70,13 +70,8 @@ struct OBJRPC{
     NvU32 *message_buffer_priv_uvm;
     MEMORY_DESCRIPTOR *pMemDesc_mesg_uvm;
 
-    // Buffer for initial GSP message.
-    void       *init_msg_buf;
-    RmPhysAddr  init_msg_buf_pa;
-
     /* Message Queue */
     struct _message_queue_info *pMessageQueueInfo;
-    RmPhysAddr                  messageQueuePhysMem;
 
     RpcHistoryEntry rpcHistory[RPC_HISTORY_DEPTH];
     NvU32 rpcHistoryCurrent;
@@ -104,7 +99,6 @@ NV_STATUS freeRpcInfrastructure_VGPU(OBJGPU *pGpu);
 OBJRPC *initRpcObject(OBJGPU *pGpu);
 void rpcSetIpVersion(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 ipVersion);
 void rpcObjIfacesSetup(OBJRPC *pRpc);
-void rpcRmApiSetup(OBJGPU *pGpu);
 NV_STATUS rpcWriteCommonHeader(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 func, NvU32 paramLength);
 NV_STATUS rpcWriteCommonHeaderSim(OBJGPU *pGpu);
 NV_STATUS _allocRpcMemDesc(OBJGPU *pGpu, NvU64 size, NvBool bContig, NV_ADDRESS_SPACE addrSpace, MEMORY_DESCRIPTOR **ppMemDesc, void **ppMemBuffer, void **ppMemBufferPriv);

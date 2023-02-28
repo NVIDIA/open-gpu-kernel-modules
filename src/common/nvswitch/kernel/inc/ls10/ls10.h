@@ -175,6 +175,9 @@
 
 #define NVSWITCH_NUM_LINKS_PER_NVLIPT_LS10              (NVSWITCH_NUM_LINKS_LS10/NUM_NVLIPT_ENGINE_LS10)
 
+#define NVSWITCH_NVLIPT_GET_PUBLIC_ID_LS10(_physlinknum) \
+    ((_physlinknum)/NVSWITCH_LINKS_PER_NVLIPT_LS10)
+
 #define NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LS10(_physlinknum) \
     ((_physlinknum)%NVSWITCH_NUM_LINKS_PER_NVLIPT_LS10)
 
@@ -809,10 +812,6 @@ typedef const struct
 #define nvswitch_corelib_write_discovery_token_ls10 nvswitch_corelib_write_discovery_token_lr10
 #define nvswitch_corelib_read_discovery_token_ls10  nvswitch_corelib_read_discovery_token_lr10
 
-#define nvswitch_inforom_nvl_get_minion_data_ls10   nvswitch_inforom_nvl_get_minion_data_lr10
-#define nvswitch_inforom_nvl_set_minion_data_ls10   nvswitch_inforom_nvl_set_minion_data_lr10
-#define nvswitch_inforom_nvl_get_max_correctable_error_rate_ls10 nvswitch_inforom_nvl_get_max_correctable_error_rate_lr10
-#define nvswitch_inforom_nvl_get_errors_ls10        nvswitch_inforom_nvl_get_errors_lr10
 #define nvswitch_inforom_ecc_log_error_event_ls10   nvswitch_inforom_ecc_log_error_event_lr10
 #define nvswitch_inforom_ecc_get_errors_ls10        nvswitch_inforom_ecc_get_errors_lr10
 #define nvswitch_inforom_bbx_get_sxid_ls10          nvswitch_inforom_bbx_get_sxid_lr10
@@ -889,10 +888,6 @@ NvlStatus nvswitch_corelib_set_tx_mode_lr10(nvlink_link *link, NvU64 mode, NvU32
 NvlStatus nvswitch_corelib_get_tl_link_mode_lr10(nvlink_link *link, NvU64 *mode);
 void      nvswitch_init_buffer_ready_lr10(nvswitch_device *device, nvlink_link *link, NvBool bNportBufferReady);
 
-NvlStatus nvswitch_inforom_nvl_get_minion_data_lr10(nvswitch_device *device, void *pNvlGeneric, NvU8 linkId, NvU32 *seedData);
-NvlStatus nvswitch_inforom_nvl_set_minion_data_lr10(nvswitch_device *device, void *pNvlGeneric, NvU8 linkId, NvU32 *seedData, NvU32 size, NvBool *bDirty);
-NvlStatus nvswitch_inforom_nvl_get_max_correctable_error_rate_lr10(nvswitch_device *device, NVSWITCH_GET_NVLINK_MAX_CORRECTABLE_ERROR_RATES_PARAMS *params);
-NvlStatus nvswitch_inforom_nvl_get_errors_lr10(nvswitch_device *device, NVSWITCH_GET_NVLINK_ERROR_COUNTS_PARAMS *params);
 NvlStatus nvswitch_inforom_ecc_log_error_event_lr10(nvswitch_device *device, INFOROM_ECC_OBJECT *pEccGeneric, INFOROM_NVS_ECC_ERROR_EVENT *err_event);
 NvlStatus nvswitch_inforom_ecc_get_errors_lr10(nvswitch_device *device, NVSWITCH_GET_ECC_ERROR_COUNTS_PARAMS *params);
 NvlStatus nvswitch_inforom_bbx_get_sxid_lr10(nvswitch_device *device, NVSWITCH_GET_SXIDS_PARAMS *params);
@@ -972,10 +967,10 @@ void      nvswitch_store_topology_information_ls10(nvswitch_device *device, nvli
 NvlStatus nvswitch_ctrl_i2c_indexed_ls10(nvswitch_device *device, NVSWITCH_CTRL_I2C_INDEXED_PARAMS *pParams);
 NvBool    nvswitch_i2c_is_device_access_allowed_ls10(nvswitch_device *device, NvU32 port, NvU8 addr, NvBool bIsRead);
 NvlStatus nvswitch_minion_get_ali_debug_registers_ls10(nvswitch_device *device, nvlink_link *link, NVSWITCH_MINION_ALI_DEBUG_REGISTERS *params);
+void      nvswitch_execute_unilateral_link_shutdown_ls10(nvlink_link *link);
 void      nvswitch_setup_link_system_registers_ls10(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_load_link_disable_settings_ls10(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_link_disable_interrupts_ls10(nvswitch_device *device, NvU32 link);
-void      nvswitch_execute_unilateral_link_shutdown_ls10(nvlink_link *link);
 
 void      nvswitch_init_dlpl_interrupts_ls10(nvlink_link *link);
 NvlStatus nvswitch_reset_and_drain_links_ls10(nvswitch_device *device, NvU64 link_mask);
@@ -1007,6 +1002,7 @@ void      nvswitch_set_error_rate_threshold_ls10(nvlink_link *link, NvBool bIsDe
 void      nvswitch_configure_error_rate_threshold_interrupt_ls10(nvlink_link *link, NvBool bEnable);
 NvlStatus nvswitch_reset_and_train_link_ls10(nvswitch_device *device, nvlink_link *link);
 NvBool    nvswitch_are_link_clocks_on_ls10(nvswitch_device *device, nvlink_link *link, NvU32 clocksMask);
+void      nvswitch_get_error_rate_threshold_ls10(nvlink_link *link);
 
 #endif //_LS10_H_
 

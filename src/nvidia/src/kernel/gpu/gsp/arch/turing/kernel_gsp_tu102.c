@@ -56,7 +56,6 @@
 #undef RPC_STRUCTURES
 #undef RPC_GENERIC_UNION
 
-
 void
 kgspConfigureFalcon_TU102
 (
@@ -108,25 +107,26 @@ kgspAllocBootArgs_TU102
     NvP64 pVa = NvP64_NULL;
     NvP64 pPriv = NvP64_NULL;
     NV_STATUS nvStatus = NV_OK;
+    NvU64 flags = MEMDESC_FLAGS_NONE;
 
     // Allocate WPR meta data
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescCreate(&pKernelGsp->pWprMetaDescriptor,
-                                        pGpu, 0x1000, 0x1000,
-                                        NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
-                                        MEMDESC_FLAGS_NONE),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         memdescCreate(&pKernelGsp->pWprMetaDescriptor,
+                                       pGpu, 0x1000, 0x1000,
+                                       NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
+                                       flags),
+                        _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescAlloc(pKernelGsp->pWprMetaDescriptor),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         memdescAlloc(pKernelGsp->pWprMetaDescriptor),
+                         _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescMap(pKernelGsp->pWprMetaDescriptor, 0,
-                                     memdescGetSize(pKernelGsp->pWprMetaDescriptor),
-                                     NV_TRUE, NV_PROTECT_READ_WRITE,
-                                     &pVa, &pPriv),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         memdescMap(pKernelGsp->pWprMetaDescriptor, 0,
+                                    memdescGetSize(pKernelGsp->pWprMetaDescriptor),
+                                    NV_TRUE, NV_PROTECT_READ_WRITE,
+                                    &pVa, &pPriv),
+                         _kgspAllocBootArgs_exit_cleanup);
 
     pKernelGsp->pWprMeta = (GspFwWprMeta *)NvP64_VALUE(pVa);
     pKernelGsp->pWprMetaMappingPriv = pPriv;
@@ -135,24 +135,24 @@ kgspAllocBootArgs_TU102
     // Setup libos arguments memory
     //
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescCreate(&pKernelGsp->pLibosInitArgumentsDescriptor,
-                                        pGpu,
-                                        LIBOS_INIT_ARGUMENTS_SIZE,
-                                        LIBOS_INIT_ARGUMENTS_SIZE,
-                                        NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED,
-                                        MEMDESC_FLAGS_NONE),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         memdescCreate(&pKernelGsp->pLibosInitArgumentsDescriptor,
+                                       pGpu,
+                                       LIBOS_INIT_ARGUMENTS_SIZE,
+                                       LIBOS_INIT_ARGUMENTS_SIZE,
+                                       NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED,
+                                       flags),
+                         _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescAlloc(pKernelGsp->pLibosInitArgumentsDescriptor),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         memdescAlloc(pKernelGsp->pLibosInitArgumentsDescriptor),
+                         _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescMap(pKernelGsp->pLibosInitArgumentsDescriptor, 0,
-                                     memdescGetSize(pKernelGsp->pLibosInitArgumentsDescriptor),
-                                     NV_TRUE, NV_PROTECT_READ_WRITE,
+                         memdescMap(pKernelGsp->pLibosInitArgumentsDescriptor, 0,
+                                    memdescGetSize(pKernelGsp->pLibosInitArgumentsDescriptor),
+                                    NV_TRUE, NV_PROTECT_READ_WRITE,
                                      &pVa, &pPriv),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         _kgspAllocBootArgs_exit_cleanup);
 
     pKernelGsp->pLibosInitArgumentsCached = (LibosMemoryRegionInitArgument *)NvP64_VALUE(pVa);
     pKernelGsp->pLibosInitArgumentsMappingPriv = pPriv;
@@ -161,22 +161,22 @@ kgspAllocBootArgs_TU102
     NV_ASSERT(sizeof(GSP_ARGUMENTS_CACHED) <= 0x1000);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescCreate(&pKernelGsp->pGspArgumentsDescriptor,
-                                        pGpu, 0x1000, 0x1000,
-                                        NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
-                                        MEMDESC_FLAGS_NONE),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         memdescCreate(&pKernelGsp->pGspArgumentsDescriptor,
+                                       pGpu, 0x1000, 0x1000,
+                                       NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
+                                       flags),
+                         _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescAlloc(pKernelGsp->pGspArgumentsDescriptor),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         memdescAlloc(pKernelGsp->pGspArgumentsDescriptor),
+                         _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescMap(pKernelGsp->pGspArgumentsDescriptor, 0,
-                                     memdescGetSize(pKernelGsp->pGspArgumentsDescriptor),
-                                     NV_TRUE, NV_PROTECT_READ_WRITE,
-                                     &pVa, &pPriv),
-                          _kgspAllocBootArgs_exit_cleanup);
+                         memdescMap(pKernelGsp->pGspArgumentsDescriptor, 0,
+                                    memdescGetSize(pKernelGsp->pGspArgumentsDescriptor),
+                                    NV_TRUE, NV_PROTECT_READ_WRITE,
+                                    &pVa, &pPriv),
+                         _kgspAllocBootArgs_exit_cleanup);
 
     pKernelGsp->pGspArgumentsCached = (GSP_ARGUMENTS_CACHED *)NvP64_VALUE(pVa);
     pKernelGsp->pGspArgumentsMappingPriv = pPriv;
@@ -361,8 +361,11 @@ kgspBootstrapRiscvOSEarly_TU102
             kflcnReset_HAL(pGpu, pKernelFalcon);
 
             NV_ASSERT_OK_OR_GOTO(status,
-                kgspExecuteFwsecFrts_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode,
-                                        pKernelGsp->pWprMeta->frtsOffset), exit);
+                                 kgspExecuteFwsecFrts_HAL(pGpu,
+                                                          pKernelGsp,
+                                                          pKernelGsp->pFwsecUcode,
+                                                          pKernelGsp->pWprMeta->frtsOffset),
+                                 exit);
         }
     }
 
@@ -426,11 +429,13 @@ kgspBootstrapRiscvOSEarly_TU102
     NV_PRINTF(LEVEL_INFO, "Waiting for GSP fw RM to be ready...\n");
 
     // Link the status queue.
-    NV_ASSERT_OK_OR_GOTO(status, GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo),
-                          exit);
+    NV_ASSERT_OK_OR_GOTO(status,
+                         GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo),
+                         exit);
 
-    NV_ASSERT_OK_OR_GOTO(status, kgspWaitForRmInitDone(pGpu, pKernelGsp),
-                          exit);
+    NV_ASSERT_OK_OR_GOTO(status,
+                         kgspWaitForRmInitDone(pGpu, pKernelGsp),
+                         exit);
 
     NV_PRINTF(LEVEL_INFO, "GSP FW RM ready.\n");
 
@@ -559,24 +564,29 @@ kgspCalculateFbLayout_TU102
 
     //
     // Compute the start of the ELF.  Align to 64K to avoid issues with
-    // inherent alignment constraints (e.g. GC6 buffers which are allocated
-    // just below this offset).
+    // inherent alignment constraints.
     //
     pWprMeta->gspFwOffset = NV_ALIGN_DOWN64(pWprMeta->bootBinOffset - pWprMeta->sizeOfRadix3Elf, 0x10000);
 
-    NvU64 wprHeapSize = kgspGetWprHeapSize(pGpu, pKernelGsp);
+    const NvU64 wprHeapSize = kgspGetWprHeapSize(pGpu, pKernelGsp);
 
-    // Start of WPR region (1Mb aligned)
-    pWprMeta->gspFwWprStart =
-        NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - wprHeapSize, 0x100000);
-
-    // GSP-RM heap in WPR, align to 1Mb
-    pWprMeta->gspFwHeapOffset = NV_ALIGN_UP64(pWprMeta->gspFwWprStart + sizeof *pWprMeta, 0x100000);
+    // GSP-RM heap in WPR, align to 1MB
+    pWprMeta->gspFwHeapOffset = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - wprHeapSize, 0x100000);
     pWprMeta->gspFwHeapSize = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - pWprMeta->gspFwHeapOffset, 0x100000);
 
-    // Non WPR heap
+    // Number of VF partitions allocating sub-heaps from the WPR heap
+    pWprMeta->gspFwHeapVfPartitionCount = pGpu->bVgpuGspPluginOffloadEnabled ? MAX_PARTITIONS_WITH_GFID : 0;
+
+    //
+    // Start of WPR region (128K alignment requirement, but 1MB aligned so that
+    // the extra padding sits in WPR instead of in between the end of the
+    // non-WPR heap and the start of WPR).
+    //
+    pWprMeta->gspFwWprStart = NV_ALIGN_DOWN64(pWprMeta->gspFwHeapOffset - sizeof *pWprMeta, 0x100000);
+
+    // Non WPR heap (1MB aligned)
     pWprMeta->nonWprHeapSize = kgspGetNonWprHeapSize(pGpu, pKernelGsp);
-    pWprMeta->nonWprHeapOffset = pWprMeta->gspFwWprStart - pWprMeta->nonWprHeapSize;
+    pWprMeta->nonWprHeapOffset = NV_ALIGN_DOWN64(pWprMeta->gspFwWprStart - pWprMeta->nonWprHeapSize, 0x100000);
 
     pWprMeta->gspFwRsvdStart = pWprMeta->nonWprHeapOffset;
 
@@ -603,15 +613,6 @@ kgspCalculateFbLayout_TU102
     pWprMeta->verified = 0;
     pWprMeta->revision = GSP_FW_WPR_META_REVISION;
     pWprMeta->magic = GSP_FW_WPR_META_MAGIC;
-
-    if (pGpu->bVgpuGspPluginOffloadEnabled)
-    {
-        pKernelGsp->pWprMeta->driverModel = 1;
-    }
-    else
-    {
-        pKernelGsp->pWprMeta->driverModel = 0;
-    }
 
 #if 0
     NV_PRINTF(LEVEL_ERROR, "WPR meta data offset:     0x%016llx\n", pWprMeta->gspFwWprStart);
@@ -733,21 +734,6 @@ kgspResetHw_TU102
     GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _FALSE);
 
     return NV_OK;
-}
-
-/*!
- *  Return NV_OK along with the Engine Reset state.
- */
-NvBool
-kgspIsEngineInReset_TU102
-(
-    OBJGPU *pGpu,
-    KernelGsp *pKernelGsp
-)
-{
-    NvU32 val = GPU_REG_RD32(pGpu, NV_PGSP_FALCON_ENGINE);
-
-    return FLD_TEST_DRF(_PGSP_FALCON, _ENGINE, _RESET, _TRUE, val);
 }
 
 void
@@ -939,4 +925,124 @@ kgspWaitForGfwBootOk_TU102
     }
 
     return status;
+}
+
+void 
+kgspFreeSuspendResumeData_TU102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    // release sr meta data resources
+    if (pKernelGsp->pSRMetaDescriptor != NULL)
+    {
+        memdescFree(pKernelGsp->pSRMetaDescriptor);
+        memdescDestroy(pKernelGsp->pSRMetaDescriptor);
+        pKernelGsp->pSRMetaDescriptor = NULL;
+    }
+
+    // release sr meta data resources
+    if (pKernelGsp->pSRRadix3Descriptor != NULL)
+    {
+        memdescFree(pKernelGsp->pSRRadix3Descriptor);
+        memdescDestroy(pKernelGsp->pSRRadix3Descriptor);
+        pKernelGsp->pSRRadix3Descriptor = NULL;
+    }
+}
+
+NV_STATUS
+kgspSavePowerMgmtState_TU102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    GspFwSRMeta gspfwSRMeta;
+    NvP64 pVa = NvP64_NULL;
+    NvP64 pPriv = NvP64_NULL;
+    NV_STATUS nvStatus = NV_OK;
+
+    // Fill in GspFwSRMeta structure
+    portMemSet(&gspfwSRMeta, 0, sizeof(gspfwSRMeta));
+    gspfwSRMeta.magic                   = GSP_FW_SR_META_MAGIC;
+    gspfwSRMeta.revision                = GSP_FW_SR_META_REVISION;
+    gspfwSRMeta.sizeOfSuspendResumeData = pKernelGsp->pWprMeta->gspFwWprEnd - pKernelGsp->pWprMeta->gspFwWprStart;
+
+    
+    NV_ASSERT_OK_OR_GOTO(nvStatus,
+                         kgspCreateRadix3(pGpu,
+                                          pKernelGsp,
+                                          &pKernelGsp->pSRRadix3Descriptor,
+                                          NULL,
+                                          NULL,
+                                          gspfwSRMeta.sizeOfSuspendResumeData),
+                         exit_fail_cleanup);
+
+    gspfwSRMeta.sysmemAddrOfSuspendResumeData = memdescGetPhysAddr(pKernelGsp->pSRRadix3Descriptor, AT_GPU, 0);
+
+    // Create SR Metadata Area
+    NV_ASSERT_OK_OR_GOTO(nvStatus,
+                         memdescCreate(&pKernelGsp->pSRMetaDescriptor,
+                                       pGpu,
+                                       sizeof(GspFwSRMeta),
+                                       256,
+                                       NV_TRUE,
+                                       ADDR_SYSMEM,
+                                       NV_MEMORY_UNCACHED,
+                                       MEMDESC_FLAGS_NONE),
+                         exit_fail_cleanup);
+
+    NV_ASSERT_OK_OR_GOTO(nvStatus,
+                         memdescAlloc(pKernelGsp->pSRMetaDescriptor),
+                         exit_fail_cleanup);
+
+    // Copy SR Metadata Structure
+    NV_ASSERT_OK_OR_GOTO(nvStatus,
+                         memdescMap(pKernelGsp->pSRMetaDescriptor,
+                                    0,
+                                    memdescGetSize(pKernelGsp->pSRMetaDescriptor),
+                                    NV_TRUE,
+                                    NV_PROTECT_WRITEABLE,
+                                    &pVa,
+                                    &pPriv),
+                         exit_fail_cleanup);
+
+    portMemCopy(pVa, sizeof(gspfwSRMeta), &gspfwSRMeta, sizeof(gspfwSRMeta));
+
+    memdescUnmap(pKernelGsp->pSRMetaDescriptor,
+                 NV_TRUE, osGetCurrentProcess(),
+                 pVa, pPriv);
+
+    NV_ASSERT_OK_OR_GOTO(nvStatus,
+                         kgspExecuteBooterUnloadIfNeeded_HAL(pGpu,
+                                                             pKernelGsp, 
+                                                             memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor,AT_GPU, 0)),
+                         exit_fail_cleanup);
+
+    return nvStatus;
+
+exit_fail_cleanup:
+    kgspFreeSuspendResumeData_HAL(pGpu, pKernelGsp);
+    return nvStatus;
+}
+
+NV_STATUS
+kgspRestorePowerMgmtState_TU102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    NV_STATUS nvStatus = NV_OK;
+
+    NV_ASSERT_OK_OR_GOTO(nvStatus,
+                         kgspExecuteBooterLoad_HAL(pGpu,
+                                                   pKernelGsp,
+                                                   memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor, AT_GPU,0)),
+                         exit_cleanup);
+
+exit_cleanup:
+    kgspFreeSuspendResumeData_HAL(pGpu, pKernelGsp);
+    return nvStatus;
 }

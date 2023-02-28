@@ -325,6 +325,18 @@ _sysRegistryOverrideResourceServer
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_CLIENT_HANDLE_LOOKUP, !!data32);
     }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_LIST_DEFERRED_FREE,
+                            &data32) == NV_OK)
+    {
+        pSys->bUseDeferredClientListFree = !!data32;
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_LIST_DEFERRED_FREE_LIMIT,
+                            &data32) == NV_OK)
+    {
+        pSys->clientListDeferredFreeLimit = data32;
+    }
 }
 
 static void
@@ -656,15 +668,6 @@ sysInitRegistryOverrides_IMPL
         pSys->setProperty(pSys, PDB_PROP_SYS_PRIORITY_THROTTLE_DELAY_US, data32);
     }
 
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_MULTICAST_FLA,
-                            &data32) == NV_OK)
-    {
-        if (data32 == NV_REG_STR_RM_MULTICAST_FLA_ENABLED)
-        {
-            pSys->bMulticastFlaEnabled = NV_TRUE;
-        }
-    }
-
     _sysRegistryOverrideExternalFabricMgmt(pSys, pGpu);
     _sysRegistryOverrideResourceServer(pSys, pGpu);
 
@@ -678,6 +681,8 @@ sysInitRegistryOverrides_IMPL
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, !!data32);
     }
+
+    gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu);
 }
 
 void

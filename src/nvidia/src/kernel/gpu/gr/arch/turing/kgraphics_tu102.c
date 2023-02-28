@@ -22,6 +22,7 @@
  */
 
 #include "kernel/gpu/gr/kernel_graphics.h"
+#include "kernel/gpu/mem_mgr/mem_mgr.h"
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h"
 
@@ -52,6 +53,7 @@ kgraphicsAllocGrGlobalCtxBuffers_TU102
     NvU32                         rtvcbBufferAlign;
     NV_STATUS                     status;
     const KGRAPHICS_STATIC_INFO  *pKernelGraphicsStaticInfo;
+    CTX_BUF_POOL_INFO            *pCtxBufPool = NULL;
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
@@ -97,6 +99,14 @@ kgraphicsAllocGrGlobalCtxBuffers_TU102
     {
         pCtxBuffers = &pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid];
         pCtxAttr = pKernelGraphics->globalCtxBuffersInfo.globalCtxAttr;
+        NV_ASSERT_OK_OR_RETURN(ctxBufPoolGetGlobalPool(pGpu, CTX_BUF_ID_GR_GLOBAL,
+            RM_ENGINE_TYPE_GR(pKernelGraphics->instance), &pCtxBufPool));
+    }
+
+    // Don't use context buffer pool for VF allocations managed by host RM.
+    if (ctxBufPoolIsSupported(pGpu) && (pCtxBufPool != NULL))
+    {
+        allocFlags |= MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL;
     }
 
     if (IS_GFID_VF(gfid))
@@ -127,6 +137,13 @@ kgraphicsAllocGrGlobalCtxBuffers_TU102
                           allocFlags));
 
         memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
+        if ((allocFlags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
+        {
+            MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+            memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+            NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+        }
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_RTV_CB].pAllocList));
     }

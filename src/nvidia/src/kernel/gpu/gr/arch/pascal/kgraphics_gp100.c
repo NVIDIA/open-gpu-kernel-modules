@@ -22,6 +22,7 @@
  */
 
 #include "kernel/gpu/gr/kernel_graphics.h"
+#include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/intr/engine_idx.h"
 #include "nvRmReg.h"
@@ -218,7 +219,13 @@ kgraphicsAllocGlobalCtxBuffers_GP100
         if ((*ppMemDesc)->_addressSpace == ADDR_FBMEM)
             memdescSetGpuCacheAttrib(*ppMemDesc, NV_MEMORY_CACHED);
 
-        NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+        if ((allocFlags & MEMDESC_FLAGS_OWNED_BY_CTX_BUF_POOL) != 0)
+        {
+            MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+            memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+            NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
+        }
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].pAllocList));

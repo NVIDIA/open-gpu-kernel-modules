@@ -547,7 +547,7 @@ _kbusRemoveNvlinkPeerMapping
             status = knvlinkSyncLinkMasksAndVbiosInfo(pGpu0, pKernelNvlink0);
             if (status != NV_OK)
             {
-                NV_ASSERT(status == NV_OK);
+                NV_ASSERT(status != NV_OK);
                 return status;
             }
 

@@ -100,9 +100,9 @@ struct TimerApi {
     NV_STATUS (*__tmrapiGetRegBaseOffsetAndSize__)(struct TimerApi *, struct OBJGPU *, NvU32 *, NvU32 *);
     NV_STATUS (*__tmrapiCtrlCmdTmrSetAlarmNotify__)(struct TimerApi *, NV0004_CTRL_TMR_SET_ALARM_NOTIFY_PARAMS *);
     NvBool (*__tmrapiShareCallback__)(struct TimerApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__tmrapiMapTo__)(struct TimerApi *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__tmrapiGetOrAllocNotifShare__)(struct TimerApi *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__tmrapiCheckMemInterUnmap__)(struct TimerApi *, NvBool);
+    NV_STATUS (*__tmrapiGetOrAllocNotifShare__)(struct TimerApi *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__tmrapiMapTo__)(struct TimerApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__tmrapiGetMapAddrSpace__)(struct TimerApi *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__tmrapiSetNotificationShare__)(struct TimerApi *, struct NotifShare *);
     NvU32 (*__tmrapiGetRefCount__)(struct TimerApi *);
@@ -119,9 +119,11 @@ struct TimerApi {
     NV_STATUS (*__tmrapiGetMemoryMappingDescriptor__)(struct TimerApi *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__tmrapiControlFilter__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__tmrapiUnregisterEvent__)(struct TimerApi *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__tmrapiControlSerialization_Prologue__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__tmrapiCanCopy__)(struct TimerApi *);
     void (*__tmrapiPreDestruct__)(struct TimerApi *);
     NV_STATUS (*__tmrapiIsDuplicate__)(struct TimerApi *, NvHandle, NvBool *);
+    void (*__tmrapiControlSerialization_Epilogue__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__tmrapiGetNotificationListPtr__)(struct TimerApi *);
     struct NotifShare *(*__tmrapiGetNotificationShare__)(struct TimerApi *);
     NV_STATUS (*__tmrapiMap__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -159,9 +161,9 @@ NV_STATUS __nvoc_objCreate_TimerApi(TimerApi**, Dynamic*, NvU32, struct CALL_CON
 #define tmrapiGetRegBaseOffsetAndSize(pTimerApi, pGpu, pOffset, pSize) tmrapiGetRegBaseOffsetAndSize_DISPATCH(pTimerApi, pGpu, pOffset, pSize)
 #define tmrapiCtrlCmdTmrSetAlarmNotify(pTimerApi, pParams) tmrapiCtrlCmdTmrSetAlarmNotify_DISPATCH(pTimerApi, pParams)
 #define tmrapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) tmrapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define tmrapiMapTo(pResource, pParams) tmrapiMapTo_DISPATCH(pResource, pParams)
-#define tmrapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) tmrapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define tmrapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) tmrapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define tmrapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) tmrapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define tmrapiMapTo(pResource, pParams) tmrapiMapTo_DISPATCH(pResource, pParams)
 #define tmrapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) tmrapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define tmrapiSetNotificationShare(pNotifier, pNotifShare) tmrapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define tmrapiGetRefCount(pResource) tmrapiGetRefCount_DISPATCH(pResource)
@@ -178,9 +180,11 @@ NV_STATUS __nvoc_objCreate_TimerApi(TimerApi**, Dynamic*, NvU32, struct CALL_CON
 #define tmrapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) tmrapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define tmrapiControlFilter(pResource, pCallContext, pParams) tmrapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define tmrapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) tmrapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define tmrapiControlSerialization_Prologue(pResource, pCallContext, pParams) tmrapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define tmrapiCanCopy(pResource) tmrapiCanCopy_DISPATCH(pResource)
 #define tmrapiPreDestruct(pResource) tmrapiPreDestruct_DISPATCH(pResource)
 #define tmrapiIsDuplicate(pResource, hMemory, pDuplicate) tmrapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define tmrapiControlSerialization_Epilogue(pResource, pCallContext, pParams) tmrapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define tmrapiGetNotificationListPtr(pNotifier) tmrapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define tmrapiGetNotificationShare(pNotifier) tmrapiGetNotificationShare_DISPATCH(pNotifier)
 #define tmrapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) tmrapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -201,16 +205,16 @@ static inline NvBool tmrapiShareCallback_DISPATCH(struct TimerApi *pGpuResource,
     return pGpuResource->__tmrapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS tmrapiMapTo_DISPATCH(struct TimerApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__tmrapiMapTo__(pResource, pParams);
+static inline NV_STATUS tmrapiCheckMemInterUnmap_DISPATCH(struct TimerApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__tmrapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS tmrapiGetOrAllocNotifShare_DISPATCH(struct TimerApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__tmrapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS tmrapiCheckMemInterUnmap_DISPATCH(struct TimerApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__tmrapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS tmrapiMapTo_DISPATCH(struct TimerApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__tmrapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS tmrapiGetMapAddrSpace_DISPATCH(struct TimerApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -277,6 +281,10 @@ static inline NV_STATUS tmrapiUnregisterEvent_DISPATCH(struct TimerApi *pNotifie
     return pNotifier->__tmrapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS tmrapiControlSerialization_Prologue_DISPATCH(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__tmrapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool tmrapiCanCopy_DISPATCH(struct TimerApi *pResource) {
     return pResource->__tmrapiCanCopy__(pResource);
 }
@@ -287,6 +295,10 @@ static inline void tmrapiPreDestruct_DISPATCH(struct TimerApi *pResource) {
 
 static inline NV_STATUS tmrapiIsDuplicate_DISPATCH(struct TimerApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__tmrapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void tmrapiControlSerialization_Epilogue_DISPATCH(struct TimerApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__tmrapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *tmrapiGetNotificationListPtr_DISPATCH(struct TimerApi *pNotifier) {

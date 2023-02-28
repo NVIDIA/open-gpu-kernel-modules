@@ -159,6 +159,7 @@ struct RS_RES_FREE_PARAMS_INTERNAL
 
     // Internal use only
     NvBool             bHiPriOnly;      ///< [in] Only free if this is a high priority resources
+    NvBool             bDisableOnly;    ///< [in] Disable the target instead of freeing it (only applies to clients)
     RS_LOCK_INFO      *pLockInfo;       ///< [inout] Locking flags and state
     NvU32              freeFlags;       ///< [in] Flags for the free operation
     NvU32              freeState;       ///< [inout] Free state
@@ -249,6 +250,8 @@ struct RsResource {
     NV_STATUS (*__resControlLookup__)(struct RsResource *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__resControl__)(struct RsResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__resControlFilter__)(struct RsResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__resControlSerialization_Prologue__)(struct RsResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    void (*__resControlSerialization_Epilogue__)(struct RsResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__resControl_Prologue__)(struct RsResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__resControl_Epilogue__)(struct RsResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__resMap__)(struct RsResource *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -298,6 +301,8 @@ NV_STATUS __nvoc_objCreate_RsResource(RsResource**, Dynamic*, NvU32, struct CALL
 #define resControlLookup(pResource, pParams, ppEntry) resControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define resControl(pResource, pCallContext, pParams) resControl_DISPATCH(pResource, pCallContext, pParams)
 #define resControlFilter(pResource, pCallContext, pParams) resControlFilter_DISPATCH(pResource, pCallContext, pParams)
+#define resControlSerialization_Prologue(pResource, pCallContext, pParams) resControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define resControlSerialization_Epilogue(pResource, pCallContext, pParams) resControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define resControl_Prologue(pResource, pCallContext, pParams) resControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define resControl_Epilogue(pResource, pCallContext, pParams) resControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define resMap(pResource, pCallContext, pParams, pCpuMapping) resMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -342,6 +347,18 @@ NV_STATUS resControlFilter_IMPL(struct RsResource *pResource, struct CALL_CONTEX
 
 static inline NV_STATUS resControlFilter_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__resControlFilter__(pResource, pCallContext, pParams);
+}
+
+NV_STATUS resControlSerialization_Prologue_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+static inline NV_STATUS resControlSerialization_Prologue_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__resControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+void resControlSerialization_Epilogue_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+static inline void resControlSerialization_Epilogue_DISPATCH(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__resControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 NV_STATUS resControl_Prologue_IMPL(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);

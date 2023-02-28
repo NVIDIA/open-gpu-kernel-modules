@@ -468,7 +468,61 @@ typedef struct NV0073_CTRL_SYSTEM_GET_SET_HOTPLUG_CONFIG_PARAMS {
     NvU32 hotplugAlwaysAttached;
 } NV0073_CTRL_SYSTEM_GET_SET_HOTPLUG_CONFIG_PARAMS;
 
+/*
+ * NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_STATE
+ *
+ * This command can be used to retrieve dynamic hotplug state information that
+ * are currently recorded by the RM. This information can be used by the client
+ * to determine which displays to detect after a hotplug event occurs.  Or if
+ * the client knows that this device generates a hot plug/unplug signal on all
+ * connectors, then this can be used to cull displays from detection.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed.  This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   flags
+ *     This parameter specifies optional flags to be used while retrieving
+ *     the hotplug state information.
+ *     Here are the current defined fields:
+ *       NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_FLAGS_LID
+ *         A client uses this field to determine the lid state.
+ *         Possible values are:
+ *            NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_FLAGS_LID_OPEN
+ *              The lid is open.
+ *            NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_FLAGS_LID_CLOSED
+ *              The lid is closed.  The client should remove devices as
+ *              reported inside the
+ *              NV0073_CTRL_SYSTEM_GET_CONNECT_POLICY_PARAMS.lidClosedMask.
+ *   hotplugAfterEdidMask
+ *     This display mask specifies an NV0073_DISPLAY_MASK value describing
+ *     the set of displays that have seen a hotplug or hotunplug event
+ *     sometime after the last valid EDID read.  If the device never has
+ *     a valid EDID read, then it will always be listed here.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
 
+
+#define NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_STATE (0x730124U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS_MESSAGE_ID (0x24U)
+
+typedef struct NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 flags;
+    NvU32 hotplugAfterEdidMask;
+} NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS;
+
+/* valid get hoplug state flags */
+#define NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_FLAGS_LID                   0:0
+#define NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_FLAGS_LID_OPEN   (0x00000000U)
+#define NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_FLAGS_LID_CLOSED (0x00000001U)
 
 /*
  * NV0073_CTRL_CMD_SYSTEM_GET_HEAD_ROUTING_MAP
@@ -756,6 +810,136 @@ typedef struct NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS {
 } NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS;
 
 
+/*
+ * NV0073_CTRL_SYSTEM_CONNECTOR_INFO
+ *
+ * This structure describes a single connector table entry.
+ *
+ *   type
+ *     This field specifies the connector type.
+ *   displayMask
+ *     This field specifies the the displayMask to which the connector belongs.
+ *   location
+ *     This field specifies the placement of the connector on the platform.
+ *   hotplug
+ *     This field specifies hotplug capabilities (if any) for the connector.
+ */
+typedef struct NV0073_CTRL_SYSTEM_CONNECTOR_INFO {
+    NvU32 type;
+    NvU32 displayMask;
+    NvU32 location;
+    NvU32 hotplug;
+} NV0073_CTRL_SYSTEM_CONNECTOR_INFO;
+
+/* valid type values */
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_VGA_15_PIN               (0x00000000U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_A                    (0x00000001U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_POD_VGA_15_PIN           (0x00000002U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_TV_COMPOSITE             (0x00000010U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_TV_SVIDEO                (0x00000011U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_TV_SVIDEO_BO_COMPOSITE   (0x00000012U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_TV_COMPONENT             (0x00000013U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_TV_SCART                 (0x00000014U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_TV_SCART_EIAJ4120        (0x00000014U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_TV_EIAJ4120              (0x00000017U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_PC_POD_HDTV_YPRPB        (0x00000018U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_PC_POD_SVIDEO            (0x00000019U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_PC_POD_COMPOSITE         (0x0000001AU)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_I_TV_SVIDEO          (0x00000020U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_I_TV_COMPOSITE       (0x00000021U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_I_TV_SV_BO_COMPOSITE (0x00000022U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_I                    (0x00000030U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_D                    (0x00000031U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_ADC                      (0x00000032U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LFH_DVI_I_1              (0x00000038U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LFH_DVI_I_2              (0x00000039U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LFH_SVIDEO               (0x0000003AU)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_BNC                      (0x0000003CU)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LVDS_SPWG                (0x00000040U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LVDS_OEM                 (0x00000041U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LVDS_SPWG_DET            (0x00000042U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LVDS_OEM_DET             (0x00000043U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_TVDS_OEM_ATT             (0x00000045U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_VGA_15_PIN_UNDOCKED      (0x00000050U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_VGA_15_PIN_DOCKED        (0x00000051U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_I_UNDOCKED           (0x00000052U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_I_DOCKED             (0x00000053U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_D_UNDOCKED           (0x00000052U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DVI_D_DOCKED             (0x00000053U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DP_EXT                   (0x00000056U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DP_INT                   (0x00000057U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DP_EXT_UNDOCKED          (0x00000058U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_DP_EXT_DOCKED            (0x00000059U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_3PIN_DIN_STEREO          (0x00000060U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_HDMI_A                   (0x00000061U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_AUDIO_SPDIF              (0x00000062U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_HDMI_C_MINI              (0x00000063U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LFH_DP_1                 (0x00000064U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_LFH_DP_2                 (0x00000065U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_TYPE_VIRTUAL_WFD              (0x00000070U)
+
+/* valid hotplug values */
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_HOTPLUG_A_SUPPORTED           (0x00000001U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_HOTPLUG_B_SUPPORTED           (0x00000002U)
+
+/*
+ * Nv0073_CTRL_CMD_SYSTEM_GET_CONNECTOR_TABLE
+ *
+ * This command can be used to retrieve display connector information.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed.  This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *   version
+ *     This parameter returns the version of the connector table.
+ *   platform
+ *     This parameter returns the type of platform of the associated subdevice.
+ *   connectorTableEntries
+ *     This parameter returns the number of valid entries in the connector
+ *     table.
+ *   connectorTable
+ *     This parameter returns the connector information in the form of an
+ *     array of NV0073_CTRL_SYSTEM_CONNECTOR_INFO structures.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ */
+#define NV0073_CTRL_CMD_SYSTEM_GET_CONNECTOR_TABLE                      (0x730165U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS_MESSAGE_ID" */
+
+/* maximum number of connector table entries */
+#define NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_MAX_ENTRIES              (16U)
+
+#define NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS_MESSAGE_ID (0x65U)
+
+typedef struct NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS {
+    NvU32                             subDeviceInstance;
+    NvU32                             version;
+    NvU32                             platform;
+    NvU32                             connectorTableEntries;
+    /*
+     * C form:
+     * NV0073_CTRL_SYSTEM_CONNECTOR_INFO connectorTable[NV0073_CTRL_SYSTEM_CONNECTOR_TABLE_MAX_ENTRIES];
+     */
+    NV0073_CTRL_SYSTEM_CONNECTOR_INFO connectorTable[NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_MAX_ENTRIES];
+} NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS;
+
+/* valid version values */
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_VERSION_30                     (0x00000030U)
+
+/* valid platform values */
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_PLATFORM_DEFAULT_ADD_IN_CARD   (0x00000000U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_PLATFORM_TWO_PLATE_ADD_IN_CARD (0x00000001U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_PLATFORM_MOBILE_ADD_IN_CARD    (0x00000008U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_PLATFORM_MXM_MODULE            (0x00000009U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_PLATFORM_MOBILE_BACK           (0x00000010U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_PLATFORM_MOBILE_BACK_LEFT      (0x00000011U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_PLATFORM_MOBILE_BACK_DOCK      (0x00000018U)
+#define NV0073_CTRL_SYSTEM_CONNECTOR_INFO_PLATFORM_CRUSH_DEFAULT         (0x00000020U)
 
 /*
  * NV0073_CTRL_CMD_SYSTEM_GET_BOOT_DISPLAYS
@@ -1090,7 +1274,9 @@ typedef struct NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS {
  *   NV_ERR_INVALID_ARGUMENT
  */
 
-#define NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_UNPLUG_STATE (0x73017bU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | 0x7B" */
+#define NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_UNPLUG_STATE (0x73017bU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS_MESSAGE_ID (0x7BU)
 
 typedef struct NV0073_CTRL_SYSTEM_GET_HOTPLUG_UNPLUG_STATE_PARAMS {
     NvU32 subDeviceInstance;
@@ -1367,7 +1553,11 @@ typedef struct NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS {
  * the parameters.
  */
 
-#define NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_EVENT_CONFIG  (0x730197U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | 0x97" */
+#define NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_EVENT_CONFIG (0x730197U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_GET_HOTPLUG_EVENT_CONFIG_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SYSTEM_GET_HOTPLUG_EVENT_CONFIG_PARAMS_MESSAGE_ID (0x97U)
+
+typedef NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS NV0073_CTRL_SYSTEM_GET_HOTPLUG_EVENT_CONFIG_PARAMS;
 
 /*
  * NV0073_CTRL_CMD_SYSTEM_SET_HOTPLUG_EVENT_CONFIG
@@ -1378,7 +1568,11 @@ typedef struct NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS {
  * the parameters.
  */
 
-#define NV0073_CTRL_CMD_SYSTEM_SET_HOTPLUG_EVENT_CONFIG  (0x730198U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | 0x98" */
+#define NV0073_CTRL_CMD_SYSTEM_SET_HOTPLUG_EVENT_CONFIG (0x730198U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_SET_HOTPLUG_EVENT_CONFIG_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SYSTEM_SET_HOTPLUG_EVENT_CONFIG_PARAMS_MESSAGE_ID (0x98U)
+
+typedef NV0073_CTRL_SYSTEM_HOTPLUG_EVENT_CONFIG_PARAMS NV0073_CTRL_SYSTEM_SET_HOTPLUG_EVENT_CONFIG_PARAMS;
 
 
 

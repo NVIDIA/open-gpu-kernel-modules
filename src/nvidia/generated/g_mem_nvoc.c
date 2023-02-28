@@ -128,6 +128,14 @@ static void __nvoc_thunk_RsResource_memAddAdditionalDependants(struct RsClient *
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RsResource.offset), pReference);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_memUnmapFrom(struct Memory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_memControlSerialization_Prologue(struct Memory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RmResource.offset), pCallContext, pParams);
+}
+
 static NV_STATUS __nvoc_thunk_RmResource_memControl_Prologue(struct Memory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RmResource.offset), pCallContext, pParams);
 }
@@ -136,16 +144,16 @@ static NvBool __nvoc_thunk_RsResource_memCanCopy(struct Memory *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_memMapTo(struct Memory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RsResource.offset), pParams);
-}
-
 static void __nvoc_thunk_RsResource_memPreDestruct(struct Memory *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_memUnmapFrom(struct Memory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RsResource_memMapTo(struct Memory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_memControlSerialization_Epilogue(struct Memory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Memory_RmResource.offset), pCallContext, pParams);
 }
 
 static void __nvoc_thunk_RmResource_memControl_Epilogue(struct Memory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -366,15 +374,19 @@ static void __nvoc_init_funcTable_Memory_1(Memory *pThis) {
 
     pThis->__memAddAdditionalDependants__ = &__nvoc_thunk_RsResource_memAddAdditionalDependants;
 
+    pThis->__memUnmapFrom__ = &__nvoc_thunk_RsResource_memUnmapFrom;
+
+    pThis->__memControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_memControlSerialization_Prologue;
+
     pThis->__memControl_Prologue__ = &__nvoc_thunk_RmResource_memControl_Prologue;
 
     pThis->__memCanCopy__ = &__nvoc_thunk_RsResource_memCanCopy;
 
-    pThis->__memMapTo__ = &__nvoc_thunk_RsResource_memMapTo;
-
     pThis->__memPreDestruct__ = &__nvoc_thunk_RsResource_memPreDestruct;
 
-    pThis->__memUnmapFrom__ = &__nvoc_thunk_RsResource_memUnmapFrom;
+    pThis->__memMapTo__ = &__nvoc_thunk_RsResource_memMapTo;
+
+    pThis->__memControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_memControlSerialization_Epilogue;
 
     pThis->__memControl_Epilogue__ = &__nvoc_thunk_RmResource_memControl_Epilogue;
 
@@ -403,12 +415,15 @@ NV_STATUS __nvoc_objCreate_Memory(Memory **ppThis, Dynamic *pParent, NvU32 creat
     Object *pParentObj;
     Memory *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(Memory));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(Memory), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(Memory));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_Memory);
+
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -425,11 +440,17 @@ NV_STATUS __nvoc_objCreate_Memory(Memory **ppThis, Dynamic *pParent, NvU32 creat
     if (status != NV_OK) goto __nvoc_objCreate_Memory_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_Memory_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(Memory));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

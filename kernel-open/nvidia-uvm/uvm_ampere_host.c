@@ -29,7 +29,7 @@
 #include "clc56f.h"
 #include "clc076.h"
 
-bool uvm_hal_ampere_host_method_validate(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
+bool uvm_hal_ampere_host_method_is_valid(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
@@ -82,7 +82,7 @@ bool uvm_hal_ampere_host_method_validate(uvm_push_t *push, NvU32 method_address,
    return true;
 }
 
-bool uvm_hal_ampere_host_sw_method_validate(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
+bool uvm_hal_ampere_host_sw_method_is_valid(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
 {
     if (!uvm_channel_is_proxy(push->channel))
         return true;

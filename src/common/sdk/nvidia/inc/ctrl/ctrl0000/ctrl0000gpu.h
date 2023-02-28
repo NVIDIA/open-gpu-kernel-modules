@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -90,6 +90,11 @@ typedef struct NV0000_CTRL_GPU_GET_ID_INFO_PARAMS {
     NvS32 numaId;
 } NV0000_CTRL_GPU_GET_ID_INFO_PARAMS;
 
+#define NV0000_CTRL_SLI_STATUS_OK                (0x00000000U)
+#define NV0000_CTRL_SLI_STATUS_OS_NOT_SUPPORTED  (0x00000002U)
+#define NV0000_CTRL_SLI_STATUS_GPU_NOT_SUPPORTED (0x00000040U)
+#define NV0000_CTRL_SLI_STATUS_INVALID_GPU_COUNT (0x00000001U)
+
 /*
  * NV0000_CTRL_CMD_GPU_GET_ID_INFO_V2
  * This command returns GPU instance information for the specified GPU.
@@ -149,7 +154,7 @@ typedef struct NV0000_CTRL_GPU_GET_ID_INFO_PARAMS {
 
 
 
-#define NV0000_CTRL_CMD_GPU_GET_ID_INFO_V2 (0x205U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_GPU_GET_ID_INFO_V2       (0x205U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS_MESSAGE_ID (0x5U)
 
@@ -433,6 +438,55 @@ typedef struct NV0000_CTRL_GPU_ATTACH_IDS_PARAMS {
 typedef struct NV0000_CTRL_GPU_DETACH_IDS_PARAMS {
     NvU32 gpuIds[NV0000_CTRL_GPU_MAX_ATTACHED_GPUS];
 } NV0000_CTRL_GPU_DETACH_IDS_PARAMS;
+
+
+
+/*
+ * NV0000_CTRL_CMD_GPU_GET_VIDEO_LINKS
+ *
+ * This command returns information about video bridge connections
+ * detected between GPUs in the system, organized as a table
+ * with one row per attached GPU and none, one or more peer GPUs
+ * listed in the columns of each row, if connected to the row head
+ * GPU via a video bridge.
+ *
+ *   gpuId
+ *     For each row, this field holds the GPU ID of the GPU
+ *     whose connections are listed in the row.
+ *
+ *   connectedGpuIds
+ *     For each row, this table holds the GPU IDs of the
+ *     GPUs connected to the GPU identified via the 'gpuId'
+ *     field.
+ *
+ *   links
+ *     This table holds information about the video bridges
+ *     connected between GPUs in the system.  Each row
+ *     represents connections to a single GPU.
+ *
+ * Please note: the table only reports video links between already
+ * attached GPUs.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+
+#define NV0000_CTRL_CMD_GPU_GET_VIDEO_LINKS (0x219U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_GPU_MAX_VIDEO_LINKS     8U
+
+typedef struct NV0000_CTRL_GPU_VIDEO_LINKS {
+    NvU32 gpuId;
+    NvU32 connectedGpuIds[NV0000_CTRL_GPU_MAX_VIDEO_LINKS];
+} NV0000_CTRL_GPU_VIDEO_LINKS;
+
+#define NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS_MESSAGE_ID (0x19U)
+
+typedef struct NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS {
+    NV0000_CTRL_GPU_VIDEO_LINKS links[NV0000_CTRL_GPU_MAX_ATTACHED_GPUS];
+} NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS;
 
 
 
@@ -869,5 +923,60 @@ typedef struct NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 totalSize, 8);
     NV_DECLARE_ALIGNED(NvP64 pData, 8);
 } NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_GPU_SET_NVLINK_BW_MODE
+ *
+ * This command is used to set NVLINK bandwidth for power saving
+ *
+ * The setting must be applied before the GPU is attached.
+ * NVLINK_BW_MODE is an NOP for non-NVLink GPUs.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_DEVICE
+ *   NV_ERR_INSUFFICIENT_PERMISSIONS
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_IN_USE
+ */
+
+#define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_FULL     (0x00U)
+#define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_OFF      (0x01U)
+#define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_MIN      (0x02U)
+#define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_HALF     (0x03U)
+#define NV0000_CTRL_CMD_GPU_NVLINK_BW_MODE_3QUARTER (0x04U)
+
+#define NV0000_CTRL_CMD_GPU_SET_NVLINK_BW_MODE (0x286U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS_MESSAGE_ID (0x86U)
+
+typedef struct NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS {
+    NvU8 mode;
+} NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_GPU_GET_NVLINK_BW_MODE
+ *
+ * This command is used to get NVLINK bandwidth for power saving
+ *
+ * The setting must be applied before the GPU is attached.
+ * NVLINK_BW_MODE is an NOP for non-NVLink GPUs.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_DEVICE
+ *   NV_ERR_INSUFFICIENT_PERMISSIONS
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_IN_USE
+ */
+
+#define NV0000_CTRL_CMD_GPU_GET_NVLINK_BW_MODE (0x287U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS_MESSAGE_ID (0x87U)
+
+typedef struct NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS {
+    NvU8 mode;
+} NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS;
+
 /* _ctrl0000gpu_h_ */
 

@@ -41,7 +41,7 @@ void rpcObjIfacesSetup(OBJRPC *pRpc)
  //     pRpcMethods->__rpcRecvPollUvm__           = rpcRecvPollUvm_IMPL; # ONLY_IF => VIRTUALIZATION
 }
 
-void
+static void
 rpcSetPropertiesSpecial
 (
     POBJRPC    pRpc

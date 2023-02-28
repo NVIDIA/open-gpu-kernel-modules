@@ -25,7 +25,6 @@
 #define __NVKMS_HEADSURFACE_CONFIG_H__
 
 #include "nvkms-types.h"
-#include "nvkms-modeset-types.h"      /* NVProposedModeSetHwState */
 #include "nvkms-softfloat.h"          /* NvKmsMatrixF32 */
 #include "nvidia-headsurface-types.h" /* NvHsStaticWarpMesh */
 #include "g_shader_names.h"           /* ProgramName */

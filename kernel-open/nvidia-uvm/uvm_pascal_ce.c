@@ -39,32 +39,6 @@ void uvm_hal_pascal_ce_offset_in_out(uvm_push_t *push, NvU64 offset_in, NvU64 of
                      OFFSET_OUT_LOWER, HWVALUE(C0B5, OFFSET_OUT_LOWER, VALUE, NvOffset_LO32(offset_out)));
 }
 
-// Perform an appropriate membar before a semaphore operation. Returns whether
-// the semaphore operation should include a flush.
-static bool pascal_membar_before_semaphore(uvm_push_t *push)
-{
-    uvm_gpu_t *gpu;
-
-    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE)) {
-        // No MEMBAR requested, don't use a flush.
-        return false;
-    }
-
-    if (!uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU)) {
-        // By default do a MEMBAR SYS and for that we can just use flush on the
-        // semaphore operation.
-        return true;
-    }
-
-    // MEMBAR GPU requested, do it on the HOST and skip the CE flush as CE
-    // doesn't have this capability.
-    gpu = uvm_push_get_gpu(push);
-    gpu->parent->host_hal->wait_for_idle(push);
-    gpu->parent->host_hal->membar_gpu(push);
-
-    return false;
-}
-
 void uvm_hal_pascal_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
@@ -72,7 +46,7 @@ void uvm_hal_pascal_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 p
     NvU32 launch_dma_plc_mode;
     bool use_flush;
 
-    use_flush = pascal_membar_before_semaphore(push);
+    use_flush = uvm_hal_membar_before_semaphore(push);
 
     if (use_flush)
         flush_value = HWCONST(C0B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
@@ -98,7 +72,7 @@ void uvm_hal_pascal_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, N
     NvU32 launch_dma_plc_mode;
     bool use_flush;
 
-    use_flush = pascal_membar_before_semaphore(push);
+    use_flush = uvm_hal_membar_before_semaphore(push);
 
     if (use_flush)
         flush_value = HWCONST(C0B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);
@@ -127,7 +101,7 @@ void uvm_hal_pascal_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
     NvU32 launch_dma_plc_mode;
     bool use_flush;
 
-    use_flush = pascal_membar_before_semaphore(push);
+    use_flush = uvm_hal_membar_before_semaphore(push);
 
     if (use_flush)
         flush_value = HWCONST(C0B5, LAUNCH_DMA, FLUSH_ENABLE, TRUE);

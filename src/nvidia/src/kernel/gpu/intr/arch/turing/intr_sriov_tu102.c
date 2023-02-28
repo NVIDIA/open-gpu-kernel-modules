@@ -34,47 +34,6 @@
 //
 
 /*!
- * @brief Enables virtual interrupts to be sent from a virtual function with
- * the specified GFID.
- *
- * @param[in]   pGpu        OBJGPU pointer
- * @param[in]   pIntr       Intr pointer
- * @param[in]   gfid        GFID assigned to the virtual function
- */
-NV_STATUS
-intrEnableVirtualIntrLeaf_TU102
-(
-    OBJGPU  *pGpu,
-    Intr    *pIntr,
-    NvU32    gfid
-)
-{
-    GFID_ALLOC_STATUS gfidState;
-    NvU32 reg = gfid / (DRF_SIZE(NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VALUE));
-    NvU32 bit = gfid % (DRF_SIZE(NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VALUE));
-
-    NV_ASSERT_OK_OR_RETURN(gpuGetGfidState(pGpu, gfid, &gfidState));
-    if (gfidState == GFID_FREE)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid GFID 0x%x\n", gfid);
-        DBG_BREAKPOINT();
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if (reg >= NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET__SIZE_1)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Computed register index exceeds valid available "
-            "range of NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET. reg idx = 0x%x\n", reg);
-        DBG_BREAKPOINT();
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    GPU_REG_WR32(pGpu, NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET(reg),
-        (NV_CTRL_VIRTUAL_INTR_LEAF_EN_SET_VECTOR_ENABLE << bit));
-    return NV_OK;
-}
-
-/*!
  * @brief Services virtual interrupts, i.e. interrupts triggered by PRIV_DOORBELL
  * writes from virtual functions
  *

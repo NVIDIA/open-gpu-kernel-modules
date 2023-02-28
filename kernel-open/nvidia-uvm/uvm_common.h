@@ -347,6 +347,21 @@ typedef struct
     NvHandle user_object;
 } uvm_rm_user_object_t;
 
+typedef enum
+{
+    UVM_FD_UNINITIALIZED,
+    UVM_FD_INITIALIZING,
+    UVM_FD_VA_SPACE,
+    UVM_FD_COUNT
+} uvm_fd_type_t;
+
+// This should be large enough to fit the valid values from uvm_fd_type_t above.
+// Note we can't use order_base_2(UVM_FD_COUNT) to define this because our code
+// coverage tool fails due when the preprocessor expands that to a huge mess of
+// ternary operators.
+#define UVM_FD_TYPE_BITS 2
+#define UVM_FD_TYPE_MASK ((1UL << UVM_FD_TYPE_BITS) - 1)
+
 // Macro used to compare two values for types that support less than operator.
 // It returns -1 if a < b, 1 if a > b and 0 if a == 0
 #define UVM_CMP_DEFAULT(a,b)              \
@@ -368,6 +383,10 @@ typedef struct
 // Returns whether the input file was opened against the UVM character device
 // file. A NULL input returns false.
 bool uvm_file_is_nvidia_uvm(struct file *filp);
+
+// Returns the type of data filp->private_data contains to and if ptr_val !=
+// NULL returns the value of the pointer.
+uvm_fd_type_t uvm_fd_type(struct file *filp, void **ptr_val);
 
 // Reads the first word in the supplied struct page.
 static inline void uvm_touch_page(struct page *page)

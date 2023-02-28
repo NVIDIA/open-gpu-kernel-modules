@@ -30,7 +30,7 @@
 #include "nvidia-drm-connector.h"
 #include "nvidia-drm-gem.h"
 #include "nvidia-drm-crtc.h"
-#include "nvidia-drm-prime-fence.h"
+#include "nvidia-drm-fence.h"
 #include "nvidia-drm-helper.h"
 #include "nvidia-drm-gem-nvkms-memory.h"
 #include "nvidia-drm-gem-user-memory.h"
@@ -706,6 +706,16 @@ static int nv_drm_get_dev_info_ioctl(struct drm_device *dev,
     return 0;
 }
 
+static int nv_drm_dmabuf_supported_ioctl(struct drm_device *dev,
+                                         void *data, struct drm_file *filep)
+{
+    /* check the pDevice since this only gets set if modeset = 1
+     * which is a requirement for the dma_buf extension to work
+     */
+    struct nv_drm_device *nv_dev = to_nv_device(dev);
+    return nv_dev->pDevice ? 0 : -EINVAL;
+}
+
 static
 int nv_drm_get_client_capability_ioctl(struct drm_device *dev,
                                        void *data, struct drm_file *filep)
@@ -734,6 +744,455 @@ int nv_drm_get_client_capability_ioctl(struct drm_device *dev,
 
     return 0;
 }
+
+#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+static bool nv_drm_connector_is_dpy_id(struct drm_connector *connector,
+                                       NvU32 dpyId)
+{
+    struct nv_drm_connector *nv_connector = to_nv_connector(connector);
+    return nv_connector->nv_detected_encoder &&
+           nv_connector->nv_detected_encoder->hDisplay == dpyId;
+}
+
+static int nv_drm_get_dpy_id_for_connector_id_ioctl(struct drm_device *dev,
+                                                    void *data,
+                                                    struct drm_file *filep)
+{
+    struct drm_nvidia_get_dpy_id_for_connector_id_params *params = data;
+    // Importantly, drm_connector_lookup (with filep) will only return the
+    // connector if we are master, a lessee with the connector, or not master at
+    // all. It will return NULL if we are a lessee with other connectors.
+    struct drm_connector *connector =
+        nv_drm_connector_lookup(dev, filep, params->connectorId);
+    struct nv_drm_connector *nv_connector;
+    int ret = 0;
+
+    if (!connector) {
+        return -EINVAL;
+    }
+
+    nv_connector = to_nv_connector(connector);
+    if (!nv_connector) {
+        ret = -EINVAL;
+        goto done;
+    }
+
+    if (!nv_connector->nv_detected_encoder) {
+        ret = -EINVAL;
+        goto done;
+    }
+
+    params->dpyId = nv_connector->nv_detected_encoder->hDisplay;
+
+done:
+    nv_drm_connector_put(connector);
+    return ret;
+}
+
+static int nv_drm_get_connector_id_for_dpy_id_ioctl(struct drm_device *dev,
+                                                    void *data,
+                                                    struct drm_file *filep)
+{
+    struct drm_nvidia_get_connector_id_for_dpy_id_params *params = data;
+    struct drm_connector *connector;
+    int ret = -EINVAL;
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    struct drm_connector_list_iter conn_iter;
+    nv_drm_connector_list_iter_begin(dev, &conn_iter);
+#endif
+
+    /* Lookup for existing connector with same dpyId */
+    nv_drm_for_each_connector(connector, &conn_iter, dev) {
+        if (nv_drm_connector_is_dpy_id(connector, params->dpyId)) {
+            params->connectorId = connector->base.id;
+            ret = 0;
+            break;
+        }
+    }
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    nv_drm_connector_list_iter_end(&conn_iter);
+#endif
+
+    return ret;
+}
+
+static NvU32 nv_drm_get_head_bit_from_connector(struct drm_connector *connector)
+{
+    struct nv_drm_connector *nv_connector = to_nv_connector(connector);
+
+    if (connector->state && connector->state->crtc) {
+        struct nv_drm_crtc *nv_crtc = to_nv_crtc(connector->state->crtc);
+        return NVBIT(nv_crtc->head);
+    } else if (nv_connector->nv_detected_encoder &&
+               nv_connector->nv_detected_encoder->base.crtc) {
+        struct nv_drm_crtc *nv_crtc =
+            to_nv_crtc(nv_connector->nv_detected_encoder->base.crtc);
+        return NVBIT(nv_crtc->head);
+    }
+
+    return 0;
+}
+
+static int nv_drm_grant_permission_ioctl(struct drm_device *dev, void *data,
+                                         struct drm_file *filep)
+{
+    struct drm_nvidia_grant_permissions_params *params = data;
+    struct nv_drm_device *nv_dev = to_nv_device(dev);
+    struct nv_drm_connector *target_nv_connector = NULL;
+    struct nv_drm_crtc *target_nv_crtc = NULL;
+    struct drm_connector *connector, *target_connector = NULL;
+    struct drm_crtc *crtc;
+    NvU32 head = 0, freeHeadBits, targetHeadBit, possible_crtcs;
+    int ret = 0;
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    struct drm_connector_list_iter conn_iter;
+#endif
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    struct drm_modeset_acquire_ctx ctx;
+    DRM_MODESET_LOCK_ALL_BEGIN(dev, ctx, DRM_MODESET_ACQUIRE_INTERRUPTIBLE,
+                               ret);
+#else
+    mutex_lock(&dev->mode_config.mutex);
+#endif
+
+    /* Get the connector for the dpyId. */
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    nv_drm_connector_list_iter_begin(dev, &conn_iter);
+#endif
+    nv_drm_for_each_connector(connector, &conn_iter, dev) {
+        if (nv_drm_connector_is_dpy_id(connector, params->dpyId)) {
+            target_connector =
+                nv_drm_connector_lookup(dev, filep, connector->base.id);
+            break;
+        }
+    }
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    nv_drm_connector_list_iter_end(&conn_iter);
+#endif
+
+    // Importantly, drm_connector_lookup/drm_crtc_find (with filep) will only
+    // return the object if we are master, a lessee with the object, or not
+    // master at all. It will return NULL if we are a lessee with other objects.
+    if (!target_connector) {
+        ret = -EINVAL;
+        goto done;
+    }
+    target_nv_connector = to_nv_connector(target_connector);
+    possible_crtcs =
+        target_nv_connector->nv_detected_encoder->base.possible_crtcs;
+
+    /* Target connector must not be previously granted. */
+    if (target_nv_connector->modeset_permission_filep) {
+        ret = -EINVAL;
+        goto done;
+    }
+
+    /* Add all heads that are owned and not already granted. */
+    freeHeadBits = 0;
+    nv_drm_for_each_crtc(crtc, dev) {
+        struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
+        if (nv_drm_crtc_find(dev, filep, crtc->base.id) &&
+            !nv_crtc->modeset_permission_filep &&
+            (drm_crtc_mask(crtc) & possible_crtcs)) {
+            freeHeadBits |= NVBIT(nv_crtc->head);
+        }
+    }
+
+    targetHeadBit = nv_drm_get_head_bit_from_connector(target_connector);
+    if (targetHeadBit & freeHeadBits) {
+        /* If a crtc is already being used by this connector, use it. */
+        freeHeadBits = targetHeadBit;
+    } else {
+        /* Otherwise, remove heads that are in use by other connectors. */
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+        nv_drm_connector_list_iter_begin(dev, &conn_iter);
+#endif
+        nv_drm_for_each_connector(connector, &conn_iter, dev) {
+            freeHeadBits &= ~nv_drm_get_head_bit_from_connector(connector);
+        }
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+        nv_drm_connector_list_iter_end(&conn_iter);
+#endif
+    }
+
+    /* Fail if no heads are available. */
+    if (!freeHeadBits) {
+        ret = -EINVAL;
+        goto done;
+    }
+
+    /*
+     * Loop through the crtc again and find a matching head.
+     * Record the filep that is using the crtc and the connector.
+     */
+    nv_drm_for_each_crtc(crtc, dev) {
+        struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
+        if (freeHeadBits & NVBIT(nv_crtc->head)) {
+            target_nv_crtc = nv_crtc;
+            head = nv_crtc->head;
+            break;
+        }
+    }
+
+    if (!nvKms->grantPermissions(params->fd, nv_dev->pDevice, head,
+                                 params->dpyId)) {
+        ret = -EINVAL;
+        goto done;
+    }
+
+    target_nv_connector->modeset_permission_crtc = target_nv_crtc;
+    target_nv_connector->modeset_permission_filep = filep;
+    target_nv_crtc->modeset_permission_filep = filep;
+
+done:
+    if (target_connector) {
+        nv_drm_connector_put(target_connector);
+    }
+
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    DRM_MODESET_LOCK_ALL_END(dev, ctx, ret);
+#else
+    mutex_unlock(&dev->mode_config.mutex);
+#endif
+
+    return ret;
+}
+
+static bool nv_drm_revoke_connector(struct nv_drm_device *nv_dev,
+                                    struct nv_drm_connector *nv_connector)
+{
+    bool ret = true;
+    if (nv_connector->modeset_permission_crtc) {
+        if (nv_connector->nv_detected_encoder) {
+            ret = nvKms->revokePermissions(
+                nv_dev->pDevice, nv_connector->modeset_permission_crtc->head,
+                nv_connector->nv_detected_encoder->hDisplay);
+        }
+        nv_connector->modeset_permission_crtc->modeset_permission_filep = NULL;
+        nv_connector->modeset_permission_crtc = NULL;
+    }
+    nv_connector->modeset_permission_filep = NULL;
+    return ret;
+}
+
+static int nv_drm_revoke_permission(struct drm_device *dev,
+                                    struct drm_file *filep, NvU32 dpyId)
+{
+    struct drm_connector *connector;
+    struct drm_crtc *crtc;
+    int ret = 0;
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    struct drm_connector_list_iter conn_iter;
+#endif
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    struct drm_modeset_acquire_ctx ctx;
+    DRM_MODESET_LOCK_ALL_BEGIN(dev, ctx, DRM_MODESET_ACQUIRE_INTERRUPTIBLE,
+                               ret);
+#else
+    mutex_lock(&dev->mode_config.mutex);
+#endif
+
+    /*
+     * If dpyId is set, only revoke those specific resources. Otherwise,
+     * it is from closing the file so revoke all resources for that filep.
+     */
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    nv_drm_connector_list_iter_begin(dev, &conn_iter);
+#endif
+    nv_drm_for_each_connector(connector, &conn_iter, dev) {
+        struct nv_drm_connector *nv_connector = to_nv_connector(connector);
+        if (nv_connector->modeset_permission_filep == filep &&
+            (!dpyId || nv_drm_connector_is_dpy_id(connector, dpyId))) {
+            if (!nv_drm_connector_revoke_permissions(dev, nv_connector)) {
+                ret = -EINVAL;
+                // Continue trying to revoke as much as possible.
+            }
+        }
+    }
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    nv_drm_connector_list_iter_end(&conn_iter);
+#endif
+
+    nv_drm_for_each_crtc(crtc, dev) {
+        struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
+        if (nv_crtc->modeset_permission_filep == filep && !dpyId) {
+            nv_crtc->modeset_permission_filep = NULL;
+        }
+    }
+
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    DRM_MODESET_LOCK_ALL_END(dev, ctx, ret);
+#else
+    mutex_unlock(&dev->mode_config.mutex);
+#endif
+
+    return ret;
+}
+
+static int nv_drm_revoke_permission_ioctl(struct drm_device *dev, void *data,
+                                          struct drm_file *filep)
+{
+    struct drm_nvidia_revoke_permissions_params *params = data;
+    if (!params->dpyId) {
+        return -EINVAL;
+    }
+    return nv_drm_revoke_permission(dev, filep, params->dpyId);
+}
+
+static void nv_drm_postclose(struct drm_device *dev, struct drm_file *filep)
+{
+    /*
+     * Some systems like android can reach here without initializing the
+     * device, so check for that.
+     */
+    if (dev->mode_config.num_crtc > 0 &&
+        dev->mode_config.crtc_list.next != NULL &&
+        dev->mode_config.crtc_list.prev != NULL &&
+        dev->mode_config.num_connector > 0 &&
+        dev->mode_config.connector_list.next != NULL &&
+        dev->mode_config.connector_list.prev != NULL) {
+        nv_drm_revoke_permission(dev, filep, 0);
+    }
+}
+#endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+
+#if defined(NV_DRM_MASTER_HAS_LEASES)
+static struct drm_master *nv_drm_find_lessee(struct drm_master *master,
+                                             int lessee_id)
+{
+    int object;
+    void *entry;
+
+    while (master->lessor != NULL) {
+        master = master->lessor;
+    }
+
+    idr_for_each_entry(&master->lessee_idr, entry, object)
+    {
+        if (object == lessee_id) {
+            return entry;
+        }
+    }
+
+    return NULL;
+}
+
+static void nv_drm_get_revoked_objects(struct drm_device *dev,
+                                       struct drm_file *filep, unsigned int cmd,
+                                       unsigned long arg, int **objects,
+                                       int *objects_count)
+{
+    unsigned int ioc_size;
+    struct drm_mode_revoke_lease revoke_lease;
+    struct drm_master *lessor, *lessee;
+    void *entry;
+    int *objs;
+    int obj, obj_count, obj_i;
+
+    ioc_size = _IOC_SIZE(cmd);
+    if (ioc_size > sizeof(revoke_lease)) {
+        return;
+    }
+
+    if (copy_from_user(&revoke_lease, (void __user *)arg, ioc_size) != 0) {
+        return;
+    }
+
+    lessor = nv_drm_file_get_master(filep);
+    if (lessor == NULL) {
+        return;
+    }
+
+    mutex_lock(&dev->mode_config.idr_mutex);
+    lessee = nv_drm_find_lessee(lessor, revoke_lease.lessee_id);
+
+    if (lessee == NULL) {
+        goto done;
+    }
+
+    obj_count = 0;
+    idr_for_each_entry(&lessee->leases, entry, obj) {
+        ++obj_count;
+    }
+    if (obj_count == 0) {
+        goto done;
+    }
+
+    objs = nv_drm_calloc(obj_count, sizeof(int));
+    if (objs == NULL) {
+        goto done;
+    }
+
+    obj_i = 0;
+    idr_for_each_entry(&lessee->leases, entry, obj) {
+        objs[obj_i++] = obj;
+    }
+    *objects = objs;
+    *objects_count = obj_count;
+
+done:
+    mutex_unlock(&dev->mode_config.idr_mutex);
+    drm_master_put(&lessor);
+}
+
+static bool nv_drm_is_in_objects(int object, int *objects, int objects_count)
+{
+    int i;
+    for (i = 0; i < objects_count; ++i) {
+        if (objects[i] == object) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void nv_drm_finish_revoking_objects(struct drm_device *dev,
+                                           struct drm_file *filep, int *objects,
+                                           int objects_count)
+{
+    struct drm_connector *connector;
+    struct drm_crtc *crtc;
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    struct drm_connector_list_iter conn_iter;
+#endif
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    int ret = 0;
+    struct drm_modeset_acquire_ctx ctx;
+    DRM_MODESET_LOCK_ALL_BEGIN(dev, ctx, DRM_MODESET_ACQUIRE_INTERRUPTIBLE,
+                               ret);
+#else
+    mutex_lock(&dev->mode_config.mutex);
+#endif
+
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    nv_drm_connector_list_iter_begin(dev, &conn_iter);
+#endif
+    nv_drm_for_each_connector(connector, &conn_iter, dev) {
+        struct nv_drm_connector *nv_connector = to_nv_connector(connector);
+        if (nv_connector->modeset_permission_filep &&
+            nv_drm_is_in_objects(connector->base.id, objects, objects_count)) {
+            nv_drm_connector_revoke_permissions(dev, nv_connector);
+        }
+    }
+#if defined(NV_DRM_CONNECTOR_LIST_ITER_PRESENT)
+    nv_drm_connector_list_iter_end(&conn_iter);
+#endif
+
+    nv_drm_for_each_crtc(crtc, dev) {
+        struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
+        if (nv_crtc->modeset_permission_filep &&
+            nv_drm_is_in_objects(crtc->base.id, objects, objects_count)) {
+            nv_crtc->modeset_permission_filep = NULL;
+        }
+    }
+
+#if NV_DRM_MODESET_LOCK_ALL_END_ARGUMENT_COUNT == 3
+    DRM_MODESET_LOCK_ALL_END(dev, ctx, ret);
+#else
+    mutex_unlock(&dev->mode_config.mutex);
+#endif
+}
+#endif /* NV_DRM_MASTER_HAS_LEASES */
 
 #if defined(NV_DRM_BUS_PRESENT)
 
@@ -766,12 +1225,50 @@ static struct drm_bus nv_drm_bus = {
 
 #endif /* NV_DRM_BUS_PRESENT */
 
+/*
+ * Wrapper around drm_ioctl to hook in to upstream ioctl.
+ *
+ * Currently used to add additional handling to REVOKE_LEASE.
+ */
+static long nv_drm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+    long retcode;
+
+#if defined(NV_DRM_MASTER_HAS_LEASES)
+    struct drm_file *file_priv = filp->private_data;
+    struct drm_device *dev = file_priv->minor->dev;
+    int *objects = NULL;
+    int objects_count = 0;
+
+    if (cmd == DRM_IOCTL_MODE_REVOKE_LEASE) {
+        // Save the revoked objects before revoking.
+        nv_drm_get_revoked_objects(dev, file_priv, cmd, arg, &objects,
+                                   &objects_count);
+    }
+#endif
+
+    retcode = drm_ioctl(filp, cmd, arg);
+
+#if defined(NV_DRM_MASTER_HAS_LEASES)
+    if (cmd == DRM_IOCTL_MODE_REVOKE_LEASE && objects) {
+        if (retcode == 0) {
+            // If revoking was successful, finish revoking the objects.
+            nv_drm_finish_revoking_objects(dev, file_priv, objects,
+                                           objects_count);
+        }
+        nv_drm_free(objects);
+    }
+#endif
+
+    return retcode;
+}
+
 static const struct file_operations nv_drm_fops = {
     .owner          = THIS_MODULE,
 
     .open           = drm_open,
     .release        = drm_release,
-    .unlocked_ioctl = drm_ioctl,
+    .unlocked_ioctl = nv_drm_ioctl,
 #if defined(CONFIG_COMPAT)
     .compat_ioctl   = drm_compat_ioctl,
 #endif
@@ -807,11 +1304,11 @@ static const struct drm_ioctl_desc nv_drm_ioctls[] = {
     DRM_IOCTL_DEF_DRV(NVIDIA_FENCE_SUPPORTED,
                       nv_drm_fence_supported_ioctl,
                       DRM_RENDER_ALLOW|DRM_UNLOCKED),
-    DRM_IOCTL_DEF_DRV(NVIDIA_FENCE_CONTEXT_CREATE,
-                      nv_drm_fence_context_create_ioctl,
+    DRM_IOCTL_DEF_DRV(NVIDIA_PRIME_FENCE_CONTEXT_CREATE,
+                      nv_drm_prime_fence_context_create_ioctl,
                       DRM_RENDER_ALLOW|DRM_UNLOCKED),
-    DRM_IOCTL_DEF_DRV(NVIDIA_GEM_FENCE_ATTACH,
-                      nv_drm_gem_fence_attach_ioctl,
+    DRM_IOCTL_DEF_DRV(NVIDIA_GEM_PRIME_FENCE_ATTACH,
+                      nv_drm_gem_prime_fence_attach_ioctl,
                       DRM_RENDER_ALLOW|DRM_UNLOCKED),
 #endif
 
@@ -837,6 +1334,21 @@ static const struct drm_ioctl_desc nv_drm_ioctls[] = {
     DRM_IOCTL_DEF_DRV(NVIDIA_GEM_IDENTIFY_OBJECT,
                       nv_drm_gem_identify_object_ioctl,
                       DRM_RENDER_ALLOW|DRM_UNLOCKED),
+    DRM_IOCTL_DEF_DRV(NVIDIA_DMABUF_SUPPORTED,
+                      nv_drm_dmabuf_supported_ioctl,
+                      DRM_RENDER_ALLOW|DRM_UNLOCKED),
+    DRM_IOCTL_DEF_DRV(NVIDIA_GET_DPY_ID_FOR_CONNECTOR_ID,
+                      nv_drm_get_dpy_id_for_connector_id_ioctl,
+                      DRM_RENDER_ALLOW|DRM_UNLOCKED),
+    DRM_IOCTL_DEF_DRV(NVIDIA_GET_CONNECTOR_ID_FOR_DPY_ID,
+                      nv_drm_get_connector_id_for_dpy_id_ioctl,
+                      DRM_RENDER_ALLOW|DRM_UNLOCKED),
+    DRM_IOCTL_DEF_DRV(NVIDIA_GRANT_PERMISSIONS,
+                      nv_drm_grant_permission_ioctl,
+                      DRM_UNLOCKED|DRM_MASTER),
+    DRM_IOCTL_DEF_DRV(NVIDIA_REVOKE_PERMISSIONS,
+                      nv_drm_revoke_permission_ioctl,
+                      DRM_UNLOCKED|DRM_MASTER),
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 };
 
@@ -879,6 +1391,9 @@ static struct drm_driver nv_drm_driver = {
 
     .load                   = nv_drm_load,
     .unload                 = nv_drm_unload,
+#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+    .postclose              = nv_drm_postclose,
+#endif
 
     .fops                   = &nv_drm_fops,
 

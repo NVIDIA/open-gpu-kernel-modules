@@ -37,8 +37,8 @@ typedef RS_RES_CONTROL_PARAMS_INTERNAL RmCtrlParams;
 // RMCTRL_API_COPPY_FLAGS is used to specify control api copy behavior.
 #define RMCTRL_API_COPY_FLAGS_NONE                              0x00000000
 
-// skip memory copy in api copy in
-#define RMCTRL_API_COPY_FLAGS_SKIP_COPYIN                       NVBIT(0)
+// skip memory copy in api copy in and zero the buffer
+#define RMCTRL_API_COPY_FLAGS_SKIP_COPYIN_ZERO_BUFFER           NVBIT(0)
 
 // set control cache on api copy out
 #define RMCTRL_API_COPY_FLAGS_SET_CONTROL_CACHE                 NVBIT(1)
@@ -290,6 +290,17 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 // Overrides regular privilege level flags.
 //
 #define RMCTRL_FLAGS_GSP_PLUGIN_FOR_VGPU_GSP                  0x000100000
+
+//
+// This flag specifies that the control output depends on the input
+// parameters but can be cached on receiving end. Since the control
+// result depends on the input and the input varifies with controls,
+// the cache should be handled in a per-control bases.
+//
+#define RMCTRL_FLAGS_CACHEABLE_BY_INPUT                       0x000200000
+
+// The combination of cacheable flags
+#define RMCTRL_FLAGS_CACHEABLE_ANY (RMCTRL_FLAGS_CACHEABLE | RMCTRL_FLAGS_CACHEABLE_BY_INPUT)
 
 //
 //  'ACCESS_RIGHTS' Attribute

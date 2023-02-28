@@ -1,6 +1,6 @@
 //****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -438,6 +438,7 @@ typedef enum NVT_TV_FORMAT
 #define NVT_CEA861_REV_E                     3
 #define NVT_CEA861_REV_F                     3
 #define NVT_CTA861_REV_G                     3
+#define NVT_CTA861_REV_H                     3
 //
 // max data after misc/basic_caps in EIA861EXTENSION
 #define NVT_CEA861_MAX_PAYLOAD               123
@@ -469,28 +470,39 @@ typedef enum NVT_TV_FORMAT
 // the extended tag codes when NVT_CEA861_TAG_EXTENDED_FLAG
 #define NVT_CEA861_EXT_TAG_VIDEO_CAP                    0   // Video Capability Data Block
 #define NVT_CEA861_EXT_TAG_VENDOR_SPECIFIC_VIDEO        1   // Vendor-Specific Video Data Block
-#define NVT_CEA861_EXT_TAG_VESA_VIDEO_DISPLAY_DEVICE    2   // Reserved for VESA Video Display Device Information Data Block
+#define NVT_CEA861_EXT_TAG_VESA_VIDEO_DISPLAY_DEVICE    2   // VESA Video Display Device Information Data Block
 #define NVT_CEA861_EXT_TAG_VESA_VIDEO                   3   // Reserved for VESA Video Data BLock
 #define NVT_CEA861_EXT_TAG_HDMI_VIDEO                   4   // Reserved for HDMI Video Data Block
 #define NVT_CEA861_EXT_TAG_COLORIMETRY                  5   // Colorimetry Data Block
 #define NVT_CEA861_EXT_TAG_HDR_STATIC_METADATA          6   // HDR Static Metadata Data Block CEA861.3 HDR extension for HDMI 2.0a
-#define NVT_CEA861_EXT_TAG_VIDEO_RSVD_MIN               7   //  7...12  :  Reserved for video-related blocks
-#define NVT_CEA861_EXT_TAG_VIDEO_RSVD_MAX              12
+#define NVT_CTA861_EXT_TAG_HDR_DYNAMIC_METADATA         7   // CTA861-H HDR Dynamic Metadata Data Block
+#define NVT_CTA861_EXT_TAG_VIDEO_RSVD_MIN               8   // 8...12  :  Reserved for video-related blocks
+#define NVT_CTA861_EXT_TAG_VIDEO_RSVD_MAX              12
 #define NVT_CEA861_EXT_TAG_VIDEO_FORMAT_PREFERENCE     13   // CEA861F  Video Format Preference Data Block
 #define NVT_CEA861_EXT_TAG_YCBCR420_VIDEO              14   // CEA861F  YCBCR 4:2:0 Video Data Block
 #define NVT_CEA861_EXT_TAG_YCBCR420_CAP                15   // CEA861F  YCBCR 4:2:0 Capability Map Data Block
 #define NVT_CEA861_EXT_TAG_MISC_AUDIO                  16   // CEA Miscellaneous Audio Fields
 #define NVT_CEA861_EXT_TAG_VENDOR_SPECIFIC_AUDIO       17   // Vendor-Specific Audio Data Block
 #define NVT_CEA861_EXT_TAG_HDMI_AUDIO                  18   // Reserved for HDMI Audio Data Block
-#define NVT_CEA861_EXT_TAG_AUDIO_RSVD_MIN              19   // 19...31  :  Reserved for audio-related blocks
-#define NVT_CEA861_EXT_TAG_AUDIO_RSVD_MAX              31
+#define NVT_CTA861_EXT_TAG_ROOM_CONFIGURATION          19   // CTA861-H Room Configuration Data Block
+#define NVT_CTA861_EXT_TAG_SPEACKER_LOCATION           20   // CTA861-H Speaker Location Data Block
+#define NVT_CTA861_EXT_TAG_AUDIO_RSVD_MIN              21   // 21...31  :  Reserved for audio-related blocks
+#define NVT_CTA861_EXT_TAG_AUDIO_RSVD_MAX              31
 #define NVT_CEA861_EXT_TAG_INFOFRAME                   32   // Infoframe Data Block
-#define NVT_CEA861_EXT_TAG_RSVD_MIN_1                  33   // 33...120 :  Reserved for general
-#define NVT_CEA861_EXT_TAG_RSVD_MAX_1                 119
+#define NVT_CEA861_EXT_TAG_RSVD                        33   // Reserved
+#define NVT_CTA861_EXT_TAG_DID_TYPE_VII                34   // DisplayID Type VII Video Timing Data Block
+#define NVT_CTA861_EXT_TAG_DID_TYPE_VIII               35   // DisplayID Type VIII Video Timing Data Block
+#define NVT_CTA861_EXT_TAG_RSVD_MIN_1                  36   // 36...41 :  Reserved for general
+#define NVT_CTA861_EXT_TAG_RSVD_MAX_1                  41
+#define NVT_CTA861_EXT_TAG_DID_TYPE_X                  42   // DisplayID Type X Video Timing Data Block
+#define NVT_CTA861_EXT_TAG_RSVD_MIN_2                  43   // 43...119 :  Reserved for general
+#define NVT_CEA861_EXT_TAG_RSVD_MAX_2                 119
 #define NVT_CEA861_EXT_TAG_HF_EEODB                   120   // HDMI Forum Edid Extension Override Data Block
 #define NVT_CTA861_EXT_TAG_SCDB                       121   // 0x79 == Tag for Sink Capability Data Block
-#define NVT_CEA861_EXT_TAG_RSVD_MIN_2                 122   // 122...255 :  Reserved for general
-#define NVT_CEA861_EXT_TAG_RSVD_MAX_2                 255
+#define NVT_CEA861_EXT_TAG_HDMI_RSVD_MIN              122   // 122...127 :  Reserved for HDMI
+#define NVT_CEA861_EXT_TAG_HDMI_RSVD_MAX              127
+#define NVT_CEA861_EXT_TAG_RSVD_MIN_3                 128   // 128...255 :  Reserved for general
+#define NVT_CEA861_EXT_TAG_RSVD_MAX_3                 255
 //
 //the extended tag payload size; the size includes the extended tag code
 #define NVT_CEA861_EXT_VIDEO_CAP_SD_SIZE                2
@@ -1108,7 +1120,28 @@ typedef struct tagNVT_2BYTES
     NvU8   byte1;
     NvU8   byte2;
 } NVT_2BYTES;
-//
+
+//***********************
+// DisplayID 10 Timing Data Block
+//***********************
+#define NVT_CTA861_DID_TYPE10_DESCRIPTORS_MIN    1
+#define NVT_CTA861_DID_TYPE10_DESCRIPTORS_MAX    4
+#define NVT_CTA861_DID_TYPE10_MAX_DATA_BLOCK     4
+
+typedef struct DID_TYPE10_DATA
+{ 
+    struct {
+        NvU8 revision : 3;
+        NvU8 F33      : 1;
+        NvU8 t10_m    : 3;
+        NvU8 F37      : 1;
+    } version;
+
+    NvU8 total_descriptors;
+
+    NvU8 payload[28];  // given the 7bytes * 4 space
+} DID_TYPE10_DATA;
+
 // See CEA-861E, Table 42, 43 Extended Tags; indicates that the corresponding CEA extended data block value is valid, e.g. if colorimetry is set, then NVT_EDID_CEA861_INFO::colorimetry is valid
 typedef struct tagNVT_VALID_EXTENDED_BLOCKS
 {
@@ -1126,7 +1159,6 @@ typedef struct tagNVT_VALID_EXTENDED_BLOCKS
     NvU32   nvda_vsdb           :  1;
     NvU32   msft_vsdb           :  1;
 } NVT_VALID_EXTENDED_BLOCKS;
-
 
 //*************************
 // extended data blocks
@@ -1205,6 +1237,10 @@ typedef struct tagEDID_CEA861_INFO
     // NVT_EDID_CEA861_INFO::vsvdb.SCDB = 1 in case hfscdb is exposed by sink.
     NvU32       hfscdbSize;
     NvU8        hfscdb[NVT_CTA861_EXT_SCDB_PAYLOAD_MAX_LENGTH];
+
+    // DID Type X Video extended block, see CTA861-H, section 3.5.17.3 DisplayID Type X Video Timing Data Block
+    NvU8             total_did_type10db;
+    DID_TYPE10_DATA  did_type10_data_block[NVT_CTA861_DID_TYPE10_MAX_DATA_BLOCK];
 
     NvU8        hfeeodb;                            // HDMI Forum Edid Extension Override Data Block.
 } NVT_EDID_CEA861_INFO;
@@ -5312,6 +5348,9 @@ typedef enum
 #define NVT_FLAG_DISPLAYID_T7_DSC_PASSTHRU       0x00400000
 #define NVT_FLAG_DISPLAYID_2_0_TIMING            0x00800000  // this one for the CTA861 embedded in DID20
 #define NVT_FLAG_DISPLAYID_T7_T8_EXPLICT_YUV420  0x01000000  // DID2 E7 spec. supported yuv420 indicated
+#define NVT_FLAG_DISPLAYID_T7_TIMING             0x02000000
+#define NVT_FLAG_DISPLAYID_T8_TIMING             0x04000000
+#define NVT_FLAG_DISPLAYID_T10_TIMING            0x08000000
 
 #define NVT_FLAG_INTERLACED_MASK                 (NVT_FLAG_INTERLACED_TIMING | NVT_FLAG_INTERLACED_TIMING2)
 

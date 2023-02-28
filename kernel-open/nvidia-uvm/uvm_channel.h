@@ -50,6 +50,9 @@
 #define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MIN 32
 #define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MAX (1024 * 1024)
 
+// Maximum number of channels per pool.
+#define UVM_CHANNEL_MAX_NUM_CHANNELS_PER_POOL 8
+
 // Semaphore payloads cannot advance too much between calls to
 // uvm_gpu_tracking_semaphore_update_completed_value(). In practice the jumps
 // are bound by gpfifo sizing as we have to update the completed value to
@@ -60,6 +63,14 @@
 // channel GPFIFO sizing defined here so it's easiest to just have it here as
 // uvm_channel.h includes uvm_gpu_semaphore.h.
 #define UVM_GPU_SEMAPHORE_MAX_JUMP (2 * UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MAX)
+
+#define uvm_channel_pool_assert_locked(pool) (          \
+{                                                       \
+    if (uvm_channel_pool_is_proxy(pool))                \
+        uvm_assert_mutex_locked(&(pool)->mutex);        \
+    else                                                \
+        uvm_assert_spinlock_locked(&(pool)->spinlock);  \
+})
 
 // Channel types
 typedef enum
@@ -162,7 +173,20 @@ typedef struct
     // Pool type: Refer to the uvm_channel_pool_type_t enum.
     uvm_channel_pool_type_t pool_type;
 
-    // Lock protecting the state of channels in the pool
+    // Lock protecting the state of channels in the pool.
+    //
+    // There are two pool lock types available: spinlock and mutex. The mutex
+    // variant is required when the thread holding the pool lock must
+    // sleep (ex: acquire another mutex) deeper in the call stack, either in UVM
+    // or RM. For example, work submission to proxy channels in SR-IOV heavy
+    // entails calling an RM API that acquires a mutex, so the proxy channel
+    // pool must use the mutex variant.
+    //
+    // Unless the mutex is required, the spinlock is preferred. This is because,
+    // other than for proxy channels, work submission takes little time and does
+    // not involve any RM calls, so UVM can avoid any invocation that may result
+    // on a sleep. All non-proxy channel pools use the spinlock variant, even in
+    // SR-IOV heavy.
     union {
         uvm_spinlock_t spinlock;
         uvm_mutex_t mutex;
@@ -275,7 +299,7 @@ struct uvm_channel_manager_struct
     unsigned num_channel_pools;
 
     // Mask containing the indexes of the usable Copy Engines. Each usable CE
-    // has a pool associated with it, see channel_manager_ce_pool
+    // has at least one pool associated with it.
     DECLARE_BITMAP(ce_mask, UVM_COPY_ENGINE_COUNT_MAX);
 
     struct
@@ -313,10 +337,6 @@ struct uvm_channel_manager_struct
 // Create a channel manager for the GPU
 NV_STATUS uvm_channel_manager_create(uvm_gpu_t *gpu, uvm_channel_manager_t **manager_out);
 
-void uvm_channel_pool_lock(uvm_channel_pool_t *pool);
-void uvm_channel_pool_unlock(uvm_channel_pool_t *pool);
-void uvm_channel_pool_assert_locked(uvm_channel_pool_t *pool);
-
 static bool uvm_channel_pool_is_proxy(uvm_channel_pool_t *pool)
 {
     UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
@@ -329,10 +349,16 @@ static bool uvm_channel_is_proxy(uvm_channel_t *channel)
     return uvm_channel_pool_is_proxy(channel->pool);
 }
 
+static bool uvm_channel_pool_is_ce(uvm_channel_pool_t *pool)
+{
+    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+
+    return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE) || uvm_channel_pool_is_proxy(pool);
+}
+
 static bool uvm_channel_is_ce(uvm_channel_t *channel)
 {
-    UVM_ASSERT(channel->pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
-    return (channel->pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE) || uvm_channel_is_proxy(channel);
+    return uvm_channel_pool_is_ce(channel->pool);
 }
 
 // Proxy channels are used to push page tree related methods, so their channel
@@ -448,6 +474,10 @@ NV_STATUS uvm_channel_write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_
 
 const char *uvm_channel_type_to_string(uvm_channel_type_t channel_type);
 const char *uvm_channel_pool_type_to_string(uvm_channel_pool_type_t channel_pool_type);
+
+// Returns the number of available GPFIFO entries. The function internally
+// acquires the channel pool lock.
+NvU32 uvm_channel_get_available_gpfifo_entries(uvm_channel_t *channel);
 
 void uvm_channel_print_pending_pushes(uvm_channel_t *channel);
 

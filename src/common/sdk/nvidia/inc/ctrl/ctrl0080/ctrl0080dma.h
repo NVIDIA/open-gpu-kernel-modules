@@ -87,7 +87,7 @@
  */
 
 typedef struct NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK {
-    NvU32 pageSize;
+    NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
     NV_DECLARE_ALIGNED(NvU64 pteEntrySize, 8);
     NvU32 comptagLine;
     NvU32 kind;

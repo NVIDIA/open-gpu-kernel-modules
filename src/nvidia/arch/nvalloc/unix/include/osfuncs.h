@@ -39,13 +39,6 @@ OSDbgBreakpointEnabled          osDbgBreakpointEnabled;
 
 void*                           osGetStereoDongleInterface(void);
 
-OSCallACPI_DSM                  osCallACPI_DSM;
-OSCallACPI_DDC                  osCallACPI_DDC;
-OSCallACPI_NVHG_ROM             osCallACPI_NVHG_ROM;
-OSCallACPI_DOD                  osCallACPI_DOD;
-OSCallACPI_MXDS                 osCallACPI_MXDS;
-OSCallACPI_MXDM                 osCallACPI_MXDM;
-
 #if defined(NVCPU_X86_64)
 OSnv_rdcr4                      nv_rdcr4;
 NvU64                           nv_rdcr3(OBJOS *);

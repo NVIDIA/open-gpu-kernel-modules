@@ -66,10 +66,6 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJGPUMON =
     /*pExportInfo=*/        &__nvoc_export_info_OBJGPUMON
 };
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonReconcileTunableState(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonStateLoad(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg0) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset), arg0);
 }
@@ -114,28 +110,8 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonStatePreInitUnlocked(POBJGPU pGp
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonGetTunableState(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonCompareTunableState(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_gpumonFreeTunableState(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonStatePostLoad(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg0) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset), arg0);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonAllocTunableState(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonSetTunableState(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_OBJGPUMON_OBJENGSTATE.offset), pTunableState);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_gpumonConstructEngine(POBJGPU pGpu, struct OBJGPUMON *pEngstate, ENGDESCRIPTOR arg0) {
@@ -189,8 +165,6 @@ static void __nvoc_init_funcTable_OBJGPUMON_1(OBJGPUMON *pThis, RmHalspecOwner *
     PORT_UNREFERENCED_VARIABLE(chipHal);
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
-    pThis->__gpumonReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_gpumonReconcileTunableState;
-
     pThis->__gpumonStateLoad__ = &__nvoc_thunk_OBJENGSTATE_gpumonStateLoad;
 
     pThis->__gpumonStateUnload__ = &__nvoc_thunk_OBJENGSTATE_gpumonStateUnload;
@@ -213,17 +187,7 @@ static void __nvoc_init_funcTable_OBJGPUMON_1(OBJGPUMON *pThis, RmHalspecOwner *
 
     pThis->__gpumonStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_gpumonStatePreInitUnlocked;
 
-    pThis->__gpumonGetTunableState__ = &__nvoc_thunk_OBJENGSTATE_gpumonGetTunableState;
-
-    pThis->__gpumonCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_gpumonCompareTunableState;
-
-    pThis->__gpumonFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_gpumonFreeTunableState;
-
     pThis->__gpumonStatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_gpumonStatePostLoad;
-
-    pThis->__gpumonAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_gpumonAllocTunableState;
-
-    pThis->__gpumonSetTunableState__ = &__nvoc_thunk_OBJENGSTATE_gpumonSetTunableState;
 
     pThis->__gpumonConstructEngine__ = &__nvoc_thunk_OBJENGSTATE_gpumonConstructEngine;
 
@@ -249,12 +213,15 @@ NV_STATUS __nvoc_objCreate_OBJGPUMON(OBJGPUMON **ppThis, Dynamic *pParent, NvU32
     OBJGPUMON *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(OBJGPUMON));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(OBJGPUMON), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(OBJGPUMON));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_OBJGPUMON);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -275,11 +242,17 @@ NV_STATUS __nvoc_objCreate_OBJGPUMON(OBJGPUMON **ppThis, Dynamic *pParent, NvU32
     if (status != NV_OK) goto __nvoc_objCreate_OBJGPUMON_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_OBJGPUMON_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(OBJGPUMON));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

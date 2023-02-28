@@ -90,12 +90,15 @@ NV_STATUS __nvoc_objCreate_Object(Object **ppThis, Dynamic *pParent, NvU32 creat
     Object *pParentObj;
     Object *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(Object));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(Object), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(Object));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_Object);
+
+    pThis->createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -112,11 +115,17 @@ NV_STATUS __nvoc_objCreate_Object(Object **ppThis, Dynamic *pParent, NvU32 creat
     if (status != NV_OK) goto __nvoc_objCreate_Object_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_Object_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(Object));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

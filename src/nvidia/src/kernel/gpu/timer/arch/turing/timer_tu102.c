@@ -38,8 +38,8 @@
 NV_STATUS
 tmrSetCountdown_TU102
 (
-    POBJGPU            pGpu,
-    POBJTMR            pTmr,
+    OBJGPU            *pGpu,
+    OBJTMR            *pTmr,
     NvU32              time,
     NvU32              tmrId,
     THREAD_STATE_NODE *pThreadState
@@ -128,16 +128,14 @@ tmrGetGpuPtimerOffset_TU102
 /*
  * @brief This function returns the PTIMER_TIME_0 register. This function will
  *  work for both Physical function and virtual function in SR-IOV.
- *  @param[in] POBJGPU - GPU Object pointer
- *  @param[in] POBJTMR - Timer Object pointer
  *
  *  @return NvU32
  */
 NvU32
 tmrReadTimeLoReg_TU102
 (
-    POBJGPU             pGpu,
-    POBJTMR             pTmr,
+    OBJGPU             *pGpu,
+    OBJTMR             *pTmr,
     THREAD_STATE_NODE  *pThreadState
 )
 {
@@ -147,16 +145,14 @@ tmrReadTimeLoReg_TU102
 /*
  * @brief This function returns the PTIMER_TIME_1 register. This function will
  *  work for both Physical function and virtual function in SR-IOV.
- *  @param[in] POBJGPU - GPU Object pointer
- *  @param[in] POBJTMR - Timer Object pointer
  *
  *  @return NvU32
  */
 NvU32
 tmrReadTimeHiReg_TU102
 (
-    POBJGPU             pGpu,
-    POBJTMR             pTmr,
+    OBJGPU             *pGpu,
+    OBJTMR             *pTmr,
     THREAD_STATE_NODE  *pThreadState
 )
 {

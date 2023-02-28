@@ -59,6 +59,9 @@
 #include "uvm_linux.h"
 #include "uvm_types.h"
 #include "nv_uvm_types.h"
+#if UVM_IS_CONFIG_HMM()
+#include <linux/memremap.h>
+#endif
 
 typedef enum
 {
@@ -195,7 +198,35 @@ typedef uvm_chunk_size_t uvm_chunk_sizes_mask_t;
 
 typedef struct uvm_pmm_gpu_chunk_suballoc_struct uvm_pmm_gpu_chunk_suballoc_t;
 
-typedef struct uvm_gpu_chunk_struct uvm_gpu_chunk_t;
+#if UVM_IS_CONFIG_HMM()
+
+typedef struct uvm_pmm_gpu_struct uvm_pmm_gpu_t;
+
+typedef struct
+{
+    struct dev_pagemap pagemap;
+} uvm_pmm_gpu_devmem_t;
+
+// Return the GPU chunk for a given device private struct page.
+uvm_gpu_chunk_t *uvm_pmm_devmem_page_to_chunk(struct page *page);
+
+// Return the GPU id for a given device private struct page.
+uvm_gpu_id_t uvm_pmm_devmem_page_to_gpu_id(struct page *page);
+
+// Return the PFN of the device private struct page for the given GPU chunk.
+unsigned long uvm_pmm_gpu_devmem_get_pfn(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
+
+// Free any orphan pages.
+// This should be called as part of removing a GPU: after all work is stopped
+// and all va_blocks have been destroyed. There normally won't be any
+// device private struct page references left but there can be cases after
+// fork() where a child process still holds a reference. This function searches
+// for pages that still have a reference and migrates the page to the GPU in
+// order to release the reference in the CPU page table.
+void uvm_pmm_gpu_free_orphan_pages(uvm_pmm_gpu_t *pmm);
+
+#endif
+
 struct uvm_gpu_chunk_struct
 {
     // Physical address of GPU chunk. This may be removed to save memory
@@ -208,15 +239,15 @@ struct uvm_gpu_chunk_struct
         // We use +1 in the order_base_2 calls appropriately to avoid compiler
         // warnings due to the bitfields being too narrow for the values of
         // their types.
-        uvm_pmm_gpu_memory_type_t               type : order_base_2(UVM_PMM_GPU_MEMORY_TYPE_COUNT + 1);
+        uvm_pmm_gpu_memory_type_t type : order_base_2(UVM_PMM_GPU_MEMORY_TYPE_COUNT + 1);
 
         // The eviction flag is internal and used only for root chunks. It's
         // set by the eviction path once a chunk is chosen for eviction in
         // chunk_start_eviction(). Also see the (root_)chunk_is_in_eviction()
         // helpers.
-        bool                             in_eviction : 1;
+        bool in_eviction : 1;
 
-        bool                      inject_split_error : 1;
+        bool inject_split_error : 1;
 
         // This flag is initalized when allocating a new root chunk from PMA.
         // It is set to true, if PMA already scrubbed the chunk. The flag is
@@ -224,19 +255,23 @@ struct uvm_gpu_chunk_struct
         // the caller is not required to clear it before freeing the chunk. The
         // VA block chunk population code can query it to skip zeroing the
         // chunk.
-        bool                                 is_zero : 1;
+        bool is_zero : 1;
 
-        uvm_pmm_gpu_chunk_state_t              state : order_base_2(UVM_PMM_GPU_CHUNK_STATE_COUNT + 1);
+        // This flag indicates an allocated chunk is referenced by a device
+        // private struct page PTE and therefore expects a page_free() callback.
+        bool is_referenced : 1;
 
-        size_t                             log2_size : order_base_2(UVM_CHUNK_SIZE_MASK_SIZE);
+        uvm_pmm_gpu_chunk_state_t state : order_base_2(UVM_PMM_GPU_CHUNK_STATE_COUNT + 1);
+
+        size_t log2_size : order_base_2(UVM_CHUNK_SIZE_MASK_SIZE);
 
         // Start page index within va_block
-        uvm_page_index_t         va_block_page_index : order_base_2(PAGES_PER_UVM_VA_BLOCK + 1);
+        uvm_page_index_t va_block_page_index : order_base_2(PAGES_PER_UVM_VA_BLOCK + 1);
 
         // This allows determining what PMM owns the chunk. Users of this field
         // must only use it if the owning GPU is retained.
         // TODO: Bug 2008200: Enforce single PMM instance per GPU
-        NvU32                           gpu_global_index : order_base_2(UVM_GLOBAL_ID_MAX_PROCESSORS);
+        NvU32 gpu_global_index : order_base_2(UVM_GLOBAL_ID_MAX_PROCESSORS);
     };
 
     // List entry.
@@ -309,7 +344,7 @@ typedef struct
     atomic64_t map_count;
 } uvm_gpu_root_chunk_indirect_peer_t;
 
-typedef struct
+typedef struct uvm_pmm_gpu_struct
 {
     // Sizes of the MMU
     uvm_chunk_sizes_mask_t chunk_sizes[UVM_PMM_GPU_MEMORY_TYPE_COUNT];
@@ -348,8 +383,18 @@ typedef struct
         // List of root chunks used by VA blocks
         struct list_head va_block_used;
 
+        // List of chunks needing to be lazily freed and a queue for processing
+        // the list. TODO: Bug 3881835: revisit whether to use nv_kthread_q_t
+        // or workqueue.
+        struct list_head va_block_lazy_free;
+        nv_kthread_q_item_t va_block_lazy_free_q_item;
+
         uvm_gpu_root_chunk_indirect_peer_t indirect_peer[UVM_ID_MAX_GPUS];
     } root_chunks;
+
+#if UVM_IS_CONFIG_HMM()
+    uvm_pmm_gpu_devmem_t devmem;
+#endif
 
     // Lock protecting PMA allocation, freeing and eviction
     uvm_rw_semaphore_t pma_lock;
@@ -410,16 +455,17 @@ struct page *uvm_gpu_chunk_to_page(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 // Allocates num_chunks chunks of size chunk_size in caller-supplied array (chunks).
 //
 // Returned chunks are in the TEMP_PINNED state, requiring a call to either
-// uvm_pmm_gpu_unpin_temp or uvm_pmm_gpu_free. If a tracker is passed in, all
+// uvm_pmm_gpu_unpin_allocated, uvm_pmm_gpu_unpin_referenced, or
+// uvm_pmm_gpu_free. If a tracker is passed in, all
 // the pending operations on the allocated chunks will be added to it
 // guaranteeing that all the entries come from the same GPU as the PMM.
 // Otherwise, when tracker is NULL, all the pending operations will be
 // synchronized before returning to the caller.
 //
 // Each of the allocated chunks list nodes (uvm_gpu_chunk_t::list) can be used
-// by the caller until the chunk is unpinned (uvm_pmm_gpu_unpin_temp) or freed
-// (uvm_pmm_gpu_free). If used, the list node has to be returned to a valid
-// state before calling either of the APIs.
+// by the caller until the chunk is unpinned (uvm_pmm_gpu_unpin_allocated,
+// uvm_pmm_gpu_unpin_referenced) or freed (uvm_pmm_gpu_free). If used, the list
+// node has to be returned to a valid state before calling either of the APIs.
 //
 // In case of an error, the chunks array is guaranteed to be cleared.
 NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
@@ -459,10 +505,17 @@ static NV_STATUS uvm_pmm_gpu_alloc_user(uvm_pmm_gpu_t *pmm,
     return uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, UVM_PMM_GPU_MEMORY_TYPE_USER, flags, chunks, out_tracker);
 }
 
-// Unpin a temporarily pinned chunk and set its reverse map to a VA block
+// Unpin a temporarily pinned chunk, set its reverse map to a VA block, and
+// mark it as allocated.
 //
 // Can only be used on user memory.
-void uvm_pmm_gpu_unpin_temp(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_va_block_t *va_block);
+void uvm_pmm_gpu_unpin_allocated(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_va_block_t *va_block);
+
+// Unpin a temporarily pinned chunk, set its reverse map to a VA block, and
+// mark it as referenced.
+//
+// Can only be used on user memory.
+void uvm_pmm_gpu_unpin_referenced(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk, uvm_va_block_t *va_block);
 
 // Frees the chunk. This also unpins the chunk if it is temporarily pinned.
 //

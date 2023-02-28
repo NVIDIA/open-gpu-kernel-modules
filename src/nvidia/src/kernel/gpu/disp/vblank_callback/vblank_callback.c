@@ -67,11 +67,6 @@ vblcbConstruct_IMPL
     NV_STATUS        status         = NV_OK;
     NV_VBLANK_CALLBACK_ALLOCATION_PARAMETERS *pAllocParams = pParams->pAllocParams;
 
-    if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
-    {
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
-
     if (pKernelDisplay == NULL)
     {
         return NV_ERR_NOT_SUPPORTED;

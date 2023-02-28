@@ -899,7 +899,6 @@ nvswitch_os_vsnprintf
 void
 nvswitch_os_assert_log
 (
-    int cond,
     const char *pFormat,
     ...
 );

@@ -74,6 +74,34 @@ Dynamic *objFindAncestor_IMPL(Dynamic *pDynamic, NVOC_CLASS_ID classId)
 void objAddChild_IMPL(Object *pObj, Object *pChild)
 {
     NV_ASSERT(pChild->pParent == NULL);
+
+#if defined(DEBUG)
+    if (pChild->createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        //
+        // For objects constructed in place it is possible to call objCreate() twice without calling objDelete()
+        // This results in a loop in parent's child list, making it endless
+        // This check is supposed to make catching this issue easier without affecting perf
+        //
+         Object *pCurrentChild = pObj->childTree.pChild;
+
+         while (pCurrentChild != NULL)
+         {
+             if (pCurrentChild == pChild)
+             {
+#if NV_PRINTF_STRINGS_ALLOWED
+                portDbgPrintf("NVOC: %s: class %s called in-place objCreate() twice without calling objDelete()",
+                               __FUNCTION__,
+                               objGetClassInfo(pChild)->name);
+#endif // NV_PRINTF_STRINGS_ALLOWED
+                 PORT_BREAKPOINT_DEBUG();
+             }
+
+             pCurrentChild = pCurrentChild->childTree.pSibling;
+         }
+     }
+#endif // defined(DEBUG)
+
     pChild->pParent = pObj;
     pChild->childTree.pSibling = pObj->childTree.pChild;
     pObj->childTree.pChild = pChild;
@@ -116,6 +144,25 @@ Object *objGetDirectParent_IMPL(Object *pObj)
     return pObj->pParent;
 }
 
+NV_STATUS __nvoc_handleObjCreateMemAlloc(NvU32 createFlags, NvU32 allocSize, void **ppLocalPtr, void **ppThis)
+{
+    if (allocSize == 0 || ppThis == NULL || ppLocalPtr == NULL)
+        return NV_ERR_INVALID_PARAMETER;
+
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+    {
+        *ppLocalPtr = *ppThis;
+    }
+    else
+    {
+        *ppLocalPtr = portMemAllocNonPaged(allocSize);
+        if (*ppLocalPtr == NULL)
+            return NV_ERR_NO_MEMORY;
+    }
+
+    return NV_OK;
+}
+
 //! Internal backing method for objDelete.
 void __nvoc_objDelete(Dynamic *pDynamic)
 {
@@ -147,7 +194,8 @@ void __nvoc_objDelete(Dynamic *pDynamic)
     }
 
     pDerivedObj = __nvoc_fullyDerive(pDynamic);
-    portMemFree(pDerivedObj);
+    if (!(pObj->createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT))
+        portMemFree(pDerivedObj);
 }
 
 //! Internal method to fill out an object's RTTI pointers from a class definition.

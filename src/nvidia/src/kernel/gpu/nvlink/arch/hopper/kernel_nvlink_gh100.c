@@ -28,6 +28,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "nverror.h"
 #include "objtmr.h"
+#include "gpu_mgr/gpu_mgr.h"
 
 /*!
  * @brief Check if ALI is supported for the given device
@@ -371,6 +372,197 @@ knvlinkLogAliDebugMessages_GH100
     return NV_OK;
 }
 
+/**
+ * @brief Check if the nvlink bandwidth setting is OFF
+ *
+ * @param[in]   pKernelNvlink         reference of KernelNvlink
+ */
+NvBool
+knvlinkIsBandwidthModeOff_GH100
+(
+    KernelNvlink *pKernelNvlink
+)
+{
+    return (gpumgrGetGpuNvlinkBwMode() == GPU_NVLINK_BW_MODE_OFF);
+}
+
+/**
+ * @brief Calculate the number of active nvlinks needs to be reduced
+ *        for direct connect GPU system
+ *
+ * @param[in]   pKernelNvlink         reference of KernelNvlink
+ */
+NvU32
+knvlinkGetNumLinksToBeReducedPerIoctrl_GH100
+(
+    KernelNvlink *pKernelNvlink
+)
+{
+    NvU32 numlinks = 0;
+    NvU8 mode;
+
+#if defined(INCLUDE_NVLINK_LIB)
+    numlinks = pKernelNvlink->pNvlinkDev->numActiveLinksPerIoctrl;
+#endif
+
+    if (numlinks == 0)
+        goto out;
+
+    mode = gpumgrGetGpuNvlinkBwMode();
+
+    switch (mode)
+    {
+        case GPU_NVLINK_BW_MODE_OFF:
+            NV_PRINTF(LEVEL_ERROR, "Cannot reach here %s %d mode=%d\n",
+                      __func__, __LINE__, mode);
+            NV_ASSERT(0);
+            break;
+        case GPU_NVLINK_BW_MODE_MIN:
+            numlinks = numlinks - 1; // At least one is ative at this point.
+            break;
+        case GPU_NVLINK_BW_MODE_HALF:
+            numlinks = numlinks / 2;
+            break;
+        case GPU_NVLINK_BW_MODE_3QUARTER:
+            numlinks = numlinks / 4;
+            break;
+        default: // Treat as GPU_NVLINK_BW_MODE_FULL
+            numlinks = 0;
+            break;
+    }
+
+out:
+    return numlinks;
+}
+
+/**
+ * @brief Calculate the effective peer link mask for HS_HUB configuration
+ *
+ * @param[in]   pGpu               OBJGPU pointer of local GPU
+ * @param[in]   pKernelNvlink      reference of KernelNvlink
+ * @param[in]   pRemoteGpu         OBJGPU pointer of remote GPU
+ * @param[in/out] pPeerLinkMask    reference of peerLinkMask   
+ */
+void
+knvlinkGetEffectivePeerLinkMask_GH100
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink,
+    OBJGPU *pRemoteGpu,
+    NvU32  *pPeerLinkMask
+)
+{
+    NvU32 peerLinkMask, remotePeerLinkMask, effectivePeerLinkMask, peerLinkMaskPerIoctrl;
+    NvU32 gpuInstance, remoteGpuInstance;
+    NvU32 numLinksPerIoctrl, numIoctrls;
+    KernelNvlink *pRemoteKernelNvlink;
+    NvU32 numLinksToBeReduced;
+    NvU32 linkId, count, i;
+
+    gpuInstance = gpuGetInstance(pGpu);
+    remoteGpuInstance = gpuGetInstance(pRemoteGpu);
+
+    // Do not support NVSwitch systems for now.
+    if (knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
+    {
+        return;
+    }
+
+    peerLinkMask = pKernelNvlink->peerLinkMasks[remoteGpuInstance];
+    if (peerLinkMask == 0)
+    {
+        return;
+    }
+
+    //
+    // No need to check if remotePeerLinkMask and peerLinkMask are equal because
+    // RM will not enable P2P otherwise. Given that we have reached here means
+    // the masks must be equal.
+    //
+    pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
+    remotePeerLinkMask = pRemoteKernelNvlink->peerLinkMasks[gpuInstance];
+    NV_ASSERT(nvPopCount32(remotePeerLinkMask) == nvPopCount32(peerLinkMask));    
+
+    // Find out number of active NVLinks between the two GPUs.
+    numLinksToBeReduced = knvlinkGetNumLinksToBeReducedPerIoctrl_HAL(pKernelNvlink);
+    effectivePeerLinkMask = peerLinkMask;
+
+    if (numLinksToBeReduced == 0)
+    {
+        return;
+    }
+
+    // Start reducing effectivePeerLinkMask...
+
+    //
+    // To have deterministic approach, if local GPU ID is less than remote GPU
+    // ID, always trim peerLinkMask from the perspective of local GPU.
+    // Otherwise, use remote GPU for the same.
+    //
+#if defined(INCLUDE_NVLINK_LIB)
+    numIoctrls = pKernelNvlink->pNvlinkDev->numIoctrls;
+    numLinksPerIoctrl = pKernelNvlink->pNvlinkDev->numLinksPerIoctrl;
+#else
+    numIoctrls = 0;
+    numLinksPerIoctrl = 0;
+#endif
+
+    if (pGpu->gpuId < pRemoteGpu->gpuId)
+    {
+        for (i = 0; i < numIoctrls; i++)
+        {
+            count = 0;
+            peerLinkMaskPerIoctrl = peerLinkMask &
+                (((1 << numLinksPerIoctrl) - 1) << (i * numLinksPerIoctrl));
+
+            FOR_EACH_INDEX_IN_MASK(32, linkId, peerLinkMaskPerIoctrl)
+            {
+                if (count == numLinksToBeReduced)
+                {
+                    break;
+                }
+
+                effectivePeerLinkMask &= (~NVBIT(linkId));
+                count++;
+            }
+            FOR_EACH_INDEX_IN_MASK_END;
+        }
+    }
+    else
+    {
+        for (i = 0; i < numIoctrls; i++)
+        {
+            count = 0;
+            peerLinkMaskPerIoctrl = remotePeerLinkMask &
+                (((1 << numLinksPerIoctrl) - 1) << (i * numLinksPerIoctrl));
+
+            FOR_EACH_INDEX_IN_MASK(32, linkId, peerLinkMaskPerIoctrl)
+            {
+                if (count == numLinksToBeReduced)
+                {
+                    break;
+                }
+
+#if defined(INCLUDE_NVLINK_LIB)
+                effectivePeerLinkMask &=
+                    (~NVBIT(pRemoteKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.linkNumber));
+#endif
+                count++;
+            }
+            FOR_EACH_INDEX_IN_MASK_END;
+        }
+    }
+
+    //
+    // effectivePeerLinkMask can never be zero, otherwise we create inconsistent
+    // HW/SW state, where we say that NVLink P2P is supported, but we don't
+    // program HSHUB.
+    //
+    // So, if not enough NVLinks are present, then drop effectivePeerLinkMask.
+    //
+    *pPeerLinkMask = (effectivePeerLinkMask > 0) ? effectivePeerLinkMask : peerLinkMask;
+}
+
 /*!
  * @brief   Set unique fabric address for NVSwitch enabled systems.
  *
@@ -432,48 +624,6 @@ knvlinkSetUniqueFabricBaseAddress_GH100
 }
 
 /*!
- * @brief  Check if floorsweeping is needed for this particular chip
- *
- * @param[in]  pGpu            OBJGPU pointer
- * @param[in]  pKernelNvlink   KernelNvlink pointer
- *
- * @returns On success, sets unique fabric address and returns NV_OK.
- *          On failure, returns NV_ERR_XXX.
- */
-NvBool
-knvlinkIsFloorSweepingNeeded_GH100
-(
-    OBJGPU       *pGpu,
-    KernelNvlink *pKernelNvlink,
-    NvU32         numActiveLinksPerIoctrl,
-    NvU32         numLinksPerIoctrl
-)
-{
-
-    //
-    // Only floorsweep down the given GPU if the following conditions are met:
-    // 1. The number of active links allowed for the IOCTRL is less then the
-    //    total number of links for the IOCTRL. No reason to spend time in code
-    //    if the exectution of it will be a NOP
-    //
-    // 2. If the GPU has never been floorswept. An optimization to make sure RM
-    //    doesn't burn cycles repeatedly running running code that will be a NOP
-    //
-    // 3. (temporary) Run only on Silicon chips. Fmodel currently doesn't support
-    //    this feature
-    //
-
-    if (numActiveLinksPerIoctrl < numLinksPerIoctrl &&
-        !pKernelNvlink->bFloorSwept                 &&
-        IS_SILICON(pGpu))
-    {
-        return NV_TRUE;
-    }
-
-    return NV_FALSE;
-}
-
-/*!
  * @brief   Check if system has enough active NVLinks and
  *          enough NVLink bridges
  *
@@ -495,3 +645,49 @@ knvlinkDirectConnectCheck_GH100
                         (void *)&params,
                         sizeof(params));
 }
+
+/*!
+ * @brief  Check if floorsweeping is needed for this particular chip
+ *
+ * @param[in]  pGpu            OBJGPU pointer
+ * @param[in]  pKernelNvlink   KernelNvlink pointer
+ *
+ * @returns On success, sets unique fabric address and returns NV_OK.
+ *          On failure, returns NV_ERR_XXX.
+ */
+NvBool
+knvlinkIsFloorSweepingNeeded_GH100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    NvU32         numActiveLinksPerIoctrl,
+    NvU32         numLinksPerIoctrl
+)
+{
+
+    //
+    // Only floorsweep down the given GPU if the following conditions are met:
+    // 1. if the number of links for the IP is > 0
+    //
+    // 2. The number of active links allowed for the IOCTRL is less then the
+    //    total number of links for the IOCTRL. No reason to spend time in code
+    //    if the exectution of it will be a NOP
+    //
+    // 3. If the GPU has never been floorswept. An optimization to make sure RM
+    //    doesn't burn cycles repeatedly running running code that will be a NOP
+    //
+    // 4. (temporary) Run only on Silicon chips. Fmodel currently doesn't support
+    //    this feature
+    //
+
+    if ((numLinksPerIoctrl > 0 && numActiveLinksPerIoctrl > 0) &&
+        numActiveLinksPerIoctrl < numLinksPerIoctrl            &&
+        !pKernelNvlink->bFloorSwept                            &&
+        IS_SILICON(pGpu))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+

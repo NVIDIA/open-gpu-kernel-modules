@@ -244,10 +244,7 @@ typedef struct NV2080_CTRL_BUS_GET_PCI_INFO_PARAMS {
  *
  */
 
-typedef struct NV2080_CTRL_BUS_INFO {
-    NvU32 index;
-    NvU32 data;
-} NV2080_CTRL_BUS_INFO;
+typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_BUS_INFO;
 
 /* valid bus info index values */
 
@@ -1397,10 +1394,14 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS {
  *       NV_OK and bIsLinkUp is NV_TRUE.
  *   nrLinks[OUT]
  *       Total number of C2C links that are up.
+ *   maxNrLinks[OUT]
+ *       Maximum number of C2C links that are supported.
  *   linkMask[OUT]
  *       Bitmask of the C2C links present and up.
  *   perLinkBwMBps[OUT]
  *       Theoretical per link bandwidth in MBps.
+ *   perLinkLaneWidth[OUT]
+ *       Lane width per link.
  *   remoteType[OUT]
  *       Type of the device connected to the remote end of the C2C link.
  *       Valid values are :
@@ -1427,8 +1428,10 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS {
 typedef struct NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS {
     NvBool bIsLinkUp;
     NvU32  nrLinks;
+    NvU32  maxNrLinks;
     NvU32  linkMask;
     NvU32  perLinkBwMBps;
+    NvU32  perLinkLaneWidth;
     NvU32  remoteType;
 } NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS;
 

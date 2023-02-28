@@ -79,10 +79,11 @@ static NV_STATUS  gsyncFrameCountTimerService_P2060(OBJGPU *, OBJTMR *, void *);
 static NV_STATUS  gsyncResetFrameCountData_P2060(OBJGPU *, PDACP2060EXTERNALDEVICE);
 
 static NV_STATUS  gsyncGpuStereoHeadSync(OBJGPU *, NvU32, PDACEXTERNALDEVICE, NvU32);
+static NvBool     supportsMulDiv(DACEXTERNALDEVICE *);
 static NvBool     needsMasterBarrierWar(PDACEXTERNALDEVICE);
 static NvBool     isFirmwareRevMismatch(OBJGPU *, DAC_EXTERNAL_DEVICE_REVS);
 
-static NvBool     isBoardWithNvlinkQsyncContention(POBJGPU);
+static NvBool     isBoardWithNvlinkQsyncContention(OBJGPU *);
 static void       _extdevService(NvU32 , void *);
 
 NvBool
@@ -1113,7 +1114,7 @@ extdevWatchdog_P2060
 static NV_STATUS
 gsyncApplyStereoPinAlwaysHiWar
 (
-    POBJGPU            pGpu,
+    OBJGPU            *pGpu,
     PDACEXTERNALDEVICE pExtDev
 )
 {
@@ -1125,7 +1126,7 @@ gsyncApplyStereoPinAlwaysHiWar
 static NV_STATUS
 gsyncUnApplyStereoPinAlwaysHiWar
 (
-    POBJGPU pGpu
+    OBJGPU *pGpu
 )
 {
 
@@ -4094,6 +4095,8 @@ gsyncGetRevision_P2060
         return NV_ERR_GENERIC; // something more descriptive, perhaps?
     }
 
+    portMemSet(pParams, 0, sizeof(*pParams));
+
     pParams->revId = (NvU32)pExtDev->revId;
     pParams->boardId = (NvU32)deviceId;
     pParams->revision = (NvU32)deviceRev;
@@ -4139,6 +4142,12 @@ gsyncGetRevision_P2060
         if (needsMasterBarrierWar(pExtDev))
         {
             pParams->capFlags |= NV30F1_CTRL_GSYNC_GET_CAPS_CAP_FLAGS_NEED_MASTER_BARRIER_WAR;
+        }
+
+        if (supportsMulDiv(pExtDev))
+        {
+            pParams->capFlags |= NV30F1_CTRL_GSYNC_GET_CAPS_CAP_FLAGS_MULTIPLY_DIVIDE_SYNC;
+            pParams->maxMulDivValue = (NV_P2060_MULTIPLIER_DIVIDER_VALUE_MINUS_ONE_MAX + 1);
         }
     }
     else
@@ -5432,7 +5441,7 @@ isFirmwareRevMismatch
 static NvBool
 isBoardWithNvlinkQsyncContention
 (
-    POBJGPU pGpu
+    OBJGPU *pGpu
 )
 {
     NvU16 devIds[] = {
@@ -5453,4 +5462,106 @@ isBoardWithNvlinkQsyncContention
     }
 
     return NV_FALSE;
+}
+
+// Return NV_TRUE if the current Qsync revision supports sync multiply/divide
+static NvBool
+supportsMulDiv
+(
+    DACEXTERNALDEVICE *pExtDev
+)
+{
+    // Supported only for 2061 boards with >= 2.4
+    if (pExtDev->deviceId == DAC_EXTERNAL_DEVICE_P2061)
+    {
+        if ((pExtDev->deviceRev >= DAC_EXTERNAL_DEVICE_REV_3) ||
+            ((pExtDev->deviceRev == DAC_EXTERNAL_DEVICE_REV_2) &&
+             (pExtDev->deviceExRev >= 4)))
+        {
+            return NV_TRUE;
+        }
+    }
+    return NV_FALSE;
+}
+
+NV_STATUS
+gsyncGetMulDiv_P2060
+(
+    OBJGPU *pGpu,
+    DACEXTERNALDEVICE *pExtDev,
+    NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *pMulDivSettings
+)
+{
+    DACP2060EXTERNALDEVICE *pThis = (DACP2060EXTERNALDEVICE *)pExtDev;
+    NvU8 reg;
+
+    NV_ASSERT_OR_RETURN(pMulDivSettings != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, supportsMulDiv(pExtDev), NV_ERR_NOT_SUPPORTED);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+        readregu008_extdeviceTargeted(pGpu, pExtDev, NV_P2060_MULTIPLIER_DIVIDER, &reg));
+
+    pMulDivSettings->multiplyDivideValue =
+        DRF_VAL(_P2060, _MULTIPLIER_DIVIDER, _VALUE_MINUS_ONE, reg) + 1;
+    pMulDivSettings->multiplyDivideMode =
+        FLD_TEST_DRF(_P2060, _MULTIPLIER_DIVIDER, _MODE, _DIVIDE, reg) ?
+            NV30F1_CTRL_GSYNC_SET_CONTROL_MULTIPLY_DIVIDE_MODE_DIVIDE :
+            NV30F1_CTRL_GSYNC_SET_CONTROL_MULTIPLY_DIVIDE_MODE_MULTIPLY;
+
+    // Cache this for debugging
+    portMemCopy(&pThis->mulDivSettings, sizeof(pThis->mulDivSettings),
+                pMulDivSettings, sizeof(*pMulDivSettings));
+
+    return NV_OK;
+}
+
+NV_STATUS
+gsyncSetMulDiv_P2060
+(
+    OBJGPU *pGpu,
+    DACEXTERNALDEVICE *pExtDev,
+    NV30F1_CTRL_GSYNC_MULTIPLY_DIVIDE_SETTINGS *pMulDivSettings
+)
+{
+    DACP2060EXTERNALDEVICE *pThis = (DACP2060EXTERNALDEVICE *)pExtDev;
+    NvU8 reg;
+
+    NV_ASSERT_OR_RETURN(pMulDivSettings != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, supportsMulDiv(pExtDev), NV_ERR_NOT_SUPPORTED);
+    pGpu = GetP2060MasterableGpu(pGpu, (DACP2060EXTERNALDEVICE *)pExtDev);
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_GENERIC);
+
+    //
+    // Assume that there are no other fields inside NV_P2060_MULTIPLIER_DIVIDER
+    // to necessitate a read-modify-write
+    //
+    reg = 0;
+
+    switch (pMulDivSettings->multiplyDivideMode)
+    {
+        case NV30F1_CTRL_GSYNC_SET_CONTROL_MULTIPLY_DIVIDE_MODE_MULTIPLY:
+            reg = FLD_SET_DRF(_P2060, _MULTIPLIER_DIVIDER, _MODE, _MULTIPLY, reg);
+            break;
+        case NV30F1_CTRL_GSYNC_SET_CONTROL_MULTIPLY_DIVIDE_MODE_DIVIDE:
+            reg = FLD_SET_DRF(_P2060, _MULTIPLIER_DIVIDER, _MODE, _DIVIDE, reg);
+            break;
+        default:
+            return NV_ERR_INVALID_PARAMETER;
+    }
+
+    // The register is a 3-bit value ranging from 0-7 representing the integers from 1-8, so check the input param
+    if ((pMulDivSettings->multiplyDivideValue < 1) ||
+        (pMulDivSettings->multiplyDivideValue > (NV_P2060_MULTIPLIER_DIVIDER_VALUE_MINUS_ONE_MAX + 1)))
+        return NV_ERR_INVALID_PARAMETER;
+    // Subtract 1 while packing the register
+    reg = FLD_SET_DRF_NUM(_P2060, _MULTIPLIER_DIVIDER, _VALUE_MINUS_ONE,
+                          pMulDivSettings->multiplyDivideValue - 1, reg);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, writeregu008_extdeviceTargeted(pGpu, pExtDev, NV_P2060_MULTIPLIER_DIVIDER, reg));
+
+    // Cache this for debugging
+    portMemCopy(&pThis->mulDivSettings, sizeof(pThis->mulDivSettings),
+                pMulDivSettings, sizeof(*pMulDivSettings));
+
+    return NV_OK;
 }

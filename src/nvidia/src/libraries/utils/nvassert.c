@@ -35,6 +35,9 @@
 #include "os/os.h"
 #include "nvrm_registry.h"
 #include "rmconfig.h"
+#include "gpu/gpu.h"
+#include "gpu/gpu_user_shared_data.h"
+#include "class/cl00de.h"
 #elif !defined(RMCFG_FEATURE_ENABLED)
 #define RMCFG_FEATURE_x 0
 #endif
@@ -55,18 +58,31 @@ void rcdbRmAssertStatus(NvU32 status, NvU32 lineNum, NvU64 ip);
 #if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
 
 #if NV_JOURNAL_ASSERT_ENABLE
+static void
+_logAssertCount(void)
+{
+    static NvU32 assertCount = 0;
+    NV00DE_SHARED_DATA *pSharedData = gpushareddataWriteStart(g_pGpu);
+
+    pSharedData->gspAssertCount = ++assertCount;
+
+    gpushareddataWriteFinish(g_pGpu);
+}
+
 /*
  * Helper function for NV_ASSERT_FAILED
  */
 void
 nvAssertFailed(void)
 {
+    _logAssertCount();
     NV_JOURNAL_ASSERT_FAILURE(NV_RM_ASSERT_UNKNOWN_LINE_NUM, portUtilGetReturnAddress());
 }
 
 void
 nvAssertOkFailed(NvU32 status)
 {
+    _logAssertCount();
     NV_JOURNAL_ASSERT_FAILURE_STATUS(NV_RM_ASSERT_UNKNOWN_LINE_NUM, portUtilGetReturnAddress(), status);
 }
 #endif

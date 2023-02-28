@@ -48,6 +48,9 @@
 #include "class/cl90cdtypes.h"
 #include "ctrl/ctrl90cd.h"
 
+#define NV_FECS_TRACE_MAX_TIMESTAMPS 5
+#define NV_FECS_TRACE_MAGIC_INVALIDATED 0xdededede         // magic number for entries that have been read
+
 typedef struct
 {
     NvU32 magic_lo;
@@ -56,11 +59,10 @@ typedef struct
     NvU32 context_ptr;
     NvU32 new_context_id;
     NvU32 new_context_ptr;
-    NvU64 ts[];
+    NvU64 ts[NV_FECS_TRACE_MAX_TIMESTAMPS];
+    NvU32 reserved[13];
+    NvU32 seqno;
 } FECS_EVENT_RECORD;
-
-#define NV_FECS_TRACE_MAX_TIMESTAMPS 5
-#define NV_FECS_TRACE_MAGIC_INVALIDATED 0xdededede         // magic number for entries that have been read
 
 /*! Opaque pointer to private data */
 typedef struct VGPU_FECS_TRACE_STAGING_BUFFER VGPU_FECS_TRACE_STAGING_BUFFER;
@@ -73,6 +75,7 @@ struct KGRAPHICS_FECS_TRACE_INFO
     NvU16  fecsTraceRdOffset;
     NvU16  fecsTraceCounter;
     NvU32  fecsCtxswLogIntrPending;
+    NvU32  fecsLastSeqno;
 
 #if PORT_IS_MODULE_SUPPORTED(crypto)
     PORT_CRYPTO_PRNG *pFecsLogPrng;
@@ -224,6 +227,19 @@ formatAndNotifyFecsRecord
     pChannelRef = (pKernelChannel != NULL) ? kchannelGetMIGReference(pKernelChannel) : NULL;
     pNewChannelRef = (pKernelChannelNew != NULL) ? kchannelGetMIGReference(pKernelChannelNew) : NULL;
 
+    if (kgraphicsIsFecsRecordUcodeSeqnoSupported(pGpu, pKernelGraphics))
+    {
+        KGRAPHICS_FECS_TRACE_INFO *pFecsTraceInfo = kgraphicsGetFecsTraceInfo(pGpu, pKernelGraphics);
+
+        // Dropped at least 1 event
+        if ((pFecsTraceInfo->fecsLastSeqno + 1) != pRecord->seqno)
+        {
+            notifRecord.dropCount = pRecord->seqno - pFecsTraceInfo->fecsLastSeqno - 1;
+        }
+
+        pFecsTraceInfo->fecsLastSeqno = pRecord->seqno;
+    }
+
     for (timestampId = 0; timestampId < NV_FECS_TRACE_MAX_TIMESTAMPS; timestampId++)
     {
         NV_ASSERT_OK_OR_ELSE(status,
@@ -345,6 +361,8 @@ formatAndNotifyFecsRecord
             pSubmap = multimapFindSubmap(&pGpu->fecsEventBufferBindingsUid, 0);
             notifyEventBuffers(pGpu, pSubmap, &notifRecord);
 
+            // Clear so we don't report drops for every event in this record
+            notifRecord.dropCount = 0;
         }
     }
 }
@@ -1233,6 +1251,8 @@ fecsBufferReset
         portMemSet(pFecsTraceInfo->pFecsBufferMapping,
                    (NvU8)(NV_FECS_TRACE_MAGIC_INVALIDATED & 0xff),
                    memdescGetSize(pFecsMemDesc));
+
+        pFecsTraceInfo->fecsLastSeqno = 0;
 
         // Routing info is the same for all future calls in this series
         traceWrOffsetParams.grRouteInfo = getHwEnableParams.grRouteInfo;

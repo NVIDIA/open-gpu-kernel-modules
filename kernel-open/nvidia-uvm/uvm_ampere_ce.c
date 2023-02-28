@@ -27,7 +27,7 @@
 #include "clc7b5.h"
 #include "clc56f.h" // Needed because HAL ce_init pushes SET_OBJECT
 
-bool uvm_hal_ampere_ce_method_validate_c6b5(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
+bool uvm_hal_ampere_ce_method_is_valid_c6b5(uvm_push_t *push, NvU32 method_address, NvU32 method_data)
 {
     if (!uvm_channel_is_proxy(push->channel))
         return true;
@@ -112,7 +112,7 @@ NvU32 uvm_hal_ampere_ce_plc_mode_c7b5(void)
     return HWCONST(C7B5, LAUNCH_DMA, DISABLE_PLC, TRUE);
 }
 
-bool uvm_hal_ampere_ce_memcopy_validate_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
+bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
 {
     NvU64 push_begin_gpu_va;
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
@@ -183,7 +183,7 @@ void uvm_hal_ampere_ce_memcopy_patch_src_c6b5(uvm_push_t *push, uvm_gpu_address_
     src->address -= uvm_pushbuffer_get_gpu_va_for_push(push->channel->pool->manager->pushbuffer, push);
 }
 
-bool uvm_hal_ampere_ce_memset_validate_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size)
+bool uvm_hal_ampere_ce_memset_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 

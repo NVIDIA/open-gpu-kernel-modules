@@ -35,8 +35,8 @@
 NV_STATUS
 uvmReadAccessCntrBufferPutPtr_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
     NvU32 *putOffset
 )
 {
@@ -49,8 +49,8 @@ uvmReadAccessCntrBufferPutPtr_TU102
 NV_STATUS
 uvmReadAccessCntrBufferGetPtr_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
     NvU32 *getOffset
 )
 {
@@ -62,8 +62,8 @@ uvmReadAccessCntrBufferGetPtr_TU102
 NV_STATUS
 uvmWriteAccessCntrBufferGetPtr_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
     NvU32 getPtrValue
 )
 {
@@ -74,8 +74,8 @@ uvmWriteAccessCntrBufferGetPtr_TU102
 NV_STATUS
 uvmEnableAccessCntr_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
     NvBool  bIsErrorRecovery
 )
 {
@@ -105,8 +105,8 @@ uvmEnableAccessCntr_TU102
 NV_STATUS
 uvmGetAccessCntrRegisterMappings_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
     NvP64 *pAccessCntrBufferGet,
     NvP64 *pAccessCntrBufferPut,
     NvP64 *pAccessCntrBufferFull,
@@ -138,8 +138,8 @@ uvmGetAccessCntrRegisterMappings_TU102
 NV_STATUS
 uvmReadAccessCntrBufferFullPtr_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
     NvBool *fullFlag
 )
 {
@@ -158,7 +158,7 @@ uvmReadAccessCntrBufferFullPtr_TU102
 }
 
 NV_STATUS
-uvmAccessCntrSetThreshold_TU102(POBJGPU pGpu, POBJUVM pUvm, NvU32 threshold)
+uvmAccessCntrSetThreshold_TU102(OBJGPU *pGpu, OBJUVM *pUvm, NvU32 threshold)
 {
 
     GPU_VREG_FLD_WR_DRF_NUM(pGpu, _VIRTUAL_FUNCTION_PRIV, _ACCESS_COUNTER_CONFIG, _THRESHOLD, threshold);
@@ -166,7 +166,7 @@ uvmAccessCntrSetThreshold_TU102(POBJGPU pGpu, POBJUVM pUvm, NvU32 threshold)
 }
 
 // Note: This function returns zero for chips which do not support the access counter.
-NvU32 uvmGetAccessCounterBufferSize_TU102(POBJGPU pGpu, POBJUVM pUvm)
+NvU32 uvmGetAccessCounterBufferSize_TU102(OBJGPU *pGpu, OBJUVM *pUvm)
 {
 
     return GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_SIZE) *
@@ -174,7 +174,7 @@ NvU32 uvmGetAccessCounterBufferSize_TU102(POBJGPU pGpu, POBJUVM pUvm)
 }
 
 NV_STATUS
-uvmAccessCntrSetGranularity_TU102(POBJGPU pGpu, POBJUVM pUvm, ACCESS_CNTR_TYPE accessCntType, NvU32 granularity)
+uvmAccessCntrSetGranularity_TU102(OBJGPU *pGpu, OBJUVM *pUvm, ACCESS_CNTR_TYPE accessCntType, NvU32 granularity)
 {
 
     if (accessCntType == MIMC)
@@ -269,8 +269,8 @@ uvmIsAccessCntrBufferPushed_TU102
 NV_STATUS
 uvmEnableAccessCntrIntr_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm,
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
     NvU32   intrType
 )
 {
@@ -288,8 +288,8 @@ uvmEnableAccessCntrIntr_TU102
 NV_STATUS
 uvmDisableAccessCntrIntr_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm
+    OBJGPU *pGpu,
+    OBJUVM *pUvm
 )
 {
     Intr *pIntr = GPU_GET_INTR(pGpu);
@@ -302,8 +302,8 @@ uvmDisableAccessCntrIntr_TU102
 NV_STATUS
 uvmAccessCntrService_TU102
 (
-    POBJGPU pGpu,
-    POBJUVM pUvm
+    OBJGPU *pGpu,
+    OBJUVM *pUvm
 )
 {
     NvU64       accessCntrAddress = 0;

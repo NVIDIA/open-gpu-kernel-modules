@@ -116,8 +116,12 @@ static void __nvoc_thunk_RsResource_migmonitorsessionAddAdditionalDependants(str
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pReference);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionUnmap(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pCpuMapping);
+static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionUnmapFrom(struct MIGMonitorSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_migmonitorsessionControlSerialization_Prologue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RmResource_migmonitorsessionControl_Prologue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -128,20 +132,24 @@ static NvBool __nvoc_thunk_RsResource_migmonitorsessionCanCopy(struct MIGMonitor
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionMapTo(struct MIGMonitorSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionUnmap(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 static void __nvoc_thunk_RsResource_migmonitorsessionPreDestruct(struct MIGMonitorSession *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionUnmapFrom(struct MIGMonitorSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionMapTo(struct MIGMonitorSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_migmonitorsessionIsDuplicate(struct MIGMonitorSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_migmonitorsessionControlSerialization_Epilogue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGMonitorSession_RmResource.offset), pCallContext, pParams);
 }
 
 static void __nvoc_thunk_RmResource_migmonitorsessionControl_Epilogue(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -215,19 +223,23 @@ static void __nvoc_init_funcTable_MIGMonitorSession_1(MIGMonitorSession *pThis) 
 
     pThis->__migmonitorsessionAddAdditionalDependants__ = &__nvoc_thunk_RsResource_migmonitorsessionAddAdditionalDependants;
 
-    pThis->__migmonitorsessionUnmap__ = &__nvoc_thunk_RsResource_migmonitorsessionUnmap;
+    pThis->__migmonitorsessionUnmapFrom__ = &__nvoc_thunk_RsResource_migmonitorsessionUnmapFrom;
+
+    pThis->__migmonitorsessionControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_migmonitorsessionControlSerialization_Prologue;
 
     pThis->__migmonitorsessionControl_Prologue__ = &__nvoc_thunk_RmResource_migmonitorsessionControl_Prologue;
 
     pThis->__migmonitorsessionCanCopy__ = &__nvoc_thunk_RsResource_migmonitorsessionCanCopy;
 
-    pThis->__migmonitorsessionMapTo__ = &__nvoc_thunk_RsResource_migmonitorsessionMapTo;
+    pThis->__migmonitorsessionUnmap__ = &__nvoc_thunk_RsResource_migmonitorsessionUnmap;
 
     pThis->__migmonitorsessionPreDestruct__ = &__nvoc_thunk_RsResource_migmonitorsessionPreDestruct;
 
-    pThis->__migmonitorsessionUnmapFrom__ = &__nvoc_thunk_RsResource_migmonitorsessionUnmapFrom;
+    pThis->__migmonitorsessionMapTo__ = &__nvoc_thunk_RsResource_migmonitorsessionMapTo;
 
     pThis->__migmonitorsessionIsDuplicate__ = &__nvoc_thunk_RsResource_migmonitorsessionIsDuplicate;
+
+    pThis->__migmonitorsessionControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_migmonitorsessionControlSerialization_Epilogue;
 
     pThis->__migmonitorsessionControl_Epilogue__ = &__nvoc_thunk_RmResource_migmonitorsessionControl_Epilogue;
 
@@ -258,12 +270,15 @@ NV_STATUS __nvoc_objCreate_MIGMonitorSession(MIGMonitorSession **ppThis, Dynamic
     Object *pParentObj;
     MIGMonitorSession *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(MIGMonitorSession));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(MIGMonitorSession), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(MIGMonitorSession));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_MIGMonitorSession);
+
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -280,11 +295,17 @@ NV_STATUS __nvoc_objCreate_MIGMonitorSession(MIGMonitorSession **ppThis, Dynamic
     if (status != NV_OK) goto __nvoc_objCreate_MIGMonitorSession_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_MIGMonitorSession_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(MIGMonitorSession));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

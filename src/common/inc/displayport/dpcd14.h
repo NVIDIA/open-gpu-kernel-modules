@@ -24,6 +24,8 @@
 #ifndef _DISPLAYPORT14_H_
 #define _DISPLAYPORT14_H_
 
+#define NV_DPCD14_GUID_2                                                            (0x00000040) /* R-XUR */
+
 #define NV_DPCD14_EXTEND_CAP_BASE                                                   (0x00002200)
 
 #define NV_DPCD14_MAX_LINK_BANDWIDTH                                                (0x00000001) /* R-XUR */
@@ -187,11 +189,6 @@
 #define NV_DPCD14_DSC_BITS_PER_PIXEL_INCREMENT_SUPPORTED_1_2                        (0x00000003) /* R-XUV */
 #define NV_DPCD14_DSC_BITS_PER_PIXEL_INCREMENT_SUPPORTED_1                          (0x00000004) /* R-XUV */
 
-// Field definition only used only with 128b/132b for DP2.0+
-#define NV_DPCD20_TRAINING_LANE_SET(i)                                          (0x00000103+(i)) /* RW-1A */
-#define NV_DPCD20_TRAINING_LANE_SET__SIZE                                                     4  /* RW--S */
-#define NV_DPCD20_TRAINING_LANE_SET_TX_FFE_PRESET_VALUE                                     3:0  /* RWXUF */
-
 #define NV_DPCD14_DSC_ENABLE                                                        (0x00000160) /* R-XUR */
 #define NV_DPCD14_DSC_ENABLE_SINK                                                            0:0 /* R-XUF */
 #define NV_DPCD14_DSC_ENABLE_SINK_NO                                                (0x00000000) /* R-XUV */
@@ -239,15 +236,6 @@
 #define NV_DPCD14_TRAINING_PATTERN_SET_SYM_ERR_SEL_DISPARITY_ERROR                  (0x00000001) /* RWXUV */
 #define NV_DPCD14_TRAINING_PATTERN_SET_SYM_ERR_SEL_ILLEGAL_SYMBOL_ERROR             (0x00000002) /* RWXUV */
 
-// Field definition only used only with 128b/132b for DP2.0+
-#define NV_DPCD20_128B_132B_TRAINING_PATTERN                                        (0x00000102) /* RWXUR */
-#define NV_DPCD20_128B_132B_TRAINING_PATTERN_SELECT                                          3:0 /* RWXUF */
-#define NV_DPCD20_128B_132B_TRAINING_PATTERN_SELECT_NONE                            (0x00000000) /* RWXUV */
-#define NV_DPCD20_128B_132B_TRAINING_PATTERN_SELECT_TPS1                            (0x00000001) /* RWXUV */
-#define NV_DPCD20_128B_132B_TRAINING_PATTERN_SELECT_TPS2                            (0x00000002) /* RWXUV */
-#define NV_DPCD20_128B_132B_TRAINING_PATTERN_SELECT_TPS2_CDS                        (0x00000003) /* RWXUV */
-// Note: Bit 7:4 are reserved for 128b/132b. Driver should keep them 0
-
 #define NV_DPCD14_LINK_QUAL_LANE_SET(i)                                         (0x0000010B+(i)) /* RW-1A */
 #define NV_DPCD14_LINK_QUAL_LANE_SET__SIZE                                                    4  /* R---S */
 #define NV_DPCD14_LINK_QUAL_LANE_SET_LQS                                                    2:0  /* RWXUF */
@@ -269,36 +257,6 @@
 #define NV_DPCD14_FEC_CONFIGURATION_LANE_SELECT_LANE_1                                  (0x00000001) /* RWXUV */
 #define NV_DPCD14_FEC_CONFIGURATION_LANE_SELECT_LANE_2                                  (0x00000002) /* RWXUV */
 #define NV_DPCD14_FEC_CONFIGURATION_LANE_SELECT_LANE_3                                  (0x00000003) /* RWXUV */
-
-// Field definition only used only with 128b/132b for DP2.0+
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED                                                  (0x00000204) /* R-XUR */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_DPRX_EQ_INTERLANE_ALIGN_DONE                   2:2  /* R-XUF */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_DPRX_EQ_INTERLANE_ALIGN_DONE_NO        (0x00000000) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_DPRX_EQ_INTERLANE_ALIGN_DONE_YES       (0x00000001) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_DPRX_CDS_INTERLANE_ALIGN_DONE                  3:3  /* R-XUF */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_DPRX_CDS_INTERLANE_ALIGN_DONE_NO       (0x00000000) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_DPRX_CDS_INTERLANE_ALIGN_DONE_YES      (0x00000001) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_LT_FAILED                                      4:4  /* R-XUF */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_LT_FAILED_NO                           (0x00000000) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_128B_132B_LT_FAILED_YES                          (0x00000001) /* R-XUV */
-
-// Field definition for 0x0206/0x0207h (ADJUST_REQUEST_LANEX), only used only with 128b/132b for DP2.0+
-#define NV_DPCD20_LANEX_XPLUS1_ADJUST_REQ_LANEX_TX_FFE_PRESET_VALUE              3:0  /* R-XUF */
-#define NV_DPCD20_LANEX_XPLUS1_ADJUST_REQ_LANEXPLUS1_TX_FFE_PRESET_VALUE         7:4  /* R-XUF */
-
-// PANEL REPLAY RELATED DPCD
-#define NV_DPCD20_PANEL_REPLAY_CAPABILITY                                         (0x000000B0)
-#define NV_DPCD20_PANEL_REPLAY_CAPABILITY_SUPPORTED                                       0:0
-#define NV_DPCD20_PANEL_REPLAY_CAPABILITY_SUPPORTED_NO                            (0x00000000)
-#define NV_DPCD20_PANEL_REPLAY_CAPABILITY_SUPPORTED_YES                           (0x00000001)
-#define NV_DPCD20_PANEL_REPLAY_CAPABILITY_SEL_UPDATE                                      1:1
-#define NV_DPCD20_PANEL_REPLAY_CAPABILITY_SEL_UPDATE_NO                           (0x00000000)
-#define NV_DPCD20_PANEL_REPLAY_CAPABILITY_SEL_UPDATE_YES                          (0x00000001)
-
-#define NV_DPCD20_PANEL_REPLAY_CONFIGURATION                                      (0x000001B0)
-#define NV_DPCD20_PANEL_REPLAY_CONFIGURATION_ENABLE_PR_MODE                               0:0
-#define NV_DPCD20_PANEL_REPLAY_CONFIGURATION_ENABLE_PR_MODE_NO                    (0x00000000)
-#define NV_DPCD20_PANEL_REPLAY_CONFIGURATION_ENABLE_PR_MODE_YES                   (0x00000001)
 
 #define NV_DPCD14_PHY_TEST_PATTERN                                                  (0x00000248) /* R-XUR */
 #define NV_DPCD14_PHY_TEST_PATTERN_SEL_CP2520PAT3                                   (0x00000007) /* R-XUV */
@@ -333,24 +291,6 @@
 // Field definitions for FW/SW Revision
 #define NV_DPCD14_FW_SW_REVISION_MAJOR                                              (0x0000040A) /* R-XUR */
 #define NV_DPCD14_FW_SW_REVISION_MINOR                                              (0x0000040B) /* R-XUR */
-
-// Field definition for 0x0200E (LANE_ALIGN_STATUS_UPDATED_ESI), used only when DP2.0+ 128b/132b is enabled.
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI                                              (0x0000200E) /* R-XUR */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_DPRX_EQ_INTERLANE_ALIGN_DONE               2:2  /* R-XUF */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_DPRX_EQ_INTERLANE_ALIGN_DONE_NO    (0x00000000) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_DPRX_EQ_INTERLANE_ALIGN_DONE_YES   (0x00000001) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_DPRX_CDS_INTERLANE_ALIGN_DONE              3:3  /* R-XUF */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_DPRX_CDS_INTERLANE_ALIGN_DONE_NO   (0x00000000) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_DPRX_CDS_INTERLANE_ALIGN_DONE_YES  (0x00000001) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_LT_FAILED                                  4:4  /* R-XUF */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_LT_FAILED_NO                       (0x00000000) /* R-XUV */
-#define NV_DPCD20_LANE_ALIGN_STATUS_UPDATED_ESI_128B_132B_LT_FAILED_YES                      (0x00000001) /* R-XUV */
-
-// Field definition for 0x0200F (SINK_STATUS_ESI), used only when DP2.0+ 128b/132b is enabled.
-#define NV_DPCD20_SINK_STATUS_ESI                                         (0x0000200F) /* R-XUR */
-#define NV_DPCD20_SINK_STATUS_ESI_INTRA_HOP_AUX_REPLY                             3:3  /* R-XUF */
-#define NV_DPCD20_SINK_STATUS_ESI_INTRA_HOP_AUX_REPLY_DPRX                (0x00000000) /* R-XUV */
-#define NV_DPCD20_SINK_STATUS_ESI_INTRA_HOP_AUX_REPLY_LTTPR               (0x00000001) /* R-XUV */
 
 #define NV_DPCD14_EXTENDED_REV                                                      (0x00002200) /* R-XUR */
 #define NV_DPCD14_EXTENDED_REV_MAJOR                                                         7:4 /* R-XUF */
@@ -532,98 +472,76 @@
 #define NV_DPCD14_DPRX_FEATURE_ENUM_LIST_VSC_EXT_FRAMEWORK_V1_SUPPORTED_NO          (0x00000000) /* R-XUV */
 #define NV_DPCD14_DPRX_FEATURE_ENUM_LIST_VSC_EXT_FRAMEWORK_V1_SUPPORTED_YES         (0x00000001) /* R-XUV */
 
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES                                    (0x00002215) /* R-XUR */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR10                                     0:0  /* R-XUF */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR10_NO                          (0x00000000) /* R-XUV */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR10_YES                         (0x00000001) /* R-XUV */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR20                                     1:1  /* R-XUF */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR20_NO                          (0x00000000) /* R-XUV */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR20_YES                         (0x00000001) /* R-XUV */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR13_5                                   2:2  /* R-XUF */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR13_5_NO                        (0x00000000) /* R-XUV */
-#define NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES_UHBR13_5_YES                       (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS                                      (0x00003036) /* R-XUR */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_MODE                                         0:0  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_MODE_TMDS                            (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_MODE_FRL                             (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RESULT                                    6:1  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_9G                                    1:1  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_9G_NO                         (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_9G_YES                        (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_18G                                   2:2  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_18G_NO                        (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_18G_YES                       (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_24G                                   3:3  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_24G_NO                        (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_24G_YES                       (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_32G                                   4:4  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_32G_NO                        (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_32G_YES                       (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_40G                                   5:5  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_40G_NO                        (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_40G_YES                       (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_48G                                   6:6  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_48G_NO                        (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_48G_YES                       (0x00000001) /* R-XUV */
 
-//
-// The interval is (128b/132b_TRAINING_AUX_RD_INTERVAL value + 1) * INTERVAL_UNIT.
-// The maximum is 256 ms.
-//
-#define NV_DPCD20_128B_132B_TRAINING_AUX_RD_INTERVAL                                (0x00002216) /* R-XUR */
-#define NV_DPCD20_128B_132B_TRAINING_AUX_RD_INTERVAL_VAL                                    6:0  /* R-XUF */
-#define NV_DPCD20_128B_132B_TRAINING_AUX_RD_INTERVAL_UNIT                                   7:7  /* R-XUF */
-#define NV_DPCD20_128B_132B_TRAINING_AUX_RD_INTERVAL_UNIT_2MS                       (0x00000000) /* R-XUV */
-#define NV_DPCD20_128B_132B_TRAINING_AUX_RD_INTERVAL_UNIT_1MS                       (0x00000001) /* R-XUV */
-#define NV_DPCD20_128B_132B_TRAINING_AUX_RD_INTERVAL_MAX_MS                                 256
+#define NV_DPCD14_PCON_DOWNSTREAM_LINK_ERROR_LANE(i)                            (0x00003037+(i)) /* RW-1A */
+#define NV_DPCD14_PCON_DOWNSTREAM_LINK_ERROR_LANE__SIZE                                       4  /* R---S */
+#define NV_DPCD14_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT                                     3:0  /* R-XUF */
+#define NV_DPCD14_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT_ZERO                        (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT_THREE                       (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT_TEN                         (0x00000002) /* R-XUV */
+#define NV_DPCD14_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT_HUNDRED                     (0x00000004) /* R-XUV */
 
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS                                      (0x00003036) /* R-XUR */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_MODE                                         0:0  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_MODE_TMDS                            (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_MODE_FRL                             (0x00000001) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RESULT                                    6:1  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_9G                                    1:1  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_9G_NO                         (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_9G_YES                        (0x00000001) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_18G                                   2:2  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_18G_NO                        (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_18G_YES                       (0x00000001) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_24G                                   3:3  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_24G_NO                        (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_24G_YES                       (0x00000001) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_32G                                   4:4  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_32G_NO                        (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_32G_YES                       (0x00000001) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_40G                                   5:5  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_40G_NO                        (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_40G_YES                       (0x00000001) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_48G                                   6:6  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_48G_NO                        (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS_LT_RES_48G_YES                       (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_TX_LINK_STATUS                                          (0x0000303B) /* R-XUR */
+#define NV_DPCD14_PCON_HDMI_TX_LINK_STATUS_LINK_ACTIVE                                      0:0  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_TX_LINK_STATUS_LINK_ACTIVE_NO                           (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_TX_LINK_STATUS_LINK_ACTIVE_YES                          (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_TX_LINK_STATUS_LINK_READY                                       1:1  /* R-XUF */
+#define NV_DPCD14_PCON_HDMI_TX_LINK_STATUS_LINK_READY_NO                            (0x00000000) /* R-XUV */
+#define NV_DPCD14_PCON_HDMI_TX_LINK_STATUS_LINK_READY_YES                           (0x00000001) /* R-XUV */
 
-#define NV_DPCD20_PCON_DOWNSTREAM_LINK_ERROR_LANE(i)                            (0x00003037+(i)) /* RW-1A */
-#define NV_DPCD20_PCON_DOWNSTREAM_LINK_ERROR_LANE__SIZE                                       4  /* R---S */
-#define NV_DPCD20_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT                                     3:0  /* R-XUF */
-#define NV_DPCD20_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT_ZERO                        (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT_THREE                       (0x00000001) /* R-XUV */
-#define NV_DPCD20_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT_TEN                         (0x00000002) /* R-XUV */
-#define NV_DPCD20_PCON_DOWNSTREAM_LINK_ERROR_LANE_COUNT_HUNDRED                     (0x00000004) /* R-XUV */
+#define NV_DPCD14_PCON_CONTROL_0                                                    (0x00003050) /* RWXUR */
+#define NV_DPCD14_PCON_CONTROL_0_OUTPUT_CONFIG                                              0:0  /* RWXUF */
+#define NV_DPCD14_PCON_CONTROL_0_OUTPUT_CONFIG_DVI                                  (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_0_OUTPUT_CONFIG_HDMI                                 (0x00000001) /* RWXUV */
 
-#define NV_DPCD20_PCON_HDMI_TX_LINK_STATUS                                          (0x0000303B) /* R-XUR */
-#define NV_DPCD20_PCON_HDMI_TX_LINK_STATUS_LINK_ACTIVE                                      0:0  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_TX_LINK_STATUS_LINK_ACTIVE_NO                           (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_TX_LINK_STATUS_LINK_ACTIVE_YES                          (0x00000001) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_TX_LINK_STATUS_LINK_READY                                       1:1  /* R-XUF */
-#define NV_DPCD20_PCON_HDMI_TX_LINK_STATUS_LINK_READY_NO                            (0x00000000) /* R-XUV */
-#define NV_DPCD20_PCON_HDMI_TX_LINK_STATUS_LINK_READY_YES                           (0x00000001) /* R-XUV */
+#define NV_DPCD14_PCON_CONTROL_1                                                    (0x00003051) /* RWXUR */
+#define NV_DPCD14_PCON_CONTROL_1_CONVERT_YCBCR420                                           0:0  /* RWXUF */
+#define NV_DPCD14_PCON_CONTROL_1_CONVERT_YCBCR420_DISABLE                           (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_1_CONVERT_YCBCR420_ENABLE                            (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_EDID_PROCESS                                  1:1  /* RWXUF */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_EDID_PROCESS_NO                       (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_EDID_PROCESS_YES                      (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_AUTO_SCRAMBLING                               2:2  /* RWXUF */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_AUTO_SCRAMBLING_NO                    (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_AUTO_SCRAMBLING_YES                   (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_FORCE_SCRAMBLING                              3:3  /* RWXUF */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_FORCE_SCRAMBLING_NO                   (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_1_DISABLE_HDMI_FORCE_SCRAMBLING_YES                  (0x00000001) /* RWXUV */
 
-#define NV_DPCD20_PCON_CONTROL_0                                                    (0x00003050) /* RWXUR */
-#define NV_DPCD20_PCON_CONTROL_0_OUTPUT_CONFIG                                              0:0  /* RWXUF */
-#define NV_DPCD20_PCON_CONTROL_0_OUTPUT_CONFIG_DVI                                  (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_0_OUTPUT_CONFIG_HDMI                                 (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_2                                                    (0x00003052) /* RWXUR */
+#define NV_DPCD14_PCON_CONTROL_2_CONVERT_YCBCR422                                           0:0  /* RWXUF */
+#define NV_DPCD14_PCON_CONTROL_2_CONVERT_YCBCR422_DISABLE                           (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_2_CONVERT_YCBCR422_ENABLE                            (0x00000001) /* RWXUV */
 
-#define NV_DPCD20_PCON_CONTROL_1                                                    (0x00003051) /* RWXUR */
-#define NV_DPCD20_PCON_CONTROL_1_CONVERT_YCBCR420                                           0:0  /* RWXUF */
-#define NV_DPCD20_PCON_CONTROL_1_CONVERT_YCBCR420_DISABLE                           (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_1_CONVERT_YCBCR420_ENABLE                            (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_EDID_PROCESS                                  1:1  /* RWXUF */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_EDID_PROCESS_NO                       (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_EDID_PROCESS_YES                      (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_AUTO_SCRAMBLING                               2:2  /* RWXUF */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_AUTO_SCRAMBLING_NO                    (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_AUTO_SCRAMBLING_YES                   (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_FORCE_SCRAMBLING                              3:3  /* RWXUF */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_FORCE_SCRAMBLING_NO                   (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_1_DISABLE_HDMI_FORCE_SCRAMBLING_YES                  (0x00000001) /* RWXUV */
-
-#define NV_DPCD20_PCON_CONTROL_2                                                    (0x00003052) /* RWXUR */
-#define NV_DPCD20_PCON_CONTROL_2_CONVERT_YCBCR422                                           0:0  /* RWXUF */
-#define NV_DPCD20_PCON_CONTROL_2_CONVERT_YCBCR422_DISABLE                           (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_2_CONVERT_YCBCR422_ENABLE                            (0x00000001) /* RWXUV */
-
-#define NV_DPCD20_PCON_CONTROL_3                                                    (0x00003053) /* RWXUR */
-#define NV_DPCD20_PCON_CONTROL_3_COMPONENT_BIT_DEPTH                                        1:0  /* RWXUF */
-#define NV_DPCD20_PCON_CONTROL_3_COMPONENT_BIT_DEPTH_SAME_AS_INC                    (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_3_COMPONENT_BIT_DEPTH_8BPC                           (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_3_COMPONENT_BIT_DEPTH_10BPC                          (0x00000002) /* RWXUV */
-#define NV_DPCD20_PCON_CONTROL_3_COMPONENT_BIT_DEPTH_12BPC                          (0x00000003) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_3                                                    (0x00003053) /* RWXUR */
+#define NV_DPCD14_PCON_CONTROL_3_COMPONENT_BIT_DEPTH                                        1:0  /* RWXUF */
+#define NV_DPCD14_PCON_CONTROL_3_COMPONENT_BIT_DEPTH_SAME_AS_INC                    (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_3_COMPONENT_BIT_DEPTH_8BPC                           (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_3_COMPONENT_BIT_DEPTH_10BPC                          (0x00000002) /* RWXUV */
+#define NV_DPCD14_PCON_CONTROL_3_COMPONENT_BIT_DEPTH_12BPC                          (0x00000003) /* RWXUV */
 
 #define NV_DPCD14_OUTPUT_HTOTAL_LOW                                                 (0x00003054) /* RWXUR */
 #define NV_DPCD14_OUTPUT_HTOTAL_HIGH                                                (0x00003055) /* RWXUR */
@@ -638,42 +556,42 @@
 #define NV_DPCD14_OUTPUT_HSP_HSW_HIGH_OUTPUT_HSP_POSITIVE                           (0x00000000) /* RWXUV */
 #define NV_DPCD14_OUTPUT_HSP_HSW_HIGH_OUTPUT_HSP_NEGATIVE                           (0x00000001) /* RWXUV */
 
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1                                            (0x0000305A) /* RWXUR */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW                                        2:0  /* RWXUF */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_ZERO                           (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_9G                             (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_18G                            (0x00000002) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_24G                            (0x00000003) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_32G                            (0x00000004) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_40G                            (0x00000005) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_48G                            (0x00000006) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_SRC_CONTROL_MODE                                   3:3  /* RWXUF */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_SRC_CONTROL_MODE_DISABLE                   (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_SRC_CONTROL_MODE_ENABLE                    (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_CONCURRENT_LT_MODE                                 4:4  /* RWXUF */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_CONCURRENT_LT_MODE_DISABLE                 (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_CONCURRENT_LT_MODE_ENABLE                  (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_LINK_FRL_MODE                                      5:5  /* RWXUF */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_LINK_FRL_MODE_DISABLE                      (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_LINK_FRL_MODE_ENABLE                       (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_IRQ_LINK_FRL_MODE                                  6:6  /* RWXUF */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_IRQ_LINK_FRL_MODE_DISABLE                  (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_IRQ_LINK_FRL_MODE_ENABLE                   (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_HDMI_LINK                                          7:7  /* RWXUF */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_HDMI_LINK_DISABLE                          (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_1_HDMI_LINK_ENABLE                           (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1                                            (0x0000305A) /* RWXUR */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW                                        2:0  /* RWXUF */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_ZERO                           (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_9G                             (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_18G                            (0x00000002) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_24G                            (0x00000003) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_32G                            (0x00000004) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_40G                            (0x00000005) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_MAX_LINK_BW_48G                            (0x00000006) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_SRC_CONTROL_MODE                                   3:3  /* RWXUF */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_SRC_CONTROL_MODE_DISABLE                   (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_SRC_CONTROL_MODE_ENABLE                    (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_CONCURRENT_LT_MODE                                 4:4  /* RWXUF */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_CONCURRENT_LT_MODE_DISABLE                 (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_CONCURRENT_LT_MODE_ENABLE                  (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_LINK_FRL_MODE                                      5:5  /* RWXUF */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_LINK_FRL_MODE_DISABLE                      (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_LINK_FRL_MODE_ENABLE                       (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_IRQ_LINK_FRL_MODE                                  6:6  /* RWXUF */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_IRQ_LINK_FRL_MODE_DISABLE                  (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_IRQ_LINK_FRL_MODE_ENABLE                   (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_HDMI_LINK                                          7:7  /* RWXUF */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_HDMI_LINK_DISABLE                          (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_1_HDMI_LINK_ENABLE                           (0x00000001) /* RWXUV */
 
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2                                            (0x0000305B) /* RWXUR */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK                                       5:0  /* RWXUF */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_9G                            (0x00000001) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_18G                           (0x00000002) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_24G                           (0x00000004) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_32G                           (0x00000008) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_40G                           (0x00000010) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_48G                           (0x00000020) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_FRL_LT_CONTROL                                     6:6  /* RWXUF */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_FRL_LT_CONTROL_NORMAL                      (0x00000000) /* RWXUV */
-#define NV_DPCD20_PCON_FRL_LINK_CONFIG_2_FRL_LT_CONTROL_EXTENDED                    (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2                                            (0x0000305B) /* RWXUR */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK                                       5:0  /* RWXUF */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_9G                            (0x00000001) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_18G                           (0x00000002) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_24G                           (0x00000004) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_32G                           (0x00000008) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_40G                           (0x00000010) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_LINK_BW_MASK_48G                           (0x00000020) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_FRL_LT_CONTROL                                     6:6  /* RWXUF */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_FRL_LT_CONTROL_NORMAL                      (0x00000000) /* RWXUV */
+#define NV_DPCD14_PCON_FRL_LINK_CONFIG_2_FRL_LT_CONTROL_EXTENDED                    (0x00000001) /* RWXUV */
 
 // LT Tunable Repeater Related offsets
 
@@ -789,6 +707,16 @@
 #define NV_DPCD14_LANE_ALIGN_STATUS_UPDATED_PHY_REPEATER           (0x00000022) /* R-XUR */
 #define NV_DPCD14_ADJUST_REQUEST_LANE0_1_PHY_REPEATER              (0x00000023) /* R-XUR */
 #define NV_DPCD14_ADJUST_REQUEST_LANE2_3_PHY_REPEATER              (0x00000024) /* R-XUR */
+
+// BRANCH SPECIFIC DSC CAPS
+#define NV_DPCD14_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_0                            (0x000000A0)
+#define NV_DPCD14_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_0_VALUE                              7:0
+
+#define NV_DPCD14_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_1                            (0x000000A1)
+#define NV_DPCD14_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_1_VALUE                              7:0
+
+#define NV_DPCD14_BRANCH_DSC_MAXIMUM_LINE_BUFFER_WIDTH                            (0x000000A2)
+#define NV_DPCD14_BRANCH_DSC_MAXIMUM_LINE_BUFFER_WIDTH_VALUE                              7:0
 
 #endif // #ifndef _DISPLAYPORT14_H_
 

@@ -36,6 +36,7 @@ extern "C" {
 
 #include "nvport/nvport.h"
 #include "resserv/resserv.h"
+#include "resserv/rs_client.h"
 #include "nvoc/runtime.h"
 
 #ifdef __cplusplus
@@ -135,8 +136,8 @@ struct RsSession {
     struct Object *__nvoc_pbase_Object;
     struct RsShared *__nvoc_pbase_RsShared;
     struct RsSession *__nvoc_pbase_RsSession;
-    void (*__sessionRemoveDependant__)(struct RsSession *, RsResourceRef *);
-    void (*__sessionRemoveDependency__)(struct RsSession *, RsResourceRef *);
+    void (*__sessionRemoveDependant__)(struct RsSession *, struct RsResourceRef *);
+    void (*__sessionRemoveDependency__)(struct RsSession *, struct RsResourceRef *);
     PORT_RWLOCK *pLock;
     NvBool bValid;
     RsResourceRefList dependencies;
@@ -173,15 +174,15 @@ NV_STATUS __nvoc_objCreate_RsSession(RsSession**, Dynamic*, NvU32);
 
 #define sessionRemoveDependant(pSession, pResourceRef) sessionRemoveDependant_DISPATCH(pSession, pResourceRef)
 #define sessionRemoveDependency(pSession, pResourceRef) sessionRemoveDependency_DISPATCH(pSession, pResourceRef)
-void sessionRemoveDependant_IMPL(struct RsSession *pSession, RsResourceRef *pResourceRef);
+void sessionRemoveDependant_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
 
-static inline void sessionRemoveDependant_DISPATCH(struct RsSession *pSession, RsResourceRef *pResourceRef) {
+static inline void sessionRemoveDependant_DISPATCH(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
     pSession->__sessionRemoveDependant__(pSession, pResourceRef);
 }
 
-void sessionRemoveDependency_IMPL(struct RsSession *pSession, RsResourceRef *pResourceRef);
+void sessionRemoveDependency_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
 
-static inline void sessionRemoveDependency_DISPATCH(struct RsSession *pSession, RsResourceRef *pResourceRef) {
+static inline void sessionRemoveDependency_DISPATCH(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
     pSession->__sessionRemoveDependency__(pSession, pResourceRef);
 }
 
@@ -191,10 +192,10 @@ NV_STATUS sessionConstruct_IMPL(struct RsSession *arg_pSession);
 void sessionDestruct_IMPL(struct RsSession *pSession);
 
 #define __nvoc_sessionDestruct(pSession) sessionDestruct_IMPL(pSession)
-NV_STATUS sessionAddDependant_IMPL(struct RsSession *pSession, RsResourceRef *pResourceRef);
+NV_STATUS sessionAddDependant_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
 
 #ifdef __nvoc_rs_server_h_disabled
-static inline NV_STATUS sessionAddDependant(struct RsSession *pSession, RsResourceRef *pResourceRef) {
+static inline NV_STATUS sessionAddDependant(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
     NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -202,10 +203,10 @@ static inline NV_STATUS sessionAddDependant(struct RsSession *pSession, RsResour
 #define sessionAddDependant(pSession, pResourceRef) sessionAddDependant_IMPL(pSession, pResourceRef)
 #endif //__nvoc_rs_server_h_disabled
 
-NV_STATUS sessionAddDependency_IMPL(struct RsSession *pSession, RsResourceRef *pResourceRef);
+NV_STATUS sessionAddDependency_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
 
 #ifdef __nvoc_rs_server_h_disabled
-static inline NV_STATUS sessionAddDependency(struct RsSession *pSession, RsResourceRef *pResourceRef) {
+static inline NV_STATUS sessionAddDependency(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
     NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -213,10 +214,10 @@ static inline NV_STATUS sessionAddDependency(struct RsSession *pSession, RsResou
 #define sessionAddDependency(pSession, pResourceRef) sessionAddDependency_IMPL(pSession, pResourceRef)
 #endif //__nvoc_rs_server_h_disabled
 
-NV_STATUS sessionCheckLocksForAdd_IMPL(struct RsSession *pSession, RsResourceRef *pResourceRef);
+NV_STATUS sessionCheckLocksForAdd_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
 
 #ifdef __nvoc_rs_server_h_disabled
-static inline NV_STATUS sessionCheckLocksForAdd(struct RsSession *pSession, RsResourceRef *pResourceRef) {
+static inline NV_STATUS sessionCheckLocksForAdd(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
     NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -224,10 +225,10 @@ static inline NV_STATUS sessionCheckLocksForAdd(struct RsSession *pSession, RsRe
 #define sessionCheckLocksForAdd(pSession, pResourceRef) sessionCheckLocksForAdd_IMPL(pSession, pResourceRef)
 #endif //__nvoc_rs_server_h_disabled
 
-void sessionCheckLocksForRemove_IMPL(struct RsSession *pSession, RsResourceRef *pResourceRef);
+void sessionCheckLocksForRemove_IMPL(struct RsSession *pSession, struct RsResourceRef *pResourceRef);
 
 #ifdef __nvoc_rs_server_h_disabled
-static inline void sessionCheckLocksForRemove(struct RsSession *pSession, RsResourceRef *pResourceRef) {
+static inline void sessionCheckLocksForRemove(struct RsSession *pSession, struct RsResourceRef *pResourceRef) {
     NV_ASSERT_FAILED_PRECOMP("RsSession was disabled!");
 }
 #else //__nvoc_rs_server_h_disabled
@@ -318,6 +319,11 @@ struct RsServer
 
     NvU32                     activeClientCount;
     NvU64                     activeResourceCount;
+
+    /// List of clients that are de-activated and pending free
+    RsDisabledClientList      disabledClientList;
+    struct RsClient                 *pNextDisabledClient;
+    PORT_SPINLOCK            *pDisabledClientListLock;
 };
 
 /**
@@ -399,20 +405,35 @@ NV_STATUS serverAllocClient(RsServer *pServer, RS_RES_ALLOC_PARAMS_INTERNAL *pPa
 NV_STATUS serverFreeClient(RsServer *pServer, RS_CLIENT_FREE_PARAMS* pParams);
 
 /**
- * Free a list of client handles. All resources references owned by the client will be
- * freed. All priority resources will be freed first across all listed clients.
+ * Mark a list of client handles as disabled. All CPU mappings owned by that
+ * client will be unmapped immediate, and the client will be marked as disabled.
+ * A call to @ref serverFreeDisabledClients will then free all such clients.
  *
  * It is invalid to attempt to free a client from a user other than the one
  * that allocated it.
  *
  * @param[in]   pServer This server instance
- * @param[in]   phClientList The list of client handles to free
+ * @param[in]   phClientList The list of client handles to disable
  * @param[in]   numClients The number of clients in the list
  * @param[in]   freeState User-defined free state
  * @param[in]   pSecInfo Security Info
  *
  */
-NV_STATUS serverFreeClientList(RsServer *pServer, NvHandle *phClientList, NvU32 numClients, NvU32 freeState, API_SECURITY_INFO *pSecInfo);
+NV_STATUS serverMarkClientListDisabled(RsServer *pServer, NvHandle *phClientList, NvU32 numClients, NvU32 freeState, API_SECURITY_INFO *pSecInfo);
+
+/**
+ * Frees all currently disabled clients. All resources references owned by 
+ * any of the clients will be freed.
+ * All priority resources will be freed first across all listed clients.
+ *
+ * NOTE: may return NV_WARN_MORE_PROCESSING_REQUIRED if not all clients were freed
+ *
+ * @param[in]   pServer   This server instance
+ * @param[in]   freeState User-defined free state
+ * @param[in]   limit     Max number of iterations to make returning; 0 means no limit
+ *
+ */
+NV_STATUS serverFreeDisabledClients(RsServer *pServer, NvU32 freeState, NvU32 limit);
 
 /**
  * Allocate a resource.
@@ -488,8 +509,67 @@ NvBool serverShareIterNext(RS_SHARE_ITERATOR*);
  * @param[in] pServer
  * @param[in] clientHandleBase
  */
- NV_STATUS serverSetClientHandleBase(RsServer *pServer, NvU32 clientHandleBase);
+NV_STATUS serverSetClientHandleBase(RsServer *pServer, NvU32 clientHandleBase);
 
+/**
+ * Deserialize parameters for servicing command
+ *
+ * @param[in] pCallContext
+ * @param[in] cmd
+ * @param[in] pParams
+ * @param[in] paramsSize
+ * @param[in] flags
+ */
+NV_STATUS serverDeserializeCtrlDown(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pParams, NvU32 paramsSize, NvU32 *flags);
+
+/**
+ * Serialize parameters for servicing command
+ *
+ * @param[in] pCallContext
+ * @param[in] cmd
+ * @param[in] pParams
+ * @param[in] paramsSize
+ * @param[in] flags
+ */
+NV_STATUS serverSerializeCtrlDown(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pParams, NvU32 paramsSize, NvU32 *flags);
+
+/**
+ * Deserialize parameters for returning from command
+ *
+ * @param[in] pCallContext
+ * @param[in] cmd
+ * @param[in] pParams
+ * @param[in] paramsSize
+ * @param[in] flags
+ */
+NV_STATUS serverDeserializeCtrlUp(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pParams, NvU32 paramsSize, NvU32 *flags);
+
+/**
+ * Serialize parameters for returning from command
+ *
+ * @param[in] pCallContext
+ * @param[in] cmd
+ * @param[in] pParams
+ * @param[in] paramsSize
+ * @param[in] flags
+ */
+NV_STATUS serverSerializeCtrlUp(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pParams, NvU32 paramsSize, NvU32 *flags);
+
+/**
+ * Unset flag for reserializing control before going to GSP
+ * Used if kernel control servicing passes params to GSP without changing them
+ *
+ * @param[in] pCallContext
+ */
+void serverDisableReserializeControl(CALL_CONTEXT *pCallContext);
+
+/**
+ * Free finn structures allocated for serializing/deserializing
+ *
+ * @param[in] pCallContext
+ * @param[in] pParams
+ */
+void serverFreeSerializeStructures(CALL_CONTEXT *pCallContext, void *pParams);
 
 /**
  * Return an available client handle for new client allocation

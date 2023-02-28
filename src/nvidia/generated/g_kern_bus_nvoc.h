@@ -297,7 +297,6 @@ struct KernelBus {
     NV_STATUS (*__kbusConstructEngine__)(OBJGPU *, struct KernelBus *, ENGDESCRIPTOR);
     NV_STATUS (*__kbusStatePreInitLocked__)(OBJGPU *, struct KernelBus *);
     NV_STATUS (*__kbusStateInitLocked__)(OBJGPU *, struct KernelBus *);
-    NV_STATUS (*__kbusStatePreLoad__)(OBJGPU *, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStateLoad__)(OBJGPU *, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStatePostLoad__)(OBJGPU *, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStatePreUnload__)(OBJGPU *, struct KernelBus *, NvU32);
@@ -348,16 +347,11 @@ struct KernelBus {
     NvU8 *(*__kbusMapCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, PMEMORY_DESCRIPTOR);
     void (*__kbusUnmapCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, PMEMORY_DESCRIPTOR);
     void (*__kbusTeardownCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, NvBool);
-    NV_STATUS (*__kbusReconcileTunableState__)(POBJGPU, struct KernelBus *, void *);
+    NV_STATUS (*__kbusStatePreLoad__)(POBJGPU, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStatePostUnload__)(POBJGPU, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStateInitUnlocked__)(POBJGPU, struct KernelBus *);
     void (*__kbusInitMissing__)(POBJGPU, struct KernelBus *);
     NV_STATUS (*__kbusStatePreInitUnlocked__)(POBJGPU, struct KernelBus *);
-    NV_STATUS (*__kbusGetTunableState__)(POBJGPU, struct KernelBus *, void *);
-    NV_STATUS (*__kbusCompareTunableState__)(POBJGPU, struct KernelBus *, void *, void *);
-    void (*__kbusFreeTunableState__)(POBJGPU, struct KernelBus *, void *);
-    NV_STATUS (*__kbusAllocTunableState__)(POBJGPU, struct KernelBus *, void **);
-    NV_STATUS (*__kbusSetTunableState__)(POBJGPU, struct KernelBus *, void *);
     NvBool (*__kbusIsPresent__)(POBJGPU, struct KernelBus *);
     NvU32 totalPciBars;
     RmPhysAddr pciBars[8];
@@ -402,6 +396,7 @@ struct KernelBus {
     NvBool bAllowReflectedMappingAccess;
     NvBool bBar2Tunnelled;
     NvBool bBar2InternalOnly;
+    NvBool bIsEntireBar2RegionVirtuallyAddressible;
     NvBool bSkipBar2TestOnGc6Exit;
     NvBool bFbFlushDisabled;
     PMEMORY_DESCRIPTOR pFlushMemDesc;
@@ -452,8 +447,6 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusStatePreInitLocked(pGpu, pKernelBus) kbusStatePreInitLocked_DISPATCH(pGpu, pKernelBus)
 #define kbusStatePreInitLocked_HAL(pGpu, pKernelBus) kbusStatePreInitLocked_DISPATCH(pGpu, pKernelBus)
 #define kbusStateInitLocked(pGpu, pKernelBus) kbusStateInitLocked_DISPATCH(pGpu, pKernelBus)
-#define kbusStatePreLoad(pGpu, pKernelBus, arg0) kbusStatePreLoad_DISPATCH(pGpu, pKernelBus, arg0)
-#define kbusStatePreLoad_HAL(pGpu, pKernelBus, arg0) kbusStatePreLoad_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusStateLoad(pGpu, pKernelBus, arg0) kbusStateLoad_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusStateLoad_HAL(pGpu, pKernelBus, arg0) kbusStateLoad_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusStatePostLoad(pGpu, pKernelBus, arg0) kbusStatePostLoad_DISPATCH(pGpu, pKernelBus, arg0)
@@ -556,16 +549,11 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, arg0) kbusUnmapCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusTeardownCoherentCpuMapping(pGpu, pKernelBus, arg0) kbusTeardownCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusTeardownCoherentCpuMapping_HAL(pGpu, pKernelBus, arg0) kbusTeardownCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
-#define kbusReconcileTunableState(pGpu, pEngstate, pTunableState) kbusReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
+#define kbusStatePreLoad(pGpu, pEngstate, arg0) kbusStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kbusStatePostUnload(pGpu, pEngstate, arg0) kbusStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kbusStateInitUnlocked(pGpu, pEngstate) kbusStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kbusInitMissing(pGpu, pEngstate) kbusInitMissing_DISPATCH(pGpu, pEngstate)
 #define kbusStatePreInitUnlocked(pGpu, pEngstate) kbusStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kbusGetTunableState(pGpu, pEngstate, pTunableState) kbusGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kbusCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) kbusCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define kbusFreeTunableState(pGpu, pEngstate, pTunableState) kbusFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kbusAllocTunableState(pGpu, pEngstate, ppTunableState) kbusAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define kbusSetTunableState(pGpu, pEngstate, pTunableState) kbusSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kbusIsPresent(pGpu, pEngstate) kbusIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kbusInitBarsSize_KERNEL(OBJGPU *pGpu, struct KernelBus *pKernelBus);
 
@@ -1605,14 +1593,6 @@ static inline NV_STATUS kbusStateInitLocked_DISPATCH(OBJGPU *pGpu, struct Kernel
     return pKernelBus->__kbusStateInitLocked__(pGpu, pKernelBus);
 }
 
-static inline NV_STATUS kbusStatePreLoad_56cd7a(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0) {
-    return NV_OK;
-}
-
-static inline NV_STATUS kbusStatePreLoad_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0) {
-    return pKernelBus->__kbusStatePreLoad__(pGpu, pKernelBus, arg0);
-}
-
 NV_STATUS kbusStateLoad_GM107(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0);
 
 static inline NV_STATUS kbusStateLoad_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0) {
@@ -2089,8 +2069,8 @@ static inline void kbusTeardownCoherentCpuMapping_DISPATCH(OBJGPU *pGpu, struct 
     pKernelBus->__kbusTeardownCoherentCpuMapping__(pGpu, pKernelBus, arg0);
 }
 
-static inline NV_STATUS kbusReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, void *pTunableState) {
-    return pEngstate->__kbusReconcileTunableState__(pGpu, pEngstate, pTunableState);
+static inline NV_STATUS kbusStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, NvU32 arg0) {
+    return pEngstate->__kbusStatePreLoad__(pGpu, pEngstate, arg0);
 }
 
 static inline NV_STATUS kbusStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, NvU32 arg0) {
@@ -2107,26 +2087,6 @@ static inline void kbusInitMissing_DISPATCH(POBJGPU pGpu, struct KernelBus *pEng
 
 static inline NV_STATUS kbusStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate) {
     return pEngstate->__kbusStatePreInitUnlocked__(pGpu, pEngstate);
-}
-
-static inline NV_STATUS kbusGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, void *pTunableState) {
-    return pEngstate->__kbusGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kbusCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__kbusCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void kbusFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, void *pTunableState) {
-    pEngstate->__kbusFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kbusAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, void **ppTunableState) {
-    return pEngstate->__kbusAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS kbusSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, void *pTunableState) {
-    return pEngstate->__kbusSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool kbusIsPresent_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate) {
@@ -2375,6 +2335,13 @@ static inline NvU8 *kbusCpuOffsetInBar2WindowGet(OBJGPU *pGpu, struct KernelBus 
 #define kbusUnmapRmAperture_HAL(pGpu, pMemDesc, pCpuPtr, bFlush) \
     kbusUnmapRmApertureWithFlags_HAL(pGpu, pMemDesc, pCpuPtr,    \
                                     (bFlush) ? TRANSFER_FLAGS_NONE : TRANSFER_FLAGS_DEFER_FLUSH)
+
+//
+// For SHH/GH180, BAR0 PRAMIN and CPU-visible BAR1/2 should be disabled when C2C is being used.
+// For P9+GV100, BAR0 PRAMIN and CPU-visible BAR1/2 should never be disabled.
+//
+#define KBUS_BAR0_PRAMIN_DISABLED(pGpu) NV_FALSE
+#define KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu) NV_FALSE
 
 #endif // KERN_BUS_H
 

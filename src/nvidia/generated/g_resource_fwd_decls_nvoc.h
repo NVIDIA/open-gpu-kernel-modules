@@ -805,6 +805,17 @@ typedef struct AccessCounterBuffer AccessCounterBuffer;
 #define __nvoc_class_id_AccessCounterBuffer 0x1f0074
 #endif /* __nvoc_class_id_AccessCounterBuffer */
 
+struct VidmemAccessBitBuffer;
+
+#ifndef __NVOC_CLASS_VidmemAccessBitBuffer_TYPEDEF__
+#define __NVOC_CLASS_VidmemAccessBitBuffer_TYPEDEF__
+typedef struct VidmemAccessBitBuffer VidmemAccessBitBuffer;
+#endif /* __NVOC_CLASS_VidmemAccessBitBuffer_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_VidmemAccessBitBuffer
+#define __nvoc_class_id_VidmemAccessBitBuffer 0xebb6da
+#endif /* __nvoc_class_id_VidmemAccessBitBuffer */
+
 struct GPUInstanceSubscription;
 
 #ifndef __NVOC_CLASS_GPUInstanceSubscription_TYPEDEF__
@@ -1142,6 +1153,7 @@ struct NVOCFwdDeclHack {
     struct DispSfUser *PRIVATE_FIELD(DispSfUser_NVC771_DISP_SF_USER);
     struct MmuFaultBuffer *PRIVATE_FIELD(MmuFaultBuffer_MMU_FAULT_BUFFER);
     struct AccessCounterBuffer *PRIVATE_FIELD(AccessCounterBuffer_ACCESS_COUNTER_NOTIFY_BUFFER);
+    struct VidmemAccessBitBuffer *PRIVATE_FIELD(VidmemAccessBitBuffer_MMU_VIDMEM_ACCESS_BIT_BUFFER);
     struct GPUInstanceSubscription *PRIVATE_FIELD(GPUInstanceSubscription_AMPERE_SMC_PARTITION_REF);
     struct ComputeInstanceSubscription *PRIVATE_FIELD(ComputeInstanceSubscription_AMPERE_SMC_EXEC_PARTITION_REF);
     struct MIGConfigSession *PRIVATE_FIELD(MIGConfigSession_AMPERE_SMC_CONFIG_SESSION);

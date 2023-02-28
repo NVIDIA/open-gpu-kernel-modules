@@ -124,6 +124,14 @@ static void __nvoc_thunk_RsResource_gpuresAddAdditionalDependants(struct RsClien
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pReference);
 }
 
+static NV_STATUS __nvoc_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_gpuresControlSerialization_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RmResource.offset), pCallContext, pParams);
+}
+
 static NV_STATUS __nvoc_thunk_RmResource_gpuresControl_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RmResource.offset), pCallContext, pParams);
 }
@@ -132,20 +140,20 @@ static NvBool __nvoc_thunk_RsResource_gpuresCanCopy(struct GpuResource *pResourc
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_gpuresMapTo(struct GpuResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pParams);
-}
-
 static void __nvoc_thunk_RsResource_gpuresPreDestruct(struct GpuResource *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RsResource_gpuresMapTo(struct GpuResource *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_gpuresIsDuplicate(struct GpuResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_gpuresControlSerialization_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RmResource.offset), pCallContext, pParams);
 }
 
 static void __nvoc_thunk_RmResource_gpuresControl_Epilogue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -234,17 +242,21 @@ static void __nvoc_init_funcTable_GpuResource_1(GpuResource *pThis) {
 
     pThis->__gpuresAddAdditionalDependants__ = &__nvoc_thunk_RsResource_gpuresAddAdditionalDependants;
 
+    pThis->__gpuresUnmapFrom__ = &__nvoc_thunk_RsResource_gpuresUnmapFrom;
+
+    pThis->__gpuresControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_gpuresControlSerialization_Prologue;
+
     pThis->__gpuresControl_Prologue__ = &__nvoc_thunk_RmResource_gpuresControl_Prologue;
 
     pThis->__gpuresCanCopy__ = &__nvoc_thunk_RsResource_gpuresCanCopy;
 
-    pThis->__gpuresMapTo__ = &__nvoc_thunk_RsResource_gpuresMapTo;
-
     pThis->__gpuresPreDestruct__ = &__nvoc_thunk_RsResource_gpuresPreDestruct;
 
-    pThis->__gpuresUnmapFrom__ = &__nvoc_thunk_RsResource_gpuresUnmapFrom;
+    pThis->__gpuresMapTo__ = &__nvoc_thunk_RsResource_gpuresMapTo;
 
     pThis->__gpuresIsDuplicate__ = &__nvoc_thunk_RsResource_gpuresIsDuplicate;
+
+    pThis->__gpuresControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_gpuresControlSerialization_Epilogue;
 
     pThis->__gpuresControl_Epilogue__ = &__nvoc_thunk_RmResource_gpuresControl_Epilogue;
 
@@ -273,12 +285,15 @@ NV_STATUS __nvoc_objCreate_GpuResource(GpuResource **ppThis, Dynamic *pParent, N
     Object *pParentObj;
     GpuResource *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(GpuResource));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(GpuResource), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(GpuResource));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GpuResource);
+
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -295,11 +310,17 @@ NV_STATUS __nvoc_objCreate_GpuResource(GpuResource **ppThis, Dynamic *pParent, N
     if (status != NV_OK) goto __nvoc_objCreate_GpuResource_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_GpuResource_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(GpuResource));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

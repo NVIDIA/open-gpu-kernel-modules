@@ -118,7 +118,8 @@ struct KernelDisplay {
     void (*__kdispRestoreOriginalLsrMinTime__)(OBJGPU *, struct KernelDisplay *, NvU32, NvU32);
     NV_STATUS (*__kdispComputeLsrMinTimeValue__)(OBJGPU *, struct KernelDisplay *, NvU32, NvU32, NvU32 *);
     void (*__kdispSetSwapBarrierLsrMinTime__)(OBJGPU *, struct KernelDisplay *, NvU32, NvU32 *, NvU32);
-    NV_STATUS (*__kdispReconcileTunableState__)(POBJGPU, struct KernelDisplay *, void *);
+    NV_STATUS (*__kdispGetRgScanLock__)(OBJGPU *, struct KernelDisplay *, NvU32, OBJGPU *, NvU32, NvBool *, NvU32 *, NvBool *, NvU32 *);
+    NV_STATUS (*__kdispDetectSliLink__)(struct KernelDisplay *, OBJGPU *, OBJGPU *, NvU32, NvU32);
     NV_STATUS (*__kdispServiceNotificationInterrupt__)(OBJGPU *, struct KernelDisplay *, IntrServiceServiceNotificationInterruptArguments *);
     NV_STATUS (*__kdispStatePreLoad__)(POBJGPU, struct KernelDisplay *, NvU32);
     NV_STATUS (*__kdispStatePostUnload__)(POBJGPU, struct KernelDisplay *, NvU32);
@@ -126,13 +127,8 @@ struct KernelDisplay {
     NV_STATUS (*__kdispStateInitUnlocked__)(POBJGPU, struct KernelDisplay *);
     void (*__kdispInitMissing__)(POBJGPU, struct KernelDisplay *);
     NV_STATUS (*__kdispStatePreInitUnlocked__)(POBJGPU, struct KernelDisplay *);
-    NV_STATUS (*__kdispGetTunableState__)(POBJGPU, struct KernelDisplay *, void *);
-    NV_STATUS (*__kdispCompareTunableState__)(POBJGPU, struct KernelDisplay *, void *, void *);
-    void (*__kdispFreeTunableState__)(POBJGPU, struct KernelDisplay *, void *);
     NvBool (*__kdispClearInterrupt__)(OBJGPU *, struct KernelDisplay *, IntrServiceClearInterruptArguments *);
     NV_STATUS (*__kdispStatePostLoad__)(POBJGPU, struct KernelDisplay *, NvU32);
-    NV_STATUS (*__kdispAllocTunableState__)(POBJGPU, struct KernelDisplay *, void **);
-    NV_STATUS (*__kdispSetTunableState__)(POBJGPU, struct KernelDisplay *, void *);
     NvBool (*__kdispIsPresent__)(POBJGPU, struct KernelDisplay *);
     NvBool PDB_PROP_KDISP_IMP_ENABLE;
     struct DisplayInstanceMemory *pInst;
@@ -206,7 +202,10 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay**, Dynamic*, NvU32);
 #define kdispComputeLsrMinTimeValue_HAL(pGpu, pKernelDisplay, head, swapRdyHiLsrMinTime, pComputedLsrMinTime) kdispComputeLsrMinTimeValue_DISPATCH(pGpu, pKernelDisplay, head, swapRdyHiLsrMinTime, pComputedLsrMinTime)
 #define kdispSetSwapBarrierLsrMinTime(pGpu, pKernelDisplay, head, pOrigLsrMinTime, newLsrMinTime) kdispSetSwapBarrierLsrMinTime_DISPATCH(pGpu, pKernelDisplay, head, pOrigLsrMinTime, newLsrMinTime)
 #define kdispSetSwapBarrierLsrMinTime_HAL(pGpu, pKernelDisplay, head, pOrigLsrMinTime, newLsrMinTime) kdispSetSwapBarrierLsrMinTime_DISPATCH(pGpu, pKernelDisplay, head, pOrigLsrMinTime, newLsrMinTime)
-#define kdispReconcileTunableState(pGpu, pEngstate, pTunableState) kdispReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
+#define kdispGetRgScanLock(pGpu, pKernelDisplay, head0, pPeerGpu, head1, pMasterScanLock, pMasterScanLockPin, pSlaveScanLock, pSlaveScanLockPin) kdispGetRgScanLock_DISPATCH(pGpu, pKernelDisplay, head0, pPeerGpu, head1, pMasterScanLock, pMasterScanLockPin, pSlaveScanLock, pSlaveScanLockPin)
+#define kdispGetRgScanLock_HAL(pGpu, pKernelDisplay, head0, pPeerGpu, head1, pMasterScanLock, pMasterScanLockPin, pSlaveScanLock, pSlaveScanLockPin) kdispGetRgScanLock_DISPATCH(pGpu, pKernelDisplay, head0, pPeerGpu, head1, pMasterScanLock, pMasterScanLockPin, pSlaveScanLock, pSlaveScanLockPin)
+#define kdispDetectSliLink(pKernelDisplay, pParentGpu, pChildGpu, ParentDrPort, ChildDrPort) kdispDetectSliLink_DISPATCH(pKernelDisplay, pParentGpu, pChildGpu, ParentDrPort, ChildDrPort)
+#define kdispDetectSliLink_HAL(pKernelDisplay, pParentGpu, pChildGpu, ParentDrPort, ChildDrPort) kdispDetectSliLink_DISPATCH(pKernelDisplay, pParentGpu, pChildGpu, ParentDrPort, ChildDrPort)
 #define kdispServiceNotificationInterrupt(pGpu, pIntrService, pParams) kdispServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define kdispStatePreLoad(pGpu, pEngstate, arg0) kdispStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kdispStatePostUnload(pGpu, pEngstate, arg0) kdispStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -214,13 +213,8 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay**, Dynamic*, NvU32);
 #define kdispStateInitUnlocked(pGpu, pEngstate) kdispStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kdispInitMissing(pGpu, pEngstate) kdispInitMissing_DISPATCH(pGpu, pEngstate)
 #define kdispStatePreInitUnlocked(pGpu, pEngstate) kdispStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kdispGetTunableState(pGpu, pEngstate, pTunableState) kdispGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kdispCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) kdispCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define kdispFreeTunableState(pGpu, pEngstate, pTunableState) kdispFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kdispClearInterrupt(pGpu, pIntrService, pParams) kdispClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define kdispStatePostLoad(pGpu, pEngstate, arg0) kdispStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kdispAllocTunableState(pGpu, pEngstate, ppTunableState) kdispAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define kdispSetTunableState(pGpu, pEngstate, pTunableState) kdispSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kdispIsPresent(pGpu, pEngstate) kdispIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kdispConstructInstMem_IMPL(struct KernelDisplay *pKernelDisplay);
 
@@ -506,9 +500,9 @@ static inline NV_STATUS kdispStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelDis
     return pKernelDisplay->__kdispStateUnload__(pGpu, pKernelDisplay, flags);
 }
 
-void kdispRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[163]);
+void kdispRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[166]);
 
-static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[163]) {
+static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[166]) {
     pKernelDisplay->__kdispRegisterIntrService__(pGpu, pKernelDisplay, pRecords);
 }
 
@@ -623,8 +617,26 @@ static inline void kdispSetSwapBarrierLsrMinTime_DISPATCH(OBJGPU *pGpu, struct K
     pKernelDisplay->__kdispSetSwapBarrierLsrMinTime__(pGpu, pKernelDisplay, head, pOrigLsrMinTime, newLsrMinTime);
 }
 
-static inline NV_STATUS kdispReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelDisplay *pEngstate, void *pTunableState) {
-    return pEngstate->__kdispReconcileTunableState__(pGpu, pEngstate, pTunableState);
+NV_STATUS kdispGetRgScanLock_v02_01(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 head0, OBJGPU *pPeerGpu, NvU32 head1, NvBool *pMasterScanLock, NvU32 *pMasterScanLockPin, NvBool *pSlaveScanLock, NvU32 *pSlaveScanLockPin);
+
+static inline NV_STATUS kdispGetRgScanLock_92bfc3(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 head0, OBJGPU *pPeerGpu, NvU32 head1, NvBool *pMasterScanLock, NvU32 *pMasterScanLockPin, NvBool *pSlaveScanLock, NvU32 *pSlaveScanLockPin) {
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kdispGetRgScanLock_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 head0, OBJGPU *pPeerGpu, NvU32 head1, NvBool *pMasterScanLock, NvU32 *pMasterScanLockPin, NvBool *pSlaveScanLock, NvU32 *pSlaveScanLockPin) {
+    return pKernelDisplay->__kdispGetRgScanLock__(pGpu, pKernelDisplay, head0, pPeerGpu, head1, pMasterScanLock, pMasterScanLockPin, pSlaveScanLock, pSlaveScanLockPin);
+}
+
+NV_STATUS kdispDetectSliLink_v04_00(struct KernelDisplay *pKernelDisplay, OBJGPU *pParentGpu, OBJGPU *pChildGpu, NvU32 ParentDrPort, NvU32 ChildDrPort);
+
+static inline NV_STATUS kdispDetectSliLink_92bfc3(struct KernelDisplay *pKernelDisplay, OBJGPU *pParentGpu, OBJGPU *pChildGpu, NvU32 ParentDrPort, NvU32 ChildDrPort) {
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kdispDetectSliLink_DISPATCH(struct KernelDisplay *pKernelDisplay, OBJGPU *pParentGpu, OBJGPU *pChildGpu, NvU32 ParentDrPort, NvU32 ChildDrPort) {
+    return pKernelDisplay->__kdispDetectSliLink__(pKernelDisplay, pParentGpu, pChildGpu, ParentDrPort, ChildDrPort);
 }
 
 static inline NV_STATUS kdispServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
@@ -655,32 +667,12 @@ static inline NV_STATUS kdispStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct 
     return pEngstate->__kdispStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kdispGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelDisplay *pEngstate, void *pTunableState) {
-    return pEngstate->__kdispGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kdispCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelDisplay *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__kdispCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void kdispFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelDisplay *pEngstate, void *pTunableState) {
-    pEngstate->__kdispFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NvBool kdispClearInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pIntrService, IntrServiceClearInterruptArguments *pParams) {
     return pIntrService->__kdispClearInterrupt__(pGpu, pIntrService, pParams);
 }
 
 static inline NV_STATUS kdispStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelDisplay *pEngstate, NvU32 arg0) {
     return pEngstate->__kdispStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kdispAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelDisplay *pEngstate, void **ppTunableState) {
-    return pEngstate->__kdispAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS kdispSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelDisplay *pEngstate, void *pTunableState) {
-    return pEngstate->__kdispSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool kdispIsPresent_DISPATCH(POBJGPU pGpu, struct KernelDisplay *pEngstate) {

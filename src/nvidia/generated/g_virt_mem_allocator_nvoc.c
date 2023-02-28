@@ -78,10 +78,6 @@ static NV_STATUS __nvoc_thunk_VirtMemAllocator_engstateStatePostLoad(struct OBJG
     return dmaStatePostLoad(pGpu, (struct VirtMemAllocator *)(((unsigned char *)pDma) - __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset), arg0);
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_dmaReconcileTunableState(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset), pTunableState);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_dmaStateLoad(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, NvU32 arg0) {
     return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset), arg0);
 }
@@ -120,26 +116,6 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_dmaStatePreInitLocked(POBJGPU pGpu, st
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_dmaStatePreInitUnlocked(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset));
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_dmaGetTunableState(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_dmaCompareTunableState(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_dmaFreeTunableState(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_dmaAllocTunableState(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_dmaSetTunableState(POBJGPU pGpu, struct VirtMemAllocator *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_VirtMemAllocator_OBJENGSTATE.offset), pTunableState);
 }
 
 static NvBool __nvoc_thunk_OBJENGSTATE_dmaIsPresent(POBJGPU pGpu, struct VirtMemAllocator *pEngstate) {
@@ -266,8 +242,6 @@ static void __nvoc_init_funcTable_VirtMemAllocator_1(VirtMemAllocator *pThis, Rm
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_thunk_VirtMemAllocator_engstateStatePostLoad;
 
-    pThis->__dmaReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_dmaReconcileTunableState;
-
     pThis->__dmaStateLoad__ = &__nvoc_thunk_OBJENGSTATE_dmaStateLoad;
 
     pThis->__dmaStateUnload__ = &__nvoc_thunk_OBJENGSTATE_dmaStateUnload;
@@ -287,16 +261,6 @@ static void __nvoc_init_funcTable_VirtMemAllocator_1(VirtMemAllocator *pThis, Rm
     pThis->__dmaStatePreInitLocked__ = &__nvoc_thunk_OBJENGSTATE_dmaStatePreInitLocked;
 
     pThis->__dmaStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_dmaStatePreInitUnlocked;
-
-    pThis->__dmaGetTunableState__ = &__nvoc_thunk_OBJENGSTATE_dmaGetTunableState;
-
-    pThis->__dmaCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_dmaCompareTunableState;
-
-    pThis->__dmaFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_dmaFreeTunableState;
-
-    pThis->__dmaAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_dmaAllocTunableState;
-
-    pThis->__dmaSetTunableState__ = &__nvoc_thunk_OBJENGSTATE_dmaSetTunableState;
 
     pThis->__dmaIsPresent__ = &__nvoc_thunk_OBJENGSTATE_dmaIsPresent;
 }
@@ -320,12 +284,15 @@ NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator **ppThis, Dynamic *
     VirtMemAllocator *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(VirtMemAllocator));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(VirtMemAllocator), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(VirtMemAllocator));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_VirtMemAllocator);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -346,11 +313,17 @@ NV_STATUS __nvoc_objCreate_VirtMemAllocator(VirtMemAllocator **ppThis, Dynamic *
     if (status != NV_OK) goto __nvoc_objCreate_VirtMemAllocator_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_VirtMemAllocator_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(VirtMemAllocator));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

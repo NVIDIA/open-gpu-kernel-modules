@@ -86,7 +86,6 @@ struct KernelFalcon {
     NV_STATUS (*__kflcnResetHw__)(struct OBJGPU *, struct KernelFalcon *);
     NV_STATUS (*__kflcnPreResetWait__)(struct OBJGPU *, struct KernelFalcon *);
     NV_STATUS (*__kflcnWaitForResetToFinish__)(struct OBJGPU *, struct KernelFalcon *);
-    NvBool (*__kflcnIsEngineInReset__)(struct OBJGPU *, struct KernelFalcon *);
     NvU32 (*__kflcnReadIntrStatus__)(struct OBJGPU *, struct KernelFalcon *);
     void (*__kflcnIntrRetrigger__)(struct OBJGPU *, struct KernelFalcon *);
     NvU32 (*__kflcnMaskImemAddr__)(struct OBJGPU *, struct KernelFalcon *, NvU32);
@@ -142,7 +141,6 @@ NV_STATUS __nvoc_objCreate_KernelFalcon(KernelFalcon**, Dynamic*, NvU32);
 #define kflcnPreResetWait_HAL(pGpu, pKernelFlcn) kflcnPreResetWait_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnWaitForResetToFinish(pGpu, pKernelFlcn) kflcnWaitForResetToFinish_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn) kflcnWaitForResetToFinish_DISPATCH(pGpu, pKernelFlcn)
-#define kflcnIsEngineInReset(pGpu, pKernelFlcn) kflcnIsEngineInReset_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnReadIntrStatus(pGpu, pKerneFlcn) kflcnReadIntrStatus_DISPATCH(pGpu, pKerneFlcn)
 #define kflcnReadIntrStatus_HAL(pGpu, pKerneFlcn) kflcnReadIntrStatus_DISPATCH(pGpu, pKerneFlcn)
 #define kflcnIntrRetrigger(pGpu, pKernelFlcn) kflcnIntrRetrigger_DISPATCH(pGpu, pKernelFlcn)
@@ -348,10 +346,6 @@ static inline NV_STATUS kflcnWaitForResetToFinish_DISPATCH(struct OBJGPU *pGpu, 
     return pKernelFlcn->__kflcnWaitForResetToFinish__(pGpu, pKernelFlcn);
 }
 
-static inline NvBool kflcnIsEngineInReset_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
-    return pKernelFlcn->__kflcnIsEngineInReset__(pGpu, pKernelFlcn);
-}
-
 NvU32 kflcnReadIntrStatus_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKerneFlcn);
 
 NvU32 kflcnReadIntrStatus_GA102(struct OBJGPU *pGpu, struct KernelFalcon *pKerneFlcn);
@@ -440,7 +434,6 @@ struct GenericKernelFalcon {
     struct Object *__nvoc_pbase_Object;
     struct GenericKernelFalcon *__nvoc_pbase_GenericKernelFalcon;
     NV_STATUS (*__gkflcnResetHw__)(struct OBJGPU *, struct GenericKernelFalcon *);
-    NvBool (*__gkflcnIsEngineInReset__)(struct OBJGPU *, struct GenericKernelFalcon *);
     void (*__gkflcnRegisterIntrService__)(struct OBJGPU *, struct GenericKernelFalcon *, IntrServiceRecord *);
     NV_STATUS (*__gkflcnServiceNotificationInterrupt__)(struct OBJGPU *, struct GenericKernelFalcon *, IntrServiceServiceNotificationInterruptArguments *);
     NvBool (*__gkflcnClearInterrupt__)(struct OBJGPU *, struct GenericKernelFalcon *, IntrServiceClearInterruptArguments *);
@@ -476,7 +469,6 @@ NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon**, Dynamic*, 
     __nvoc_objCreate_GenericKernelFalcon((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_pFalconConfig)
 
 #define gkflcnResetHw(pGpu, pGenKernFlcn) gkflcnResetHw_DISPATCH(pGpu, pGenKernFlcn)
-#define gkflcnIsEngineInReset(pGpu, pGenKernFlcn) gkflcnIsEngineInReset_DISPATCH(pGpu, pGenKernFlcn)
 #define gkflcnRegisterIntrService(arg0, arg1, arg2) gkflcnRegisterIntrService_DISPATCH(arg0, arg1, arg2)
 #define gkflcnServiceNotificationInterrupt(arg0, arg1, arg2) gkflcnServiceNotificationInterrupt_DISPATCH(arg0, arg1, arg2)
 #define gkflcnClearInterrupt(pGpu, pIntrService, pParams) gkflcnClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
@@ -487,15 +479,9 @@ static inline NV_STATUS gkflcnResetHw_DISPATCH(struct OBJGPU *pGpu, struct Gener
     return pGenKernFlcn->__gkflcnResetHw__(pGpu, pGenKernFlcn);
 }
 
-NvBool gkflcnIsEngineInReset_IMPL(struct OBJGPU *pGpu, struct GenericKernelFalcon *pGenKernFlcn);
+void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[166]);
 
-static inline NvBool gkflcnIsEngineInReset_DISPATCH(struct OBJGPU *pGpu, struct GenericKernelFalcon *pGenKernFlcn) {
-    return pGenKernFlcn->__gkflcnIsEngineInReset__(pGpu, pGenKernFlcn);
-}
-
-void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[163]);
-
-static inline void gkflcnRegisterIntrService_DISPATCH(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[163]) {
+static inline void gkflcnRegisterIntrService_DISPATCH(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[166]) {
     arg1->__gkflcnRegisterIntrService__(arg0, arg1, arg2);
 }
 

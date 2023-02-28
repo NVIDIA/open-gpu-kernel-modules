@@ -2509,26 +2509,22 @@ nvswitch_os_vsnprintf
 void
 nvswitch_os_assert_log
 (
-    int cond,
     const char *fmt,
     ...
 )
 {
-    if(cond == 0x0)
+    if (printk_ratelimit())
     {
-        if (printk_ratelimit())
-        {
-            va_list arglist;
-            char fmt_printk[NVSWITCH_LOG_BUFFER_SIZE];
+        va_list arglist;
+        char fmt_printk[NVSWITCH_LOG_BUFFER_SIZE];
 
-            va_start(arglist, fmt);
-            vsnprintf(fmt_printk, sizeof(fmt_printk), fmt, arglist);
-            va_end(arglist);
-            nvswitch_os_print(NVSWITCH_DBG_LEVEL_ERROR, fmt_printk);
-            WARN_ON(1);
-         }
-         dbg_breakpoint();
-    }
+        va_start(arglist, fmt);
+        vsnprintf(fmt_printk, sizeof(fmt_printk), fmt, arglist);
+        va_end(arglist);
+        nvswitch_os_print(NVSWITCH_DBG_LEVEL_ERROR, fmt_printk);
+        WARN_ON(1);
+     }
+     dbg_breakpoint();
 }
 
 /*

@@ -101,6 +101,19 @@ gpuInitRegistryOverrides_KERNEL
         }
     }
 
+    if (osReadRegistryDword(pGpu,
+                            NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA, &data32) == NV_OK)
+    {
+        if (data32 == NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA_ENABLE) 
+        {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_MOVE_CTX_BUFFERS_TO_PMA, NV_TRUE);
+        }
+        else 
+        {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_MOVE_CTX_BUFFERS_TO_PMA, NV_FALSE);
+        }
+    }
+
     if (pGpu->bSriovCapable)
     {
         if (osReadRegistryDword(pGpu, NV_REG_STR_RM_SET_SRIOV_MODE, &data32) == NV_OK)

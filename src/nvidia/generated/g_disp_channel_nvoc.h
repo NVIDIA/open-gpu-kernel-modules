@@ -91,9 +91,9 @@ struct DispChannel {
     struct DispChannel *__nvoc_pbase_DispChannel;
     NV_STATUS (*__dispchnGetRegBaseOffsetAndSize__)(struct DispChannel *, struct OBJGPU *, NvU32 *, NvU32 *);
     NvBool (*__dispchnShareCallback__)(struct DispChannel *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__dispchnMapTo__)(struct DispChannel *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__dispchnGetOrAllocNotifShare__)(struct DispChannel *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__dispchnCheckMemInterUnmap__)(struct DispChannel *, NvBool);
+    NV_STATUS (*__dispchnGetOrAllocNotifShare__)(struct DispChannel *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__dispchnMapTo__)(struct DispChannel *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__dispchnGetMapAddrSpace__)(struct DispChannel *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__dispchnSetNotificationShare__)(struct DispChannel *, struct NotifShare *);
     NvU32 (*__dispchnGetRefCount__)(struct DispChannel *);
@@ -110,9 +110,11 @@ struct DispChannel {
     NV_STATUS (*__dispchnGetMemoryMappingDescriptor__)(struct DispChannel *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__dispchnControlFilter__)(struct DispChannel *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispchnUnregisterEvent__)(struct DispChannel *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__dispchnControlSerialization_Prologue__)(struct DispChannel *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispchnCanCopy__)(struct DispChannel *);
     void (*__dispchnPreDestruct__)(struct DispChannel *);
     NV_STATUS (*__dispchnIsDuplicate__)(struct DispChannel *, NvHandle, NvBool *);
+    void (*__dispchnControlSerialization_Epilogue__)(struct DispChannel *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__dispchnGetNotificationListPtr__)(struct DispChannel *);
     struct NotifShare *(*__dispchnGetNotificationShare__)(struct DispChannel *);
     NV_STATUS (*__dispchnMap__)(struct DispChannel *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -157,9 +159,9 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel**, Dynamic*, NvU32, struct CA
 
 #define dispchnGetRegBaseOffsetAndSize(pDispChannel, pGpu, pOffset, pSize) dispchnGetRegBaseOffsetAndSize_DISPATCH(pDispChannel, pGpu, pOffset, pSize)
 #define dispchnShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) dispchnShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define dispchnMapTo(pResource, pParams) dispchnMapTo_DISPATCH(pResource, pParams)
-#define dispchnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispchnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define dispchnCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispchnCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define dispchnGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispchnGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define dispchnMapTo(pResource, pParams) dispchnMapTo_DISPATCH(pResource, pParams)
 #define dispchnGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) dispchnGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define dispchnSetNotificationShare(pNotifier, pNotifShare) dispchnSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define dispchnGetRefCount(pResource) dispchnGetRefCount_DISPATCH(pResource)
@@ -176,9 +178,11 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel**, Dynamic*, NvU32, struct CA
 #define dispchnGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispchnGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define dispchnControlFilter(pResource, pCallContext, pParams) dispchnControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define dispchnUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispchnUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define dispchnControlSerialization_Prologue(pResource, pCallContext, pParams) dispchnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchnCanCopy(pResource) dispchnCanCopy_DISPATCH(pResource)
 #define dispchnPreDestruct(pResource) dispchnPreDestruct_DISPATCH(pResource)
 #define dispchnIsDuplicate(pResource, hMemory, pDuplicate) dispchnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define dispchnControlSerialization_Epilogue(pResource, pCallContext, pParams) dispchnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchnGetNotificationListPtr(pNotifier) dispchnGetNotificationListPtr_DISPATCH(pNotifier)
 #define dispchnGetNotificationShare(pNotifier) dispchnGetNotificationShare_DISPATCH(pNotifier)
 #define dispchnMap(pGpuResource, pCallContext, pParams, pCpuMapping) dispchnMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -193,16 +197,16 @@ static inline NvBool dispchnShareCallback_DISPATCH(struct DispChannel *pGpuResou
     return pGpuResource->__dispchnShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS dispchnMapTo_DISPATCH(struct DispChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__dispchnMapTo__(pResource, pParams);
+static inline NV_STATUS dispchnCheckMemInterUnmap_DISPATCH(struct DispChannel *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__dispchnCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS dispchnGetOrAllocNotifShare_DISPATCH(struct DispChannel *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__dispchnGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS dispchnCheckMemInterUnmap_DISPATCH(struct DispChannel *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__dispchnCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS dispchnMapTo_DISPATCH(struct DispChannel *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__dispchnMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS dispchnGetMapAddrSpace_DISPATCH(struct DispChannel *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -269,6 +273,10 @@ static inline NV_STATUS dispchnUnregisterEvent_DISPATCH(struct DispChannel *pNot
     return pNotifier->__dispchnUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS dispchnControlSerialization_Prologue_DISPATCH(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__dispchnControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool dispchnCanCopy_DISPATCH(struct DispChannel *pResource) {
     return pResource->__dispchnCanCopy__(pResource);
 }
@@ -279,6 +287,10 @@ static inline void dispchnPreDestruct_DISPATCH(struct DispChannel *pResource) {
 
 static inline NV_STATUS dispchnIsDuplicate_DISPATCH(struct DispChannel *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__dispchnIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void dispchnControlSerialization_Epilogue_DISPATCH(struct DispChannel *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__dispchnControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *dispchnGetNotificationListPtr_DISPATCH(struct DispChannel *pNotifier) {
@@ -370,9 +382,9 @@ struct DispChannelPio {
     struct DispChannel *__nvoc_pbase_DispChannel;
     struct DispChannelPio *__nvoc_pbase_DispChannelPio;
     NvBool (*__dispchnpioShareCallback__)(struct DispChannelPio *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__dispchnpioMapTo__)(struct DispChannelPio *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__dispchnpioGetOrAllocNotifShare__)(struct DispChannelPio *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__dispchnpioCheckMemInterUnmap__)(struct DispChannelPio *, NvBool);
+    NV_STATUS (*__dispchnpioGetOrAllocNotifShare__)(struct DispChannelPio *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__dispchnpioMapTo__)(struct DispChannelPio *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__dispchnpioGetMapAddrSpace__)(struct DispChannelPio *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__dispchnpioSetNotificationShare__)(struct DispChannelPio *, struct NotifShare *);
     NvU32 (*__dispchnpioGetRefCount__)(struct DispChannelPio *);
@@ -390,9 +402,11 @@ struct DispChannelPio {
     NV_STATUS (*__dispchnpioGetMemoryMappingDescriptor__)(struct DispChannelPio *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__dispchnpioControlFilter__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispchnpioUnregisterEvent__)(struct DispChannelPio *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__dispchnpioControlSerialization_Prologue__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispchnpioCanCopy__)(struct DispChannelPio *);
     void (*__dispchnpioPreDestruct__)(struct DispChannelPio *);
     NV_STATUS (*__dispchnpioIsDuplicate__)(struct DispChannelPio *, NvHandle, NvBool *);
+    void (*__dispchnpioControlSerialization_Epilogue__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__dispchnpioGetNotificationListPtr__)(struct DispChannelPio *);
     struct NotifShare *(*__dispchnpioGetNotificationShare__)(struct DispChannelPio *);
     NV_STATUS (*__dispchnpioMap__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -428,9 +442,9 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio**, Dynamic*, NvU32, str
     __nvoc_objCreate_DispChannelPio((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 #define dispchnpioShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) dispchnpioShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define dispchnpioMapTo(pResource, pParams) dispchnpioMapTo_DISPATCH(pResource, pParams)
-#define dispchnpioGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispchnpioGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define dispchnpioCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispchnpioCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define dispchnpioGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispchnpioGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define dispchnpioMapTo(pResource, pParams) dispchnpioMapTo_DISPATCH(pResource, pParams)
 #define dispchnpioGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) dispchnpioGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define dispchnpioSetNotificationShare(pNotifier, pNotifShare) dispchnpioSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define dispchnpioGetRefCount(pResource) dispchnpioGetRefCount_DISPATCH(pResource)
@@ -448,9 +462,11 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio**, Dynamic*, NvU32, str
 #define dispchnpioGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispchnpioGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define dispchnpioControlFilter(pResource, pCallContext, pParams) dispchnpioControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define dispchnpioUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispchnpioUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define dispchnpioControlSerialization_Prologue(pResource, pCallContext, pParams) dispchnpioControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchnpioCanCopy(pResource) dispchnpioCanCopy_DISPATCH(pResource)
 #define dispchnpioPreDestruct(pResource) dispchnpioPreDestruct_DISPATCH(pResource)
 #define dispchnpioIsDuplicate(pResource, hMemory, pDuplicate) dispchnpioIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define dispchnpioControlSerialization_Epilogue(pResource, pCallContext, pParams) dispchnpioControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchnpioGetNotificationListPtr(pNotifier) dispchnpioGetNotificationListPtr_DISPATCH(pNotifier)
 #define dispchnpioGetNotificationShare(pNotifier) dispchnpioGetNotificationShare_DISPATCH(pNotifier)
 #define dispchnpioMap(pGpuResource, pCallContext, pParams, pCpuMapping) dispchnpioMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -459,16 +475,16 @@ static inline NvBool dispchnpioShareCallback_DISPATCH(struct DispChannelPio *pGp
     return pGpuResource->__dispchnpioShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS dispchnpioMapTo_DISPATCH(struct DispChannelPio *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__dispchnpioMapTo__(pResource, pParams);
+static inline NV_STATUS dispchnpioCheckMemInterUnmap_DISPATCH(struct DispChannelPio *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__dispchnpioCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS dispchnpioGetOrAllocNotifShare_DISPATCH(struct DispChannelPio *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__dispchnpioGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS dispchnpioCheckMemInterUnmap_DISPATCH(struct DispChannelPio *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__dispchnpioCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS dispchnpioMapTo_DISPATCH(struct DispChannelPio *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__dispchnpioMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS dispchnpioGetMapAddrSpace_DISPATCH(struct DispChannelPio *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -539,6 +555,10 @@ static inline NV_STATUS dispchnpioUnregisterEvent_DISPATCH(struct DispChannelPio
     return pNotifier->__dispchnpioUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS dispchnpioControlSerialization_Prologue_DISPATCH(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__dispchnpioControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool dispchnpioCanCopy_DISPATCH(struct DispChannelPio *pResource) {
     return pResource->__dispchnpioCanCopy__(pResource);
 }
@@ -549,6 +569,10 @@ static inline void dispchnpioPreDestruct_DISPATCH(struct DispChannelPio *pResour
 
 static inline NV_STATUS dispchnpioIsDuplicate_DISPATCH(struct DispChannelPio *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__dispchnpioIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void dispchnpioControlSerialization_Epilogue_DISPATCH(struct DispChannelPio *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__dispchnpioControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *dispchnpioGetNotificationListPtr_DISPATCH(struct DispChannelPio *pNotifier) {
@@ -594,9 +618,9 @@ struct DispChannelDma {
     struct DispChannel *__nvoc_pbase_DispChannel;
     struct DispChannelDma *__nvoc_pbase_DispChannelDma;
     NvBool (*__dispchndmaShareCallback__)(struct DispChannelDma *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__dispchndmaMapTo__)(struct DispChannelDma *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__dispchndmaGetOrAllocNotifShare__)(struct DispChannelDma *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__dispchndmaCheckMemInterUnmap__)(struct DispChannelDma *, NvBool);
+    NV_STATUS (*__dispchndmaGetOrAllocNotifShare__)(struct DispChannelDma *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__dispchndmaMapTo__)(struct DispChannelDma *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__dispchndmaGetMapAddrSpace__)(struct DispChannelDma *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__dispchndmaSetNotificationShare__)(struct DispChannelDma *, struct NotifShare *);
     NvU32 (*__dispchndmaGetRefCount__)(struct DispChannelDma *);
@@ -614,9 +638,11 @@ struct DispChannelDma {
     NV_STATUS (*__dispchndmaGetMemoryMappingDescriptor__)(struct DispChannelDma *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__dispchndmaControlFilter__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispchndmaUnregisterEvent__)(struct DispChannelDma *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__dispchndmaControlSerialization_Prologue__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispchndmaCanCopy__)(struct DispChannelDma *);
     void (*__dispchndmaPreDestruct__)(struct DispChannelDma *);
     NV_STATUS (*__dispchndmaIsDuplicate__)(struct DispChannelDma *, NvHandle, NvBool *);
+    void (*__dispchndmaControlSerialization_Epilogue__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__dispchndmaGetNotificationListPtr__)(struct DispChannelDma *);
     struct NotifShare *(*__dispchndmaGetNotificationShare__)(struct DispChannelDma *);
     NV_STATUS (*__dispchndmaMap__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -652,9 +678,9 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma**, Dynamic*, NvU32, str
     __nvoc_objCreate_DispChannelDma((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 #define dispchndmaShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) dispchndmaShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define dispchndmaMapTo(pResource, pParams) dispchndmaMapTo_DISPATCH(pResource, pParams)
-#define dispchndmaGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispchndmaGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define dispchndmaCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) dispchndmaCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define dispchndmaGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispchndmaGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define dispchndmaMapTo(pResource, pParams) dispchndmaMapTo_DISPATCH(pResource, pParams)
 #define dispchndmaGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) dispchndmaGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define dispchndmaSetNotificationShare(pNotifier, pNotifShare) dispchndmaSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define dispchndmaGetRefCount(pResource) dispchndmaGetRefCount_DISPATCH(pResource)
@@ -672,9 +698,11 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma**, Dynamic*, NvU32, str
 #define dispchndmaGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispchndmaGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define dispchndmaControlFilter(pResource, pCallContext, pParams) dispchndmaControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define dispchndmaUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispchndmaUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define dispchndmaControlSerialization_Prologue(pResource, pCallContext, pParams) dispchndmaControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchndmaCanCopy(pResource) dispchndmaCanCopy_DISPATCH(pResource)
 #define dispchndmaPreDestruct(pResource) dispchndmaPreDestruct_DISPATCH(pResource)
 #define dispchndmaIsDuplicate(pResource, hMemory, pDuplicate) dispchndmaIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define dispchndmaControlSerialization_Epilogue(pResource, pCallContext, pParams) dispchndmaControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchndmaGetNotificationListPtr(pNotifier) dispchndmaGetNotificationListPtr_DISPATCH(pNotifier)
 #define dispchndmaGetNotificationShare(pNotifier) dispchndmaGetNotificationShare_DISPATCH(pNotifier)
 #define dispchndmaMap(pGpuResource, pCallContext, pParams, pCpuMapping) dispchndmaMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -683,16 +711,16 @@ static inline NvBool dispchndmaShareCallback_DISPATCH(struct DispChannelDma *pGp
     return pGpuResource->__dispchndmaShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS dispchndmaMapTo_DISPATCH(struct DispChannelDma *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__dispchndmaMapTo__(pResource, pParams);
+static inline NV_STATUS dispchndmaCheckMemInterUnmap_DISPATCH(struct DispChannelDma *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__dispchndmaCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS dispchndmaGetOrAllocNotifShare_DISPATCH(struct DispChannelDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__dispchndmaGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS dispchndmaCheckMemInterUnmap_DISPATCH(struct DispChannelDma *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__dispchndmaCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS dispchndmaMapTo_DISPATCH(struct DispChannelDma *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__dispchndmaMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS dispchndmaGetMapAddrSpace_DISPATCH(struct DispChannelDma *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -763,6 +791,10 @@ static inline NV_STATUS dispchndmaUnregisterEvent_DISPATCH(struct DispChannelDma
     return pNotifier->__dispchndmaUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS dispchndmaControlSerialization_Prologue_DISPATCH(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__dispchndmaControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool dispchndmaCanCopy_DISPATCH(struct DispChannelDma *pResource) {
     return pResource->__dispchndmaCanCopy__(pResource);
 }
@@ -773,6 +805,10 @@ static inline void dispchndmaPreDestruct_DISPATCH(struct DispChannelDma *pResour
 
 static inline NV_STATUS dispchndmaIsDuplicate_DISPATCH(struct DispChannelDma *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__dispchndmaIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void dispchndmaControlSerialization_Epilogue_DISPATCH(struct DispChannelDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__dispchndmaControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *dispchndmaGetNotificationListPtr_DISPATCH(struct DispChannelDma *pNotifier) {

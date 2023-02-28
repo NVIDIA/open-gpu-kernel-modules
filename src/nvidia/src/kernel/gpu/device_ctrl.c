@@ -35,6 +35,7 @@
 #include "gpu/gpu.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
+#include "virtualization/hypervisor/hypervisor.h"
 
 
 
@@ -209,6 +210,29 @@ deviceCtrlCmdGpuGetVirtualizationMode_IMPL
     {
         pParams->virtualizationMode =
             NV0080_CTRL_GPU_VIRTUALIZATION_MODE_NMOS;
+    }
+    else if (hypervisorIsVgxHyper() && (gpuIsSriovEnabled(pGpu)
+    ))
+    {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU))
+        {
+            pParams->virtualizationMode =
+                NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST_VGPU;
+        }
+        else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VSGA))
+        {
+            pParams->virtualizationMode =
+                NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST_VSGA;
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "invalid virtualization Mode: %x. Returning NONE!\n",
+                      pParams->virtualizationMode);
+
+            pParams->virtualizationMode =
+                NV0080_CTRL_GPU_VIRTUALIZATION_MODE_NONE;
+        }
     }
     else
     {

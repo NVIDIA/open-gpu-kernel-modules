@@ -1,4 +1,4 @@
-// Generated using 'Offline GLSL Shader Compiler Version 13.0.0.0.465.00.dev/gpu_drv/dev_a-14542'
+// Generated using 'Offline GLSL Shader Compiler Version 13.0.0.0.530.00.dev/gpu_drv/dev_a-15624'
 // WARNING: This file is auto-generated!  Do not hand-edit!
 // Instead, edit the GLSL shaders and run 'unix-build nvmake @generate'.
 
@@ -9,7 +9,7 @@ ct_assert(NUM_PROGRAMS == 34);
 static const Nv3dProgramInfo HopperProgramInfo[NUM_PROGRAMS] = {
     // nvidia_headsurface_vertex
     { .offset = 0x00000000,
-      .registerCount = 13,
+      .registerCount = 14,
       .type = NV3D_SHADER_TYPE_VERTEX,
       .constIndex = -1,
       .stage = NV3D_HW_SHADER_STAGE_VERTEX_B,

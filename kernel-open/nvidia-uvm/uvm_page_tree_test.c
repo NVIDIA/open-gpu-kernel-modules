@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -305,18 +305,25 @@ static NV_STATUS test_page_tree_init(uvm_gpu_t *gpu, NvU32 big_page_size, uvm_pa
     return uvm_page_tree_init(gpu, NULL, UVM_PAGE_TREE_TYPE_USER, big_page_size, UVM_APERTURE_SYS, tree);
 }
 
+static NV_STATUS test_page_tree_init_kernel(uvm_gpu_t *gpu, NvU32 big_page_size, uvm_page_tree_t *tree)
+{
+    return uvm_page_tree_init(gpu, NULL, UVM_PAGE_TREE_TYPE_KERNEL, big_page_size, UVM_APERTURE_SYS, tree);
+}
+
 static NV_STATUS test_page_tree_get_ptes(uvm_page_tree_t *tree,
                                          NvU32 page_size,
                                          NvU64 start,
                                          NvLength size,
                                          uvm_page_table_range_t *range)
 {
-    return uvm_page_tree_get_ptes(tree,
-                                  page_size,
-                                  uvm_parent_gpu_canonical_address(tree->gpu->parent, start),
-                                  size,
-                                  UVM_PMM_ALLOC_FLAGS_NONE,
-                                  range);
+    uvm_mmu_mode_hal_t *hal = tree->gpu->parent->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K);
+
+    // Maxwell GPUs don't use canonical form address even on platforms that
+    // support it.
+    start = (tree->type == UVM_PAGE_TREE_TYPE_USER) && (hal->num_va_bits() > 40) ?
+                           uvm_parent_gpu_canonical_address(tree->gpu->parent, start) :
+                           start;
+    return uvm_page_tree_get_ptes(tree, page_size, start, size, UVM_PMM_ALLOC_FLAGS_NONE, range);
 }
 
 static NV_STATUS test_page_tree_get_entry(uvm_page_tree_t *tree,
@@ -324,11 +331,13 @@ static NV_STATUS test_page_tree_get_entry(uvm_page_tree_t *tree,
                                           NvU64 start,
                                           uvm_page_table_range_t *single)
 {
-    return uvm_page_tree_get_entry(tree,
-                                   page_size,
-                                   uvm_parent_gpu_canonical_address(tree->gpu->parent, start),
-                                   UVM_PMM_ALLOC_FLAGS_NONE,
-                                   single);
+    uvm_mmu_mode_hal_t *hal = tree->gpu->parent->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K);
+
+    // See comment above (test_page_tree_get_ptes)
+    start = (tree->type == UVM_PAGE_TREE_TYPE_USER) && (hal->num_va_bits() > 40) ?
+                           uvm_parent_gpu_canonical_address(tree->gpu->parent, start) :
+                           start;
+    return uvm_page_tree_get_entry(tree, page_size, start, UVM_PMM_ALLOC_FLAGS_NONE, single);
 }
 
 static NV_STATUS test_page_tree_alloc_table(uvm_page_tree_t *tree,
@@ -411,7 +420,10 @@ static NV_STATUS alloc_64k_memory_57b_va(uvm_gpu_t *gpu)
     uvm_page_table_range_t range;
 
     NvLength size = 64 * 1024;
-    MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
+
+    // We use a kernel-type page tree to decouple the test from the CPU VA width
+    // and canonical form address limits.
+    MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_64K, 0x100000000000000ULL, size, &range), NV_OK);
     TEST_CHECK_RET(range.entry_count == 1);
     TEST_CHECK_RET(range.table->depth == 5);
@@ -532,7 +544,7 @@ static NV_STATUS allocate_then_free_8_8_64k(uvm_gpu_t *gpu)
     NvLength start = stride * 248 + 256LL * 1024 * 1024 * 1024 + (1LL << 47);
     int i;
 
-    MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
+    MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
 
     for (i = 0; i < 16; i++)
         MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_64K, start + i * stride, size, range + i), NV_OK);
@@ -652,7 +664,7 @@ static NV_STATUS get_entire_table_4k(uvm_gpu_t *gpu)
 
     NvLength size = 1 << 21;
 
-    MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
+    MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_4K, start, size, &range), NV_OK);
 
     TEST_CHECK_RET(range.table == tree.root->entries[1]->entries[0]->entries[0]->entries[1]);
@@ -672,13 +684,13 @@ static NV_STATUS get_entire_table_512m(uvm_gpu_t *gpu)
     uvm_page_tree_t tree;
     uvm_page_table_range_t range;
 
-    NvU64 start = 1UL << 47;
+    NvU64 start = 1UL << 48;
     NvLength size = 512UL * 512 * 1024 * 1024;
 
-    MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
+    MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_512M, start, size, &range), NV_OK);
 
-    TEST_CHECK_RET(range.table == tree.root->entries[1]->entries[0]);
+    TEST_CHECK_RET(range.table == tree.root->entries[2]->entries[0]);
     TEST_CHECK_RET(range.entry_count == 512);
     TEST_CHECK_RET(range.table->depth == 2);
     TEST_CHECK_RET(range.page_size == UVM_PAGE_SIZE_512M);
@@ -701,7 +713,7 @@ static NV_STATUS split_4k_from_2m(uvm_gpu_t *gpu)
     NvU64 start = 1UL << 48;
     NvLength size = 1 << 21;
 
-    MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
+    MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_2M, start, size, &range_2m), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_2M, start + size, size, &range_adj), NV_OK);
 
@@ -749,7 +761,7 @@ static NV_STATUS split_2m_from_512m(uvm_gpu_t *gpu)
     NvU64 start = 1UL << 48;
     NvLength size = 512UL * 1024 * 1024;
 
-    MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
+    MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_512M, start, size, &range_512m), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_512M, start + size, size, &range_adj), NV_OK);
 
@@ -1025,7 +1037,7 @@ static NV_STATUS test_tlb_invalidates(uvm_gpu_t *gpu)
     // Depth 1
     NvU64 extent_pde2 = extent_pde1 * (1ull << 9);
 
-    MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
+    MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
 
     fake_tlb_invals_enable();
 
@@ -1270,7 +1282,7 @@ static NV_STATUS test_range_vec(uvm_gpu_t *gpu, NvU32 big_page_size, NvU32 page_
     NvU32 i;
     NvU64 offsets[4];
 
-    MEM_NV_CHECK_RET(test_page_tree_init(gpu, big_page_size, &tree), NV_OK);
+    MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, big_page_size, &tree), NV_OK);
 
     pde_coverage = uvm_mmu_pde_coverage(&tree, page_size);
     page_table_entries = pde_coverage / page_size;

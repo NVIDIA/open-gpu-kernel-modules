@@ -28,6 +28,8 @@
  */
 
 #include "nvidia-drm-helper.h"
+#include "nvidia-drm-priv.h"
+#include "nvidia-drm-crtc.h"
 
 #include "nvmisc.h"
 
@@ -147,6 +149,18 @@ int nv_drm_atomic_helper_disable_all(struct drm_device *dev,
         if (ret < 0)
             goto free;
     }
+
+#if defined(NV_DRM_ROTATION_AVAILABLE)
+    nv_drm_for_each_plane(plane, dev) {
+        plane_state = drm_atomic_get_plane_state(state, plane);
+        if (IS_ERR(plane_state)) {
+            ret = PTR_ERR(plane_state);
+            goto free;
+        }
+
+        plane_state->rotation = DRM_MODE_ROTATE_0;
+    }
+#endif
 
     nv_drm_for_each_connector_in_state(state, conn, conn_state, i) {
         ret = drm_atomic_set_crtc_for_connector(conn_state, NULL);

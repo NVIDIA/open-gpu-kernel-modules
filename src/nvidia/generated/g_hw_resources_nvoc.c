@@ -101,6 +101,46 @@ static NV_STATUS __nvoc_thunk_Memory_hwresCheckMemInterUnmap(struct MemoryHwReso
     return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), bSubdeviceHandleProvided);
 }
 
+static NvBool __nvoc_thunk_RmResource_hwresShareCallback(struct MemoryHwResources *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_hwresMapTo(struct MemoryHwResources *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_hwresGetMapAddrSpace(struct MemoryHwResources *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_hwresGetRefCount(struct MemoryHwResources *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_hwresAddAdditionalDependants(struct RsClient *pClient, struct MemoryHwResources *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_hwresControl_Prologue(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_Memory_hwresIsGpuMapAllowed(struct MemoryHwResources *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), pGpu);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_hwresUnmapFrom(struct MemoryHwResources *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_hwresControl_Epilogue(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_hwresControlLookup(struct MemoryHwResources *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pParams, ppEntry);
+}
+
 static NV_STATUS __nvoc_thunk_Memory_hwresControl(struct MemoryHwResources *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), pCallContext, pParams);
 }
@@ -117,36 +157,12 @@ static NV_STATUS __nvoc_thunk_Memory_hwresGetMemoryMappingDescriptor(struct Memo
     return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_hwresGetMapAddrSpace(struct MemoryHwResources *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvBool __nvoc_thunk_RmResource_hwresShareCallback(struct MemoryHwResources *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_hwresControlFilter(struct MemoryHwResources *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_hwresAddAdditionalDependants(struct RsClient *pClient, struct MemoryHwResources *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_hwresGetRefCount(struct MemoryHwResources *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_hwresMapTo(struct MemoryHwResources *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_hwresControl_Prologue(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pCallContext, pParams);
-}
-
-static NvBool __nvoc_thunk_Memory_hwresIsGpuMapAllowed(struct MemoryHwResources *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), pGpu);
+static NV_STATUS __nvoc_thunk_RmResource_hwresControlSerialization_Prologue(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_hwresIsReady(struct MemoryHwResources *pMemory, NvBool bCopyConstructorContext) {
@@ -165,16 +181,8 @@ static NV_STATUS __nvoc_thunk_Memory_hwresIsDuplicate(struct MemoryHwResources *
     return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), hMemory, pDuplicate);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_hwresUnmapFrom(struct MemoryHwResources *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pParams);
-}
-
-static void __nvoc_thunk_RmResource_hwresControl_Epilogue(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_hwresControlLookup(struct MemoryHwResources *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_hwresControlSerialization_Epilogue(struct MemoryHwResources *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_hwresMap(struct MemoryHwResources *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -230,6 +238,26 @@ static void __nvoc_init_funcTable_MemoryHwResources_1(MemoryHwResources *pThis) 
 
     pThis->__hwresCheckMemInterUnmap__ = &__nvoc_thunk_Memory_hwresCheckMemInterUnmap;
 
+    pThis->__hwresShareCallback__ = &__nvoc_thunk_RmResource_hwresShareCallback;
+
+    pThis->__hwresMapTo__ = &__nvoc_thunk_RsResource_hwresMapTo;
+
+    pThis->__hwresGetMapAddrSpace__ = &__nvoc_thunk_Memory_hwresGetMapAddrSpace;
+
+    pThis->__hwresGetRefCount__ = &__nvoc_thunk_RsResource_hwresGetRefCount;
+
+    pThis->__hwresAddAdditionalDependants__ = &__nvoc_thunk_RsResource_hwresAddAdditionalDependants;
+
+    pThis->__hwresControl_Prologue__ = &__nvoc_thunk_RmResource_hwresControl_Prologue;
+
+    pThis->__hwresIsGpuMapAllowed__ = &__nvoc_thunk_Memory_hwresIsGpuMapAllowed;
+
+    pThis->__hwresUnmapFrom__ = &__nvoc_thunk_RsResource_hwresUnmapFrom;
+
+    pThis->__hwresControl_Epilogue__ = &__nvoc_thunk_RmResource_hwresControl_Epilogue;
+
+    pThis->__hwresControlLookup__ = &__nvoc_thunk_RsResource_hwresControlLookup;
+
     pThis->__hwresControl__ = &__nvoc_thunk_Memory_hwresControl;
 
     pThis->__hwresUnmap__ = &__nvoc_thunk_Memory_hwresUnmap;
@@ -238,21 +266,9 @@ static void __nvoc_init_funcTable_MemoryHwResources_1(MemoryHwResources *pThis) 
 
     pThis->__hwresGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_hwresGetMemoryMappingDescriptor;
 
-    pThis->__hwresGetMapAddrSpace__ = &__nvoc_thunk_Memory_hwresGetMapAddrSpace;
-
-    pThis->__hwresShareCallback__ = &__nvoc_thunk_RmResource_hwresShareCallback;
-
     pThis->__hwresControlFilter__ = &__nvoc_thunk_RsResource_hwresControlFilter;
 
-    pThis->__hwresAddAdditionalDependants__ = &__nvoc_thunk_RsResource_hwresAddAdditionalDependants;
-
-    pThis->__hwresGetRefCount__ = &__nvoc_thunk_RsResource_hwresGetRefCount;
-
-    pThis->__hwresMapTo__ = &__nvoc_thunk_RsResource_hwresMapTo;
-
-    pThis->__hwresControl_Prologue__ = &__nvoc_thunk_RmResource_hwresControl_Prologue;
-
-    pThis->__hwresIsGpuMapAllowed__ = &__nvoc_thunk_Memory_hwresIsGpuMapAllowed;
+    pThis->__hwresControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_hwresControlSerialization_Prologue;
 
     pThis->__hwresIsReady__ = &__nvoc_thunk_Memory_hwresIsReady;
 
@@ -262,11 +278,7 @@ static void __nvoc_init_funcTable_MemoryHwResources_1(MemoryHwResources *pThis) 
 
     pThis->__hwresIsDuplicate__ = &__nvoc_thunk_Memory_hwresIsDuplicate;
 
-    pThis->__hwresUnmapFrom__ = &__nvoc_thunk_RsResource_hwresUnmapFrom;
-
-    pThis->__hwresControl_Epilogue__ = &__nvoc_thunk_RmResource_hwresControl_Epilogue;
-
-    pThis->__hwresControlLookup__ = &__nvoc_thunk_RsResource_hwresControlLookup;
+    pThis->__hwresControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_hwresControlSerialization_Epilogue;
 
     pThis->__hwresMap__ = &__nvoc_thunk_Memory_hwresMap;
 
@@ -294,12 +306,15 @@ NV_STATUS __nvoc_objCreate_MemoryHwResources(MemoryHwResources **ppThis, Dynamic
     Object *pParentObj;
     MemoryHwResources *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(MemoryHwResources));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(MemoryHwResources), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(MemoryHwResources));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_MemoryHwResources);
+
+    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -316,11 +331,17 @@ NV_STATUS __nvoc_objCreate_MemoryHwResources(MemoryHwResources **ppThis, Dynamic
     if (status != NV_OK) goto __nvoc_objCreate_MemoryHwResources_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_MemoryHwResources_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(MemoryHwResources));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

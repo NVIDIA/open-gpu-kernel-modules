@@ -124,12 +124,15 @@ NV_STATUS __nvoc_objCreate_UserInfo(UserInfo **ppThis, Dynamic *pParent, NvU32 c
     Object *pParentObj;
     UserInfo *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(UserInfo));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(UserInfo), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(UserInfo));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_UserInfo);
+
+    pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -146,11 +149,17 @@ NV_STATUS __nvoc_objCreate_UserInfo(UserInfo **ppThis, Dynamic *pParent, NvU32 c
     if (status != NV_OK) goto __nvoc_objCreate_UserInfo_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_UserInfo_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(UserInfo));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 
@@ -359,12 +368,15 @@ NV_STATUS __nvoc_objCreate_RmClient(RmClient **ppThis, Dynamic *pParent, NvU32 c
     Object *pParentObj;
     RmClient *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(RmClient));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RmClient), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(RmClient));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RmClient);
+
+    pThis->__nvoc_base_RsClient.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -381,11 +393,17 @@ NV_STATUS __nvoc_objCreate_RmClient(RmClient **ppThis, Dynamic *pParent, NvU32 c
     if (status != NV_OK) goto __nvoc_objCreate_RmClient_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_RmClient_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(RmClient));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

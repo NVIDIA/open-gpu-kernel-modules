@@ -211,12 +211,12 @@ NV_STATUS UvmDeinitialize(void);
 // UvmReopen
 //
 // Reinitializes the UVM driver after checking for minimal user-mode state.
-// Before calling this function, all GPUs must be unregistered with 
+// Before calling this function, all GPUs must be unregistered with
 // UvmUnregisterGpu() and all allocated VA ranges must be freed with UvmFree().
 // Note that it is not required to release VA ranges that were reserved with
 // UvmReserveVa().
 //
-// UvmReopen() closes the open file returned by UvmGetFileDescriptor() and 
+// UvmReopen() closes the open file returned by UvmGetFileDescriptor() and
 // replaces it with a new open file with the same name.
 //
 // Arguments:
@@ -1746,17 +1746,20 @@ NV_STATUS UvmCreateExternalRange(void     *base,
 // GPUs. The external allocation can be unmapped from a specific GPU using
 // UvmUnmapExternal or from all GPUs using UvmFree.
 //
-// The virtual address range specified by (base, length) must be aligned to the
-// allocation's physical page size and must fall within a VA range previously
-// created with UvmCreateExternalRange. A GPU VA space must have been registered
-// for each GPU in the list. The offset in the physical allocation at which the
-// allocation must be mapped should also be aligned to the allocation's physical
-// page size. The (base, length) range must lie within the largest possible
-// virtual address supported by the specified GPUs.
+// The virtual address range specified by (base, length) must fall within a VA
+// range previously created with UvmCreateExternalRange. A GPU VA space must
+// have been registered for each GPU in the list. The (base, length) range must
+// lie within the largest possible virtual address supported by the specified
+// GPUs.
+//
+// The page size used for the mapping is the largest supported page size less
+// than or equal to the alignments of base, length, offset, and the allocation
+// page size.
 //
 // If the range specified by (base, length) falls within any existing mappings,
 // the behavior is the same as if UvmUnmapExternal with the range specified by
-// (base, length) had been called first.
+// (base, length) had been called first, provided that base and length are
+// aligned to the page size used for the existing one.
 //
 // If the allocation resides in GPU memory, that GPU must have been registered
 // via UvmRegisterGpu. If the allocation resides in GPU memory and a mapping is
@@ -1838,8 +1841,9 @@ NV_STATUS UvmCreateExternalRange(void     *base,
 //         - The requested address range does not fall entirely within an
 //           existing external VA range created with a single call to
 //           UvmCreateExternalRange.
-//         - At least one of base and length is not aligned to the allocation's
-//           physical page size.
+//         - The mapping page size allowed by the alignments of base, length,
+//           and offset is smaller than the minimum supported page size on the
+//           GPU.
 //         - base or base + length fall within an existing mapping but are not
 //           aligned to that mapping's page size.
 //
@@ -1848,8 +1852,7 @@ NV_STATUS UvmCreateExternalRange(void     *base,
 //         address supported by one or more of the specified GPUs.
 //
 //     NV_ERR_INVALID_OFFSET:
-//         offset is not aligned to the allocation's physical page size or
-//         offset+length exceeds the allocation size.
+//         - offset+length exceeds the allocation size.
 //
 //     NV_ERR_INVALID_DEVICE:
 //         One of the following occurred:
@@ -3757,6 +3760,7 @@ NV_STATUS UvmToolsDisableCounters(UvmToolsCountersHandle counters,
 //
 //     NV_ERR_INVALID_ARGUMENT:
 //         Read spans more than a single target process allocation.
+//
 //
 //------------------------------------------------------------------------------
 NV_STATUS UvmToolsReadProcessMemory(UvmToolsSessionHandle  session,

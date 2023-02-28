@@ -166,6 +166,14 @@ static NvBool __nvoc_thunk_RmResource_resShareCallback(struct RsResource *pResou
     return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) - __nvoc_rtti_RmResource_RsResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_resControlSerialization_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) - __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
+}
+
+static void __nvoc_thunk_RmResource_resControlSerialization_Epilogue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) - __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
+}
+
 static NV_STATUS __nvoc_thunk_RmResource_resControl_Prologue(struct RsResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) - __nvoc_rtti_RmResource_RsResource.offset), pCallContext, pParams);
 }
@@ -277,6 +285,10 @@ static void __nvoc_init_funcTable_RmResource_1(RmResource *pThis) {
 
     pThis->__rmresGetMemoryMappingDescriptor__ = &rmresGetMemoryMappingDescriptor_IMPL;
 
+    pThis->__rmresControlSerialization_Prologue__ = &rmresControlSerialization_Prologue_IMPL;
+
+    pThis->__rmresControlSerialization_Epilogue__ = &rmresControlSerialization_Epilogue_IMPL;
+
     pThis->__rmresControl_Prologue__ = &rmresControl_Prologue_IMPL;
 
     pThis->__rmresControl_Epilogue__ = &rmresControl_Epilogue_IMPL;
@@ -284,6 +296,10 @@ static void __nvoc_init_funcTable_RmResource_1(RmResource *pThis) {
     pThis->__nvoc_base_RsResource.__resAccessCallback__ = &__nvoc_thunk_RmResource_resAccessCallback;
 
     pThis->__nvoc_base_RsResource.__resShareCallback__ = &__nvoc_thunk_RmResource_resShareCallback;
+
+    pThis->__nvoc_base_RsResource.__resControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_resControlSerialization_Prologue;
+
+    pThis->__nvoc_base_RsResource.__resControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_resControlSerialization_Epilogue;
 
     pThis->__nvoc_base_RsResource.__resControl_Prologue__ = &__nvoc_thunk_RmResource_resControl_Prologue;
 
@@ -335,12 +351,15 @@ NV_STATUS __nvoc_objCreate_RmResource(RmResource **ppThis, Dynamic *pParent, NvU
     Object *pParentObj;
     RmResource *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(RmResource));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RmResource), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(RmResource));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RmResource);
+
+    pThis->__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -357,11 +376,17 @@ NV_STATUS __nvoc_objCreate_RmResource(RmResource **ppThis, Dynamic *pParent, NvU
     if (status != NV_OK) goto __nvoc_objCreate_RmResource_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_RmResource_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(RmResource));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

@@ -1079,6 +1079,11 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
                 // add the detailed timings in 18-byte long display descriptor
                 parse861ExtDetailedTiming(pExt, p861Info->basic_caps, pInfo);
 
+                if (p861Info->revision >= NVT_CTA861_REV_H && p861Info->total_did_type10db != 0)
+                {
+                    parseCta861DIDType10VideoTimingDataBlock(p861Info, pInfo);
+                }
+
                 // CEA861-F at 7.5.12 section about VFPDB block.
                 if (p861Info->revision >= NVT_CEA861_REV_F && p861Info->total_vfpdb != 0)
                 {
@@ -2169,9 +2174,8 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
     NvBool                              bAllZero = NV_TRUE;
     NvU32 ret = 0;
 
-    // check the EDID base size to avoid accessing beyond the EDID buffer, do not proceed with
-    // further validation.
-    if (length < sizeof(EDIDV1STRUC))
+    // check the EDID base size to avoid accessing beyond the EDID buffer
+    if (length < sizeof(EDIDV1STRUC) || (length > sizeof(EDIDV1STRUC) && (length % sizeof(EDIDV1STRUC) != 0)))
         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_SIZE);
 
     // check the EDID version and signature
@@ -2253,6 +2257,11 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
     {   
         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXTENSION_COUNT);
     }
+
+    // we shall not trust any extension blocks with wrong input EDID size 
+    if (NVT_IS_EDID_VALIDATION_FLAGS(ret, NVT_EDID_VALIDATION_ERR_SIZE) || 
+        NVT_IS_EDID_VALIDATION_FLAGS(ret, NVT_EDID_VALIDATION_ERR_EXTENSION_COUNT))
+        return ret;
 
     // validate extension blocks
     for (j = 1; j <= p->bExtensionFlag; j++)
@@ -2415,7 +2424,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                     }
 
                     // compare the remain 0 value are correct or not before meet checksum byte
-                    for (i = 0; i <= (NvU32)(&pDisplayid->data[NVT_DID_MAX_EXT_PAYLOAD-1] - pData_collection); i++)
+                    for (i = 0; i < (NvU32)(&pDisplayid->data[NVT_DID_MAX_EXT_PAYLOAD-1] - pData_collection); i++)
                     {
                         if (pData_collection[i] != 0)
                         {
@@ -2465,7 +2474,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                     }
 
                     // compare the remain 0 value are correct or not before meet checksum byte
-                    for (i = 0; i <= (NvU32)(&pDisplayid->data[NVT_DID_MAX_EXT_PAYLOAD-1] - pData_collection); i++)
+                    for (i = 0; i < (NvU32)(&pDisplayid->data[NVT_DID_MAX_EXT_PAYLOAD-1] - pData_collection); i++)
                     {
                         if (pData_collection[i] != 0)
                         {

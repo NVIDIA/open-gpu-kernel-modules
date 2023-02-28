@@ -1123,6 +1123,27 @@ cleanup:
     return status;
 }
 
+/*! Return if GFX is supported for the given kernel graphics engine */
+NvBool
+kgraphicsIsGFXSupported_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics
+)
+{
+    const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
+    NvU32 gfxCapabilites;
+
+    NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo != NULL, NV_FALSE);
+    NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo->pGrInfo != NULL, NV_FALSE);
+
+    gfxCapabilites = pKernelGraphicsStaticInfo->pGrInfo->infoList[NV2080_CTRL_GR_INFO_INDEX_GFX_CAPABILITIES].data;
+
+    return (FLD_TEST_DRF(2080_CTRL_GR, _INFO_GFX_CAPABILITIES, _2D, _TRUE, gfxCapabilites) &&
+            FLD_TEST_DRF(2080_CTRL_GR, _INFO_GFX_CAPABILITIES, _3D, _TRUE, gfxCapabilites) &&
+            FLD_TEST_DRF(2080_CTRL_GR, _INFO_GFX_CAPABILITIES, _I2M, _TRUE, gfxCapabilites));
+}
+
 /*! Retrieve ctxbufpool parameters for given local ctx buffer */
 const CTX_BUF_INFO *
 kgraphicsGetCtxBufferInfo_IMPL
@@ -1672,6 +1693,8 @@ kgraphicsCreateGoldenImageChannel_IMPL
     NV_MEMORY_ALLOCATION_PARAMS            memAllocParams;
     NV_CHANNEL_ALLOC_PARAMS channelGPFIFOAllocParams;
     NvU32                                  classNum;
+    MIG_INSTANCE_REF                       ref;
+    NvU32                                  objectType;
 
     // XXX This should be removed when braodcast SLI support is deprecated
     if (!gpumgrIsParentGPU(pGpu))
@@ -1718,11 +1741,9 @@ kgraphicsCreateGoldenImageChannel_IMPL
 
     if (bNeedMIGWar)
     {
-        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         NvHandle hPartitionRef = 0xbaba0048;
         NvHandle hExecPartitionRef = 0xbaba004a;
         NVC637_ALLOCATION_PARAMETERS nvC637AllocParams = {0};
-        MIG_INSTANCE_REF ref;
 
         // Get swizzId for this GR
         NV_ASSERT_OK_OR_GOTO(status,
@@ -1875,7 +1896,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
 
     if (bNeedMIGWar)
     {
-        MIG_INSTANCE_REF ref;
         RM_ENGINE_TYPE localRmEngineType;
 
         NV_ASSERT_OK_OR_GOTO(status,
@@ -1941,19 +1961,20 @@ kgraphicsCreateGoldenImageChannel_IMPL
     bAcquireLock = NV_FALSE;
     pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
-    // Get KernelGraphicsObject class Id
     if (!bNeedMIGWar)
     {
-        NV_ASSERT_OK_OR_GOTO(status,
-            kgraphicsGetClassByType(pGpu, pKernelGraphics, GR_OBJECT_TYPE_3D, &classNum),
-            cleanup);
+        objectType = GR_OBJECT_TYPE_3D;
     }
     else
     {
-        NV_ASSERT_OK_OR_GOTO(status,
-            kgraphicsGetClassByType(pGpu, pKernelGraphics, GR_OBJECT_TYPE_COMPUTE, &classNum),
-            cleanup);
+        objectType = GR_OBJECT_TYPE_COMPUTE;
+
     }
+
+    // Get KernelGraphicsObject class Id
+    NV_ASSERT_OK_OR_GOTO(status,
+        kgraphicsGetClassByType(pGpu, pKernelGraphics, objectType, &classNum),
+        cleanup);
     NV_ASSERT_OR_GOTO(classNum != 0, cleanup);
 
     // Allocate a GR object on the channel
@@ -2327,6 +2348,55 @@ deviceCtrlCmdKGrGetInfoV2_IMPL
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         _kgraphicsCtrlCmdGrGetInfoV2(pGpu, hClient, pParams));
 
+    return NV_OK;
+}
+
+NV_STATUS
+kgraphicsDiscoverMaxLocalCtxBufferSize_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics
+)
+{
+    NvU32 bufId = 0;
+    const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
+
+    if (IS_MODS_AMODEL(pGpu))
+        return NV_OK;
+
+    NV_ASSERT_OK_OR_RETURN(
+    kgraphicsInitializeDeferredStaticData(pGpu, pKernelGraphics, NV01_NULL_OBJECT, NV01_NULL_OBJECT));
+
+    NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo->pContextBuffersInfo != NULL, NV_ERR_INVALID_STATE);
+
+    FOR_EACH_IN_ENUM(GR_CTX_BUFFER, bufId)
+    {
+        if (bufId == GR_CTX_BUFFER_MAIN)
+        {
+            NvU32 size;
+
+            NV_ASSERT_OK_OR_RETURN(kgraphicsGetMainCtxBufferSize(pGpu, pKernelGraphics, NV_TRUE, &size));
+            kgraphicsSetCtxBufferInfo(pGpu, pKernelGraphics, bufId,
+                                      size,
+                                      RM_PAGE_SIZE,
+                                      RM_ATTR_PAGE_SIZE_4KB,
+                                      kgraphicsShouldForceMainCtxContiguity_HAL(pGpu, pKernelGraphics));
+        }
+        else
+        {
+            NvU32 fifoEngineId;
+
+            NV_ASSERT_OK_OR_RETURN(
+                kgrctxCtxBufferToFifoEngineId(bufId, &fifoEngineId));
+
+            kgraphicsSetCtxBufferInfo(pGpu, pKernelGraphics, bufId,
+                                      pKernelGraphicsStaticInfo->pContextBuffersInfo->engine[fifoEngineId].size,
+                                      RM_PAGE_SIZE,
+                                      RM_ATTR_PAGE_SIZE_4KB,
+                                      ((bufId == GR_CTX_BUFFER_PATCH) || (bufId == GR_CTX_BUFFER_PM)));
+        }
+    }
+    FOR_EACH_IN_ENUM_END;
     return NV_OK;
 }
 

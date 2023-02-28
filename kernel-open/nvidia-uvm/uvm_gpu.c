@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -94,8 +94,6 @@ static uvm_gpu_link_type_t get_gpu_link_type(UVM_LINK_TYPE link_type)
             return UVM_GPU_LINK_NVLINK_3;
         case UVM_LINK_TYPE_NVLINK_4:
             return UVM_GPU_LINK_NVLINK_4;
-        case UVM_LINK_TYPE_C2C:
-            return UVM_GPU_LINK_C2C;
         default:
             return UVM_GPU_LINK_INVALID;
     }
@@ -210,27 +208,12 @@ static bool gpu_supports_uvm(uvm_parent_gpu_t *parent_gpu)
     return parent_gpu->rm_info.subdeviceCount == 1;
 }
 
-static bool parent_gpu_uses_canonical_form_address(uvm_parent_gpu_t *parent_gpu)
+static bool platform_uses_canonical_form_address(void)
 {
-    NvU64 gpu_addr_shift;
-    NvU64 cpu_addr_shift;
-
-    // PPC64LE doesn't use canonical form addresses.
     if (NVCPU_IS_PPC64LE)
         return false;
 
-    // We use big_page_size as UVM_PAGE_SIZE_64K because num_va_bits() is
-    // big_page_size invariant in the MMU HAL.
-    UVM_ASSERT(!parent_gpu->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_128K) ||
-               (parent_gpu->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K)->num_va_bits() ==
-                parent_gpu->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_128K)->num_va_bits()));
-
-    gpu_addr_shift = parent_gpu->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K)->num_va_bits();
-    cpu_addr_shift = fls64(TASK_SIZE - 1) + 1;
-
-    // Refer to the comments and diagram in uvm_gpu.c:uvm_gpu_can_address().
-    return gpu_addr_shift >= cpu_addr_shift;
-
+    return true;
 }
 
 bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
@@ -239,12 +222,19 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
     // the canonical address form.
     NvU64 max_va_lower;
     NvU64 addr_end = addr + size - 1;
+    NvU8 gpu_addr_shift;
+    NvU8 cpu_addr_shift;
+    NvU8 addr_shift;
 
     // Watch out for calling this too early in init
     UVM_ASSERT(gpu->address_space_tree.hal);
     UVM_ASSERT(gpu->address_space_tree.hal->num_va_bits() < 64);
     UVM_ASSERT(addr <= addr_end);
     UVM_ASSERT(size > 0);
+
+    gpu_addr_shift = gpu->address_space_tree.hal->num_va_bits();
+    cpu_addr_shift = fls64(TASK_SIZE - 1) + 1;
+    addr_shift = gpu_addr_shift;
 
     // Pascal+ GPUs are capable of accessing kernel pointers in various modes
     // by applying the same upper-bit checks that x86, ARM, and Power
@@ -255,13 +245,15 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
     // mapped (or addressed) by the GPU/CPU when the CPU uses canonical form.
     // (C) regions are only accessible by the CPU. Similarly, (G) regions
     // are only accessible by the GPU. (X) regions are not addressible.
+    // Note that we only consider (V) regions, i.e., address ranges that are
+    // addressable by both, the CPU and GPU.
     //
     //               GPU MAX VA < CPU MAX VA           GPU MAX VA >= CPU MAX VA
     //          0xF..F +----------------+          0xF..F +----------------+
-    //                 |CCCCCCCCCCCCCCCC|                 |VVVVVVVVVVVVVVVV|
-    //                 |CCCCCCCCCCCCCCCC|                 |VVVVVVVVVVVVVVVV|
-    //                 |CCCCCCCCCCCCCCCC|                 |VVVVVVVVVVVVVVVV|
-    //                 |CCCCCCCCCCCCCCCC| CPU MIN UPPER VA|----------------|
+    //                 |VVVVVVVVVVVVVVVV|                 |VVVVVVVVVVVVVVVV|
+    //                 |VVVVVVVVVVVVVVVV|                 |VVVVVVVVVVVVVVVV|
+    //                 |VVVVVVVVVVVVVVVV|                 |VVVVVVVVVVVVVVVV|
+    // GPU MIN UPPER VA|----------------| CPU MIN UPPER VA|----------------|
     //                 |CCCCCCCCCCCCCCCC|                 |GGGGGGGGGGGGGGGG|
     //                 |CCCCCCCCCCCCCCCC|                 |GGGGGGGGGGGGGGGG|
     // CPU MIN UPPER VA|----------------| GPU MIN UPPER VA|----------------|
@@ -270,32 +262,83 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
     // CPU MAX LOWER VA|----------------| GPU MAX LOWER VA|----------------|
     //                 |CCCCCCCCCCCCCCCC|                 |GGGGGGGGGGGGGGGG|
     //                 |CCCCCCCCCCCCCCCC|                 |GGGGGGGGGGGGGGGG|
-    //       GPU MAX VA|----------------| CPU MAX LOWER VA|----------------|
+    // GPU MAX LOWER VA|----------------| CPU MAX LOWER VA|----------------|
     //                 |VVVVVVVVVVVVVVVV|                 |VVVVVVVVVVVVVVVV|
     //                 |VVVVVVVVVVVVVVVV|                 |VVVVVVVVVVVVVVVV|
     //                 |VVVVVVVVVVVVVVVV|                 |VVVVVVVVVVVVVVVV|
     //               0 +----------------+               0 +----------------+
 
-    if (parent_gpu_uses_canonical_form_address(gpu->parent)) {
-        NvU64 min_va_upper = (NvU64)((NvS64)(1ULL << 63) >> (64 - gpu->address_space_tree.hal->num_va_bits()));
-        max_va_lower = 1ULL << (gpu->address_space_tree.hal->num_va_bits() - 1);
+    // On canonical form address platforms and Pascal+ GPUs.
+    if (platform_uses_canonical_form_address() && gpu_addr_shift > 40) {
+        NvU64 min_va_upper;
+
+        // On x86, when cpu_addr_shift > gpu_addr_shift, it means the CPU uses
+        // 5-level paging and the GPU is pre-Hopper. On Pascal-Ada GPUs (49b
+        // wide VA) we set addr_shift to match a 4-level paging x86 (48b wide).
+        // See more details on uvm_parent_gpu_canonical_address(..);
+        if (cpu_addr_shift > gpu_addr_shift)
+            addr_shift = NVCPU_IS_X86_64 ? 48 : 49;
+        else if (gpu_addr_shift == 57)
+            addr_shift = gpu_addr_shift;
+        else
+            addr_shift = cpu_addr_shift;
+
+        min_va_upper = (NvU64)((NvS64)(1ULL << 63) >> (64 - addr_shift));
+        max_va_lower = 1ULL << (addr_shift - 1);
         return (addr_end < max_va_lower) || (addr >= min_va_upper);
     }
     else {
-        max_va_lower = 1ULL << gpu->address_space_tree.hal->num_va_bits();
+        max_va_lower = 1ULL << addr_shift;
         return addr_end < max_va_lower;
     }
 }
 
+// The internal UVM VAS does not use canonical form addresses.
+bool uvm_gpu_can_address_kernel(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
+{
+    NvU64 addr_end = addr + size - 1;
+    NvU64 max_gpu_va;
+
+    // Watch out for calling this too early in init
+    UVM_ASSERT(gpu->address_space_tree.hal);
+    UVM_ASSERT(gpu->address_space_tree.hal->num_va_bits() < 64);
+    UVM_ASSERT(addr <= addr_end);
+    UVM_ASSERT(size > 0);
+
+    max_gpu_va = 1ULL << gpu->address_space_tree.hal->num_va_bits();
+    return addr_end < max_gpu_va;
+}
+
 NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr)
 {
-    NvU32 gpu_va_bits;
-    NvU32 shift;
+    NvU8 gpu_addr_shift;
+    NvU8 cpu_addr_shift;
+    NvU8 addr_shift;
+    NvU64 input_addr = addr;
 
-    if (parent_gpu_uses_canonical_form_address(parent_gpu)) {
-        gpu_va_bits =  parent_gpu->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K)->num_va_bits();
-        shift = 64 - gpu_va_bits;
-        addr = (NvU64)((NvS64)(addr << shift) >> shift);
+    if (platform_uses_canonical_form_address()) {
+        // When the CPU VA width is larger than GPU's, it means that:
+        // On ARM: the CPU is on LVA mode and the GPU is pre-Hopper.
+        // On x86: the CPU uses 5-level paging and the GPU is pre-Hopper.
+        // We sign-extend on the 48b on ARM and on the 47b on x86 to mirror the
+        // behavior of CPUs with smaller (than GPU) VA widths.
+        gpu_addr_shift = parent_gpu->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K)->num_va_bits();
+        cpu_addr_shift = fls64(TASK_SIZE - 1) + 1;
+
+        if (cpu_addr_shift > gpu_addr_shift)
+            addr_shift = NVCPU_IS_X86_64 ? 48 : 49;
+        else if (gpu_addr_shift == 57)
+            addr_shift = gpu_addr_shift;
+        else
+            addr_shift = cpu_addr_shift;
+
+        addr = (NvU64)((NvS64)(addr << (64 - addr_shift)) >> (64 - addr_shift));
+
+        // This protection acts on when the address is not covered by the GPU's
+        // OOR_ADDR_CHECK. This can only happen when OOR_ADDR_CHECK is in
+        // permissive (NO_CHECK) mode.
+        if ((addr << (64 - gpu_addr_shift)) != (input_addr << (64 - gpu_addr_shift)))
+            return input_addr;
     }
 
     return addr;
@@ -351,7 +394,7 @@ static const char *uvm_gpu_virt_type_string(UVM_VIRT_MODE virtMode)
 
 static const char *uvm_gpu_link_type_string(uvm_gpu_link_type_t link_type)
 {
-    BUILD_BUG_ON(UVM_GPU_LINK_MAX != 7);
+    BUILD_BUG_ON(UVM_GPU_LINK_MAX != 6);
 
     switch (link_type) {
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_INVALID);
@@ -360,7 +403,6 @@ static const char *uvm_gpu_link_type_string(uvm_gpu_link_type_t link_type)
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_2);
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_3);
         UVM_ENUM_STRING_CASE(UVM_GPU_LINK_NVLINK_4);
-        UVM_ENUM_STRING_CASE(UVM_GPU_LINK_C2C);
         UVM_ENUM_STRING_DEFAULT();
     }
 }
@@ -866,6 +908,7 @@ static NV_STATUS alloc_parent_gpu(const NvProcessorUuid *gpu_uuid,
                                   uvm_parent_gpu_t **parent_gpu_out)
 {
     uvm_parent_gpu_t *parent_gpu;
+    NV_STATUS status;
 
     parent_gpu = uvm_kvmalloc_zero(sizeof(*parent_gpu));
     if (!parent_gpu)
@@ -882,11 +925,14 @@ static NV_STATUS alloc_parent_gpu(const NvProcessorUuid *gpu_uuid,
     uvm_rb_tree_init(&parent_gpu->instance_ptr_table);
     uvm_rb_tree_init(&parent_gpu->tsg_table);
 
+    // TODO: Bug 3881835: revisit whether to use nv_kthread_q_t or workqueue.
+    status = errno_to_nv_status(nv_kthread_q_init(&parent_gpu->lazy_free_q, "vidmem lazy free"));
+
     nv_kref_init(&parent_gpu->gpu_kref);
 
     *parent_gpu_out = parent_gpu;
 
-    return NV_OK;
+    return status;
 }
 
 // Allocates a uvm_gpu_t struct and initializes the basic fields and leaves all
@@ -1539,6 +1585,8 @@ static void uvm_parent_gpu_destroy(nv_kref_t *nv_kref)
     UVM_ASSERT(parent_gpu->num_retained_gpus == 0);
     UVM_ASSERT(bitmap_empty(parent_gpu->valid_gpus, UVM_ID_MAX_SUB_PROCESSORS));
 
+    nv_kthread_q_stop(&parent_gpu->lazy_free_q);
+
     for (sub_processor_index = 0; sub_processor_index < UVM_ID_MAX_SUB_PROCESSORS; sub_processor_index++)
         UVM_ASSERT(!parent_gpu->gpus[sub_processor_index]);
 
@@ -2165,12 +2213,9 @@ static NV_STATUS init_peer_access(uvm_gpu_t *gpu0,
 {
     NV_STATUS status;
 
-    UVM_ASSERT(p2p_caps_params->p2pLink != UVM_LINK_TYPE_C2C);
-
     // check for peer-to-peer compatibility (PCI-E or NvLink).
     peer_caps->link_type = get_gpu_link_type(p2p_caps_params->p2pLink);
     if (peer_caps->link_type == UVM_GPU_LINK_INVALID
-        || peer_caps->link_type == UVM_GPU_LINK_C2C
         )
         return NV_ERR_NOT_SUPPORTED;
 
@@ -2553,7 +2598,10 @@ uvm_aperture_t uvm_gpu_peer_aperture(uvm_gpu_t *local_gpu, uvm_gpu_t *remote_gpu
 uvm_aperture_t uvm_gpu_page_tree_init_location(const uvm_gpu_t *gpu)
 {
     // See comment in page_tree_set_location
-    return uvm_gpu_is_virt_mode_sriov_heavy(gpu)? UVM_APERTURE_VID : UVM_APERTURE_DEFAULT;
+    if (uvm_gpu_is_virt_mode_sriov_heavy(gpu))
+        return UVM_APERTURE_VID;
+
+    return UVM_APERTURE_DEFAULT;
 }
 
 uvm_processor_id_t uvm_gpu_get_processor_id_by_address(uvm_gpu_t *gpu, uvm_gpu_phys_address_t addr)
@@ -2964,9 +3012,6 @@ NV_STATUS uvm_gpu_fault_entry_to_va_space(uvm_gpu_t *gpu,
 exit_unlock:
     uvm_spin_unlock(&gpu->parent->instance_ptr_table_lock);
 
-    if (status == NV_OK)
-        UVM_ASSERT(uvm_va_space_initialized(*out_va_space) == NV_OK);
-
     return status;
 }
 
@@ -3004,9 +3049,6 @@ NV_STATUS uvm_gpu_access_counter_entry_to_va_space(uvm_gpu_t *gpu,
 
 exit_unlock:
     uvm_spin_unlock(&gpu->parent->instance_ptr_table_lock);
-
-    if (status == NV_OK)
-        UVM_ASSERT(uvm_va_space_initialized(*out_va_space) == NV_OK);
 
     return status;
 }

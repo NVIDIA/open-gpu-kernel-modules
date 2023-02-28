@@ -94,6 +94,8 @@ struct RsClient {
     CLIENT_TYPE type;
     NvBool bActive;
     NvBool bResourceWarning;
+    NvBool bDisabled;
+    NvBool bHighPriorityFreeDone;
     RsRefMap resourceMap;
     AccessBackRefList accessBackRefList;
     NvHandle handleRangeStart;
@@ -102,6 +104,7 @@ struct RsClient {
     NvHandle handleGenIdx;
     RsRefFreeList pendingFreeList;
     struct RS_FREE_STACK *pFreeStack;
+    struct ListNode disabledClientNode;
 };
 
 #ifndef __NVOC_CLASS_RsClient_TYPEDEF__
@@ -392,6 +395,7 @@ static inline NV_STATUS clientSetRestrictedRange(struct RsClient *pClient, NvHan
 
 #undef PRIVATE_FIELD
 
+MAKE_INTRUSIVE_LIST(RsDisabledClientList, RsClient, disabledClientNode);
 
 /**
  * Get an iterator to the elements in the client's resource map
@@ -434,6 +438,14 @@ RS_ORDERED_ITERATOR clientRefOrderedIter(struct RsClient *pClient, RsResourceRef
  */
 NvBool clientRefOrderedIterNext(struct RsClient *pClient, RS_ORDERED_ITERATOR *pIt);
 
+/**
+ * Release all CPU address mappings for a resource
+ *
+ * @param[in] pClient Client that owns the resource
+ * @param[in] pCallContext Caller information (which includes the resource reference whose mappings will be freed)
+ * @param[in] pLockInfo Information about which locks are already held, for recursive calls
+ */
+NV_STATUS clientUnmapResourceRefMappings(struct RsClient *pClient, CALL_CONTEXT *pCallContext, RS_LOCK_INFO *pLockInfo);
 
 /**
  * RsResource interface to a RsClient
@@ -467,11 +479,13 @@ struct RsClientResource {
     NvU32 (*__clientresGetRefCount__)(struct RsClientResource *);
     NV_STATUS (*__clientresControlFilter__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__clientresAddAdditionalDependants__)(struct RsClient *, struct RsClientResource *, RsResourceRef *);
+    NV_STATUS (*__clientresControlSerialization_Prologue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__clientresCanCopy__)(struct RsClientResource *);
     NV_STATUS (*__clientresControl_Prologue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__clientresPreDestruct__)(struct RsClientResource *);
     NV_STATUS (*__clientresUnmapFrom__)(struct RsClientResource *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__clientresIsDuplicate__)(struct RsClientResource *, NvHandle, NvBool *);
+    void (*__clientresControlSerialization_Epilogue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__clientresControl_Epilogue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__clientresControlLookup__)(struct RsClientResource *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__clientresMap__)(struct RsClientResource *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -514,11 +528,13 @@ NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource**, Dynamic*, NvU32,
 #define clientresGetRefCount(pResource) clientresGetRefCount_DISPATCH(pResource)
 #define clientresControlFilter(pResource, pCallContext, pParams) clientresControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define clientresAddAdditionalDependants(pClient, pResource, pReference) clientresAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define clientresControlSerialization_Prologue(pResource, pCallContext, pParams) clientresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define clientresCanCopy(pResource) clientresCanCopy_DISPATCH(pResource)
 #define clientresControl_Prologue(pResource, pCallContext, pParams) clientresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define clientresPreDestruct(pResource) clientresPreDestruct_DISPATCH(pResource)
 #define clientresUnmapFrom(pResource, pParams) clientresUnmapFrom_DISPATCH(pResource, pParams)
 #define clientresIsDuplicate(pResource, hMemory, pDuplicate) clientresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define clientresControlSerialization_Epilogue(pResource, pCallContext, pParams) clientresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define clientresControl_Epilogue(pResource, pCallContext, pParams) clientresControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define clientresControlLookup(pResource, pParams, ppEntry) clientresControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define clientresMap(pResource, pCallContext, pParams, pCpuMapping) clientresMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -551,6 +567,10 @@ static inline void clientresAddAdditionalDependants_DISPATCH(struct RsClient *pC
     pResource->__clientresAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
+static inline NV_STATUS clientresControlSerialization_Prologue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__clientresControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool clientresCanCopy_DISPATCH(struct RsClientResource *pResource) {
     return pResource->__clientresCanCopy__(pResource);
 }
@@ -569,6 +589,10 @@ static inline NV_STATUS clientresUnmapFrom_DISPATCH(struct RsClientResource *pRe
 
 static inline NV_STATUS clientresIsDuplicate_DISPATCH(struct RsClientResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__clientresIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void clientresControlSerialization_Epilogue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__clientresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void clientresControl_Epilogue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -604,6 +628,7 @@ struct RS_CLIENT_FREE_PARAMS_INTERNAL
     NvHandle hDomain;           ///< [in] The parent domain
     NvHandle hClient;           ///< [in] The client handle
     NvBool   bHiPriOnly;        ///< [in] Only free high priority resources
+    NvBool   bDisableOnly;      ///< [in] Only disable the listed clients, do not free them yet
     NvU32    state;             ///< [in] User-defined state
 
     RS_RES_FREE_PARAMS_INTERNAL *pResFreeParams; ///< [in] Necessary for locking state

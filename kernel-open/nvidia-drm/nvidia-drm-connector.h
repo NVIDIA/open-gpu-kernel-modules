@@ -51,6 +51,20 @@ struct nv_drm_connector {
 
     atomic_t connection_status_dirty;
 
+    /**
+     * @modeset_permission_filep:
+     *
+     * The filep using this connector with DRM_IOCTL_NVIDIA_GRANT_PERMISSIONS.
+     */
+    struct drm_file *modeset_permission_filep;
+
+    /**
+     * @modeset_permission_crtc:
+     *
+     * The crtc using this connector with DRM_IOCTL_NVIDIA_GRANT_PERMISSIONS.
+     */
+    struct nv_drm_crtc *modeset_permission_crtc;
+
     struct drm_connector base;
 };
 
@@ -83,6 +97,9 @@ nv_drm_get_connector(struct drm_device *dev,
                      NvU32 physicalIndex, NvKmsConnectorType type,
                      NvBool internal,
                      char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH]);
+
+bool nv_drm_connector_revoke_permissions(struct drm_device *dev,
+                                         struct nv_drm_connector *nv_connector);
 
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 

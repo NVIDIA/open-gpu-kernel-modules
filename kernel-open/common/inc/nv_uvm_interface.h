@@ -922,6 +922,23 @@ NV_STATUS nvUvmInterfaceGetNonReplayableFaults(UvmGpuFaultInfo *pFaultInfo,
                                                NvU32 *numFaults);
 
 /*******************************************************************************
+    nvUvmInterfaceFlushReplayableFaultBuffer
+
+    This function sends an RPC to GSP in order to flush the HW replayable fault buffer.
+
+    NOTES:
+    - This function DOES NOT acquire the RM API or GPU locks. That is because
+    it is called during fault servicing, which could produce deadlocks.
+
+    Arguments:
+        device[IN]        - Device handle associated with the gpu
+
+    Error codes:
+      NV_ERR_INVALID_ARGUMENT
+*/
+NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(uvmGpuDeviceHandle device);
+
+/*******************************************************************************
     nvUvmInterfaceInitAccessCntrInfo
 
     This function obtains access counter buffer address, size and a few register mappings
@@ -1054,11 +1071,13 @@ void nvUvmInterfaceP2pObjectDestroy(uvmGpuSessionHandle session,
         hMemory[IN]                     -  Memory handle.
         offset [IN]                     -  Offset from the beginning of the allocation
                                            where PTE mappings should begin.
-                                           Should be aligned with pagesize associated
+                                           Should be aligned with mappingPagesize
+                                           in gpuExternalMappingInfo associated
                                            with the allocation.
         size [IN]                       -  Length of the allocation for which PTEs
                                            should be built.
-                                           Should be aligned with pagesize associated
+                                           Should be aligned with mappingPagesize
+                                           in gpuExternalMappingInfo associated
                                            with the allocation.
                                            size = 0 will be interpreted as the total size
                                            of the allocation.

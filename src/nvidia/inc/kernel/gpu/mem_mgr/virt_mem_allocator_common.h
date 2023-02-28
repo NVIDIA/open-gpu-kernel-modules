@@ -47,13 +47,14 @@ typedef struct EVENTNOTIFICATION EVENTNOTIFICATION;
 //  for address mapping; the system page size can be larger.
 //
 //---------------------------------------------------------------------------
-#define RM_PAGE_SIZE        4096
-#define RM_PAGE_SIZE_64K    (64 * 1024)
-#define RM_PAGE_SIZE_128K   (128 * 1024)
-#define RM_PAGE_MASK        0x0FFF
-#define RM_PAGE_SHIFT       12
-#define RM_PAGE_SHIFT_64K   16
-#define RM_PAGE_SHIFT_128K  17
+#define RM_PAGE_SIZE_INVALID 0
+#define RM_PAGE_SIZE         4096
+#define RM_PAGE_SIZE_64K     (64 * 1024)
+#define RM_PAGE_SIZE_128K    (128 * 1024)
+#define RM_PAGE_MASK         0x0FFF
+#define RM_PAGE_SHIFT        12
+#define RM_PAGE_SHIFT_64K    16
+#define RM_PAGE_SHIFT_128K   17
 
 // Huge page size is 2 MB
 #define RM_PAGE_SHIFT_HUGE 21

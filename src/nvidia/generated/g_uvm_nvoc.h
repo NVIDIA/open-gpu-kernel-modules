@@ -105,7 +105,6 @@ struct OBJUVM {
     NV_STATUS (*__uvmStateInitUnlocked__)(OBJGPU *, struct OBJUVM *);
     void (*__uvmRegisterIntrService__)(OBJGPU *, struct OBJUVM *, IntrServiceRecord *);
     NvU32 (*__uvmServiceInterrupt__)(OBJGPU *, struct OBJUVM *, IntrServiceServiceInterruptArguments *);
-    NV_STATUS (*__uvmReconcileTunableState__)(POBJGPU, struct OBJUVM *, void *);
     NV_STATUS (*__uvmStateLoad__)(POBJGPU, struct OBJUVM *, NvU32);
     NV_STATUS (*__uvmStateUnload__)(POBJGPU, struct OBJUVM *, NvU32);
     NV_STATUS (*__uvmServiceNotificationInterrupt__)(OBJGPU *, struct OBJUVM *, IntrServiceServiceNotificationInterruptArguments *);
@@ -116,13 +115,8 @@ struct OBJUVM {
     void (*__uvmInitMissing__)(POBJGPU, struct OBJUVM *);
     NV_STATUS (*__uvmStatePreInitLocked__)(POBJGPU, struct OBJUVM *);
     NV_STATUS (*__uvmStatePreInitUnlocked__)(POBJGPU, struct OBJUVM *);
-    NV_STATUS (*__uvmGetTunableState__)(POBJGPU, struct OBJUVM *, void *);
-    NV_STATUS (*__uvmCompareTunableState__)(POBJGPU, struct OBJUVM *, void *, void *);
-    void (*__uvmFreeTunableState__)(POBJGPU, struct OBJUVM *, void *);
     NvBool (*__uvmClearInterrupt__)(OBJGPU *, struct OBJUVM *, IntrServiceClearInterruptArguments *);
     NV_STATUS (*__uvmStatePostLoad__)(POBJGPU, struct OBJUVM *, NvU32);
-    NV_STATUS (*__uvmAllocTunableState__)(POBJGPU, struct OBJUVM *, void **);
-    NV_STATUS (*__uvmSetTunableState__)(POBJGPU, struct OBJUVM *, void *);
     NV_STATUS (*__uvmConstructEngine__)(POBJGPU, struct OBJUVM *, ENGDESCRIPTOR);
     NvBool (*__uvmIsPresent__)(POBJGPU, struct OBJUVM *);
     struct ACCESS_CNTR_BUFFER accessCntrBuffer;
@@ -165,7 +159,6 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM**, Dynamic*, NvU32);
 #define uvmStateInitUnlocked(pGpu, pUvm) uvmStateInitUnlocked_DISPATCH(pGpu, pUvm)
 #define uvmRegisterIntrService(arg0, pUvm, arg1) uvmRegisterIntrService_DISPATCH(arg0, pUvm, arg1)
 #define uvmServiceInterrupt(arg0, pUvm, arg1) uvmServiceInterrupt_DISPATCH(arg0, pUvm, arg1)
-#define uvmReconcileTunableState(pGpu, pEngstate, pTunableState) uvmReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define uvmStateLoad(pGpu, pEngstate, arg0) uvmStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define uvmStateUnload(pGpu, pEngstate, arg0) uvmStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define uvmServiceNotificationInterrupt(pGpu, pIntrService, pParams) uvmServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
@@ -176,13 +169,8 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM**, Dynamic*, NvU32);
 #define uvmInitMissing(pGpu, pEngstate) uvmInitMissing_DISPATCH(pGpu, pEngstate)
 #define uvmStatePreInitLocked(pGpu, pEngstate) uvmStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define uvmStatePreInitUnlocked(pGpu, pEngstate) uvmStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define uvmGetTunableState(pGpu, pEngstate, pTunableState) uvmGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define uvmCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) uvmCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define uvmFreeTunableState(pGpu, pEngstate, pTunableState) uvmFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define uvmClearInterrupt(pGpu, pIntrService, pParams) uvmClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define uvmStatePostLoad(pGpu, pEngstate, arg0) uvmStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define uvmAllocTunableState(pGpu, pEngstate, ppTunableState) uvmAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define uvmSetTunableState(pGpu, pEngstate, pTunableState) uvmSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define uvmConstructEngine(pGpu, pEngstate, arg0) uvmConstructEngine_DISPATCH(pGpu, pEngstate, arg0)
 #define uvmIsPresent(pGpu, pEngstate) uvmIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS uvmInitializeAccessCntrBuffer_IMPL(OBJGPU *pGpu, struct OBJUVM *pUvm);
@@ -577,9 +565,9 @@ static inline NV_STATUS uvmStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJUV
     return pUvm->__uvmStateInitUnlocked__(pGpu, pUvm);
 }
 
-void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[163]);
+void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[166]);
 
-static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[163]) {
+static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[166]) {
     pUvm->__uvmRegisterIntrService__(arg0, pUvm, arg1);
 }
 
@@ -587,10 +575,6 @@ NvU32 uvmServiceInterrupt_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceSer
 
 static inline NvU32 uvmServiceInterrupt_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceServiceInterruptArguments *arg1) {
     return pUvm->__uvmServiceInterrupt__(arg0, pUvm, arg1);
-}
-
-static inline NV_STATUS uvmReconcileTunableState_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, void *pTunableState) {
-    return pEngstate->__uvmReconcileTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NV_STATUS uvmStateLoad_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg0) {
@@ -633,32 +617,12 @@ static inline NV_STATUS uvmStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OB
     return pEngstate->__uvmStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS uvmGetTunableState_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, void *pTunableState) {
-    return pEngstate->__uvmGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS uvmCompareTunableState_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__uvmCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void uvmFreeTunableState_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, void *pTunableState) {
-    pEngstate->__uvmFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NvBool uvmClearInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJUVM *pIntrService, IntrServiceClearInterruptArguments *pParams) {
     return pIntrService->__uvmClearInterrupt__(pGpu, pIntrService, pParams);
 }
 
 static inline NV_STATUS uvmStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, NvU32 arg0) {
     return pEngstate->__uvmStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS uvmAllocTunableState_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, void **ppTunableState) {
-    return pEngstate->__uvmAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS uvmSetTunableState_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, void *pTunableState) {
-    return pEngstate->__uvmSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NV_STATUS uvmConstructEngine_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstate, ENGDESCRIPTOR arg0) {

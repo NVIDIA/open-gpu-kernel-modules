@@ -72,7 +72,7 @@ struct NvdecContext {
     NV_STATUS (*__nvdecctxUnmapFrom__)(struct NvdecContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__nvdecctxControl_Epilogue__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nvdecctxControlLookup__)(struct NvdecContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
-    NV_STATUS (*__nvdecctxGetSwMethods__)(struct NvdecContext *, METHOD **, NvU32 *);
+    NV_STATUS (*__nvdecctxGetSwMethods__)(struct NvdecContext *, const METHOD **, NvU32 *);
     NvHandle (*__nvdecctxGetInternalObjectHandle__)(struct NvdecContext *);
     NV_STATUS (*__nvdecctxControl__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nvdecctxUnmap__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -81,9 +81,11 @@ struct NvdecContext {
     NvBool (*__nvdecctxIsSwMethodStalling__)(struct NvdecContext *, NvU32);
     NV_STATUS (*__nvdecctxControlFilter__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nvdecctxUnregisterEvent__)(struct NvdecContext *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__nvdecctxControlSerialization_Prologue__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__nvdecctxCanCopy__)(struct NvdecContext *);
     void (*__nvdecctxPreDestruct__)(struct NvdecContext *);
     NV_STATUS (*__nvdecctxIsDuplicate__)(struct NvdecContext *, NvHandle, NvBool *);
+    void (*__nvdecctxControlSerialization_Epilogue__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__nvdecctxGetNotificationListPtr__)(struct NvdecContext *);
     struct NotifShare *(*__nvdecctxGetNotificationShare__)(struct NvdecContext *);
     NV_STATUS (*__nvdecctxMap__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -141,9 +143,11 @@ NV_STATUS __nvoc_objCreate_NvdecContext(NvdecContext**, Dynamic*, NvU32, struct 
 #define nvdecctxIsSwMethodStalling(pChannelDescendant, hHandle) nvdecctxIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define nvdecctxControlFilter(pResource, pCallContext, pParams) nvdecctxControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define nvdecctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) nvdecctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define nvdecctxControlSerialization_Prologue(pResource, pCallContext, pParams) nvdecctxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define nvdecctxCanCopy(pResource) nvdecctxCanCopy_DISPATCH(pResource)
 #define nvdecctxPreDestruct(pResource) nvdecctxPreDestruct_DISPATCH(pResource)
 #define nvdecctxIsDuplicate(pResource, hMemory, pDuplicate) nvdecctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define nvdecctxControlSerialization_Epilogue(pResource, pCallContext, pParams) nvdecctxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define nvdecctxGetNotificationListPtr(pNotifier) nvdecctxGetNotificationListPtr_DISPATCH(pNotifier)
 #define nvdecctxGetNotificationShare(pNotifier) nvdecctxGetNotificationShare_DISPATCH(pNotifier)
 #define nvdecctxMap(pGpuResource, pCallContext, pParams, pCpuMapping) nvdecctxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -231,7 +235,7 @@ static inline NV_STATUS nvdecctxControlLookup_DISPATCH(struct NvdecContext *pRes
     return pResource->__nvdecctxControlLookup__(pResource, pParams, ppEntry);
 }
 
-static inline NV_STATUS nvdecctxGetSwMethods_DISPATCH(struct NvdecContext *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS nvdecctxGetSwMethods_DISPATCH(struct NvdecContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__nvdecctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
@@ -267,6 +271,10 @@ static inline NV_STATUS nvdecctxUnregisterEvent_DISPATCH(struct NvdecContext *pN
     return pNotifier->__nvdecctxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS nvdecctxControlSerialization_Prologue_DISPATCH(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__nvdecctxControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool nvdecctxCanCopy_DISPATCH(struct NvdecContext *pResource) {
     return pResource->__nvdecctxCanCopy__(pResource);
 }
@@ -277,6 +285,10 @@ static inline void nvdecctxPreDestruct_DISPATCH(struct NvdecContext *pResource) 
 
 static inline NV_STATUS nvdecctxIsDuplicate_DISPATCH(struct NvdecContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__nvdecctxIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void nvdecctxControlSerialization_Epilogue_DISPATCH(struct NvdecContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__nvdecctxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *nvdecctxGetNotificationListPtr_DISPATCH(struct NvdecContext *pNotifier) {

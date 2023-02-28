@@ -97,8 +97,7 @@ typedef struct NV00FD_CTRL_GET_INFO_PARAMS {
  *    Physical memory handle to be attached.
  *
  *  offset [IN]
- *    Offset into the MCFLA object. (Must be zero for now, maybe used in future)
- *    Must be MCFLA pagesize aligned.
+ *    Offset into the MCFLA object. Must be at least physical pagesize aligned.
  *
  *  mapOffSet [IN]
  *    Offset into the physical memory descriptor.
@@ -112,15 +111,10 @@ typedef struct NV00FD_CTRL_GET_INFO_PARAMS {
  *  flags [IN]
  *    For future use only. Must be zero for now.
  *
- *  devDescriptor [IN]
- *    devDescriptor is a file descriptor for unix RM clients, but a void
- *    pointer for windows RM clients. It is transparent to RM clients i.e. RM's
- *    user-mode shim populates this field on behalf of clients.
- *
  *  Restrictions:
  *  a. Memory belonging to only NVSwitch P2P supported GPUs
  *     which can do multicast can be attached
- *  b. Physical memory with 2MB pagesize is allowed
+ *  b. Physical memory with 2MB or 512MB pagesize is allowed
  *  c. Memory of an already attached GPU should not be attached
  *  d. Only vidmem physical memory handle can be attached
  *
@@ -136,7 +130,6 @@ typedef struct NV00FD_CTRL_ATTACH_MEM_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 mapOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 mapLength, 8);
     NvU32    flags;
-    NV_DECLARE_ALIGNED(NvU64 devDescriptor, 8);
 } NV00FD_CTRL_ATTACH_MEM_PARAMS;
 
 /*
@@ -156,5 +149,57 @@ typedef struct NV00FD_CTRL_ATTACH_MEM_PARAMS {
 typedef struct NV00FD_CTRL_REGISTER_EVENT_PARAMS {
     NV_DECLARE_ALIGNED(NvP64 pOsEvent, 8);
 } NV00FD_CTRL_REGISTER_EVENT_PARAMS;
+
+/*
+ * NV00FD_CTRL_CMD_ATTACH_GPU
+ *
+ * Attaches GPU to the Multicast FLA object. This step must be done before
+ * attaching memory to the Multicast FLA object.
+ *
+ *  hSubdevice [IN]
+ *    Subdevice handle of the owner GPU
+ *
+ *  flags [IN]
+ *    For future use only. Must be zero for now.
+ *
+ *  devDescriptor [IN]
+ *    devDescriptor is a file descriptor for unix RM clients, but a void
+ *    pointer for windows RM clients. It is transparent to RM clients i.e. RM's
+ *    user-mode shim populates this field on behalf of clients.
+ */
+#define NV00FD_CTRL_CMD_ATTACH_GPU (0xfd0104) /* finn: Evaluated from "(FINN_NV_MEMORY_MULTICAST_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00FD_CTRL_ATTACH_GPU_PARAMS_MESSAGE_ID" */
+
+#define NV00FD_CTRL_ATTACH_GPU_PARAMS_MESSAGE_ID (0x4U)
+
+typedef struct NV00FD_CTRL_ATTACH_GPU_PARAMS {
+    NvHandle hSubdevice;
+    NvU32    flags;
+    NV_DECLARE_ALIGNED(NvU64 devDescriptor, 8);
+} NV00FD_CTRL_ATTACH_GPU_PARAMS;
+
+/*
+ * NV00FD_CTRL_CMD_DETACH_MEM
+ *
+ * Detaches the physical memory handle for a given GPU.
+ *
+ *  hSubdevice [IN]
+ *    Subdevice handle of the GPU for which memory to be detached.
+ *
+ *  offset [IN]
+ *    Offset into the MCFLA object at which memory to be detached. Same as
+ *    NV00FD_CTRL_CMD_ATTACH_MEM.
+ *
+ *  flags [IN]
+ *    For future use only. Must be zero for now.
+ */
+#define NV00FD_CTRL_CMD_DETACH_MEM (0xfd0105) /* finn: Evaluated from "(FINN_NV_MEMORY_MULTICAST_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00FD_CTRL_DETACH_MEM_PARAMS_MESSAGE_ID" */
+
+#define NV00FD_CTRL_DETACH_MEM_PARAMS_MESSAGE_ID (0x5U)
+
+typedef struct NV00FD_CTRL_DETACH_MEM_PARAMS {
+    NvHandle hSubdevice;
+    NV_DECLARE_ALIGNED(NvU64 offset, 8);
+    NvU32    flags;
+} NV00FD_CTRL_DETACH_MEM_PARAMS;
 
 /* _ctrl00fd_h_ */

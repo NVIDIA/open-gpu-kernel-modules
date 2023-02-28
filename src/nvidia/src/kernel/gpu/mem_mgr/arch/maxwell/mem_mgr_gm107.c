@@ -467,9 +467,10 @@ memmgrAllocHal_GM107
     //
     if (FLD_TEST_DRF(OS32, _ATTR2, _ZBC_SKIP_ZBCREFCOUNT, _NO, pFbAllocInfo->pageFormat->attr2))
     {
-        if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_ZBC, pFbAllocInfo->pageFormat->kind) &&
-            !(pFbAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_VIRTUAL) &&
-            !IS_MIG_ENABLED(pGpu))
+        if (
+            !IS_MIG_ENABLED(pGpu) &&
+            memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_ZBC, pFbAllocInfo->pageFormat->kind) &&
+            !(pFbAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_VIRTUAL))
         {
             retAttr2 = FLD_SET_DRF(OS32, _ATTR2, _ZBC, _PREFER_ZBC, retAttr2);
             if (!bAlignPhase)
@@ -524,7 +525,7 @@ memmgrFreeHal_GM107
     PRMTIMEOUT     pTimeout
 )
 {
-    NvU32                  commitResId   = pFbAllocInfo->hwResId;
+    NvU32 commitResId = pFbAllocInfo->hwResId;
 
     if (pFbAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_SKIP_RESOURCE_ALLOC)
     {
@@ -1131,10 +1132,10 @@ memmgrSetMemDescPageSize_GM107
     RM_ATTR_PAGE_SIZE   pageSizeAttr
 )
 {
-    NvU32             newPageSize    = RM_PAGE_SIZE;
+    NvU64             newPageSize    = RM_PAGE_SIZE;
     KernelGmmu       *pKernelGmmu    = GPU_GET_KERNEL_GMMU(pGpu);
     NV_ADDRESS_SPACE  addrSpace      = memdescGetAddressSpace(pMemDesc);
-    NvU32             oldPageSize;
+    NvU64             oldPageSize;
 
     // This policy is meaningless for virtual memdescs, so abort early.
     if (ADDR_VIRTUAL == addrSpace)
@@ -1232,7 +1233,7 @@ memmgrSetMemDescPageSize_GM107
     }
 
     // Only update the memory descriptor if it is unset
-    oldPageSize = memdescGetPageSize(pMemDesc, addressTranslation);
+    oldPageSize = memdescGetPageSize64(pMemDesc, addressTranslation);
     if (0 == oldPageSize)
     {
         memdescSetPageSize(pMemDesc, addressTranslation, newPageSize);

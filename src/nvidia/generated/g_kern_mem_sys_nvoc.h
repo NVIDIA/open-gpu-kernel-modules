@@ -215,7 +215,6 @@ struct KernelMemorySystem {
     NV_STATUS (*__kmemsysReadMIGMemoryCfg__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysInitMIGMemoryPartitionTable__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysSwizzIdToVmmuSegmentsRange__)(OBJGPU *, struct KernelMemorySystem *, NvU32, NvU32, NvU32);
-    NV_STATUS (*__kmemsysReconcileTunableState__)(POBJGPU, struct KernelMemorySystem *, void *);
     NV_STATUS (*__kmemsysStateLoad__)(POBJGPU, struct KernelMemorySystem *, NvU32);
     NV_STATUS (*__kmemsysStateUnload__)(POBJGPU, struct KernelMemorySystem *, NvU32);
     NV_STATUS (*__kmemsysStatePostUnload__)(POBJGPU, struct KernelMemorySystem *, NvU32);
@@ -224,18 +223,14 @@ struct KernelMemorySystem {
     void (*__kmemsysInitMissing__)(POBJGPU, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysStatePreInitLocked__)(POBJGPU, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysStatePreInitUnlocked__)(POBJGPU, struct KernelMemorySystem *);
-    NV_STATUS (*__kmemsysGetTunableState__)(POBJGPU, struct KernelMemorySystem *, void *);
-    NV_STATUS (*__kmemsysCompareTunableState__)(POBJGPU, struct KernelMemorySystem *, void *, void *);
-    void (*__kmemsysFreeTunableState__)(POBJGPU, struct KernelMemorySystem *, void *);
     NV_STATUS (*__kmemsysStatePostLoad__)(POBJGPU, struct KernelMemorySystem *, NvU32);
-    NV_STATUS (*__kmemsysAllocTunableState__)(POBJGPU, struct KernelMemorySystem *, void **);
-    NV_STATUS (*__kmemsysSetTunableState__)(POBJGPU, struct KernelMemorySystem *, void *);
     NvBool (*__kmemsysIsPresent__)(POBJGPU, struct KernelMemorySystem *);
     NvBool bDisableTiledCachingInvalidatesWithEccBug1521641;
     NvBool bGpuCacheEnable;
     NvBool bNumaNodesAdded;
     NvBool bL2CleanFbPull;
     NvBool bPreserveComptagBackingStoreOnSuspend;
+    NvBool bBug3656943WAR;
     const MEMORY_SYSTEM_STATIC_CONFIG *pStaticConfig;
     MEM_PARTITION_NUMA_INFO *memPartitionNumaInfo;
     MIG_MEM_BOUNDARY_CONFIG_TABLE memBoundaryCfgTable;
@@ -311,7 +306,6 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysInitMIGMemoryPartitionTable_HAL(pGpu, pKernelMemorySystem) kmemsysInitMIGMemoryPartitionTable_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysSwizzIdToVmmuSegmentsRange(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments) kmemsysSwizzIdToVmmuSegmentsRange_DISPATCH(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments)
 #define kmemsysSwizzIdToVmmuSegmentsRange_HAL(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments) kmemsysSwizzIdToVmmuSegmentsRange_DISPATCH(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments)
-#define kmemsysReconcileTunableState(pGpu, pEngstate, pTunableState) kmemsysReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kmemsysStateLoad(pGpu, pEngstate, arg0) kmemsysStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kmemsysStateUnload(pGpu, pEngstate, arg0) kmemsysStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kmemsysStatePostUnload(pGpu, pEngstate, arg0) kmemsysStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -320,12 +314,7 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysInitMissing(pGpu, pEngstate) kmemsysInitMissing_DISPATCH(pGpu, pEngstate)
 #define kmemsysStatePreInitLocked(pGpu, pEngstate) kmemsysStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define kmemsysStatePreInitUnlocked(pGpu, pEngstate) kmemsysStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kmemsysGetTunableState(pGpu, pEngstate, pTunableState) kmemsysGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kmemsysCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) kmemsysCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define kmemsysFreeTunableState(pGpu, pEngstate, pTunableState) kmemsysFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kmemsysStatePostLoad(pGpu, pEngstate, arg0) kmemsysStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kmemsysAllocTunableState(pGpu, pEngstate, ppTunableState) kmemsysAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define kmemsysSetTunableState(pGpu, pEngstate, pTunableState) kmemsysSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kmemsysIsPresent(pGpu, pEngstate) kmemsysIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kmemsysGetUsableFbSize_KERNEL(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU64 *pFbSize);
 
@@ -653,10 +642,6 @@ static inline NV_STATUS kmemsysSwizzIdToVmmuSegmentsRange_DISPATCH(OBJGPU *pGpu,
     return pKernelMemorySystem->__kmemsysSwizzIdToVmmuSegmentsRange__(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments);
 }
 
-static inline NV_STATUS kmemsysReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, void *pTunableState) {
-    return pEngstate->__kmemsysReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kmemsysStateLoad_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, NvU32 arg0) {
     return pEngstate->__kmemsysStateLoad__(pGpu, pEngstate, arg0);
 }
@@ -689,28 +674,8 @@ static inline NV_STATUS kmemsysStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struc
     return pEngstate->__kmemsysStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kmemsysGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, void *pTunableState) {
-    return pEngstate->__kmemsysGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kmemsysCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__kmemsysCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void kmemsysFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, void *pTunableState) {
-    pEngstate->__kmemsysFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kmemsysStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, NvU32 arg0) {
     return pEngstate->__kmemsysStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kmemsysAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, void **ppTunableState) {
-    return pEngstate->__kmemsysAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS kmemsysSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, void *pTunableState) {
-    return pEngstate->__kmemsysSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool kmemsysIsPresent_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate) {

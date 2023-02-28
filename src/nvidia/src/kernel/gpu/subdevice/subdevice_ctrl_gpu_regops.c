@@ -183,12 +183,12 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
         }
         else
         {
-        NV_RM_RPC_GPU_EXEC_REG_OPS(pGpu,
-                                   pRmCtrlParams->hClient,
-                                   pRmCtrlParams->hObject,
-                                   pRmCtrlParams->pParams,
-                                   pRegOps,
-                                   status);
+            NV_RM_RPC_GPU_EXEC_REG_OPS(pGpu,
+                                       pRmCtrlParams->hClient,
+                                       pRmCtrlParams->hObject,
+                                       pRmCtrlParams->pParams,
+                                       pRegOps,
+                                       status);
         }
         return status;
     }

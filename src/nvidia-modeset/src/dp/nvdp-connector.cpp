@@ -30,7 +30,6 @@
 #include "nvkms-evo.h"
 #include "nvkms-types.h"
 #include "nvkms-modeset.h"
-#include "nvkms-modeset-types.h"
 #include "nvkms-utils.h"
 #include "nvkms-rmapi.h"
 
@@ -199,67 +198,30 @@ static DisplayPort::Group* CreateGroup(
     return pGroup;
 }
 
-/*!
- * Returns the bits per pixel for the pixel depth value given
- *
- * \param[in]   pixelDepth   nvKmsPixelDepth value
- *
- * \return      The pixel depth configured by this enum value
- */
-static NvU32 GetSORBpp(
-    const enum nvKmsPixelDepth pixelDepth,
-    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace)
+static NvU32 GetColorDepth(
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc)
 {
-    NvU32 bpc = nvPixelDepthToBitsPerComponent(pixelDepth);
-    if (bpc == 0) {
-        nvAssert(!"Unrecognized SOR pixel depth");
-        /* XXX Assume lowest ? */
-        bpc = 6;
+    switch (colorSpace) {
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420:
+            /*
+             * In YUV420, HW is programmed with RGB color space and full color
+             * range.  The color space conversion and color range compression
+             * happen in a headSurface composite shader.
+             */
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444:
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
+            /*
+             * For RGB/YCbCr444, each pixel is always 3 components.  For
+             * YCbCr/YUV420, we currently always scan out from the headSurface
+             * as RGB.
+             */
+            return colorBpc * 3;
+        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422:
+            return colorBpc * 2;
     }
 
-    /*
-     * In YUV420, HW is programmed with RGB color space and full color range.
-     * The color space conversion and color range compression happen in a
-     * headSurface composite shader.
-     *
-     * XXX Add support for
-     * NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422 over DP.
-     */
-    nvAssert(colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420 ||
-             colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444 ||
-             colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB);
-
-    /* For RGB/YCbCr444, each pixel is always 3 components.  For YCbCr/YUV420,
-     * we currently always scan out from the headSurface as RGB. */
-    return bpc * 3;
-}
-
-/* XXX Instead of tracking pixelDepth, you should track bpc and calculate bpp
- * from bpc + colorSpace. */
-static NvU32 GetBpc(
-    const enum nvKmsPixelDepth pixelDepth,
-    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace)
-{
-    NvU32 bpc = nvPixelDepthToBitsPerComponent(pixelDepth);
-    if (bpc == 0) {
-        nvAssert(!"Unrecognized SOR pixel depth");
-        /* XXX Assume lowest ? */
-        return 6;
-    }
-
-    /*
-     * In YUV420, HW is programmed with RGB color space and full color range.
-     * The color space conversion and color range compression happen in a
-     * headSurface composite shader.
-     *
-     * XXX Add support for
-     * NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422 over DP.
-     */
-    nvAssert(colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420 ||
-             colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444 ||
-             colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB);
-
-    return bpc;
+    return 0;
 }
 
 static void SetDPMSATiming(const NVDispEvoRec *pDispEvo,
@@ -302,6 +264,7 @@ static void InitDpModesetParams(
     const NvU32 displayId,
     const NVHwModeTimingsEvo *pTimings,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
     DisplayPort::DpModesetParams *pParams)
 {
     pParams->modesetInfo.pixelClockHz = pTimings->pixelClock * 1000;
@@ -313,10 +276,8 @@ static void InitDpModesetParams(
     pParams->modesetInfo.surfaceHeight = nvEvoVisibleHeight(pTimings);
 
     pParams->modesetInfo.depth =
-        GetSORBpp(pTimings->pixelDepth, colorSpace);
-
-    pParams->modesetInfo.bitsPerComponent =
-        GetBpc(pTimings->pixelDepth, colorSpace);
+        GetColorDepth(colorSpace, colorBpc);
+    pParams->modesetInfo.bitsPerComponent = colorBpc;
 
     pParams->colorFormat = dpColorFormat_Unknown;
     switch (colorSpace) {
@@ -333,7 +294,6 @@ static void InitDpModesetParams(
             pParams->colorFormat = dpColorFormat_YCbCr422;
             break;
         case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
-        case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_BT2020RGB:
             pParams->colorFormat = dpColorFormat_RGB;
             break;
     }
@@ -349,6 +309,7 @@ NVDPLibModesetStatePtr nvDPLibCreateModesetState(
     const NvU32 displayId,
     const NVDpyIdList dpyIdList,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
     NVHwModeTimingsEvo *pTimings)
 {
     bool found = false;
@@ -382,6 +343,7 @@ NVDPLibModesetStatePtr nvDPLibCreateModesetState(
                         displayId,
                         pTimings,
                         colorSpace,
+                        colorBpc,
                         &pDpLibModesetState->modesetParams);
     if (pTimings->dpDsc.enable) {
         pDpLibModesetState->modesetParams.modesetInfo.bEnableDsc = true;
@@ -421,6 +383,7 @@ NvBool nvDPLibValidateTimings(
     const NvU32 displayId,
     const NVDpyIdList dpyIdList,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
     const struct NvKmsModeValidationParams *pModeValidationParams,
     NVHwModeTimingsEvo *pTimings)
 {
@@ -474,6 +437,7 @@ NvBool nvDPLibValidateTimings(
                         displayId,
                         pTimings,
                         colorSpace,
+                        colorBpc,
                         pModesetParams);
 
     dpDscParams.bCheckWithDsc = true;
@@ -532,6 +496,7 @@ NvBool nvDPEndValidation(NVDispEvoPtr pDispEvo)
 NvBool nvDPValidateModeForDpyEvo(
     const NVDpyEvoRec *pDpyEvo,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
     const struct NvKmsModeValidationParams *pModeValidationParams,
     NVHwModeTimingsEvo *pTimings)
 {
@@ -548,6 +513,7 @@ NvBool nvDPValidateModeForDpyEvo(
                                         0 /* displayId */,
                                         nvAddDpyIdToEmptyDpyIdList(pDpyEvo->id),
                                         colorSpace,
+                                        colorBpc,
                                         pModeValidationParams,
                                         pTimings);
     connector->endCompoundQuery();
@@ -913,13 +879,17 @@ void nvDPSetAllowMultiStreamingOneConnector(
 }
 
 static NvBool IsDpSinkMstCapableForceSst(const NVDispEvoRec *pDispEvo,
-                                         const NvU32 head)
+                                         const NvU32 apiHead)
 {
-    const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-    const NVConnectorEvoRec *pConnectorEvo = pHeadState->pConnectorEvo;
+    const NVDispApiHeadStateEvoRec *pApiHeadState =
+        &pDispEvo->apiHeadState[apiHead];
+    const NVDpyEvoRec *pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
+    const NVConnectorEvoRec *pConnectorEvo = (pDpyEvo != NULL) ?
+        pDpyEvo->pConnectorEvo : NULL;
 
-    if (pConnectorEvo == NULL ||
-        pConnectorEvo->pDpLibConnector == NULL) {
+    if ((pConnectorEvo == NULL) ||
+        (pConnectorEvo->pDpLibConnector == NULL)) {
         return FALSE;
     }
 
@@ -931,11 +901,15 @@ static NvBool IsDpSinkMstCapableForceSst(const NVDispEvoRec *pDispEvo,
 
 static NvBool IsDpLinkTransitionWaitingForHeadShutDown(
     const NVDispEvoRec *pDispEvo,
-    const NvU32 head)
+    const NvU32 apiHead)
 {
-    const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-    return pHeadState->pConnectorEvo &&
-           nvDPIsLinkAwaitingTransition(pHeadState->pConnectorEvo);
+    const NVDispApiHeadStateEvoRec *pApiHeadState =
+        &pDispEvo->apiHeadState[apiHead];
+    const NVDpyEvoRec *pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
+
+    return (pDpyEvo != NULL) &&
+           nvDPIsLinkAwaitingTransition(pDpyEvo->pConnectorEvo);
 }
 
 void nvDPSetAllowMultiStreaming(NVDevEvoPtr pDevEvo, NvBool allowMST)
@@ -962,7 +936,7 @@ void nvDPSetAllowMultiStreaming(NVDevEvoPtr pDevEvo, NvBool allowMST)
         return;
     }
 
-    nvShutDownHeads(pDevEvo, IsDpSinkMstCapableForceSst);
+    nvShutDownApiHeads(pDevEvo, IsDpSinkMstCapableForceSst);
 
     /*
      * Heads driving MST capable sinks in force SST mode, are shut down. Now you
@@ -987,8 +961,8 @@ void nvDPSetAllowMultiStreaming(NVDevEvoPtr pDevEvo, NvBool allowMST)
     }
 
     /* Shut down all DisplayPort heads that need to transition to/from SST. */
-    nvShutDownHeads(pDevEvo,
-                    IsDpLinkTransitionWaitingForHeadShutDown);
+    nvShutDownApiHeads(pDevEvo,
+                       IsDpLinkTransitionWaitingForHeadShutDown);
 
     /*
      * Handle any pending timers the DP library scheduled to notify us

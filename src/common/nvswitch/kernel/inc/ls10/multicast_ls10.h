@@ -111,10 +111,12 @@ NvlStatus nvswitch_mc_build_mcp_list_ls10(nvswitch_device *device, NvU32 *port_l
                                             NvU32 *entries_used);
 
 NvlStatus nvswitch_mc_unwind_directives_ls10(nvswitch_device *device,
-                                                NVSWITCH_TCP_DIRECTIVE_LS10* directives,
-                                                NvU32 *ports, NvU8 *vc_hop,
-                                                NvU32 *ports_per_spray_group, NvU32 *replica_offset,
-                                                NvBool *replica_valid);
+                                             NVSWITCH_TCP_DIRECTIVE_LS10 directives[NVSWITCH_MC_TCP_LIST_SIZE_LS10],
+                                             NvU32 ports[NVSWITCH_MC_MAX_PORTS],
+                                             NvU8 vc_hop[NVSWITCH_MC_MAX_PORTS],
+                                             NvU32 ports_per_spray_group[NVSWITCH_MC_MAX_SPRAYGROUPS],
+                                             NvU32 replica_offset[NVSWITCH_MC_MAX_SPRAYGROUPS],
+                                             NvBool replica_valid[NVSWITCH_MC_MAX_SPRAYGROUPS]);
 
 NvlStatus nvswitch_mc_invalidate_mc_rid_entry_ls10(nvswitch_device *device, NvU32 port, NvU32 index,
                                                     NvBool use_extended_table, NvBool zero);

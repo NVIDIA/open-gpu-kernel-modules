@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -3816,8 +3816,8 @@ typedef struct
 #define CTRL_NVSWITCH_CLEAR_COUNTERS                        0x51
 #define CTRL_NVSWITCH_SET_NVLINK_ERROR_THRESHOLD            0x52
 #define CTRL_NVSWITCH_GET_NVLINK_ERROR_THRESHOLD            0x53
-#define CTRL_NVSWITCH_GET_VOLTAGE                           0x55
-#define CTRL_NVSWITCH_GET_BOARD_PART_NUMBER                 0x54
+#define CTRL_NVSWITCH_GET_VOLTAGE                           0x54
+#define CTRL_NVSWITCH_GET_BOARD_PART_NUMBER                 0x55
 
 #ifdef __cplusplus
 }

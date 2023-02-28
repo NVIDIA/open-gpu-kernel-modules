@@ -120,8 +120,9 @@ NV_STATUS uvm_rm_mem_alloc_and_map_all(uvm_gpu_t *gpu,
 // Map/Unmap on UVM's internal address space of a GPU. In SR-IOV heavy the
 // operation is also applied on the GPU's proxy address space.
 //
-// Supported only for sysmem (UVM_RM_MEM_TYPE_SYS). The GPU has to be different
-// from the one the memory was originally allocated for.
+// Mapping/unmapping on the GPU owner, or mapping on an already mapped GPU, are
+// no-ops. Mapping/unmapping on a GPU different from the owner is only supported
+// for system memory.
 //
 // Locking same as uvm_rm_mem_alloc()
 NV_STATUS uvm_rm_mem_map_gpu(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, NvU64 gpu_alignment);

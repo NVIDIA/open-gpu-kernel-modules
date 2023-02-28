@@ -213,10 +213,7 @@ typedef struct NV2080_CTRL_FIFO_GET_PHYSICAL_CHANNEL_COUNT_PARAMS {
  *     This index can be used too get channel groups currently in use per engine/runlist.
  *
  */
-typedef struct NV2080_CTRL_FIFO_INFO {
-    NvU32 index;
-    NvU32 data;
-} NV2080_CTRL_FIFO_INFO;
+typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FIFO_INFO;
 
 /* valid fifo info index values */
 #define NV2080_CTRL_FIFO_INFO_INDEX_INSTANCE_TOTAL                       (0x000000000)

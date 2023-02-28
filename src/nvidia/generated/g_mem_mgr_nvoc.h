@@ -75,6 +75,11 @@ typedef enum
 #define TRANSFER_FLAGS_SHADOW_INIT_MEM        NVBIT32(2) // Applicable only for non-PROCESSOR transfers
 #define TRANSFER_FLAGS_PERSISTENT_CPU_MAPPING NVBIT32(3) // Require long lived PROCESSOR mapping
 #define TRANSFER_FLAGS_DESTROY_MAPPING        NVBIT32(4) // Destroy any cached mappings when complete
+#define TRANSFER_FLAGS_USE_BAR1               NVBIT32(5) // Use only BAR1 for PROCESSOR transfers
+
+// Protection flags: at most 1 may be set, none means READ_WRITE by default
+#define TRANSFER_FLAGS_MAP_PROTECT_READABLE   NVBIT32(6) // Transfer is only reading data
+#define TRANSFER_FLAGS_MAP_PROTECT_WRITEABLE  NVBIT32(7) // Transfer is only writing data
 
 typedef struct
 {
@@ -413,6 +418,7 @@ struct MemoryManager {
     NvU32 (*__memmgrGetPteKindPitch__)(OBJGPU *, struct MemoryManager *);
     NvU32 (*__memmgrChooseKindCompressC__)(OBJGPU *, struct MemoryManager *, FB_ALLOC_PAGE_FORMAT *);
     NV_STATUS (*__memmgrGetFlaKind__)(OBJGPU *, struct MemoryManager *, NvU32 *);
+    NvBool (*__memmgrIsApertureSupportedByFla__)(OBJGPU *, struct MemoryManager *, NV_ADDRESS_SPACE);
     NvU32 (*__memmgrDetermineComptag__)(OBJGPU *, struct MemoryManager *, RmPhysAddr);
     NV_STATUS (*__memmgrCheckReservedMemorySize__)(OBJGPU *, struct MemoryManager *);
     NV_STATUS (*__memmgrReadMmuLock__)(OBJGPU *, struct MemoryManager *, NvBool *, NvU64 *, NvU64 *);
@@ -421,18 +427,12 @@ struct MemoryManager {
     void (*__memmgrGetDisablePlcKind__)(struct MemoryManager *, NvU32 *);
     void (*__memmgrEnableDynamicPageOfflining__)(OBJGPU *, struct MemoryManager *);
     NV_STATUS (*__memmgrGetBlackListPages__)(OBJGPU *, struct MemoryManager *, BLACKLIST_ADDRESS *, NvU32 *);
-    NV_STATUS (*__memmgrReconcileTunableState__)(POBJGPU, struct MemoryManager *, void *);
     NV_STATUS (*__memmgrStatePreLoad__)(POBJGPU, struct MemoryManager *, NvU32);
     NV_STATUS (*__memmgrStatePostUnload__)(POBJGPU, struct MemoryManager *, NvU32);
     NV_STATUS (*__memmgrStateInitUnlocked__)(POBJGPU, struct MemoryManager *);
     void (*__memmgrInitMissing__)(POBJGPU, struct MemoryManager *);
     NV_STATUS (*__memmgrStatePreInitUnlocked__)(POBJGPU, struct MemoryManager *);
-    NV_STATUS (*__memmgrGetTunableState__)(POBJGPU, struct MemoryManager *, void *);
-    NV_STATUS (*__memmgrCompareTunableState__)(POBJGPU, struct MemoryManager *, void *, void *);
-    void (*__memmgrFreeTunableState__)(POBJGPU, struct MemoryManager *, void *);
     NV_STATUS (*__memmgrStatePostLoad__)(POBJGPU, struct MemoryManager *, NvU32);
-    NV_STATUS (*__memmgrAllocTunableState__)(POBJGPU, struct MemoryManager *, void **);
-    NV_STATUS (*__memmgrSetTunableState__)(POBJGPU, struct MemoryManager *, void *);
     NvBool (*__memmgrIsPresent__)(POBJGPU, struct MemoryManager *);
     NvBool bFbsrWddmModeEnabled;
     NvBool bFbRegionsSupported;
@@ -551,6 +551,8 @@ NV_STATUS __nvoc_objCreate_MemoryManager(MemoryManager**, Dynamic*, NvU32);
 #define memmgrChooseKindCompressC_HAL(pGpu, pMemoryManager, arg0) memmgrChooseKindCompressC_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrGetFlaKind(pGpu, pMemoryManager, arg0) memmgrGetFlaKind_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrGetFlaKind_HAL(pGpu, pMemoryManager, arg0) memmgrGetFlaKind_DISPATCH(pGpu, pMemoryManager, arg0)
+#define memmgrIsApertureSupportedByFla(pGpu, pMemoryManager, arg0) memmgrIsApertureSupportedByFla_DISPATCH(pGpu, pMemoryManager, arg0)
+#define memmgrIsApertureSupportedByFla_HAL(pGpu, pMemoryManager, arg0) memmgrIsApertureSupportedByFla_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrDetermineComptag(pGpu, pMemoryManager, arg0) memmgrDetermineComptag_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrDetermineComptag_HAL(pGpu, pMemoryManager, arg0) memmgrDetermineComptag_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrCheckReservedMemorySize(pGpu, pMemoryManager) memmgrCheckReservedMemorySize_DISPATCH(pGpu, pMemoryManager)
@@ -567,18 +569,12 @@ NV_STATUS __nvoc_objCreate_MemoryManager(MemoryManager**, Dynamic*, NvU32);
 #define memmgrEnableDynamicPageOfflining_HAL(pGpu, pMemoryManager) memmgrEnableDynamicPageOfflining_DISPATCH(pGpu, pMemoryManager)
 #define memmgrGetBlackListPages(pGpu, pMemoryManager, pBlAddrs, pCount) memmgrGetBlackListPages_DISPATCH(pGpu, pMemoryManager, pBlAddrs, pCount)
 #define memmgrGetBlackListPages_HAL(pGpu, pMemoryManager, pBlAddrs, pCount) memmgrGetBlackListPages_DISPATCH(pGpu, pMemoryManager, pBlAddrs, pCount)
-#define memmgrReconcileTunableState(pGpu, pEngstate, pTunableState) memmgrReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define memmgrStatePreLoad(pGpu, pEngstate, arg0) memmgrStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define memmgrStatePostUnload(pGpu, pEngstate, arg0) memmgrStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define memmgrStateInitUnlocked(pGpu, pEngstate) memmgrStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define memmgrInitMissing(pGpu, pEngstate) memmgrInitMissing_DISPATCH(pGpu, pEngstate)
 #define memmgrStatePreInitUnlocked(pGpu, pEngstate) memmgrStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define memmgrGetTunableState(pGpu, pEngstate, pTunableState) memmgrGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define memmgrCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) memmgrCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define memmgrFreeTunableState(pGpu, pEngstate, pTunableState) memmgrFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define memmgrStatePostLoad(pGpu, pEngstate, arg0) memmgrStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define memmgrAllocTunableState(pGpu, pEngstate, ppTunableState) memmgrAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define memmgrSetTunableState(pGpu, pEngstate, pTunableState) memmgrSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define memmgrIsPresent(pGpu, pEngstate) memmgrIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS memmgrSavePowerMgmtState_KERNEL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
@@ -608,11 +604,11 @@ static inline NV_STATUS memmgrRestorePowerMgmtState(OBJGPU *pGpu, struct MemoryM
 
 #define memmgrRestorePowerMgmtState_HAL(pGpu, pMemoryManager) memmgrRestorePowerMgmtState(pGpu, pMemoryManager)
 
-NvU32 memmgrDeterminePageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2);
+NvU64 memmgrDeterminePageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2);
 
 
 #ifdef __nvoc_mem_mgr_h_disabled
-static inline NvU32 memmgrDeterminePageSize(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2) {
+static inline NvU64 memmgrDeterminePageSize(struct MemoryManager *pMemoryManager, NvHandle hClient, NvU64 memSize, NvU32 memFormat, NvU32 pageFormatFlags, NvU32 *pRetAttr, NvU32 *pRetAttr2) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
     return 0;
 }
@@ -1760,23 +1756,23 @@ static inline void memmgrFreeFbsrMemory(OBJGPU *pGpu, struct MemoryManager *pMem
 
 #define memmgrFreeFbsrMemory_HAL(pGpu, pMemoryManager) memmgrFreeFbsrMemory(pGpu, pMemoryManager)
 
-static inline NV_STATUS memmgrCreateVgaWorkspaceMemDesc_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+static inline NV_STATUS memmgrReserveVgaWorkspaceMemDescForFbsr_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS memmgrCreateVgaWorkspaceMemDesc_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
+NV_STATUS memmgrReserveVgaWorkspaceMemDescForFbsr_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager);
 
 
 #ifdef __nvoc_mem_mgr_h_disabled
-static inline NV_STATUS memmgrCreateVgaWorkspaceMemDesc(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
+static inline NV_STATUS memmgrReserveVgaWorkspaceMemDescForFbsr(OBJGPU *pGpu, struct MemoryManager *pMemoryManager) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_mem_mgr_h_disabled
-#define memmgrCreateVgaWorkspaceMemDesc(pGpu, pMemoryManager) memmgrCreateVgaWorkspaceMemDesc_46f6a7(pGpu, pMemoryManager)
+#define memmgrReserveVgaWorkspaceMemDescForFbsr(pGpu, pMemoryManager) memmgrReserveVgaWorkspaceMemDescForFbsr_46f6a7(pGpu, pMemoryManager)
 #endif //__nvoc_mem_mgr_h_disabled
 
-#define memmgrCreateVgaWorkspaceMemDesc_HAL(pGpu, pMemoryManager) memmgrCreateVgaWorkspaceMemDesc(pGpu, pMemoryManager)
+#define memmgrReserveVgaWorkspaceMemDescForFbsr_HAL(pGpu, pMemoryManager) memmgrReserveVgaWorkspaceMemDescForFbsr(pGpu, pMemoryManager)
 
 NV_STATUS memmgrConstructEngine_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, ENGDESCRIPTOR arg0);
 
@@ -1896,6 +1892,16 @@ static inline NV_STATUS memmgrGetFlaKind_DISPATCH(OBJGPU *pGpu, struct MemoryMan
     return pMemoryManager->__memmgrGetFlaKind__(pGpu, pMemoryManager, arg0);
 }
 
+NvBool memmgrIsApertureSupportedByFla_GA100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg0);
+
+static inline NvBool memmgrIsApertureSupportedByFla_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg0) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NvBool memmgrIsApertureSupportedByFla_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NV_ADDRESS_SPACE arg0) {
+    return pMemoryManager->__memmgrIsApertureSupportedByFla__(pGpu, pMemoryManager, arg0);
+}
+
 NvU32 memmgrDetermineComptag_TU102(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg0);
 
 static inline NvU32 memmgrDetermineComptag_13cd8d(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, RmPhysAddr arg0) {
@@ -1978,10 +1984,6 @@ static inline NV_STATUS memmgrGetBlackListPages_DISPATCH(OBJGPU *pGpu, struct Me
     return pMemoryManager->__memmgrGetBlackListPages__(pGpu, pMemoryManager, pBlAddrs, pCount);
 }
 
-static inline NV_STATUS memmgrReconcileTunableState_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate, void *pTunableState) {
-    return pEngstate->__memmgrReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS memmgrStatePreLoad_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate, NvU32 arg0) {
     return pEngstate->__memmgrStatePreLoad__(pGpu, pEngstate, arg0);
 }
@@ -2002,28 +2004,8 @@ static inline NV_STATUS memmgrStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct
     return pEngstate->__memmgrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS memmgrGetTunableState_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate, void *pTunableState) {
-    return pEngstate->__memmgrGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS memmgrCompareTunableState_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__memmgrCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void memmgrFreeTunableState_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate, void *pTunableState) {
-    pEngstate->__memmgrFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS memmgrStatePostLoad_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate, NvU32 arg0) {
     return pEngstate->__memmgrStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS memmgrAllocTunableState_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate, void **ppTunableState) {
-    return pEngstate->__memmgrAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS memmgrSetTunableState_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate, void *pTunableState) {
-    return pEngstate->__memmgrSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool memmgrIsPresent_DISPATCH(POBJGPU pGpu, struct MemoryManager *pEngstate) {
@@ -2520,21 +2502,10 @@ static inline NV_STATUS memmgrGetKindComprFromMemDesc(struct MemoryManager *pMem
 #define memmgrGetKindComprFromMemDesc(pMemoryManager, arg0, offset, kind, pComprInfo) memmgrGetKindComprFromMemDesc_IMPL(pMemoryManager, arg0, offset, kind, pComprInfo)
 #endif //__nvoc_mem_mgr_h_disabled
 
-NvBool memmgrIsCompressible_IMPL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0);
+NV_STATUS memmgrFillComprInfo_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg0, NvU32 arg1, NvU32 arg2, NvU64 arg3, NvU32 arg4, COMPR_INFO *arg5);
 
 #ifdef __nvoc_mem_mgr_h_disabled
-static inline NvBool memmgrIsCompressible(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0) {
-    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_mem_mgr_h_disabled
-#define memmgrIsCompressible(pMemoryManager, arg0) memmgrIsCompressible_IMPL(pMemoryManager, arg0)
-#endif //__nvoc_mem_mgr_h_disabled
-
-NV_STATUS memmgrFillComprInfo_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvU32 arg1, NvU32 arg2, NvU64 arg3, NvU32 arg4, COMPR_INFO *arg5);
-
-#ifdef __nvoc_mem_mgr_h_disabled
-static inline NV_STATUS memmgrFillComprInfo(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvU32 arg1, NvU32 arg2, NvU64 arg3, NvU32 arg4, COMPR_INFO *arg5) {
+static inline NV_STATUS memmgrFillComprInfo(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU64 arg0, NvU32 arg1, NvU32 arg2, NvU64 arg3, NvU32 arg4, COMPR_INFO *arg5) {
     NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }

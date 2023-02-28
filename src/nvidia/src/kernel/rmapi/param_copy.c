@@ -73,6 +73,10 @@ NV_STATUS rmapiParamsAcquire
 
         pParamCopy->flags |= RMAPI_PARAM_COPY_FLAGS_IS_DIRECT_USAGE;
         pKernelParams     = NvP64_VALUE(pParamCopy->pUserParams);
+
+        if (pParamCopy->flags & RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER)
+            portMemSet(pKernelParams, 0, pParamCopy->paramsSize);
+
         goto done;
     }
 

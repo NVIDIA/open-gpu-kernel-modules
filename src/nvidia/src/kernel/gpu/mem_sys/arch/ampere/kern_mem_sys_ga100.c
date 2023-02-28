@@ -90,6 +90,8 @@ kmemsysInitFlushSysmemBuffer_GA100
     //
     if (pKernelMemorySystem->pSysmemFlushBufferMemDesc == NULL)
     {
+        NvU64 flags = MEMDESC_FLAGS_NONE;
+
         //
         // Sysmem flush buffer
         // The sysmembar flush does a zero byte read of sysmem if there was a
@@ -103,7 +105,7 @@ kmemsysInitFlushSysmemBuffer_GA100
                                NV_TRUE,
                                ADDR_SYSMEM,
                                NV_MEMORY_UNCACHED,
-                               MEMDESC_FLAGS_NONE);
+                               flags);
         if (status != NV_OK)
             return status;
 

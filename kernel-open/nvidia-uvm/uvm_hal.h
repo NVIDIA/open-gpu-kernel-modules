@@ -34,7 +34,7 @@
 
 // A dummy method validation that always returns true; it can be used to skip
 // CE/Host/SW method validations for a given architecture
-bool uvm_hal_method_validate_stub(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
+bool uvm_hal_method_is_valid_stub(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
 
 typedef void (*uvm_hal_init_t)(uvm_push_t *push);
 void uvm_hal_maxwell_ce_init(uvm_push_t *push);
@@ -42,12 +42,12 @@ void uvm_hal_maxwell_host_init_noop(uvm_push_t *push);
 void uvm_hal_pascal_host_init(uvm_push_t *push);
 
 // Host method validation
-typedef bool (*uvm_hal_host_method_validate)(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
-bool uvm_hal_ampere_host_method_validate(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
+typedef bool (*uvm_hal_host_method_is_valid)(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
+bool uvm_hal_ampere_host_method_is_valid(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
 
 // SW method validation
-typedef bool (*uvm_hal_host_sw_method_validate)(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
-bool uvm_hal_ampere_host_sw_method_validate(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
+typedef bool (*uvm_hal_host_sw_method_is_valid)(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
+bool uvm_hal_ampere_host_sw_method_is_valid(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
 
 // Wait for idle
 typedef void (*uvm_hal_wait_for_idle_t)(uvm_push_t *push);
@@ -208,6 +208,7 @@ typedef void (*uvm_hal_semaphore_release_t)(uvm_push_t *push, NvU64 gpu_va, NvU3
 void uvm_hal_maxwell_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_maxwell_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_pascal_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
+void uvm_hal_volta_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_turing_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_ce_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
@@ -220,6 +221,7 @@ void uvm_hal_hopper_host_semaphore_release(uvm_push_t *push, NvU64 gpu_va, NvU32
 typedef void (*uvm_hal_semaphore_timestamp_t)(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_maxwell_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_pascal_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
+void uvm_hal_volta_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 void uvm_hal_hopper_ce_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
 
 void uvm_hal_maxwell_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va);
@@ -272,16 +274,17 @@ NvU32 uvm_hal_maxwell_ce_plc_mode(void);
 NvU32 uvm_hal_ampere_ce_plc_mode_c7b5(void);
 
 // CE method validation
-typedef bool (*uvm_hal_ce_method_validate)(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
-bool uvm_hal_ampere_ce_method_validate_c6b5(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
+typedef bool (*uvm_hal_ce_method_is_valid)(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
+bool uvm_hal_ampere_ce_method_is_valid_c6b5(uvm_push_t *push, NvU32 method_address, NvU32 method_data);
 
 // Memcopy validation.
 // The validation happens at the start of the memcopy (uvm_hal_memcopy_t)
-// execution. Use uvm_hal_ce_memcopy_validate_stub to skip the validation for
+// execution. Use uvm_hal_ce_memcopy_is_valid_stub to skip the validation for
 // a given architecture.
-typedef bool (*uvm_hal_ce_memcopy_validate)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
-bool uvm_hal_ce_memcopy_validate_stub(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
-bool uvm_hal_ampere_ce_memcopy_validate_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
+typedef bool (*uvm_hal_ce_memcopy_is_valid)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
+bool uvm_hal_ce_memcopy_is_valid_stub(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
+bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
+bool uvm_hal_hopper_ce_memcopy_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
 
 // Patching of the memcopy source; if not needed for a given architecture use
 // the (empty) uvm_hal_ce_memcopy_patch_src_stub implementation
@@ -296,6 +299,7 @@ void uvm_hal_ampere_ce_memcopy_patch_src_c6b5(uvm_push_t *push, uvm_gpu_address_
 // UVM_PUSH_FLAG_NEXT_CE_* flags with uvm_push_set_flag().
 typedef void (*uvm_hal_memcopy_t)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src, size_t size);
 void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src, size_t size);
+void uvm_hal_volta_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src, size_t size);
 
 // Simple wrapper for uvm_hal_memcopy_t with both addresses being virtual
 typedef void (*uvm_hal_memcopy_v_to_v_t)(uvm_push_t *push, NvU64 dst, NvU64 src, size_t size);
@@ -303,11 +307,12 @@ void uvm_hal_maxwell_ce_memcopy_v_to_v(uvm_push_t *push, NvU64 dst, NvU64 src, s
 
 // Memset validation.
 // The validation happens at the start of the memset (uvm_hal_memset_*_t)
-// execution. Use uvm_hal_ce_memset_validate_stub to skip the validation for
+// execution. Use uvm_hal_ce_memset_is_valid_stub to skip the validation for
 // a given architecture.
-typedef bool (*uvm_hal_ce_memset_validate)(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size);
-bool uvm_hal_ce_memset_validate_stub(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size);
-bool uvm_hal_ampere_ce_memset_validate_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size);
+typedef bool (*uvm_hal_ce_memset_is_valid)(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size);
+bool uvm_hal_ce_memset_is_valid_stub(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size);
+bool uvm_hal_ampere_ce_memset_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size);
+bool uvm_hal_hopper_ce_memset_is_valid(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size);
 
 // Memset size bytes at dst to a given N-byte input value.
 //
@@ -329,6 +334,10 @@ void uvm_hal_maxwell_ce_memset_4(uvm_push_t *push, uvm_gpu_address_t dst, NvU32 
 void uvm_hal_maxwell_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 value, size_t size);
 void uvm_hal_maxwell_ce_memset_v_4(uvm_push_t *push, NvU64 dst_va, NvU32 value, size_t size);
 
+void uvm_hal_volta_ce_memset_1(uvm_push_t *push, uvm_gpu_address_t dst, NvU8 value, size_t size);
+void uvm_hal_volta_ce_memset_4(uvm_push_t *push, uvm_gpu_address_t dst, NvU32 value, size_t size);
+void uvm_hal_volta_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 value, size_t size);
+
 void uvm_hal_hopper_ce_memset_1(uvm_push_t *push, uvm_gpu_address_t dst, NvU8 value, size_t size);
 void uvm_hal_hopper_ce_memset_4(uvm_push_t *push, uvm_gpu_address_t dst, NvU32 value, size_t size);
 void uvm_hal_hopper_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 value, size_t size);
@@ -342,6 +351,7 @@ void uvm_hal_hopper_ce_memset_8(uvm_push_t *push, uvm_gpu_address_t dst, NvU64 v
 typedef void (*uvm_hal_semaphore_reduction_inc_t)(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_maxwell_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_pascal_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
+void uvm_hal_volta_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 void uvm_hal_hopper_ce_semaphore_reduction_inc(uvm_push_t *push, NvU64 gpu_va, NvU32 payload);
 
 // Initialize GPU architecture dependent properties
@@ -579,8 +589,8 @@ void uvm_hal_turing_clear_access_counter_notifications(uvm_parent_gpu_t *parent_
 struct uvm_host_hal_struct
 {
     uvm_hal_init_t init;
-    uvm_hal_host_method_validate method_validate;
-    uvm_hal_host_sw_method_validate sw_method_validate;
+    uvm_hal_host_method_is_valid method_is_valid;
+    uvm_hal_host_sw_method_is_valid sw_method_is_valid;
     uvm_hal_wait_for_idle_t wait_for_idle;
     uvm_hal_membar_sys_t membar_sys;
     uvm_hal_membar_gpu_t membar_gpu;
@@ -612,18 +622,18 @@ struct uvm_host_hal_struct
 struct uvm_ce_hal_struct
 {
     uvm_hal_init_t init;
-    uvm_hal_ce_method_validate method_validate;
+    uvm_hal_ce_method_is_valid method_is_valid;
     uvm_hal_semaphore_release_t semaphore_release;
     uvm_hal_semaphore_timestamp_t semaphore_timestamp;
     uvm_hal_ce_offset_out_t offset_out;
     uvm_hal_ce_offset_in_out_t offset_in_out;
     uvm_hal_ce_phys_mode_t phys_mode;
     uvm_hal_ce_plc_mode_t plc_mode;
-    uvm_hal_ce_memcopy_validate memcopy_validate;
+    uvm_hal_ce_memcopy_is_valid memcopy_is_valid;
     uvm_hal_ce_memcopy_patch_src memcopy_patch_src;
     uvm_hal_memcopy_t memcopy;
     uvm_hal_memcopy_v_to_v_t memcopy_v_to_v;
-    uvm_hal_ce_memset_validate memset_validate;
+    uvm_hal_ce_memset_is_valid memset_is_valid;
     uvm_hal_memset_1_t memset_1;
     uvm_hal_memset_4_t memset_4;
     uvm_hal_memset_8_t memset_8;
@@ -725,5 +735,21 @@ static void uvm_hal_wfi_membar(uvm_push_t *push, uvm_membar_t membar)
 // Internal helper used by the TLB invalidate hal functions. This issues the
 // appropriate Host membar(s) after a TLB invalidate.
 void uvm_hal_tlb_invalidate_membar(uvm_push_t *push, uvm_membar_t membar);
+
+// Internal helper used by architectures/engines that don't support a FLUSH
+// operation with a FLUSH_TYPE on the semaphore release method, e.g., pre-Volta
+// CE. It inspects and clears the MEMBAR push flags, issues a Host WFI +
+// membar.gpu for MEMBAR_GPU or returns true to indicate the caller to use the
+// engine's FLUSH for MEMBAR_SYS.
+bool uvm_hal_membar_before_semaphore(uvm_push_t *push);
+
+// Determine the appropriate membar to use on TLB invalidates for GPU PTE
+// permissions downgrades.
+//
+// gpu is the GPU on which the TLB invalidate is happening.
+//
+// is_local_vidmem indicates whether all mappings being invalidated pointed to
+// the local GPU's memory.
+uvm_membar_t uvm_hal_downgrade_membar_type(uvm_gpu_t *gpu, bool is_local_vidmem);
 
 #endif // __UVM_HAL_H__

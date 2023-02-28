@@ -170,6 +170,7 @@ typedef void *PUID_TOKEN;
 #define RS_LOCK_FLAGS_NO_CUSTOM_LOCK_3          NVBIT(4)
 #define RS_LOCK_FLAGS_NO_DEPENDANT_SESSION_LOCK NVBIT(5)
 #define RS_LOCK_FLAGS_FREE_SESSION_LOCK         NVBIT(6)
+#define RS_LOCK_FLAGS_LOW_PRIORITY              NVBIT(7)
 
 /// RS_LOCK_STATE
 #define RS_LOCK_STATE_TOP_LOCK_ACQUIRED        NVBIT(0)
@@ -276,6 +277,13 @@ struct CALL_CONTEXT
     RS_LOCK_INFO  *pLockInfo;       ///< Saved locking context information for the call
     API_SECURITY_INFO secInfo;
     RS_RES_CONTROL_PARAMS_INTERNAL  *pControlParams; ///< parameters of the call [optional]
+
+    void *pSerializedParams;        ///< Serialized version of the params
+    void *pDeserializedParams;      ///< Deserialized version of the params
+    NvU32 serializedSize;           ///< Serialized size
+    NvU32 deserializedSize;         ///< Deserialized size
+    NvBool bReserialize;            ///< Reserialize before calling into GSP
+    NvBool bRestoreParams;          ///< Need to restore pParams
 };
 
 typedef enum {

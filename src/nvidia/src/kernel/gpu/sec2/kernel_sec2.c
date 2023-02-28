@@ -27,6 +27,8 @@
 #include "gpu/eng_desc.h"
 #include "gpu/falcon/kernel_falcon.h"
 #include "gpu/gpu.h"
+#include "gpu/fifo/kernel_fifo.h"
+#include "rmapi/event.h"
 
 NV_STATUS
 ksec2ConstructEngine_IMPL
@@ -51,4 +53,43 @@ ksec2Destruct_IMPL
 
     portMemFree((void * /* const_cast */) pKernelSec2->pGenericBlUcodeImg);
     pKernelSec2->pGenericBlUcodeImg = NULL;
+}
+
+void 
+ksec2RegisterIntrService_IMPL
+(
+    OBJGPU *pGpu,
+    KernelSec2 *pKernelSec2,
+    IntrServiceRecord pRecords[MC_ENGINE_IDX_MAX]
+)
+{
+    KernelFalcon *pKernelFalcon = staticCast(pKernelSec2, KernelFalcon);
+    NV_ASSERT_OR_RETURN_VOID(pKernelFalcon);
+
+    // Register to handle nonstalling interrupts
+    NV_ASSERT_OR_RETURN_VOID(pKernelFalcon->physEngDesc != ENG_INVALID);
+
+    NvU32 mcIdx = MC_ENGINE_IDX_SEC2;
+
+    NV_PRINTF(LEVEL_INFO, "Registering 0x%x/0x%x to handle SEC2 nonstall intr\n", pKernelFalcon->physEngDesc, mcIdx);
+
+    NV_ASSERT(pRecords[mcIdx].pNotificationService == NULL);
+    pRecords[mcIdx].bFifoWaiveNotify = NV_FALSE;
+    pRecords[mcIdx].pNotificationService = staticCast(pKernelSec2, IntrService);
+
+}
+
+NV_STATUS 
+ksec2ServiceNotificationInterrupt_IMPL
+(
+    OBJGPU *pGpu,
+    KernelSec2 *pKernelSec2,
+    IntrServiceServiceNotificationInterruptArguments *pParams
+)
+{
+    NV_PRINTF(LEVEL_INFO, "servicing nonstall intr for SEC2 engine\n");
+
+    // Wake up channels waiting on this event
+    engineNonStallIntrNotify(pGpu, RM_ENGINE_TYPE_SEC2);
+    return NV_OK;
 }

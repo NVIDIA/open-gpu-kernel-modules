@@ -122,6 +122,38 @@ static NvBool __nvoc_thunk_RmResource_ctxdmaAccessCallback(struct ContextDma *pR
     return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
+static void __nvoc_thunk_Notifier_ctxdmaSetNotificationShare(struct ContextDma *pNotifier, struct NotifShare *pNotifShare) {
+    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset), pNotifShare);
+}
+
+static NvU32 __nvoc_thunk_RsResource_ctxdmaGetRefCount(struct ContextDma *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_ctxdmaAddAdditionalDependants(struct RsClient *pClient, struct ContextDma *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_ctxdmaControl_Prologue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
+}
+
+static void __nvoc_thunk_RmResource_ctxdmaControl_Epilogue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_ctxdmaControlLookup(struct ContextDma *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pParams, ppEntry);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_ctxdmaControl(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_ctxdmaUnmap(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pCpuMapping);
+}
+
 static NV_STATUS __nvoc_thunk_RmResource_ctxdmaGetMemInterMapParams(struct ContextDma *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
     return rmresGetMemInterMapParams((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ContextDma_RmResource.offset), pParams);
 }
@@ -130,40 +162,20 @@ static NV_STATUS __nvoc_thunk_RmResource_ctxdmaGetMemoryMappingDescriptor(struct
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ContextDma_RmResource.offset), ppMemDesc);
 }
 
-static void __nvoc_thunk_Notifier_ctxdmaSetNotificationShare(struct ContextDma *pNotifier, struct NotifShare *pNotifShare) {
-    notifySetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset), pNotifShare);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_ctxdmaControl(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pParams);
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_ctxdmaControlFilter(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pParams);
-}
-
-static NvU32 __nvoc_thunk_RsResource_ctxdmaGetRefCount(struct ContextDma *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_ctxdmaUnregisterEvent(struct ContextDma *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, NvHandle hEventClient, NvHandle hEvent) {
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_ctxdmaUnmap(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pCpuMapping);
+static NV_STATUS __nvoc_thunk_RmResource_ctxdmaControlSerialization_Prologue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_ctxdmaCanCopy(struct ContextDma *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_ctxdmaControl_Prologue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
-}
-
-static void __nvoc_thunk_RsResource_ctxdmaAddAdditionalDependants(struct RsClient *pClient, struct ContextDma *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pReference);
 }
 
 static void __nvoc_thunk_RsResource_ctxdmaPreDestruct(struct ContextDma *pResource) {
@@ -174,20 +186,16 @@ static NV_STATUS __nvoc_thunk_RsResource_ctxdmaIsDuplicate(struct ContextDma *pR
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), hMemory, pDuplicate);
 }
 
+static void __nvoc_thunk_RmResource_ctxdmaControlSerialization_Epilogue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
+}
+
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_ctxdmaGetNotificationListPtr(struct ContextDma *pNotifier) {
     return notifyGetNotificationListPtr((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset));
 }
 
-static void __nvoc_thunk_RmResource_ctxdmaControl_Epilogue(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
-}
-
 static struct NotifShare *__nvoc_thunk_Notifier_ctxdmaGetNotificationShare(struct ContextDma *pNotifier) {
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_ContextDma_Notifier.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_ctxdmaControlLookup(struct ContextDma *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pParams, ppEntry);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_ctxdmaMap(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -328,39 +336,43 @@ static void __nvoc_init_funcTable_ContextDma_1(ContextDma *pThis) {
 
     pThis->__ctxdmaAccessCallback__ = &__nvoc_thunk_RmResource_ctxdmaAccessCallback;
 
+    pThis->__ctxdmaSetNotificationShare__ = &__nvoc_thunk_Notifier_ctxdmaSetNotificationShare;
+
+    pThis->__ctxdmaGetRefCount__ = &__nvoc_thunk_RsResource_ctxdmaGetRefCount;
+
+    pThis->__ctxdmaAddAdditionalDependants__ = &__nvoc_thunk_RsResource_ctxdmaAddAdditionalDependants;
+
+    pThis->__ctxdmaControl_Prologue__ = &__nvoc_thunk_RmResource_ctxdmaControl_Prologue;
+
+    pThis->__ctxdmaControl_Epilogue__ = &__nvoc_thunk_RmResource_ctxdmaControl_Epilogue;
+
+    pThis->__ctxdmaControlLookup__ = &__nvoc_thunk_RsResource_ctxdmaControlLookup;
+
+    pThis->__ctxdmaControl__ = &__nvoc_thunk_RsResource_ctxdmaControl;
+
+    pThis->__ctxdmaUnmap__ = &__nvoc_thunk_RsResource_ctxdmaUnmap;
+
     pThis->__ctxdmaGetMemInterMapParams__ = &__nvoc_thunk_RmResource_ctxdmaGetMemInterMapParams;
 
     pThis->__ctxdmaGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_ctxdmaGetMemoryMappingDescriptor;
 
-    pThis->__ctxdmaSetNotificationShare__ = &__nvoc_thunk_Notifier_ctxdmaSetNotificationShare;
-
-    pThis->__ctxdmaControl__ = &__nvoc_thunk_RsResource_ctxdmaControl;
-
     pThis->__ctxdmaControlFilter__ = &__nvoc_thunk_RsResource_ctxdmaControlFilter;
-
-    pThis->__ctxdmaGetRefCount__ = &__nvoc_thunk_RsResource_ctxdmaGetRefCount;
 
     pThis->__ctxdmaUnregisterEvent__ = &__nvoc_thunk_Notifier_ctxdmaUnregisterEvent;
 
-    pThis->__ctxdmaUnmap__ = &__nvoc_thunk_RsResource_ctxdmaUnmap;
+    pThis->__ctxdmaControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_ctxdmaControlSerialization_Prologue;
 
     pThis->__ctxdmaCanCopy__ = &__nvoc_thunk_RsResource_ctxdmaCanCopy;
-
-    pThis->__ctxdmaControl_Prologue__ = &__nvoc_thunk_RmResource_ctxdmaControl_Prologue;
-
-    pThis->__ctxdmaAddAdditionalDependants__ = &__nvoc_thunk_RsResource_ctxdmaAddAdditionalDependants;
 
     pThis->__ctxdmaPreDestruct__ = &__nvoc_thunk_RsResource_ctxdmaPreDestruct;
 
     pThis->__ctxdmaIsDuplicate__ = &__nvoc_thunk_RsResource_ctxdmaIsDuplicate;
 
+    pThis->__ctxdmaControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_ctxdmaControlSerialization_Epilogue;
+
     pThis->__ctxdmaGetNotificationListPtr__ = &__nvoc_thunk_Notifier_ctxdmaGetNotificationListPtr;
 
-    pThis->__ctxdmaControl_Epilogue__ = &__nvoc_thunk_RmResource_ctxdmaControl_Epilogue;
-
     pThis->__ctxdmaGetNotificationShare__ = &__nvoc_thunk_Notifier_ctxdmaGetNotificationShare;
-
-    pThis->__ctxdmaControlLookup__ = &__nvoc_thunk_RsResource_ctxdmaControlLookup;
 
     pThis->__ctxdmaMap__ = &__nvoc_thunk_RsResource_ctxdmaMap;
 
@@ -391,12 +403,15 @@ NV_STATUS __nvoc_objCreate_ContextDma(ContextDma **ppThis, Dynamic *pParent, NvU
     Object *pParentObj;
     ContextDma *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(ContextDma));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ContextDma), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(ContextDma));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ContextDma);
+
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -413,11 +428,17 @@ NV_STATUS __nvoc_objCreate_ContextDma(ContextDma **ppThis, Dynamic *pParent, NvU
     if (status != NV_OK) goto __nvoc_objCreate_ContextDma_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_ContextDma_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(ContextDma));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

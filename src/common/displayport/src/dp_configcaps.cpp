@@ -115,14 +115,6 @@ struct DPCDHALImpl : DPCDHAL
         // DPCD Offset 0119h [0] - If we grant the extendedSleepWakeTimeoutRequest
         bool      bExtendedSleepWakeTimeoutGranted;
 
-        // 0x2206, if the sink supports 128b/132b
-        bool      bDP20ChannelCodingSupported;
-        // 0x2215
-        bool      bUHBR_10GSupported;
-        bool      bUHBR_13_5GSupported;
-        bool      bUHBR_20GSupported;
-
-
         // DPCD Offset F0002h - Number of Physical Repeaters present (after mapping) between Source and Sink
         unsigned  phyRepeaterCount;
         // DPCD offset 700 - EDP_DPCD_REV
@@ -134,13 +126,6 @@ struct DPCDHALImpl : DPCDHAL
             LinkRate  maxLinkRate;                              // DPCD offset F0001h
             unsigned  maxLaneCount;                             // DPCD offset F0004h
             unsigned  phyRepeaterExtendedWakeTimeoutMs;         // DPCD offset F0005h
-
-            // 0xF0006, if the PHY Repeater supports 128b/132b
-            bool      bDP20ChannelCodingSupported;
-            // 0xF0007
-            bool      UHBR_10GSupported;
-            bool      UHBR_13_5GSupported;
-            bool      UHBR_20GSupported;
         } repeaterCaps;
 
         PCONCaps pconCaps;
@@ -506,45 +491,6 @@ struct DPCDHALImpl : DPCDHAL
 
         caps.numberAudioEndpoints = (unsigned)(DRF_VAL(_DPCD, _NUMBER_OF_AUDIO_ENDPOINTS, _VALUE, buffer[0x2]));
 
-        // 02206h
-        if (AuxRetry::ack == bus.read(NV_DPCD14_EXTENDED_MAIN_LINK_CHANNEL_CODING, &buffer[0], 1))
-        {
-            caps.bDP20ChannelCodingSupported =
-                                   FLD_TEST_DRF(_DPCD14,
-                                                _EXTENDED_MAIN_LINK_CHANNEL_CODING,
-                                                _ANSI_128B_132B,
-                                                _YES,
-                                                buffer[0]);
-            if (caps.bDP20ChannelCodingSupported == true)
-            {
-                // 0x2215
-                if (AuxRetry::ack == bus.read(NV_DPCD20_128B_132B_SUPPORTED_LINK_RATES, &buffer[0], 1))
-                {
-                    caps.bUHBR_10GSupported =
-                         FLD_TEST_DRF(_DPCD20,
-                                      _128B_132B_SUPPORTED_LINK_RATES,
-                                      _UHBR10,
-                                      _YES,
-                                      buffer[0]);
-
-                    caps.bUHBR_13_5GSupported =
-                         FLD_TEST_DRF(_DPCD20,
-                                      _128B_132B_SUPPORTED_LINK_RATES,
-                                      _UHBR13_5,
-                                      _YES,
-                                      buffer[0]);
-
-                    caps.bUHBR_20GSupported =
-                         FLD_TEST_DRF(_DPCD20,
-                                      _128B_132B_SUPPORTED_LINK_RATES,
-                                      _UHBR20,
-                                      _YES,
-                                      buffer[0]);
-                }
-                DP_ASSERT(caps.bUHBR_10GSupported && "Unknown max link rate or HBR2 without at least DP 1.2. Assuming DP 1.1 defaults");
-            }
-        }
-
         if (bLttprSupported)
         {
             // Burst read from 0xF0000 to 0xF0007
@@ -583,42 +529,6 @@ struct DPCDHALImpl : DPCDHAL
                                      _PHY_REPEATER_EXTENDED_WAKE_TIMEOUT,
                                      _REQ, buffer[0x5]) * 10;
 
-                        // An LTTPR that supports 128b/132b channel coding shall program this register to 20h.
-                        if (lttprIsAtLeastVersion(2, 0))
-                        {
-                            caps.repeaterCaps.bDP20ChannelCodingSupported =
-                                 FLD_TEST_DRF(_DPCD14,
-                                              _PHY_REPEATER_MAIN_LINK_CHANNEL_CODING,
-                                              _128B_132B_SUPPORTED,
-                                              _YES,
-                                              buffer[6]);
-
-                            caps.repeaterCaps.UHBR_10GSupported =
-                                 FLD_TEST_DRF(_DPCD14,
-                                              _PHY_REPEATER_128B_132B_RATES,
-                                              _10G_SUPPORTED,
-                                              _YES,
-                                              buffer[7]);
-
-                            caps.repeaterCaps.UHBR_13_5GSupported =
-                                 FLD_TEST_DRF(_DPCD14,
-                                              _PHY_REPEATER_128B_132B_RATES,
-                                              _13_5G_SUPPORTED,
-                                              _YES,
-                                              buffer[7]);
-
-                            caps.repeaterCaps.UHBR_20GSupported =
-                                 FLD_TEST_DRF(_DPCD14,
-                                              _PHY_REPEATER_128B_132B_RATES,
-                                              _20G_SUPPORTED,
-                                              _YES,
-                                              buffer[7]);
-
-                            if (buffer[7] && !caps.repeaterCaps.bDP20ChannelCodingSupported)
-                            {
-                                DP_ASSERT(0 && "UHBR is supported without 128b/132b Channel Encoding Supported!");
-                            }
-                        }
                     }
                     else
                     {
@@ -828,6 +738,24 @@ struct DPCDHALImpl : DPCDHAL
             }
         }
         return bSDPExtnForColorimetry;
+    }
+    
+    virtual bool getRootAsyncSDPSupported()
+    {
+        NvU8 byte = 0;
+        if (!caps.extendedRxCapsPresent)
+            return false;
+        if (AuxRetry::ack != bus.read(NV_DPCD14_DPRX_FEATURE_ENUM_LIST, &byte,  sizeof byte) ||
+            FLD_TEST_DRF(_DPCD14, _DPRX_FEATURE_ENUM_LIST, _ADAPTIVE_SYNC_SDP_SUPPORTED, _NO, byte))
+        {
+            return false;
+        }
+        if (AuxRetry::ack != bus.read(NV_DPCD_DOWN_STREAM_PORT, &byte,  sizeof byte) ||
+            FLD_TEST_DRF(_DPCD, _DOWN_STREAM_PORT, _MSA_TIMING_PAR_IGNORED, _NO, byte))
+        {
+            return false;
+        }
+        return true;
     }
 
 
@@ -2721,8 +2649,8 @@ struct DPCDHALImpl : DPCDHAL
     virtual void resetProtocolConverter()
     {
         NvU8    data = 0;
-        bus.write(NV_DPCD20_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data));
-        bus.write(NV_DPCD20_PCON_FRL_LINK_CONFIG_2, &data, sizeof(data));
+        bus.write(NV_DPCD14_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data));
+        bus.write(NV_DPCD14_PCON_FRL_LINK_CONFIG_2, &data, sizeof(data));
 
     }
 
@@ -2732,26 +2660,26 @@ struct DPCDHALImpl : DPCDHAL
 
         if (bEnableSourceControlMode)
         {
-            data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _SRC_CONTROL_MODE, _ENABLE, data);
+            data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _SRC_CONTROL_MODE, _ENABLE, data);
             if (bEnableFRLMode)
             {
-                data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _LINK_FRL_MODE, _ENABLE, data);
-                data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _IRQ_LINK_FRL_MODE, _ENABLE, data);
+                data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _LINK_FRL_MODE, _ENABLE, data);
+                data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _IRQ_LINK_FRL_MODE, _ENABLE, data);
             }
             else
             {
-                data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _LINK_FRL_MODE, _DISABLE, data);
-                data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _IRQ_LINK_FRL_MODE, _DISABLE, data);
+                data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _LINK_FRL_MODE, _DISABLE, data);
+                data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _IRQ_LINK_FRL_MODE, _DISABLE, data);
             }
         }
         else
         {
-            data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _SRC_CONTROL_MODE, _DISABLE, data);
-            data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _LINK_FRL_MODE, _DISABLE, data);
-            data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _IRQ_LINK_FRL_MODE, _DISABLE, data);
+            data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _SRC_CONTROL_MODE, _DISABLE, data);
+            data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _LINK_FRL_MODE, _DISABLE, data);
+            data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _IRQ_LINK_FRL_MODE, _DISABLE, data);
         }
 
-        if (AuxRetry::ack != bus.write(NV_DPCD20_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.write(NV_DPCD14_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
         {
             return false;
         }
@@ -2789,12 +2717,12 @@ struct DPCDHALImpl : DPCDHAL
         // Clear only this interrupt bit.
         this->clearHdmiLinkStatusChanged();
 
-        if (AuxRetry::ack != bus.read(NV_DPCD20_PCON_HDMI_TX_LINK_STATUS, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.read(NV_DPCD14_PCON_HDMI_TX_LINK_STATUS, &data, sizeof(data)))
         {
             return false;
         }
 
-        if (FLD_TEST_DRF(_DPCD20, _PCON_HDMI_TX_LINK_STATUS, _LINK_READY, _YES, data))
+        if (FLD_TEST_DRF(_DPCD14, _PCON_HDMI_TX_LINK_STATUS, _LINK_READY, _YES, data))
         {
             *bFrlReady = true;
         }
@@ -2819,22 +2747,22 @@ struct DPCDHALImpl : DPCDHAL
             // PCON FW trains for all Link BW selected in Link BW Mask (Bit 0~5)
             //
             data = linkBwMask;
-            data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_2, _FRL_LT_CONTROL,
+            data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_2, _FRL_LT_CONTROL,
                                _EXTENDED, data);
         }
         else
         {
             // Set FRL_LT_CONTROL to Normal mode, so PCON stops when first FRL LT succeed.
-            data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_2, _FRL_LT_CONTROL,
+            data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_2, _FRL_LT_CONTROL,
                                _NORMAL, data);
         }
 
-        if (AuxRetry::ack != bus.write(NV_DPCD20_PCON_FRL_LINK_CONFIG_2, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.write(NV_DPCD14_PCON_FRL_LINK_CONFIG_2, &data, sizeof(data)))
         {
             return false;
         }
 
-        if (AuxRetry::ack != bus.read(NV_DPCD20_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.read(NV_DPCD14_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
         {
             return false;
         }
@@ -2842,7 +2770,7 @@ struct DPCDHALImpl : DPCDHAL
         if (bEnableConcurrentMode && caps.pconCaps.bConcurrentLTSupported)
         {
             // Client selects concurrent.
-            data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _CONCURRENT_LT_MODE,
+            data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _CONCURRENT_LT_MODE,
                                _ENABLE, data);
         }
         else
@@ -2850,15 +2778,15 @@ struct DPCDHALImpl : DPCDHAL
             //
             // Don't do concurrent LT for now.
             //
-            data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _CONCURRENT_LT_MODE,
+            data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _CONCURRENT_LT_MODE,
                                _DISABLE, data);
         }
-        data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _HDMI_LINK,
+        data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _HDMI_LINK,
                            _ENABLE, data);
-        data = FLD_SET_DRF_NUM(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _MAX_LINK_BW,
+        data = FLD_SET_DRF_NUM(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _MAX_LINK_BW,
                                targetBw, data);
 
-        if (AuxRetry::ack != bus.write(NV_DPCD20_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.write(NV_DPCD14_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
         {
             return false;
         }
@@ -2888,16 +2816,16 @@ struct DPCDHALImpl : DPCDHAL
             return false;
         }
         // Check HDMI Link Active status (0x303B Bit 0) and Link Config (0x3036)
-        if (AuxRetry::ack != bus.read(NV_DPCD20_PCON_HDMI_TX_LINK_STATUS, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.read(NV_DPCD14_PCON_HDMI_TX_LINK_STATUS, &data, sizeof(data)))
         {
             return false;
         }
 
-        if (FLD_TEST_DRF(_DPCD20, _PCON_HDMI_TX_LINK_STATUS, _LINK_ACTIVE, _YES, data))
+        if (FLD_TEST_DRF(_DPCD14, _PCON_HDMI_TX_LINK_STATUS, _LINK_ACTIVE, _YES, data))
         {
-            if (AuxRetry::ack == bus.read(NV_DPCD20_PCON_HDMI_LINK_CONFIG_STATUS, &data, sizeof(data)))
+            if (AuxRetry::ack == bus.read(NV_DPCD14_PCON_HDMI_LINK_CONFIG_STATUS, &data, sizeof(data)))
             {
-                *frlRateMask = DRF_VAL(_DPCD20, _PCON_HDMI_LINK_CONFIG_STATUS, _LT_RESULT, data);
+                *frlRateMask = DRF_VAL(_DPCD14, _PCON_HDMI_LINK_CONFIG_STATUS, _LT_RESULT, data);
             }
 
         }
@@ -2912,18 +2840,18 @@ struct DPCDHALImpl : DPCDHAL
         if (bLinkActive == NULL && bLinkReady == NULL)
             return false;
 
-        if (AuxRetry::ack != bus.read(NV_DPCD20_PCON_HDMI_TX_LINK_STATUS, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.read(NV_DPCD14_PCON_HDMI_TX_LINK_STATUS, &data, sizeof(data)))
         {
             return false;
         }
         if (bLinkReady != NULL)
         {
-            *bLinkReady = (FLD_TEST_DRF(_DPCD20, _PCON_HDMI_TX_LINK_STATUS,
+            *bLinkReady = (FLD_TEST_DRF(_DPCD14, _PCON_HDMI_TX_LINK_STATUS,
                                         _LINK_READY, _YES, data));
         }
         if (bLinkActive != NULL)
         {
-            *bLinkActive = (FLD_TEST_DRF(_DPCD20, _PCON_HDMI_TX_LINK_STATUS,
+            *bLinkActive = (FLD_TEST_DRF(_DPCD14, _PCON_HDMI_TX_LINK_STATUS,
                                          _LINK_ACTIVE, _YES, data));
         }
         return true;
@@ -2938,12 +2866,12 @@ struct DPCDHALImpl : DPCDHAL
         NvU8    data = 0;
         NvU32   loopCount;
         NvU32   frlRate;
-        if (AuxRetry::ack != bus.read(NV_DPCD20_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.read(NV_DPCD14_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
         {
             return false;
         }
-        data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _HDMI_LINK, _DISABLE, data);
-        if (AuxRetry::ack != bus.write(NV_DPCD20_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
+        data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _HDMI_LINK, _DISABLE, data);
+        if (AuxRetry::ack != bus.write(NV_DPCD14_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
         {
             return false;
         }
@@ -2954,14 +2882,14 @@ struct DPCDHALImpl : DPCDHAL
         data = 0;
         do
         {
-            if (AuxRetry::ack != bus.read(NV_DPCD20_PCON_HDMI_TX_LINK_STATUS,
+            if (AuxRetry::ack != bus.read(NV_DPCD14_PCON_HDMI_TX_LINK_STATUS,
                                           &data, sizeof(data)))
                 continue;
-            if (FLD_TEST_DRF(_DPCD20, _PCON_HDMI_TX_LINK_STATUS, _LINK_READY, _YES, data))
+            if (FLD_TEST_DRF(_DPCD14, _PCON_HDMI_TX_LINK_STATUS, _LINK_READY, _YES, data))
                 break;
         } while (timeout.valid());
 
-        if (FLD_TEST_DRF(_DPCD20, _PCON_HDMI_TX_LINK_STATUS, _LINK_READY, _NO, data))
+        if (FLD_TEST_DRF(_DPCD14, _PCON_HDMI_TX_LINK_STATUS, _LINK_READY, _NO, data))
         {
             return false;
         }
@@ -2970,12 +2898,12 @@ struct DPCDHALImpl : DPCDHAL
         // 5. Set HDMI Enable Bit.
         data = 0;
 
-        if (AuxRetry::ack != bus.read(NV_DPCD20_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
+        if (AuxRetry::ack != bus.read(NV_DPCD14_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
         {
             return false;
         }
-        data = FLD_SET_DRF(_DPCD20, _PCON_FRL_LINK_CONFIG_1, _HDMI_LINK, _ENABLE, data);
-        if (AuxRetry::ack != bus.write(NV_DPCD20_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
+        data = FLD_SET_DRF(_DPCD14, _PCON_FRL_LINK_CONFIG_1, _HDMI_LINK, _ENABLE, data);
+        if (AuxRetry::ack != bus.write(NV_DPCD14_PCON_FRL_LINK_CONFIG_1, &data, sizeof(data)))
         {
             return false;
         }
@@ -3202,9 +3130,9 @@ struct DPCDHALImpl : DPCDHAL
         if (retVal)
         {
             psrEvt->sinkCapChange = DRF_VAL(_DPCD,
-                _PANEL_SELF_REFRESH_EVENT_STATUS,
-                _CAP_CHANGE,
-                config);
+                                            _PANEL_SELF_REFRESH_EVENT_STATUS,
+                                            _CAP_CHANGE,
+                                            config);
         }
         return retVal;
     }

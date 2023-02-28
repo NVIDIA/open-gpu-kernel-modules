@@ -291,11 +291,6 @@ NV_STATUS gkflcnResetHw_IMPL(OBJGPU *pGpu, GenericKernelFalcon *pGenKernFlcn)
     NV_ASSERT_FAILED("This should only be called on full KernelFalcon implementations");
     return NV_ERR_NOT_SUPPORTED;
 }
-NvBool gkflcnIsEngineInReset_IMPL(OBJGPU *pGpu, GenericKernelFalcon *pGenKernFlcn)
-{
-    NV_ASSERT_FAILED("This should only be called on full KernelFalcon implementations");
-    return NV_FALSE;
-}
 
 void gkflcnRegisterIntrService_IMPL(OBJGPU *pGpu, GenericKernelFalcon *pGenericKernelFalcon, IntrServiceRecord pRecords[MC_ENGINE_IDX_MAX])
 {

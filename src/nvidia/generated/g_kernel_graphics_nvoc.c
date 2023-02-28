@@ -107,7 +107,7 @@ static NV_STATUS __nvoc_thunk_KernelGraphics_engstateStatePostLoad(OBJGPU *arg0,
     return kgraphicsStatePostLoad(arg0, (struct KernelGraphics *)(((unsigned char *)arg1) - __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset), flags);
 }
 
-static void __nvoc_thunk_KernelGraphics_intrservRegisterIntrService(OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[163]) {
+static void __nvoc_thunk_KernelGraphics_intrservRegisterIntrService(OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[166]) {
     kgraphicsRegisterIntrService(arg0, (struct KernelGraphics *)(((unsigned char *)arg1) - __nvoc_rtti_KernelGraphics_IntrService.offset), arg2);
 }
 
@@ -121,10 +121,6 @@ static NvBool __nvoc_thunk_KernelGraphics_intrservClearInterrupt(OBJGPU *arg0, s
 
 static NvU32 __nvoc_thunk_KernelGraphics_intrservServiceInterrupt(OBJGPU *arg0, struct IntrService *arg1, IntrServiceServiceInterruptArguments *arg2) {
     return kgraphicsServiceInterrupt(arg0, (struct KernelGraphics *)(((unsigned char *)arg1) - __nvoc_rtti_KernelGraphics_IntrService.offset), arg2);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgraphicsReconcileTunableState(POBJGPU pGpu, struct KernelGraphics *pEngstate, void *pTunableState) {
-    return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset), pTunableState);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgraphicsStatePreLoad(POBJGPU pGpu, struct KernelGraphics *pEngstate, NvU32 arg0) {
@@ -149,26 +145,6 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgraphicsStatePreInitLocked(POBJGPU pG
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgraphicsStatePreInitUnlocked(POBJGPU pGpu, struct KernelGraphics *pEngstate) {
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset));
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgraphicsGetTunableState(POBJGPU pGpu, struct KernelGraphics *pEngstate, void *pTunableState) {
-    return engstateGetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgraphicsCompareTunableState(POBJGPU pGpu, struct KernelGraphics *pEngstate, void *pTunables1, void *pTunables2) {
-    return engstateCompareTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset), pTunables1, pTunables2);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_kgraphicsFreeTunableState(POBJGPU pGpu, struct KernelGraphics *pEngstate, void *pTunableState) {
-    engstateFreeTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgraphicsAllocTunableState(POBJGPU pGpu, struct KernelGraphics *pEngstate, void **ppTunableState) {
-    return engstateAllocTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset), ppTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgraphicsSetTunableState(POBJGPU pGpu, struct KernelGraphics *pEngstate, void *pTunableState) {
-    return engstateSetTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset), pTunableState);
 }
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelGraphics = 
@@ -232,6 +208,20 @@ void __nvoc_init_dataField_KernelGraphics(KernelGraphics *pThis, RmHalspecOwner 
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->bRtvCbSupported = ((NvBool)(0 == 0));
+    }
+
+    // Hal field -- bFecsRecordUcodeSeqnoSupported
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+        {
+            pThis->bFecsRecordUcodeSeqnoSupported = ((NvBool)(0 == 0));
+        }
+        // default
+        else
+        {
+            pThis->bFecsRecordUcodeSeqnoSupported = ((NvBool)(0 != 0));
+        }
     }
 }
 
@@ -322,8 +312,6 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, RmHals
 
     pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_thunk_KernelGraphics_intrservServiceInterrupt;
 
-    pThis->__kgraphicsReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsReconcileTunableState;
-
     pThis->__kgraphicsStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsStatePreLoad;
 
     pThis->__kgraphicsStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsStatePostUnload;
@@ -335,16 +323,6 @@ static void __nvoc_init_funcTable_KernelGraphics_1(KernelGraphics *pThis, RmHals
     pThis->__kgraphicsStatePreInitLocked__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsStatePreInitLocked;
 
     pThis->__kgraphicsStatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsStatePreInitUnlocked;
-
-    pThis->__kgraphicsGetTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsGetTunableState;
-
-    pThis->__kgraphicsCompareTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsCompareTunableState;
-
-    pThis->__kgraphicsFreeTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsFreeTunableState;
-
-    pThis->__kgraphicsAllocTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsAllocTunableState;
-
-    pThis->__kgraphicsSetTunableState__ = &__nvoc_thunk_OBJENGSTATE_kgraphicsSetTunableState;
 }
 
 void __nvoc_init_funcTable_KernelGraphics(KernelGraphics *pThis, RmHalspecOwner *pRmhalspecowner) {
@@ -369,12 +347,15 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics **ppThis, Dynamic *pPar
     KernelGraphics *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(KernelGraphics));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelGraphics), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(KernelGraphics));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelGraphics);
+
+    pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -395,11 +376,17 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics **ppThis, Dynamic *pPar
     if (status != NV_OK) goto __nvoc_objCreate_KernelGraphics_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_KernelGraphics_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(KernelGraphics));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

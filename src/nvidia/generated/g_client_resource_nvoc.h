@@ -30,6 +30,7 @@ extern "C" {
  */
 #include "g_client_resource_nvoc.h"
 
+
 #ifndef _CLIENT_RESOURCE_H_
 #define _CLIENT_RESOURCE_H_
 
@@ -75,6 +76,8 @@ struct RmClientResource {
     struct RmClientResource *__nvoc_pbase_RmClientResource;
     NvBool (*__cliresAccessCallback__)(struct RmClientResource *, struct RsClient *, void *, RsAccessRight);
     NvBool (*__cliresShareCallback__)(struct RmClientResource *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__cliresControl_Prologue__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    void (*__cliresControl_Epilogue__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__cliresCtrlCmdSystemGetCpuInfo__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetFeatures__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetBuildVersionV2__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_PARAMS *);
@@ -127,9 +130,12 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdGpuQueryGpuDrainState__)(struct RmClientResource *, NV0000_CTRL_GPU_QUERY_DRAIN_STATE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetMemOpEnable__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_MEMOP_ENABLE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuDisableNvlinkInit__)(struct RmClientResource *, NV0000_CTRL_GPU_DISABLE_NVLINK_INIT_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdGpuSetNvlinkBwMode__)(struct RmClientResource *, NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdGpuGetNvlinkBwMode__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdLegacyConfig__)(struct RmClientResource *, NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdIdleChannels__)(struct RmClientResource *, NV0000_CTRL_GPU_IDLE_CHANNELS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdPushGspUcode__)(struct RmClientResource *, NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdGpuGetVideoLinks__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGsyncGetAttachedIds__)(struct RmClientResource *, NV0000_CTRL_GSYNC_GET_ATTACHED_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGsyncGetIdInfo__)(struct RmClientResource *, NV0000_CTRL_GSYNC_GET_ID_INFO_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdEventSetNotification__)(struct RmClientResource *, NV0000_CTRL_EVENT_SET_NOTIFICATION_PARAMS *);
@@ -167,13 +173,13 @@ struct RmClientResource {
     void (*__cliresAddAdditionalDependants__)(struct RsClient *, struct RmClientResource *, RsResourceRef *);
     NvU32 (*__cliresGetRefCount__)(struct RmClientResource *);
     NV_STATUS (*__cliresUnregisterEvent__)(struct RmClientResource *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__cliresControlSerialization_Prologue__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__cliresCanCopy__)(struct RmClientResource *);
-    NV_STATUS (*__cliresControl_Prologue__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__cliresPreDestruct__)(struct RmClientResource *);
     NV_STATUS (*__cliresUnmapFrom__)(struct RmClientResource *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__cliresIsDuplicate__)(struct RmClientResource *, NvHandle, NvBool *);
+    void (*__cliresControlSerialization_Epilogue__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__cliresGetNotificationListPtr__)(struct RmClientResource *);
-    void (*__cliresControl_Epilogue__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     struct NotifShare *(*__cliresGetNotificationShare__)(struct RmClientResource *);
     NV_STATUS (*__cliresControlLookup__)(struct RmClientResource *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__cliresMap__)(struct RmClientResource *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -210,6 +216,8 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 
 #define cliresAccessCallback(pRmCliRes, pInvokingClient, pAllocParams, accessRight) cliresAccessCallback_DISPATCH(pRmCliRes, pInvokingClient, pAllocParams, accessRight)
 #define cliresShareCallback(pRmCliRes, pInvokingClient, pParentRef, pSharePolicy) cliresShareCallback_DISPATCH(pRmCliRes, pInvokingClient, pParentRef, pSharePolicy)
+#define cliresControl_Prologue(pRmCliRes, pCallContext, pParams) cliresControl_Prologue_DISPATCH(pRmCliRes, pCallContext, pParams)
+#define cliresControl_Epilogue(pRmCliRes, pCallContext, pParams) cliresControl_Epilogue_DISPATCH(pRmCliRes, pCallContext, pParams)
 #define cliresCtrlCmdSystemGetCpuInfo(pRmCliRes, pCpuInfoParams) cliresCtrlCmdSystemGetCpuInfo_DISPATCH(pRmCliRes, pCpuInfoParams)
 #define cliresCtrlCmdSystemGetFeatures(pRmCliRes, pParams) cliresCtrlCmdSystemGetFeatures_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetBuildVersionV2(pRmCliRes, pParams) cliresCtrlCmdSystemGetBuildVersionV2_DISPATCH(pRmCliRes, pParams)
@@ -262,9 +270,12 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdGpuQueryGpuDrainState(pRmCliRes, pParams) cliresCtrlCmdGpuQueryGpuDrainState_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdGpuGetMemOpEnable(pRmCliRes, pMemOpEnableParams) cliresCtrlCmdGpuGetMemOpEnable_DISPATCH(pRmCliRes, pMemOpEnableParams)
 #define cliresCtrlCmdGpuDisableNvlinkInit(pRmCliRes, pParams) cliresCtrlCmdGpuDisableNvlinkInit_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdGpuSetNvlinkBwMode(pRmCliRes, pParams) cliresCtrlCmdGpuSetNvlinkBwMode_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdGpuGetNvlinkBwMode(pRmCliRes, pParams) cliresCtrlCmdGpuGetNvlinkBwMode_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdLegacyConfig(pRmCliRes, pParams) cliresCtrlCmdLegacyConfig_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdIdleChannels(pRmCliRes, pParams) cliresCtrlCmdIdleChannels_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdPushGspUcode(pRmCliRes, pParams) cliresCtrlCmdPushGspUcode_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdGpuGetVideoLinks(pRmCliRes, pParams) cliresCtrlCmdGpuGetVideoLinks_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdGsyncGetAttachedIds(pRmCliRes, pGsyncAttachedIds) cliresCtrlCmdGsyncGetAttachedIds_DISPATCH(pRmCliRes, pGsyncAttachedIds)
 #define cliresCtrlCmdGsyncGetIdInfo(pRmCliRes, pGsyncIdInfoParams) cliresCtrlCmdGsyncGetIdInfo_DISPATCH(pRmCliRes, pGsyncIdInfoParams)
 #define cliresCtrlCmdEventSetNotification(pRmCliRes, pEventSetNotificationParams) cliresCtrlCmdEventSetNotification_DISPATCH(pRmCliRes, pEventSetNotificationParams)
@@ -302,13 +313,13 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresAddAdditionalDependants(pClient, pResource, pReference) cliresAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define cliresGetRefCount(pResource) cliresGetRefCount_DISPATCH(pResource)
 #define cliresUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) cliresUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define cliresControlSerialization_Prologue(pResource, pCallContext, pParams) cliresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define cliresCanCopy(pResource) cliresCanCopy_DISPATCH(pResource)
-#define cliresControl_Prologue(pResource, pCallContext, pParams) cliresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define cliresPreDestruct(pResource) cliresPreDestruct_DISPATCH(pResource)
 #define cliresUnmapFrom(pResource, pParams) cliresUnmapFrom_DISPATCH(pResource, pParams)
 #define cliresIsDuplicate(pResource, hMemory, pDuplicate) cliresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define cliresControlSerialization_Epilogue(pResource, pCallContext, pParams) cliresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define cliresGetNotificationListPtr(pNotifier) cliresGetNotificationListPtr_DISPATCH(pNotifier)
-#define cliresControl_Epilogue(pResource, pCallContext, pParams) cliresControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define cliresGetNotificationShare(pNotifier) cliresGetNotificationShare_DISPATCH(pNotifier)
 #define cliresControlLookup(pResource, pParams, ppEntry) cliresControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define cliresMap(pResource, pCallContext, pParams, pCpuMapping) cliresMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -323,6 +334,18 @@ NvBool cliresShareCallback_IMPL(struct RmClientResource *pRmCliRes, struct RsCli
 
 static inline NvBool cliresShareCallback_DISPATCH(struct RmClientResource *pRmCliRes, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pRmCliRes->__cliresShareCallback__(pRmCliRes, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+NV_STATUS cliresControl_Prologue_IMPL(struct RmClientResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+static inline NV_STATUS cliresControl_Prologue_DISPATCH(struct RmClientResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pRmCliRes->__cliresControl_Prologue__(pRmCliRes, pCallContext, pParams);
+}
+
+void cliresControl_Epilogue_IMPL(struct RmClientResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+static inline void cliresControl_Epilogue_DISPATCH(struct RmClientResource *pRmCliRes, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pRmCliRes->__cliresControl_Epilogue__(pRmCliRes, pCallContext, pParams);
 }
 
 NV_STATUS cliresCtrlCmdSystemGetCpuInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS *pCpuInfoParams);
@@ -637,6 +660,18 @@ static inline NV_STATUS cliresCtrlCmdGpuDisableNvlinkInit_DISPATCH(struct RmClie
     return pRmCliRes->__cliresCtrlCmdGpuDisableNvlinkInit__(pRmCliRes, pParams);
 }
 
+NV_STATUS cliresCtrlCmdGpuSetNvlinkBwMode_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdGpuSetNvlinkBwMode_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_SET_NVLINK_BW_MODE_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdGpuSetNvlinkBwMode__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdGpuGetNvlinkBwMode_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdGpuGetNvlinkBwMode_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdGpuGetNvlinkBwMode__(pRmCliRes, pParams);
+}
+
 NV_STATUS cliresCtrlCmdLegacyConfig_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS *pParams);
 
 static inline NV_STATUS cliresCtrlCmdLegacyConfig_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_LEGACY_CONFIG_PARAMS *pParams) {
@@ -653,6 +688,12 @@ NV_STATUS cliresCtrlCmdPushGspUcode_IMPL(struct RmClientResource *pRmCliRes, NV0
 
 static inline NV_STATUS cliresCtrlCmdPushGspUcode_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_PUSH_GSP_UCODE_PARAMS *pParams) {
     return pRmCliRes->__cliresCtrlCmdPushGspUcode__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdGpuGetVideoLinks_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdGpuGetVideoLinks_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdGpuGetVideoLinks__(pRmCliRes, pParams);
 }
 
 NV_STATUS cliresCtrlCmdGsyncGetAttachedIds_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GSYNC_GET_ATTACHED_IDS_PARAMS *pGsyncAttachedIds);
@@ -861,12 +902,12 @@ static inline NV_STATUS cliresUnregisterEvent_DISPATCH(struct RmClientResource *
     return pNotifier->__cliresUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
-static inline NvBool cliresCanCopy_DISPATCH(struct RmClientResource *pResource) {
-    return pResource->__cliresCanCopy__(pResource);
+static inline NV_STATUS cliresControlSerialization_Prologue_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__cliresControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS cliresControl_Prologue_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__cliresControl_Prologue__(pResource, pCallContext, pParams);
+static inline NvBool cliresCanCopy_DISPATCH(struct RmClientResource *pResource) {
+    return pResource->__cliresCanCopy__(pResource);
 }
 
 static inline void cliresPreDestruct_DISPATCH(struct RmClientResource *pResource) {
@@ -881,12 +922,12 @@ static inline NV_STATUS cliresIsDuplicate_DISPATCH(struct RmClientResource *pRes
     return pResource->__cliresIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
-static inline PEVENTNOTIFICATION *cliresGetNotificationListPtr_DISPATCH(struct RmClientResource *pNotifier) {
-    return pNotifier->__cliresGetNotificationListPtr__(pNotifier);
+static inline void cliresControlSerialization_Epilogue_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__cliresControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline void cliresControl_Epilogue_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__cliresControl_Epilogue__(pResource, pCallContext, pParams);
+static inline PEVENTNOTIFICATION *cliresGetNotificationListPtr_DISPATCH(struct RmClientResource *pNotifier) {
+    return pNotifier->__cliresGetNotificationListPtr__(pNotifier);
 }
 
 static inline struct NotifShare *cliresGetNotificationShare_DISPATCH(struct RmClientResource *pNotifier) {

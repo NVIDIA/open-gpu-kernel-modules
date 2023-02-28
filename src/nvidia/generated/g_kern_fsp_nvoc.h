@@ -153,7 +153,7 @@ struct KernelFsp {
     void (*__kfspGetQueueHeadTail__)(struct OBJGPU *, struct KernelFsp *, NvU32 *, NvU32 *);
     void (*__kfspUpdateMsgQueueHeadTail__)(struct OBJGPU *, struct KernelFsp *, NvU32, NvU32);
     void (*__kfspGetMsgQueueHeadTail__)(struct OBJGPU *, struct KernelFsp *, NvU32 *, NvU32 *);
-    NvU8 (*__kfspNvdmToSeid__)(POBJGPU, struct KernelFsp *, NvU8);
+    NvU8 (*__kfspNvdmToSeid__)(struct OBJGPU *, struct KernelFsp *, NvU8);
     NvU32 (*__kfspCreateMctpHeader__)(struct OBJGPU *, struct KernelFsp *, NvU8, NvU8, NvU8, NvU8);
     NvU32 (*__kfspCreateNvdmHeader__)(struct OBJGPU *, struct KernelFsp *, NvU32);
     NV_STATUS (*__kfspWriteToEmem__)(struct OBJGPU *, struct KernelFsp *, NvU8 *, NvU32);
@@ -166,7 +166,7 @@ struct KernelFsp {
     NV_STATUS (*__kfspErrorCode2NvStatusMap__)(struct OBJGPU *, struct KernelFsp *, NvU32);
     NvU64 (*__kfspGetExtraReservedMemorySize__)(struct OBJGPU *, struct KernelFsp *);
     NvBool (*__kfspCheckGspSecureScratch__)(struct OBJGPU *, struct KernelFsp *);
-    NV_STATUS (*__kfspReconcileTunableState__)(POBJGPU, struct KernelFsp *, void *);
+    NV_STATUS (*__kfspWaitForGspTargetMaskReleased__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspStateLoad__)(POBJGPU, struct KernelFsp *, NvU32);
     NV_STATUS (*__kfspStateUnload__)(POBJGPU, struct KernelFsp *, NvU32);
     NV_STATUS (*__kfspStateInitLocked__)(POBJGPU, struct KernelFsp *);
@@ -177,19 +177,13 @@ struct KernelFsp {
     void (*__kfspInitMissing__)(POBJGPU, struct KernelFsp *);
     NV_STATUS (*__kfspStatePreInitLocked__)(POBJGPU, struct KernelFsp *);
     NV_STATUS (*__kfspStatePreInitUnlocked__)(POBJGPU, struct KernelFsp *);
-    NV_STATUS (*__kfspGetTunableState__)(POBJGPU, struct KernelFsp *, void *);
-    NV_STATUS (*__kfspCompareTunableState__)(POBJGPU, struct KernelFsp *, void *, void *);
-    void (*__kfspFreeTunableState__)(POBJGPU, struct KernelFsp *, void *);
     NV_STATUS (*__kfspStatePostLoad__)(POBJGPU, struct KernelFsp *, NvU32);
-    NV_STATUS (*__kfspAllocTunableState__)(POBJGPU, struct KernelFsp *, void **);
-    NV_STATUS (*__kfspSetTunableState__)(POBJGPU, struct KernelFsp *, void *);
     NvBool (*__kfspIsPresent__)(POBJGPU, struct KernelFsp *);
     NvBool PDB_PROP_KFSP_BOOT_COMMAND_OK;
     NvBool PDB_PROP_KFSP_GSP_MODE_GSPRM;
     NvBool PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM;
     NvBool PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM;
     NvBool PDB_PROP_KFSP_DISABLE_GSPFMC;
-    NvBool PDB_PROP_KFSP_HULK_EXECUTED;
     MEMORY_DESCRIPTOR *pSysmemFrtsMemdesc;
     MEMORY_DESCRIPTOR *pVidmemFrtsMemdesc;
     MEMORY_DESCRIPTOR *pGspFmcMemdesc;
@@ -227,8 +221,6 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFsp;
 #define PDB_PROP_KFSP_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 #define PDB_PROP_KFSP_GSP_MODE_GSPRM_BASE_CAST
 #define PDB_PROP_KFSP_GSP_MODE_GSPRM_BASE_NAME PDB_PROP_KFSP_GSP_MODE_GSPRM
-#define PDB_PROP_KFSP_HULK_EXECUTED_BASE_CAST
-#define PDB_PROP_KFSP_HULK_EXECUTED_BASE_NAME PDB_PROP_KFSP_HULK_EXECUTED
 #define PDB_PROP_KFSP_BOOT_COMMAND_OK_BASE_CAST
 #define PDB_PROP_KFSP_BOOT_COMMAND_OK_BASE_NAME PDB_PROP_KFSP_BOOT_COMMAND_OK
 #define PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM_BASE_CAST
@@ -293,7 +285,8 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
 #define kfspGetExtraReservedMemorySize_HAL(pGpu, pKernelFsp) kfspGetExtraReservedMemorySize_DISPATCH(pGpu, pKernelFsp)
 #define kfspCheckGspSecureScratch(pGpu, pKernelFsp) kfspCheckGspSecureScratch_DISPATCH(pGpu, pKernelFsp)
 #define kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp) kfspCheckGspSecureScratch_DISPATCH(pGpu, pKernelFsp)
-#define kfspReconcileTunableState(pGpu, pEngstate, pTunableState) kfspReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
+#define kfspWaitForGspTargetMaskReleased(pGpu, pKernelFsp) kfspWaitForGspTargetMaskReleased_DISPATCH(pGpu, pKernelFsp)
+#define kfspWaitForGspTargetMaskReleased_HAL(pGpu, pKernelFsp) kfspWaitForGspTargetMaskReleased_DISPATCH(pGpu, pKernelFsp)
 #define kfspStateLoad(pGpu, pEngstate, arg0) kfspStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kfspStateUnload(pGpu, pEngstate, arg0) kfspStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kfspStateInitLocked(pGpu, pEngstate) kfspStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -304,12 +297,7 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
 #define kfspInitMissing(pGpu, pEngstate) kfspInitMissing_DISPATCH(pGpu, pEngstate)
 #define kfspStatePreInitLocked(pGpu, pEngstate) kfspStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define kfspStatePreInitUnlocked(pGpu, pEngstate) kfspStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kfspGetTunableState(pGpu, pEngstate, pTunableState) kfspGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kfspCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) kfspCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define kfspFreeTunableState(pGpu, pEngstate, pTunableState) kfspFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kfspStatePostLoad(pGpu, pEngstate, arg0) kfspStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kfspAllocTunableState(pGpu, pEngstate, ppTunableState) kfspAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define kfspSetTunableState(pGpu, pEngstate, pTunableState) kfspSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kfspIsPresent(pGpu, pEngstate) kfspIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kfspConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp, ENGDESCRIPTOR arg0);
 
@@ -455,13 +443,13 @@ static inline void kfspGetMsgQueueHeadTail_DISPATCH(struct OBJGPU *pGpu, struct 
     pKernelFsp->__kfspGetMsgQueueHeadTail__(pGpu, pKernelFsp, pMsgqHead, pMsgqTail);
 }
 
-NvU8 kfspNvdmToSeid_GH100(POBJGPU pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType);
+NvU8 kfspNvdmToSeid_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType);
 
-static inline NvU8 kfspNvdmToSeid_b2b553(POBJGPU pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType) {
+static inline NvU8 kfspNvdmToSeid_b2b553(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType) {
     return 0;
 }
 
-static inline NvU8 kfspNvdmToSeid_DISPATCH(POBJGPU pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType) {
+static inline NvU8 kfspNvdmToSeid_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp, NvU8 nvdmType) {
     return pKernelFsp->__kfspNvdmToSeid__(pGpu, pKernelFsp, nvdmType);
 }
 
@@ -585,8 +573,14 @@ static inline NvBool kfspCheckGspSecureScratch_DISPATCH(struct OBJGPU *pGpu, str
     return pKernelFsp->__kfspCheckGspSecureScratch__(pGpu, pKernelFsp);
 }
 
-static inline NV_STATUS kfspReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, void *pTunableState) {
-    return pEngstate->__kfspReconcileTunableState__(pGpu, pEngstate, pTunableState);
+NV_STATUS kfspWaitForGspTargetMaskReleased_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline NV_STATUS kfspWaitForGspTargetMaskReleased_395e98(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kfspWaitForGspTargetMaskReleased_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return pKernelFsp->__kfspWaitForGspTargetMaskReleased__(pGpu, pKernelFsp);
 }
 
 static inline NV_STATUS kfspStateLoad_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg0) {
@@ -629,28 +623,8 @@ static inline NV_STATUS kfspStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct K
     return pEngstate->__kfspStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kfspGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, void *pTunableState) {
-    return pEngstate->__kfspGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kfspCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__kfspCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void kfspFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, void *pTunableState) {
-    pEngstate->__kfspFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kfspStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg0) {
     return pEngstate->__kfspStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kfspAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, void **ppTunableState) {
-    return pEngstate->__kfspAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS kfspSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, void *pTunableState) {
-    return pEngstate->__kfspSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool kfspIsPresent_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate) {

@@ -440,6 +440,18 @@ typedef struct KernelPerf KernelPerf;
 #endif /* __nvoc_class_id_KernelPerf */
 
 
+struct Pxuc;
+
+#ifndef __NVOC_CLASS_Pxuc_TYPEDEF__
+#define __NVOC_CLASS_Pxuc_TYPEDEF__
+typedef struct Pxuc Pxuc;
+#endif /* __NVOC_CLASS_Pxuc_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_Pxuc
+#define __nvoc_class_id_Pxuc 0xba06f5
+#endif /* __nvoc_class_id_Pxuc */
+
+
 struct OBJBIF;
 
 #ifndef __NVOC_CLASS_OBJBIF_TYPEDEF__
@@ -1124,18 +1136,6 @@ typedef struct OBJNVJPG OBJNVJPG;
 #endif /* __nvoc_class_id_OBJNVJPG */
 
 
-struct OBJFAS;
-
-#ifndef __NVOC_CLASS_OBJFAS_TYPEDEF__
-#define __NVOC_CLASS_OBJFAS_TYPEDEF__
-typedef struct OBJFAS OBJFAS;
-#endif /* __NVOC_CLASS_OBJFAS_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJFAS
-#define __nvoc_class_id_OBJFAS 0x4ddf48
-#endif /* __nvoc_class_id_OBJFAS */
-
-
 struct OBJVMMU;
 
 #ifndef __NVOC_CLASS_OBJVMMU_TYPEDEF__
@@ -1268,16 +1268,16 @@ typedef struct OBJDISPMACRO OBJDISPMACRO;
 #endif /* __nvoc_class_id_OBJDISPMACRO */
 
 
-struct OBJNNE;
+struct Nne;
 
-#ifndef __NVOC_CLASS_OBJNNE_TYPEDEF__
-#define __NVOC_CLASS_OBJNNE_TYPEDEF__
-typedef struct OBJNNE OBJNNE;
-#endif /* __NVOC_CLASS_OBJNNE_TYPEDEF__ */
+#ifndef __NVOC_CLASS_Nne_TYPEDEF__
+#define __NVOC_CLASS_Nne_TYPEDEF__
+typedef struct Nne Nne;
+#endif /* __NVOC_CLASS_Nne_TYPEDEF__ */
 
-#ifndef __nvoc_class_id_OBJNNE
-#define __nvoc_class_id_OBJNNE 0xc7f0f8
-#endif /* __nvoc_class_id_OBJNNE */
+#ifndef __nvoc_class_id_Nne
+#define __nvoc_class_id_Nne 0x2487e2
+#endif /* __nvoc_class_id_Nne */
 
 
 struct Smbpbi;
@@ -1380,9 +1380,10 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_INFOROM              MKENGDESC(classId(OBJINFOROM),          0)
 #define ENG_PERF                 MKENGDESC(classId(Perf),                0)
 #define ENG_KERNEL_PERF          MKENGDESC(classId(KernelPerf),          0)
+#define ENG_PXUC                 MKENGDESC(classId(Pxuc),                0)
 #define ENG_BIF                  MKENGDESC(classId(OBJBIF),              0)
 #define ENG_KERNEL_BIF           MKENGDESC(classId(KernelBif),           0)
-#define ENG_HSHUBMANAGER         MKENGDESC(classId(OBJHSHUBMANAGER)),    0)
+#define ENG_HSHUBMANAGER         MKENGDESC(classId(OBJHSHUBMANAGER),     0)
 #define ENG_SF                   MKENGDESC(classId(OBJSF),               0)
 #define ENG_GPIO                 MKENGDESC(classId(OBJGPIO),             0)
 #define ENG_CLK                  MKENGDESC(classId(ClockManager),        0)

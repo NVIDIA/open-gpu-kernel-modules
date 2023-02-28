@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009 - 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -504,6 +504,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "TEI",    _VENDOR_NAME_ENTRY("TECO")                              },
     { "TGI",    _VENDOR_NAME_ENTRY("TriGem")                            },
     { "TGS",    _VENDOR_NAME_ENTRY("Torus")                             },
+    { "TMA",    _VENDOR_NAME_ENTRY("Tianma Microelectronics")           },
     { "TOS",    _VENDOR_NAME_ENTRY("Toshiba")                           },
     { "TRI",    _VENDOR_NAME_ENTRY("Tricord")                           },
     { "TRM",    _VENDOR_NAME_ENTRY("Tekram")                            },

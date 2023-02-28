@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,6 +52,8 @@
 #include "mem_mgr/virt_mem_mgr.h"
 
 #include "published/ampere/ga100/dev_mmu.h"
+#include "vgpu/rpc.h"
+#include "virtualization/hypervisor/hypervisor.h"
 
 
 
@@ -708,17 +710,23 @@ fabricvaspaceGetGpaMemdesc_IMPL
     MEMORY_DESCRIPTOR **ppAdjustedMemdesc
 )
 {
-    KernelNvlink      *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
-    MEMORY_DESCRIPTOR *pRootMemDesc = NULL;
-    NODE              *pNode        = NULL;
-    NV_STATUS          status       = NV_OK;
-    NvU64              rootOffset   = 0;
+    KernelNvlink      *pKernelNvlink      = GPU_GET_KERNEL_NVLINK(pMappingGpu);
+    MEMORY_DESCRIPTOR *pRootMemDesc       = NULL;
+    NODE              *pNode              = NULL;
+    NV_STATUS          status             = NV_OK;
+    NvU64              rootOffset         = 0;
+    NvBool             bLoopbackSupported = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(ppAdjustedMemdesc != NULL, NV_ERR_INVALID_ARGUMENT);
 
+    {
+        bLoopbackSupported = pKernelNvlink != NULL &&
+                            (knvlinkIsP2pLoopbackSupported(pMappingGpu, pKernelNvlink) ||
+                             knvlinkIsForcedConfig(pMappingGpu, pKernelNvlink));
+    }
+
     if (memdescGetAddressSpace(pFabricMemdesc) != ADDR_FABRIC_V2 ||
-        (pKernelNvlink != NULL &&
-         knvlinkIsP2pLoopbackSupported(pMappingGpu, pKernelNvlink)))
+        bLoopbackSupported)
     {
         *ppAdjustedMemdesc = pFabricMemdesc;
         return NV_OK;
@@ -874,11 +882,11 @@ _fabricVaspaceValidateMapAttrs
 (
     NvU64  fabricOffset,
     NvU64  fabricAllocSize,
-    NvU32  fabricPageSize,
+    NvU64  fabricPageSize,
     NvU64  physMapOffset,
     NvU64  physMapLength,
     NvU64  physAllocSize,
-    NvU32  physPageSize
+    NvU64  physPageSize
 )
 {
     // Fabric mem offset should be at least phys page size aligned.
@@ -1002,7 +1010,7 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
     FABRIC_VASPACE_MAPPING_REGIONS regions;
     NvU32 numRegions;
 
-    fabricPageSize = memdescGetPageSize(pFabricMemDesc, AT_GPU);
+    fabricPageSize = memdescGetPageSize64(pFabricMemDesc, AT_GPU);
 
     NV_ASSERT_OR_RETURN_VOID(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE) == \
                              pFabricVAS);
@@ -1063,7 +1071,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
                      DMA_UPDATE_VASPACE_FLAGS_SKIP_4K_PTE_CHECK;
     NvU32 fabricPageCount;
     NvU64 fabricAddr;
-    NvU32 physPageSize;
+    NvU64 physPageSize;
     NvU64 fabricPageSize;
     NvU64 physAddr;
     NvU32 i, j;
@@ -1072,6 +1080,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
     FABRIC_VASPACE_MAPPING_REGIONS regions;
     NvU32 numRegions;
     MEMORY_DESCRIPTOR *pTempMemdesc;
+    NvU32 aperture;
 
     NV_ASSERT_OR_RETURN(pFabricMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pPhysMemDesc != NULL,   NV_ERR_INVALID_ARGUMENT);
@@ -1081,8 +1090,8 @@ fabricvaspaceMapPhysMemdesc_IMPL
     NV_ASSERT_OR_RETURN(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE) == pFabricVAS,
                         NV_ERR_INVALID_ARGUMENT);
 
-    physPageSize = memdescGetPageSize(pPhysMemDesc, AT_GPU);
-    fabricPageSize = memdescGetPageSize(pFabricMemDesc, AT_GPU);
+    physPageSize = memdescGetPageSize64(pPhysMemDesc, AT_GPU);
+    fabricPageSize = memdescGetPageSize64(pFabricMemDesc, AT_GPU);
 
     status = _fabricVaspaceValidateMapAttrs(fabricOffset,
                                             memdescGetSize(pFabricMemDesc),
@@ -1157,14 +1166,36 @@ fabricvaspaceMapPhysMemdesc_IMPL
                 pTempMemdesc = pPhysMemDesc;
             }
 
+            if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_FBMEM)
+            {
+                aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
+            }
+            else if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_SYSMEM)
+            {
+                if (memdescGetCpuCacheAttrib(pPhysMemDesc) == NV_MEMORY_CACHED)
+                {
+                    aperture = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
+                }
+                else
+                {
+                    aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+                }
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR, "Unsupported aperture\n");
+                NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
+            }
+
             // Map the memory fabric object at the given physical memory offset.
             status = dmaUpdateVASpace_HAL(pGpu, pDma, pFabricVAS->pGVAS, pTempMemdesc,
                                       NULL, fabricAddr, fabricAddr + mapLength - 1,
                                       mapFlags, &pageArray, 0, &comprInfo, 0,
                                       NV_MMU_PTE_VALID_TRUE,
-                                      NV_MMU_PTE_APERTURE_VIDEO_MEMORY,
+                                      aperture,
                                       BUS_INVALID_PEER, NVLINK_INVALID_FABRIC_ADDR,
-                                      DMA_DEFER_TLB_INVALIDATE, NV_FALSE, fabricPageSize);
+                                      DMA_DEFER_TLB_INVALIDATE, NV_FALSE,
+                                      memdescGetPageSize64(pTempMemdesc, AT_GPU));
 
             if (pTempMemdesc != pPhysMemDesc)
                 memdescDestroy(pTempMemdesc);

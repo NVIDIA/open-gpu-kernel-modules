@@ -59,9 +59,6 @@
 
 #define NV_DP_REGKEY_FORCE_EDP_ILR                    "DP_BYPASS_EDP_ILR_REV_CHECK"
 
-// Regkey to enable OUI caching/restoring in release branch.
-#define NV_DP_REGKEY_ENABLE_OUI_RESTORING             "DP_ENABLE_OUI_RESTORING"
-
 // Message to power down video stream before power down link (set D3)
 #define NV_DP_REGKEY_POWER_DOWN_PHY                   "DP_POWER_DOWN_PHY"
 
@@ -102,7 +99,6 @@ struct DP_REGKEY_DATABASE
     bool  bOptLinkKeptAliveSst;
     bool  bBypassEDPRevCheck;
     bool  bDscMstCapBug3143315;
-    bool  bEnableOuiRestoring;
     bool  bPowerDownPhyBeforeD3;
 };
 

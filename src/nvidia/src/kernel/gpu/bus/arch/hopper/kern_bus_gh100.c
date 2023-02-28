@@ -134,7 +134,6 @@ kbusSetBAR0WindowVidOffset_GH100
     NvU64        vidOffset
 )
 {
-
     NV_ASSERT((vidOffset & 0xffff)==0);
     NV_ASSERT(kbusValidateBAR0WindowBase_HAL(pGpu, pKernelBus, vidOffset >> NV_XAL_EP_BAR0_WINDOW_BASE_SHIFT));
 
@@ -1402,12 +1401,8 @@ kbusAllocateFlaVaspace_GH100
         
         inbandMsgCbParams.messageType = NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP;
         inbandMsgCbParams.pCallback = &memorymulticastfabricTeamSetupResponseCallback;
-
-        // 
-        // Update this such that it indicates that Gpu lock shouldn't be taken
-        // when the callback is invoked
-        //
-        inbandMsgCbParams.wqItemFlags = 0;
+        inbandMsgCbParams.wqItemFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW;
 
         status = knvlinkRegisterInbandCallback(pGpu,
                                                GPU_GET_KERNEL_NVLINK(pGpu),

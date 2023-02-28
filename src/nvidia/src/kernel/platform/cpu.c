@@ -183,9 +183,6 @@ void RmInitCpuInfo(void)
         case AARCH64_VENDOR_PART(ARM, CORTEX_A57):
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
             break;
-        case AARCH64_VENDOR_PART(ARM, NEOVERSE_N2):
-            pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV9A_GENERIC;
-            break;
         default:
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
             portDbgPrintf(

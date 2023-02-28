@@ -39,6 +39,7 @@
 
 /* ------------------------------------ Local Defines ------------------------------ */
 #define PMA_CHUNK_SIZE_512M (512 * 1024 * 1024)
+#define PMA_CHUNK_SIZE_4M   (4 * 1024 * 1024)
 #define PMA_CHUNK_SIZE_2M   (2 * 1024 * 1024)
 #define PMA_CHUNK_SIZE_512K (512 * 1024)
 #define PMA_CHUNK_SIZE_256K (256 * 1024)
@@ -95,17 +96,17 @@ typedef enum
 /*!
  * This array contains the alloction sizes (in bytes) of each pool.
  */
-static const NvU32 poolAllocSizes[] = {0x20000000, 0x200000, 0x40000, 0x20000, 0x10000, 0x2000, 0x1000, 0x100};
+static const NvU64 poolAllocSizes[] = {0x20000000, 0x200000, 0x40000, 0x20000, 0x10000, 0x2000, 0x1000, 0x100};
 
 #define POOL_CONFIG_POOL_IDX       0
 #define POOL_CONFIG_CHUNKSIZE_IDX  1
 
-static const int poolConfig[POOL_CONFIG_MAX_SUPPORTED][POOL_CONFIG_CHUNKSIZE_IDX + 1] = {
+static const NvU64 poolConfig[POOL_CONFIG_MAX_SUPPORTED][POOL_CONFIG_CHUNKSIZE_IDX + 1] = {
      // page size        // chunk size
      { RM_POOL_IDX_256K, PMA_CHUNK_SIZE_512K},  // pool with pageSize = 256K for GMMU_FMT_VERSION_1
      { RM_POOL_IDX_4K,   PMA_CHUNK_SIZE_64K },  // pool with pageSize = 4K for GMMU_FMT_VERSION_2
      { RM_POOL_IDX_512M, PMA_CHUNK_SIZE_512M }, // pool with pageSize = 512MB for RM allocated buffers (unused as of ampere)
-     { RM_POOL_IDX_2M,   PMA_CHUNK_SIZE_2M },   // pool with pageSize = 2MB for RM allocated buffers
+     { RM_POOL_IDX_2M,   PMA_CHUNK_SIZE_4M },   // pool with pageSize = 2MB for RM allocated buffers
      { RM_POOL_IDX_64K,  PMA_CHUNK_SIZE_256K }, // pool with pageSize = 64K for RM allocated buffers
      { RM_POOL_IDX_4K,   PMA_CHUNK_SIZE_64K }   // pool with pageSize = 4K for RM allocated buffers
 };
@@ -444,7 +445,7 @@ rmMemPoolSetup
         flags = FLD_SET_DRF(_RMPOOL, _FLAGS, _AUTO_POPULATE, _DISABLE, flags);
     }
     pMemReserveInfo->pPool[pMemReserveInfo->topmostPoolIndex] = poolInitialize(
-                                                 (NvU32)pMemReserveInfo->pmaChunkSize,
+                                                 pMemReserveInfo->pmaChunkSize,
                                                  poolAllocSizes[pMemReserveInfo->topmostPoolIndex],
                                                  allocUpstreamTopPool,
                                                  freeUpstreamTopPool,
@@ -611,7 +612,7 @@ rmMemPoolAllocate
             if (allocSize <= poolAllocSizes[poolIndex])
             {
                 NV_PRINTF(LEVEL_INFO,
-                    "Allocating from pool with alloc size = 0x%x Bytes\n",
+                    "Allocating from pool with alloc size = 0x%llx Bytes\n",
                     poolAllocSizes[poolIndex]);
                 break;
             }
@@ -633,7 +634,7 @@ rmMemPoolAllocate
         NvU32 index;
 
         NV_PRINTF(LEVEL_INFO,
-            "Allocating from pool with alloc size = 0x%x Bytes\n",
+            "Allocating from pool with alloc size = 0x%llx Bytes\n",
             poolAllocSizes[topPool] * numPages);
 
         if (memdescGetContiguity(pMemDesc, AT_GPU))
@@ -981,7 +982,7 @@ rmMemPoolGetChunkAndPageSize
 (
     RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo,
     NvU64 *pChunkSize,
-    NvU32 *pPageSize
+    NvU64 *pPageSize
 )
 {
     NV_ASSERT_OR_RETURN(pMemReserveInfo != NULL, NV_ERR_INVALID_ARGUMENT);

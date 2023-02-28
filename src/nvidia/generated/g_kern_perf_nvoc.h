@@ -77,7 +77,6 @@ struct KernelPerf {
     NV_STATUS (*__kperfStateLoad__)(struct OBJGPU *, struct KernelPerf *, NvU32);
     NV_STATUS (*__kperfStateUnload__)(struct OBJGPU *, struct KernelPerf *, NvU32);
     void (*__kperfStateDestroy__)(struct OBJGPU *, struct KernelPerf *);
-    NV_STATUS (*__kperfReconcileTunableState__)(POBJGPU, struct KernelPerf *, void *);
     NV_STATUS (*__kperfStatePreLoad__)(POBJGPU, struct KernelPerf *, NvU32);
     NV_STATUS (*__kperfStatePostUnload__)(POBJGPU, struct KernelPerf *, NvU32);
     NV_STATUS (*__kperfStatePreUnload__)(POBJGPU, struct KernelPerf *, NvU32);
@@ -85,12 +84,7 @@ struct KernelPerf {
     void (*__kperfInitMissing__)(POBJGPU, struct KernelPerf *);
     NV_STATUS (*__kperfStatePreInitLocked__)(POBJGPU, struct KernelPerf *);
     NV_STATUS (*__kperfStatePreInitUnlocked__)(POBJGPU, struct KernelPerf *);
-    NV_STATUS (*__kperfGetTunableState__)(POBJGPU, struct KernelPerf *, void *);
-    NV_STATUS (*__kperfCompareTunableState__)(POBJGPU, struct KernelPerf *, void *, void *);
-    void (*__kperfFreeTunableState__)(POBJGPU, struct KernelPerf *, void *);
     NV_STATUS (*__kperfStatePostLoad__)(POBJGPU, struct KernelPerf *, NvU32);
-    NV_STATUS (*__kperfAllocTunableState__)(POBJGPU, struct KernelPerf *, void **);
-    NV_STATUS (*__kperfSetTunableState__)(POBJGPU, struct KernelPerf *, void *);
     NvBool (*__kperfIsPresent__)(POBJGPU, struct KernelPerf *);
     struct KERNEL_PERF_GPU_BOOST_SYNC sliGpuBoostSync;
     NvU32 reentrancyMask;
@@ -131,7 +125,6 @@ NV_STATUS __nvoc_objCreate_KernelPerf(KernelPerf**, Dynamic*, NvU32);
 #define kperfStateLoad(pGpu, pKernelPerf, flags) kperfStateLoad_DISPATCH(pGpu, pKernelPerf, flags)
 #define kperfStateUnload(pGpu, pKernelPerf, flags) kperfStateUnload_DISPATCH(pGpu, pKernelPerf, flags)
 #define kperfStateDestroy(pGpu, pKernelPerf) kperfStateDestroy_DISPATCH(pGpu, pKernelPerf)
-#define kperfReconcileTunableState(pGpu, pEngstate, pTunableState) kperfReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kperfStatePreLoad(pGpu, pEngstate, arg0) kperfStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kperfStatePostUnload(pGpu, pEngstate, arg0) kperfStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kperfStatePreUnload(pGpu, pEngstate, arg0) kperfStatePreUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -139,12 +132,7 @@ NV_STATUS __nvoc_objCreate_KernelPerf(KernelPerf**, Dynamic*, NvU32);
 #define kperfInitMissing(pGpu, pEngstate) kperfInitMissing_DISPATCH(pGpu, pEngstate)
 #define kperfStatePreInitLocked(pGpu, pEngstate) kperfStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define kperfStatePreInitUnlocked(pGpu, pEngstate) kperfStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kperfGetTunableState(pGpu, pEngstate, pTunableState) kperfGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kperfCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) kperfCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define kperfFreeTunableState(pGpu, pEngstate, pTunableState) kperfFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kperfStatePostLoad(pGpu, pEngstate, arg0) kperfStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kperfAllocTunableState(pGpu, pEngstate, ppTunableState) kperfAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define kperfSetTunableState(pGpu, pEngstate, pTunableState) kperfSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kperfIsPresent(pGpu, pEngstate) kperfIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS kperfGpuBoostSyncStateInit_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
 
@@ -204,10 +192,6 @@ static inline void kperfStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct Kernel
     pKernelPerf->__kperfStateDestroy__(pGpu, pKernelPerf);
 }
 
-static inline NV_STATUS kperfReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, void *pTunableState) {
-    return pEngstate->__kperfReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kperfStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, NvU32 arg0) {
     return pEngstate->__kperfStatePreLoad__(pGpu, pEngstate, arg0);
 }
@@ -236,28 +220,8 @@ static inline NV_STATUS kperfStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct 
     return pEngstate->__kperfStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS kperfGetTunableState_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, void *pTunableState) {
-    return pEngstate->__kperfGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kperfCompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__kperfCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void kperfFreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, void *pTunableState) {
-    pEngstate->__kperfFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS kperfStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, NvU32 arg0) {
     return pEngstate->__kperfStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS kperfAllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, void **ppTunableState) {
-    return pEngstate->__kperfAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS kperfSetTunableState_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate, void *pTunableState) {
-    return pEngstate->__kperfSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool kperfIsPresent_DISPATCH(POBJGPU pGpu, struct KernelPerf *pEngstate) {

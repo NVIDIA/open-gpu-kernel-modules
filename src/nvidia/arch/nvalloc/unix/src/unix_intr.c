@@ -303,9 +303,6 @@ NV_STATUS osIsr(
  */
 NvBool osLockShouldToggleInterrupts(OBJGPU *pGpu)
 {
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
-        return NV_TRUE;
-
     return (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH) &&
              gpuIsStateLoaded(pGpu) &&
             !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_SLI_LINK_CODEPATH));
@@ -591,10 +588,10 @@ NV_STATUS NV_API_CALL rm_gpu_copy_mmu_faults(
         goto done;
     }
 
-    // Non-replayable faults are copied to the client shadow buffer by GSP-RM.
     if (IS_GSP_CLIENT(pGpu))
     {
-        status = NV_ERR_NOT_SUPPORTED;
+        // Non-replayable faults are copied to the client shadow buffer by GSP-RM.
+        status = NV_OK;
         goto done;
     }
 
@@ -614,11 +611,6 @@ static NV_STATUS _rm_gpu_copy_mmu_faults_unlocked(
     THREAD_STATE_NODE *pThreadState
 )
 {
-    // Non-replayable faults are copied to the client shadow buffer by GSP-RM.
-    if (IS_GSP_CLIENT(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     return NV_OK;
 }
@@ -643,6 +635,7 @@ NV_STATUS rm_gpu_handle_mmu_faults(
     
     if (pGpu == NULL)
     {
+        NV_EXIT_RM_RUNTIME(sp,fp);
         return NV_ERR_OBJECT_NOT_FOUND;
     }
 
@@ -666,7 +659,7 @@ NV_STATUS rm_gpu_handle_mmu_faults(
             {
                 // We have to clear the top level interrupt bit here since otherwise
                 // the bottom half will attempt to service the interrupt on the CPU
-                // side before GSP recieves the notification and services it
+                // side before GSP receives the notification and services it
                 kgmmuClearNonReplayableFaultIntr_HAL(pGpu, pKernelGmmu, &threadState);
                 status = intrTriggerPrivDoorbell_HAL(pGpu, pIntr, NV_DOORBELL_NOTIFY_LEAF_SERVICE_NON_REPLAYABLE_FAULT_HANDLE);
 
@@ -681,7 +674,15 @@ NV_STATUS rm_gpu_handle_mmu_faults(
         }
         else
         {
-            status = _rm_gpu_copy_mmu_faults_unlocked(pGpu, faultsCopied, &threadState);
+            if (IS_GSP_CLIENT(pGpu))
+            {
+                // Non-replayable faults are copied to the client shadow buffer by GSP-RM.
+                status = NV_OK;
+            }
+            else
+            {
+                status = _rm_gpu_copy_mmu_faults_unlocked(pGpu, faultsCopied, &threadState);
+            }
         }
 
         threadStateFreeISRLockless(&threadState, pGpu, THREAD_STATE_FLAGS_IS_ISR_LOCKLESS);

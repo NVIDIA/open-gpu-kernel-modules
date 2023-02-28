@@ -77,7 +77,7 @@ NV_STATUS ctxBufPoolFree(CTX_BUF_POOL_INFO *pCtxBufPool, PMEMORY_DESCRIPTOR pMem
 void      ctxBufPoolRelease(CTX_BUF_POOL_INFO *pCtxBufPool);
 void      ctxBufPoolDestroy(CTX_BUF_POOL_INFO **ppCtxBufPool);
 NvBool    ctxBufPoolIsSupported(OBJGPU *pGpu);
-NV_STATUS ctxBufPoolGetSizeAndPageSize(CTX_BUF_POOL_INFO *pCtxBufPool, OBJGPU *pGpu, NvU64 alignment, RM_ATTR_PAGE_SIZE attr, NvBool bContig, NvU64 *pSize, NvU32 *pPageSize);
+NV_STATUS ctxBufPoolGetSizeAndPageSize(CTX_BUF_POOL_INFO *pCtxBufPool, OBJGPU *pGpu, NvU64 alignment, RM_ATTR_PAGE_SIZE attr, NvBool bContig, NvU64 *pSize, NvU64 *pPageSize);
 NV_STATUS ctxBufPoolGetGlobalPool(OBJGPU *pGpu, CTX_BUF_ID bufId, RM_ENGINE_TYPE rmEngineType, CTX_BUF_POOL_INFO **ppCtxBufPool);
 NvBool    ctxBufPoolIsScrubSkipped(CTX_BUF_POOL_INFO *pCtxBufPool);
 void      ctxBufPoolSetScrubSkip(CTX_BUF_POOL_INFO *pCtxBufPool, NvBool bSkipScrub);

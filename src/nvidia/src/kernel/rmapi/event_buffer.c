@@ -208,7 +208,7 @@ eventbufferConstruct_IMPL
             RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
             NvHandle hMemory = RES_GET_HANDLE(pMemory);
 
-            if (!bKernel)
+            if ((!bKernel) && bUsingVgpuStagingBuffer)
             {
                 status = pRmApi->DupObject(pRmApi,
                                            hMapperClient,
@@ -269,7 +269,7 @@ eventbufferConstruct_IMPL
             RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
             NvHandle hMemory = RES_GET_HANDLE(pMemory);
 
-            if (!bKernel)
+            if ((!bKernel) && bUsingVgpuStagingBuffer)
             {
                 status = pRmApi->DupObject(pRmApi,
                                            hMapperClient,
@@ -330,7 +330,7 @@ eventbufferConstruct_IMPL
                 RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
                 NvHandle hMemory = RES_GET_HANDLE(pMemory);
 
-                if (!bKernel)
+                if ((!bKernel) && bUsingVgpuStagingBuffer)
                 {
                     status = pRmApi->DupObject(pRmApi,
                                                hMapperClient,

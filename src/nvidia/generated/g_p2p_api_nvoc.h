@@ -73,13 +73,15 @@ struct P2PApi {
     NvU32 (*__p2papiGetRefCount__)(struct P2PApi *);
     NV_STATUS (*__p2papiControlFilter__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__p2papiAddAdditionalDependants__)(struct RsClient *, struct P2PApi *, RsResourceRef *);
-    NV_STATUS (*__p2papiUnmap__)(struct P2PApi *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__p2papiUnmapFrom__)(struct P2PApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__p2papiControlSerialization_Prologue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__p2papiControl_Prologue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__p2papiCanCopy__)(struct P2PApi *);
-    NV_STATUS (*__p2papiMapTo__)(struct P2PApi *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__p2papiUnmap__)(struct P2PApi *, struct CALL_CONTEXT *, RsCpuMapping *);
     void (*__p2papiPreDestruct__)(struct P2PApi *);
-    NV_STATUS (*__p2papiUnmapFrom__)(struct P2PApi *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__p2papiMapTo__)(struct P2PApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__p2papiIsDuplicate__)(struct P2PApi *, NvHandle, NvBool *);
+    void (*__p2papiControlSerialization_Epilogue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__p2papiControl_Epilogue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__p2papiControlLookup__)(struct P2PApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__p2papiMap__)(struct P2PApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -129,13 +131,15 @@ NV_STATUS __nvoc_objCreate_P2PApi(P2PApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define p2papiGetRefCount(pResource) p2papiGetRefCount_DISPATCH(pResource)
 #define p2papiControlFilter(pResource, pCallContext, pParams) p2papiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiAddAdditionalDependants(pClient, pResource, pReference) p2papiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define p2papiUnmap(pResource, pCallContext, pCpuMapping) p2papiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define p2papiUnmapFrom(pResource, pParams) p2papiUnmapFrom_DISPATCH(pResource, pParams)
+#define p2papiControlSerialization_Prologue(pResource, pCallContext, pParams) p2papiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiControl_Prologue(pResource, pCallContext, pParams) p2papiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiCanCopy(pResource) p2papiCanCopy_DISPATCH(pResource)
-#define p2papiMapTo(pResource, pParams) p2papiMapTo_DISPATCH(pResource, pParams)
+#define p2papiUnmap(pResource, pCallContext, pCpuMapping) p2papiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define p2papiPreDestruct(pResource) p2papiPreDestruct_DISPATCH(pResource)
-#define p2papiUnmapFrom(pResource, pParams) p2papiUnmapFrom_DISPATCH(pResource, pParams)
+#define p2papiMapTo(pResource, pParams) p2papiMapTo_DISPATCH(pResource, pParams)
 #define p2papiIsDuplicate(pResource, hMemory, pDuplicate) p2papiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define p2papiControlSerialization_Epilogue(pResource, pCallContext, pParams) p2papiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiControl_Epilogue(pResource, pCallContext, pParams) p2papiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiControlLookup(pResource, pParams, ppEntry) p2papiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define p2papiMap(pResource, pCallContext, pParams, pCpuMapping) p2papiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -172,8 +176,12 @@ static inline void p2papiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__p2papiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS p2papiUnmap_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__p2papiUnmap__(pResource, pCallContext, pCpuMapping);
+static inline NV_STATUS p2papiUnmapFrom_DISPATCH(struct P2PApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__p2papiUnmapFrom__(pResource, pParams);
+}
+
+static inline NV_STATUS p2papiControlSerialization_Prologue_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__p2papiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS p2papiControl_Prologue_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -184,20 +192,24 @@ static inline NvBool p2papiCanCopy_DISPATCH(struct P2PApi *pResource) {
     return pResource->__p2papiCanCopy__(pResource);
 }
 
-static inline NV_STATUS p2papiMapTo_DISPATCH(struct P2PApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__p2papiMapTo__(pResource, pParams);
+static inline NV_STATUS p2papiUnmap_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__p2papiUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline void p2papiPreDestruct_DISPATCH(struct P2PApi *pResource) {
     pResource->__p2papiPreDestruct__(pResource);
 }
 
-static inline NV_STATUS p2papiUnmapFrom_DISPATCH(struct P2PApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__p2papiUnmapFrom__(pResource, pParams);
+static inline NV_STATUS p2papiMapTo_DISPATCH(struct P2PApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__p2papiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS p2papiIsDuplicate_DISPATCH(struct P2PApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__p2papiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void p2papiControlSerialization_Epilogue_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__p2papiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void p2papiControl_Epilogue_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {

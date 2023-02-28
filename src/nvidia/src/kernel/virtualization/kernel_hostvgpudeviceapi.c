@@ -197,3 +197,13 @@ kernelhostvgpudeviceapiCtrlCmdSetGuestId_IMPL
 {
     return NV_ERR_NOT_SUPPORTED;
 }
+
+NV_STATUS
+kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL
+(
+    KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi,
+    NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *pParams
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}

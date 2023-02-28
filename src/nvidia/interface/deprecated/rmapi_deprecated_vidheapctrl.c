@@ -41,7 +41,6 @@ typedef struct {
 } RmVidHeapControlEntry;
 
 // forward declarations
-static NV_STATUS _nvos32FunctionAllocDepthWidthHeight(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionAllocSize(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionAllocSizeRange(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
 static NV_STATUS _nvos32FunctionAllocTiledPitchHeight(DEPRECATED_CONTEXT *, NVOS32_PARAMETERS *);
@@ -56,7 +55,6 @@ static NV_STATUS _nvos32FunctionAllocOsDesc(DEPRECATED_CONTEXT *, NVOS32_PARAMET
 
 static const RmVidHeapControlEntry rmVidHeapControlTable[] = {
 
-    { NVOS32_FUNCTION_ALLOC_DEPTH_WIDTH_HEIGHT,  _nvos32FunctionAllocDepthWidthHeight },
     { NVOS32_FUNCTION_ALLOC_SIZE,                _nvos32FunctionAllocSize },
     { NVOS32_FUNCTION_ALLOC_SIZE_RANGE,          _nvos32FunctionAllocSizeRange },
     { NVOS32_FUNCTION_ALLOC_TILED_PITCH_HEIGHT,  _nvos32FunctionAllocTiledPitchHeight },
@@ -148,68 +146,6 @@ _rmVidHeapControlAllocCommon
 
     pArgs->free = 0;
     pArgs->total = 0;
-
-    return status;
-}
-
-static NV_STATUS
-_nvos32FunctionAllocDepthWidthHeight
-(
-    DEPRECATED_CONTEXT *pContext,
-    NVOS32_PARAMETERS  *pArgs
-)
-{
-    NV_MEMORY_ALLOCATION_PARAMS  allocParams = {0};
-    NvU32                        byteWidth;
-    NV_STATUS                    status = NV_OK;
-
-    // For NV3, scanline alignment is 32 bytes.
-    byteWidth = ((pArgs->data.AllocDepthWidthHeight.width * pArgs->data.AllocDepthWidthHeight.depth) + 7) >> 3;
-    pArgs->data.AllocDepthWidthHeight.size  = pArgs->data.AllocDepthWidthHeight.height * ((byteWidth + 31) & ~31);
-
-    // Range begin/end are captured only if the appropriate flag bit is set.
-    if (pArgs->data.AllocDepthWidthHeight.flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END)
-    {
-        allocParams.rangeLo    = pArgs->data.AllocDepthWidthHeight.rangeBegin;
-        allocParams.rangeHi    = pArgs->data.AllocDepthWidthHeight.rangeEnd;
-    }
-    else
-    {
-        allocParams.rangeLo    = 0;
-        allocParams.rangeHi    = 0;
-    }
-
-    #define ALLOC_DEPTH_WIDTH_HEIGHT_PARAMS(_IN, _IN_OUT) \
-    _IN(owner, AllocDepthWidthHeight.owner) \
-    _IN(type, AllocDepthWidthHeight.type) \
-    _IN(flags, AllocDepthWidthHeight.flags) \
-    _IN(height, AllocDepthWidthHeight.height) \
-    _IN(width, AllocDepthWidthHeight.width) \
-    _IN_OUT(size, AllocDepthWidthHeight.size) \
-    _IN(alignment, AllocDepthWidthHeight.alignment) \
-    _IN_OUT(offset, AllocDepthWidthHeight.offset) \
-    _IN_OUT(attr, AllocDepthWidthHeight.attr) \
-    _IN_OUT(attr2, AllocDepthWidthHeight.attr2) \
-    _IN_OUT(format, AllocDepthWidthHeight.format) \
-    _IN_OUT(limit, AllocDepthWidthHeight.limit) \
-    _IN_OUT(address, AllocDepthWidthHeight.address) \
-    _IN_OUT(comprCovg, AllocDepthWidthHeight.comprCovg) \
-    _IN_OUT(zcullCovg, AllocDepthWidthHeight.zcullCovg) \
-    _IN_OUT(ctagOffset, AllocDepthWidthHeight.ctagOffset)
-
-    ALLOC_DEPTH_WIDTH_HEIGHT_PARAMS(_COPY_IN, _COPY_IN);
-
-    pArgs->data.AllocDepthWidthHeight.partitionStride = 256;
-
-    // get memory
-    status = _rmVidHeapControlAllocCommon(pContext,
-                                          pArgs,
-                                          pArgs->hRoot,
-                                          pArgs->hObjectParent,
-                                          &pArgs->data.AllocDepthWidthHeight.hMemory,
-                                          &allocParams);
-
-    ALLOC_DEPTH_WIDTH_HEIGHT_PARAMS(_NO_COPY, _COPY_OUT);
 
     return status;
 }

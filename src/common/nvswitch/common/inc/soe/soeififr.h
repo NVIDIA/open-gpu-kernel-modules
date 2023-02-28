@@ -27,6 +27,7 @@
 #include "flcnifcmn.h"
 
 #define INFOROM_FS_FILE_NAME_SIZE       3
+#define INFOROM_BBX_OBJ_XID_ENTRIES     10
 
 enum
 {
@@ -70,6 +71,7 @@ typedef struct
 typedef struct
 {
     NvU8 cmdType;
+    NvU32 sizeInBytes;
     RM_FLCN_U64 dmaHandle;
 } RM_SOE_IFR_CMD_BBX_SXID_GET_PARAMS;
 
@@ -81,5 +83,20 @@ typedef union
     RM_SOE_IFR_CMD_BBX_SXID_ADD_PARAMS bbxSxidAdd;
     RM_SOE_IFR_CMD_BBX_SXID_GET_PARAMS bbxSxidGet;
 } RM_SOE_IFR_CMD;
+
+// entry of getSxid
+typedef struct
+{
+    NvU32 sxid;
+    NvU32 timestamp;
+} RM_SOE_BBX_SXID_ENTRY;
+
+// SXID data array return to getSxid
+typedef struct
+{
+    NvU32 sxidCount;
+    RM_SOE_BBX_SXID_ENTRY sxidFirst[INFOROM_BBX_OBJ_XID_ENTRIES];
+    RM_SOE_BBX_SXID_ENTRY sxidLast[INFOROM_BBX_OBJ_XID_ENTRIES];
+} RM_SOE_BBX_GET_SXID_DATA;
 
 #endif // _SOEIFIFR_H_

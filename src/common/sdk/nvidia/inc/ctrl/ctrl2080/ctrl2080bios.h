@@ -36,10 +36,7 @@
 
 
 
-typedef struct NV2080_CTRL_BIOS_INFO {
-    NvU32 index;
-    NvU32 data;
-} NV2080_CTRL_BIOS_INFO;
+typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_BIOS_INFO;
 
 /* Maximum number of bios infos that can be queried at once */
 #define NV2080_CTRL_BIOS_INFO_MAX_SIZE                              (0x0000000F)

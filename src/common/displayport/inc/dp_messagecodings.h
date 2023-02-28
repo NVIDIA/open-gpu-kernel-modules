@@ -274,6 +274,7 @@ namespace DisplayPort
         struct
         {
             unsigned portNumber;
+            unsigned availableStreams;
             bool     bFECCapability;
             unsigned TotalPBN;
             unsigned FreePBN;
@@ -354,6 +355,8 @@ namespace DisplayPort
         struct
         {
             unsigned port;
+            unsigned availableStreams;
+            bool     bFECCapability;
             GUID guid;
             unsigned PBN;
         } request;

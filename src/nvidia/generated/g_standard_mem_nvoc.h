@@ -71,25 +71,27 @@ struct StandardMemory {
     struct StandardMemory *__nvoc_pbase_StandardMemory;
     NvBool (*__stdmemCanCopy__)(struct StandardMemory *);
     NV_STATUS (*__stdmemCheckMemInterUnmap__)(struct StandardMemory *, NvBool);
+    NvBool (*__stdmemShareCallback__)(struct StandardMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__stdmemMapTo__)(struct StandardMemory *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__stdmemGetMapAddrSpace__)(struct StandardMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__stdmemGetRefCount__)(struct StandardMemory *);
+    void (*__stdmemAddAdditionalDependants__)(struct RsClient *, struct StandardMemory *, RsResourceRef *);
+    NV_STATUS (*__stdmemControl_Prologue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__stdmemIsGpuMapAllowed__)(struct StandardMemory *, struct OBJGPU *);
+    NV_STATUS (*__stdmemUnmapFrom__)(struct StandardMemory *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__stdmemControl_Epilogue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__stdmemControlLookup__)(struct StandardMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__stdmemControl__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__stdmemUnmap__)(struct StandardMemory *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__stdmemGetMemInterMapParams__)(struct StandardMemory *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__stdmemGetMemoryMappingDescriptor__)(struct StandardMemory *, MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__stdmemGetMapAddrSpace__)(struct StandardMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvBool (*__stdmemShareCallback__)(struct StandardMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__stdmemControlFilter__)(struct StandardMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__stdmemAddAdditionalDependants__)(struct RsClient *, struct StandardMemory *, RsResourceRef *);
-    NvU32 (*__stdmemGetRefCount__)(struct StandardMemory *);
-    NV_STATUS (*__stdmemMapTo__)(struct StandardMemory *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__stdmemControl_Prologue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NvBool (*__stdmemIsGpuMapAllowed__)(struct StandardMemory *, struct OBJGPU *);
+    NV_STATUS (*__stdmemControlSerialization_Prologue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__stdmemIsReady__)(struct StandardMemory *, NvBool);
     NV_STATUS (*__stdmemCheckCopyPermissions__)(struct StandardMemory *, struct OBJGPU *, NvHandle);
     void (*__stdmemPreDestruct__)(struct StandardMemory *);
     NV_STATUS (*__stdmemIsDuplicate__)(struct StandardMemory *, NvHandle, NvBool *);
-    NV_STATUS (*__stdmemUnmapFrom__)(struct StandardMemory *, RS_RES_UNMAP_FROM_PARAMS *);
-    void (*__stdmemControl_Epilogue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__stdmemControlLookup__)(struct StandardMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__stdmemControlSerialization_Epilogue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__stdmemMap__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__stdmemAccessCallback__)(struct StandardMemory *, struct RsClient *, void *, RsAccessRight);
 };
@@ -124,25 +126,27 @@ NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory**, Dynamic*, NvU32, CAL
 
 #define stdmemCanCopy(pStandardMemory) stdmemCanCopy_DISPATCH(pStandardMemory)
 #define stdmemCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) stdmemCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
+#define stdmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) stdmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
+#define stdmemMapTo(pResource, pParams) stdmemMapTo_DISPATCH(pResource, pParams)
+#define stdmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) stdmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define stdmemGetRefCount(pResource) stdmemGetRefCount_DISPATCH(pResource)
+#define stdmemAddAdditionalDependants(pClient, pResource, pReference) stdmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define stdmemControl_Prologue(pResource, pCallContext, pParams) stdmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define stdmemIsGpuMapAllowed(pMemory, pGpu) stdmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define stdmemUnmapFrom(pResource, pParams) stdmemUnmapFrom_DISPATCH(pResource, pParams)
+#define stdmemControl_Epilogue(pResource, pCallContext, pParams) stdmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define stdmemControlLookup(pResource, pParams, ppEntry) stdmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define stdmemControl(pMemory, pCallContext, pParams) stdmemControl_DISPATCH(pMemory, pCallContext, pParams)
 #define stdmemUnmap(pMemory, pCallContext, pCpuMapping) stdmemUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define stdmemGetMemInterMapParams(pMemory, pParams) stdmemGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define stdmemGetMemoryMappingDescriptor(pMemory, ppMemDesc) stdmemGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define stdmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) stdmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
-#define stdmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) stdmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define stdmemControlFilter(pResource, pCallContext, pParams) stdmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define stdmemAddAdditionalDependants(pClient, pResource, pReference) stdmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define stdmemGetRefCount(pResource) stdmemGetRefCount_DISPATCH(pResource)
-#define stdmemMapTo(pResource, pParams) stdmemMapTo_DISPATCH(pResource, pParams)
-#define stdmemControl_Prologue(pResource, pCallContext, pParams) stdmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define stdmemIsGpuMapAllowed(pMemory, pGpu) stdmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define stdmemControlSerialization_Prologue(pResource, pCallContext, pParams) stdmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define stdmemIsReady(pMemory, bCopyConstructorContext) stdmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define stdmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) stdmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
 #define stdmemPreDestruct(pResource) stdmemPreDestruct_DISPATCH(pResource)
 #define stdmemIsDuplicate(pMemory, hMemory, pDuplicate) stdmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
-#define stdmemUnmapFrom(pResource, pParams) stdmemUnmapFrom_DISPATCH(pResource, pParams)
-#define stdmemControl_Epilogue(pResource, pCallContext, pParams) stdmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define stdmemControlLookup(pResource, pParams, ppEntry) stdmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define stdmemControlSerialization_Epilogue(pResource, pCallContext, pParams) stdmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define stdmemMap(pMemory, pCallContext, pParams, pCpuMapping) stdmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
 #define stdmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) stdmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvU32 stdmemGetSysmemPageSize_IMPL(struct OBJGPU *pGpu, struct StandardMemory *pMemory);
@@ -169,6 +173,46 @@ static inline NV_STATUS stdmemCheckMemInterUnmap_DISPATCH(struct StandardMemory 
     return pMemory->__stdmemCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
 }
 
+static inline NvBool stdmemShareCallback_DISPATCH(struct StandardMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return pResource->__stdmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline NV_STATUS stdmemMapTo_DISPATCH(struct StandardMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__stdmemMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS stdmemGetMapAddrSpace_DISPATCH(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pMemory->__stdmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 stdmemGetRefCount_DISPATCH(struct StandardMemory *pResource) {
+    return pResource->__stdmemGetRefCount__(pResource);
+}
+
+static inline void stdmemAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct StandardMemory *pResource, RsResourceRef *pReference) {
+    pResource->__stdmemAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS stdmemControl_Prologue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__stdmemControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool stdmemIsGpuMapAllowed_DISPATCH(struct StandardMemory *pMemory, struct OBJGPU *pGpu) {
+    return pMemory->__stdmemIsGpuMapAllowed__(pMemory, pGpu);
+}
+
+static inline NV_STATUS stdmemUnmapFrom_DISPATCH(struct StandardMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__stdmemUnmapFrom__(pResource, pParams);
+}
+
+static inline void stdmemControl_Epilogue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__stdmemControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS stdmemControlLookup_DISPATCH(struct StandardMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__stdmemControlLookup__(pResource, pParams, ppEntry);
+}
+
 static inline NV_STATUS stdmemControl_DISPATCH(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pMemory->__stdmemControl__(pMemory, pCallContext, pParams);
 }
@@ -185,36 +229,12 @@ static inline NV_STATUS stdmemGetMemoryMappingDescriptor_DISPATCH(struct Standar
     return pMemory->__stdmemGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
 }
 
-static inline NV_STATUS stdmemGetMapAddrSpace_DISPATCH(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pMemory->__stdmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvBool stdmemShareCallback_DISPATCH(struct StandardMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return pResource->__stdmemShareCallback__(pResource, pInvokingClient, pParentRef, pSharePolicy);
-}
-
 static inline NV_STATUS stdmemControlFilter_DISPATCH(struct StandardMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__stdmemControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void stdmemAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct StandardMemory *pResource, RsResourceRef *pReference) {
-    pResource->__stdmemAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 stdmemGetRefCount_DISPATCH(struct StandardMemory *pResource) {
-    return pResource->__stdmemGetRefCount__(pResource);
-}
-
-static inline NV_STATUS stdmemMapTo_DISPATCH(struct StandardMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__stdmemMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS stdmemControl_Prologue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__stdmemControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NvBool stdmemIsGpuMapAllowed_DISPATCH(struct StandardMemory *pMemory, struct OBJGPU *pGpu) {
-    return pMemory->__stdmemIsGpuMapAllowed__(pMemory, pGpu);
+static inline NV_STATUS stdmemControlSerialization_Prologue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__stdmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS stdmemIsReady_DISPATCH(struct StandardMemory *pMemory, NvBool bCopyConstructorContext) {
@@ -233,16 +253,8 @@ static inline NV_STATUS stdmemIsDuplicate_DISPATCH(struct StandardMemory *pMemor
     return pMemory->__stdmemIsDuplicate__(pMemory, hMemory, pDuplicate);
 }
 
-static inline NV_STATUS stdmemUnmapFrom_DISPATCH(struct StandardMemory *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__stdmemUnmapFrom__(pResource, pParams);
-}
-
-static inline void stdmemControl_Epilogue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__stdmemControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS stdmemControlLookup_DISPATCH(struct StandardMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__stdmemControlLookup__(pResource, pParams, ppEntry);
+static inline void stdmemControlSerialization_Epilogue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__stdmemControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS stdmemMap_DISPATCH(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -265,7 +277,7 @@ void stdmemDumpInputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData, CA
 void stdmemDumpOutputAllocParams_IMPL(NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
 
 #define stdmemDumpOutputAllocParams(pAllocData) stdmemDumpOutputAllocParams_IMPL(pAllocData)
-NvU32 stdmemQueryPageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
+NvU64 stdmemQueryPageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NV_MEMORY_ALLOCATION_PARAMS *pAllocData);
 
 #define stdmemQueryPageSize(pMemoryManager, hClient, pAllocData) stdmemQueryPageSize_IMPL(pMemoryManager, hClient, pAllocData)
 #undef PRIVATE_FIELD

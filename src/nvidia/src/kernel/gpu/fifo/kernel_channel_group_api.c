@@ -167,8 +167,7 @@ kchangrpapiConstruct_IMPL
         // to determine runlistId from engineId passed by client. This
         // runlistId is used to associate all future channels in this TSG to
         // that runlist. Setting the engineType will cause the runlist
-        // corresponding to that engine to be chosen in
-        // kchangrpGetDefaultRunlist_HAL.
+        // corresponding to that engine to be chosen.
         //
         pKernelChannelGroup->engineType = rmEngineType;
     }
@@ -273,20 +272,28 @@ kchangrpapiConstruct_IMPL
     // Memory needs to be reserved in the pool only for buffers for
     // engines in instance.
     //
+
+    //
+    // Size of memory that will be calculated for ctxBufPool reservation if ctxBufPool is enabled and MIG is disabled 
+    // or current engine belongs to this MIG instance and MIG is enabled
+    //
     if (pKernelChannelGroup->pCtxBufPool != NULL &&
-        kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, pKernelChannelGroup->engineType, ref))
+        (!bMIGInUse || kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, pKernelChannelGroup->engineType, ref)))
     {
         // GR Buffers
         if (RM_ENGINE_TYPE_IS_GR(pKernelChannelGroup->engineType))
         {
             KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, RM_ENGINE_TYPE_GR_IDX(pKernelChannelGroup->engineType));
-            NvU32 bufId;
+            NvU32 bufId = 0;
             portMemSet(&bufInfoList[0], 0, sizeof(CTX_BUF_INFO) * NV_ENUM_SIZE(GR_CTX_BUFFER));
             bufCount = 0;
+
+            kgraphicsDiscoverMaxLocalCtxBufferSize(pGpu, pKernelGraphics);
+
             FOR_EACH_IN_ENUM(GR_CTX_BUFFER, bufId)
             {
                 // TODO expose engine class capabilities to kernel RM
-                if (kgrmgrIsCtxBufSupported(bufId, !IS_MIG_ENABLED(pGpu)))
+                if (kgrmgrIsCtxBufSupported(bufId, NV_FALSE))
                 {
                     const CTX_BUF_INFO *pBufInfo = kgraphicsGetCtxBufferInfo(pGpu, pKernelGraphics, bufId);
                     bufInfoList[bufCount] = *pBufInfo;
@@ -1073,7 +1080,8 @@ kchangrpapiCtrlCmdGpFifoSchedule_IMPL
     // If no channels have a runlist set, get the default and use it.
     if (runlistId == INVALID_RUNLIST_ID)
     {
-        runlistId = kchangrpGetDefaultRunlist_HAL(pGpu, pKernelChannelGroup);
+        runlistId = kfifoGetDefaultRunlist_HAL(pGpu, pKernelFifo,
+            pKernelChannelGroup->engineType);
     }
 
     // We can rewrite TSG runlist id just as we will do that for all TSG channels below

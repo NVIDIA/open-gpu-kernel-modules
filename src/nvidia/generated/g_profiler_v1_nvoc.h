@@ -63,25 +63,27 @@ struct Profiler {
     NV_STATUS (*__profilerCtrlCmdProfilerRequestCgControls__)(struct Profiler *, NV90CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *);
     NV_STATUS (*__profilerCtrlCmdProfilerReleaseCgControls__)(struct Profiler *, NV90CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *);
     NvBool (*__profilerShareCallback__)(struct Profiler *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__profilerCheckMemInterUnmap__)(struct Profiler *, NvBool);
+    NV_STATUS (*__profilerMapTo__)(struct Profiler *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__profilerGetMapAddrSpace__)(struct Profiler *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__profilerGetRefCount__)(struct Profiler *);
+    void (*__profilerAddAdditionalDependants__)(struct RsClient *, struct Profiler *, RsResourceRef *);
+    NV_STATUS (*__profilerControl_Prologue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__profilerGetRegBaseOffsetAndSize__)(struct Profiler *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__profilerInternalControlForward__)(struct Profiler *, NvU32, void *, NvU32);
+    NV_STATUS (*__profilerUnmapFrom__)(struct Profiler *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__profilerControl_Epilogue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__profilerControlLookup__)(struct Profiler *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NvHandle (*__profilerGetInternalObjectHandle__)(struct Profiler *);
     NV_STATUS (*__profilerUnmap__)(struct Profiler *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__profilerGetMemInterMapParams__)(struct Profiler *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__profilerGetMemoryMappingDescriptor__)(struct Profiler *, struct MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__profilerGetMapAddrSpace__)(struct Profiler *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvHandle (*__profilerGetInternalObjectHandle__)(struct Profiler *);
     NV_STATUS (*__profilerControlFilter__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__profilerAddAdditionalDependants__)(struct RsClient *, struct Profiler *, RsResourceRef *);
-    NvU32 (*__profilerGetRefCount__)(struct Profiler *);
-    NV_STATUS (*__profilerCheckMemInterUnmap__)(struct Profiler *, NvBool);
-    NV_STATUS (*__profilerMapTo__)(struct Profiler *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__profilerControl_Prologue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__profilerGetRegBaseOffsetAndSize__)(struct Profiler *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__profilerControlSerialization_Prologue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__profilerCanCopy__)(struct Profiler *);
-    NV_STATUS (*__profilerInternalControlForward__)(struct Profiler *, NvU32, void *, NvU32);
     void (*__profilerPreDestruct__)(struct Profiler *);
-    NV_STATUS (*__profilerUnmapFrom__)(struct Profiler *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__profilerIsDuplicate__)(struct Profiler *, NvHandle, NvBool *);
-    void (*__profilerControl_Epilogue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__profilerControlLookup__)(struct Profiler *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__profilerControlSerialization_Epilogue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__profilerMap__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__profilerAccessCallback__)(struct Profiler *, struct RsClient *, void *, RsAccessRight);
 };
@@ -121,25 +123,27 @@ NV_STATUS __nvoc_objCreate_Profiler(Profiler**, Dynamic*, NvU32, struct CALL_CON
 #define profilerCtrlCmdProfilerRequestCgControls(pProfiler, pParams) profilerCtrlCmdProfilerRequestCgControls_DISPATCH(pProfiler, pParams)
 #define profilerCtrlCmdProfilerReleaseCgControls(pProfiler, pParams) profilerCtrlCmdProfilerReleaseCgControls_DISPATCH(pProfiler, pParams)
 #define profilerShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) profilerShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
+#define profilerCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) profilerCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define profilerMapTo(pResource, pParams) profilerMapTo_DISPATCH(pResource, pParams)
+#define profilerGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) profilerGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
+#define profilerGetRefCount(pResource) profilerGetRefCount_DISPATCH(pResource)
+#define profilerAddAdditionalDependants(pClient, pResource, pReference) profilerAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define profilerControl_Prologue(pResource, pCallContext, pParams) profilerControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define profilerGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) profilerGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define profilerInternalControlForward(pGpuResource, command, pParams, size) profilerInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
+#define profilerUnmapFrom(pResource, pParams) profilerUnmapFrom_DISPATCH(pResource, pParams)
+#define profilerControl_Epilogue(pResource, pCallContext, pParams) profilerControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define profilerControlLookup(pResource, pParams, ppEntry) profilerControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define profilerGetInternalObjectHandle(pGpuResource) profilerGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define profilerUnmap(pGpuResource, pCallContext, pCpuMapping) profilerUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define profilerGetMemInterMapParams(pRmResource, pParams) profilerGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define profilerGetMemoryMappingDescriptor(pRmResource, ppMemDesc) profilerGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define profilerGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) profilerGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define profilerGetInternalObjectHandle(pGpuResource) profilerGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define profilerControlFilter(pResource, pCallContext, pParams) profilerControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define profilerAddAdditionalDependants(pClient, pResource, pReference) profilerAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define profilerGetRefCount(pResource) profilerGetRefCount_DISPATCH(pResource)
-#define profilerCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) profilerCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define profilerMapTo(pResource, pParams) profilerMapTo_DISPATCH(pResource, pParams)
-#define profilerControl_Prologue(pResource, pCallContext, pParams) profilerControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define profilerGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) profilerGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define profilerControlSerialization_Prologue(pResource, pCallContext, pParams) profilerControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerCanCopy(pResource) profilerCanCopy_DISPATCH(pResource)
-#define profilerInternalControlForward(pGpuResource, command, pParams, size) profilerInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define profilerPreDestruct(pResource) profilerPreDestruct_DISPATCH(pResource)
-#define profilerUnmapFrom(pResource, pParams) profilerUnmapFrom_DISPATCH(pResource, pParams)
 #define profilerIsDuplicate(pResource, hMemory, pDuplicate) profilerIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define profilerControl_Epilogue(pResource, pCallContext, pParams) profilerControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define profilerControlLookup(pResource, pParams, ppEntry) profilerControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define profilerControlSerialization_Epilogue(pResource, pCallContext, pParams) profilerControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerMap(pGpuResource, pCallContext, pParams, pCpuMapping) profilerMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define profilerAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) profilerAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NvBool profilerIsProfilingPermitted_IMPL(struct Profiler *pProfiler);
@@ -234,6 +238,54 @@ static inline NvBool profilerShareCallback_DISPATCH(struct Profiler *pGpuResourc
     return pGpuResource->__profilerShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static inline NV_STATUS profilerCheckMemInterUnmap_DISPATCH(struct Profiler *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__profilerCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+}
+
+static inline NV_STATUS profilerMapTo_DISPATCH(struct Profiler *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__profilerMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS profilerGetMapAddrSpace_DISPATCH(struct Profiler *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pGpuResource->__profilerGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 profilerGetRefCount_DISPATCH(struct Profiler *pResource) {
+    return pResource->__profilerGetRefCount__(pResource);
+}
+
+static inline void profilerAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct Profiler *pResource, RsResourceRef *pReference) {
+    pResource->__profilerAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS profilerControl_Prologue_DISPATCH(struct Profiler *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__profilerControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS profilerGetRegBaseOffsetAndSize_DISPATCH(struct Profiler *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return pGpuResource->__profilerGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+}
+
+static inline NV_STATUS profilerInternalControlForward_DISPATCH(struct Profiler *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return pGpuResource->__profilerInternalControlForward__(pGpuResource, command, pParams, size);
+}
+
+static inline NV_STATUS profilerUnmapFrom_DISPATCH(struct Profiler *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__profilerUnmapFrom__(pResource, pParams);
+}
+
+static inline void profilerControl_Epilogue_DISPATCH(struct Profiler *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__profilerControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS profilerControlLookup_DISPATCH(struct Profiler *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__profilerControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NvHandle profilerGetInternalObjectHandle_DISPATCH(struct Profiler *pGpuResource) {
+    return pGpuResource->__profilerGetInternalObjectHandle__(pGpuResource);
+}
+
 static inline NV_STATUS profilerUnmap_DISPATCH(struct Profiler *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return pGpuResource->__profilerUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
@@ -246,68 +298,28 @@ static inline NV_STATUS profilerGetMemoryMappingDescriptor_DISPATCH(struct Profi
     return pRmResource->__profilerGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline NV_STATUS profilerGetMapAddrSpace_DISPATCH(struct Profiler *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__profilerGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvHandle profilerGetInternalObjectHandle_DISPATCH(struct Profiler *pGpuResource) {
-    return pGpuResource->__profilerGetInternalObjectHandle__(pGpuResource);
-}
-
 static inline NV_STATUS profilerControlFilter_DISPATCH(struct Profiler *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__profilerControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void profilerAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct Profiler *pResource, RsResourceRef *pReference) {
-    pResource->__profilerAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 profilerGetRefCount_DISPATCH(struct Profiler *pResource) {
-    return pResource->__profilerGetRefCount__(pResource);
-}
-
-static inline NV_STATUS profilerCheckMemInterUnmap_DISPATCH(struct Profiler *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__profilerCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
-}
-
-static inline NV_STATUS profilerMapTo_DISPATCH(struct Profiler *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__profilerMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS profilerControl_Prologue_DISPATCH(struct Profiler *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__profilerControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS profilerGetRegBaseOffsetAndSize_DISPATCH(struct Profiler *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__profilerGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+static inline NV_STATUS profilerControlSerialization_Prologue_DISPATCH(struct Profiler *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__profilerControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool profilerCanCopy_DISPATCH(struct Profiler *pResource) {
     return pResource->__profilerCanCopy__(pResource);
 }
 
-static inline NV_STATUS profilerInternalControlForward_DISPATCH(struct Profiler *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__profilerInternalControlForward__(pGpuResource, command, pParams, size);
-}
-
 static inline void profilerPreDestruct_DISPATCH(struct Profiler *pResource) {
     pResource->__profilerPreDestruct__(pResource);
-}
-
-static inline NV_STATUS profilerUnmapFrom_DISPATCH(struct Profiler *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__profilerUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS profilerIsDuplicate_DISPATCH(struct Profiler *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__profilerIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
-static inline void profilerControl_Epilogue_DISPATCH(struct Profiler *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__profilerControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS profilerControlLookup_DISPATCH(struct Profiler *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__profilerControlLookup__(pResource, pParams, ppEntry);
+static inline void profilerControlSerialization_Epilogue_DISPATCH(struct Profiler *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__profilerControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS profilerMap_DISPATCH(struct Profiler *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {

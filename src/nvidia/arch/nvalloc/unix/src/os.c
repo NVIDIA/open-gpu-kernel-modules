@@ -45,6 +45,7 @@
 #include "mem_mgr/io_vaspace.h"
 #include <diagnostics/journal.h>
 #include "gpu/mem_mgr/mem_desc.h"
+#include "gpu/mem_mgr/mem_mgr.h"
 #include "core/thread_state.h"
 #include <nvacpitypes.h>
 #include <platform/acpi_common.h>
@@ -299,7 +300,13 @@ void* osMapKernelSpace(
 
     offset = (Start & ~os_page_mask);
     Start &= os_page_mask;
-    Size = ((Size + offset + ~os_page_mask) & os_page_mask);
+
+    if (!portSafeAddU64(Size, offset, &Size) ||
+        !portSafeAddU64(Size, ~os_page_mask, &Size))
+    {
+        return NULL;
+    }
+    Size &= os_page_mask;
 
     ptr = os_map_kernel_space(Start, Size, Mode);
     if (ptr != NULL)
@@ -892,6 +899,7 @@ NV_STATUS osAllocPagesInternal(
     nv_state_t *nv = NV_GET_NV_STATE(pGpu);
     void *pMemData = NULL;
     NV_STATUS status;
+    NvS32     nodeId = -1;
 
     memdescSetAddress(pMemDesc, NvP64_NULL);
     memdescSetMemData(pMemDesc, NULL, NULL);
@@ -923,16 +931,19 @@ NV_STATUS osAllocPagesInternal(
         if (nv && (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_32BIT_ADDRESSABLE)))
             nv->force_dma32_alloc = NV_TRUE;
 
-        status = nv_alloc_pages(
-            NV_GET_NV_STATE(pGpu),
-            NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount),
-            memdescGetContiguity(pMemDesc, AT_CPU),
-            memdescGetCpuCacheAttrib(pMemDesc),
-            pSys->getProperty(pSys,
-                PDB_PROP_SYS_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS),
-            unencrypted,
-            memdescGetPteArray(pMemDesc, AT_CPU),
-            &pMemData);
+        {
+            status = nv_alloc_pages(
+                NV_GET_NV_STATE(pGpu),
+                NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount),
+                memdescGetContiguity(pMemDesc, AT_CPU),
+                memdescGetCpuCacheAttrib(pMemDesc),
+                pSys->getProperty(pSys,
+                    PDB_PROP_SYS_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS),
+                unencrypted,
+                nodeId,
+                memdescGetPteArray(pMemDesc, AT_CPU),
+                &pMemData);
+        }
 
         if (nv && nv->force_dma32_alloc)
             nv->force_dma32_alloc = NV_FALSE;
@@ -942,7 +953,7 @@ NV_STATUS osAllocPagesInternal(
     {
         return status;
     }
-    
+
     //
     // If the OS layer doesn't think in RM page size, we need to inflate the
     // PTE array into RM pages.
@@ -5240,3 +5251,4 @@ osDmabufIsSupported(void)
 {
     return os_dma_buf_enabled;
 }
+

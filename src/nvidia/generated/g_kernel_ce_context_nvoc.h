@@ -76,7 +76,7 @@ struct KernelCeContext {
     NV_STATUS (*__kcectxUnmapFrom__)(struct KernelCeContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__kcectxControl_Epilogue__)(struct KernelCeContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kcectxControlLookup__)(struct KernelCeContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
-    NV_STATUS (*__kcectxGetSwMethods__)(struct KernelCeContext *, METHOD **, NvU32 *);
+    NV_STATUS (*__kcectxGetSwMethods__)(struct KernelCeContext *, const METHOD **, NvU32 *);
     NvHandle (*__kcectxGetInternalObjectHandle__)(struct KernelCeContext *);
     NV_STATUS (*__kcectxControl__)(struct KernelCeContext *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kcectxUnmap__)(struct KernelCeContext *, CALL_CONTEXT *, RsCpuMapping *);
@@ -85,9 +85,11 @@ struct KernelCeContext {
     NvBool (*__kcectxIsSwMethodStalling__)(struct KernelCeContext *, NvU32);
     NV_STATUS (*__kcectxControlFilter__)(struct KernelCeContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kcectxUnregisterEvent__)(struct KernelCeContext *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__kcectxControlSerialization_Prologue__)(struct KernelCeContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__kcectxCanCopy__)(struct KernelCeContext *);
     void (*__kcectxPreDestruct__)(struct KernelCeContext *);
     NV_STATUS (*__kcectxIsDuplicate__)(struct KernelCeContext *, NvHandle, NvBool *);
+    void (*__kcectxControlSerialization_Epilogue__)(struct KernelCeContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__kcectxGetNotificationListPtr__)(struct KernelCeContext *);
     struct NotifShare *(*__kcectxGetNotificationShare__)(struct KernelCeContext *);
     NV_STATUS (*__kcectxMap__)(struct KernelCeContext *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -145,9 +147,11 @@ NV_STATUS __nvoc_objCreate_KernelCeContext(KernelCeContext**, Dynamic*, NvU32, C
 #define kcectxIsSwMethodStalling(pChannelDescendant, hHandle) kcectxIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define kcectxControlFilter(pResource, pCallContext, pParams) kcectxControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define kcectxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) kcectxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define kcectxControlSerialization_Prologue(pResource, pCallContext, pParams) kcectxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define kcectxCanCopy(pResource) kcectxCanCopy_DISPATCH(pResource)
 #define kcectxPreDestruct(pResource) kcectxPreDestruct_DISPATCH(pResource)
 #define kcectxIsDuplicate(pResource, hMemory, pDuplicate) kcectxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define kcectxControlSerialization_Epilogue(pResource, pCallContext, pParams) kcectxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kcectxGetNotificationListPtr(pNotifier) kcectxGetNotificationListPtr_DISPATCH(pNotifier)
 #define kcectxGetNotificationShare(pNotifier) kcectxGetNotificationShare_DISPATCH(pNotifier)
 #define kcectxMap(pGpuResource, pCallContext, pParams, pCpuMapping) kcectxMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -208,7 +212,7 @@ static inline NV_STATUS kcectxControlLookup_DISPATCH(struct KernelCeContext *pRe
     return pResource->__kcectxControlLookup__(pResource, pParams, ppEntry);
 }
 
-static inline NV_STATUS kcectxGetSwMethods_DISPATCH(struct KernelCeContext *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS kcectxGetSwMethods_DISPATCH(struct KernelCeContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__kcectxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
 
@@ -244,6 +248,10 @@ static inline NV_STATUS kcectxUnregisterEvent_DISPATCH(struct KernelCeContext *p
     return pNotifier->__kcectxUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS kcectxControlSerialization_Prologue_DISPATCH(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__kcectxControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool kcectxCanCopy_DISPATCH(struct KernelCeContext *pResource) {
     return pResource->__kcectxCanCopy__(pResource);
 }
@@ -254,6 +262,10 @@ static inline void kcectxPreDestruct_DISPATCH(struct KernelCeContext *pResource)
 
 static inline NV_STATUS kcectxIsDuplicate_DISPATCH(struct KernelCeContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__kcectxIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void kcectxControlSerialization_Epilogue_DISPATCH(struct KernelCeContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__kcectxControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *kcectxGetNotificationListPtr_DISPATCH(struct KernelCeContext *pNotifier) {

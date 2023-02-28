@@ -303,7 +303,6 @@ NV_STATUS uvm_va_space_mm_register(uvm_va_space_t *va_space)
     uvm_assert_mmap_lock_locked_write(current->mm);
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
-    UVM_ASSERT(uvm_va_space_initialized(va_space) != NV_OK);
     if (!uvm_va_space_mm_enabled(va_space))
         return NV_OK;
 
@@ -357,8 +356,6 @@ struct mm_struct *uvm_va_space_mm_retain(uvm_va_space_t *va_space)
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
     struct mm_struct *mm = NULL;
 
-    UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
-
     if (!uvm_va_space_mm_enabled(va_space))
         return NULL;
 
@@ -381,8 +378,6 @@ struct mm_struct *uvm_va_space_mm_or_current_retain(uvm_va_space_t *va_space)
 
     // We should only attempt to use current->mm from a user thread
     UVM_ASSERT(!(current->flags & PF_KTHREAD));
-
-    UVM_ASSERT(uvm_va_space_initialized(va_space) == NV_OK);
 
     // current->mm is NULL when we're in process teardown. In that case it
     // doesn't make sense to use any mm.
@@ -646,7 +641,7 @@ NV_STATUS uvm_test_va_space_mm_retain(UVM_TEST_VA_SPACE_MM_RETAIN_PARAMS *params
     uvm_mutex_lock(&g_uvm_global.va_spaces.lock);
 
     list_for_each_entry(va_space, &g_uvm_global.va_spaces.list, list_node) {
-        if ((uintptr_t)va_space == params->va_space_ptr && uvm_va_space_initialized(va_space) == NV_OK) {
+        if ((uintptr_t)va_space == params->va_space_ptr) {
             mm = uvm_va_space_mm_retain(va_space);
             break;
         }

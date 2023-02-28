@@ -32,8 +32,10 @@
 #include "gpu/gsp/kernel_gsp.h"
 
 #include "published/hopper/gh100/dev_fsp_pri.h"
-#include "published/hopper/gh100/dev_fsp_addendum.h"
+#include "fsp/fsp_nvdm_format.h"
 #include "published/hopper/gh100/dev_gc6_island_addendum.h"
+#include "published/hopper/gh100/dev_falcon_v4.h"
+#include "published/hopper/gh100/dev_gsp.h"
 #include "published/hopper/gh100/dev_therm.h"
 #include "published/hopper/gh100/dev_therm_addendum.h"
 #include "os/os.h"
@@ -170,7 +172,7 @@ kfspGetRmChannelSize_GH100
 NvU8
 kfspNvdmToSeid_GH100
 (
-    POBJGPU    pGpu,
+    OBJGPU    *pGpu,
     KernelFsp *pKernelFsp,
     NvU8       nvdmType
 )
@@ -657,7 +659,7 @@ kfspCheckGspSecureScratch_GH100
 static const BINDATA_ARCHIVE *
 kfspGetGspUcodeArchive
 (
-    POBJGPU    pGpu,
+    OBJGPU    *pGpu,
     KernelFsp *pKernelFsp
 )
 {
@@ -733,7 +735,7 @@ kfspGetGspUcodeArchive
 static NV_STATUS
 kfspGetGspBootArgs
 (
-    POBJGPU     pGpu,
+    OBJGPU     *pGpu,
     KernelFsp  *pKernelFsp,
     RmPhysAddr *pBootArgsGspSysmemOffset
 )
@@ -765,7 +767,7 @@ kfspGetGspBootArgs
 static NV_STATUS
 kfspSetupGspImages
 (
-    POBJGPU           pGpu,
+    OBJGPU           *pGpu,
     KernelFsp        *pKernelFsp,
     NVDM_PAYLOAD_COT *pCotPayload
 )
@@ -781,6 +783,12 @@ kfspSetupGspImages
     NvU32 pGspImageMapSize;
     NvP64 pVaKernel = NULL;
     NvP64 pPrivKernel = NULL;
+    NvU64 flags = MEMDESC_FLAGS_NONE;
+
+    //
+    // On systems with SEV enabled, the GSP-FMC image has to be accessible
+    // to FSP (an unit inside GPU) and hence placed in unprotected sysmem
+    //
 
     // Detect the mode of operation for GSP and fetch the right image to boot
     pBinArchive = kfspGetGspUcodeArchive(pGpu, pKernelFsp);
@@ -808,8 +816,7 @@ kfspSetupGspImages
     pGspImageMapSize = NV_ALIGN_UP(pGspImageSize, 0x1000);
 
     status = memdescCreate(&pKernelFsp->pGspFmcMemdesc, pGpu, pGspImageMapSize,
-                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED,
-                           MEMDESC_FLAGS_NONE);
+                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED, flags);
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
     status = memdescAlloc(pKernelFsp->pGspFmcMemdesc);
@@ -851,10 +858,58 @@ failed:
     return status;
 }
 
+/*!
+ * Determine if PRIV target mask is unlocked for GSP and BAR0 Decoupler allows GSP access.
+ *
+ * This is temporary WAR for the PRIV target mask bug 3640831 until we have notification
+ * protocol in place (there is no HW mechanism for CPU to check if GSP is open other than
+ * reading 0xBADF41YY code).
+ *
+ * Until the programmed BAR0 decoupler settings are cleared, GSP access is blocked from
+ * the CPU so all reads will return 0.
+ */
+static NvBool
+_kfspIsGspTargetMaskReleased
+(
+    OBJGPU  *pGpu,
+    void    *pVoid
+)
+{
+    const NvU32   privErrTargetLocked      = 0xBADF4100U;
+    const NvU32   privErrTargetLockedMask  = 0xFFFFFF00U; // Ignore LSB - it has extra error information
+    NvU32 reg;
+
+    //
+    // This register is read with the raw OS read to avoid the 0xbadf sanity checking
+    // done by the usual register read utilities.
+    //
+    reg = osDevReadReg032(pGpu, gpuGetDeviceMapping(pGpu, DEVICE_INDEX_GPU, 0),
+                          DRF_BASE(NV_PGSP) + NV_PFALCON_FALCON_HWCFG2);
+
+    return ((reg != 0) && ((reg & privErrTargetLockedMask) != privErrTargetLocked));
+}
+
+/*!
+ * Determine if GSP's target mask is released.
+ */
+NV_STATUS
+kfspWaitForGspTargetMaskReleased_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    NV_STATUS status = NV_OK;
+
+    status =  gpuTimeoutCondWait(pGpu, _kfspIsGspTargetMaskReleased, NULL, NULL);
+
+    return status;
+}
+
 static NV_STATUS
 _kfspCheckGspBootStatus
 (
-    POBJGPU    pGpu,
+    OBJGPU    *pGpu,
     KernelFsp *pKernelFsp
 )
 {
@@ -889,6 +944,15 @@ _kfspCheckGspBootStatus
          }
          return status;
      }
+
+    // Ensure that for GH100+ TM is released before polling for priv lockdown release
+    status = kfspWaitForGspTargetMaskReleased_HAL(pGpu, pKernelFsp);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Timed out waiting for GSP's target mask to be released.\n");
+        DBG_BREAKPOINT();
+        return status;
+    }
 
     // Ensure priv lockdown is released before polling interrupts
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
@@ -1070,9 +1134,14 @@ kfspSendBootCommands_GH100
     // Set up sysmem for FRTS copy
     if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM))
     {
+        NvU64 flags = MEMDESC_FLAGS_NONE;
+
+        //
+        // On systems with SEV enabled, the FRTS has to be accessible to
+        // FSP (an unit inside GPU) and hence placed in unprotected sysmem
+        //
         status = memdescCreate(&pKernelFsp->pSysmemFrtsMemdesc, pGpu, frtsSize,
-                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED,
-                               MEMDESC_FLAGS_NONE);
+                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED, flags);
         NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
         status = memdescAlloc(pKernelFsp->pSysmemFrtsMemdesc);

@@ -201,10 +201,7 @@ typedef struct NV0041_CTRL_GET_SURFACE_ZCULL_ID_PARAMS {
  *     This index is used to request the surface address space type.
  *     Returned values are described by NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE.
  */
-typedef struct NV0041_CTRL_SURFACE_INFO {
-    NvU32 index;
-    NvU32 data;
-} NV0041_CTRL_SURFACE_INFO;
+typedef NVXXXX_CTRL_XXX_INFO NV0041_CTRL_SURFACE_INFO;
 
 /* valid surface info index values */
 #define NV0041_CTRL_SURFACE_INFO_INDEX_ATTRS                           (0x00000001)

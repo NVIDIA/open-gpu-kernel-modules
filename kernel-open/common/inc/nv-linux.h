@@ -633,6 +633,26 @@ static NvBool nv_numa_node_has_memory(int node_id)
         free_pages(ptr, order);                      \
     }
 
+static inline pgprot_t nv_adjust_pgprot(pgprot_t vm_prot, NvU32 extra)
+{
+    pgprot_t prot = __pgprot(pgprot_val(vm_prot) | extra);
+#if defined(CONFIG_AMD_MEM_ENCRYPT) && defined(NV_PGPROT_DECRYPTED_PRESENT)
+    /*
+     * When AMD memory encryption is enabled, device memory mappings with the
+     * C-bit set read as 0xFF, so ensure the bit is cleared for user mappings.
+     *
+     * If cc_mkdec() is present, then pgprot_decrypted() can't be used.
+     */
+#if defined(NV_CC_MKDEC_PRESENT)
+    prot =  __pgprot(__sme_clr(pgprot_val(vm_prot)));
+#else
+    prot = pgprot_decrypted(prot);
+#endif
+#endif
+
+    return prot;
+}
+
 #if defined(PAGE_KERNEL_NOENC)
 #if defined(__pgprot_mask)
 #define NV_PAGE_KERNEL_NOCACHE_NOENC __pgprot_mask(__PAGE_KERNEL_NOCACHE)
@@ -654,7 +674,8 @@ static inline NvUPtr nv_vmap(struct page **pages, NvU32 page_count,
 #if defined(PAGE_KERNEL_NOENC)
     if (unencrypted)
     {
-        prot = cached ? PAGE_KERNEL_NOENC : NV_PAGE_KERNEL_NOCACHE_NOENC;
+        prot = cached ? nv_adjust_pgprot(PAGE_KERNEL_NOENC, 0) :
+                        nv_adjust_pgprot(NV_PAGE_KERNEL_NOCACHE_NOENC, 0);
     }
     else
 #endif
@@ -939,26 +960,6 @@ static inline int nv_remap_page_range(struct vm_area_struct *vma,
     return ret;
 }
 
-static inline pgprot_t nv_adjust_pgprot(pgprot_t vm_prot, NvU32 extra)
-{
-    pgprot_t prot = __pgprot(pgprot_val(vm_prot) | extra);
-#if defined(CONFIG_AMD_MEM_ENCRYPT) && defined(NV_PGPROT_DECRYPTED_PRESENT)
-    /*
-     * When AMD memory encryption is enabled, device memory mappings with the
-     * C-bit set read as 0xFF, so ensure the bit is cleared for user mappings.
-     *
-     * If cc_mkdec() is present, then pgprot_decrypted() can't be used.
-     */
-#if defined(NV_CC_MKDEC_PRESENT)
-    prot =  __pgprot(__sme_clr(pgprot_val(vm_prot)));
-#else
-    prot = pgprot_decrypted(prot);
-#endif
-#endif
-
-    return prot;
-}
-
 static inline int nv_io_remap_page_range(struct vm_area_struct *vma,
     NvU64 phys_addr, NvU64 size, NvU32 extra_prot)
 {
@@ -1182,7 +1183,7 @@ typedef struct nv_alloc_s {
         NvBool zeroed      : 1;
         NvBool aliased     : 1;
         NvBool user        : 1;
-        NvBool node0       : 1;
+        NvBool node        : 1;
         NvBool peer_io     : 1;
         NvBool physical    : 1;
         NvBool unencrypted : 1;
@@ -1196,6 +1197,7 @@ typedef struct nv_alloc_s {
     unsigned int   pid;
     struct page  **user_pages;
     NvU64         guest_id;             /* id of guest VM */
+    NvS32         node_id;              /* Node id for memory allocation when node is set in flags */
     void          *import_priv;
     struct sg_table *import_sgt;
 } nv_alloc_t;
@@ -1436,6 +1438,24 @@ struct nv_dma_device {
     NvBool nvlink;
 };
 
+#if defined(NV_LINUX_ACPI_EVENTS_SUPPORTED)
+/*
+ * acpi data storage structure
+ *
+ * This structure retains the pointer to the device,
+ * and any other baggage we want to carry along
+ *
+ */
+typedef struct
+{
+    nvidia_stack_t *sp;
+    struct acpi_device *device;
+    struct acpi_handle *handle;
+    void *notifier_data;
+    int notify_handler_installed;
+} nv_acpi_t;
+#endif
+
 /* linux-specific version of old nv_state_t */
 /* this is a general os-specific state structure. the first element *must* be
    the general state structure, for the generic unix-based code */
@@ -1530,8 +1550,13 @@ typedef struct nv_linux_state_s {
     /* Per-device notifier block for ACPI events */
     struct notifier_block acpi_nb;
 
+#if defined(NV_LINUX_ACPI_EVENTS_SUPPORTED)
+    nv_acpi_t* nv_acpi_object;
+#endif
+
     /* Lock serializing ISRs for different SOC vectors */
     nv_spinlock_t soc_isr_lock;
+    void *soc_bh_mutex;
 
     struct nv_timer snapshot_timer;
     nv_spinlock_t snapshot_timer_lock;
@@ -1576,24 +1601,6 @@ extern struct semaphore nv_linux_devices_lock;
 extern struct rw_semaphore nv_system_pm_lock;
 
 extern NvBool nv_ats_supported;
-
-#if defined(NV_LINUX_ACPI_EVENTS_SUPPORTED)
-/*
- * acpi data storage structure
- *
- * This structure retains the pointer to the device,
- * and any other baggage we want to carry along
- *
- */
-typedef struct
-{
-    nvidia_stack_t *sp;
-    struct acpi_device *device;
-    struct acpi_handle *handle;
-    int notify_handler_installed;
-} nv_acpi_t;
-
-#endif
 
 /*
  * file-private data
@@ -1744,6 +1751,7 @@ static inline NV_STATUS nv_check_gpu_state(nv_state_t *nv)
 
 extern NvU32 NVreg_EnableUserNUMAManagement;
 extern NvU32 NVreg_RegisterPCIDriver;
+extern NvU32 NVreg_EnableResizableBar;
 
 extern NvU32 num_probed_nv_devices;
 extern NvU32 num_nv_devices;

@@ -120,7 +120,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_DeferredApiObject =
     /*pExportInfo=*/        &__nvoc_export_info_DeferredApiObject
 };
 
-static NV_STATUS __nvoc_thunk_DeferredApiObject_chandesGetSwMethods(struct ChannelDescendant *pDeferredApi, METHOD **ppMethods, NvU32 *pNumMethods) {
+static NV_STATUS __nvoc_thunk_DeferredApiObject_chandesGetSwMethods(struct ChannelDescendant *pDeferredApi, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return defapiGetSwMethods((struct DeferredApiObject *)(((unsigned char *)pDeferredApi) - __nvoc_rtti_DeferredApiObject_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
@@ -212,6 +212,10 @@ static NV_STATUS __nvoc_thunk_Notifier_defapiUnregisterEvent(struct DeferredApiO
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DeferredApiObject_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_defapiControlSerialization_Prologue(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_defapiCanCopy(struct DeferredApiObject *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RsResource.offset));
 }
@@ -222,6 +226,10 @@ static void __nvoc_thunk_RsResource_defapiPreDestruct(struct DeferredApiObject *
 
 static NV_STATUS __nvoc_thunk_RsResource_defapiIsDuplicate(struct DeferredApiObject *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_defapiControlSerialization_Epilogue(struct DeferredApiObject *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_defapiGetNotificationListPtr(struct DeferredApiObject *pNotifier) {
@@ -395,11 +403,15 @@ static void __nvoc_init_funcTable_DeferredApiObject_1(DeferredApiObject *pThis) 
 
     pThis->__defapiUnregisterEvent__ = &__nvoc_thunk_Notifier_defapiUnregisterEvent;
 
+    pThis->__defapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_defapiControlSerialization_Prologue;
+
     pThis->__defapiCanCopy__ = &__nvoc_thunk_RsResource_defapiCanCopy;
 
     pThis->__defapiPreDestruct__ = &__nvoc_thunk_RsResource_defapiPreDestruct;
 
     pThis->__defapiIsDuplicate__ = &__nvoc_thunk_RsResource_defapiIsDuplicate;
+
+    pThis->__defapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_defapiControlSerialization_Epilogue;
 
     pThis->__defapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_defapiGetNotificationListPtr;
 
@@ -435,12 +447,15 @@ NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject **ppThis, Dynamic
     DeferredApiObject *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(DeferredApiObject));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DeferredApiObject), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(DeferredApiObject));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DeferredApiObject);
+
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -461,11 +476,17 @@ NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject **ppThis, Dynamic
     if (status != NV_OK) goto __nvoc_objCreate_DeferredApiObject_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_DeferredApiObject_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(DeferredApiObject));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

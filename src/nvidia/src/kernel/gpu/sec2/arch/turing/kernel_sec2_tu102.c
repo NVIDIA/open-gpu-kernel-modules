@@ -72,18 +72,6 @@ ksec2ResetHw_TU102
     return NV_OK;
 }
 
-NvBool
-ksec2IsEngineInReset_TU102
-(
-    OBJGPU *pGpu,
-    KernelSec2 *pKernelSec2
-)
-{
-    NvU32 val = GPU_REG_RD32(pGpu, NV_PSEC_FALCON_ENGINE);
-
-    return FLD_TEST_DRF(_PSEC_FALCON, _ENGINE, _RESET, _TRUE, val);
-}
-
 static NV_STATUS
 s_allocateGenericBlUcode
 (

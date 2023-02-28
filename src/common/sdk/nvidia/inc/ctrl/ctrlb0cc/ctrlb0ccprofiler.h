@@ -109,7 +109,7 @@ typedef struct NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS {
  * for streaming the updated bytes available in the buffer.
  *
  */
-#define NVB0CC_CTRL_CMD_ALLOC_PMA_STREAM     (0xb0cc0105) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | 0x5" */
+#define NVB0CC_CTRL_CMD_ALLOC_PMA_STREAM     (0xb0cc0105) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS_MESSAGE_ID" */
 
 /*!
  * Defines the maximum size of PMA buffer for streamout. It can be up to 4GB minus one page
@@ -117,6 +117,8 @@ typedef struct NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS {
  */
 #define NVB0CC_PMA_BUFFER_SIZE_MAX           (0xffe00000ULL) /* finn: Evaluated from "(4 * 1024 * 1024 * 1024 - 2 * 1024 * 1024)" */
 #define NVB0CC_PMA_BYTES_AVAILABLE_SIZE      (0x1000) /* finn: Evaluated from "(4 * 1024)" */
+
+#define NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS_MESSAGE_ID (0x5U)
 
 typedef struct NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS {
     /*!
@@ -180,6 +182,8 @@ typedef struct NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS {
      */
     NvU32 pmaChannelIdx;
 } NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS;
+
+
 
 /*!
  * NVB0CC_CTRL_CMD_BIND_PM_RESOURCES
@@ -258,6 +262,11 @@ typedef struct NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS {
      * [in] The PMA Channel Index associated with a given PMA stream.
      */
     NvU32  pmaChannelIdx;
+
+    /*!
+     * [out] Set to TRUE if PMA buffer has overflowed.
+     */
+    NvBool bOverflowStatus;
 } NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS;
 
 /*!
@@ -440,9 +449,7 @@ typedef struct NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_STATUS {
 
 #define NVB0CC_MAX_CREDIT_INFO_ENTRIES (63)
 
-#define NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_MESSAGE_ID (0xEU)
-
-typedef struct NVB0CC_CTRL_SET_HS_CREDITS_PARAMS {
+typedef struct NVB0CC_CTRL_HS_CREDITS_PARAMS {
     /*!
      * [in] The PMA Channel Index associated with a given PMA stream.
      */
@@ -462,7 +469,11 @@ typedef struct NVB0CC_CTRL_SET_HS_CREDITS_PARAMS {
      * [in] Credit programming per chiplet
      */
     NVB0CC_CTRL_PMA_STREAM_HS_CREDITS_INFO   creditInfo[NVB0CC_MAX_CREDIT_INFO_ENTRIES];
-} NVB0CC_CTRL_SET_HS_CREDITS_PARAMS;
+} NVB0CC_CTRL_HS_CREDITS_PARAMS;
+
+#define NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_MESSAGE_ID (0xEU)
+
+typedef NVB0CC_CTRL_HS_CREDITS_PARAMS NVB0CC_CTRL_SET_HS_CREDITS_PARAMS;
 
 /*!
  * NVB0CC_CTRL_CMD_GET_HS_CREDITS
@@ -470,10 +481,79 @@ typedef struct NVB0CC_CTRL_SET_HS_CREDITS_PARAMS {
  * Gets per chiplet (pmm router) high speed streaming credits for a pma channel.
  *
  */
-#define NVB0CC_CTRL_CMD_GET_HS_CREDITS (0xb0cc010f) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | 0xF" */
+#define NVB0CC_CTRL_CMD_GET_HS_CREDITS (0xb0cc010f) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_GET_HS_CREDITS_PARAMS_MESSAGE_ID" */
 
-typedef NVB0CC_CTRL_SET_HS_CREDITS_PARAMS NVB0CC_CTRL_GET_HS_CREDITS_PARAMS;
+#define NVB0CC_CTRL_GET_HS_CREDITS_PARAMS_MESSAGE_ID (0xFU)
+
+typedef NVB0CC_CTRL_HS_CREDITS_PARAMS NVB0CC_CTRL_GET_HS_CREDITS_PARAMS;
 
 
+
+typedef enum NVB0CC_CTRL_HES_TYPE {
+    NVB0CC_CTRL_HES_INVALID = 0,
+    NVB0CC_CTRL_HES_CWD = 1,
+} NVB0CC_CTRL_HES_TYPE;
+
+typedef struct NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS {
+    /*!
+     * [in] Enable ctxsw for HES_CWD.
+     */
+    NvBool ctxsw;
+} NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS;
+
+/*
+ * NVB0CC_CTRL_HES_RESERVATION_UNION
+ *
+ * Union of all HES reservation params
+ *
+ */
+typedef union NVB0CC_CTRL_HES_RESERVATION_UNION {
+    NVB0CC_CTRL_RESERVE_HES_CWD_PARAMS cwd;
+} NVB0CC_CTRL_HES_RESERVATION_UNION;
+
+/*!
+ * NVB0CC_CTRL_CMD_RESERVE_HES
+ *
+ * Reserves HES for use by the calling client.
+ * This PM system will only be accessible if this reservation is
+ * taken.
+ *
+ * This reservation can be released with @ref NVB0CC_CTRL_CMD_RELEASE_HES.
+ *
+ * Reservation scope and rules are same as for @ref NVB0CC_CTRL_CMD_RESERVE_HWPM_LEGACY.
+ *
+ */
+#define NVB0CC_CTRL_CMD_RESERVE_HES (0xb0cc0113) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_RESERVE_HES_PARAMS_MESSAGE_ID" */
+
+#define NVB0CC_CTRL_RESERVE_HES_PARAMS_MESSAGE_ID (0x13U)
+
+typedef struct NVB0CC_CTRL_RESERVE_HES_PARAMS {
+    /*!
+     * [in] Denotes the HES reservation type. Choose from @NVB0CC_CTRL_HES_TYPE.
+     */
+    NvU32                             type;
+
+    /*!
+     * [in] Union of all possible reserve param structs. Initialize the reserveParams corresponding to the chosen type.
+     */
+    NVB0CC_CTRL_HES_RESERVATION_UNION reserveParams;
+} NVB0CC_CTRL_RESERVE_HES_PARAMS;
+
+/*!
+ * NVB0CC_CTRL_CMD_RELEASE_HES
+ *
+ * Releases the reservation taken with @ref NVB0CC_CTRL_CMD_RESERVE_HES.
+ *
+ */
+#define NVB0CC_CTRL_CMD_RELEASE_HES (0xb0cc0114) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_RELEASE_HES_PARAMS_MESSAGE_ID" */
+
+#define NVB0CC_CTRL_RELEASE_HES_PARAMS_MESSAGE_ID (0x14U)
+
+typedef struct NVB0CC_CTRL_RELEASE_HES_PARAMS {
+    /*!
+     * [in] type of @NVB0CC_CTRL_HES_TYPE needs to be released.
+     */
+    NVB0CC_CTRL_HES_TYPE type;
+} NVB0CC_CTRL_RELEASE_HES_PARAMS;
 
 /* _ctrlb0ccprofiler_h_ */

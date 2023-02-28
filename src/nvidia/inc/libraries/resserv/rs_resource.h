@@ -140,6 +140,7 @@ struct RS_RES_FREE_PARAMS_INTERNAL
 
     // Internal use only
     NvBool             bHiPriOnly;      ///< [in] Only free if this is a high priority resources
+    NvBool             bDisableOnly;    ///< [in] Disable the target instead of freeing it (only applies to clients)
     RS_LOCK_INFO      *pLockInfo;       ///< [inout] Locking flags and state
     NvU32              freeFlags;       ///< [in] Flags for the free operation
     NvU32              freeState;       ///< [inout] Free state
@@ -295,6 +296,30 @@ public:
      */
     virtual NV_STATUS resControlFilter(RsResource *pResource, CALL_CONTEXT *pCallContext,
                                        RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+    /**
+     * Serialize the control parameters if they are going to GSP/Host, not serialized, and support serialization
+     * Or
+     * Deserialize the control parameters if necessary and replace the inner params pointer with the deserialized params
+     *
+     * @param[in]   pResource
+     * @param[in]   pCallContext
+     * @param[in]   pParams
+     */
+    virtual NV_STATUS resControlSerialization_Prologue(RsResource *pResource, CALL_CONTEXT *pCallContext,
+                                                       RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
+
+    /**
+     * Deserialize the parameters returned from GSP if client did not pass serialized params
+     * Or
+     * Serialize the control parameters if client expects it and restore the original inner params pointer
+     *
+     * @param[in]   pResource
+     * @param[in]   pCallContext
+     * @param[in]   pParams
+     */
+    virtual void resControlSerialization_Epilogue(RsResource *pResource, CALL_CONTEXT *pCallContext,
+                                                  RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
     /**
      * Operations performed right before the control call is executed. Default stubbed.

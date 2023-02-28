@@ -404,7 +404,7 @@ void RmFreeUnusedClients(
     NvU32 *pClientList;
     NvU32 numClients, i;
     NV_STATUS status;
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
 
     //
     // The 'nvfp' pointer uniquely identifies an open instance in kernel space
@@ -427,7 +427,7 @@ void RmFreeUnusedClients(
 
     if (numClients != 0)
     {
-        pRmApi->FreeClientList(pRmApi, pClientList, numClients);
+        pRmApi->DisableClients(pRmApi, pClientList, numClients);
 
         portMemFree(pClientList);
     }
@@ -1008,6 +1008,16 @@ static NV_STATUS RmPerformVersionCheck(
     NvBool relaxed = NV_FALSE;
     NvU32 i;
 
+    //
+    // rmStr (i.e., NV_VERSION_STRING) must be null-terminated and fit within
+    // NV_RM_API_VERSION_STRING_LENGTH, so that:
+    //
+    // (1) If the versions don't match, we can return rmStr in
+    //     pParams->versionString.
+    // (2) The below loop is guaranteed to not overrun rmStr.
+    //
+    ct_assert(sizeof(NV_VERSION_STRING) <= NV_RM_API_VERSION_STRING_LENGTH);
+
     if (dataSize != sizeof(nv_ioctl_rm_api_version_t))
         return NV_ERR_INVALID_ARGUMENT;
 
@@ -1020,11 +1030,11 @@ static NV_STATUS RmPerformVersionCheck(
     pParams->reply = NV_RM_API_VERSION_REPLY_RECOGNIZED;
 
     //
-    // the client requested to override the version check; just return
-    // success.
+    // the client is just querying the version, not verifying against expected.
     //
-    if (pParams->cmd == NV_RM_API_VERSION_CMD_OVERRIDE)
+    if (pParams->cmd == NV_RM_API_VERSION_CMD_QUERY)
     {
+        os_string_copy(pParams->versionString, rmStr);
         return NV_OK;
     }
 
@@ -1035,19 +1045,6 @@ static NV_STATUS RmPerformVersionCheck(
     if (pParams->cmd == NV_RM_API_VERSION_CMD_RELAXED)
     {
         relaxed = NV_TRUE;
-    }
-
-    //
-    // rmStr (i.e., NV_VERSION_STRING) must be null-terminated and fit within
-    // NV_RM_API_VERSION_STRING_LENGTH, so that:
-    //
-    // (1) If the versions don't match, we can return rmStr in
-    //     pParams->versionString.
-    // (2) The below loop is guaranteed to not overrun rmStr.
-    //
-    if ((os_string_length(rmStr) + 1) > NV_RM_API_VERSION_STRING_LENGTH)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
     }
 
     for (i = 0; i < NV_RM_API_VERSION_STRING_LENGTH; i++)
@@ -1351,6 +1348,24 @@ RmDmabufPutClientAndDevice(
     pKernelMIGGpuInstance = (KERNEL_MIG_GPU_INSTANCE *) pGpuInstanceInfo;
 
     NV_ASSERT_OK(kmigmgrDecRefCount(pKernelMIGGpuInstance->pShare));
+}
+
+static void
+RmHandleNvpcfEvents(
+    nv_state_t *pNv
+)
+{
+    OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+    THREAD_STATE_NODE threadState;
+
+    if (RmUnixRmApiPrologue(pNv, &threadState, RM_LOCK_MODULES_ACPI) == NULL)
+    {
+        return;
+    }
+
+    gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_NVPCF_EVENTS, NULL, 0, 0, 0);
+
+    RmUnixRmApiEpilogue(pNv, &threadState);
 }
 
 /*
@@ -2446,6 +2461,27 @@ NV_STATUS NV_API_CALL rm_ioctl(
     return rmStatus;
 }
 
+static void _deferredClientListFreeCallback(void *unused)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    NV_STATUS status = serverFreeDisabledClients(&g_resServ, 0, pSys->clientListDeferredFreeLimit);
+    //
+    // Possible return values:
+    //   NV_WARN_MORE_PROCESSING_REQUIRED - Iteration limit reached, need to call again
+    //   NV_ERR_IN_USE - Already running on another thread, try again later
+    // In both cases, schedule a worker to clean up anything that remains
+    //
+    if (status != NV_OK)
+    {
+        status = osQueueSystemWorkItem(_deferredClientListFreeCallback, unused);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_NOTICE, "Failed to schedule deferred free callback. Freeing immediately.\n");
+            serverFreeDisabledClients(&g_resServ, 0, 0);
+        }
+    }
+}
+
 void NV_API_CALL rm_cleanup_file_private(
     nvidia_stack_t     *sp,
     nv_state_t         *pNv,
@@ -2454,19 +2490,23 @@ void NV_API_CALL rm_cleanup_file_private(
 {
     THREAD_STATE_NODE threadState;
     void      *fp;
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL);
+    RM_API *pRmApi;
     RM_API_CONTEXT rmApiContext = {0};
     NvU32 i;
+    OBJSYS *pSys = SYS_GET_INSTANCE();
 
     NV_ENTER_RM_RUNTIME(sp,fp);
+    pRmApi = rmapiGetInterface(RMAPI_EXTERNAL);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
     threadStateSetTimeoutOverride(&threadState, 10 * 1000);
 
-    if (rmapiPrologue(pRmApi, &rmApiContext) != NV_OK)
+    if (rmapiPrologue(pRmApi, &rmApiContext) != NV_OK) {
+        NV_EXIT_RM_RUNTIME(sp,fp);
         return;
+    }
 
-    // LOCK: acquire API lock
-    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI) == NV_OK)
+    // LOCK: acquire API lock. Low priority so cleanup doesn't block active threads
+    if (rmapiLockAcquire(RMAPI_LOCK_FLAGS_LOW_PRIORITY, RM_LOCK_MODULES_OSAPI) == NV_OK)
     {
         // Unref any object which was exported on this file.
         if (nvfp->handles != NULL)
@@ -2487,12 +2527,20 @@ void NV_API_CALL rm_cleanup_file_private(
             nvfp->maxHandles = 0;
         }
 
-        // Free any RM clients associated with this file.
+        // Disable any RM clients associated with this file.
         RmFreeUnusedClients(pNv, nvfp);
+
+        // Unless configured otherwise, immediately free all disabled clients
+        if (!pSys->bUseDeferredClientListFree)
+            serverFreeDisabledClients(&g_resServ, RM_LOCK_STATES_API_LOCK_ACQUIRED, 0);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
     }
+
+    // Start the deferred free callback if necessary
+    if (pSys->bUseDeferredClientListFree)
+        _deferredClientListFreeCallback(NULL);
 
     rmapiEpilogue(pRmApi, &rmApiContext);
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -2929,7 +2977,7 @@ static NV_STATUS RmRunNanoTimerCallback(
         THREAD_STATE_FLAGS_IS_DEFERRED_INT_HANDLER);
 
     // Call timer event service
-    status = tmrEventServiceOSTimerCallback_HAL(pGpu, pTmr, (PTMR_EVENT)pTmrEvent);
+    status = tmrEventServiceTimer(pGpu, pTmr, (PTMR_EVENT)pTmrEvent);
 
     // Out of conflicting thread
     threadStateFreeISRAndDeferredIntHandler(&threadState,
@@ -5318,25 +5366,6 @@ void NV_API_CALL rm_dma_buf_put_client_and_device(
 // NOTE: Used only on VMWware
 //
 
-void NV_API_CALL rm_vgpu_vfio_set_driver_vm(
-    nvidia_stack_t *sp,
-    NvBool is_driver_vm
-)
-{
-    OBJSYS *pSys;
-    POBJHYPERVISOR pHypervisor;
-    void *fp;
-
-    NV_ENTER_RM_RUNTIME(sp,fp);
-
-    pSys = SYS_GET_INSTANCE();
-    pHypervisor = SYS_GET_HYPERVISOR(pSys);
-
-    pHypervisor->setProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED, is_driver_vm);
-
-    NV_EXIT_RM_RUNTIME(sp,fp);
-}
-
 NvBool NV_API_CALL rm_is_altstack_in_use(void)
 {
 #if defined(__use_altstack__)
@@ -5344,4 +5373,22 @@ NvBool NV_API_CALL rm_is_altstack_in_use(void)
 #else
     return NV_FALSE;
 #endif
+}
+
+void NV_API_CALL rm_acpi_nvpcf_notify(
+    nvidia_stack_t *sp
+)
+{
+    void       *fp;
+    OBJGPU *pGpu = gpumgrGetGpu(0);
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+
+    if (pGpu != NULL)
+    {
+        nv_state_t *nv = NV_GET_NV_STATE(pGpu);
+        RmHandleNvpcfEvents(nv);
+    }
+
+    NV_EXIT_RM_RUNTIME(sp,fp);
 }

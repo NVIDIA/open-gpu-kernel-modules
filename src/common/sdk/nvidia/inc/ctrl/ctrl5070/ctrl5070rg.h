@@ -257,65 +257,6 @@ typedef struct NV5070_CTRL_CMD_SET_RG_FLIPLOCK_PROP_PARAMS {
 } NV5070_CTRL_CMD_SET_RG_FLIPLOCK_PROP_PARAMS;
 
 /*
- * NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN
- *
- * This command returns which lockpin has been connected for the specified
- * subdevice in the current SLI and/or framelock configuration.
- *
- *      head
- *          The head for which the locking is associated with
- *
- *      masterScanLock
- *          Indicate the connection status and pin number of master scanlock
- *
- *      slaveScanLock
- *          Indicate the connection status and pin number of slave scanlock
- *
- *      flipLock
- *          Indicate the connection status and pin number of fliplock
- *
- *      stereoLock
- *          Indicate the connection status and pin number of stereo lock
- *
- * Possible status values returned are:
- *      NV_OK
- *      NV_ERR_INVALID_ARGUMENT
- */
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN                                (0x50700207) /* finn: Evaluated from "(FINN_NV50_DISPLAY_RG_INTERFACE_ID << 8) | NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_PARAMS_MESSAGE_ID" */
-
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_MASTER_SCAN_LOCK_CONNECTED     0:0
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_MASTER_SCAN_LOCK_CONNECTED_NO  (0x00000000)
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_MASTER_SCAN_LOCK_CONNECTED_YES (0x00000001)
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_MASTER_SCAN_LOCK_PIN           3:1
-
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_SLAVE_SCAN_LOCK_CONNECTED      0:0
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_SLAVE_SCAN_LOCK_CONNECTED_NO   (0x00000000)
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_SLAVE_SCAN_LOCK_CONNECTED_YES  (0x00000001)
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_SLAVE_SCAN_LOCK_PIN            3:1
-
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_FLIP_LOCK_CONNECTED       0:0
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_FLIP_LOCK_CONNECTED_NO         (0x00000000)
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_FLIP_LOCK_CONNECTED_YES        (0x00000001)
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_FLIP_LOCK_PIN             3:1
-
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STEREO_LOCK_CONNECTED     0:0
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STEREO_LOCK_CONNECTED_NO       (0x00000000)
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STEREO_LOCK_CONNECTED_YES      (0x00000001)
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_STEREO_LOCK_PIN           3:1
-
-#define NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_PARAMS_MESSAGE_ID (0x7U)
-
-typedef struct NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_PARAMS {
-    NV5070_CTRL_CMD_BASE_PARAMS base;
-    NvU32                       head;
-
-    NvU32                       masterScanLock;
-    NvU32                       slaveScanLock;
-    NvU32                       flipLock;
-    NvU32                       stereoLock;
-} NV5070_CTRL_CMD_GET_RG_CONNECTED_LOCKPIN_PARAMS;
-
-/*
  * NV5070_CTRL_CMD_SET_VIDEO_STATUS
  *
  * This command is used to set the current video playback status for use

@@ -64,26 +64,28 @@ struct VblankCallback {
     struct VblankCallback *__nvoc_pbase_VblankCallback;
     NV_STATUS (*__vblcbCtrlSetVBlankNotification__)(struct VblankCallback *, NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION_PARAMS *);
     NvBool (*__vblcbShareCallback__)(struct VblankCallback *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__vblcbCheckMemInterUnmap__)(struct VblankCallback *, NvBool);
+    NV_STATUS (*__vblcbMapTo__)(struct VblankCallback *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__vblcbGetMapAddrSpace__)(struct VblankCallback *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__vblcbGetRefCount__)(struct VblankCallback *);
+    void (*__vblcbAddAdditionalDependants__)(struct RsClient *, struct VblankCallback *, RsResourceRef *);
+    NV_STATUS (*__vblcbControl_Prologue__)(struct VblankCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__vblcbGetRegBaseOffsetAndSize__)(struct VblankCallback *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__vblcbInternalControlForward__)(struct VblankCallback *, NvU32, void *, NvU32);
+    NV_STATUS (*__vblcbUnmapFrom__)(struct VblankCallback *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__vblcbControl_Epilogue__)(struct VblankCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__vblcbControlLookup__)(struct VblankCallback *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NvHandle (*__vblcbGetInternalObjectHandle__)(struct VblankCallback *);
     NV_STATUS (*__vblcbControl__)(struct VblankCallback *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vblcbUnmap__)(struct VblankCallback *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__vblcbGetMemInterMapParams__)(struct VblankCallback *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__vblcbGetMemoryMappingDescriptor__)(struct VblankCallback *, struct MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__vblcbGetMapAddrSpace__)(struct VblankCallback *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
-    NvHandle (*__vblcbGetInternalObjectHandle__)(struct VblankCallback *);
     NV_STATUS (*__vblcbControlFilter__)(struct VblankCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    void (*__vblcbAddAdditionalDependants__)(struct RsClient *, struct VblankCallback *, RsResourceRef *);
-    NvU32 (*__vblcbGetRefCount__)(struct VblankCallback *);
-    NV_STATUS (*__vblcbCheckMemInterUnmap__)(struct VblankCallback *, NvBool);
-    NV_STATUS (*__vblcbMapTo__)(struct VblankCallback *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__vblcbControl_Prologue__)(struct VblankCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__vblcbGetRegBaseOffsetAndSize__)(struct VblankCallback *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__vblcbControlSerialization_Prologue__)(struct VblankCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__vblcbCanCopy__)(struct VblankCallback *);
-    NV_STATUS (*__vblcbInternalControlForward__)(struct VblankCallback *, NvU32, void *, NvU32);
     void (*__vblcbPreDestruct__)(struct VblankCallback *);
-    NV_STATUS (*__vblcbUnmapFrom__)(struct VblankCallback *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__vblcbIsDuplicate__)(struct VblankCallback *, NvHandle, NvBool *);
-    void (*__vblcbControl_Epilogue__)(struct VblankCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__vblcbControlLookup__)(struct VblankCallback *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    void (*__vblcbControlSerialization_Epilogue__)(struct VblankCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vblcbMap__)(struct VblankCallback *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__vblcbAccessCallback__)(struct VblankCallback *, struct RsClient *, void *, RsAccessRight);
     VBLANKCALLBACK CallBack;
@@ -123,26 +125,28 @@ NV_STATUS __nvoc_objCreate_VblankCallback(VblankCallback**, Dynamic*, NvU32, CAL
 
 #define vblcbCtrlSetVBlankNotification(pVblankCallback, pParams) vblcbCtrlSetVBlankNotification_DISPATCH(pVblankCallback, pParams)
 #define vblcbShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) vblcbShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
+#define vblcbCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vblcbCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define vblcbMapTo(pResource, pParams) vblcbMapTo_DISPATCH(pResource, pParams)
+#define vblcbGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) vblcbGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
+#define vblcbGetRefCount(pResource) vblcbGetRefCount_DISPATCH(pResource)
+#define vblcbAddAdditionalDependants(pClient, pResource, pReference) vblcbAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define vblcbControl_Prologue(pResource, pCallContext, pParams) vblcbControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define vblcbGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) vblcbGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define vblcbInternalControlForward(pGpuResource, command, pParams, size) vblcbInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
+#define vblcbUnmapFrom(pResource, pParams) vblcbUnmapFrom_DISPATCH(pResource, pParams)
+#define vblcbControl_Epilogue(pResource, pCallContext, pParams) vblcbControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define vblcbControlLookup(pResource, pParams, ppEntry) vblcbControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define vblcbGetInternalObjectHandle(pGpuResource) vblcbGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define vblcbControl(pGpuResource, pCallContext, pParams) vblcbControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define vblcbUnmap(pGpuResource, pCallContext, pCpuMapping) vblcbUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define vblcbGetMemInterMapParams(pRmResource, pParams) vblcbGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define vblcbGetMemoryMappingDescriptor(pRmResource, ppMemDesc) vblcbGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
-#define vblcbGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) vblcbGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
-#define vblcbGetInternalObjectHandle(pGpuResource) vblcbGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define vblcbControlFilter(pResource, pCallContext, pParams) vblcbControlFilter_DISPATCH(pResource, pCallContext, pParams)
-#define vblcbAddAdditionalDependants(pClient, pResource, pReference) vblcbAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define vblcbGetRefCount(pResource) vblcbGetRefCount_DISPATCH(pResource)
-#define vblcbCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vblcbCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
-#define vblcbMapTo(pResource, pParams) vblcbMapTo_DISPATCH(pResource, pParams)
-#define vblcbControl_Prologue(pResource, pCallContext, pParams) vblcbControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define vblcbGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) vblcbGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define vblcbControlSerialization_Prologue(pResource, pCallContext, pParams) vblcbControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define vblcbCanCopy(pResource) vblcbCanCopy_DISPATCH(pResource)
-#define vblcbInternalControlForward(pGpuResource, command, pParams, size) vblcbInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define vblcbPreDestruct(pResource) vblcbPreDestruct_DISPATCH(pResource)
-#define vblcbUnmapFrom(pResource, pParams) vblcbUnmapFrom_DISPATCH(pResource, pParams)
 #define vblcbIsDuplicate(pResource, hMemory, pDuplicate) vblcbIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define vblcbControl_Epilogue(pResource, pCallContext, pParams) vblcbControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define vblcbControlLookup(pResource, pParams, ppEntry) vblcbControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define vblcbControlSerialization_Epilogue(pResource, pCallContext, pParams) vblcbControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vblcbMap(pGpuResource, pCallContext, pParams, pCpuMapping) vblcbMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define vblcbAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) vblcbAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 NV_STATUS vblcbCtrlSetVBlankNotification_IMPL(struct VblankCallback *pVblankCallback, NV9010_CTRL_CMD_SET_VBLANK_NOTIFICATION_PARAMS *pParams);
@@ -153,6 +157,54 @@ static inline NV_STATUS vblcbCtrlSetVBlankNotification_DISPATCH(struct VblankCal
 
 static inline NvBool vblcbShareCallback_DISPATCH(struct VblankCallback *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pGpuResource->__vblcbShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline NV_STATUS vblcbCheckMemInterUnmap_DISPATCH(struct VblankCallback *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__vblcbCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+}
+
+static inline NV_STATUS vblcbMapTo_DISPATCH(struct VblankCallback *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__vblcbMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS vblcbGetMapAddrSpace_DISPATCH(struct VblankCallback *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pGpuResource->__vblcbGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 vblcbGetRefCount_DISPATCH(struct VblankCallback *pResource) {
+    return pResource->__vblcbGetRefCount__(pResource);
+}
+
+static inline void vblcbAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct VblankCallback *pResource, RsResourceRef *pReference) {
+    pResource->__vblcbAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS vblcbControl_Prologue_DISPATCH(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__vblcbControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS vblcbGetRegBaseOffsetAndSize_DISPATCH(struct VblankCallback *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return pGpuResource->__vblcbGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+}
+
+static inline NV_STATUS vblcbInternalControlForward_DISPATCH(struct VblankCallback *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return pGpuResource->__vblcbInternalControlForward__(pGpuResource, command, pParams, size);
+}
+
+static inline NV_STATUS vblcbUnmapFrom_DISPATCH(struct VblankCallback *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__vblcbUnmapFrom__(pResource, pParams);
+}
+
+static inline void vblcbControl_Epilogue_DISPATCH(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__vblcbControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS vblcbControlLookup_DISPATCH(struct VblankCallback *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return pResource->__vblcbControlLookup__(pResource, pParams, ppEntry);
+}
+
+static inline NvHandle vblcbGetInternalObjectHandle_DISPATCH(struct VblankCallback *pGpuResource) {
+    return pGpuResource->__vblcbGetInternalObjectHandle__(pGpuResource);
 }
 
 static inline NV_STATUS vblcbControl_DISPATCH(struct VblankCallback *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -171,68 +223,28 @@ static inline NV_STATUS vblcbGetMemoryMappingDescriptor_DISPATCH(struct VblankCa
     return pRmResource->__vblcbGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
 }
 
-static inline NV_STATUS vblcbGetMapAddrSpace_DISPATCH(struct VblankCallback *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return pGpuResource->__vblcbGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
-}
-
-static inline NvHandle vblcbGetInternalObjectHandle_DISPATCH(struct VblankCallback *pGpuResource) {
-    return pGpuResource->__vblcbGetInternalObjectHandle__(pGpuResource);
-}
-
 static inline NV_STATUS vblcbControlFilter_DISPATCH(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__vblcbControlFilter__(pResource, pCallContext, pParams);
 }
 
-static inline void vblcbAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct VblankCallback *pResource, RsResourceRef *pReference) {
-    pResource->__vblcbAddAdditionalDependants__(pClient, pResource, pReference);
-}
-
-static inline NvU32 vblcbGetRefCount_DISPATCH(struct VblankCallback *pResource) {
-    return pResource->__vblcbGetRefCount__(pResource);
-}
-
-static inline NV_STATUS vblcbCheckMemInterUnmap_DISPATCH(struct VblankCallback *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__vblcbCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
-}
-
-static inline NV_STATUS vblcbMapTo_DISPATCH(struct VblankCallback *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__vblcbMapTo__(pResource, pParams);
-}
-
-static inline NV_STATUS vblcbControl_Prologue_DISPATCH(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pResource->__vblcbControl_Prologue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS vblcbGetRegBaseOffsetAndSize_DISPATCH(struct VblankCallback *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return pGpuResource->__vblcbGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+static inline NV_STATUS vblcbControlSerialization_Prologue_DISPATCH(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__vblcbControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NvBool vblcbCanCopy_DISPATCH(struct VblankCallback *pResource) {
     return pResource->__vblcbCanCopy__(pResource);
 }
 
-static inline NV_STATUS vblcbInternalControlForward_DISPATCH(struct VblankCallback *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return pGpuResource->__vblcbInternalControlForward__(pGpuResource, command, pParams, size);
-}
-
 static inline void vblcbPreDestruct_DISPATCH(struct VblankCallback *pResource) {
     pResource->__vblcbPreDestruct__(pResource);
-}
-
-static inline NV_STATUS vblcbUnmapFrom_DISPATCH(struct VblankCallback *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__vblcbUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS vblcbIsDuplicate_DISPATCH(struct VblankCallback *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__vblcbIsDuplicate__(pResource, hMemory, pDuplicate);
 }
 
-static inline void vblcbControl_Epilogue_DISPATCH(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    pResource->__vblcbControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS vblcbControlLookup_DISPATCH(struct VblankCallback *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__vblcbControlLookup__(pResource, pParams, ppEntry);
+static inline void vblcbControlSerialization_Epilogue_DISPATCH(struct VblankCallback *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__vblcbControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS vblcbMap_DISPATCH(struct VblankCallback *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

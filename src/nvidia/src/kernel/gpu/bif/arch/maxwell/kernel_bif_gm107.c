@@ -631,3 +631,35 @@ kbifGetBusOptionsAddr_GM107
     }
     return status;
 }
+
+NV_STATUS
+kbifDisableSysmemAccess_GM107
+(
+    OBJGPU     *pGpu,
+    KernelBif  *pKernelBif,
+    NvBool      bDisable
+)
+{
+    NV_STATUS status = NV_OK;
+    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_INTERNAL_BIF_DISABLE_SYSTEM_MEMORY_ACCESS_PARAMS params = {0};
+
+    // Only support on Windows
+    NV_ASSERT_OR_RETURN(RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM, NV_ERR_NOT_SUPPORTED);
+
+    params.bDisable = bDisable;
+    status = pRmApi->Control(pRmApi,
+                             pGpu->hInternalClient,
+                             pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_BIF_DISABLE_SYSTEM_MEMORY_ACCESS,
+                             &params,
+                             sizeof(NV2080_CTRL_INTERNAL_BIF_DISABLE_SYSTEM_MEMORY_ACCESS_PARAMS));
+
+    // Only set the PDB in kernel if it was set in physical successfully
+    if (status == NV_OK)
+    {
+        pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_SYSTEM_ACCESS_DISABLED, bDisable);
+    }
+
+    return status;
+}

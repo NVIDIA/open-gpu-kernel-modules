@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -665,20 +665,26 @@ osInitNvMapping(
               "NV fb using linear address  : 0x%p\n", pGpu->registerAccess.gpuFbAddr);
 
     pGpu->setProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED, NV_TRUE);
-    pGpu->setProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS, NV_FALSE);
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS, NV_TRUE);
 
     if (osReadRegistryDword(pGpu,
                 NV_REG_PROCESS_NONSTALL_INTR_IN_LOCKLESS_ISR, &data) == NV_OK)
     {
-        if (data == NV_REG_PROCESS_NONSTALL_INTR_IN_LOCKLESS_ISR_ENABLE)
+        if (data == NV_REG_PROCESS_NONSTALL_INTR_IN_LOCKLESS_ISR_DISABLE)
         {
-            pGpu->setProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS, NV_TRUE);
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS, NV_FALSE);
         }
     }
 
     if (!os_is_vgx_hyper())
     {
         pGpu->setProperty(pGpu, PDB_PROP_GPU_ALLOW_PAGE_RETIREMENT, NV_TRUE);
+    }
+    else
+    {
+        {
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_ALLOW_PAGE_RETIREMENT, NV_TRUE);
+        }
     }
 
     if ((osReadRegistryDword(NULL,
@@ -765,6 +771,11 @@ RmSetConsolePreservationParams(OBJGPU *pGpu)
     //
     if (os_is_vgx_hyper() || IS_VIRTUAL(pGpu))
         return;
+
+    if (!gpuFuseSupportsDisplay_HAL(pGpu))
+    {
+        return;
+    }
 
     //
     // Check the OS layer for any video memory used by a console
@@ -936,6 +947,9 @@ RmInitNvDevice(
         RM_SET_ERROR(*status, RM_INIT_GPU_UNIVERSAL_VALIDATION_FAILED);
         return;
     }
+
+    // Setup GPU scalability
+    (void) RmInitScalability(pGpu);
 
     return;
 }

@@ -48,40 +48,46 @@ static NvU32 get_push_end_size(uvm_channel_t *channel)
 
 static NV_STATUS test_push_end_size(uvm_va_space_t *va_space)
 {
-    NV_STATUS status = NV_OK;
     uvm_gpu_t *gpu;
-    NvU32 push_size;
-    NvU32 i;
 
     for_each_va_space_gpu(gpu, va_space) {
-        for (i = 0; i < UVM_CHANNEL_TYPE_COUNT; ++i) {
+        uvm_channel_type_t type;
+
+        for (type = 0; type < UVM_CHANNEL_TYPE_COUNT; ++type) {
             uvm_push_t push;
-            NvU32 push_end_size;
-            uvm_channel_type_t type = i;
+            NvU32 push_size_before;
+            NvU32 push_end_size_observed, push_end_size_expected;
 
-            status = uvm_push_begin(gpu->channel_manager, type, &push, "type %u\n", (unsigned)type);
-            TEST_CHECK_GOTO(status == NV_OK, done);
+            TEST_NV_CHECK_RET(uvm_push_begin(gpu->channel_manager,
+                                             type,
+                                             &push,
+                                             "type %s\n",
+                                             uvm_channel_type_to_string(type)));
 
-            push_end_size = get_push_end_size(push.channel);
-            push_size = uvm_push_get_size(&push);
+            push_size_before = uvm_push_get_size(&push);
             uvm_push_end(&push);
-            if (uvm_push_get_size(&push) - push_size != push_end_size) {
-                UVM_TEST_PRINT("push_end_size incorrect, %u instead of %u for GPU %s\n",
-                               uvm_push_get_size(&push) - push_size,
-                               push_end_size,
+
+            push_end_size_expected = get_push_end_size(push.channel);
+            push_end_size_observed = uvm_push_get_size(&push) - push_size_before;
+
+            if (push_end_size_observed != push_end_size_expected) {
+                UVM_TEST_PRINT("push_end_size incorrect, %u instead of %u on channel type %s for GPU %s\n",
+                               push_end_size_observed,
+                               push_end_size_expected,
+                               uvm_channel_type_to_string(type),
                                uvm_gpu_name(gpu));
-                status = NV_ERR_INVALID_STATE;
-                goto done;
+
+                // The size mismatch error gets precedence over a wait error
+                (void) uvm_push_wait(&push);
+
+                return NV_ERR_INVALID_STATE;
             }
+
+            TEST_NV_CHECK_RET(uvm_push_wait(&push));
         }
     }
 
-done:
-    for_each_va_space_gpu(gpu, va_space) {
-        uvm_channel_manager_wait(gpu->channel_manager);
-    }
-
-    return status;
+    return NV_OK;
 }
 
 typedef enum {
@@ -201,6 +207,7 @@ static NV_STATUS test_concurrent_pushes(uvm_va_space_t *va_space)
     NvU32 i;
     uvm_push_t *pushes;
     uvm_tracker_t tracker = UVM_TRACKER_INIT();
+    uvm_channel_type_t channel_type = UVM_CHANNEL_TYPE_GPU_INTERNAL;
 
     // As noted above, this test does unsafe things that would be detected by
     // lock tracking, opt-out.
@@ -213,9 +220,10 @@ static NV_STATUS test_concurrent_pushes(uvm_va_space_t *va_space)
     }
 
     for_each_va_space_gpu(gpu, va_space) {
+
         for (i = 0; i < UVM_PUSH_MAX_CONCURRENT_PUSHES; ++i) {
             uvm_push_t *push = &pushes[i];
-            status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_CPU_TO_GPU, push, "concurrent push %u", i);
+            status = uvm_push_begin(gpu->channel_manager, channel_type, push, "concurrent push %u", i);
             TEST_CHECK_GOTO(status == NV_OK, done);
         }
         for (i = 0; i < UVM_PUSH_MAX_CONCURRENT_PUSHES; ++i) {
@@ -760,6 +768,7 @@ static NV_STATUS test_push_gpu_to_gpu(uvm_va_space_t *va_space)
     bool waive = true;
 
     for_each_va_space_gpu(gpu_a, va_space) {
+
         for_each_va_space_gpu(gpu_b, va_space) {
             if (can_do_peer_copies(va_space, gpu_a, gpu_b)) {
                 waive = false;

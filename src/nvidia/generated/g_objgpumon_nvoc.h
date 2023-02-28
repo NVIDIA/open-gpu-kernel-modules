@@ -42,7 +42,6 @@ extern "C" {
 
 #include "gpu/gpu.h"
 #include "gpu/eng_state.h"
-#include "kernel/gpu/fifo/kernel_fifo.h"
 
 #include "ctrl/ctrl2080/ctrl2080perf.h"
 
@@ -59,7 +58,6 @@ struct OBJGPUMON {
     struct Object *__nvoc_pbase_Object;
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct OBJGPUMON *__nvoc_pbase_OBJGPUMON;
-    NV_STATUS (*__gpumonReconcileTunableState__)(POBJGPU, struct OBJGPUMON *, void *);
     NV_STATUS (*__gpumonStateLoad__)(POBJGPU, struct OBJGPUMON *, NvU32);
     NV_STATUS (*__gpumonStateUnload__)(POBJGPU, struct OBJGPUMON *, NvU32);
     NV_STATUS (*__gpumonStateInitLocked__)(POBJGPU, struct OBJGPUMON *);
@@ -71,12 +69,7 @@ struct OBJGPUMON {
     void (*__gpumonInitMissing__)(POBJGPU, struct OBJGPUMON *);
     NV_STATUS (*__gpumonStatePreInitLocked__)(POBJGPU, struct OBJGPUMON *);
     NV_STATUS (*__gpumonStatePreInitUnlocked__)(POBJGPU, struct OBJGPUMON *);
-    NV_STATUS (*__gpumonGetTunableState__)(POBJGPU, struct OBJGPUMON *, void *);
-    NV_STATUS (*__gpumonCompareTunableState__)(POBJGPU, struct OBJGPUMON *, void *, void *);
-    void (*__gpumonFreeTunableState__)(POBJGPU, struct OBJGPUMON *, void *);
     NV_STATUS (*__gpumonStatePostLoad__)(POBJGPU, struct OBJGPUMON *, NvU32);
-    NV_STATUS (*__gpumonAllocTunableState__)(POBJGPU, struct OBJGPUMON *, void **);
-    NV_STATUS (*__gpumonSetTunableState__)(POBJGPU, struct OBJGPUMON *, void *);
     NV_STATUS (*__gpumonConstructEngine__)(POBJGPU, struct OBJGPUMON *, ENGDESCRIPTOR);
     NvBool (*__gpumonIsPresent__)(POBJGPU, struct OBJGPUMON *);
 };
@@ -111,7 +104,6 @@ NV_STATUS __nvoc_objCreate_OBJGPUMON(OBJGPUMON**, Dynamic*, NvU32);
 #define __objCreate_OBJGPUMON(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_OBJGPUMON((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
-#define gpumonReconcileTunableState(pGpu, pEngstate, pTunableState) gpumonReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define gpumonStateLoad(pGpu, pEngstate, arg0) gpumonStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define gpumonStateUnload(pGpu, pEngstate, arg0) gpumonStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define gpumonStateInitLocked(pGpu, pEngstate) gpumonStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -123,30 +115,21 @@ NV_STATUS __nvoc_objCreate_OBJGPUMON(OBJGPUMON**, Dynamic*, NvU32);
 #define gpumonInitMissing(pGpu, pEngstate) gpumonInitMissing_DISPATCH(pGpu, pEngstate)
 #define gpumonStatePreInitLocked(pGpu, pEngstate) gpumonStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define gpumonStatePreInitUnlocked(pGpu, pEngstate) gpumonStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define gpumonGetTunableState(pGpu, pEngstate, pTunableState) gpumonGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define gpumonCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) gpumonCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define gpumonFreeTunableState(pGpu, pEngstate, pTunableState) gpumonFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define gpumonStatePostLoad(pGpu, pEngstate, arg0) gpumonStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define gpumonAllocTunableState(pGpu, pEngstate, ppTunableState) gpumonAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define gpumonSetTunableState(pGpu, pEngstate, pTunableState) gpumonSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define gpumonConstructEngine(pGpu, pEngstate, arg0) gpumonConstructEngine_DISPATCH(pGpu, pEngstate, arg0)
 #define gpumonIsPresent(pGpu, pEngstate) gpumonIsPresent_DISPATCH(pGpu, pEngstate)
-void gpumonGetContextProcessInfo_GM107(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, RM_ENGINE_TYPE rmEngineTypeBegin, RM_ENGINE_TYPE rmEngineTypeEnd, NvU32 context, NvU32 *pProcID, NvU32 *pSubProcessID, const char **pSubProcessName);
+void gpumonGetContextProcessInfo_GM107(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, NvU32 arg0, NvU32 *arg1, NvU32 *arg2, const char **arg3);
 
 
 #ifdef __nvoc_objgpumon_h_disabled
-static inline void gpumonGetContextProcessInfo(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, RM_ENGINE_TYPE rmEngineTypeBegin, RM_ENGINE_TYPE rmEngineTypeEnd, NvU32 context, NvU32 *pProcID, NvU32 *pSubProcessID, const char **pSubProcessName) {
+static inline void gpumonGetContextProcessInfo(struct OBJGPU *pGpu, struct OBJGPUMON *pGpumon, NvU32 arg0, NvU32 *arg1, NvU32 *arg2, const char **arg3) {
     NV_ASSERT_FAILED_PRECOMP("OBJGPUMON was disabled!");
 }
 #else //__nvoc_objgpumon_h_disabled
-#define gpumonGetContextProcessInfo(pGpu, pGpumon, rmEngineTypeBegin, rmEngineTypeEnd, context, pProcID, pSubProcessID, pSubProcessName) gpumonGetContextProcessInfo_GM107(pGpu, pGpumon, rmEngineTypeBegin, rmEngineTypeEnd, context, pProcID, pSubProcessID, pSubProcessName)
+#define gpumonGetContextProcessInfo(pGpu, pGpumon, arg0, arg1, arg2, arg3) gpumonGetContextProcessInfo_GM107(pGpu, pGpumon, arg0, arg1, arg2, arg3)
 #endif //__nvoc_objgpumon_h_disabled
 
-#define gpumonGetContextProcessInfo_HAL(pGpu, pGpumon, rmEngineTypeBegin, rmEngineTypeEnd, context, pProcID, pSubProcessID, pSubProcessName) gpumonGetContextProcessInfo(pGpu, pGpumon, rmEngineTypeBegin, rmEngineTypeEnd, context, pProcID, pSubProcessID, pSubProcessName)
-
-static inline NV_STATUS gpumonReconcileTunableState_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
-    return pEngstate->__gpumonReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
+#define gpumonGetContextProcessInfo_HAL(pGpu, pGpumon, arg0, arg1, arg2, arg3) gpumonGetContextProcessInfo(pGpu, pGpumon, arg0, arg1, arg2, arg3)
 
 static inline NV_STATUS gpumonStateLoad_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg0) {
     return pEngstate->__gpumonStateLoad__(pGpu, pEngstate, arg0);
@@ -192,28 +175,8 @@ static inline NV_STATUS gpumonStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct
     return pEngstate->__gpumonStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS gpumonGetTunableState_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
-    return pEngstate->__gpumonGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS gpumonCompareTunableState_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__gpumonCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void gpumonFreeTunableState_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
-    pEngstate->__gpumonFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS gpumonStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, NvU32 arg0) {
     return pEngstate->__gpumonStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS gpumonAllocTunableState_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void **ppTunableState) {
-    return pEngstate->__gpumonAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS gpumonSetTunableState_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, void *pTunableState) {
-    return pEngstate->__gpumonSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NV_STATUS gpumonConstructEngine_DISPATCH(POBJGPU pGpu, struct OBJGPUMON *pEngstate, ENGDESCRIPTOR arg0) {

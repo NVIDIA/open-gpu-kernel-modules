@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -37,19 +37,10 @@ typedef struct
     // This stores pointers to uvm_va_block_t for HMM blocks.
     uvm_range_tree_t blocks;
     uvm_mutex_t blocks_lock;
-
-    // TODO: Bug 3351822: [UVM-HMM] Remove temporary testing changes.
-    // This flag is set true by default for each va_space so most processes
-    // don't see partially implemented UVM-HMM behavior but can be enabled by
-    // test code for a given va_space so the test process can do some interim
-    // testing. It needs to be a separate flag instead of modifying
-    // uvm_disable_hmm or va_space->flags since those are user inputs and are
-    // visible/checked by test code.
-    // Remove this when UVM-HMM is fully integrated into chips_a.
-    bool disable;
 } uvm_hmm_va_space_t;
 
 #if UVM_IS_CONFIG_HMM()
+
     // Tells whether HMM is enabled for the given va_space.
     // If it is not enabled, all of the functions below are no-ops.
     bool uvm_hmm_is_enabled(uvm_va_space_t *va_space);
@@ -62,16 +53,24 @@ typedef struct
     // and the va_space lock must be held in write mode.
     NV_STATUS uvm_hmm_va_space_initialize(uvm_va_space_t *va_space);
 
-    // Initialize HMM for the given the va_space for testing.
-    // Bug 1750144: UVM: Add HMM (Heterogeneous Memory Management) support to
-    // the UVM driver. Remove this when enough HMM functionality is implemented.
-    // Locking: the va_space->va_space_mm.mm mmap_lock must be write locked
-    // and the va_space lock must be held in write mode.
-    NV_STATUS uvm_hmm_va_space_initialize_test(uvm_va_space_t *va_space);
-
     // Destroy any HMM state for the given the va_space.
     // Locking: va_space lock must be held in write mode.
     void uvm_hmm_va_space_destroy(uvm_va_space_t *va_space);
+
+    // Unmap all page tables in this VA space which map memory owned by this
+    // GPU. Any memory still resident on this GPU will be evicted to system
+    // memory. Note that 'mm' can be NULL (e.g., when closing the UVM file)
+    // in which case any GPU memory is simply freed.
+    // Locking: if mm is not NULL, the caller must hold mm->mmap_lock in at
+    // least read mode and the va_space lock must be held in write mode.
+    void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_struct *mm);
+
+    // Destroy the VA space's mappings on the GPU, if it has any.
+    // Locking: if mm is not NULL, the caller must hold mm->mmap_lock in at
+    // least read mode and the va_space lock must be held in write mode.
+    void uvm_hmm_remove_gpu_va_space(uvm_va_space_t *va_space,
+                                     uvm_gpu_va_space_t *gpu_va_space,
+                                     struct mm_struct *mm);
 
     // Find an existing HMM va_block.
     // This function can be called without having retained and locked the mm,
@@ -84,6 +83,25 @@ typedef struct
     NV_STATUS uvm_hmm_va_block_find(uvm_va_space_t *va_space,
                                     NvU64 addr,
                                     uvm_va_block_t **va_block_ptr);
+
+    // Find an existing HMM va_block when processing a CPU fault and try to
+    // isolate and lock the faulting page.
+    // Return NV_ERR_INVALID_ADDRESS if the block is not found,
+    // NV_ERR_BUSY_RETRY if the page could not be locked, and
+    // NV_OK if the block is found and the page is locked. Also,
+    // uvm_hmm_cpu_fault_finish() must be called if NV_OK is returned.
+    // Locking: This must be called with the vma->vm_mm locked and the va_space
+    // read locked.
+    NV_STATUS uvm_hmm_va_block_cpu_find(uvm_va_space_t *va_space,
+                                        uvm_service_block_context_t *service_context,
+                                        struct vm_fault *vmf,
+                                        uvm_va_block_t **va_block_ptr);
+
+    // This must be called after uvm_va_block_cpu_fault() if
+    // uvm_hmm_va_block_cpu_find() returns NV_OK.
+    // Locking: This must be called with the vma->vm_mm locked and the va_space
+    // read locked.
+    void uvm_hmm_cpu_fault_finish(uvm_service_block_context_t *service_context);
 
     // Find or create a new HMM va_block.
     //
@@ -114,9 +132,9 @@ typedef struct
     // Locking: This function must be called with the va_block lock held and if
     // va_block is a HMM block, va_block_context->mm must be retained and
     // locked for at least read.
-    bool uvm_hmm_va_block_context_vma_is_valid(uvm_va_block_t *va_block,
-                                               uvm_va_block_context_t *va_block_context,
-                                               uvm_va_block_region_t region);
+    bool uvm_hmm_check_context_vma_is_valid(uvm_va_block_t *va_block,
+                                            uvm_va_block_context_t *va_block_context,
+                                            uvm_va_block_region_t region);
 
     // Find or create a HMM va_block and mark it so the next va_block split
     // will fail for testing purposes.
@@ -168,7 +186,8 @@ typedef struct
     NV_STATUS uvm_hmm_set_preferred_location(uvm_va_space_t *va_space,
                                              uvm_processor_id_t preferred_location,
                                              NvU64 base,
-                                             NvU64 last_address);
+                                             NvU64 last_address,
+                                             uvm_tracker_t *out_tracker);
 
     // Set the accessed by policy for the given range. This also tries to
     // map the range. Note that 'last_address' is inclusive.
@@ -178,7 +197,17 @@ typedef struct
                                       uvm_processor_id_t processor_id,
                                       bool set_bit,
                                       NvU64 base,
-                                      NvU64 last_address);
+                                      NvU64 last_address,
+                                      uvm_tracker_t *out_tracker);
+
+    // Deferred work item to reestablish accessed by mappings after eviction. On
+    // GPUs with access counters enabled, the evicted GPU will also get remote
+    // mappings.
+    // Locking: the va_space->va_space_mm.mm mmap_lock must be locked
+    // and the va_space lock must be held in at least read mode.
+    void uvm_hmm_block_add_eviction_mappings(uvm_va_space_t *va_space,
+                                             uvm_va_block_t *va_block,
+                                             uvm_va_block_context_t *block_context);
 
     // Set the read duplication policy for the given range.
     // Note that 'last_address' is inclusive.
@@ -248,7 +277,104 @@ typedef struct
                                             uvm_va_block_context_t *va_block_context,
                                             NvU64 addr);
 
-    NV_STATUS uvm_test_hmm_init(UVM_TEST_HMM_INIT_PARAMS *params, struct file *filp);
+    // This is called to service a GPU fault.
+    // Locking: the va_space->va_space_mm.mm mmap_lock must be locked,
+    // the va_space read lock must be held, and the va_block lock held.
+    NV_STATUS uvm_hmm_va_block_service_locked(uvm_processor_id_t processor_id,
+                                              uvm_processor_id_t new_residency,
+                                              uvm_va_block_t *va_block,
+                                              uvm_va_block_retry_t *va_block_retry,
+                                              uvm_service_block_context_t *service_context);
+
+    // This is called to migrate a region within a HMM va_block.
+    // va_block_context must not be NULL and va_block_context->policy and
+    // va_block_context->hmm.vma must be valid.
+    // Locking: the va_block_context->mm must be retained, mmap_lock must be
+    // locked, and the va_block lock held.
+    NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
+                                              uvm_va_block_retry_t *va_block_retry,
+                                              uvm_va_block_context_t *va_block_context,
+                                              uvm_processor_id_t dest_id,
+                                              uvm_va_block_region_t region,
+                                              uvm_make_resident_cause_t cause);
+
+    // This is called to migrate an address range of HMM allocations via
+    // UvmMigrate().
+    //
+    // va_block_context must not be NULL. The caller is not required to set
+    // va_block_context->policy or va_block_context->hmm.vma.
+    //
+    // Locking: the va_space->va_space_mm.mm mmap_lock must be locked and
+    // the va_space read lock must be held.
+    NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
+                                     uvm_va_block_context_t *va_block_context,
+                                     NvU64 base,
+                                     NvU64 length,
+                                     uvm_processor_id_t dest_id,
+                                     uvm_migrate_mode_t mode,
+                                     uvm_tracker_t *out_tracker);
+
+    // This sets the va_block_context->hmm.src_pfns[] to the ZONE_DEVICE private
+    // PFN for the GPU chunk memory.
+    NV_STATUS uvm_hmm_va_block_evict_chunk_prep(uvm_va_block_t *va_block,
+                                                uvm_va_block_context_t *va_block_context,
+                                                uvm_gpu_chunk_t *gpu_chunk,
+                                                uvm_va_block_region_t chunk_region);
+
+    // Migrate pages to system memory for the given page mask.
+    // Note that the mmap lock is not held and there is no MM retained.
+    // This must be called after uvm_hmm_va_block_evict_chunk_prep() has
+    // initialized va_block_context->hmm.src_pfns[] for the source GPU physical
+    // PFNs being migrated. Note that the input mask 'pages_to_evict' can be
+    // modified. If any of the evicted pages has the accessed by policy set,
+    // then record that by setting out_accessed_by_set.
+    // Locking: the va_block lock must be locked.
+    NV_STATUS uvm_hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
+                                            uvm_va_block_context_t *va_block_context,
+                                            const uvm_page_mask_t *pages_to_evict,
+                                            uvm_va_block_region_t region,
+                                            bool *out_accessed_by_set);
+
+    // Migrate pages from the given GPU to system memory for the given page
+    // mask and region. va_block_context must not be NULL.
+    // Note that the mmap lock is not held and there is no MM retained.
+    // Locking: the va_block lock must be locked.
+    NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
+                                                    uvm_gpu_t *gpu,
+                                                    uvm_va_block_context_t *va_block_context,
+                                                    const uvm_page_mask_t *pages_to_evict,
+                                                    uvm_va_block_region_t region);
+
+    // Migrate a GPU chunk to system memory. This called to remove CPU page
+    // table references to device private struct pages for the given GPU after
+    // all other references in va_blocks have been released and the GPU is
+    // in the process of being removed/torn down. Note that there is no mm,
+    // VMA, va_block or any user channel activity on this GPU.
+    NV_STATUS uvm_hmm_pmm_gpu_evict_chunk(uvm_gpu_t *gpu,
+                                          uvm_gpu_chunk_t *gpu_chunk);
+
+    // This returns what would be the intersection of va_block start/end and
+    // VMA start/end-1 for the given 'lookup_address' if
+    // uvm_hmm_va_block_find_create() was called.
+    // Locking: the caller must hold mm->mmap_lock in at least read mode and
+    // the va_space lock must be held in at least read mode.
+    NV_STATUS uvm_hmm_va_block_range_bounds(uvm_va_space_t *va_space,
+                                            struct mm_struct *mm,
+                                            NvU64 lookup_address,
+                                            NvU64 *startp,
+                                            NvU64 *endp,
+                                            UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params);
+
+    // This updates the HMM va_block CPU residency information for a single
+    // page at 'lookup_address' by calling hmm_range_fault(). If 'populate' is
+    // true, the CPU page will be faulted in read/write or read-only
+    // (depending on the permission of the underlying VMA at lookup_address).
+    // Locking: the caller must hold mm->mmap_lock in at least read mode and
+    // the va_space lock must be held in at least read mode.
+    NV_STATUS uvm_hmm_va_block_update_residency_info(uvm_va_block_t *va_block,
+                                                     struct mm_struct *mm,
+                                                     NvU64 lookup_address,
+                                                     bool populate);
 
     NV_STATUS uvm_test_split_invalidate_delay(UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS *params,
                                               struct file *filp);
@@ -285,12 +411,17 @@ typedef struct
         return NV_OK;
     }
 
-    static NV_STATUS uvm_hmm_va_space_initialize_test(uvm_va_space_t *va_space)
+    static void uvm_hmm_va_space_destroy(uvm_va_space_t *va_space)
     {
-        return NV_WARN_NOTHING_TO_DO;
     }
 
-    static void uvm_hmm_va_space_destroy(uvm_va_space_t *va_space)
+    static void uvm_hmm_unregister_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu, struct mm_struct *mm)
+    {
+    }
+
+    static void uvm_hmm_remove_gpu_va_space(uvm_va_space_t *va_space,
+                                            uvm_gpu_va_space_t *gpu_va_space,
+                                            struct mm_struct *mm)
     {
     }
 
@@ -299,6 +430,18 @@ typedef struct
                                            uvm_va_block_t **va_block_ptr)
     {
         return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static NV_STATUS uvm_hmm_va_block_cpu_find(uvm_va_space_t *va_space,
+                                               uvm_service_block_context_t *service_context,
+                                               struct vm_fault *vmf,
+                                               uvm_va_block_t **va_block_ptr)
+    {
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static void uvm_hmm_cpu_fault_finish(uvm_service_block_context_t *service_context)
+    {
     }
 
     static NV_STATUS uvm_hmm_va_block_find_create(uvm_va_space_t *va_space,
@@ -314,9 +457,9 @@ typedef struct
         return NV_OK;
     }
 
-    static bool uvm_hmm_va_block_context_vma_is_valid(uvm_va_block_t *va_block,
-                                                      uvm_va_block_context_t *va_block_context,
-                                                      uvm_va_block_region_t region)
+    static bool uvm_hmm_check_context_vma_is_valid(uvm_va_block_t *va_block,
+                                                   uvm_va_block_context_t *va_block_context,
+                                                   uvm_va_block_region_t region)
     {
         return true;
     }
@@ -349,7 +492,8 @@ typedef struct
     static NV_STATUS uvm_hmm_set_preferred_location(uvm_va_space_t *va_space,
                                                     uvm_processor_id_t preferred_location,
                                                     NvU64 base,
-                                                    NvU64 last_address)
+                                                    NvU64 last_address,
+                                                    uvm_tracker_t *out_tracker)
     {
         return NV_ERR_INVALID_ADDRESS;
     }
@@ -358,9 +502,16 @@ typedef struct
                                              uvm_processor_id_t processor_id,
                                              bool set_bit,
                                              NvU64 base,
-                                             NvU64 last_address)
+                                             NvU64 last_address,
+                                             uvm_tracker_t *out_tracker)
     {
         return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static void uvm_hmm_block_add_eviction_mappings(uvm_va_space_t *va_space,
+                                                    uvm_va_block_t *va_block,
+                                                    uvm_va_block_context_t *block_context)
+    {
     }
 
     static NV_STATUS uvm_hmm_set_read_duplication(uvm_va_space_t *va_space,
@@ -405,9 +556,84 @@ typedef struct
         return UVM_PROT_NONE;
     }
 
-    static NV_STATUS uvm_test_hmm_init(UVM_TEST_HMM_INIT_PARAMS *params, struct file *filp)
+    static NV_STATUS uvm_hmm_va_block_service_locked(uvm_processor_id_t processor_id,
+                                                     uvm_processor_id_t new_residency,
+                                                     uvm_va_block_t *va_block,
+                                                     uvm_va_block_retry_t *va_block_retry,
+                                                     uvm_service_block_context_t *service_context)
     {
-        return NV_WARN_NOTHING_TO_DO;
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
+                                                     uvm_va_block_retry_t *va_block_retry,
+                                                     uvm_va_block_context_t *va_block_context,
+                                                     uvm_processor_id_t dest_id,
+                                                     uvm_va_block_region_t region,
+                                                     uvm_make_resident_cause_t cause)
+    {
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
+                                            uvm_va_block_context_t *va_block_context,
+                                            NvU64 base,
+                                            NvU64 length,
+                                            uvm_processor_id_t dest_id,
+                                            uvm_migrate_mode_t mode,
+                                            uvm_tracker_t *out_tracker)
+    {
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static NV_STATUS uvm_hmm_va_block_evict_chunk_prep(uvm_va_block_t *va_block,
+                                                       uvm_va_block_context_t *va_block_context,
+                                                       uvm_gpu_chunk_t *gpu_chunk,
+                                                       uvm_va_block_region_t chunk_region)
+    {
+        return NV_OK;
+    }
+
+    static NV_STATUS uvm_hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
+                                                   uvm_va_block_context_t *va_block_context,
+                                                   const uvm_page_mask_t *pages_to_evict,
+                                                   uvm_va_block_region_t region,
+                                                   bool *out_accessed_by_set)
+    {
+        return NV_OK;
+    }
+
+    static NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
+                                                           uvm_gpu_t *gpu,
+                                                           uvm_va_block_context_t *va_block_context,
+                                                           const uvm_page_mask_t *pages_to_evict,
+                                                           uvm_va_block_region_t region)
+    {
+        return NV_OK;
+    }
+
+    static NV_STATUS uvm_hmm_pmm_gpu_evict_chunk(uvm_gpu_t *gpu,
+                                                 uvm_gpu_chunk_t *gpu_chunk)
+    {
+        return NV_OK;
+    }
+
+    static NV_STATUS uvm_hmm_va_block_range_bounds(uvm_va_space_t *va_space,
+                                                   struct mm_struct *mm,
+                                                   NvU64 lookup_address,
+                                                   NvU64 *startp,
+                                                   NvU64 *endp,
+                                                   UVM_TEST_VA_RESIDENCY_INFO_PARAMS *params)
+    {
+        return NV_ERR_INVALID_ADDRESS;
+    }
+
+    static NV_STATUS uvm_hmm_va_block_update_residency_info(uvm_va_block_t *va_block,
+                                                            struct mm_struct *mm,
+                                                            NvU64 lookup_address,
+                                                            bool populate)
+    {
+        return NV_ERR_INVALID_ADDRESS;
     }
 
     static NV_STATUS uvm_test_split_invalidate_delay(UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS *params,

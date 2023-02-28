@@ -94,6 +94,7 @@ static void InitImpParams(NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS *pImp)
 static void AssignPerHeadImpParams(const NVDevEvoRec *pDevEvo,
                                    NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS *pImp,
                                    const NVHwModeTimingsEvo *pTimings,
+                                   const enum nvKmsPixelDepth pixelDepth,
                                    const struct NvKmsUsageBounds *pUsage,
                                    const int head,
                                    const int orNumber,
@@ -312,7 +313,7 @@ static void AssignPerHeadImpParams(const NVDevEvoRec *pDevEvo,
 
     /* pixel depth */
 
-    switch (pTimings->pixelDepth) {
+    switch (pixelDepth) {
     case NVKMS_PIXEL_DEPTH_18_444:
         pImp->Head[head].outputResourcePixelDepthBPP =
             NV5070_CTRL_IS_MODE_POSSIBLE_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_18_444;
@@ -324,6 +325,14 @@ static void AssignPerHeadImpParams(const NVDevEvoRec *pDevEvo,
     case NVKMS_PIXEL_DEPTH_30_444:
         pImp->Head[head].outputResourcePixelDepthBPP =
             NV5070_CTRL_IS_MODE_POSSIBLE_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_30_444;
+        break;
+    case NVKMS_PIXEL_DEPTH_16_422:
+        pImp->Head[head].outputResourcePixelDepthBPP =
+            NV5070_CTRL_IS_MODE_POSSIBLE_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_16_422;
+        break;
+    case NVKMS_PIXEL_DEPTH_20_422:
+        pImp->Head[head].outputResourcePixelDepthBPP =
+            NV5070_CTRL_IS_MODE_POSSIBLE_OUTPUT_RESOURCE_PIXEL_DEPTH_BPP_20_422;
         break;
     }
 }
@@ -351,6 +360,7 @@ void nvEvo1IsModePossible(NVDispEvoPtr pDispEvo,
 
         AssignPerHeadImpParams(pDevEvo, pImp,
                                pInput->head[head].pTimings,
+                               pInput->head[head].pixelDepth,
                                pInput->head[head].pUsage,
                                head,
                                pInput->head[head].orIndex,
@@ -533,7 +543,8 @@ NvBool nvEvo1IsChannelMethodPending(NVDevEvoPtr pDevEvo,
 
 void nvEvo1SetDscParams(const NVDispEvoRec *pDispEvo,
                         const NvU32 head,
-                        const NVHwModeTimingsEvo *pTimings)
+                        const NVHwModeTimingsEvo *pTimings,
+                        const enum nvKmsPixelDepth pixelDepth)
 {
     nvAssert(!pTimings->dpDsc.enable);
 }

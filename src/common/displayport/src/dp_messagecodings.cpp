@@ -227,11 +227,11 @@ EnumPathResMessage::EnumPathResMessage(const Address & target, unsigned port, bo
 
 ParseResponseStatus EnumPathResMessage::parseResponseAck(EncodedMessage * message, BitStreamReader * reader)
 {
-    reply.portNumber = reader->readOrDefault(4 /*Port_Number*/, 0xF);
-    reader->readOrDefault(3 /*zeroes*/, 0);
-    reply.bFECCapability = (reader->readOrDefault(1 /*FEC*/, 0x0) == 1) ? true : false;
-    reply.TotalPBN = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
-    reply.FreePBN  = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
+    reply.portNumber        = reader->readOrDefault(4 /*Port_Number*/, 0xF);
+    reply.availableStreams  = reader->readOrDefault(3 /*Available_Streams*/, 0);
+    reply.bFECCapability    = (reader->readOrDefault(1 /*FEC*/, 0x0) == 1) ? true : false;
+    reply.TotalPBN          = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
+    reply.FreePBN           = reader->readOrDefault(16 /*PBN*/, 0xFFFF);
 
     if (this->getSinkPort() != reply.portNumber)
         return ParseResponseWrong;
@@ -353,10 +353,11 @@ bool ResStatusNotifyMessage::processByType(EncodedMessage * message, BitStreamRe
     bool status;
 
     // read the request body
-    request.port = reader->readOrDefault(4/*Port_Number*/, 0xF);
-    reader->readOrDefault(4/*zeroes*/, 0);
-    status = DisplayPort::extractGUID(reader, &request.guid);
-    request.PBN = reader->readOrDefault(16/*Available_PBN*/, 0);
+    request.port                = reader->readOrDefault(4 /*Port_Number*/, 0xF);
+    request.availableStreams    = reader->readOrDefault(3 /*Available_Streams*/, 0);
+    request.bFECCapability      = reader->readOrDefault(1 /*FEC Capability*/, 0);
+    status                      = DisplayPort::extractGUID(reader, &request.guid);
+    request.PBN                 = reader->readOrDefault(16/*Available_PBN*/, 0);
 
     // action will be implemented by evensink
     this->sink->messageProcessed(this);

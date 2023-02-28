@@ -127,16 +127,16 @@ static NvBool __nvoc_thunk_GpuResource_accesscntrShareCallback(struct AccessCoun
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_AccessCounterBuffer_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_accesscntrMapTo(struct AccessCounterBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RmResource_accesscntrCheckMemInterUnmap(struct AccessCounterBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_accesscntrGetOrAllocNotifShare(struct AccessCounterBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_accesscntrCheckMemInterUnmap(struct AccessCounterBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), bSubdeviceHandleProvided);
+static NV_STATUS __nvoc_thunk_RsResource_accesscntrMapTo(struct AccessCounterBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), pParams);
 }
 
 static void __nvoc_thunk_Notifier_accesscntrSetNotificationShare(struct AccessCounterBuffer *pNotifier, struct NotifShare *pNotifShare) {
@@ -199,6 +199,10 @@ static NV_STATUS __nvoc_thunk_Notifier_accesscntrUnregisterEvent(struct AccessCo
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_AccessCounterBuffer_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_accesscntrControlSerialization_Prologue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_accesscntrCanCopy(struct AccessCounterBuffer *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset));
 }
@@ -209,6 +213,10 @@ static void __nvoc_thunk_RsResource_accesscntrPreDestruct(struct AccessCounterBu
 
 static NV_STATUS __nvoc_thunk_RsResource_accesscntrIsDuplicate(struct AccessCounterBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_accesscntrControlSerialization_Epilogue(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_AccessCounterBuffer_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_accesscntrGetNotificationListPtr(struct AccessCounterBuffer *pNotifier) {
@@ -482,11 +490,11 @@ static void __nvoc_init_funcTable_AccessCounterBuffer_1(AccessCounterBuffer *pTh
 
     pThis->__accesscntrShareCallback__ = &__nvoc_thunk_GpuResource_accesscntrShareCallback;
 
-    pThis->__accesscntrMapTo__ = &__nvoc_thunk_RsResource_accesscntrMapTo;
+    pThis->__accesscntrCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_accesscntrCheckMemInterUnmap;
 
     pThis->__accesscntrGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_accesscntrGetOrAllocNotifShare;
 
-    pThis->__accesscntrCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_accesscntrCheckMemInterUnmap;
+    pThis->__accesscntrMapTo__ = &__nvoc_thunk_RsResource_accesscntrMapTo;
 
     pThis->__accesscntrSetNotificationShare__ = &__nvoc_thunk_Notifier_accesscntrSetNotificationShare;
 
@@ -518,11 +526,15 @@ static void __nvoc_init_funcTable_AccessCounterBuffer_1(AccessCounterBuffer *pTh
 
     pThis->__accesscntrUnregisterEvent__ = &__nvoc_thunk_Notifier_accesscntrUnregisterEvent;
 
+    pThis->__accesscntrControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_accesscntrControlSerialization_Prologue;
+
     pThis->__accesscntrCanCopy__ = &__nvoc_thunk_RsResource_accesscntrCanCopy;
 
     pThis->__accesscntrPreDestruct__ = &__nvoc_thunk_RsResource_accesscntrPreDestruct;
 
     pThis->__accesscntrIsDuplicate__ = &__nvoc_thunk_RsResource_accesscntrIsDuplicate;
+
+    pThis->__accesscntrControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_accesscntrControlSerialization_Epilogue;
 
     pThis->__accesscntrGetNotificationListPtr__ = &__nvoc_thunk_Notifier_accesscntrGetNotificationListPtr;
 
@@ -556,12 +568,15 @@ NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer **ppThis, Dyn
     Object *pParentObj;
     AccessCounterBuffer *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(AccessCounterBuffer));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(AccessCounterBuffer), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(AccessCounterBuffer));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_AccessCounterBuffer);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -578,11 +593,17 @@ NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer **ppThis, Dyn
     if (status != NV_OK) goto __nvoc_objCreate_AccessCounterBuffer_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_AccessCounterBuffer_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(AccessCounterBuffer));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

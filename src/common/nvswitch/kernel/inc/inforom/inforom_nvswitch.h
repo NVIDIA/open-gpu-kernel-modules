@@ -46,6 +46,12 @@
     (destName)[2] = (srcName)[2];                    \
 }
 
+#define m_inforom_nvl_get_new_errors_per_minute(value, pSum)    \
+    do                                                          \
+    {                                                           \
+        *pSum = (*pSum - (*pSum / 60)) + value;                 \
+    } while (NV_FALSE)                                          \
+
 //
 // OS type defines.
 //
@@ -99,6 +105,7 @@ struct inforom
         INFOROM_IMG_OBJECT_V1_00    object;
     } IMG;
 
+    INFOROM_NVLINK_STATE               *pNvlinkState;
     INFOROM_ECC_STATE                  *pEccState;
     INFOROM_OMS_STATE                  *pOmsState;
 
@@ -111,23 +118,23 @@ struct inforom
 // Generic InfoROM APIs
 NvlStatus nvswitch_initialize_inforom(nvswitch_device *device);
 NvlStatus nvswitch_inforom_read_object(nvswitch_device* device,
-                const char *objectName, const char *pObjectFormat,
+                const char objectName[3], const char *pObjectFormat,
                 NvU8 *pPackedObject, void *pObject);
 NvlStatus nvswitch_inforom_write_object(nvswitch_device* device,
-                const char *objectName, const char *pObjectFormat,
+                const char objectName[3], const char *pObjectFormat,
                 void *pObject, NvU8 *pOldPackedObject);
 void nvswitch_destroy_inforom(nvswitch_device *device);
 NvlStatus nvswitch_inforom_add_object(struct inforom *pInforom,
                                     INFOROM_OBJECT_HEADER_V1_00 *pHeader);
 NvlStatus nvswitch_inforom_get_object_version_info(nvswitch_device *device,
-                const char *objectName, NvU8 *pVersion, NvU8 *pSubVersion);
+                const char objectName[3], NvU8 *pVersion, NvU8 *pSubVersion);
 void *nvswitch_add_halinfo_node(NVListPtr head, int type, int size);
 void *nvswitch_get_halinfo_node(NVListPtr head, int type);
 void nvswitch_inforom_post_init(nvswitch_device *device);
 NvlStatus nvswitch_initialize_inforom_objects(nvswitch_device *device);
 void nvswitch_destroy_inforom_objects(nvswitch_device *device);
 NvlStatus nvswitch_inforom_load_object(nvswitch_device* device,
-                struct inforom *pInforom, const char *objectName,
+                struct inforom *pInforom, const char objectName[3],
                 const char *pObjectFormat, NvU8 *pPackedObject, void *pObject);
 void nvswitch_inforom_read_static_data(nvswitch_device *device,
                 struct inforom  *pInforom, RM_SOE_SMBPBI_INFOROM_DATA *pData);
@@ -149,6 +156,8 @@ NvlStatus nvswitch_inforom_nvlink_get_max_correctable_error_rate(nvswitch_device
                 NVSWITCH_GET_NVLINK_MAX_CORRECTABLE_ERROR_RATES_PARAMS *params);
 NvlStatus nvswitch_inforom_nvlink_get_errors(nvswitch_device *device,
                                 NVSWITCH_GET_NVLINK_ERROR_COUNTS_PARAMS *params);
+NvlStatus nvswitch_inforom_nvlink_setL1Threshold(nvswitch_device *device, NvU32 word1, NvU32 word2);
+NvlStatus nvswitch_inforom_nvlink_getL1Threshold(nvswitch_device *device, NvU32 *word1, NvU32 *word2);
 
 // InfoROM ECC APIs
 NvlStatus nvswitch_inforom_ecc_load(nvswitch_device *device);

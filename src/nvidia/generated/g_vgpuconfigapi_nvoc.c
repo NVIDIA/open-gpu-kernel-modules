@@ -115,16 +115,16 @@ static NvBool __nvoc_thunk_GpuResource_vgpuconfigapiShareCallback(struct VgpuCon
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VgpuConfigApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_vgpuconfigapiMapTo(struct VgpuConfigApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VgpuConfigApi_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RmResource_vgpuconfigapiCheckMemInterUnmap(struct VgpuConfigApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_VgpuConfigApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_vgpuconfigapiGetOrAllocNotifShare(struct VgpuConfigApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_VgpuConfigApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_vgpuconfigapiCheckMemInterUnmap(struct VgpuConfigApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_VgpuConfigApi_RmResource.offset), bSubdeviceHandleProvided);
+static NV_STATUS __nvoc_thunk_RsResource_vgpuconfigapiMapTo(struct VgpuConfigApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VgpuConfigApi_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_vgpuconfigapiGetMapAddrSpace(struct VgpuConfigApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -195,6 +195,10 @@ static NV_STATUS __nvoc_thunk_Notifier_vgpuconfigapiUnregisterEvent(struct VgpuC
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_VgpuConfigApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_vgpuconfigapiControlSerialization_Prologue(struct VgpuConfigApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VgpuConfigApi_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_vgpuconfigapiCanCopy(struct VgpuConfigApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VgpuConfigApi_RsResource.offset));
 }
@@ -205,6 +209,10 @@ static void __nvoc_thunk_RsResource_vgpuconfigapiPreDestruct(struct VgpuConfigAp
 
 static NV_STATUS __nvoc_thunk_RsResource_vgpuconfigapiIsDuplicate(struct VgpuConfigApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VgpuConfigApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_vgpuconfigapiControlSerialization_Epilogue(struct VgpuConfigApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VgpuConfigApi_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_vgpuconfigapiGetNotificationListPtr(struct VgpuConfigApi *pNotifier) {
@@ -622,11 +630,11 @@ static void __nvoc_init_funcTable_VgpuConfigApi_1(VgpuConfigApi *pThis) {
 
     pThis->__vgpuconfigapiShareCallback__ = &__nvoc_thunk_GpuResource_vgpuconfigapiShareCallback;
 
-    pThis->__vgpuconfigapiMapTo__ = &__nvoc_thunk_RsResource_vgpuconfigapiMapTo;
+    pThis->__vgpuconfigapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_vgpuconfigapiCheckMemInterUnmap;
 
     pThis->__vgpuconfigapiGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_vgpuconfigapiGetOrAllocNotifShare;
 
-    pThis->__vgpuconfigapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_vgpuconfigapiCheckMemInterUnmap;
+    pThis->__vgpuconfigapiMapTo__ = &__nvoc_thunk_RsResource_vgpuconfigapiMapTo;
 
     pThis->__vgpuconfigapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_vgpuconfigapiGetMapAddrSpace;
 
@@ -662,11 +670,15 @@ static void __nvoc_init_funcTable_VgpuConfigApi_1(VgpuConfigApi *pThis) {
 
     pThis->__vgpuconfigapiUnregisterEvent__ = &__nvoc_thunk_Notifier_vgpuconfigapiUnregisterEvent;
 
+    pThis->__vgpuconfigapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_vgpuconfigapiControlSerialization_Prologue;
+
     pThis->__vgpuconfigapiCanCopy__ = &__nvoc_thunk_RsResource_vgpuconfigapiCanCopy;
 
     pThis->__vgpuconfigapiPreDestruct__ = &__nvoc_thunk_RsResource_vgpuconfigapiPreDestruct;
 
     pThis->__vgpuconfigapiIsDuplicate__ = &__nvoc_thunk_RsResource_vgpuconfigapiIsDuplicate;
+
+    pThis->__vgpuconfigapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_vgpuconfigapiControlSerialization_Epilogue;
 
     pThis->__vgpuconfigapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_vgpuconfigapiGetNotificationListPtr;
 
@@ -702,12 +714,15 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi **ppThis, Dynamic *pParen
     Object *pParentObj;
     VgpuConfigApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(VgpuConfigApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(VgpuConfigApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(VgpuConfigApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_VgpuConfigApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -724,11 +739,17 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi **ppThis, Dynamic *pParen
     if (status != NV_OK) goto __nvoc_objCreate_VgpuConfigApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_VgpuConfigApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(VgpuConfigApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

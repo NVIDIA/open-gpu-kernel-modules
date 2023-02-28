@@ -74,13 +74,15 @@ struct MIGMonitorSession {
     NvU32 (*__migmonitorsessionGetRefCount__)(struct MIGMonitorSession *);
     NV_STATUS (*__migmonitorsessionControlFilter__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__migmonitorsessionAddAdditionalDependants__)(struct RsClient *, struct MIGMonitorSession *, RsResourceRef *);
-    NV_STATUS (*__migmonitorsessionUnmap__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__migmonitorsessionUnmapFrom__)(struct MIGMonitorSession *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__migmonitorsessionControlSerialization_Prologue__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__migmonitorsessionControl_Prologue__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__migmonitorsessionCanCopy__)(struct MIGMonitorSession *);
-    NV_STATUS (*__migmonitorsessionMapTo__)(struct MIGMonitorSession *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__migmonitorsessionUnmap__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, RsCpuMapping *);
     void (*__migmonitorsessionPreDestruct__)(struct MIGMonitorSession *);
-    NV_STATUS (*__migmonitorsessionUnmapFrom__)(struct MIGMonitorSession *, RS_RES_UNMAP_FROM_PARAMS *);
+    NV_STATUS (*__migmonitorsessionMapTo__)(struct MIGMonitorSession *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__migmonitorsessionIsDuplicate__)(struct MIGMonitorSession *, NvHandle, NvBool *);
+    void (*__migmonitorsessionControlSerialization_Epilogue__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__migmonitorsessionControl_Epilogue__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__migmonitorsessionControlLookup__)(struct MIGMonitorSession *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__migmonitorsessionMap__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -124,13 +126,15 @@ NV_STATUS __nvoc_objCreate_MIGMonitorSession(MIGMonitorSession**, Dynamic*, NvU3
 #define migmonitorsessionGetRefCount(pResource) migmonitorsessionGetRefCount_DISPATCH(pResource)
 #define migmonitorsessionControlFilter(pResource, pCallContext, pParams) migmonitorsessionControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define migmonitorsessionAddAdditionalDependants(pClient, pResource, pReference) migmonitorsessionAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define migmonitorsessionUnmap(pResource, pCallContext, pCpuMapping) migmonitorsessionUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define migmonitorsessionUnmapFrom(pResource, pParams) migmonitorsessionUnmapFrom_DISPATCH(pResource, pParams)
+#define migmonitorsessionControlSerialization_Prologue(pResource, pCallContext, pParams) migmonitorsessionControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define migmonitorsessionControl_Prologue(pResource, pCallContext, pParams) migmonitorsessionControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define migmonitorsessionCanCopy(pResource) migmonitorsessionCanCopy_DISPATCH(pResource)
-#define migmonitorsessionMapTo(pResource, pParams) migmonitorsessionMapTo_DISPATCH(pResource, pParams)
+#define migmonitorsessionUnmap(pResource, pCallContext, pCpuMapping) migmonitorsessionUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define migmonitorsessionPreDestruct(pResource) migmonitorsessionPreDestruct_DISPATCH(pResource)
-#define migmonitorsessionUnmapFrom(pResource, pParams) migmonitorsessionUnmapFrom_DISPATCH(pResource, pParams)
+#define migmonitorsessionMapTo(pResource, pParams) migmonitorsessionMapTo_DISPATCH(pResource, pParams)
 #define migmonitorsessionIsDuplicate(pResource, hMemory, pDuplicate) migmonitorsessionIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define migmonitorsessionControlSerialization_Epilogue(pResource, pCallContext, pParams) migmonitorsessionControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define migmonitorsessionControl_Epilogue(pResource, pCallContext, pParams) migmonitorsessionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define migmonitorsessionControlLookup(pResource, pParams, ppEntry) migmonitorsessionControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define migmonitorsessionMap(pResource, pCallContext, pParams, pCpuMapping) migmonitorsessionMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
@@ -167,8 +171,12 @@ static inline void migmonitorsessionAddAdditionalDependants_DISPATCH(struct RsCl
     pResource->__migmonitorsessionAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS migmonitorsessionUnmap_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return pResource->__migmonitorsessionUnmap__(pResource, pCallContext, pCpuMapping);
+static inline NV_STATUS migmonitorsessionUnmapFrom_DISPATCH(struct MIGMonitorSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__migmonitorsessionUnmapFrom__(pResource, pParams);
+}
+
+static inline NV_STATUS migmonitorsessionControlSerialization_Prologue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__migmonitorsessionControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS migmonitorsessionControl_Prologue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -179,20 +187,24 @@ static inline NvBool migmonitorsessionCanCopy_DISPATCH(struct MIGMonitorSession 
     return pResource->__migmonitorsessionCanCopy__(pResource);
 }
 
-static inline NV_STATUS migmonitorsessionMapTo_DISPATCH(struct MIGMonitorSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__migmonitorsessionMapTo__(pResource, pParams);
+static inline NV_STATUS migmonitorsessionUnmap_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return pResource->__migmonitorsessionUnmap__(pResource, pCallContext, pCpuMapping);
 }
 
 static inline void migmonitorsessionPreDestruct_DISPATCH(struct MIGMonitorSession *pResource) {
     pResource->__migmonitorsessionPreDestruct__(pResource);
 }
 
-static inline NV_STATUS migmonitorsessionUnmapFrom_DISPATCH(struct MIGMonitorSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__migmonitorsessionUnmapFrom__(pResource, pParams);
+static inline NV_STATUS migmonitorsessionMapTo_DISPATCH(struct MIGMonitorSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__migmonitorsessionMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS migmonitorsessionIsDuplicate_DISPATCH(struct MIGMonitorSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__migmonitorsessionIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void migmonitorsessionControlSerialization_Epilogue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__migmonitorsessionControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline void migmonitorsessionControl_Epilogue_DISPATCH(struct MIGMonitorSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {

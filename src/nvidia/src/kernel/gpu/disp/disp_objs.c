@@ -225,6 +225,13 @@ dispobjConstruct_IMPL
                   "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n",
                   pParams->externalClassId);
 
+        //
+        // GPUSWSEC-1560 introduced a central object privilege check in RS. Please mark derived external classes
+        // of DispObject privileged in their RS_ENTRY. Since DispObject doesn't have an external class of its own
+        // and is used as a base class, leaving this check inline to catch future derivations.
+        //
+        osAssertFailed();
+
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
 
@@ -450,14 +457,6 @@ dispswobjConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    if (pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_USER_ROOT)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n",
-                  pParams->externalClassId);
-
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
     return NV_OK;
 }
 

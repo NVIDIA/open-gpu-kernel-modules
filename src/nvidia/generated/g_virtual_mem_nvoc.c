@@ -114,6 +114,38 @@ static NV_STATUS __nvoc_thunk_Memory_virtmemCheckMemInterUnmap(struct VirtualMem
     return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), bSubdeviceHandleProvided);
 }
 
+static NvBool __nvoc_thunk_RmResource_virtmemShareCallback(struct VirtualMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static NV_STATUS __nvoc_thunk_Memory_virtmemGetMapAddrSpace(struct VirtualMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_virtmemGetRefCount(struct VirtualMemory *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_virtmemAddAdditionalDependants(struct RsClient *pClient, struct VirtualMemory *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_virtmemControl_Prologue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_Memory_virtmemIsGpuMapAllowed(struct VirtualMemory *pMemory, struct OBJGPU *pGpu) {
+    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), pGpu);
+}
+
+static void __nvoc_thunk_RmResource_virtmemControl_Epilogue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_virtmemControlLookup(struct VirtualMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset), pParams, ppEntry);
+}
+
 static NV_STATUS __nvoc_thunk_Memory_virtmemControl(struct VirtualMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), pCallContext, pParams);
 }
@@ -130,36 +162,16 @@ static NV_STATUS __nvoc_thunk_Memory_virtmemGetMemoryMappingDescriptor(struct Vi
     return memGetMemoryMappingDescriptor((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_virtmemGetMapAddrSpace(struct VirtualMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvBool __nvoc_thunk_RmResource_virtmemShareCallback(struct VirtualMemory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
-    return rmresShareCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pInvokingClient, pParentRef, pSharePolicy);
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_virtmemControlFilter(struct VirtualMemory *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_virtmemAddAdditionalDependants(struct RsClient *pClient, struct VirtualMemory *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_virtmemGetRefCount(struct VirtualMemory *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset));
+static NV_STATUS __nvoc_thunk_RmResource_virtmemControlSerialization_Prologue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_StandardMemory_virtmemCanCopy(struct VirtualMemory *pStandardMemory) {
     return stdmemCanCopy((struct StandardMemory *)(((unsigned char *)pStandardMemory) + __nvoc_rtti_VirtualMemory_StandardMemory.offset));
-}
-
-static NvBool __nvoc_thunk_Memory_virtmemIsGpuMapAllowed(struct VirtualMemory *pMemory, struct OBJGPU *pGpu) {
-    return memIsGpuMapAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), pGpu);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_virtmemControl_Prologue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_virtmemIsReady(struct VirtualMemory *pMemory, NvBool bCopyConstructorContext) {
@@ -178,12 +190,8 @@ static NV_STATUS __nvoc_thunk_Memory_virtmemIsDuplicate(struct VirtualMemory *pM
     return memIsDuplicate((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_virtmemControl_Epilogue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_virtmemControlLookup(struct VirtualMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_virtmemControlSerialization_Epilogue(struct VirtualMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_virtmemMap(struct VirtualMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -243,6 +251,22 @@ static void __nvoc_init_funcTable_VirtualMemory_1(VirtualMemory *pThis) {
 
     pThis->__virtmemCheckMemInterUnmap__ = &__nvoc_thunk_Memory_virtmemCheckMemInterUnmap;
 
+    pThis->__virtmemShareCallback__ = &__nvoc_thunk_RmResource_virtmemShareCallback;
+
+    pThis->__virtmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_virtmemGetMapAddrSpace;
+
+    pThis->__virtmemGetRefCount__ = &__nvoc_thunk_RsResource_virtmemGetRefCount;
+
+    pThis->__virtmemAddAdditionalDependants__ = &__nvoc_thunk_RsResource_virtmemAddAdditionalDependants;
+
+    pThis->__virtmemControl_Prologue__ = &__nvoc_thunk_RmResource_virtmemControl_Prologue;
+
+    pThis->__virtmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_virtmemIsGpuMapAllowed;
+
+    pThis->__virtmemControl_Epilogue__ = &__nvoc_thunk_RmResource_virtmemControl_Epilogue;
+
+    pThis->__virtmemControlLookup__ = &__nvoc_thunk_RsResource_virtmemControlLookup;
+
     pThis->__virtmemControl__ = &__nvoc_thunk_Memory_virtmemControl;
 
     pThis->__virtmemUnmap__ = &__nvoc_thunk_Memory_virtmemUnmap;
@@ -251,21 +275,11 @@ static void __nvoc_init_funcTable_VirtualMemory_1(VirtualMemory *pThis) {
 
     pThis->__virtmemGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_virtmemGetMemoryMappingDescriptor;
 
-    pThis->__virtmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_virtmemGetMapAddrSpace;
-
-    pThis->__virtmemShareCallback__ = &__nvoc_thunk_RmResource_virtmemShareCallback;
-
     pThis->__virtmemControlFilter__ = &__nvoc_thunk_RsResource_virtmemControlFilter;
 
-    pThis->__virtmemAddAdditionalDependants__ = &__nvoc_thunk_RsResource_virtmemAddAdditionalDependants;
-
-    pThis->__virtmemGetRefCount__ = &__nvoc_thunk_RsResource_virtmemGetRefCount;
+    pThis->__virtmemControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_virtmemControlSerialization_Prologue;
 
     pThis->__virtmemCanCopy__ = &__nvoc_thunk_StandardMemory_virtmemCanCopy;
-
-    pThis->__virtmemIsGpuMapAllowed__ = &__nvoc_thunk_Memory_virtmemIsGpuMapAllowed;
-
-    pThis->__virtmemControl_Prologue__ = &__nvoc_thunk_RmResource_virtmemControl_Prologue;
 
     pThis->__virtmemIsReady__ = &__nvoc_thunk_Memory_virtmemIsReady;
 
@@ -275,9 +289,7 @@ static void __nvoc_init_funcTable_VirtualMemory_1(VirtualMemory *pThis) {
 
     pThis->__virtmemIsDuplicate__ = &__nvoc_thunk_Memory_virtmemIsDuplicate;
 
-    pThis->__virtmemControl_Epilogue__ = &__nvoc_thunk_RmResource_virtmemControl_Epilogue;
-
-    pThis->__virtmemControlLookup__ = &__nvoc_thunk_RsResource_virtmemControlLookup;
+    pThis->__virtmemControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_virtmemControlSerialization_Epilogue;
 
     pThis->__virtmemMap__ = &__nvoc_thunk_Memory_virtmemMap;
 
@@ -306,12 +318,15 @@ NV_STATUS __nvoc_objCreate_VirtualMemory(VirtualMemory **ppThis, Dynamic *pParen
     Object *pParentObj;
     VirtualMemory *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(VirtualMemory));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(VirtualMemory), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(VirtualMemory));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_VirtualMemory);
+
+    pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -328,11 +343,17 @@ NV_STATUS __nvoc_objCreate_VirtualMemory(VirtualMemory **ppThis, Dynamic *pParen
     if (status != NV_OK) goto __nvoc_objCreate_VirtualMemory_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_VirtualMemory_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(VirtualMemory));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

@@ -2984,7 +2984,7 @@ NV_STATUS heapHwAlloc_IMPL
     FB_ALLOC_INFO          *pFbAllocInfo = NULL;
     FB_ALLOC_PAGE_FORMAT   *pFbAllocPageFormat = NULL;
     NvU32                   tiledAttr;
-    NvU32                   pageSize = 0;
+    NvU64                   pageSize = 0;
     NV_MEMORY_HW_RESOURCES_ALLOCATION_PARAMS *pUserParams = pHwAlloc->pUserParams;
 
     // Ensure a valid allocation type was passed in
@@ -3790,7 +3790,7 @@ _heapAllocNoncontig
     NvU32       pteIndexOffset = 0, i = 0;
     NvU32       blockId = 0;
     NV_STATUS   status = NV_OK;
-    NvU32       pageSize = 0;
+    NvU64       pageSize = 0;
     NvS64       numPagesLeft;
     MEM_BLOCK  *pCurrBlock;
     MEM_BLOCK  *pNextBlock;
@@ -3838,7 +3838,7 @@ _heapAllocNoncontig
     //
     numPagesLeft = RM_ALIGN_UP(pAllocData->allocSize, pageSize) / pageSize;
     NV_PRINTF(LEVEL_INFO,
-              "pageSize: 0x%x, numPagesLeft: 0x%llx, allocSize: 0x%llx\n",
+              "pageSize: 0x%llx, numPagesLeft: 0x%llx, allocSize: 0x%llx\n",
               pageSize / 1024, numPagesLeft, pAllocData->allocSize);
 
     for (pCurrBlock = pHeap->pNoncontigFreeBlockList;

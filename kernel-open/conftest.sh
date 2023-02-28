@@ -8,19 +8,11 @@ cd $SCRIPTDIR
 
 CC="$1"
 ARCH=$2
-ISYSTEM=`$CC -print-file-name=include 2> /dev/null`
 SOURCES=$3
 HEADERS=$SOURCES/include
 OUTPUT=$4
 XEN_PRESENT=1
 PREEMPT_RT_PRESENT=0
-KERNEL_ARCH="$ARCH"
-
-if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]; then
-    if [ -d "$SOURCES/arch/x86" ]; then
-        KERNEL_ARCH="x86"
-    fi
-fi
 
 # VGX_BUILD parameter defined only for VGX builds (vGPU Host driver)
 # VGX_KVM_BUILD parameter defined only vGPU builds on KVM hypervisor
@@ -69,16 +61,10 @@ test_header_presence() {
     # NV_LINUX_FENCE_H_PRESENT, and that is either defined or undefined, in the
     # output (which goes to stdout, just like the rest of this file).
 
-    # -MG or -MD can interfere with the use of -M and -M -MG for testing file
-    # existence; filter out any occurrences from CFLAGS. CFLAGS is intentionally
-    # wrapped with whitespace in the input to sed(1) so the regex can match zero
-    # or more occurrences of "-MD" or "-MG", surrounded by whitespace to avoid
-    # accidental matches with tokens that happen to contain either of those
-    # strings, without special handling of the beginning or the end of the line.
-    TEST_CFLAGS=`echo "-E -M $CFLAGS " | sed -e 's/\( -M[DG]\)* / /g'`
+    TEST_CFLAGS="-E -M $CFLAGS"
 
     file="$1"
-    file_define=NV_`echo $file | tr '/.' '_' | tr '-' '_' | tr 'a-z' 'A-Z'`_PRESENT
+    file_define=NV_`echo $file | tr '/.\-a-z' '___A-Z'`_PRESENT
 
     CODE="#include <$file>"
 
@@ -99,6 +85,7 @@ test_header_presence() {
 }
 
 build_cflags() {
+    ISYSTEM=`$CC -print-file-name=include 2> /dev/null`
     BASE_CFLAGS="-O2 -D__KERNEL__ \
 -DKBUILD_BASENAME=\"#conftest$$\" -DKBUILD_MODNAME=\"#conftest$$\" \
 -nostdinc -isystem $ISYSTEM \
@@ -123,6 +110,14 @@ build_cflags() {
 
     if [ "$XEN_PRESENT" != "0" ]; then
         MACH_CFLAGS="-I$HEADERS/asm/mach-xen"
+    fi
+
+    KERNEL_ARCH="$ARCH"
+
+    if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]; then
+        if [ -d "$SOURCES/arch/x86" ]; then
+            KERNEL_ARCH="x86"
+        fi
     fi
 
     SOURCE_HEADERS="$HEADERS"
@@ -762,24 +757,6 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_VFIO_INFO_ADD_CAPABILITY_HAS_CAP_TYPE_ID_ARGS" "" "types"
-        ;;
-
-        vmbus_channel_has_ringbuffer_page)
-            #
-            # Check if ringbuffer_page field exist in vmbus_channel structure
-            #
-            # Changed in commit 52a42c2a90226dc61c99bbd0cb096deeb52c334b
-            # ("vmbus: keep pointer to ring buffer page") in v5.0 (2018-09-14)
-            #
-
-            CODE="
-            #include <linux/hyperv.h>
-
-            int conftest_vmbus_channel_has_ringbuffer_page(void) {
-                    return offsetof(struct vmbus_channel, ringbuffer_page);
-            }"
-
-            compile_check_conftest "$CODE" "NV_VMBUS_CHANNEL_HAS_RING_BUFFER_PAGE" "" "types"
         ;;
 
         nvidia_grid_build)
@@ -2691,6 +2668,24 @@ compile_test() {
             fi
         ;;
 
+        enable_apicv)
+            #
+            # Determine if enable_apicv boolean is exported by kernel.
+            #
+            # Added by commit fdf513e37a3bd ("KVM: x86: Use common 'enable_apicv'
+            # variable for both APICv and AVIC")
+            #
+            CODE="
+            $CONFTEST_PREAMBLE
+            #include <asm/kvm_host.h>
+
+            bool is_enable_apicv_present() {
+                return enable_apicv;
+            }"
+
+            compile_check_conftest "$CODE" "NV_ENABLE_APICV_PRESENT" "" "types"
+        ;;
+
         pci_driver_has_driver_managed_dma)
             #
             # Determine if "struct pci_driver" has .driver_managed_dma member.
@@ -2772,6 +2767,63 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_MASTER_DROP_HAS_FROM_RELEASE_ARG" "" "types"
+        ;;
+
+        drm_master_has_leases)
+            #
+            # Determine if drm_master has 'leases', 'lessor', 'lessee_idr' fields.
+            # Also checks for struct drm_mode_revoke_lease.
+            #
+            # Added by commits 2ed077e467ee ("drm: Add drm_object lease infrastructure [v5]")
+            # and 62884cd386b8 ("drm: Add four ioctls for managing drm mode object leases [v7]")
+            # in v4.15 (2017-10-24)
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+            #if defined(NV_DRM_DRM_AUTH_H_PRESENT)
+            #include <drm/drm_auth.h>
+            #endif
+            #include <uapi/drm/drm_mode.h>
+
+            int conftest_drm_master_leases(void) {
+                return offsetof(struct drm_master, leases);
+            }
+            int conftest_drm_master_lessor(void) {
+                return offsetof(struct drm_master, lessor);
+            }
+            int conftest_drm_master_lessee_idr(void) {
+                return offsetof(struct drm_master, lessee_idr);
+            }
+            int conftest_drm_mode_revoke_lease(void) {
+                return offsetof(struct drm_mode_revoke_lease, lessee_id);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_MASTER_HAS_LEASES" "" "types"
+        ;;
+
+        drm_file_get_master)
+            #
+            # Determine if function drm_file_get_master() is present.
+            #
+            # Added by commit 56f0729a510f ("drm: protect drm_master pointers in drm_lease.c")
+            # in v5.15 (2021-07-20)
+            #
+
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+            #if defined(NV_DRM_DRM_AUTH_H_PRESENT)
+            #include <drm/drm_auth.h>
+            #endif
+
+            void conftest_drm_file_get_master(void) {
+                drm_file_get_master();
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_FILE_GET_MASTER_PRESENT" "" "functions"
         ;;
 
         drm_connector_lookup)
@@ -3819,6 +3871,40 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_TEGRA_BPMP_SEND_RECEIVE" "" "functions"
         ;;
 
+        cmd_uphy_display_port_init)
+            #
+            # Determine if CMD_UPHY_DISPLAY_PORT_INIT enum present in bpmp-abi header
+            # This enum is used only in Tegra down-stream kernel.
+            #
+            CODE="
+            #include <stdint.h>
+            #include <soc/tegra/bpmp-abi.h>
+
+            int conftest_cmd_uphy_display_port_init(void) {
+                return CMD_UPHY_DISPLAY_PORT_INIT;
+            }
+            "
+            compile_check_conftest "$CODE" "NV_CMD_UPHY_DISPLAY_PORT_INIT_PRESENT" "" "generic"
+
+        ;;
+
+        cmd_uphy_display_port_off)
+            #
+            # Determine if CMD_UPHY_DISPLAY_PORT_OFF enum present in bpmp-abi header
+            # This enum is used only in Tegra down-stream kernel.
+            #
+            CODE="
+            #include <stdint.h>
+            #include <soc/tegra/bpmp-abi.h>
+
+            int conftest_cmd_uphy_display_port_off(void) {
+                return CMD_UPHY_DISPLAY_PORT_OFF;
+            }
+            "
+            compile_check_conftest "$CODE" "NV_CMD_UPHY_DISPLAY_PORT_OFF_PRESENT" "" "generic"
+
+        ;;
+
         drm_alpha_blending_available)
             #
             # Determine if the DRM subsystem supports alpha blending
@@ -4744,6 +4830,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_REMOVE_MEMORY_HAS_NID_ARG" "" "types"
         ;;
 
+        offline_and_remove_memory)
+            #
+            # Determine if the offline_and_remove_memory function is present.
+            #
+            # Added by commit 08b3acd7a68fc179 ("mm/memory_hotplug: Introduce
+            # offline_and_remove_memory()") in v5.8-rc1 (2020-06-05)
+            #
+            CODE="
+            #include <linux/memory_hotplug.h>
+            void conftest_offline_and_remove_memory() {
+                offline_and_remove_memory();
+            }"
+
+            compile_check_conftest "$CODE" "NV_OFFLINE_AND_REMOVE_MEMORY_PRESENT" "" "functions"
+        ;;
 
         device_property_read_u64)
             #
@@ -4822,6 +4923,38 @@ compile_test() {
                 compile_check_conftest "$CODE" "NV_OF_PROPERTY_READ_VARIABLE_U8_ARRAY_PRESENT" "" "functions"
             else
                 echo "#undef NV_OF_PROPERTY_READ_VARIABLE_U8_ARRAY_PRESENT" | append_conftest "functions"
+            fi
+        ;;
+
+        of_property_read_variable_u32_array)
+            #
+            # Determine if of_property_read_variable_u32_array is present
+            #
+            # Added by commit 1df09bcof (" Move OF property and graph API from
+            # base.c to property.c"
+            #
+            # Test if linux/of.h header file inclusion is successful or not,
+            # depending on that, check for of_property_read_variable_u32_array
+            # presence
+            #
+            echo "$CONFTEST_PREAMBLE
+            #include <linux/of.h>
+            " > conftest$$.c
+
+            $CC $CFLAGS -c conftest$$.c > /dev/null 2>&1
+            rm -f conftest$$.c
+
+            if [ -f conftest$$.o ]; then
+                rm -f conftest$$.o
+                CODE="
+                #include <linux/of.h>
+                void conftest_of_property_read_variable_u32_array() {
+                    of_property_read_variable_u32_array();
+                }"
+
+                compile_check_conftest "$CODE" "NV_OF_PROPERTY_READ_VARIABLE_U32_ARRAY_PRESENT" "" "functions"
+            else
+                echo "#undef NV_OF_PROPERTY_READ_VARIABLE_U32_ARRAY_PRESENT" | append_conftest "functions"
             fi
         ;;
 
@@ -5168,6 +5301,22 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MAKE_DEVICE_EXCLUSIVE_RANGE_PRESENT" "" "functions"
         ;;
 
+        migrate_device_range)
+            #
+            # Determine if the migrate_device_range() function is present
+            #
+            # migrate_device_range() function was added by commit
+            # e778406b40dbb ("mm/migrate_device.c: add migrate_device_range()")
+            # in v6.1 (2022-09-28).
+            CODE="
+            #include <linux/migrate.h>
+            int conftest_migrate_device_range(void) {
+                migrate_device_range();
+            }"
+
+            compile_check_conftest "$CODE" "NV_MIGRATE_DEVICE_RANGE_PRESENT" "" "functions"
+        ;;
+
         ioasid_get)
             #
             # Determine if ioasid_get() function is present
@@ -5184,6 +5333,25 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_IOASID_GET_PRESENT" "" "functions"
+        ;;
+
+        mm_pasid_set)
+            #
+            # Determine if mm_pasid_set() function is present
+            #
+            # mm_pasid_set() function was added by commit
+            # 701fac40384f07197b106136012804c3cae0b3de (iommu/sva: Assign a
+            # PASID to mm on PASID allocation and free it on mm exit) in v5.18.
+            # (2022-02-15).
+            CODE="
+            #if defined(NV_LINUX_SCHED_MM_H_PRESENT)
+            #include <linux/sched/mm.h>
+            #endif
+            void conftest_mm_pasid_set(void) {
+                mm_pasid_set();
+            }"
+
+            compile_check_conftest "$CODE" "NV_MM_PASID_SET_PRESENT" "" "functions"
         ;;
 
         drm_crtc_state_has_no_vblank)
@@ -5453,6 +5621,22 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE" "" "functions"
         ;;
 
+        pci_rebar_get_possible_sizes)
+            #
+            # Determine if the pci_rebar_get_possible_sizes() function is present.
+            #
+            # Added by commit 8fbdbb66f8c10 ("PCI: Add resizable BAR infrastructure
+            # ") in v5.12
+            #
+            CODE="
+            #include <linux/pci.h>
+            void conftest_pci_rebar_get_possible_sizes(void) {
+                pci_rebar_get_possible_sizes();
+            }"
+
+            compile_check_conftest "$CODE" "NV_PCI_REBAR_GET_POSSIBLE_SIZES_PRESENT" "" "functions"
+        ;;
+
         drm_connector_has_override_edid)
             #
             # Determine if 'struct drm_connector' has an 'override_edid' member.
@@ -5473,6 +5657,27 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HAS_OVERRIDE_EDID" "" "types"
+        ;;
+
+        iommu_sva_bind_device_has_drvdata_arg)
+            #
+            # Check if iommu_sva_bind_device() has drvdata parameter.
+            #
+            # Removed by commit be51b1d6bbff48c7d1943a8ff1e5a55777807f6e
+            # ("iommu/sva: Refactoring iommu_sva_bind/unbind_device()")
+            # in v6.2 (2022-10-31)
+            #
+            CODE="
+            #include <linux/iommu.h>
+            #include <linux/mm_types.h>
+            #include <linux/device.h>
+            void conftest_iommu_sva_bind_device_has_drvdata_arg(struct device *dev,
+                                                                struct mm_struct *mm,
+                                                                void *drvdata) {
+                (void) iommu_sva_bind_device(dev, mm, drvdata);
+            }"
+
+            compile_check_conftest "$CODE" "NV_IOMMU_SVA_BIND_DEVICE_HAS_DRVDATA_ARG" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for
@@ -5743,10 +5948,6 @@ case "$5" in
 
         for i in $*; do compile_test $i; done
 
-        for file in conftest*.d; do
-            rm -f $file > /dev/null 2>&1
-        done
-
         exit 0
     ;;
 
@@ -5881,10 +6082,6 @@ case "$5" in
         CFLAGS=$6
 
         test_header_presence "${7}"
-
-        for file in conftest*.d; do
-            rm -f $file > /dev/null 2>&1
-        done
 
         exit $?
     ;;

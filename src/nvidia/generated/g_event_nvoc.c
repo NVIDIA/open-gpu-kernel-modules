@@ -124,12 +124,15 @@ NV_STATUS __nvoc_objCreate_NotifShare(NotifShare **ppThis, Dynamic *pParent, NvU
     Object *pParentObj;
     NotifShare *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(NotifShare));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(NotifShare), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(NotifShare));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_NotifShare);
+
+    pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -146,11 +149,17 @@ NV_STATUS __nvoc_objCreate_NotifShare(NotifShare **ppThis, Dynamic *pParent, NvU
     if (status != NV_OK) goto __nvoc_objCreate_NotifShare_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_NotifShare_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(NotifShare));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 
@@ -271,8 +280,12 @@ static void __nvoc_thunk_RsResource_eventAddAdditionalDependants(struct RsClient
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset), pReference);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_eventUnmap(struct Event *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
-    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset), pCallContext, pCpuMapping);
+static NV_STATUS __nvoc_thunk_RsResource_eventUnmapFrom(struct Event *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_eventControlSerialization_Prologue(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RmResource_eventControl_Prologue(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -283,20 +296,24 @@ static NvBool __nvoc_thunk_RsResource_eventCanCopy(struct Event *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_eventMapTo(struct Event *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RsResource_eventUnmap(struct Event *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+    return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset), pCallContext, pCpuMapping);
 }
 
 static void __nvoc_thunk_RsResource_eventPreDestruct(struct Event *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_eventUnmapFrom(struct Event *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RsResource_eventMapTo(struct Event *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_eventIsDuplicate(struct Event *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_eventControlSerialization_Epilogue(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Event_RmResource.offset), pCallContext, pParams);
 }
 
 static void __nvoc_thunk_RmResource_eventControl_Epilogue(struct Event *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
@@ -370,19 +387,23 @@ static void __nvoc_init_funcTable_Event_1(Event *pThis) {
 
     pThis->__eventAddAdditionalDependants__ = &__nvoc_thunk_RsResource_eventAddAdditionalDependants;
 
-    pThis->__eventUnmap__ = &__nvoc_thunk_RsResource_eventUnmap;
+    pThis->__eventUnmapFrom__ = &__nvoc_thunk_RsResource_eventUnmapFrom;
+
+    pThis->__eventControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_eventControlSerialization_Prologue;
 
     pThis->__eventControl_Prologue__ = &__nvoc_thunk_RmResource_eventControl_Prologue;
 
     pThis->__eventCanCopy__ = &__nvoc_thunk_RsResource_eventCanCopy;
 
-    pThis->__eventMapTo__ = &__nvoc_thunk_RsResource_eventMapTo;
+    pThis->__eventUnmap__ = &__nvoc_thunk_RsResource_eventUnmap;
 
     pThis->__eventPreDestruct__ = &__nvoc_thunk_RsResource_eventPreDestruct;
 
-    pThis->__eventUnmapFrom__ = &__nvoc_thunk_RsResource_eventUnmapFrom;
+    pThis->__eventMapTo__ = &__nvoc_thunk_RsResource_eventMapTo;
 
     pThis->__eventIsDuplicate__ = &__nvoc_thunk_RsResource_eventIsDuplicate;
+
+    pThis->__eventControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_eventControlSerialization_Epilogue;
 
     pThis->__eventControl_Epilogue__ = &__nvoc_thunk_RmResource_eventControl_Epilogue;
 
@@ -413,12 +434,15 @@ NV_STATUS __nvoc_objCreate_Event(Event **ppThis, Dynamic *pParent, NvU32 createF
     Object *pParentObj;
     Event *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(Event));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(Event), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(Event));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_Event);
+
+    pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -435,11 +459,17 @@ NV_STATUS __nvoc_objCreate_Event(Event **ppThis, Dynamic *pParent, NvU32 createF
     if (status != NV_OK) goto __nvoc_objCreate_Event_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_Event_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(Event));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

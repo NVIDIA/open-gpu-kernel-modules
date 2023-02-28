@@ -121,10 +121,11 @@ struct KernelHostVgpuDeviceApi {
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdEventSetNotification__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_EVENT_SET_NOTIFICATION_PARAMS *);
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetSriovState__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_SRIOV_STATE_PARAMS *);
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetGuestId__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_GUEST_ID_PARAMS *);
+    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *);
     NvBool (*__kernelhostvgpudeviceapiShareCallback__)(struct KernelHostVgpuDeviceApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__kernelhostvgpudeviceapiMapTo__)(struct KernelHostVgpuDeviceApi *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__kernelhostvgpudeviceapiGetOrAllocNotifShare__)(struct KernelHostVgpuDeviceApi *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__kernelhostvgpudeviceapiCheckMemInterUnmap__)(struct KernelHostVgpuDeviceApi *, NvBool);
+    NV_STATUS (*__kernelhostvgpudeviceapiGetOrAllocNotifShare__)(struct KernelHostVgpuDeviceApi *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__kernelhostvgpudeviceapiMapTo__)(struct KernelHostVgpuDeviceApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__kernelhostvgpudeviceapiGetMapAddrSpace__)(struct KernelHostVgpuDeviceApi *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__kernelhostvgpudeviceapiSetNotificationShare__)(struct KernelHostVgpuDeviceApi *, struct NotifShare *);
     NvU32 (*__kernelhostvgpudeviceapiGetRefCount__)(struct KernelHostVgpuDeviceApi *);
@@ -142,8 +143,10 @@ struct KernelHostVgpuDeviceApi {
     NV_STATUS (*__kernelhostvgpudeviceapiGetMemoryMappingDescriptor__)(struct KernelHostVgpuDeviceApi *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__kernelhostvgpudeviceapiControlFilter__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kernelhostvgpudeviceapiUnregisterEvent__)(struct KernelHostVgpuDeviceApi *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__kernelhostvgpudeviceapiControlSerialization_Prologue__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__kernelhostvgpudeviceapiPreDestruct__)(struct KernelHostVgpuDeviceApi *);
     NV_STATUS (*__kernelhostvgpudeviceapiIsDuplicate__)(struct KernelHostVgpuDeviceApi *, NvHandle, NvBool *);
+    void (*__kernelhostvgpudeviceapiControlSerialization_Epilogue__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__kernelhostvgpudeviceapiGetNotificationListPtr__)(struct KernelHostVgpuDeviceApi *);
     struct NotifShare *(*__kernelhostvgpudeviceapiGetNotificationShare__)(struct KernelHostVgpuDeviceApi *);
     NV_STATUS (*__kernelhostvgpudeviceapiMap__)(struct KernelHostVgpuDeviceApi *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
@@ -190,10 +193,11 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dy
 #define kernelhostvgpudeviceapiCtrlCmdEventSetNotification(pKernelHostVgpuDeviceApi, pSetEventParams) kernelhostvgpudeviceapiCtrlCmdEventSetNotification_DISPATCH(pKernelHostVgpuDeviceApi, pSetEventParams)
 #define kernelhostvgpudeviceapiCtrlCmdSetSriovState(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetSriovState_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
 #define kernelhostvgpudeviceapiCtrlCmdSetGuestId(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetGuestId_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
+#define kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
 #define kernelhostvgpudeviceapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kernelhostvgpudeviceapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define kernelhostvgpudeviceapiMapTo(pResource, pParams) kernelhostvgpudeviceapiMapTo_DISPATCH(pResource, pParams)
-#define kernelhostvgpudeviceapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) kernelhostvgpudeviceapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define kernelhostvgpudeviceapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) kernelhostvgpudeviceapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define kernelhostvgpudeviceapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) kernelhostvgpudeviceapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define kernelhostvgpudeviceapiMapTo(pResource, pParams) kernelhostvgpudeviceapiMapTo_DISPATCH(pResource, pParams)
 #define kernelhostvgpudeviceapiGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) kernelhostvgpudeviceapiGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
 #define kernelhostvgpudeviceapiSetNotificationShare(pNotifier, pNotifShare) kernelhostvgpudeviceapiSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define kernelhostvgpudeviceapiGetRefCount(pResource) kernelhostvgpudeviceapiGetRefCount_DISPATCH(pResource)
@@ -211,8 +215,10 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dy
 #define kernelhostvgpudeviceapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kernelhostvgpudeviceapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define kernelhostvgpudeviceapiControlFilter(pResource, pCallContext, pParams) kernelhostvgpudeviceapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define kernelhostvgpudeviceapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) kernelhostvgpudeviceapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define kernelhostvgpudeviceapiControlSerialization_Prologue(pResource, pCallContext, pParams) kernelhostvgpudeviceapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define kernelhostvgpudeviceapiPreDestruct(pResource) kernelhostvgpudeviceapiPreDestruct_DISPATCH(pResource)
 #define kernelhostvgpudeviceapiIsDuplicate(pResource, hMemory, pDuplicate) kernelhostvgpudeviceapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define kernelhostvgpudeviceapiControlSerialization_Epilogue(pResource, pCallContext, pParams) kernelhostvgpudeviceapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define kernelhostvgpudeviceapiGetNotificationListPtr(pNotifier) kernelhostvgpudeviceapiGetNotificationListPtr_DISPATCH(pNotifier)
 #define kernelhostvgpudeviceapiGetNotificationShare(pNotifier) kernelhostvgpudeviceapiGetNotificationShare_DISPATCH(pNotifier)
 #define kernelhostvgpudeviceapiMap(pGpuResource, pCallContext, pParams, pCpuMapping) kernelhostvgpudeviceapiMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
@@ -277,20 +283,26 @@ static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetGuestId_DISPATCH(struct
     return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetGuestId__(pKernelHostVgpuDeviceApi, pParams);
 }
 
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *pParams);
+
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *pParams) {
+    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__(pKernelHostVgpuDeviceApi, pParams);
+}
+
 static inline NvBool kernelhostvgpudeviceapiShareCallback_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pGpuResource->__kernelhostvgpudeviceapiShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS kernelhostvgpudeviceapiMapTo_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__kernelhostvgpudeviceapiMapTo__(pResource, pParams);
+static inline NV_STATUS kernelhostvgpudeviceapiCheckMemInterUnmap_DISPATCH(struct KernelHostVgpuDeviceApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__kernelhostvgpudeviceapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiGetOrAllocNotifShare_DISPATCH(struct KernelHostVgpuDeviceApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__kernelhostvgpudeviceapiGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS kernelhostvgpudeviceapiCheckMemInterUnmap_DISPATCH(struct KernelHostVgpuDeviceApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__kernelhostvgpudeviceapiCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS kernelhostvgpudeviceapiMapTo_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__kernelhostvgpudeviceapiMapTo__(pResource, pParams);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiGetMapAddrSpace_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -361,12 +373,20 @@ static inline NV_STATUS kernelhostvgpudeviceapiUnregisterEvent_DISPATCH(struct K
     return pNotifier->__kernelhostvgpudeviceapiUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS kernelhostvgpudeviceapiControlSerialization_Prologue_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__kernelhostvgpudeviceapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline void kernelhostvgpudeviceapiPreDestruct_DISPATCH(struct KernelHostVgpuDeviceApi *pResource) {
     pResource->__kernelhostvgpudeviceapiPreDestruct__(pResource);
 }
 
 static inline NV_STATUS kernelhostvgpudeviceapiIsDuplicate_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__kernelhostvgpudeviceapiIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void kernelhostvgpudeviceapiControlSerialization_Epilogue_DISPATCH(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__kernelhostvgpudeviceapiControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *kernelhostvgpudeviceapiGetNotificationListPtr_DISPATCH(struct KernelHostVgpuDeviceApi *pNotifier) {

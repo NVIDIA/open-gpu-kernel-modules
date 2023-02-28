@@ -82,20 +82,26 @@ typedef struct uvm_va_policy_node_struct
 } uvm_va_policy_node_t;
 
 // Function pointer prototype for uvm_hmm_split_as_needed() callback.
-typedef bool (*uvm_va_policy_is_split_needed_t)(uvm_va_policy_t *policy, void *data);
+typedef bool (*uvm_va_policy_is_split_needed_t)(const uvm_va_policy_t *policy, void *data);
 
 // Default policy to save uvm_va_policy_node_t space in HMM va_blocks.
-extern uvm_va_policy_t uvm_va_policy_default;
+extern const uvm_va_policy_t uvm_va_policy_default;
 
-bool uvm_va_policy_is_read_duplicate(uvm_va_policy_t *policy, uvm_va_space_t *va_space);
+// Return true if policy is the default policy.
+static bool uvm_va_policy_is_default(const uvm_va_policy_t *policy)
+{
+    return policy == &uvm_va_policy_default;
+}
+
+bool uvm_va_policy_is_read_duplicate(const uvm_va_policy_t *policy, uvm_va_space_t *va_space);
 
 // Returns the uvm_va_policy_t containing addr or default policy if not found.
 // The va_block can be either a UVM or HMM va_block.
 // Locking: The va_block lock must be held.
-uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr);
+const uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr);
 
 // Return a uvm_va_policy_node_t given a uvm_va_policy_t pointer.
-static uvm_va_policy_node_t *uvm_va_policy_node_from_policy(uvm_va_policy_t *policy)
+static const uvm_va_policy_node_t *uvm_va_policy_node_from_policy(const uvm_va_policy_t *policy)
 {
     return container_of(policy, uvm_va_policy_node_t, policy);
 }
@@ -151,6 +157,17 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
                                   uvm_processor_id_t processor_id,
                                   uvm_read_duplication_policy_t new_policy);
 
+// This is an optimized version of uvm_va_policy_set_range() where the caller
+// guarantees that the the processor_id is not the same as the existing
+// policy for the given region and that the region doesn't require splitting
+// the existing policy node 'old_policy'.
+// Returns the updated policy or NULL if memory could not be allocated.
+// Locking: The va_block lock must be held.
+const uvm_va_policy_t *uvm_va_policy_set_preferred_location(uvm_va_block_t *va_block,
+                                                            uvm_va_block_region_t region,
+                                                            uvm_processor_id_t processor_id,
+                                                            const uvm_va_policy_t *old_policy);
+
 // Iterators for specific VA policy ranges.
 
 // Returns the first policy node in the range [start, end], if any.
@@ -177,20 +194,20 @@ uvm_va_policy_node_t *uvm_va_policy_node_iter_next(uvm_va_block_t *va_block, uvm
 
 // Returns the first policy in the range [start, end], if any.
 // Locking: The va_block lock must be held.
-uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
-                                          NvU64 start,
-                                          NvU64 end,
-                                          uvm_va_policy_node_t **out_node,
-                                          uvm_va_block_region_t *out_region);
+const uvm_va_policy_t *uvm_va_policy_iter_first(uvm_va_block_t *va_block,
+                                                NvU64 start,
+                                                NvU64 end,
+                                                uvm_va_policy_node_t **out_node,
+                                                uvm_va_block_region_t *out_region);
 
 // Returns the next VA policy following the provided policy in address order,
 // if that policy's start <= the provided end.
 // Locking: The va_block lock must be held.
-uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
-                                         uvm_va_policy_t *policy,
-                                         NvU64 end,
-                                         uvm_va_policy_node_t **inout_node,
-                                         uvm_va_block_region_t *inout_region);
+const uvm_va_policy_t *uvm_va_policy_iter_next(uvm_va_block_t *va_block,
+                                               const uvm_va_policy_t *policy,
+                                               NvU64 end,
+                                               uvm_va_policy_node_t **inout_node,
+                                               uvm_va_block_region_t *inout_region);
 
 // Note that policy and region are set and usable in the loop body.
 // The 'node' variable is used to retain loop state and 'policy' doesn't

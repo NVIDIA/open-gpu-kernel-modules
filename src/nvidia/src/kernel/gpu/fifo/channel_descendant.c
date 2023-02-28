@@ -282,7 +282,7 @@ NV_STATUS
 chandesGetSwMethods_IMPL
 (
     ChannelDescendant *pChannelDescendant,
-    METHOD           **ppMethods,
+    const METHOD     **ppMethods,
     NvU32             *pNumMethods
 )
 {
@@ -301,7 +301,6 @@ NV_STATUS mthdNoOperation
 (
     OBJGPU *pGpu,
     ChannelDescendant *Object,
-    PMETHOD Method,
     NvU32   Offset,
     NvU32   Data
 )

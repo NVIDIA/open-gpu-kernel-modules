@@ -123,16 +123,16 @@ static NvBool __nvoc_thunk_GpuResource_diagapiShareCallback(struct DiagApi *pGpu
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DiagApi_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_diagapiMapTo(struct DiagApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DiagApi_RsResource.offset), pParams);
+static NV_STATUS __nvoc_thunk_RmResource_diagapiCheckMemInterUnmap(struct DiagApi *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DiagApi_RmResource.offset), bSubdeviceHandleProvided);
 }
 
 static NV_STATUS __nvoc_thunk_Notifier_diagapiGetOrAllocNotifShare(struct DiagApi *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return notifyGetOrAllocNotifShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DiagApi_Notifier.offset), hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static NV_STATUS __nvoc_thunk_RmResource_diagapiCheckMemInterUnmap(struct DiagApi *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_DiagApi_RmResource.offset), bSubdeviceHandleProvided);
+static NV_STATUS __nvoc_thunk_RsResource_diagapiMapTo(struct DiagApi *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DiagApi_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_diagapiGetMapAddrSpace(struct DiagApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
@@ -195,6 +195,10 @@ static NV_STATUS __nvoc_thunk_Notifier_diagapiUnregisterEvent(struct DiagApi *pN
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_DiagApi_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_diagapiControlSerialization_Prologue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DiagApi_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_diagapiCanCopy(struct DiagApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DiagApi_RsResource.offset));
 }
@@ -205,6 +209,10 @@ static void __nvoc_thunk_RsResource_diagapiPreDestruct(struct DiagApi *pResource
 
 static NV_STATUS __nvoc_thunk_RsResource_diagapiIsDuplicate(struct DiagApi *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DiagApi_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_diagapiControlSerialization_Epilogue(struct DiagApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DiagApi_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_diagapiGetNotificationListPtr(struct DiagApi *pNotifier) {
@@ -534,11 +542,11 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
 
     pThis->__diagapiShareCallback__ = &__nvoc_thunk_GpuResource_diagapiShareCallback;
 
-    pThis->__diagapiMapTo__ = &__nvoc_thunk_RsResource_diagapiMapTo;
+    pThis->__diagapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_diagapiCheckMemInterUnmap;
 
     pThis->__diagapiGetOrAllocNotifShare__ = &__nvoc_thunk_Notifier_diagapiGetOrAllocNotifShare;
 
-    pThis->__diagapiCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_diagapiCheckMemInterUnmap;
+    pThis->__diagapiMapTo__ = &__nvoc_thunk_RsResource_diagapiMapTo;
 
     pThis->__diagapiGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_diagapiGetMapAddrSpace;
 
@@ -570,11 +578,15 @@ static void __nvoc_init_funcTable_DiagApi_1(DiagApi *pThis) {
 
     pThis->__diagapiUnregisterEvent__ = &__nvoc_thunk_Notifier_diagapiUnregisterEvent;
 
+    pThis->__diagapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_diagapiControlSerialization_Prologue;
+
     pThis->__diagapiCanCopy__ = &__nvoc_thunk_RsResource_diagapiCanCopy;
 
     pThis->__diagapiPreDestruct__ = &__nvoc_thunk_RsResource_diagapiPreDestruct;
 
     pThis->__diagapiIsDuplicate__ = &__nvoc_thunk_RsResource_diagapiIsDuplicate;
+
+    pThis->__diagapiControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_diagapiControlSerialization_Epilogue;
 
     pThis->__diagapiGetNotificationListPtr__ = &__nvoc_thunk_Notifier_diagapiGetNotificationListPtr;
 
@@ -610,12 +622,15 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi **ppThis, Dynamic *pParent, NvU32 cre
     Object *pParentObj;
     DiagApi *pThis;
 
-    pThis = portMemAllocNonPaged(sizeof(DiagApi));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DiagApi), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(DiagApi));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DiagApi);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -632,11 +647,17 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi **ppThis, Dynamic *pParent, NvU32 cre
     if (status != NV_OK) goto __nvoc_objCreate_DiagApi_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_DiagApi_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(DiagApi));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

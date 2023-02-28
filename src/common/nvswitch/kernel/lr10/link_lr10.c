@@ -872,7 +872,7 @@ nvswitch_corelib_set_dl_link_mode_lr10
                 NVSWITCH_PRINT(device, ERROR,
                     "%s: link #%d is still in reset, cannot change link state\n",
                     __FUNCTION__, link->linkNumber);
-                return -NVL_ERR_INVALID_STATE;
+                return NVL_ERR_INVALID_STATE;
             }
 
             val = NVSWITCH_LINK_RD32_LR10(device, link->linkNumber, NVLDL, _NVLDL_TOP, _LINK_STATE);

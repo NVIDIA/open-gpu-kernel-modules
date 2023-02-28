@@ -130,13 +130,14 @@ struct TMR_EVENT_PVT
     TMR_EVENT           super;
 
     // Legacy Fields, soon to be obsoleted.
-    NvBool              bLegacy;    //<! Used to mark legacy mode, controls which of the
-                                    //<! two callbacks will called.
+    NvBool              bLegacy;     //<! Used to mark legacy mode, controls which of the
+                                     //<! two callbacks will called.
     TIMEPROC_OBSOLETE   pTimeProc_OBSOLETE;
 
-    NvBool              bInUse;     //<! Marks this as currently used
-    NvU64               timens;     //<! Absolute time to perform callback
-    PTMR_EVENT_PVT      pNext;      //<! Next element in the list
+    NvBool              bInUse;      //<! Marks this as currently used
+    NvU64               timens;      //<! Absolute time to perform callback
+    NvU64               startTimeNs; //<! Store system time at timer callback schedule
+    PTMR_EVENT_PVT      pNext;       //<! Next element in the list
 };
 
 /*!
@@ -202,7 +203,6 @@ struct OBJTMR {
     NV_STATUS (*__tmrSetCountdown__)(OBJGPU *, struct OBJTMR *, NvU32, NvU32, struct THREAD_STATE_NODE *);
     NV_STATUS (*__tmrGrTickFreqChange__)(OBJGPU *, struct OBJTMR *, NvBool);
     NV_STATUS (*__tmrGetGpuPtimerOffset__)(OBJGPU *, struct OBJTMR *, NvU32 *, NvU32 *);
-    NV_STATUS (*__tmrReconcileTunableState__)(POBJGPU, struct OBJTMR *, void *);
     NV_STATUS (*__tmrServiceNotificationInterrupt__)(OBJGPU *, struct OBJTMR *, IntrServiceServiceNotificationInterruptArguments *);
     NV_STATUS (*__tmrStatePreLoad__)(POBJGPU, struct OBJTMR *, NvU32);
     NV_STATUS (*__tmrStatePostUnload__)(POBJGPU, struct OBJTMR *, NvU32);
@@ -210,12 +210,7 @@ struct OBJTMR {
     void (*__tmrInitMissing__)(POBJGPU, struct OBJTMR *);
     NV_STATUS (*__tmrStatePreInitLocked__)(POBJGPU, struct OBJTMR *);
     NV_STATUS (*__tmrStatePreInitUnlocked__)(POBJGPU, struct OBJTMR *);
-    NV_STATUS (*__tmrGetTunableState__)(POBJGPU, struct OBJTMR *, void *);
-    NV_STATUS (*__tmrCompareTunableState__)(POBJGPU, struct OBJTMR *, void *, void *);
-    void (*__tmrFreeTunableState__)(POBJGPU, struct OBJTMR *, void *);
     NV_STATUS (*__tmrStatePostLoad__)(POBJGPU, struct OBJTMR *, NvU32);
-    NV_STATUS (*__tmrAllocTunableState__)(POBJGPU, struct OBJTMR *, void **);
-    NV_STATUS (*__tmrSetTunableState__)(POBJGPU, struct OBJTMR *, void *);
     NvBool (*__tmrIsPresent__)(POBJGPU, struct OBJTMR *);
     NvBool PDB_PROP_TMR_USE_COUNTDOWN_TIMER_FOR_RM_CALLBACKS;
     NvBool PDB_PROP_TMR_ALARM_INTR_REMOVED_FROM_PMC_TREE;
@@ -224,6 +219,7 @@ struct OBJTMR {
     NvBool PDB_PROP_TMR_USE_POLLING_FOR_CALLBACKS;
     NvBool PDB_PROP_TMR_USE_SECOND_COUNTDOWN_TIMER_FOR_SWRL;
     PTMR_EVENT_PVT pRmActiveEventList;
+    PTMR_EVENT_PVT pRmActiveOSTimerEventList;
     PTMR_EVENT_PVT pRmCallbackFreeList_OBSOLETE;
     struct TMR_EVENT_PVT rmCallbackTable_OBSOLETE[96];
     POS1HZTIMERENTRY pOs1HzCallbackList;
@@ -305,7 +301,6 @@ NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
 #define tmrGrTickFreqChange_HAL(pGpu, pTmr, arg0) tmrGrTickFreqChange_DISPATCH(pGpu, pTmr, arg0)
 #define tmrGetGpuPtimerOffset(pGpu, pTmr, arg0, arg1) tmrGetGpuPtimerOffset_DISPATCH(pGpu, pTmr, arg0, arg1)
 #define tmrGetGpuPtimerOffset_HAL(pGpu, pTmr, arg0, arg1) tmrGetGpuPtimerOffset_DISPATCH(pGpu, pTmr, arg0, arg1)
-#define tmrReconcileTunableState(pGpu, pEngstate, pTunableState) tmrReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define tmrServiceNotificationInterrupt(pGpu, pIntrService, pParams) tmrServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define tmrStatePreLoad(pGpu, pEngstate, arg0) tmrStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define tmrStatePostUnload(pGpu, pEngstate, arg0) tmrStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -313,12 +308,7 @@ NV_STATUS __nvoc_objCreate_OBJTMR(OBJTMR**, Dynamic*, NvU32);
 #define tmrInitMissing(pGpu, pEngstate) tmrInitMissing_DISPATCH(pGpu, pEngstate)
 #define tmrStatePreInitLocked(pGpu, pEngstate) tmrStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define tmrStatePreInitUnlocked(pGpu, pEngstate) tmrStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define tmrGetTunableState(pGpu, pEngstate, pTunableState) tmrGetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define tmrCompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) tmrCompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define tmrFreeTunableState(pGpu, pEngstate, pTunableState) tmrFreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define tmrStatePostLoad(pGpu, pEngstate, arg0) tmrStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define tmrAllocTunableState(pGpu, pEngstate, ppTunableState) tmrAllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define tmrSetTunableState(pGpu, pEngstate, pTunableState) tmrSetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define tmrIsPresent(pGpu, pEngstate) tmrIsPresent_DISPATCH(pGpu, pEngstate)
 NV_STATUS tmrGetCurrentTime_IMPL(struct OBJTMR *pTmr, NvU64 *pTime);
 
@@ -742,9 +732,9 @@ static inline NV_STATUS tmrEventDestroyOSTimer(struct OBJTMR *pTmr, PTMR_EVENT p
 
 #define tmrEventDestroyOSTimer_HAL(pTmr, pEvent) tmrEventDestroyOSTimer(pTmr, pEvent)
 
-void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[163]);
+void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[166]);
 
-static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[163]) {
+static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[166]) {
     pTmr->__tmrRegisterIntrService__(pGpu, pTmr, pRecords);
 }
 
@@ -854,10 +844,6 @@ static inline NV_STATUS tmrGetGpuPtimerOffset_DISPATCH(OBJGPU *pGpu, struct OBJT
     return pTmr->__tmrGetGpuPtimerOffset__(pGpu, pTmr, arg0, arg1);
 }
 
-static inline NV_STATUS tmrReconcileTunableState_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, void *pTunableState) {
-    return pEngstate->__tmrReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS tmrServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
     return pIntrService->__tmrServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
@@ -886,28 +872,8 @@ static inline NV_STATUS tmrStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct OB
     return pEngstate->__tmrStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS tmrGetTunableState_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, void *pTunableState) {
-    return pEngstate->__tmrGetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS tmrCompareTunableState_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__tmrCompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void tmrFreeTunableState_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, void *pTunableState) {
-    pEngstate->__tmrFreeTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NV_STATUS tmrStatePostLoad_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, NvU32 arg0) {
     return pEngstate->__tmrStatePostLoad__(pGpu, pEngstate, arg0);
-}
-
-static inline NV_STATUS tmrAllocTunableState_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, void **ppTunableState) {
-    return pEngstate->__tmrAllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS tmrSetTunableState_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate, void *pTunableState) {
-    return pEngstate->__tmrSetTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NvBool tmrIsPresent_DISPATCH(POBJGPU pGpu, struct OBJTMR *pEngstate) {
@@ -1102,6 +1068,17 @@ static inline NvBool tmrEventOnList(struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
 }
 #else //__nvoc_objtmr_h_disabled
 #define tmrEventOnList(pTmr, pEvent) tmrEventOnList_IMPL(pTmr, pEvent)
+#endif //__nvoc_objtmr_h_disabled
+
+NV_STATUS tmrEventServiceTimer_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, PTMR_EVENT pEvent);
+
+#ifdef __nvoc_objtmr_h_disabled
+static inline NV_STATUS tmrEventServiceTimer(OBJGPU *pGpu, struct OBJTMR *pTmr, PTMR_EVENT pEvent) {
+    NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_objtmr_h_disabled
+#define tmrEventServiceTimer(pGpu, pTmr, pEvent) tmrEventServiceTimer_IMPL(pGpu, pTmr, pEvent)
 #endif //__nvoc_objtmr_h_disabled
 
 NvBool tmrCallbackOnList_IMPL(struct OBJTMR *pTmr, TIMEPROC_OBSOLETE arg0, void *arg1);

@@ -57,7 +57,7 @@ struct SoftwareMethodTest {
     struct Notifier *__nvoc_pbase_Notifier;
     struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;
     struct SoftwareMethodTest *__nvoc_pbase_SoftwareMethodTest;
-    NV_STATUS (*__swtestGetSwMethods__)(struct SoftwareMethodTest *, METHOD **, NvU32 *);
+    NV_STATUS (*__swtestGetSwMethods__)(struct SoftwareMethodTest *, const METHOD **, NvU32 *);
     NV_STATUS (*__swtestCheckMemInterUnmap__)(struct SoftwareMethodTest *, NvBool);
     NvBool (*__swtestShareCallback__)(struct SoftwareMethodTest *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NvBool (*__swtestAccessCallback__)(struct SoftwareMethodTest *, struct RsClient *, void *, RsAccessRight);
@@ -80,9 +80,11 @@ struct SoftwareMethodTest {
     NvBool (*__swtestIsSwMethodStalling__)(struct SoftwareMethodTest *, NvU32);
     NV_STATUS (*__swtestControlFilter__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__swtestUnregisterEvent__)(struct SoftwareMethodTest *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__swtestControlSerialization_Prologue__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__swtestCanCopy__)(struct SoftwareMethodTest *);
     void (*__swtestPreDestruct__)(struct SoftwareMethodTest *);
     NV_STATUS (*__swtestIsDuplicate__)(struct SoftwareMethodTest *, NvHandle, NvBool *);
+    void (*__swtestControlSerialization_Epilogue__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__swtestGetNotificationListPtr__)(struct SoftwareMethodTest *);
     struct NotifShare *(*__swtestGetNotificationShare__)(struct SoftwareMethodTest *);
     NV_STATUS (*__swtestMap__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
@@ -140,16 +142,18 @@ NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest**, Dynamic*, Nv
 #define swtestIsSwMethodStalling(pChannelDescendant, hHandle) swtestIsSwMethodStalling_DISPATCH(pChannelDescendant, hHandle)
 #define swtestControlFilter(pResource, pCallContext, pParams) swtestControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define swtestUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) swtestUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define swtestControlSerialization_Prologue(pResource, pCallContext, pParams) swtestControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define swtestCanCopy(pResource) swtestCanCopy_DISPATCH(pResource)
 #define swtestPreDestruct(pResource) swtestPreDestruct_DISPATCH(pResource)
 #define swtestIsDuplicate(pResource, hMemory, pDuplicate) swtestIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define swtestControlSerialization_Epilogue(pResource, pCallContext, pParams) swtestControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define swtestGetNotificationListPtr(pNotifier) swtestGetNotificationListPtr_DISPATCH(pNotifier)
 #define swtestGetNotificationShare(pNotifier) swtestGetNotificationShare_DISPATCH(pNotifier)
 #define swtestMap(pGpuResource, pCallContext, pParams, pCpuMapping) swtestMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define swtestGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) swtestGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
-NV_STATUS swtestGetSwMethods_IMPL(struct SoftwareMethodTest *pSwTest, METHOD **ppMethods, NvU32 *pNumMethods);
+NV_STATUS swtestGetSwMethods_IMPL(struct SoftwareMethodTest *pSwTest, const METHOD **ppMethods, NvU32 *pNumMethods);
 
-static inline NV_STATUS swtestGetSwMethods_DISPATCH(struct SoftwareMethodTest *pSwTest, METHOD **ppMethods, NvU32 *pNumMethods) {
+static inline NV_STATUS swtestGetSwMethods_DISPATCH(struct SoftwareMethodTest *pSwTest, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pSwTest->__swtestGetSwMethods__(pSwTest, ppMethods, pNumMethods);
 }
 
@@ -241,6 +245,10 @@ static inline NV_STATUS swtestUnregisterEvent_DISPATCH(struct SoftwareMethodTest
     return pNotifier->__swtestUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS swtestControlSerialization_Prologue_DISPATCH(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__swtestControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool swtestCanCopy_DISPATCH(struct SoftwareMethodTest *pResource) {
     return pResource->__swtestCanCopy__(pResource);
 }
@@ -251,6 +259,10 @@ static inline void swtestPreDestruct_DISPATCH(struct SoftwareMethodTest *pResour
 
 static inline NV_STATUS swtestIsDuplicate_DISPATCH(struct SoftwareMethodTest *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__swtestIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void swtestControlSerialization_Epilogue_DISPATCH(struct SoftwareMethodTest *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__swtestControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *swtestGetNotificationListPtr_DISPATCH(struct SoftwareMethodTest *pNotifier) {

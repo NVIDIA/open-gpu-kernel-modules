@@ -127,18 +127,18 @@ typedef struct NV00F8_CTRL_DESCRIBE_PARAMS {
 } NV00F8_CTRL_DESCRIBE_PARAMS;
 
 /*
- *  hMemory [IN]
+ *  hMemory
  *    Physical memory handle to be attached.
  *
- *  offset [IN]
+ *  offset
  *    Offset into the fabric object.
  *    Must be physical memory pagesize aligned (at least).
  *
- *  mapOffSet [IN]
+ *  mapOffSet
  *    Offset into the physical memory descriptor.
  *    Must be physical memory pagesize aligned.
  *
- *  mapLength [IN]
+ *  mapLength
  *    Length of physical memory handle to be mapped.
  *    Must be physical memory pagesize aligned and less than or equal to
  *    fabric alloc size.
@@ -214,5 +214,58 @@ typedef struct NV00F8_CTRL_DETACH_MEM_PARAMS {
     NvU32 flags;
     NvU16 numDetached;
 } NV00F8_CTRL_DETACH_MEM_PARAMS;
+
+/*
+ * NV00F8_CTRL_CMD_GET_NUM_ATTACHED_MEM
+ *
+ * Returns number of attached physical memory info to the fabric object in
+ * a given offset range.
+ *
+ *  offsetStart [IN]
+ *    Offsets at which memory was attached.
+ *
+ *  offsetEnd [IN]
+ *    Offsets at which memory was attached.
+ *
+ *  numMemInfos [OUT]
+ *    Number of memory infos.
+ */
+#define NV00F8_CTRL_CMD_GET_NUM_ATTACHED_MEM (0xf80105) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS_MESSAGE_ID" */
+
+#define NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS_MESSAGE_ID (0x5U)
+
+typedef struct NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 offsetStart, 8);
+    NV_DECLARE_ALIGNED(NvU64 offsetEnd, 8);
+    NvU16 numMemInfos;
+} NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS;
+
+/*
+ * NV00F8_CTRL_CMD_GET_ATTACHED_MEM
+ *
+ * Queries attached physical memory info to the fabric object.
+ *
+ *  offsetStart [IN]
+ *    Offsets at which memory was attached.
+ *
+ *  numMemInfos [IN]
+ *    Number of memory infos to be filled.
+ *
+ *  memInfos [IN/OUT]
+ *    Attached memory infos.
+ *    Use must populate a non-zero `hMemory` handle. This handle will be used by
+ *    RM for duping physical memory.
+ */
+#define NV00F8_CTRL_CMD_GET_ATTACHED_MEM (0xf80106) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS_MESSAGE_ID" */
+
+#define NV00F8_MAX_ATTACHED_MEM_INFOS    64
+
+#define NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS_MESSAGE_ID (0x6U)
+
+typedef struct NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 offsetStart, 8);
+    NvU16 numMemInfos;
+    NV_DECLARE_ALIGNED(NV00F8_CTRL_ATTACH_MEM_INFO memInfos[NV00F8_MAX_ATTACHED_MEM_INFOS], 8);
+} NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS;
 
 /* _ctrl00f8_h_ */

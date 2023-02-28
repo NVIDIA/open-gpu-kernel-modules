@@ -851,11 +851,20 @@ static NvBool GrantPermissions
                                  sizeof(paramsGrant));
 }
 
-static NvBool RevokePermissions(struct NvKmsKapiDevice *device)
+static NvBool RevokePermissions
+(
+    struct NvKmsKapiDevice *device,
+    NvU32 head,
+    NvKmsKapiDisplay display
+)
 {
     struct NvKmsRevokePermissionsParams paramsRevoke = { };
+    struct NvKmsPermissions *perm = &paramsRevoke.request.permissions;
+    NvU32 dispIdx = device->dispIdx;
 
-    if (device == NULL) {
+
+    if (dispIdx >= ARRAY_LEN(perm->modeset.disp) ||
+        head >= ARRAY_LEN(perm->modeset.disp[0].head) || device == NULL) {
         return NV_FALSE;
     }
 
@@ -863,8 +872,11 @@ static NvBool RevokePermissions(struct NvKmsKapiDevice *device)
         return NV_TRUE;
     }
 
+    perm->type = NV_KMS_PERMISSIONS_TYPE_MODESET;
+    perm->modeset.disp[dispIdx].head[head].dpyIdList =
+        nvAddDpyIdToEmptyDpyIdList(nvNvU32ToDpyId(display));
+
     paramsRevoke.request.deviceHandle = device->hKmsDevice;
-    paramsRevoke.request.permissionsTypeBitmask = NVBIT(NV_KMS_PERMISSIONS_TYPE_MODESET);
 
     return nvkms_ioctl_from_kapi(device->pKmsOpen,
                                  NVKMS_IOCTL_REVOKE_PERMISSIONS, &paramsRevoke,
@@ -2315,10 +2327,9 @@ static NvBool ValidateDisplayMode
 static NvBool AssignSyncObjectConfig(
     struct NvKmsKapiDevice *device,
     const struct NvKmsKapiLayerConfig *pLayerConfig,
-    struct NvKmsChannelSyncObjects *pSyncObject,
-    NvBool bFromKmsSetMode)
+    struct NvKmsChannelSyncObjects *pSyncObject)
 {
-    if (!device->supportsSyncpts || bFromKmsSetMode) {
+    if (!device->supportsSyncpts) {
         if (pLayerConfig->syncptParams.preSyncptSpecified ||
             pLayerConfig->syncptParams.postSyncptRequested) {
             return NV_FALSE;
@@ -2468,8 +2479,7 @@ static NvBool NvKmsKapiOverlayLayerConfigToKms(
 
         ret = AssignSyncObjectConfig(device,
                                      layerConfig,
-                                     &params->layer[layer].syncObjects.val,
-                                     bFromKmsSetMode);
+                                     &params->layer[layer].syncObjects.val);
         if (ret == NV_FALSE) {
             return ret;
         }
@@ -2569,8 +2579,7 @@ static NvBool NvKmsKapiPrimaryLayerConfigToKms(
 
         ret = AssignSyncObjectConfig(device,
                                      layerConfig,
-                                     &params->layer[NVKMS_MAIN_LAYER].syncObjects.val,
-                                     bFromKmsSetMode);
+                                     &params->layer[NVKMS_MAIN_LAYER].syncObjects.val);
         if (ret == NV_FALSE) {
             return ret;
         }
@@ -2848,90 +2857,89 @@ static NvBool KmsFlip(
     struct NvKmsKapiModeSetReplyConfig *replyConfig,
     const NvBool commit)
 {
-    NvBool bChanged = NV_FALSE;
     struct NvKmsFlipParams *params = NULL;
+    struct NvKmsFlipRequestOneHead *pFlipHead = NULL;
     NvBool status = NV_TRUE;
-    NvU32 i;
+    NvU32 i, head;
 
-    params = nvKmsKapiCalloc(1, sizeof(*params));
+    /* Allocate space for the params structure, plus space for each possible
+     * head. */
+    params = nvKmsKapiCalloc(1,
+            sizeof(*params) + sizeof(pFlipHead[0]) * NVKMS_KAPI_MAX_HEADS);
 
     if (params == NULL) {
         return NV_FALSE;
     }
 
+    /* The flipHead array was allocated in the same block above. */
+    pFlipHead = (struct NvKmsFlipRequestOneHead *)(params + 1);
+
     params->request.deviceHandle = device->hKmsDevice;
     params->request.commit = commit;
     params->request.allowVrr = NV_FALSE;
+    params->request.pFlipHead = nvKmsPointerToNvU64(pFlipHead);
+    params->request.numFlipHeads = 0;
+    for (head = 0;
+         head < ARRAY_LEN(requestedConfig->headRequestedConfig); head++) {
 
-    for (i = 0; i < ARRAY_LEN(params->request.sd); i++) {
-        struct NvKmsFlipRequestOneSubDevice *sdParams = &params->request.sd[i];
-        NvU32 head;
+        const struct NvKmsKapiHeadRequestedConfig *headRequestedConfig =
+            &requestedConfig->headRequestedConfig[head];
+        const struct NvKmsKapiHeadModeSetConfig *headModeSetConfig =
+            &headRequestedConfig->modeSetConfig;
+        enum NvKmsOutputTf tf;
 
-        if ((device->subDeviceMask & (1 << i)) == 0x0) {
+        struct NvKmsFlipCommonParams *flipParams = NULL;
+
+        NvU32 layer;
+
+        if (!IsHeadConfigValid(params, requestedConfig, headModeSetConfig, head)) {
             continue;
         }
 
-        for (head = 0;
-             head < ARRAY_LEN(requestedConfig->headRequestedConfig); head++) {
+        pFlipHead[params->request.numFlipHeads].sd = 0;
+        pFlipHead[params->request.numFlipHeads].head = head;
+        flipParams = &pFlipHead[params->request.numFlipHeads].flip;
+        params->request.numFlipHeads++;
 
-            const struct NvKmsKapiHeadRequestedConfig *headRequestedConfig =
-                &requestedConfig->headRequestedConfig[head];
-            const struct NvKmsKapiHeadModeSetConfig *headModeSetConfig =
-                &headRequestedConfig->modeSetConfig;
-            enum NvKmsOutputTf tf;
+        NvKmsKapiCursorConfigToKms(&headRequestedConfig->cursorRequestedConfig,
+                                   flipParams,
+                                   NV_FALSE /* bFromKmsSetMode */);
 
-            struct NvKmsFlipCommonParams *flipParams = &sdParams->head[head];
+        for (layer = 0;
+             layer < ARRAY_LEN(headRequestedConfig->layerRequestedConfig);
+             layer++) {
 
-            NvU32 layer;
+            const struct NvKmsKapiLayerRequestedConfig
+                *layerRequestedConfig =
+                 &headRequestedConfig->layerRequestedConfig[layer];
 
-            if (!IsHeadConfigValid(params, requestedConfig, headModeSetConfig, head)) {
-                continue;
-            }
+            status = NvKmsKapiLayerConfigToKms(device,
+                                               layerRequestedConfig,
+                                               layer,
+                                               head,
+                                               flipParams,
+                                               commit,
+                                               NV_FALSE /* bFromKmsSetMode */);
 
-            sdParams->requestedHeadsBitMask |= 1 << head;
-
-            NvKmsKapiCursorConfigToKms(&headRequestedConfig->cursorRequestedConfig,
-                                       flipParams,
-                                       NV_FALSE /* bFromKmsSetMode */);
-
-            for (layer = 0;
-                 layer < ARRAY_LEN(headRequestedConfig->layerRequestedConfig);
-                 layer++) {
-
-                const struct NvKmsKapiLayerRequestedConfig
-                    *layerRequestedConfig =
-                     &headRequestedConfig->layerRequestedConfig[layer];
-
-                status = NvKmsKapiLayerConfigToKms(device,
-                                                   layerRequestedConfig,
-                                                   layer,
-                                                   head,
-                                                   flipParams,
-                                                   commit,
-                                                   NV_FALSE /* bFromKmsSetMode */);
-
-                if (status != NV_TRUE) {
-                    goto done;
-                }
-
-                bChanged = NV_TRUE;
-            }
-
-            status = GetOutputTransferFunction(headRequestedConfig, &tf);
             if (status != NV_TRUE) {
                 goto done;
             }
+        }
 
-            flipParams->tf.val = tf;
-            flipParams->tf.specified = NV_TRUE;
+        status = GetOutputTransferFunction(headRequestedConfig, &tf);
+        if (status != NV_TRUE) {
+            goto done;
+        }
 
-            if (headModeSetConfig->vrrEnabled) {
-                params->request.allowVrr = NV_TRUE;
-            }
+        flipParams->tf.val = tf;
+        flipParams->tf.specified = NV_TRUE;
+
+        if (headModeSetConfig->vrrEnabled) {
+            params->request.allowVrr = NV_TRUE;
         }
     }
 
-    if (!bChanged) {
+    if (params->request.numFlipHeads == 0) {
         goto done;
     }
 
@@ -2946,58 +2954,44 @@ static NvBool KmsFlip(
         goto done;
     }
 
-    if (!bChanged || !commit) {
+    if (!commit) {
         goto done;
     }
 
     /*! fill back flip reply */
-    for (i = 0; i < ARRAY_LEN(params->request.sd); i++) {
+    for (i = 0; i < params->request.numFlipHeads; i++) {
+         const struct NvKmsKapiHeadRequestedConfig *headRequestedConfig =
+            &requestedConfig->headRequestedConfig[pFlipHead[i].head];
 
-        struct NvKmsFlipReplyOneSubDevice *sdReplyParams = &params->reply.sd[i];
+         struct NvKmsKapiHeadReplyConfig *headReplyConfig =
+            &replyConfig->headReplyConfig[pFlipHead[i].head];
 
-        NvU32 head;
+         const struct NvKmsKapiHeadModeSetConfig *headModeSetConfig =
+            &headRequestedConfig->modeSetConfig;
 
-        if ((device->subDeviceMask & (1 << i)) == 0x0) {
+         struct NvKmsFlipCommonReplyOneHead *flipParams = &params->reply.flipHead[i];
+
+         NvU32 layer;
+
+         if (!IsHeadConfigValid(params, requestedConfig, headModeSetConfig, pFlipHead[i].head)) {
             continue;
-        }
+         }
 
-        for (head = 0;
-             head < ARRAY_LEN(requestedConfig->headRequestedConfig);
-             head++) {
+         for (layer = 0;
+              layer < ARRAY_LEN(headRequestedConfig->layerRequestedConfig);
+              layer++) {
 
-             const struct NvKmsKapiHeadRequestedConfig *headRequestedConfig =
-                &requestedConfig->headRequestedConfig[head];
+              const struct NvKmsKapiLayerConfig *layerRequestedConfig =
+                  &headRequestedConfig->layerRequestedConfig[layer].config;
 
-             struct NvKmsKapiHeadReplyConfig *headReplyConfig =
-                &replyConfig->headReplyConfig[head];
+              struct NvKmsKapiLayerReplyConfig *layerReplyConfig =
+                  &headReplyConfig->layerReplyConfig[layer];
 
-             const struct NvKmsKapiHeadModeSetConfig *headModeSetConfig =
-                &headRequestedConfig->modeSetConfig;
-
-             struct NvKmsFlipCommonReplyOneHead *flipParams = &sdReplyParams->head[head];
-
-             NvU32 layer;
-
-             if (!IsHeadConfigValid(params, requestedConfig, headModeSetConfig, head)) {
-                continue;
-             }
-
-             for (layer = 0;
-                  layer < ARRAY_LEN(headRequestedConfig->layerRequestedConfig);
-                  layer++) {
-
-                  const struct NvKmsKapiLayerConfig *layerRequestedConfig =
-                      &headRequestedConfig->layerRequestedConfig[layer].config;
-
-                  struct NvKmsKapiLayerReplyConfig *layerReplyConfig =
-                      &headReplyConfig->layerReplyConfig[layer];
-
-                  /*! initialize explicitly to -1 as 0 is valid file descriptor */
-                  layerReplyConfig->postSyncptFd = -1;
-                  if (layerRequestedConfig->syncptParams.postSyncptRequested) {
-                     layerReplyConfig->postSyncptFd =
-                         flipParams->layer[layer].postSyncpt.u.fd;
-                  }
+              /*! initialize explicitly to -1 as 0 is valid file descriptor */
+              layerReplyConfig->postSyncptFd = -1;
+              if (layerRequestedConfig->syncptParams.postSyncptRequested) {
+                 layerReplyConfig->postSyncptFd =
+                     flipParams->layer[layer].postSyncpt.u.fd;
               }
           }
       }
@@ -3030,25 +3024,11 @@ static NvBool ApplyModeSetConfig(
         const struct NvKmsKapiHeadModeSetConfig *headModeSetConfig =
             &headRequestedConfig->modeSetConfig;
 
-        const struct NvKmsKapiLayerRequestedConfig *primaryLayerRequestedConfig =
-            &headRequestedConfig->layerRequestedConfig[NVKMS_KAPI_LAYER_PRIMARY_IDX];
-
         if ((requestedConfig->headsMask & (1 << head)) == 0x0) {
             continue;
         }
 
-        /*
-         * Source width/height of primary layer represents width/height of
-         * ViewPortIn. Destination X, Y, width and height of primary layer
-         * represents dimensions of ViewPortOut. To apply changes in
-         * width/height of ViewPortIn and/or changes dimensions of
-         * ViewPortOut requires full modeset.
-         */
-
         bRequiredModeset =
-            primaryLayerRequestedConfig->flags.srcWHChanged ||
-            primaryLayerRequestedConfig->flags.dstXYChanged ||
-            primaryLayerRequestedConfig->flags.dstWHChanged ||
             headRequestedConfig->flags.activeChanged   ||
             headRequestedConfig->flags.displaysChanged ||
             headRequestedConfig->flags.modeChanged;

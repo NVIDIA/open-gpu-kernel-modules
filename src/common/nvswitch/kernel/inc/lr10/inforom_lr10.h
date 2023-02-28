@@ -58,6 +58,29 @@ nvswitch_inforom_nvl_get_errors_lr10
     NVSWITCH_GET_NVLINK_ERROR_COUNTS_PARAMS *params
 );
 
+NvlStatus nvswitch_inforom_nvl_setL1Threshold_lr10
+(
+    nvswitch_device *device,
+    void *pNvlGeneric,
+    NvU32 word1,
+    NvU32 word2
+);
+
+NvlStatus nvswitch_inforom_nvl_getL1Threshold_lr10
+(
+    nvswitch_device *device,
+    void *pNvlGeneric,
+    NvU32 *word1,
+    NvU32 *word2
+);
+
+NvlStatus nvswitch_inforom_nvl_setup_nvlink_state_lr10
+(
+    nvswitch_device *device,
+    INFOROM_NVLINK_STATE *pNvlinkState,
+    NvU8 version
+);
+
 NvlStatus
 nvswitch_inforom_ecc_log_error_event_lr10
 (

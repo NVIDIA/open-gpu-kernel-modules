@@ -88,7 +88,7 @@ kgspExecuteBooterLoad_TU102
 (
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
-    const NvU64 gspFwWprMetaOffset
+    const NvU64 sysmemAddrOfData
 )
 {
     NV_STATUS status;
@@ -98,12 +98,15 @@ kgspExecuteBooterLoad_TU102
 
     NV_ASSERT_OR_RETURN(pKernelGsp->pBooterLoadUcode != NULL, NV_ERR_INVALID_STATE);
 
-    // Provide gspFwWprMetaOffset in falcon SEC mailboxes 0 (low 32 bits) and 1 (high 32 bits)
-    mailbox0 = NvU64_LO32(gspFwWprMetaOffset);
-    mailbox1 = NvU64_HI32(gspFwWprMetaOffset);
+    //
+    // sysmemAddrOfData either represents the FW WPR MetaData or the FW SR Data as a physical address in SYSTEM 
+    // Provide that data in falcon SEC mailboxes 0 (low 32 bits) and 1 (high 32 bits)
+    //
+    mailbox0 = NvU64_LO32(sysmemAddrOfData);
+    mailbox1 = NvU64_HI32(sysmemAddrOfData);
 
-    NV_PRINTF(LEVEL_INFO, "executing Booter Load, gspFwWprMetaOffset 0x%llx\n",
-              gspFwWprMetaOffset);
+    NV_PRINTF(LEVEL_INFO, "executing Booter Load, sysmemAddrOfData 0x%llx\n",
+              sysmemAddrOfData);
 
     kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon));
 
@@ -124,11 +127,13 @@ NV_STATUS
 kgspExecuteBooterUnloadIfNeeded_TU102
 (
     OBJGPU *pGpu,
-    KernelGsp *pKernelGsp
+    KernelGsp *pKernelGsp,
+    const NvU64 sysmemAddrOfSuspendResumeData
 )
 {
     NV_STATUS status;
     KernelSec2 *pKernelSec2 = GPU_GET_KERNEL_SEC2(pGpu);
+    NvU32 mailbox0 = 0xFF, mailbox1 = 0xFF;
 
     // skip actually executing Booter Unload if WPR2 is not up
     NvU32 data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
@@ -143,10 +148,17 @@ kgspExecuteBooterUnloadIfNeeded_TU102
     NV_ASSERT_OR_RETURN(pKernelGsp->pBooterUnloadUcode != NULL, NV_ERR_INVALID_STATE);
 
     kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon));
+
+    // SR code 
+    if (sysmemAddrOfSuspendResumeData != 0)
+    {
+        mailbox0 = NvU64_LO32(sysmemAddrOfSuspendResumeData);
+        mailbox1 = NvU64_HI32(sysmemAddrOfSuspendResumeData);
+    }
     status = s_executeBooterUcode_TU102(pGpu, pKernelGsp,
                                         pKernelGsp->pBooterUnloadUcode,
                                         staticCast(pKernelSec2, KernelFalcon),
-                                        0xFF, 0xFF);
+                                        mailbox0, mailbox1);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Unload: 0x%x\n", status);

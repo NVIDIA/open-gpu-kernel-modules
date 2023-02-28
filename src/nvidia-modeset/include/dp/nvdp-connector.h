@@ -47,6 +47,7 @@ NVDPLibModesetStatePtr nvDPLibCreateModesetState(
     const NvU32 displayId,
     const NVDpyIdList dpyIdList,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
     NVHwModeTimingsEvo *pTimings);
 
 void nvDPLibFreeModesetState(NVDPLibModesetStatePtr pDpLibModesetState);
@@ -59,6 +60,7 @@ NvBool nvDPLibValidateTimings(
     const NvU32 displayId,
     const NVDpyIdList dpyIdList,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
     const struct NvKmsModeValidationParams *pModeValidationParams,
     NVHwModeTimingsEvo *pTimings);
 
@@ -67,6 +69,7 @@ NvBool nvDPEndValidation(NVDispEvoPtr pDispEvo);
 NvBool nvDPValidateModeForDpyEvo(
     const NVDpyEvoRec *pDpyEvo,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
     const struct NvKmsModeValidationParams *pModeValidationParams,
     NVHwModeTimingsEvo *pTimings);
 

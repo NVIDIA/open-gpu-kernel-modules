@@ -54,6 +54,9 @@ typedef enum
     // Locking: uvm_va_space: write
     UVM_PERF_EVENT_BLOCK_SHRINK,
 
+    // Locking: HMM uvm_va_block lock
+    UVM_PERF_EVENT_BLOCK_MUNMAP,
+
     // Locking: uvm_va_space: write
     UVM_PERF_EVENT_RANGE_DESTROY,
 
@@ -88,6 +91,12 @@ typedef union
     {
         uvm_va_block_t *block;
     } block_shrink;
+
+    struct
+    {
+        uvm_va_block_t *block;
+        uvm_va_block_region_t region;
+    } block_munmap;
 
     struct
     {

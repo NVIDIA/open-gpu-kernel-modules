@@ -43,7 +43,6 @@
 /* ------------------ static and helper functions prototypes------------------*/
 static NvU32 translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *translatedFlags);
 static NvU32 translatePageSizeToVASpaceFlags(NV_VASPACE_ALLOCATION_PARAMETERS *pNvVASpaceAllocParams);
-static void destroyMemDesc(Device *pDevice, NvHandle hVASpace);
 static NV_STATUS _vaspaceapiManagePageLevelsForSplitVaSpace(OBJGPU *pGpu, NvHandle hClient, NvU32 gpuMask, NvU32 flags, VASPACEAPI_MANAGE_PAGE_LEVELS_ACTION action);
 
 NvBool
@@ -522,7 +521,6 @@ vaspaceapiDestruct_IMPL(VaSpaceApi *pVaspaceApi)
                                                          VASPACEAPI_MANAGE_PAGE_LEVELS_RELEASE);
     }
 
-    destroyMemDesc(pDevice, hVASpace);
     if ((vaspaceGetFlags(pVaspaceApi->pVASpace) & VASPACE_FLAGS_FLA))
     {
         if (GPU_GET_KERNEL_BUS(pGpu)->flaInfo.pFlaVAS == NULL)
@@ -559,52 +557,6 @@ skip_destroy:
               RES_GET_HANDLE(pDevice), hClient,
               pCallContext->pResourceRef,
               pCallContext->pResourceRef->pParentRef);
-}
-
-/*--------------------------static and helper functions ----------------------*/
-// move this to Device
-/**
- * @brief Destroy associated memory with this vaspace.
- *
- * @param[in] pDevice  Pointer to Device instance
- * @param[in] hVASpace VASpace handle of the vaspace that will be deleted
- **/
-static void
-destroyMemDesc
-(
-    Device  *pDevice,
-    NvHandle hVASpace
-)
-{
-    VirtualMemory *pVirtualMemory = NULL;
-    RsClient      *pClient = RES_GET_CLIENT(pDevice);
-    NODE          *pNode = NULL;
-    RM_API        *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-
-    //
-    // RS-TODO: Convert to resource server dependency tracking system.
-    // stdmemConstruct calls add refAddDependant() but does it work properly for
-    // sharing (?)
-    //
-
-    // Check if any memory linked to this VASpace hasn't been freed.
-    btreeEnumStart(0, &pNode, pDevice->DevMemoryTable);
-    while (pNode != NULL)
-    {
-        Memory *pMemory = pNode->Data;
-        pVirtualMemory = dynamicCast(pMemory, VirtualMemory);
-        btreeEnumNext(&pNode, pDevice->DevMemoryTable);
-
-        if ((pVirtualMemory != NULL) &&
-            virtmemMatchesVASpace(pVirtualMemory, pClient->hClient, hVASpace))
-        {
-            // Free hMemory
-            pRmApi->Free(pRmApi, pClient->hClient, RES_GET_HANDLE(pVirtualMemory));
-
-            // Restart iteration as memory will be freed.
-            btreeEnumStart(0, &pNode, pDevice->DevMemoryTable);
-        }
-    }
 }
 
 /**

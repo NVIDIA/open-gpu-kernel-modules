@@ -727,16 +727,19 @@ error:
 //
 static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t location)
 {
+    bool should_location_be_vidmem;
     UVM_ASSERT(tree->gpu != NULL);
     UVM_ASSERT_MSG((location == UVM_APERTURE_VID) ||
                    (location == UVM_APERTURE_SYS) ||
                    (location == UVM_APERTURE_DEFAULT),
                    "Invalid location %s (%d)\n", uvm_aperture_string(location), (int)location);
 
-    // The tree must be explicitly initialized in vidmem when in SR-IOV heavy.
-    // The only exception are "fake" GPUs used during page tree testing, which
-    // can be identified by having no channel manager.
-    if ((tree->gpu->channel_manager != NULL) && uvm_gpu_is_virt_mode_sriov_heavy(tree->gpu))
+    should_location_be_vidmem = uvm_gpu_is_virt_mode_sriov_heavy(tree->gpu);
+
+    // The page tree of a "fake" GPU used during page tree testing can be in
+    // sysmem even if should_location_be_vidmem is true. A fake GPU can be
+    // identified by having no channel manager.
+    if ((tree->gpu->channel_manager != NULL) && should_location_be_vidmem)
         UVM_ASSERT(location == UVM_APERTURE_VID);
 
     if (location == UVM_APERTURE_DEFAULT) {
@@ -874,6 +877,7 @@ void uvm_page_tree_put_ptes_async(uvm_page_tree_t *tree, uvm_page_table_range_t 
     // traverse until we hit an in-use page, or the root
     while (dir->host_parent != NULL && dir->ref_count == 0) {
         uvm_page_directory_t *parent = dir->host_parent;
+        uvm_membar_t this_membar;
 
         if (free_count == 0) {
 
@@ -902,10 +906,9 @@ void uvm_page_tree_put_ptes_async(uvm_page_tree_t *tree, uvm_page_table_range_t 
 
         invalidate_depth = dir->host_parent->depth;
 
-        // If any of the pointed to PDEs were in sysmem then a SYS membar is
-        // required after the TLB invalidate.
-        if (dir->phys_alloc.addr.aperture == UVM_APERTURE_SYS)
-            membar_after_invalidate = UVM_MEMBAR_SYS;
+        // Take the membar with the widest scope of any of the pointed-to PDEs
+        this_membar = uvm_hal_downgrade_membar_type(tree->gpu, dir->phys_alloc.addr.aperture == UVM_APERTURE_VID);
+        membar_after_invalidate = max(membar_after_invalidate, this_membar);
 
         // If any of the cleared PDEs were in sysmem then a SYS membar is
         // required after the clears and before the TLB invalidate.
@@ -978,7 +981,8 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
 {
     uvm_mmu_mode_hal_t *hal = tree->hal;
 
-    // bit index just beyond the most significant bit used to index the current entry
+    // bit index just beyond the most significant bit used to index the current
+    // entry
     NvU32 addr_bit_shift = hal->num_va_bits();
 
     // track depth upon which the invalidate occured
@@ -997,19 +1001,28 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
     // ensure that the caller has specified a valid page size
     UVM_ASSERT((page_size & hal->page_sizes()) != 0);
 
-    // This algorithm will work with unaligned ranges, but the caller's intent is unclear
-    UVM_ASSERT_MSG(start % page_size == 0 && size % page_size == 0, "start 0x%llx size 0x%zx page_size 0x%x",
-            start, (size_t)size, page_size);
+    // This algorithm will work with unaligned ranges, but the caller's intent
+    // is unclear
+    UVM_ASSERT_MSG(start % page_size == 0 && size % page_size == 0,
+                   "start 0x%llx size 0x%zx page_size 0x%x\n",
+                   start,
+                   (size_t)size,
+                   page_size);
 
     // The GPU should be capable of addressing the passed range
-    UVM_ASSERT(uvm_gpu_can_address(tree->gpu, start, size));
+    if (tree->type == UVM_PAGE_TREE_TYPE_USER)
+        UVM_ASSERT(uvm_gpu_can_address(tree->gpu, start, size));
+    else
+        UVM_ASSERT(uvm_gpu_can_address_kernel(tree->gpu, start, size));
 
     while (true) {
 
-        // index of the entry, for the first byte of the range, within its containing directory
+        // index of the entry, for the first byte of the range, within its
+        // containing directory
         NvU32 start_index;
 
-        // index of the entry, for the last byte of the range, within its containing directory
+        // index of the entry, for the last byte of the range, within its
+        // containing directory
         NvU32 end_index;
 
         // pointer to PDE/PTE
@@ -2280,9 +2293,9 @@ static NV_STATUS create_dynamic_sysmem_mapping(uvm_gpu_t *gpu)
     UVM_ASSERT(gpu->parent->flat_sysmem_va_base != 0);
 
     // The DMA addressable window is the maximum system physical memory
-    // addressable by the GPU (this limit is 128TB in Pascal-Ampere). The
-    // virtual mapping to sysmem is linear, so its size matches that of the
-    // physical address space.
+    // addressable by the GPU (this limit is 128TB in Pascal-Ada). The virtual
+    // mapping to sysmem is linear, so its size matches that of the physical
+    // address space.
     flat_sysmem_va_size = gpu->parent->dma_addressable_limit + 1 - gpu->parent->dma_addressable_start;
 
     // The optimal mapping granularity is dependent on multiple factors:
@@ -2351,7 +2364,7 @@ NV_STATUS uvm_mmu_sysmem_map(uvm_gpu_t *gpu, NvU64 pa, NvU64 size)
             // because in the common case the VA block lock is held.
             pmm_flags = UVM_PMM_ALLOC_FLAGS_NONE;
 
-            sysmem_mapping->base = uvm_parent_gpu_canonical_address(gpu->parent, virtual_address.address);
+            sysmem_mapping->base = virtual_address.address;
 
             status = create_identity_mapping(gpu,
                                              sysmem_mapping->base,

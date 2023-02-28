@@ -35,6 +35,41 @@
 
 
 /*
+ * NV0073_CTRL_CMD_STEREO_DONGLE_SUPPORTED
+ *
+ * This command returns the support status of the NV stereo emitter
+ * (also known as the stereo dongle). It reports if the stereo dongle
+ * is present in terms of the USB interface initialized in Resman.
+ * This provides a RmControl interface to the STEREO_DONGLE_SUPPORTED 
+ * command in stereoDongleControl.
+ *
+ * Parameters:
+ * [IN]  subDeviceInstance - This parameter specifies the subdevice instance 
+ *        within the NV04_DISPLAY_COMMON parent device to which the operation 
+ *        should be directed.  This parameter must specify a value between 
+ *        zero and the total number of subdevices within the parent device.  
+ *        This parameter should be set to zero for default behavior.
+ * [IN]  head               - head to be passed to stereoDongleControl
+ * [IN]  bI2cEmitter        - I2C driven DT embedded emitter
+ * [IN]  bForcedSupported   - GPIO23 driven emitter
+ * [OUT] support            - the control word returned by stereoDongleControl
+ *
+ * Possible status values returned are:
+ *   NV_ERR_NOT_SUPPORTED - stereo is not initialized on the GPU
+ */
+#define NV0073_CTRL_CMD_STEREO_DONGLE_SUPPORTED (0x731702U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_STEREO_INTERFACE_ID << 8) | NV0073_CTRL_STEREO_DONGLE_SUPPORTED_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_STEREO_DONGLE_SUPPORTED_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV0073_CTRL_STEREO_DONGLE_SUPPORTED_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  head;
+    NvBool bI2cEmitter;
+    NvBool bForcedSupported;
+    NvU32  support;
+} NV0073_CTRL_STEREO_DONGLE_SUPPORTED_PARAMS;
+
+/*
  * NV0073_CTRL_CMD_STEREO_DONGLE_SET_TIMINGS
  *
  * Sets new video mode timings

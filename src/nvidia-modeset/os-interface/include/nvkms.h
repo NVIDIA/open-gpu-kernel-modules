@@ -42,6 +42,20 @@ typedef void nvkms_procfs_proc_t(void *data,
                                  char *buffer, size_t size,
                                  nvkms_procfs_out_string_func_t *outString);
 
+/* max number of loops to prevent hanging the kernel if an edge case is hit */
+#define NVKMS_READ_FILE_MAX_LOOPS 1000
+/* max size for any file read by the config system */
+#define NVKMS_READ_FILE_MAX_SIZE  8192
+
+/*
+ * The read file callback should allocate a buffer pointed to by *buff, fill it
+ * with the contents of fname, and return the size of the buffer. Buffer is not
+ * guaranteed to be null-terminated. The caller is responsible for freeing the
+ * buffer with nvkms_free, not nvFree.
+ */
+typedef size_t nvkms_config_read_file_func_t(char *fname,
+                                             char ** const buff);
+
 typedef struct {
     const char *name;
     nvkms_procfs_proc_t *func;
@@ -73,6 +87,9 @@ void nvKmsSuspend(NvU32 gpuId);
 void nvKmsResume(NvU32 gpuId);
 
 void nvKmsGetProcFiles(const nvkms_procfs_file_t **ppProcFiles);
+
+NvBool nvKmsReadConf(const char *buff, size_t size,
+                     nvkms_config_read_file_func_t readfile);
 
 void nvKmsKapiHandleEventQueueChange
 (

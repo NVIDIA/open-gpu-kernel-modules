@@ -448,7 +448,6 @@ vidmemCopyConstruct
  * @brief
  *     This routine provides common allocation services used by the
  *     following heap allocation functions:
- *       NVOS32_FUNCTION_ALLOC_DEPTH_WIDTH_HEIGHT
  *       NVOS32_FUNCTION_ALLOC_SIZE
  *       NVOS32_FUNCTION_ALLOC_SIZE_RANGE
  *       NVOS32_FUNCTION_ALLOC_TILED_PITCH_HEIGHT
@@ -1058,6 +1057,20 @@ vidmemAllocResources
     {
         NV_PRINTF(LEVEL_WARNING,
                   "Virtual-only flag used with physical allocation\n");
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto failed;
+    }
+    //
+    // In NUMA systems, the memory allocation comes from kernel
+    // and kernel doesn't support fixed address allocation.
+    //
+    if ((pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) &&
+        bIsPmaOwned &&
+        osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        NV_PRINTF(LEVEL_WARNING,
+                  "NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE for PMA cannot be "
+                  "accommodated for NUMA systems\n");
         status = NV_ERR_INVALID_ARGUMENT;
         goto failed;
     }

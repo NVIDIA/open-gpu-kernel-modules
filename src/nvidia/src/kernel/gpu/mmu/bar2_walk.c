@@ -398,7 +398,8 @@ _bar2WalkCBUpdatePde
             }
         }
     }
-    else if (pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid))
+    else if (pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
+             KBUS_BAR0_PRAMIN_DISABLED(pGpu))
     {
         if (ADDR_FBMEM == pKernelBus->PDEBAR2Aperture)
         {
@@ -487,7 +488,8 @@ _bar2WalkCBLevelAlloc
     }
 
     // Specify which Page Level we are initializing.
-    if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid))
+    if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
+        KBUS_BAR0_PRAMIN_DISABLED(pGpu))
     {
         if (pLevelFmt == pKernelBus->bar2[gfid].pFmt->pRoot)
         {
@@ -521,7 +523,8 @@ _bar2WalkCBLevelAlloc
     }
     else
     {
-            NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid));
+            NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
+                      KBUS_BAR0_PRAMIN_DISABLED(pGpu));
             pdeBase = pKernelBus->bar2[gfid].pdeBase;
             pteBase = pKernelBus->bar2[gfid].pteBase;
     }
@@ -600,12 +603,14 @@ _bar2WalkCBLevelAlloc
             }
             else
             {
-                NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid));
+                NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
+                          KBUS_BAR0_PRAMIN_DISABLED(pGpu));
                 pKernelBus->bar2[gfid].pdeBase = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
                 pKernelBus->bar2[gfid].pPDEMemDesc = pMemDesc;
             }
         }
-        if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid))
+        if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
+            KBUS_BAR0_PRAMIN_DISABLED(pGpu))
         {
             pKernelBus->bar2[gfid].pageDirInit++;
         }
@@ -680,13 +685,15 @@ _bar2WalkCBLevelAlloc
             }
             else
             {
-                NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid));
+                NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
+                          KBUS_BAR0_PRAMIN_DISABLED(pGpu));
                 pKernelBus->bar2[gfid].pteBase = memdescGetPhysAddr(pMemDesc,
                                                                     AT_GPU, 0);
             }
             pKernelBus->virtualBar2[gfid].pPTEMemDesc = pMemDesc;
         }
-        if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid))
+        if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
+            KBUS_BAR0_PRAMIN_DISABLED(pGpu))
         {
             pKernelBus->bar2[gfid].pageTblInit++;
         }

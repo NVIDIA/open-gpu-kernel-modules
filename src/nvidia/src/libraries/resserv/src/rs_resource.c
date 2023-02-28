@@ -184,6 +184,10 @@ resControl_IMPL
     if (status != NV_OK)
         return status;
 
+    status = resControlSerialization_Prologue(pResource, pCallContext, pRsParams);
+    if (status != NV_OK)
+        goto done;
+
     status = resControl_Prologue(pResource, pCallContext, pRsParams);
     if ((status != NV_OK) && (status != NV_WARN_NOTHING_TO_DO))
         goto done;
@@ -207,13 +211,22 @@ resControl_IMPL
         else
         {
             CONTROL_EXPORT_FNPTR pFunc = ((CONTROL_EXPORT_FNPTR) pEntry->pFunc);
-            status = pFunc(pDynamicObj, pRsParams->pParams);
+
+            if (pRsParams->flags & NVOS54_FLAGS_FINN_SERIALIZED)
+            {
+                status = pFunc(pDynamicObj, pCallContext->pDeserializedParams);
+            }
+            else
+            {
+                status = pFunc(pDynamicObj, pRsParams->pParams);
+            }
         }
     }
 
     resControl_Epilogue(pResource, pCallContext, pRsParams);
 
 done:
+    resControlSerialization_Epilogue(pResource, pCallContext, pRsParams);
     status = serverControl_Epilogue(pServer, pRsParams, access, &releaseFlags, status);
 
     return status;
@@ -228,6 +241,27 @@ resControlFilter_IMPL
 )
 {
     return NV_OK;
+}
+
+NV_STATUS
+resControlSerialization_Prologue_IMPL
+(
+    RsResource                     *pResource,
+    CALL_CONTEXT                   *pCallContext,
+    RS_RES_CONTROL_PARAMS_INTERNAL *pParams
+)
+{
+    return NV_OK;
+}
+
+void
+resControlSerialization_Epilogue_IMPL
+(
+    RsResource                     *pResource,
+    CALL_CONTEXT                   *pCallContext,
+    RS_RES_CONTROL_PARAMS_INTERNAL *pParams
+)
+{
 }
 
 NV_STATUS

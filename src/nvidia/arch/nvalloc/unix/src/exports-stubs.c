@@ -83,15 +83,6 @@ NV_STATUS NV_API_CALL rm_transition_dynamic_power(
     return NV_OK;
 }
 
-NV_STATUS NV_API_CALL rm_power_management(
-     nvidia_stack_t *sp,
-     nv_state_t *pNv,
-     nv_pm_action_t pmAction
-)
-{
-    return NV_OK;
-}
-
 const char* NV_API_CALL rm_get_vidmem_power_status(
     nvidia_stack_t *sp,
     nv_state_t     *pNv

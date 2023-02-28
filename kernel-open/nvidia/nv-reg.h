@@ -700,6 +700,22 @@
     NV_REG_STRING(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE)
 
 /*
+ * Option: EnableResizableBar
+ *
+ * Description:
+ *
+ * When this option is enabled, the NVIDIA driver will attempt to resize
+ * BAR1 to match framebuffer size, or the next largest available size on
+ * supported machines. This is currently only implemented for Linux.
+ *
+ * Possible values:
+ *  0 - Do not enable PCI BAR resizing
+ *  1 - Enable PCI BAR resizing
+ */
+#define __NV_ENABLE_RESIZABLE_BAR EnableResizableBar
+#define NV_REG_ENABLE_RESIZABLE_BAR NV_REG_STRING(__NV_ENABLE_RESIZABLE_BAR)
+
+/*
  * Option: EnableGpuFirmware
  *
  * Description:
@@ -825,6 +841,26 @@
 #define NV_DMA_REMAP_PEER_MMIO_DISABLE  0x00000000
 #define NV_DMA_REMAP_PEER_MMIO_ENABLE   0x00000001
 
+/*
+ * Option: NVreg_RmNvlinkBandwidth
+ *
+ * Description:
+ *
+ * This option allows user to reduce the NVLINK P2P bandwidth to save power.
+ * The option is in the string format.
+ *
+ * Possible string values:
+ *   OFF:      0% bandwidth
+ *   MIN:      15%-25% bandwidth depending on the system's NVLink topology
+ *   HALF:     50% bandwidth
+ *   3QUARTER: 75% bandwidth
+ *   FULL:     100% bandwidth (default)
+ *
+ * This option is only for Hopper+ GPU with NVLINK version 4.0.
+ */
+#define __NV_RM_NVLINK_BW RmNvlinkBandwidth
+#define NV_RM_NVLINK_BW NV_REG_STRING(__NV_RM_NVLINK_BW)
+
 #if defined(NV_DEFINE_REGISTRY_KEY_TABLE)
 
 /*
@@ -861,6 +897,7 @@ NV_DEFINE_REG_ENTRY_GLOBAL(__NV_IGNORE_MMIO_CHECK, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_NVLINK_DISABLE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_REGISTER_PCI_DRIVER, 1);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_RESIZABLE_BAR, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_DBG_BREAKPOINT, 0);
 
 NV_DEFINE_REG_STRING_ENTRY(__NV_REGISTRY_DWORDS, NULL);
@@ -870,6 +907,7 @@ NV_DEFINE_REG_STRING_ENTRY(__NV_GPU_BLACKLIST, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_TEMPORARY_FILE_PATH, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_EXCLUDED_GPUS, NULL);
 NV_DEFINE_REG_ENTRY(__NV_DMA_REMAP_PEER_MMIO, NV_DMA_REMAP_PEER_MMIO_ENABLE);
+NV_DEFINE_REG_STRING_ENTRY(__NV_RM_NVLINK_BW, NULL);
 
 /*
  *----------------registry database definition----------------------
@@ -910,6 +948,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DYNAMIC_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_REGISTER_PCI_DRIVER),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_RESIZABLE_BAR),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_GPU_FIRMWARE),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_GPU_FIRMWARE_LOGS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_DBG_BREAKPOINT),

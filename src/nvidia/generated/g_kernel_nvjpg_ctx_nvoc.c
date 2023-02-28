@@ -176,7 +176,7 @@ static NV_STATUS __nvoc_thunk_RsResource_nvjpgctxControlLookup(struct NvjpgConte
     return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset), pParams, ppEntry);
 }
 
-static NV_STATUS __nvoc_thunk_ChannelDescendant_nvjpgctxGetSwMethods(struct NvjpgContext *pChannelDescendant, METHOD **ppMethods, NvU32 *pNumMethods) {
+static NV_STATUS __nvoc_thunk_ChannelDescendant_nvjpgctxGetSwMethods(struct NvjpgContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_NvjpgContext_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
 
@@ -212,6 +212,10 @@ static NV_STATUS __nvoc_thunk_Notifier_nvjpgctxUnregisterEvent(struct NvjpgConte
     return notifyUnregisterEvent((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_NvjpgContext_Notifier.offset), hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_nvjpgctxControlSerialization_Prologue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), pCallContext, pParams);
+}
+
 static NvBool __nvoc_thunk_RsResource_nvjpgctxCanCopy(struct NvjpgContext *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset));
 }
@@ -222,6 +226,10 @@ static void __nvoc_thunk_RsResource_nvjpgctxPreDestruct(struct NvjpgContext *pRe
 
 static NV_STATUS __nvoc_thunk_RsResource_nvjpgctxIsDuplicate(struct NvjpgContext *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvjpgContext_RsResource.offset), hMemory, pDuplicate);
+}
+
+static void __nvoc_thunk_RmResource_nvjpgctxControlSerialization_Epilogue(struct NvjpgContext *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NvjpgContext_RmResource.offset), pCallContext, pParams);
 }
 
 static PEVENTNOTIFICATION *__nvoc_thunk_Notifier_nvjpgctxGetNotificationListPtr(struct NvjpgContext *pNotifier) {
@@ -335,11 +343,15 @@ static void __nvoc_init_funcTable_NvjpgContext_1(NvjpgContext *pThis, RmHalspecO
 
     pThis->__nvjpgctxUnregisterEvent__ = &__nvoc_thunk_Notifier_nvjpgctxUnregisterEvent;
 
+    pThis->__nvjpgctxControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_nvjpgctxControlSerialization_Prologue;
+
     pThis->__nvjpgctxCanCopy__ = &__nvoc_thunk_RsResource_nvjpgctxCanCopy;
 
     pThis->__nvjpgctxPreDestruct__ = &__nvoc_thunk_RsResource_nvjpgctxPreDestruct;
 
     pThis->__nvjpgctxIsDuplicate__ = &__nvoc_thunk_RsResource_nvjpgctxIsDuplicate;
+
+    pThis->__nvjpgctxControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_nvjpgctxControlSerialization_Epilogue;
 
     pThis->__nvjpgctxGetNotificationListPtr__ = &__nvoc_thunk_Notifier_nvjpgctxGetNotificationListPtr;
 
@@ -375,12 +387,15 @@ NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext **ppThis, Dynamic *pParent,
     NvjpgContext *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(NvjpgContext));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(NvjpgContext), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(NvjpgContext));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_NvjpgContext);
+
+    pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -401,11 +416,17 @@ NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext **ppThis, Dynamic *pParent,
     if (status != NV_OK) goto __nvoc_objCreate_NvjpgContext_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_NvjpgContext_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(NvjpgContext));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

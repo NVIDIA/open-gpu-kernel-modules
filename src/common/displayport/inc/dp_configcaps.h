@@ -304,6 +304,7 @@ namespace DisplayPort
         virtual unsigned lttprGetRevisionMinor() = 0;
 
         virtual bool getSDPExtnForColorimetry() = 0;
+        virtual bool getRootAsyncSDPSupported() = 0;
 
         bool  isAtLeastVersion(unsigned major, unsigned minor)
         {
@@ -522,7 +523,6 @@ namespace DisplayPort
         virtual bool readPsrErrorStatus(vesaPsrErrorStatus *psrErr) = 0;
         virtual bool writePsrEvtIndicator(vesaPsrEventIndicator psrErr) = 0;
         virtual bool readPsrEvtIndicator(vesaPsrEventIndicator *psrErr) = 0;
-
         virtual ~DPCDHAL() {}
 
     };

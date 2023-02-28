@@ -36,7 +36,6 @@ static const struct NVOC_CASTINFO __nvoc_castinfo_KernelFalcon = {
 // Not instantiable because it's not derived from class "Object"
 // Not instantiable because it's an abstract class with following pure virtual functions:
 //  kflcnResetHw
-//  kflcnIsEngineInReset
 const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFalcon = 
 {
     /*classInfo=*/ {
@@ -164,8 +163,6 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, RmHalspecO
             pThis->__kflcnWaitForResetToFinish__ = &kflcnWaitForResetToFinish_TU102;
         }
     }
-
-    pThis->__kflcnIsEngineInReset__ = NULL;
 
     // Hal function -- kflcnReadIntrStatus
     if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
@@ -301,11 +298,7 @@ static NV_STATUS __nvoc_thunk_GenericKernelFalcon_kflcnResetHw(struct OBJGPU *pG
     return gkflcnResetHw(pGpu, (struct GenericKernelFalcon *)(((unsigned char *)pGenKernFlcn) - __nvoc_rtti_GenericKernelFalcon_KernelFalcon.offset));
 }
 
-static NvBool __nvoc_thunk_GenericKernelFalcon_kflcnIsEngineInReset(struct OBJGPU *pGpu, struct KernelFalcon *pGenKernFlcn) {
-    return gkflcnIsEngineInReset(pGpu, (struct GenericKernelFalcon *)(((unsigned char *)pGenKernFlcn) - __nvoc_rtti_GenericKernelFalcon_KernelFalcon.offset));
-}
-
-static void __nvoc_thunk_GenericKernelFalcon_intrservRegisterIntrService(struct OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[163]) {
+static void __nvoc_thunk_GenericKernelFalcon_intrservRegisterIntrService(struct OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[166]) {
     gkflcnRegisterIntrService(arg0, (struct GenericKernelFalcon *)(((unsigned char *)arg1) - __nvoc_rtti_GenericKernelFalcon_IntrService.offset), arg2);
 }
 
@@ -375,15 +368,11 @@ static void __nvoc_init_funcTable_GenericKernelFalcon_1(GenericKernelFalcon *pTh
 
     pThis->__gkflcnResetHw__ = &gkflcnResetHw_IMPL;
 
-    pThis->__gkflcnIsEngineInReset__ = &gkflcnIsEngineInReset_IMPL;
-
     pThis->__gkflcnRegisterIntrService__ = &gkflcnRegisterIntrService_IMPL;
 
     pThis->__gkflcnServiceNotificationInterrupt__ = &gkflcnServiceNotificationInterrupt_IMPL;
 
     pThis->__nvoc_base_KernelFalcon.__kflcnResetHw__ = &__nvoc_thunk_GenericKernelFalcon_kflcnResetHw;
-
-    pThis->__nvoc_base_KernelFalcon.__kflcnIsEngineInReset__ = &__nvoc_thunk_GenericKernelFalcon_kflcnIsEngineInReset;
 
     pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_thunk_GenericKernelFalcon_intrservRegisterIntrService;
 
@@ -418,12 +407,15 @@ NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon **ppThis, Dyn
     GenericKernelFalcon *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(GenericKernelFalcon));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(GenericKernelFalcon), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(GenericKernelFalcon));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GenericKernelFalcon);
+
+    pThis->__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -444,11 +436,17 @@ NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon **ppThis, Dyn
     if (status != NV_OK) goto __nvoc_objCreate_GenericKernelFalcon_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_GenericKernelFalcon_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(GenericKernelFalcon));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

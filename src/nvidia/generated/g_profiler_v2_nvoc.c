@@ -97,6 +97,54 @@ static NvBool __nvoc_thunk_GpuResource_profilerBaseShareCallback(struct Profiler
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_profilerBaseCheckMemInterUnmap(struct ProfilerBase *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_profilerBaseMapTo(struct ProfilerBase *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_profilerBaseGetMapAddrSpace(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_profilerBaseGetRefCount(struct ProfilerBase *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_profilerBaseAddAdditionalDependants(struct RsClient *pClient, struct ProfilerBase *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_profilerBaseControl_Prologue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize(struct ProfilerBase *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_profilerBaseInternalControlForward(struct ProfilerBase *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset), command, pParams, size);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_profilerBaseUnmapFrom(struct ProfilerBase *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_profilerBaseControl_Epilogue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_profilerBaseControlLookup(struct ProfilerBase *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_profilerBaseGetInternalObjectHandle(struct ProfilerBase *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset));
+}
+
 static NV_STATUS __nvoc_thunk_GpuResource_profilerBaseControl(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset), pCallContext, pParams);
 }
@@ -113,68 +161,28 @@ static NV_STATUS __nvoc_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor(
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_profilerBaseGetMapAddrSpace(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_profilerBaseGetInternalObjectHandle(struct ProfilerBase *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_profilerBaseControlFilter(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_profilerBaseAddAdditionalDependants(struct RsClient *pClient, struct ProfilerBase *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_profilerBaseGetRefCount(struct ProfilerBase *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_profilerBaseCheckMemInterUnmap(struct ProfilerBase *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_profilerBaseMapTo(struct ProfilerBase *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_profilerBaseControl_Prologue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize(struct ProfilerBase *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset), pGpu, pOffset, pSize);
+static NV_STATUS __nvoc_thunk_RmResource_profilerBaseControlSerialization_Prologue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_profilerBaseCanCopy(struct ProfilerBase *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_profilerBaseInternalControlForward(struct ProfilerBase *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerBase_GpuResource.offset), command, pParams, size);
-}
-
 static void __nvoc_thunk_RsResource_profilerBasePreDestruct(struct ProfilerBase *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_profilerBaseUnmapFrom(struct ProfilerBase *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_profilerBaseIsDuplicate(struct ProfilerBase *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_profilerBaseControl_Epilogue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_profilerBaseControlLookup(struct ProfilerBase *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_profilerBaseControlSerialization_Epilogue(struct ProfilerBase *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerBase_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_profilerBaseMap(struct ProfilerBase *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -192,12 +200,12 @@ static NvBool __nvoc_thunk_RmResource_profilerBaseAccessCallback(struct Profiler
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ProfilerBase[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdReserveHwpmLegacy_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb0cc0101u,
         /*paramSize=*/  sizeof(NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS),
@@ -267,12 +275,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #endif
     },
     {               /*  [5] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdFreePmaStream_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb0cc0106u,
         /*paramSize=*/  sizeof(NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS),
@@ -282,12 +290,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #endif
     },
     {               /*  [6] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdBindPmResources_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb0cc0107u,
         /*paramSize=*/  0,
@@ -297,12 +305,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #endif
     },
     {               /*  [7] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdUnbindPmResources_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb0cc0108u,
         /*paramSize=*/  0,
@@ -417,21 +425,36 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #endif
     },
     {               /*  [15] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdInternalAllocPmaStream_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
-        /*flags=*/      0x610u,
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdReserveHes_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*flags=*/      0x210u,
         /*accessRight=*/0x0u,
-        /*methodId=*/   0xb0cc0200u,
-        /*paramSize=*/  sizeof(NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS),
+        /*methodId=*/   0xb0cc0113u,
+        /*paramSize=*/  sizeof(NVB0CC_CTRL_RESERVE_HES_PARAMS),
         /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
 #if NV_PRINTF_STRINGS_ALLOWED
-        /*func=*/       "profilerBaseCtrlCmdInternalAllocPmaStream"
+        /*func=*/       "profilerBaseCtrlCmdReserveHes"
 #endif
     },
     {               /*  [16] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdReleaseHes_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*flags=*/      0x210u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc0114u,
+        /*paramSize=*/  sizeof(NVB0CC_CTRL_RELEASE_HES_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdReleaseHes"
+#endif
+    },
+    {               /*  [17] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -446,12 +469,102 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
         /*func=*/       "profilerBaseCtrlCmdInternalPermissionsInit"
 #endif
     },
+    {               /*  [18] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdInternalAllocPmaStream_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*flags=*/      0x610u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc0204u,
+        /*paramSize=*/  sizeof(NVB0CC_CTRL_INTERNAL_ALLOC_PMA_STREAM_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdInternalAllocPmaStream"
+#endif
+    },
+    {               /*  [19] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdInternalFreePmaStream_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*flags=*/      0x610u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc0206u,
+        /*paramSize=*/  sizeof(NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdInternalFreePmaStream"
+#endif
+    },
+    {               /*  [20] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdInternalGetMaxPmas_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*flags=*/      0x610u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc0207u,
+        /*paramSize=*/  sizeof(NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdInternalGetMaxPmas"
+#endif
+    },
+    {               /*  [21] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdInternalBindPmResources_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*flags=*/      0x610u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc0208u,
+        /*paramSize=*/  0,
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdInternalBindPmResources"
+#endif
+    },
+    {               /*  [22] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdInternalUnbindPmResources_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*flags=*/      0x610u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc0209u,
+        /*paramSize=*/  0,
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdInternalUnbindPmResources"
+#endif
+    },
+    {               /*  [23] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdInternalReserveHwpmLegacy_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+        /*flags=*/      0x610u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc020au,
+        /*paramSize=*/  sizeof(NVB0CC_CTRL_INTERNAL_RESERVE_HWPM_LEGACY_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdInternalReserveHwpmLegacy"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ProfilerBase = 
 {
-    /*numEntries=*/     17,
+    /*numEntries=*/     24,
     /*pExportEntries=*/ __nvoc_exported_method_def_ProfilerBase
 };
 
@@ -498,8 +611,12 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__profilerBaseCtrlCmdReserveHwpmLegacy__ = &profilerBaseCtrlCmdReserveHwpmLegacy_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+    pThis->__profilerBaseCtrlCmdInternalReserveHwpmLegacy__ = &profilerBaseCtrlCmdInternalReserveHwpmLegacy_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
@@ -518,16 +635,32 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
     pThis->__profilerBaseCtrlCmdAllocPmaStream__ = &profilerBaseCtrlCmdAllocPmaStream_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__profilerBaseCtrlCmdFreePmaStream__ = &profilerBaseCtrlCmdFreePmaStream_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+    pThis->__profilerBaseCtrlCmdInternalFreePmaStream__ = &profilerBaseCtrlCmdInternalFreePmaStream_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+    pThis->__profilerBaseCtrlCmdInternalGetMaxPmas__ = &profilerBaseCtrlCmdInternalGetMaxPmas_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__profilerBaseCtrlCmdBindPmResources__ = &profilerBaseCtrlCmdBindPmResources_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__profilerBaseCtrlCmdUnbindPmResources__ = &profilerBaseCtrlCmdUnbindPmResources_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+    pThis->__profilerBaseCtrlCmdInternalBindPmResources__ = &profilerBaseCtrlCmdInternalBindPmResources_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x610u)
+    pThis->__profilerBaseCtrlCmdInternalUnbindPmResources__ = &profilerBaseCtrlCmdInternalUnbindPmResources_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
@@ -566,7 +699,39 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
     pThis->__profilerBaseCtrlCmdSetHsCredits__ = &profilerBaseCtrlCmdSetHsCredits_IMPL;
 #endif
 
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+    pThis->__profilerBaseCtrlCmdReserveHes__ = &profilerBaseCtrlCmdReserveHes_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+    pThis->__profilerBaseCtrlCmdReleaseHes__ = &profilerBaseCtrlCmdReleaseHes_IMPL;
+#endif
+
     pThis->__profilerBaseShareCallback__ = &__nvoc_thunk_GpuResource_profilerBaseShareCallback;
+
+    pThis->__profilerBaseCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_profilerBaseCheckMemInterUnmap;
+
+    pThis->__profilerBaseMapTo__ = &__nvoc_thunk_RsResource_profilerBaseMapTo;
+
+    pThis->__profilerBaseGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_profilerBaseGetMapAddrSpace;
+
+    pThis->__profilerBaseGetRefCount__ = &__nvoc_thunk_RsResource_profilerBaseGetRefCount;
+
+    pThis->__profilerBaseAddAdditionalDependants__ = &__nvoc_thunk_RsResource_profilerBaseAddAdditionalDependants;
+
+    pThis->__profilerBaseControl_Prologue__ = &__nvoc_thunk_RmResource_profilerBaseControl_Prologue;
+
+    pThis->__profilerBaseGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize;
+
+    pThis->__profilerBaseInternalControlForward__ = &__nvoc_thunk_GpuResource_profilerBaseInternalControlForward;
+
+    pThis->__profilerBaseUnmapFrom__ = &__nvoc_thunk_RsResource_profilerBaseUnmapFrom;
+
+    pThis->__profilerBaseControl_Epilogue__ = &__nvoc_thunk_RmResource_profilerBaseControl_Epilogue;
+
+    pThis->__profilerBaseControlLookup__ = &__nvoc_thunk_RsResource_profilerBaseControlLookup;
+
+    pThis->__profilerBaseGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_profilerBaseGetInternalObjectHandle;
 
     pThis->__profilerBaseControl__ = &__nvoc_thunk_GpuResource_profilerBaseControl;
 
@@ -576,37 +741,17 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
 
     pThis->__profilerBaseGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_profilerBaseGetMemoryMappingDescriptor;
 
-    pThis->__profilerBaseGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_profilerBaseGetMapAddrSpace;
-
-    pThis->__profilerBaseGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_profilerBaseGetInternalObjectHandle;
-
     pThis->__profilerBaseControlFilter__ = &__nvoc_thunk_RsResource_profilerBaseControlFilter;
 
-    pThis->__profilerBaseAddAdditionalDependants__ = &__nvoc_thunk_RsResource_profilerBaseAddAdditionalDependants;
-
-    pThis->__profilerBaseGetRefCount__ = &__nvoc_thunk_RsResource_profilerBaseGetRefCount;
-
-    pThis->__profilerBaseCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_profilerBaseCheckMemInterUnmap;
-
-    pThis->__profilerBaseMapTo__ = &__nvoc_thunk_RsResource_profilerBaseMapTo;
-
-    pThis->__profilerBaseControl_Prologue__ = &__nvoc_thunk_RmResource_profilerBaseControl_Prologue;
-
-    pThis->__profilerBaseGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_profilerBaseGetRegBaseOffsetAndSize;
+    pThis->__profilerBaseControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_profilerBaseControlSerialization_Prologue;
 
     pThis->__profilerBaseCanCopy__ = &__nvoc_thunk_RsResource_profilerBaseCanCopy;
 
-    pThis->__profilerBaseInternalControlForward__ = &__nvoc_thunk_GpuResource_profilerBaseInternalControlForward;
-
     pThis->__profilerBasePreDestruct__ = &__nvoc_thunk_RsResource_profilerBasePreDestruct;
-
-    pThis->__profilerBaseUnmapFrom__ = &__nvoc_thunk_RsResource_profilerBaseUnmapFrom;
 
     pThis->__profilerBaseIsDuplicate__ = &__nvoc_thunk_RsResource_profilerBaseIsDuplicate;
 
-    pThis->__profilerBaseControl_Epilogue__ = &__nvoc_thunk_RmResource_profilerBaseControl_Epilogue;
-
-    pThis->__profilerBaseControlLookup__ = &__nvoc_thunk_RsResource_profilerBaseControlLookup;
+    pThis->__profilerBaseControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_profilerBaseControlSerialization_Epilogue;
 
     pThis->__profilerBaseMap__ = &__nvoc_thunk_GpuResource_profilerBaseMap;
 
@@ -635,12 +780,15 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase **ppThis, Dynamic *pParent,
     ProfilerBase *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(ProfilerBase));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ProfilerBase), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(ProfilerBase));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ProfilerBase);
+
+    pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -661,11 +809,17 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase **ppThis, Dynamic *pParent,
     if (status != NV_OK) goto __nvoc_objCreate_ProfilerBase_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_ProfilerBase_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(ProfilerBase));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 
@@ -778,6 +932,54 @@ static NvBool __nvoc_thunk_GpuResource_profilerDevShareCallback(struct ProfilerD
     return gpuresShareCallback((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset), pInvokingClient, pParentRef, pSharePolicy);
 }
 
+static NV_STATUS __nvoc_thunk_RmResource_profilerDevCheckMemInterUnmap(struct ProfilerDev *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), bSubdeviceHandleProvided);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_profilerDevMapTo(struct ProfilerDev *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_profilerDevGetMapAddrSpace(struct ProfilerDev *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvU32 __nvoc_thunk_RsResource_profilerDevGetRefCount(struct ProfilerDev *pResource) {
+    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset));
+}
+
+static void __nvoc_thunk_RsResource_profilerDevAddAdditionalDependants(struct RsClient *pClient, struct ProfilerDev *pResource, RsResourceRef *pReference) {
+    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_profilerDevControl_Prologue(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_profilerDevGetRegBaseOffsetAndSize(struct ProfilerDev *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset), pGpu, pOffset, pSize);
+}
+
+static NV_STATUS __nvoc_thunk_GpuResource_profilerDevInternalControlForward(struct ProfilerDev *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset), command, pParams, size);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_profilerDevUnmapFrom(struct ProfilerDev *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pParams);
+}
+
+static void __nvoc_thunk_RmResource_profilerDevControl_Epilogue(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), pCallContext, pParams);
+}
+
+static NV_STATUS __nvoc_thunk_RsResource_profilerDevControlLookup(struct ProfilerDev *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
+    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pParams, ppEntry);
+}
+
+static NvHandle __nvoc_thunk_GpuResource_profilerDevGetInternalObjectHandle(struct ProfilerDev *pGpuResource) {
+    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset));
+}
+
 static NV_STATUS __nvoc_thunk_GpuResource_profilerDevControl(struct ProfilerDev *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset), pCallContext, pParams);
 }
@@ -794,68 +996,28 @@ static NV_STATUS __nvoc_thunk_RmResource_profilerDevGetMemoryMappingDescriptor(s
     return rmresGetMemoryMappingDescriptor((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), ppMemDesc);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_profilerDevGetMapAddrSpace(struct ProfilerDev *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
-    return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
-}
-
-static NvHandle __nvoc_thunk_GpuResource_profilerDevGetInternalObjectHandle(struct ProfilerDev *pGpuResource) {
-    return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset));
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_profilerDevControlFilter(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControlFilter((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pCallContext, pParams);
 }
 
-static void __nvoc_thunk_RsResource_profilerDevAddAdditionalDependants(struct RsClient *pClient, struct ProfilerDev *pResource, RsResourceRef *pReference) {
-    resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pReference);
-}
-
-static NvU32 __nvoc_thunk_RsResource_profilerDevGetRefCount(struct ProfilerDev *pResource) {
-    return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_profilerDevCheckMemInterUnmap(struct ProfilerDev *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return rmresCheckMemInterUnmap((struct RmResource *)(((unsigned char *)pRmResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), bSubdeviceHandleProvided);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_profilerDevMapTo(struct ProfilerDev *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RmResource_profilerDevControl_Prologue(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_GpuResource_profilerDevGetRegBaseOffsetAndSize(struct ProfilerDev *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
-    return gpuresGetRegBaseOffsetAndSize((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset), pGpu, pOffset, pSize);
+static NV_STATUS __nvoc_thunk_RmResource_profilerDevControlSerialization_Prologue(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), pCallContext, pParams);
 }
 
 static NvBool __nvoc_thunk_RsResource_profilerDevCanCopy(struct ProfilerDev *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_profilerDevInternalControlForward(struct ProfilerDev *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
-    return gpuresInternalControlForward((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ProfilerDev_GpuResource.offset), command, pParams, size);
-}
-
 static void __nvoc_thunk_RsResource_profilerDevPreDestruct(struct ProfilerDev *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset));
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_profilerDevUnmapFrom(struct ProfilerDev *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_profilerDevIsDuplicate(struct ProfilerDev *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return resIsDuplicate((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), hMemory, pDuplicate);
 }
 
-static void __nvoc_thunk_RmResource_profilerDevControl_Epilogue(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_profilerDevControlLookup(struct ProfilerDev *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RsResource.offset), pParams, ppEntry);
+static void __nvoc_thunk_RmResource_profilerDevControlSerialization_Epilogue(struct ProfilerDev *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ProfilerDev_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_GpuResource_profilerDevMap(struct ProfilerDev *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
@@ -917,6 +1079,30 @@ static void __nvoc_init_funcTable_ProfilerDev_1(ProfilerDev *pThis, RmHalspecOwn
 
     pThis->__profilerDevShareCallback__ = &__nvoc_thunk_GpuResource_profilerDevShareCallback;
 
+    pThis->__profilerDevCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_profilerDevCheckMemInterUnmap;
+
+    pThis->__profilerDevMapTo__ = &__nvoc_thunk_RsResource_profilerDevMapTo;
+
+    pThis->__profilerDevGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_profilerDevGetMapAddrSpace;
+
+    pThis->__profilerDevGetRefCount__ = &__nvoc_thunk_RsResource_profilerDevGetRefCount;
+
+    pThis->__profilerDevAddAdditionalDependants__ = &__nvoc_thunk_RsResource_profilerDevAddAdditionalDependants;
+
+    pThis->__profilerDevControl_Prologue__ = &__nvoc_thunk_RmResource_profilerDevControl_Prologue;
+
+    pThis->__profilerDevGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_profilerDevGetRegBaseOffsetAndSize;
+
+    pThis->__profilerDevInternalControlForward__ = &__nvoc_thunk_GpuResource_profilerDevInternalControlForward;
+
+    pThis->__profilerDevUnmapFrom__ = &__nvoc_thunk_RsResource_profilerDevUnmapFrom;
+
+    pThis->__profilerDevControl_Epilogue__ = &__nvoc_thunk_RmResource_profilerDevControl_Epilogue;
+
+    pThis->__profilerDevControlLookup__ = &__nvoc_thunk_RsResource_profilerDevControlLookup;
+
+    pThis->__profilerDevGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_profilerDevGetInternalObjectHandle;
+
     pThis->__profilerDevControl__ = &__nvoc_thunk_GpuResource_profilerDevControl;
 
     pThis->__profilerDevUnmap__ = &__nvoc_thunk_GpuResource_profilerDevUnmap;
@@ -925,37 +1111,17 @@ static void __nvoc_init_funcTable_ProfilerDev_1(ProfilerDev *pThis, RmHalspecOwn
 
     pThis->__profilerDevGetMemoryMappingDescriptor__ = &__nvoc_thunk_RmResource_profilerDevGetMemoryMappingDescriptor;
 
-    pThis->__profilerDevGetMapAddrSpace__ = &__nvoc_thunk_GpuResource_profilerDevGetMapAddrSpace;
-
-    pThis->__profilerDevGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_profilerDevGetInternalObjectHandle;
-
     pThis->__profilerDevControlFilter__ = &__nvoc_thunk_RsResource_profilerDevControlFilter;
 
-    pThis->__profilerDevAddAdditionalDependants__ = &__nvoc_thunk_RsResource_profilerDevAddAdditionalDependants;
-
-    pThis->__profilerDevGetRefCount__ = &__nvoc_thunk_RsResource_profilerDevGetRefCount;
-
-    pThis->__profilerDevCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_profilerDevCheckMemInterUnmap;
-
-    pThis->__profilerDevMapTo__ = &__nvoc_thunk_RsResource_profilerDevMapTo;
-
-    pThis->__profilerDevControl_Prologue__ = &__nvoc_thunk_RmResource_profilerDevControl_Prologue;
-
-    pThis->__profilerDevGetRegBaseOffsetAndSize__ = &__nvoc_thunk_GpuResource_profilerDevGetRegBaseOffsetAndSize;
+    pThis->__profilerDevControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_profilerDevControlSerialization_Prologue;
 
     pThis->__profilerDevCanCopy__ = &__nvoc_thunk_RsResource_profilerDevCanCopy;
 
-    pThis->__profilerDevInternalControlForward__ = &__nvoc_thunk_GpuResource_profilerDevInternalControlForward;
-
     pThis->__profilerDevPreDestruct__ = &__nvoc_thunk_RsResource_profilerDevPreDestruct;
-
-    pThis->__profilerDevUnmapFrom__ = &__nvoc_thunk_RsResource_profilerDevUnmapFrom;
 
     pThis->__profilerDevIsDuplicate__ = &__nvoc_thunk_RsResource_profilerDevIsDuplicate;
 
-    pThis->__profilerDevControl_Epilogue__ = &__nvoc_thunk_RmResource_profilerDevControl_Epilogue;
-
-    pThis->__profilerDevControlLookup__ = &__nvoc_thunk_RsResource_profilerDevControlLookup;
+    pThis->__profilerDevControlSerialization_Epilogue__ = &__nvoc_thunk_RmResource_profilerDevControlSerialization_Epilogue;
 
     pThis->__profilerDevMap__ = &__nvoc_thunk_GpuResource_profilerDevMap;
 
@@ -985,12 +1151,15 @@ NV_STATUS __nvoc_objCreate_ProfilerDev(ProfilerDev **ppThis, Dynamic *pParent, N
     ProfilerDev *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
-    pThis = portMemAllocNonPaged(sizeof(ProfilerDev));
-    if (pThis == NULL) return NV_ERR_NO_MEMORY;
+    status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ProfilerDev), (void**)&pThis, (void**)ppThis);
+    if (status != NV_OK)
+        return status;
 
     portMemSet(pThis, 0, sizeof(ProfilerDev));
 
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ProfilerDev);
+
+    pThis->__nvoc_base_ProfilerBase.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
@@ -1011,11 +1180,17 @@ NV_STATUS __nvoc_objCreate_ProfilerDev(ProfilerDev **ppThis, Dynamic *pParent, N
     if (status != NV_OK) goto __nvoc_objCreate_ProfilerDev_cleanup;
 
     *ppThis = pThis;
+
     return NV_OK;
 
 __nvoc_objCreate_ProfilerDev_cleanup:
     // do not call destructors here since the constructor already called them
-    portMemFree(pThis);
+    if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
+        portMemSet(pThis, 0, sizeof(ProfilerDev));
+    else
+        portMemFree(pThis);
+
+    // coverity[leaked_storage:FALSE]
     return status;
 }
 

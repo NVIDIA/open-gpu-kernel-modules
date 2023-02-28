@@ -35,37 +35,8 @@
 
 #include <drm/drm_crtc.h>
 
-#if defined(NV_DRM_ALPHA_BLENDING_AVAILABLE) || defined(NV_DRM_ROTATION_AVAILABLE)
-/* For DRM_ROTATE_* , DRM_REFLECT_* */
-#include <drm/drm_blend.h>
-#endif
-
-#if defined(NV_DRM_ROTATION_AVAILABLE)
-/* For DRM_MODE_ROTATE_* and DRM_MODE_REFLECT_* */
-#include <uapi/drm/drm_mode.h>
-#endif
-
 #include "nvtypes.h"
 #include "nvkms-kapi.h"
-
-#if defined(NV_DRM_ROTATION_AVAILABLE)
-/*
- * 19-05-2017 c2c446ad29437bb92b157423c632286608ebd3ec has added
- * DRM_MODE_ROTATE_* and DRM_MODE_REFLECT_* to UAPI and removed
- * DRM_ROTATE_* and DRM_MODE_REFLECT_*
- */
-#if !defined(DRM_MODE_ROTATE_0)
-#define DRM_MODE_ROTATE_0       DRM_ROTATE_0
-#define DRM_MODE_ROTATE_90      DRM_ROTATE_90
-#define DRM_MODE_ROTATE_180     DRM_ROTATE_180
-#define DRM_MODE_ROTATE_270     DRM_ROTATE_270
-#define DRM_MODE_REFLECT_X      DRM_REFLECT_X
-#define DRM_MODE_REFLECT_Y      DRM_REFLECT_Y
-#define DRM_MODE_ROTATE_MASK    DRM_ROTATE_MASK
-#define DRM_MODE_REFLECT_MASK   DRM_REFLECT_MASK
-#endif
-
-#endif //NV_DRM_ROTATION_AVAILABLE
 
 struct nv_drm_crtc {
     NvU32 head;
@@ -84,6 +55,13 @@ struct nv_drm_crtc {
      * Spinlock to protect @flip_list.
      */
     spinlock_t flip_list_lock;
+
+    /**
+     * @modeset_permission_filep:
+     *
+     * The filep using this crtc with DRM_IOCTL_NVIDIA_GRANT_PERMISSIONS.
+     */
+    struct drm_file *modeset_permission_filep;
 
     struct drm_crtc base;
 };

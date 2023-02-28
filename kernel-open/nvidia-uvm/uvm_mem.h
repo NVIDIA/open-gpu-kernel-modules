@@ -163,9 +163,6 @@ struct uvm_mem_struct
 
     uvm_gpu_t *dma_owner;
 
-    // Size of the physical chunks.
-    NvU32 chunk_size;
-
     union
     {
         struct
@@ -194,11 +191,11 @@ struct uvm_mem_struct
     // Count of chunks (vidmem) or CPU pages (sysmem) above
     size_t chunks_count;
 
+    // Size of each physical chunk (vidmem) or CPU page (sysmem)
+    NvU32 chunk_size;
+
     // Size of the allocation
     NvU64 size;
-
-    // Size of the physical allocation backing
-    NvU64 physical_allocation_size;
 
     uvm_mem_user_mapping_t *user;
 
@@ -234,6 +231,20 @@ NV_STATUS uvm_mem_translate_gpu_attributes(const UvmGpuMappingAttributes *attrs,
                                            uvm_mem_gpu_mapping_attrs_t *attrs_out);
 
 uvm_chunk_sizes_mask_t uvm_mem_kernel_chunk_sizes(uvm_gpu_t *gpu);
+
+// Size of all the physical allocations backing the given memory.
+static inline NvU64 uvm_mem_physical_size(const uvm_mem_t *mem)
+{
+    NvU64 physical_size = mem->chunks_count * mem->chunk_size;
+
+    UVM_ASSERT(mem->size <= physical_size);
+
+    return physical_size;
+}
+
+// Returns true if the memory is physically contiguous in the
+// [offset, offset + size) interval.
+bool uvm_mem_is_physically_contiguous(uvm_mem_t *mem, NvU64 offset, NvU64 size);
 
 // Allocate memory according to the given allocation parameters.
 //

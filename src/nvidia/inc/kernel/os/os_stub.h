@@ -53,9 +53,6 @@ OSSimEscapeWriteBuffer          stubOsSimEscapeWriteBuffer;
 OSSimEscapeRead                 stubOsSimEscapeRead;
 OSSimEscapeReadBuffer           stubOsSimEscapeReadBuffer;
 OSSetSurfaceName                stubOsSetSurfaceName;
-OSCallACPI_MXMX                 stubOsCallACPI_MXMX;
-OSCallACPI_DSM                  stubOsCallACPI_DSM;
-OSCallACPI_DDC                  stubOsCallACPI_DDC;
 OSCallACPI_BCL                  stubOsCallACPI_BCL;
 OSCallACPI_ON                   stubOsCallACPI_ON;
 OSCallACPI_OFF                  stubOsCallACPI_OFF;
@@ -65,9 +62,7 @@ OSCallACPI_NVHG_GPUSTA          stubOsCallWMI_NVHG_GPUSTA;
 OSCallACPI_NVHG_MXDS            stubOsCallWMI_NVHG_MXDS;
 OSCallACPI_NVHG_MXMX            stubOsCallWMI_NVHG_MXMX;
 OSCallACPI_NVHG_DOS             stubOsCallWMI_NVHG_DOS;
-OSCallACPI_NVHG_ROM             stubOsCallWMI_NVHG_ROM;
 OSCallACPI_NVHG_DCS             stubOsCallWMI_NVHG_DCS;
-OSCallACPI_DOD                  stubOsCallWMI_DOD;
 OSCheckCallback                 stubOsCheckCallback;
 OSRCCallback                    stubOsRCCallback;
 
@@ -80,9 +75,6 @@ OSPageArrayGetPhysAddr          stubOsPageArrayGetPhysAddr;
 OSInternalReserveFreeCallback   stubOsInternalReserveFreeCallback;
 OSInternalReserveAllocCallback  stubOsInternalReserveAllocCallback;
 OSGetUefiVariable               stubOsGetUefiVariable;
-OSCallACPI_MXDS                 stubOsCallACPI_MXDS;
-OSCallACPI_MXDM                 stubOsCallACPI_MXDM;
-OSCallACPI_MXID                 stubOsCallACPI_MXID;
 OSCallACPI_LRST                 stubOsCallACPI_LRST;
 
 #endif // OS_STUB_H

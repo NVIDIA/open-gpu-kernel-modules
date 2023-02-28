@@ -63,6 +63,7 @@ void rmapiShutdown(void);
                                                                         // already held then return error
 #define RMAPI_LOCK_FLAGS_READ                             NVBIT(1)        // Acquire API lock for READ
 #define RMAPI_LOCK_FLAGS_WRITE                            (0x00000000)  // Acquire API lock for WRITE - Default
+#define RMAPI_LOCK_FLAGS_LOW_PRIORITY                     NVBIT(2)      // Deprioritize lock acquire
 
 /**
  * Acquire the RM API Lock
@@ -147,11 +148,11 @@ struct _RM_API
     NV_STATUS (*FreeWithSecInfo)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hObject,
                                  NvU32 flags, API_SECURITY_INFO *pSecInfo);
 
-    // Free a list of clients with default security attributes
-    NV_STATUS (*FreeClientList)(struct _RM_API *pRmApi, NvHandle *phClientList, NvU32 numClients);
+    // Disables all clients in the list, with default security attributes
+    NV_STATUS (*DisableClients)(struct _RM_API *pRmApi, NvHandle *phClientList, NvU32 numClients);
 
-    // Free a list of clients
-    NV_STATUS (*FreeClientListWithSecInfo)(struct _RM_API *pRmApi, NvHandle *phClientList,
+    // Disables all clients in the list
+    NV_STATUS (*DisableClientsWithSecInfo)(struct _RM_API *pRmApi, NvHandle *phClientList,
                                         NvU32 numClients, API_SECURITY_INFO *pSecInfo);
 
     // Invoke a control with default security attributes and local pointers (no NvP64)
@@ -269,7 +270,7 @@ NvBool rmapiCmdIsCacheable(NvU32 cmd, NvBool bAllowInternal);
 NV_STATUS rmapiControlCacheGet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
                                void* params, NvU32 paramsSize);
 NV_STATUS rmapiControlCacheSet(NvHandle hClient, NvHandle hObject, NvU32 cmd,
-                               const void* params, NvU32 paramsSize);
+                               void* params, NvU32 paramsSize);
 NV_STATUS rmapiControlCacheSetGpuInstForObject(NvHandle hClient, NvHandle hObject, NvU32 gpuInst);
 void rmapiControlCacheFreeAllCacheForGpu(NvU32 gpuInst);
 void rmapiControlCacheSetMode(NvU32 mode);

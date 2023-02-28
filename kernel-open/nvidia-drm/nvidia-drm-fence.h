@@ -35,11 +35,11 @@ struct drm_device;
 int nv_drm_fence_supported_ioctl(struct drm_device *dev,
                                  void *data, struct drm_file *filep);
 
-int nv_drm_fence_context_create_ioctl(struct drm_device *dev,
-                                      void *data, struct drm_file *filep);
+int nv_drm_prime_fence_context_create_ioctl(struct drm_device *dev,
+                                            void *data, struct drm_file *filep);
 
-int nv_drm_gem_fence_attach_ioctl(struct drm_device *dev,
-                                  void *data, struct drm_file *filep);
+int nv_drm_gem_prime_fence_attach_ioctl(struct drm_device *dev,
+                                        void *data, struct drm_file *filep);
 
 #endif /* NV_DRM_FENCE_AVAILABLE */
 

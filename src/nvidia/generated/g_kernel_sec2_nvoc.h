@@ -52,20 +52,22 @@ typedef struct _def_rm_flcn_bl_desc RM_FLCN_BL_DESC;
 struct KernelSec2 {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
+    struct IntrService __nvoc_base_IntrService;
     struct KernelFalcon __nvoc_base_KernelFalcon;
     struct Object *__nvoc_pbase_Object;
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
+    struct IntrService *__nvoc_pbase_IntrService;
     struct KernelFalcon *__nvoc_pbase_KernelFalcon;
     struct KernelSec2 *__nvoc_pbase_KernelSec2;
     NV_STATUS (*__ksec2ConstructEngine__)(struct OBJGPU *, struct KernelSec2 *, ENGDESCRIPTOR);
+    void (*__ksec2RegisterIntrService__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceRecord *);
+    NV_STATUS (*__ksec2ServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceServiceNotificationInterruptArguments *);
     void (*__ksec2ConfigureFalcon__)(struct OBJGPU *, struct KernelSec2 *);
     NV_STATUS (*__ksec2ResetHw__)(struct OBJGPU *, struct KernelSec2 *);
-    NvBool (*__ksec2IsEngineInReset__)(struct OBJGPU *, struct KernelSec2 *);
     NvU32 (*__ksec2ReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelSec2 *, NvU32);
     const BINDATA_ARCHIVE *(*__ksec2GetBinArchiveBlUcode__)(struct OBJGPU *, struct KernelSec2 *);
     NV_STATUS (*__ksec2GetGenericBlUcode__)(struct OBJGPU *, struct KernelSec2 *, const RM_FLCN_BL_DESC **, const NvU8 **);
     const BINDATA_ARCHIVE *(*__ksec2GetBinArchiveSecurescrubUcode__)(struct OBJGPU *, struct KernelSec2 *);
-    NV_STATUS (*__ksec2ReconcileTunableState__)(POBJGPU, struct KernelSec2 *, void *);
     NV_STATUS (*__ksec2StateLoad__)(POBJGPU, struct KernelSec2 *, NvU32);
     NV_STATUS (*__ksec2StateUnload__)(POBJGPU, struct KernelSec2 *, NvU32);
     NV_STATUS (*__ksec2StateInitLocked__)(POBJGPU, struct KernelSec2 *);
@@ -77,13 +79,10 @@ struct KernelSec2 {
     void (*__ksec2InitMissing__)(POBJGPU, struct KernelSec2 *);
     NV_STATUS (*__ksec2StatePreInitLocked__)(POBJGPU, struct KernelSec2 *);
     NV_STATUS (*__ksec2StatePreInitUnlocked__)(POBJGPU, struct KernelSec2 *);
-    NV_STATUS (*__ksec2GetTunableState__)(POBJGPU, struct KernelSec2 *, void *);
-    NV_STATUS (*__ksec2CompareTunableState__)(POBJGPU, struct KernelSec2 *, void *, void *);
-    void (*__ksec2FreeTunableState__)(POBJGPU, struct KernelSec2 *, void *);
+    NvBool (*__ksec2ClearInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceClearInterruptArguments *);
     NV_STATUS (*__ksec2StatePostLoad__)(POBJGPU, struct KernelSec2 *, NvU32);
-    NV_STATUS (*__ksec2AllocTunableState__)(POBJGPU, struct KernelSec2 *, void **);
-    NV_STATUS (*__ksec2SetTunableState__)(POBJGPU, struct KernelSec2 *, void *);
     NvBool (*__ksec2IsPresent__)(POBJGPU, struct KernelSec2 *);
+    NvU32 (*__ksec2ServiceInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceServiceInterruptArguments *);
     const RM_FLCN_BL_DESC *pGenericBlUcodeDesc;
     const NvU8 *pGenericBlUcodeImg;
 };
@@ -120,12 +119,14 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 
 #define ksec2ConstructEngine(pGpu, pKernelSec2, arg0) ksec2ConstructEngine_DISPATCH(pGpu, pKernelSec2, arg0)
 #define ksec2ConstructEngine_HAL(pGpu, pKernelSec2, arg0) ksec2ConstructEngine_DISPATCH(pGpu, pKernelSec2, arg0)
+#define ksec2RegisterIntrService(pGpu, pKernelSec2, pRecords) ksec2RegisterIntrService_DISPATCH(pGpu, pKernelSec2, pRecords)
+#define ksec2RegisterIntrService_HAL(pGpu, pKernelSec2, pRecords) ksec2RegisterIntrService_DISPATCH(pGpu, pKernelSec2, pRecords)
+#define ksec2ServiceNotificationInterrupt(arg0, arg1, arg2) ksec2ServiceNotificationInterrupt_DISPATCH(arg0, arg1, arg2)
+#define ksec2ServiceNotificationInterrupt_HAL(arg0, arg1, arg2) ksec2ServiceNotificationInterrupt_DISPATCH(arg0, arg1, arg2)
 #define ksec2ConfigureFalcon(pGpu, pKernelSec2) ksec2ConfigureFalcon_DISPATCH(pGpu, pKernelSec2)
 #define ksec2ConfigureFalcon_HAL(pGpu, pKernelSec2) ksec2ConfigureFalcon_DISPATCH(pGpu, pKernelSec2)
 #define ksec2ResetHw(pGpu, pKernelSec2) ksec2ResetHw_DISPATCH(pGpu, pKernelSec2)
 #define ksec2ResetHw_HAL(pGpu, pKernelSec2) ksec2ResetHw_DISPATCH(pGpu, pKernelSec2)
-#define ksec2IsEngineInReset(pGpu, pKernelSec2) ksec2IsEngineInReset_DISPATCH(pGpu, pKernelSec2)
-#define ksec2IsEngineInReset_HAL(pGpu, pKernelSec2) ksec2IsEngineInReset_DISPATCH(pGpu, pKernelSec2)
 #define ksec2ReadUcodeFuseVersion(pGpu, pKernelSec2, ucodeId) ksec2ReadUcodeFuseVersion_DISPATCH(pGpu, pKernelSec2, ucodeId)
 #define ksec2ReadUcodeFuseVersion_HAL(pGpu, pKernelSec2, ucodeId) ksec2ReadUcodeFuseVersion_DISPATCH(pGpu, pKernelSec2, ucodeId)
 #define ksec2GetBinArchiveBlUcode(pGpu, pKernelSec2) ksec2GetBinArchiveBlUcode_DISPATCH(pGpu, pKernelSec2)
@@ -134,7 +135,6 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 #define ksec2GetGenericBlUcode_HAL(pGpu, pKernelSec2, ppDesc, ppImg) ksec2GetGenericBlUcode_DISPATCH(pGpu, pKernelSec2, ppDesc, ppImg)
 #define ksec2GetBinArchiveSecurescrubUcode(pGpu, pKernelSec2) ksec2GetBinArchiveSecurescrubUcode_DISPATCH(pGpu, pKernelSec2)
 #define ksec2GetBinArchiveSecurescrubUcode_HAL(pGpu, pKernelSec2) ksec2GetBinArchiveSecurescrubUcode_DISPATCH(pGpu, pKernelSec2)
-#define ksec2ReconcileTunableState(pGpu, pEngstate, pTunableState) ksec2ReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define ksec2StateLoad(pGpu, pEngstate, arg0) ksec2StateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define ksec2StateUnload(pGpu, pEngstate, arg0) ksec2StateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define ksec2StateInitLocked(pGpu, pEngstate) ksec2StateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -146,17 +146,26 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 #define ksec2InitMissing(pGpu, pEngstate) ksec2InitMissing_DISPATCH(pGpu, pEngstate)
 #define ksec2StatePreInitLocked(pGpu, pEngstate) ksec2StatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define ksec2StatePreInitUnlocked(pGpu, pEngstate) ksec2StatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define ksec2GetTunableState(pGpu, pEngstate, pTunableState) ksec2GetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define ksec2CompareTunableState(pGpu, pEngstate, pTunables1, pTunables2) ksec2CompareTunableState_DISPATCH(pGpu, pEngstate, pTunables1, pTunables2)
-#define ksec2FreeTunableState(pGpu, pEngstate, pTunableState) ksec2FreeTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
+#define ksec2ClearInterrupt(pGpu, pIntrService, pParams) ksec2ClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define ksec2StatePostLoad(pGpu, pEngstate, arg0) ksec2StatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define ksec2AllocTunableState(pGpu, pEngstate, ppTunableState) ksec2AllocTunableState_DISPATCH(pGpu, pEngstate, ppTunableState)
-#define ksec2SetTunableState(pGpu, pEngstate, pTunableState) ksec2SetTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define ksec2IsPresent(pGpu, pEngstate) ksec2IsPresent_DISPATCH(pGpu, pEngstate)
+#define ksec2ServiceInterrupt(pGpu, pIntrService, pParams) ksec2ServiceInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 NV_STATUS ksec2ConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0);
 
 static inline NV_STATUS ksec2ConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0) {
     return pKernelSec2->__ksec2ConstructEngine__(pGpu, pKernelSec2, arg0);
+}
+
+void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[166]);
+
+static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[166]) {
+    pKernelSec2->__ksec2RegisterIntrService__(pGpu, pKernelSec2, pRecords);
+}
+
+NV_STATUS ksec2ServiceNotificationInterrupt_IMPL(struct OBJGPU *arg0, struct KernelSec2 *arg1, IntrServiceServiceNotificationInterruptArguments *arg2);
+
+static inline NV_STATUS ksec2ServiceNotificationInterrupt_DISPATCH(struct OBJGPU *arg0, struct KernelSec2 *arg1, IntrServiceServiceNotificationInterruptArguments *arg2) {
+    return arg1->__ksec2ServiceNotificationInterrupt__(arg0, arg1, arg2);
 }
 
 void ksec2ConfigureFalcon_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
@@ -165,32 +174,14 @@ void ksec2ConfigureFalcon_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelS
 
 void ksec2ConfigureFalcon_GA102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline void ksec2ConfigureFalcon_f2d351(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    NV_ASSERT_PRECOMP(0);
-}
-
 static inline void ksec2ConfigureFalcon_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
     pKernelSec2->__ksec2ConfigureFalcon__(pGpu, pKernelSec2);
 }
 
 NV_STATUS ksec2ResetHw_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline NV_STATUS ksec2ResetHw_5baef9(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
-}
-
 static inline NV_STATUS ksec2ResetHw_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
     return pKernelSec2->__ksec2ResetHw__(pGpu, pKernelSec2);
-}
-
-NvBool ksec2IsEngineInReset_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
-
-static inline NvBool ksec2IsEngineInReset_108313(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, ((NvBool)(0 != 0)));
-}
-
-static inline NvBool ksec2IsEngineInReset_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    return pKernelSec2->__ksec2IsEngineInReset__(pGpu, pKernelSec2);
 }
 
 static inline NvU32 ksec2ReadUcodeFuseVersion_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
@@ -231,10 +222,6 @@ static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_80f438(s
 
 static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
     return pKernelSec2->__ksec2GetBinArchiveSecurescrubUcode__(pGpu, pKernelSec2);
-}
-
-static inline NV_STATUS ksec2ReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {
-    return pEngstate->__ksec2ReconcileTunableState__(pGpu, pEngstate, pTunableState);
 }
 
 static inline NV_STATUS ksec2StateLoad_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
@@ -281,32 +268,20 @@ static inline NV_STATUS ksec2StatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct 
     return pEngstate->__ksec2StatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NV_STATUS ksec2GetTunableState_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {
-    return pEngstate->__ksec2GetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS ksec2CompareTunableState_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunables1, void *pTunables2) {
-    return pEngstate->__ksec2CompareTunableState__(pGpu, pEngstate, pTunables1, pTunables2);
-}
-
-static inline void ksec2FreeTunableState_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {
-    pEngstate->__ksec2FreeTunableState__(pGpu, pEngstate, pTunableState);
+static inline NvBool ksec2ClearInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceClearInterruptArguments *pParams) {
+    return pIntrService->__ksec2ClearInterrupt__(pGpu, pIntrService, pParams);
 }
 
 static inline NV_STATUS ksec2StatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
     return pEngstate->__ksec2StatePostLoad__(pGpu, pEngstate, arg0);
 }
 
-static inline NV_STATUS ksec2AllocTunableState_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, void **ppTunableState) {
-    return pEngstate->__ksec2AllocTunableState__(pGpu, pEngstate, ppTunableState);
-}
-
-static inline NV_STATUS ksec2SetTunableState_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, void *pTunableState) {
-    return pEngstate->__ksec2SetTunableState__(pGpu, pEngstate, pTunableState);
-}
-
 static inline NvBool ksec2IsPresent_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
     return pEngstate->__ksec2IsPresent__(pGpu, pEngstate);
+}
+
+static inline NvU32 ksec2ServiceInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
+    return pIntrService->__ksec2ServiceInterrupt__(pGpu, pIntrService, pParams);
 }
 
 void ksec2Destruct_IMPL(struct KernelSec2 *pKernelSec2);

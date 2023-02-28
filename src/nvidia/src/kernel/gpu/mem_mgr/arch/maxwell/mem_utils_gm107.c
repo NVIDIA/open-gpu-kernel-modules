@@ -1523,10 +1523,10 @@ memmgrMemUtilsMemSetBlocking_GM107
             if (timeoutStatus == NV_ERR_TIMEOUT)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out wating for CE semaphore in blocking scrub!\n");
+                          "Timed Out waiting for CE semaphore in blocking scrub!\n");
 
                 NV_PRINTF(LEVEL_ERROR,
-                          "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPET=0x%x\n",
+                          "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
                           pChannel->pControlGPFifo->Get,
                           pChannel->pControlGPFifo->Put,
                           pChannel->pControlGPFifo->GPGet,
@@ -1586,10 +1586,10 @@ memmgrMemUtilsMemSetBatched_GM107
             if (timeoutStatus == NV_ERR_TIMEOUT)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out wating for CE semaphore in blocking scrub!\n");
+                          "Timed Out waiting for CE semaphore in blocking scrub!\n");
 
                 NV_PRINTF(LEVEL_ERROR,
-                          "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPET=0x%x\n",
+                          "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
                           MEM_RD32(&pChannel->pControlGPFifo->Get),
                           MEM_RD32(&pChannel->pControlGPFifo->Put),
                           MEM_RD32(&pChannel->pControlGPFifo->GPGet),
@@ -1663,7 +1663,7 @@ memmgrMemUtilsMemCopyBatched_GM107
                       MEM_RD32(semAddr), pChannel->finishPayload);
 
             NV_PRINTF(LEVEL_INFO,
-                      "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPET=0x%x\n",
+                      "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
                       MEM_RD32(&pChannel->pControlGPFifo->Get),
                       MEM_RD32(&pChannel->pControlGPFifo->Put),
                       MEM_RD32(&pChannel->pControlGPFifo->GPGet),
@@ -1672,10 +1672,10 @@ memmgrMemUtilsMemCopyBatched_GM107
             if (timeoutStatus == NV_ERR_TIMEOUT)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out wating for CE semaphore in blocking scrub!\n");
+                          "Timed Out waiting for CE semaphore in blocking scrub!\n");
 
                 NV_PRINTF(LEVEL_ERROR,
-                          "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPET=0x%x\n",
+                          "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
                           MEM_RD32(&pChannel->pControlGPFifo->Get),
                           MEM_RD32(&pChannel->pControlGPFifo->Put),
                           MEM_RD32(&pChannel->pControlGPFifo->GPGet),

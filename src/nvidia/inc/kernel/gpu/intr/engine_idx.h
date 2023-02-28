@@ -133,7 +133,10 @@
 #define MC_ENGINE_IDX_GR6_FECS_LOG                  160
 #define MC_ENGINE_IDX_GR7_FECS_LOG                  161
 #define MC_ENGINE_IDX_TMR_SWRL                      162
-#define MC_ENGINE_IDX_MAX                           163 // This must be kept as the max bit if
+#define MC_ENGINE_IDX_DISP_GSP                      163
+#define MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU          164
+#define MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_CPU      165
+#define MC_ENGINE_IDX_MAX                           166 // This must be kept as the max bit if
                                                         // we need to add more engines
 #define MC_ENGINE_IDX_INVALID                0xFFFFFFFF
 

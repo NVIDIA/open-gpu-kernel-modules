@@ -110,7 +110,7 @@ typedef struct UvmGpuMemoryInfo_tag
     NvBool deviceDescendant;
 
     // Out: Page size associated with the phys alloc.
-    NvU32 pageSize;
+    NvU64 pageSize;
 
     // Out: Set to TRUE, if the allocation is contiguous.
     NvBool contig;
@@ -306,6 +306,7 @@ typedef struct UvmGpuChannelAllocParams_tag
 
     // interpreted as UVM_GPU_CHANNEL_ENGINE_TYPE
     NvU32 engineType;
+
 } UvmGpuChannelAllocParams;
 
 typedef struct UvmGpuPagingChannelAllocParams_tag
@@ -371,7 +372,6 @@ typedef enum
     UVM_LINK_TYPE_NVLINK_2,
     UVM_LINK_TYPE_NVLINK_3,
     UVM_LINK_TYPE_NVLINK_4,
-    UVM_LINK_TYPE_C2C,
 } UVM_LINK_TYPE;
 
 typedef struct UvmGpuCaps_tag
@@ -409,7 +409,7 @@ typedef struct UvmGpuCaps_tag
 
 typedef struct UvmGpuAddressSpaceInfo_tag
 {
-    NvU32           bigPageSize;
+    NvU64           bigPageSize;
 
     NvBool          atsEnabled;
 
@@ -430,7 +430,7 @@ typedef struct UvmGpuAddressSpaceInfo_tag
 typedef struct UvmGpuAllocInfo_tag
 {
     NvU64   gpuPhysOffset;          // Returns gpuPhysOffset if contiguous requested
-    NvU32   pageSize;               // default is RM big page size - 64K or 128 K" else use 4K or 2M
+    NvU64   pageSize;               // default is RM big page size - 64K or 128 K" else use 4K or 2M
     NvU64   alignment;              // Virtual alignment
     NvBool  bContiguousPhysAlloc;   // Flag to request contiguous physical allocation
     NvBool  bMemGrowsDown;          // Causes RM to reserve physical heap from top of FB
@@ -515,6 +515,13 @@ typedef struct UvmGpuExternalMappingInfo_tag
 
     // In: Size of the buffer to store PTEs (in bytes).
     NvU64 pteBufferSize;
+
+    // In: Page size for mapping
+    //     If this field is passed as 0, the page size
+    //     of the allocation is used for mapping.
+    //     nvUvmInterfaceGetExternalAllocPtes must pass
+    //     this field as zero.
+    NvU64 mappingPageSize;
 
     // In: Pointer to a buffer to store PTEs.
     // Out: The interface will fill the buffer with PTEs
@@ -797,6 +804,7 @@ typedef struct UvmGpuFaultInfo_tag
 
         // Preallocated stack for functions called from the UVM isr bottom half
         void *isr_bh_sp;
+
     } nonReplayable;
     NvHandle faultBufferHandle;
 } UvmGpuFaultInfo;

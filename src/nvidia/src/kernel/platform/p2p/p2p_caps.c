@@ -943,7 +943,7 @@ subdeviceGetP2pCaps_VIRTUAL
         for (i = 0; i < pShimParams->peerGpuCount; i++)
         {
             NV2080_CTRL_GPU_P2P_PEER_CAPS_PEER_INFO *pParamsPeerInfo = &pShimParams->peerGpuCaps[i];
-            POBJGPU pRemoteGpu = gpumgrGetGpuFromId(pParamsPeerInfo->gpuId);
+            OBJGPU *pRemoteGpu = gpumgrGetGpuFromId(pParamsPeerInfo->gpuId);
 
             NV_CHECK_OR_ELSE(LEVEL_INFO, pRemoteGpu != NULL,
                              status = NV_ERR_INVALID_ARGUMENT; goto done);

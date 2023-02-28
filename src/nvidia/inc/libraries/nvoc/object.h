@@ -62,6 +62,9 @@ public:
     //! IP Version value.  Temporary until NVOC-style HALs are rolled out.
     NvU32 ipVersion;
 
+    //! flags used to create the object.
+    NvU32 createFlags;
+
     /*!
      * @brief Add pChild as a child of this object.
      *
@@ -118,8 +121,6 @@ public:
 #define NV_ODB_IP_VER_MAJOR                                   31:24 /* R-IVF */
 
 #define IPVersion(pObj)                            staticCast((pObj), Object)->ipVersion
-#define IsIPVersionValid(pObj)                     (DRF_VAL(_ODB, _IP_VER, _MAJOR, IPVersion(pObj)) != 0)
-#define IsIPVersionOrLater(pObj, v0)               (IPVersion(pObj) >= (v0))
 //  v0 .. v1  inclusive
 #define IsIPVersionInRange(pObj, v0, v1)           ((IPVersion(pObj) >= (v0)) && (IPVersion(pObj) <= (v1)))
 

@@ -76,7 +76,7 @@ namespace DisplayPort
         {
             struct _Enum_Path
             {
-                unsigned total, free;
+                unsigned availableStreams, total, free;
                 bool     bPathFECCapable;
                 bool     dataValid;                     // Is the cache valid?
             } enum_path;
@@ -167,7 +167,7 @@ namespace DisplayPort
         NvU8    rawDscCaps[16];
         DscCaps dscCaps;
 
-        // Panel replay Caps 
+        // Panel replay Caps
         PanelReplayCaps prCaps;
 
         bool bIsFakedMuxDevice;
@@ -195,6 +195,7 @@ namespace DisplayPort
         bool bFECParitySupported;
 
         TriState bSdpExtCapable;
+        TriState bAsyncSDPCapable;
         bool bMSAOverMSTCapable;
         bool bDscPassThroughColorFormatWar;
 
@@ -380,6 +381,7 @@ namespace DisplayPort
         virtual void queryGUID2();
 
         virtual bool getSDPExtnForColorimetrySupported();
+        virtual bool getAsyncSDPSupported();
 
         virtual bool getPanelFwRevision(NvU16 *revision);
 

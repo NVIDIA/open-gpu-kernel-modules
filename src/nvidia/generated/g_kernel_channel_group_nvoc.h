@@ -192,20 +192,6 @@ static inline NV_STATUS kchangrpSetInterleaveLevelSched(struct OBJGPU *pGpu, str
 
 #define kchangrpSetInterleaveLevelSched_HAL(pGpu, pKernelChannelGroup, value) kchangrpSetInterleaveLevelSched(pGpu, pKernelChannelGroup, value)
 
-NvU32 kchangrpGetDefaultRunlist_GM107(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup);
-
-
-#ifdef __nvoc_kernel_channel_group_h_disabled
-static inline NvU32 kchangrpGetDefaultRunlist(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroup was disabled!");
-    return 0;
-}
-#else //__nvoc_kernel_channel_group_h_disabled
-#define kchangrpGetDefaultRunlist(pGpu, pKernelChannelGroup) kchangrpGetDefaultRunlist_GM107(pGpu, pKernelChannelGroup)
-#endif //__nvoc_kernel_channel_group_h_disabled
-
-#define kchangrpGetDefaultRunlist_HAL(pGpu, pKernelChannelGroup) kchangrpGetDefaultRunlist(pGpu, pKernelChannelGroup)
-
 static inline void kchangrpUpdateSubcontextMask_b3696a(struct OBJGPU *pGpu, struct KernelChannelGroup *arg0, NvU32 arg1, NvBool arg2) {
     return;
 }
@@ -254,22 +240,6 @@ static inline NvBool kchangrpGetSubcontextZombieState(struct OBJGPU *pGpu, struc
 #endif //__nvoc_kernel_channel_group_h_disabled
 
 #define kchangrpGetSubcontextZombieState_HAL(pGpu, arg0, arg1) kchangrpGetSubcontextZombieState(pGpu, arg0, arg1)
-
-static inline NV_STATUS kchangrpFreeGrSubcontextHdrs_56cd7a(struct OBJGPU *pGpu, struct KernelChannelGroup *arg0) {
-    return NV_OK;
-}
-
-
-#ifdef __nvoc_kernel_channel_group_h_disabled
-static inline NV_STATUS kchangrpFreeGrSubcontextHdrs(struct OBJGPU *pGpu, struct KernelChannelGroup *arg0) {
-    NV_ASSERT_FAILED_PRECOMP("KernelChannelGroup was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_channel_group_h_disabled
-#define kchangrpFreeGrSubcontextHdrs(pGpu, arg0) kchangrpFreeGrSubcontextHdrs_56cd7a(pGpu, arg0)
-#endif //__nvoc_kernel_channel_group_h_disabled
-
-#define kchangrpFreeGrSubcontextHdrs_HAL(pGpu, arg0) kchangrpFreeGrSubcontextHdrs(pGpu, arg0)
 
 NV_STATUS kchangrpAllocFaultMethodBuffers_GV100(struct OBJGPU *pGpu, struct KernelChannelGroup *pKernelChannelGroup);
 

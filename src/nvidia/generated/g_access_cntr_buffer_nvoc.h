@@ -73,9 +73,9 @@ struct AccessCounterBuffer {
     NV_STATUS (*__accesscntrCtrlCmdAccessCntrSetConfig__)(struct AccessCounterBuffer *, NVC365_CTRL_ACCESS_CNTR_SET_CONFIG_PARAMS *);
     NV_STATUS (*__accesscntrCtrlCmdAccessCntrBufferEnableIntr__)(struct AccessCounterBuffer *, NVC365_CTRL_ACCESS_CNTR_BUFFER_ENABLE_INTR_PARAMS *);
     NvBool (*__accesscntrShareCallback__)(struct AccessCounterBuffer *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
-    NV_STATUS (*__accesscntrMapTo__)(struct AccessCounterBuffer *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__accesscntrGetOrAllocNotifShare__)(struct AccessCounterBuffer *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__accesscntrCheckMemInterUnmap__)(struct AccessCounterBuffer *, NvBool);
+    NV_STATUS (*__accesscntrGetOrAllocNotifShare__)(struct AccessCounterBuffer *, NvHandle, NvHandle, struct NotifShare **);
+    NV_STATUS (*__accesscntrMapTo__)(struct AccessCounterBuffer *, RS_RES_MAP_TO_PARAMS *);
     void (*__accesscntrSetNotificationShare__)(struct AccessCounterBuffer *, struct NotifShare *);
     NvU32 (*__accesscntrGetRefCount__)(struct AccessCounterBuffer *);
     void (*__accesscntrAddAdditionalDependants__)(struct RsClient *, struct AccessCounterBuffer *, RsResourceRef *);
@@ -91,9 +91,11 @@ struct AccessCounterBuffer {
     NV_STATUS (*__accesscntrGetMemoryMappingDescriptor__)(struct AccessCounterBuffer *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__accesscntrControlFilter__)(struct AccessCounterBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__accesscntrUnregisterEvent__)(struct AccessCounterBuffer *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__accesscntrControlSerialization_Prologue__)(struct AccessCounterBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__accesscntrCanCopy__)(struct AccessCounterBuffer *);
     void (*__accesscntrPreDestruct__)(struct AccessCounterBuffer *);
     NV_STATUS (*__accesscntrIsDuplicate__)(struct AccessCounterBuffer *, NvHandle, NvBool *);
+    void (*__accesscntrControlSerialization_Epilogue__)(struct AccessCounterBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__accesscntrGetNotificationListPtr__)(struct AccessCounterBuffer *);
     struct NotifShare *(*__accesscntrGetNotificationShare__)(struct AccessCounterBuffer *);
     NvBool (*__accesscntrAccessCallback__)(struct AccessCounterBuffer *, struct RsClient *, void *, RsAccessRight);
@@ -141,9 +143,9 @@ NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, 
 #define accesscntrCtrlCmdAccessCntrSetConfig(pAccessCounterBuffer, pParams) accesscntrCtrlCmdAccessCntrSetConfig_DISPATCH(pAccessCounterBuffer, pParams)
 #define accesscntrCtrlCmdAccessCntrBufferEnableIntr(pAccessCounterBuffer, pGetParams) accesscntrCtrlCmdAccessCntrBufferEnableIntr_DISPATCH(pAccessCounterBuffer, pGetParams)
 #define accesscntrShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) accesscntrShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
-#define accesscntrMapTo(pResource, pParams) accesscntrMapTo_DISPATCH(pResource, pParams)
-#define accesscntrGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) accesscntrGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 #define accesscntrCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) accesscntrCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define accesscntrGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) accesscntrGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
+#define accesscntrMapTo(pResource, pParams) accesscntrMapTo_DISPATCH(pResource, pParams)
 #define accesscntrSetNotificationShare(pNotifier, pNotifShare) accesscntrSetNotificationShare_DISPATCH(pNotifier, pNotifShare)
 #define accesscntrGetRefCount(pResource) accesscntrGetRefCount_DISPATCH(pResource)
 #define accesscntrAddAdditionalDependants(pClient, pResource, pReference) accesscntrAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
@@ -159,9 +161,11 @@ NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, 
 #define accesscntrGetMemoryMappingDescriptor(pRmResource, ppMemDesc) accesscntrGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define accesscntrControlFilter(pResource, pCallContext, pParams) accesscntrControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define accesscntrUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) accesscntrUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
+#define accesscntrControlSerialization_Prologue(pResource, pCallContext, pParams) accesscntrControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define accesscntrCanCopy(pResource) accesscntrCanCopy_DISPATCH(pResource)
 #define accesscntrPreDestruct(pResource) accesscntrPreDestruct_DISPATCH(pResource)
 #define accesscntrIsDuplicate(pResource, hMemory, pDuplicate) accesscntrIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define accesscntrControlSerialization_Epilogue(pResource, pCallContext, pParams) accesscntrControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define accesscntrGetNotificationListPtr(pNotifier) accesscntrGetNotificationListPtr_DISPATCH(pNotifier)
 #define accesscntrGetNotificationShare(pNotifier) accesscntrGetNotificationShare_DISPATCH(pNotifier)
 #define accesscntrAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) accesscntrAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
@@ -247,16 +251,16 @@ static inline NvBool accesscntrShareCallback_DISPATCH(struct AccessCounterBuffer
     return pGpuResource->__accesscntrShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
 
-static inline NV_STATUS accesscntrMapTo_DISPATCH(struct AccessCounterBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
-    return pResource->__accesscntrMapTo__(pResource, pParams);
+static inline NV_STATUS accesscntrCheckMemInterUnmap_DISPATCH(struct AccessCounterBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__accesscntrCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
 }
 
 static inline NV_STATUS accesscntrGetOrAllocNotifShare_DISPATCH(struct AccessCounterBuffer *pNotifier, NvHandle hNotifierClient, NvHandle hNotifierResource, struct NotifShare **ppNotifShare) {
     return pNotifier->__accesscntrGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
-static inline NV_STATUS accesscntrCheckMemInterUnmap_DISPATCH(struct AccessCounterBuffer *pRmResource, NvBool bSubdeviceHandleProvided) {
-    return pRmResource->__accesscntrCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+static inline NV_STATUS accesscntrMapTo_DISPATCH(struct AccessCounterBuffer *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__accesscntrMapTo__(pResource, pParams);
 }
 
 static inline void accesscntrSetNotificationShare_DISPATCH(struct AccessCounterBuffer *pNotifier, struct NotifShare *pNotifShare) {
@@ -319,6 +323,10 @@ static inline NV_STATUS accesscntrUnregisterEvent_DISPATCH(struct AccessCounterB
     return pNotifier->__accesscntrUnregisterEvent__(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent);
 }
 
+static inline NV_STATUS accesscntrControlSerialization_Prologue_DISPATCH(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__accesscntrControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool accesscntrCanCopy_DISPATCH(struct AccessCounterBuffer *pResource) {
     return pResource->__accesscntrCanCopy__(pResource);
 }
@@ -329,6 +337,10 @@ static inline void accesscntrPreDestruct_DISPATCH(struct AccessCounterBuffer *pR
 
 static inline NV_STATUS accesscntrIsDuplicate_DISPATCH(struct AccessCounterBuffer *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__accesscntrIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void accesscntrControlSerialization_Epilogue_DISPATCH(struct AccessCounterBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__accesscntrControlSerialization_Epilogue__(pResource, pCallContext, pParams);
 }
 
 static inline PEVENTNOTIFICATION *accesscntrGetNotificationListPtr_DISPATCH(struct AccessCounterBuffer *pNotifier) {

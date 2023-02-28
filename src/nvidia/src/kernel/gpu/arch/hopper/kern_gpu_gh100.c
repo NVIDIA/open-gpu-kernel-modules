@@ -31,6 +31,8 @@
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/pri_nv_xal_ep.h"
 
+#include "ctrl/ctrl2080/ctrl2080mc.h"
+
 #include "gpu/gsp/gsp_static_config.h"
 
 /*!
@@ -357,6 +359,28 @@ gpuGetFlaVasSize_GH100
 
 static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
 {
+    { classId(OBJFUSE), 1, },
+    { classId(OBJSEQ), 1, },
+    { classId(GpuMutexMgr), 1, },
+    { classId(OBJTMR), 1, },
+    { classId(GraphicsManager), 1, },
+    { classId(MIGManager), 1, },
+    { classId(KernelMIGManager), 1, },
+    { classId(KernelGraphicsManager), 1, },
+    { classId(OBJVBIOS), 1, },
+    { classId(OBJDCB), 1, },
+    { classId(OBJGPIO), 1, },
+    { classId(I2c), 1, },
+    { classId(Spi), 1, },
+    { classId(KernelRc), 1, },
+    { classId(OBJRC), 1, },
+    { classId(OBJSTEREO), 1, },
+    { classId(Intr), 1, },
+    { classId(OBJINFOROM), 1, },
+    { classId(NvDebugDump), 1, },
+    { classId(SMDebugger), 1, },
+    { classId(OBJGPULOG), 1, },
+    { classId(OBJGPUMON), 1, },
     { classId(OBJSWENG), 1 },
     { classId(OBJUVM), 1 },
     { classId(OBJACR), 1 },
@@ -384,18 +408,10 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     { classId(OBJFIFO), 1 },
     { classId(OBJGMMU), 1 },
     { classId(KernelGmmu), 1},
-    { classId(OBJGPULOG), 1 },
-    { classId(OBJGPUMON), 1 },
-    { classId(GraphicsManager), 1 },
-    { classId(MIGManager), 1 },
-    { classId(KernelMIGManager), 1 },
-    { classId(KernelGraphicsManager), 1 },
     { classId(Graphics), 8 },
     { classId(KernelGraphics), 8 },
     { classId(OBJHDACODEC), 1 },
     { classId(OBJHWPM), 1 },
-    { classId(OBJINFOROM), 1 },
-    { classId(Intr), 1 },
     { classId(Lpwr   ), 1 },
     { classId(OBJLSFM), 1 },
     { classId(OBJMC), 1 },
@@ -403,7 +419,6 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     { classId(PrivRing), 1 },
     { classId(SwIntr), 1 },
     { classId(OBJNVJPG), 8 },
-    { classId(NvDebugDump), 1 },
     { classId(KernelNvlink), 1 },
     { classId(Nvlink), 1 },
     { classId(Perf), 1 },
@@ -416,13 +431,12 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     { classId(OBJFSP), 1 },
     { classId(KernelFsp), 1 },
     { classId(Therm), 1 },
-    { classId(OBJTMR), 1 },
     { classId(OBJVOLT), 1 },
     { classId(OBJGRIDDISPLAYLESS), 1 },
-    { classId(OBJFAS), 1 },
     { classId(OBJVMMU), 1 },
     { classId(OBJOFA), 1 },
     { classId(KernelGsp), 1},
+    { classId(KernelSec2), 1},
     { classId(KernelCcu), 1 },
 };
 

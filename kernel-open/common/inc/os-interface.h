@@ -181,7 +181,6 @@ NV_STATUS   NV_API_CALL  os_put_page                 (NvU64 address);
 NvU32       NV_API_CALL  os_get_page_refcount        (NvU64 address);
 NvU32       NV_API_CALL  os_count_tail_pages         (NvU64 address);
 void        NV_API_CALL  os_free_pages_phys          (NvU64, NvU32);
-NV_STATUS   NV_API_CALL  os_call_nv_vmbus            (NvU32, void *);
 NV_STATUS   NV_API_CALL  os_open_temporary_file      (void **);
 void        NV_API_CALL  os_close_file               (void *);
 NV_STATUS   NV_API_CALL  os_write_file               (void *, NvU8 *, NvU64, NvU64);

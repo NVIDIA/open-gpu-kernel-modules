@@ -447,16 +447,16 @@ NvU64 *uvm_push_timestamp(uvm_push_t *push)
     return timestamp;
 }
 
-bool uvm_push_method_validate(uvm_push_t *push, NvU8 subch, NvU32 method_address, NvU32 method_data)
+bool uvm_push_method_is_valid(uvm_push_t *push, NvU8 subch, NvU32 method_address, NvU32 method_data)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
     if (subch == UVM_SUBCHANNEL_CE)
-        return gpu->parent->ce_hal->method_validate(push, method_address, method_data);
+        return gpu->parent->ce_hal->method_is_valid(push, method_address, method_data);
     else if (subch == UVM_SUBCHANNEL_HOST)
-        return gpu->parent->host_hal->method_validate(push, method_address, method_data);
+        return gpu->parent->host_hal->method_is_valid(push, method_address, method_data);
     else if (subch == UVM_SW_OBJ_SUBCHANNEL)
-        return gpu->parent->host_hal->sw_method_validate(push, method_address, method_data);
+        return gpu->parent->host_hal->sw_method_is_valid(push, method_address, method_data);
 
     UVM_ERR_PRINT("Unsupported subchannel 0x%x\n", subch);
     return false;

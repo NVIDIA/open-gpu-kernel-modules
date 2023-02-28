@@ -104,7 +104,7 @@ typedef struct nv_ioctl_rm_api_version
 
 #define NV_RM_API_VERSION_CMD_STRICT         0
 #define NV_RM_API_VERSION_CMD_RELAXED       '1'
-#define NV_RM_API_VERSION_CMD_OVERRIDE      '2'
+#define NV_RM_API_VERSION_CMD_QUERY         '2'
 
 #define NV_RM_API_VERSION_REPLY_UNRECOGNIZED 0
 #define NV_RM_API_VERSION_REPLY_RECOGNIZED   1
