@@ -481,7 +481,6 @@ struct MemoryManager {
     NvU32 zbcSurfaces;
     NvU64 overrideInitHeapMin;
     NvU64 overrideHeapMax;
-    NvU64 fbOverrideStartKb;
     NvU64 rsvdMemorySizeIncrement;
     struct OBJFBSR *pFbsr[8];
     struct OBJFBSR *pActiveFbsr;

@@ -5680,6 +5680,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_IOMMU_SVA_BIND_DEVICE_HAS_DRVDATA_ARG" "" "types"
         ;;
 
+        vm_area_struct_has_const_vm_flags)
+            #
+            # Determine if the 'vm_area_struct' structure has
+            # const 'vm_flags'.
+            #
+            # A union of '__vm_flags' and 'const vm_flags' was added 
+            # by commit bc292ab00f6c ("mm: introduce vma->vm_flags
+            # wrapper functions") in mm-stable branch (2023-02-09)
+            # of the akpm/mm maintainer tree.
+            #
+            CODE="
+            #include <linux/mm_types.h>
+            int conftest_vm_area_struct_has_const_vm_flags(void) {
+                return offsetof(struct vm_area_struct, __vm_flags);
+            }"
+
+            compile_check_conftest "$CODE" "NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS" "" "types"
+        ;;
+
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.
         #

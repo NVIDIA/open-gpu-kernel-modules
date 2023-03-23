@@ -62,10 +62,15 @@ static void
 _logAssertCount(void)
 {
     static NvU32 assertCount = 0;
-    NV00DE_SHARED_DATA *pSharedData = gpushareddataWriteStart(g_pGpu);
+    NV00DE_SHARED_DATA *pSharedData;
 
+    if (g_pGpu == NULL)
+    {
+        return;
+    }
+
+    pSharedData = gpushareddataWriteStart(g_pGpu);
     pSharedData->gspAssertCount = ++assertCount;
-
     gpushareddataWriteFinish(g_pGpu);
 }
 

@@ -115,6 +115,13 @@ struct ProfilerBase {
     void (*__profilerBaseControlSerialization_Epilogue__)(struct ProfilerBase *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__profilerBaseMap__)(struct ProfilerBase *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__profilerBaseAccessCallback__)(struct ProfilerBase *, struct RsClient *, void *, RsAccessRight);
+    NvU32 maxPmaChannels;
+    NvU32 pmaVchIdx;
+    NvBool bLegacyHwpm;
+    struct RsResourceRef **ppBytesAvailable;
+    struct RsResourceRef **ppStreamBuffers;
+    struct RsResourceRef *pBoundCntBuf;
+    struct RsResourceRef *pBoundPmaBuf;
 };
 
 #ifndef __NVOC_CLASS_ProfilerBase_TYPEDEF__

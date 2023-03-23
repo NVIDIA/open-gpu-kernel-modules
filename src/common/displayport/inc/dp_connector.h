@@ -215,6 +215,10 @@ namespace DisplayPort
 
         virtual NvBool isDSCSupported() = 0;
 
+        virtual NvBool isDSCDecompressionSupported() = 0;
+
+        virtual NvBool isDSCPassThroughSupported() = 0;
+
         virtual DscCaps getDscCaps() = 0;
 
         //

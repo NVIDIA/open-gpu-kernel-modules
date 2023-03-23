@@ -448,6 +448,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "SEA",    _VENDOR_NAME_ENTRY("Segate")                            },
     { "SEC",    _VENDOR_NAME_ENTRY("Seiko/Epson")                       },
     { "SEN",    _VENDOR_NAME_ENTRY("Sencore")                           },
+    { "SFL",    _VENDOR_NAME_ENTRY("Shiftall Inc")                      },
     { "SGT",    _VENDOR_NAME_ENTRY("Stargate Technology/AT&T")          },
     { "SGX",    _VENDOR_NAME_ENTRY("SGI")                               },
     { "SHP",    _VENDOR_NAME_ENTRY("Sharp")                             },

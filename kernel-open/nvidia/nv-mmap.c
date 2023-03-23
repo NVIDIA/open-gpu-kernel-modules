@@ -458,7 +458,7 @@ static int nvidia_mmap_numa(
     }
 
     // Needed for the linux kernel for mapping compound pages
-    vma->vm_flags |= VM_MIXEDMAP;
+    nv_vm_flags_set(vma, VM_MIXEDMAP);
 
     for (i = 0, addr = mmap_context->page_array[0]; i < pages;
          addr = mmap_context->page_array[++i], start += PAGE_SIZE)
@@ -603,7 +603,7 @@ int nvidia_mmap_helper(
         }
         up(&nvl->mmap_lock);
 
-        vma->vm_flags |= VM_IO | VM_PFNMAP | VM_DONTEXPAND;
+        nv_vm_flags_set(vma, VM_IO | VM_PFNMAP | VM_DONTEXPAND);
     }
     else
     {
@@ -670,15 +670,15 @@ int nvidia_mmap_helper(
 
         NV_PRINT_AT(NV_DBG_MEMINFO, at);
 
-        vma->vm_flags |= (VM_IO | VM_LOCKED | VM_RESERVED);
-        vma->vm_flags |= (VM_DONTEXPAND | VM_DONTDUMP);
+        nv_vm_flags_set(vma, VM_IO | VM_LOCKED | VM_RESERVED);
+        nv_vm_flags_set(vma, VM_DONTEXPAND | VM_DONTDUMP);
     }
 
     if ((prot & NV_PROTECT_WRITEABLE) == 0)
     {
         vma->vm_page_prot = NV_PGPROT_READ_ONLY(vma->vm_page_prot);
-        vma->vm_flags &= ~VM_WRITE;
-        vma->vm_flags &= ~VM_MAYWRITE;
+        nv_vm_flags_clear(vma, VM_WRITE);
+        nv_vm_flags_clear(vma, VM_MAYWRITE);
     }
 
     vma->vm_ops = &nv_vm_ops;

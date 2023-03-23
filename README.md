@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 530.30.02.
+version 530.41.03.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-530.30.02 driver release.  This can be achieved by installing
+530.41.03 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -167,7 +167,7 @@ for the target kernel.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 530.30.02 release,
+(see the table below). However, in the 530.41.03 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -175,7 +175,7 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/530.30.02/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/530.41.03/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -720,9 +720,13 @@ Subsystem Device ID.
 | NVIDIA A10                                      | 2236 10DE 1482 |
 | NVIDIA A10G                                     | 2237 10DE 152F |
 | NVIDIA A10M                                     | 2238 10DE 1677 |
+| NVIDIA H800 PCIe                                | 2322 10DE 17A4 |
+| NVIDIA H800                                     | 2324 10DE 17A6 |
+| NVIDIA H800                                     | 2324 10DE 17A8 |
 | NVIDIA H100 80GB HBM3                           | 2330 10DE 16C0 |
 | NVIDIA H100 80GB HBM3                           | 2330 10DE 16C1 |
 | NVIDIA H100 PCIe                                | 2331 10DE 1626 |
+| NVIDIA H100                                     | 2339 10DE 17FC |
 | NVIDIA GeForce RTX 3060 Ti                      | 2414           |
 | NVIDIA GeForce RTX 3080 Ti Laptop GPU           | 2420           |
 | NVIDIA RTX A5500 Laptop GPU                     | 2438           |
@@ -809,11 +813,18 @@ Subsystem Device ID.
 | NVIDIA RTX 6000 Ada Generation                  | 26B1 10DE 16A1 |
 | NVIDIA RTX 6000 Ada Generation                  | 26B1 17AA 16A1 |
 | NVIDIA L40                                      | 26B5 10DE 169D |
+| NVIDIA L40                                      | 26B5 10DE 17DA |
 | NVIDIA GeForce RTX 4080                         | 2704           |
 | NVIDIA GeForce RTX 4090 Laptop GPU              | 2717           |
 | NVIDIA GeForce RTX 4090 Laptop GPU              | 2757           |
 | NVIDIA GeForce RTX 4070 Ti                      | 2782           |
 | NVIDIA GeForce RTX 4080 Laptop GPU              | 27A0           |
+| NVIDIA RTX 4000 SFF Ada Generation              | 27B0 1028 16FA |
+| NVIDIA RTX 4000 SFF Ada Generation              | 27B0 103C 16FA |
+| NVIDIA RTX 4000 SFF Ada Generation              | 27B0 10DE 16FA |
+| NVIDIA RTX 4000 SFF Ada Generation              | 27B0 17AA 16FA |
+| NVIDIA L4                                       | 27B8 10DE 16CA |
+| NVIDIA L4                                       | 27B8 10DE 16EE |
 | NVIDIA GeForce RTX 4080 Laptop GPU              | 27E0           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2820           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2860           |

@@ -1477,6 +1477,11 @@ kgraphicsMapCtxBuffer_IMPL
         NvU32 updateFlags = bIsReadOnly ? (DMA_UPDATE_VASPACE_FLAGS_READ_ONLY |
             DMA_UPDATE_VASPACE_FLAGS_SHADER_READ_ONLY) : DMA_UPDATE_VASPACE_FLAGS_NONE;
 
+        if (pGVAS->flags & VASPACE_FLAGS_RESTRICTED_RM_INTERNAL_VALIMITS)
+        {
+            allocFlags |= DMA_ALLOC_VASPACE_USE_RM_INTERNAL_VALIMITS;
+        }
+
         if (kgraphicsIsPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics))
         {
             status = dmaMapBuffer_HAL(pGpu, GPU_GET_DMA(pGpu), pVAS, pMemDesc, &vaddr,
@@ -2152,6 +2157,9 @@ deviceCtrlCmdKGrGetCaps_IMPL
     {
         return NV_ERR_NOT_SUPPORTED;
     }
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGrCaps != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->capsTblSize == NV0080_CTRL_GR_CAPS_TBL_SIZE, NV_ERR_INVALID_ARGUMENT);
 
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
     {

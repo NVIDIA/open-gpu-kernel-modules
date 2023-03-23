@@ -3253,13 +3253,26 @@ _nvswitch_ctrl_get_board_part_number
     NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p
 )
 {
-    if (!nvswitch_is_inforom_supported(device))
+    if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
     {
-        NVSWITCH_PRINT(device, ERROR, "InfoROM is not supported\n");
-        return -NVL_ERR_NOT_SUPPORTED;
-    }
+        NVSWITCH_PRINT(device, INFO,
+        "%s: Skipping retrieval of board part number on FSF\n",
+            __FUNCTION__);
 
-    return device->hal.nvswitch_ctrl_get_board_part_number(device, p);
+        nvswitch_os_memset(p, 0, sizeof(NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR));
+
+       return NVL_SUCCESS;
+    }
+    else
+    {
+        if (!nvswitch_is_inforom_supported(device))
+        {
+            NVSWITCH_PRINT(device, ERROR, "InfoROM is not supported\n");
+            return -NVL_ERR_NOT_SUPPORTED;
+        }
+
+        return device->hal.nvswitch_ctrl_get_board_part_number(device, p);
+    }
 }
 
 static NvlStatus

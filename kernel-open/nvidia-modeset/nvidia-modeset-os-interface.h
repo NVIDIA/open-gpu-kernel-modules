@@ -77,6 +77,7 @@ typedef struct {
     } read_minval;
 } NvKmsSyncPtOpParams;
 
+NvBool nvkms_force_api_to_hw_head_identity_mappings(void);
 NvBool nvkms_output_rounding_fix(void);
 
 void   nvkms_call_rm    (void *ops);

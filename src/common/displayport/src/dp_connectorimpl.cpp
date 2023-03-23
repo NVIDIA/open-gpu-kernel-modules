@@ -5546,7 +5546,8 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
 
         if (existingDev && existingDev->isFakedMuxDevice() && !bIsMuxOnDgpu)
         {
-            DP_LOG((" NotifyLongPulse ignored as mux is not pointing to dGPU and there is a faked device"));
+            DP_LOG((" NotifyLongPulse ignored as mux is not pointing to dGPU and there is a faked device. Marking detect complete"));
+            sink->notifyDetectComplete();
             return;
         }
 
@@ -6520,6 +6521,7 @@ void ConnectorImpl::createFakeMuxDevice(const NvU8 *buffer, NvU32 bufferSize)
 
     // Initialize DSC state
     newDev->dscCaps.bDSCSupported = true;
+    newDev->dscCaps.bDSCDecompressionSupported = true;
     newDev->parseDscCaps(buffer, bufferSize);
     dpMemCopy(newDev->rawDscCaps, buffer, DP_MIN(bufferSize, 16));
     newDev->bDSCPossible = true;

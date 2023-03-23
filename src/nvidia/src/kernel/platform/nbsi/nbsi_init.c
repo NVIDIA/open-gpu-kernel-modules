@@ -1351,7 +1351,12 @@ static NV_STATUS getNbsiObjFromCache
         // return the full table size
         *pTotalObjSize = tempGlobSize;
 
-        rtnObjSizeWithOffset = *pTotalObjSize - rtnObjOffset;
+        if (!portSafeSubU32(*pTotalObjSize, rtnObjOffset, &rtnObjSizeWithOffset))
+        {
+            // Failed argument validation.
+            status = NV_ERR_INVALID_OFFSET;
+        }
+        else
         {
             if (*pRtnObjSize >= rtnObjSizeWithOffset)
             {
@@ -2884,7 +2889,7 @@ NV_STATUS getNbsiObjByType
                                       pRtnObjSize,
                                       pTotalObjSize,
                                       pRtnGlobStatus);
-        if (status == NV_OK)
+        if (status != NV_ERR_GENERIC)
         {
             // It's in the cache, it may or may not fit.
             return status;
@@ -3054,7 +3059,12 @@ NV_STATUS getNbsiObjByType
                     // return the full table size
                     *pTotalObjSize = testObjSize;
 
-                    rtnObjSizeWithOffset = *pTotalObjSize - wantedRtnObjOffset;
+                    if (!portSafeSubU32(*pTotalObjSize, wantedRtnObjOffset, &rtnObjSizeWithOffset))
+                    {
+                        // Failed argument validation.
+                        status = NV_ERR_INVALID_OFFSET;
+                    }
+                    else
                     {
                         if (*pRtnObjSize >= rtnObjSizeWithOffset)
                         {

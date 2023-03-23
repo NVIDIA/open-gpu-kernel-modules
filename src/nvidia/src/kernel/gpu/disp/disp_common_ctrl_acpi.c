@@ -167,6 +167,11 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
     {
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_MXMX:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_MXMX_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
             //
             // get display mask from input buffer
             // display mask is 4 byte long and available at byte 1
@@ -181,27 +186,54 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             // get acpi id
             acpiId = pfmFindAcpiId(pPfm, pGpu, displayMask);
 
+            outDataSize = sizeof(NvU32);
             outStatus = osCallACPI_MXMX(pGpu, acpiId, pInOutData);
             break;
 
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_GPUON:
         {
+            if (inOutDataSize < sizeof(NvU32))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            outDataSize = sizeof(NvU32);
             outStatus = pOS->osCallACPI_NVHG_GPUON(pGpu, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_GPUOFF:
         {
+            if (inOutDataSize < sizeof(NvU32))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            outDataSize = sizeof(NvU32);
             outStatus = pOS->osCallACPI_NVHG_GPUOFF(pGpu, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_GPUSTA:
         {
+            if (inOutDataSize < sizeof(NvU32))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            outDataSize = sizeof(NvU32);
             outStatus = pOS->osCallACPI_NVHG_GPUSTA(pGpu, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_MXDS:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_MXDS_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
 
             //
             // get acpi id from input buffer
@@ -214,11 +246,17 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
                         ((NvU8*) pInOutData) + NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_MXDS_DISP_MASK_OFFSET,
                         sizeof(NvU32));
 
+            outDataSize = sizeof(NvU32);
             outStatus = pOS->osCallACPI_NVHG_MXDS(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXDS:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXDS_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
 
             //
             // get acpi id from input buffer
@@ -231,11 +269,17 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
                         ((NvU8*) pInOutData) + NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXDS_DISP_MASK_OFFSET,
                         sizeof(NvU32));
 
+            outDataSize = sizeof(NvU32);
             outStatus = osCallACPI_MXDS(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXDM:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXDM_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
 
             //
             // get acpi id from input buffer
@@ -249,10 +293,16 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
                         sizeof(NvU32));
 
             outStatus = osCallACPI_MXDM(pGpu, acpiId, (NvU32*) pInOutData);
+            outDataSize = sizeof(NvU32);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXID:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXID_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
 
             // get acpi id from input buffer
             portMemCopy(&acpiId,
@@ -260,22 +310,34 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
                         ((NvU8*) pInOutData) + NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXID_DISP_MASK_OFFSET,
                         sizeof(NvU32));
 
+            outDataSize = sizeof(NvU32);
             outStatus = osCallACPI_MXID(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_LRST:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_LRST_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
 
             portMemCopy(&acpiId,
                         sizeof(NvU32),
                         ((NvU8*) pInOutData) + NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_LRST_DISP_MASK_OFFSET,
                         sizeof(NvU32));
 
+            outDataSize = sizeof(NvU32);
             outStatus = pOS->osCallACPI_LRST(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DDC_EDID:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DDC_EDID_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
 
             portMemCopy(&acpiId,
                         sizeof(NvU32),
@@ -290,6 +352,11 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NVHG_MXMX:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NVHG_MXMX_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
 
             //
             // get acpi id from input buffer
@@ -305,11 +372,17 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             // get acpi id
             acpiId = pfmFindAcpiId(pPfm, pGpu, displayMask);
 
+            outDataSize = sizeof(NvU32);
             outStatus = pOS->osCallACPI_NVHG_MXMX(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DOS:
         {
+            if (inOutDataSize < (NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DOS_DISP_MASK_OFFSET + sizeof(NvU32)))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
             //
             // get acpi id from input buffer
             // acpi id is 4 byte long and available at byte 4
@@ -324,20 +397,35 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             // get acpi id
             acpiId = pfmFindAcpiId(pPfm, pGpu, displayMask);
 
+            outDataSize = sizeof(NvU32);
             outStatus = pOS->osCallACPI_NVHG_DOS(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_ROM:
         {
+            NvU32 *pBuffer = (NvU32*) pInOutData;
+            if ((inOutDataSize < (2 * sizeof(NvU32))) || (inOutDataSize < pBuffer[1]))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
+
+            outDataSize = pBuffer[1];
             outStatus = osCallACPI_NVHG_ROM(pGpu, (NvU32*) pInOutData, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DCS:
         {
+            if (inOutDataSize < sizeof(NvU32))
+            {
+                outStatus = NV_ERR_INVALID_ARGUMENT;
+                break;
+            }
 
             // get display mask from input buffer
             portMemCopy(&acpiId, sizeof(NvU32), pInOutData, sizeof(NvU32));
 
+            outDataSize = sizeof(NvU32);
             outStatus = pOS->osCallACPI_NVHG_DCS(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }

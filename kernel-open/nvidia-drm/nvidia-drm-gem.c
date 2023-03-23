@@ -299,7 +299,7 @@ int nv_drm_mmap(struct file *file, struct vm_area_struct *vma)
             ret = -EINVAL;
             goto done;
         }
-        vma->vm_flags &= ~VM_MAYWRITE;
+        nv_vm_flags_clear(vma, VM_MAYWRITE);
     }
 #endif
 

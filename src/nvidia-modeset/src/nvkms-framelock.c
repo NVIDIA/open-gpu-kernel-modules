@@ -440,6 +440,8 @@ static NVFrameLockEvoPtr AllocFrameLockEvo(NVDevEvoPtr pDevEvo,
     pFrameLockEvo->testMode = FALSE;
     pFrameLockEvo->houseSyncMode =
         NV_KMS_FRAMELOCK_ATTRIBUTE_HOUSE_SYNC_MODE_DISABLED;
+    pFrameLockEvo->mulDivValue = 1;
+    pFrameLockEvo->mulDivMode = NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_MODE_MULTIPLY;
 
     /* Query the framelock revision information */
     if (nvRmApiControl(nvEvoGlobal.clientHandle,
@@ -482,6 +484,9 @@ static NVFrameLockEvoPtr AllocFrameLockEvo(NVDevEvoPtr pDevEvo,
     pFrameLockEvo->maxSyncInterval = gsyncGetCapsParams.maxSyncInterval;
     pFrameLockEvo->videoModeReadOnly = !!(gsyncGetCapsParams.capFlags &
         NV30F1_CTRL_GSYNC_GET_CAPS_CAP_FLAGS_ONLY_GET_VIDEO_MODE);
+    pFrameLockEvo->mulDivSupported = !!(gsyncGetCapsParams.capFlags &
+        NV30F1_CTRL_GSYNC_GET_CAPS_CAP_FLAGS_MULTIPLY_DIVIDE_SYNC);
+    pFrameLockEvo->maxMulDivValue = gsyncGetCapsParams.maxMulDivValue;
 
     /* Determine if house sync is selectable on this frame lock device */
     if (!FrameLockUseHouseSyncGetSupport(pFrameLockEvo,
@@ -865,6 +870,74 @@ static NvBool FrameLockSetSyncDelay(NVFrameLockEvoPtr pFrameLockEvo, NvS64 val)
     return TRUE;
 }
 
+/*!
+ * Set the sync multiply/divide value given in val.  Returns FALSE if the
+ * assignment failed.  Assigns pFrameLockEvo->mulDivValue upon success.
+ */
+static NvBool SetFrameLockMulDivVal(NVFrameLockEvoPtr pFrameLockEvo, NvS64 val)
+{
+    NV30F1_CTRL_GSYNC_SET_CONTROL_PARAMS_PARAMS
+        gsyncSetControlParamsParams = { 0 };
+    NvU32 ret;
+
+    if (!pFrameLockEvo->mulDivSupported ||
+        (val > pFrameLockEvo->maxMulDivValue)) {
+        return FALSE;
+    }
+
+    gsyncSetControlParamsParams.which =
+        NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_MULTIPLY_DIVIDE;
+
+    gsyncSetControlParamsParams.syncMulDiv.multiplyDivideValue = val;
+    gsyncSetControlParamsParams.syncMulDiv.multiplyDivideMode = pFrameLockEvo->mulDivMode;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pFrameLockEvo->device,
+                         NV30F1_CTRL_CMD_GSYNC_SET_CONTROL_PARAMS,
+                         &gsyncSetControlParamsParams,
+                         sizeof(gsyncSetControlParamsParams));
+
+    if (ret != NVOS_STATUS_SUCCESS) return FALSE;
+
+    pFrameLockEvo->mulDivValue = val;
+
+    return TRUE;
+}
+
+/*!
+ * Set the sync multiply/divide mode given in val.  Returns FALSE if the
+ * assignment failed.  Assigns pFrameLockEvo->mulDivMode upon success.
+ */
+static NvBool SetFrameLockMulDivMode(NVFrameLockEvoPtr pFrameLockEvo, NvS64 val)
+{
+    NV30F1_CTRL_GSYNC_SET_CONTROL_PARAMS_PARAMS
+        gsyncSetControlParamsParams = { 0 };
+    NvU32 ret;
+
+    if (!pFrameLockEvo->mulDivSupported ||
+        ((val != NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_MODE_MULTIPLY) &&
+         (val != NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_MODE_DIVIDE))) {
+        return FALSE;
+    }
+
+    gsyncSetControlParamsParams.which =
+        NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_MULTIPLY_DIVIDE;
+
+    gsyncSetControlParamsParams.syncMulDiv.multiplyDivideValue = pFrameLockEvo->mulDivValue;
+    gsyncSetControlParamsParams.syncMulDiv.multiplyDivideMode = val;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pFrameLockEvo->device,
+                         NV30F1_CTRL_CMD_GSYNC_SET_CONTROL_PARAMS,
+                         &gsyncSetControlParamsParams,
+                         sizeof(gsyncSetControlParamsParams));
+
+    if (ret != NVOS_STATUS_SUCCESS) return FALSE;
+
+    pFrameLockEvo->mulDivMode = val;
+
+    return TRUE;
+}
 /*!
  * Set the sync interval to the value given in val.  Returns FALSE if
  * the assignment failed.  Assigns pFrameLockEvo->syncInterval upon
@@ -1342,6 +1415,12 @@ static NvBool ResetHardwareOneDisp(NVDispEvoPtr pDispEvo, NvS64 value)
     if (!FrameLockSetTestMode(pFrameLockEvo, pFrameLockEvo->testMode)) {
         ret = FALSE;
     }
+    if (!SetFrameLockMulDivVal(pFrameLockEvo, pFrameLockEvo->mulDivValue)) {
+        ret = FALSE;
+    }
+    if (!SetFrameLockMulDivMode(pFrameLockEvo, pFrameLockEvo->mulDivMode)) {
+        ret = FALSE;
+    }
 
     /* Since (we think) sync is disabled, these should always be disabled */
     if (!FrameLockSetWatchdog(pFrameLockEvo, FALSE)) {
@@ -1448,6 +1527,61 @@ static NvBool GetFrameLockSyncDelayValidValues(
 
     pValidValues->u.range.min = 0;
     pValidValues->u.range.max = pFrameLockEvo->maxSyncSkew;
+
+    return TRUE;
+}
+
+static NvBool GetFrameLockMulDivVal(const NVFrameLockEvoRec *pFrameLockEvo,
+                                    enum NvKmsFrameLockAttribute attribute,
+                                    NvS64 *val)
+{
+    if (!pFrameLockEvo->mulDivSupported) {
+        return FALSE;
+    }
+
+    *val = pFrameLockEvo->mulDivValue;
+
+    return TRUE;
+}
+
+static NvBool GetFrameLockMulDivValValidValues(
+    const NVFrameLockEvoRec *pFrameLockEvo,
+    struct NvKmsAttributeValidValuesCommonReply *pValidValues)
+{
+    nvAssert(pValidValues->type == NV_KMS_ATTRIBUTE_TYPE_RANGE);
+
+    if (!pFrameLockEvo->mulDivSupported) {
+        return FALSE;
+    }
+
+    pValidValues->u.range.min = 1;
+    pValidValues->u.range.max = pFrameLockEvo->maxMulDivValue;
+
+    return TRUE;
+}
+
+static NvBool GetFrameLockMulDivModeValidValues(
+    const NVFrameLockEvoRec *pFrameLockEvo,
+    struct NvKmsAttributeValidValuesCommonReply *pValidValues)
+{
+    if (!pFrameLockEvo->mulDivSupported) {
+        return FALSE;
+    }
+
+    nvAssert(pValidValues->type == NV_KMS_ATTRIBUTE_TYPE_INTEGER);
+
+    return TRUE;
+}
+
+static NvBool GetFrameLockMulDivMode(const NVFrameLockEvoRec *pFrameLockEvo,
+                                     enum NvKmsFrameLockAttribute attribute,
+                                     NvS64 *val)
+{
+    if (!pFrameLockEvo->mulDivSupported) {
+        return FALSE;
+    }
+
+    *val = pFrameLockEvo->mulDivMode;
 
     return TRUE;
 }
@@ -2083,6 +2217,18 @@ static const struct {
         .set            = NULL,
         .get            = nvFrameLockGetStatusEvo,
         .getValidValues = NULL,
+        .type           = NV_KMS_ATTRIBUTE_TYPE_INTEGER,
+    },
+    [NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_VALUE] = {
+        .set            = SetFrameLockMulDivVal,
+        .get            = GetFrameLockMulDivVal,
+        .getValidValues = GetFrameLockMulDivValValidValues,
+        .type           = NV_KMS_ATTRIBUTE_TYPE_RANGE,
+    },
+    [NV_KMS_FRAMELOCK_ATTRIBUTE_MULTIPLY_DIVIDE_MODE] = {
+        .set            = SetFrameLockMulDivMode,
+        .get            = GetFrameLockMulDivMode,
+        .getValidValues = GetFrameLockMulDivModeValidValues,
         .type           = NV_KMS_ATTRIBUTE_TYPE_INTEGER,
     },
 };

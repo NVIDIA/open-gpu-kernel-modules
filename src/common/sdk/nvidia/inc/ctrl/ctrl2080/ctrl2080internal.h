@@ -136,6 +136,9 @@ typedef struct NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS {
 
     /*! Ampere PLC bug */
     NvBool bDisablePlcForCertainOffsetsBug3046774;
+
+    /*! FB override Start KB */
+    NV_DECLARE_ALIGNED(NvU64 fbOverrideStartKb, 8);
 } NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS;
 
 /*!

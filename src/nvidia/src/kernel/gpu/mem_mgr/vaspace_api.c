@@ -350,6 +350,18 @@ vaspaceapiConstruct_IMPL
             }
         }
 
+        // 
+        // Bug 3610538 For unlinked SLI, clients want to restrict internal buffers to
+        // Internal VA range. setting internal va range to match what we use for
+        // windows.
+        //
+        if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_VA_INTERNAL_LIMIT)
+        {
+            vaStartInternal = SPLIT_VAS_SERVER_RM_MANAGED_VA_START;
+            vaLimitInternal = SPLIT_VAS_SERVER_RM_MANAGED_VA_START +
+                              SPLIT_VAS_SERVER_RM_MANAGED_VA_SIZE - 1;
+        }
+
         // Finally call the factory
         status = vmmCreateVaspace(pVmm, pParams->externalClassId,
                                   pNvVASpaceAllocParams->index,
@@ -618,6 +630,10 @@ static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *tran
     if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_REQUIRE_FIXED_OFFSET)
     {
         flags |= VASPACE_FLAGS_REQUIRE_FIXED_OFFSET;
+    }
+    if (allocFlags & NV_VASPACE_ALLOCATION_FLAGS_VA_INTERNAL_LIMIT)
+    {
+        flags |= VASPACE_FLAGS_RESTRICTED_RM_INTERNAL_VALIMITS;
     }
     flags |= VASPACE_FLAGS_ENABLE_VMM;
 

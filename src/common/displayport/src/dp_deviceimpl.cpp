@@ -1560,13 +1560,22 @@ NvBool DeviceImpl::getDSCSupport()
     {
         if (FLD_TEST_DRF(_DPCD14, _DSC_SUPPORT, _DSC_SUPPORT, _YES, byte))
         {
-            dscCaps.bDSCSupported = true;
+            dscCaps.bDSCDecompressionSupported = true;
+        }
+        if (FLD_TEST_DRF(_DPCD20, _DSC_SUPPORT, _PASS_THROUGH_SUPPORT, _YES, byte))
+        {
+            dscCaps.bDSCPassThroughSupported = true;
         }
     }
 
     else
     {
         DP_LOG(("DP-DEV> DSC Support AUX READ failed for %s!", address.toString(sb)));
+    }
+
+    if (dscCaps.bDSCDecompressionSupported || dscCaps.bDSCPassThroughSupported)
+    {
+        dscCaps.bDSCSupported = true;
     }
 
     return dscCaps.bDSCSupported;
@@ -1685,6 +1694,11 @@ bool DeviceImpl::getFECSupport()
 NvBool DeviceImpl::isDSCSupported()
 {
     return dscCaps.bDSCSupported;
+}
+
+NvBool DeviceImpl::isDSCDecompressionSupported()
+{
+    return dscCaps.bDSCDecompressionSupported;
 }
 
 NvBool DeviceImpl::isDSCPassThroughSupported()
@@ -2027,7 +2041,7 @@ void DeviceImpl::setDscDecompressionDevice(bool bDscCapBasedOnParent)
                         this->devDoingDscDecompression = this;
                         this->bDSCPossible = true;
                     }
-                    else if (this->parent->isDSCSupported())
+                    else if (this->parent->isDSCDecompressionSupported())
                     {
                         //
                         // This condition takes care of DSC capable sink devices
@@ -2040,12 +2054,15 @@ void DeviceImpl::setDscDecompressionDevice(bool bDscCapBasedOnParent)
                 }
                 else
                 {
-                    // This condition takes care of branch device capable of DSC.
-                    this->devDoingDscDecompression = this;
-                    this->bDSCPossible = true;
+                    if (this->isDSCDecompressionSupported())
+                    {
+                        // This condition takes care of branch device capable of DSC decoding.
+                        this->devDoingDscDecompression = this;
+                        this->bDSCPossible = true;
+                    }
                 }
             }
-            else if (this->parent && this->parent->isDSCSupported())
+            else if (this->parent && this->parent->isDSCDecompressionSupported())
             {
                 //
                 // This condition takes care of sink devices not capable of DSC
@@ -2058,7 +2075,7 @@ void DeviceImpl::setDscDecompressionDevice(bool bDscCapBasedOnParent)
     }
     else
     {
-        if (this->isDSCSupported())
+        if (this->isDSCDecompressionSupported())
         {
             this->bDSCPossible = true;
             this->devDoingDscDecompression = this;

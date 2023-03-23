@@ -449,6 +449,7 @@ namespace DisplayPort
         bool getFECSupport();
         NvBool isDSCPassThroughSupported();
         NvBool isDSCSupported();
+        NvBool isDSCDecompressionSupported();
         NvBool isDSCPossible();
         bool isFECSupported();
         bool readAndParseDSCCaps();

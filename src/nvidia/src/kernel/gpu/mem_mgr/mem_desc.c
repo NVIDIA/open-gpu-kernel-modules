@@ -2317,6 +2317,28 @@ memdescFillPages
     }
 }
 
+/*!
+ *  @brief Acquire exclusive use for memdesc for RM.
+ *
+ *  @param[inout] pMemDesc Memory descriptor
+ *
+ *  @returns Boolean indicating whether we successfully acquired the memdesc for exclusive use
+ */
+NvBool
+memdescAcquireRmExclusiveUse
+(
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pMemDesc->_pParentDescriptor == NULL &&
+                                    !pMemDesc->bRmExclusiveUse &&
+                                    pMemDesc->DupCount == 1,
+                       NV_FALSE);
+
+    pMemDesc->bRmExclusiveUse = NV_TRUE;
+    return NV_TRUE;
+}
+
 //
 // SubMemory per subdevice chart: (MD - Memory Descriptor, SD - subdevice)
 //
@@ -2451,6 +2473,7 @@ memdescCreateSubMem
     pMemDescNew->bUsingSuballocator  = pMemDesc->bUsingSuballocator;
     pMemDescNew->_pParentDescriptor  = pMemDesc;
     pMemDesc->childDescriptorCnt++;
+    pMemDescNew->bRmExclusiveUse = pMemDesc->bRmExclusiveUse;
 
     pMemDescNew->subMemOffset        = Offset;
 

@@ -240,6 +240,7 @@ typedef enum
 typedef struct DscCaps
 {
     NvBool bDSCSupported;
+    NvBool bDSCDecompressionSupported;
     NvBool bDSCPassThroughSupported;
     unsigned versionMajor, versionMinor;
     unsigned rcBufferBlockSize;

@@ -103,5 +103,6 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += timespec64
 NV_CONFTEST_TYPE_COMPILE_TESTS += mm_has_mmap_lock
 NV_CONFTEST_TYPE_COMPILE_TESTS += migrate_vma_added_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += migrate_device_range
+NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg

@@ -1,12 +1,18 @@
 # Changelog
 
 ## Release 530 Entries
- 
+
+### [530.41.03] 2023-03-23
+
 ### [530.30.02] 2023-02-28
- 
+
 #### Fixed
 
 - Add support for resizable BAR on Linux when NVreg_EnableResizableBar=1 module param is set. [#3](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/3) by @sjkelly
+
+#### Added
+
+- Support for power management features like Suspend, Hibernate and Resume.
 
 ## Release 525 Entries
 

@@ -572,10 +572,15 @@ RmPhysAddr dmaPageArrayGetPhysAddr(DMA_PAGE_ARRAY *pPageArray, NvU32 pageIndex);
 //
 // hal.dmaAllocVASpace() flags
 //
-#define DMA_ALLOC_VASPACE_NONE                  0
-#define DMA_VA_LIMIT_49B                        NVBIT(0)
-#define DMA_VA_LIMIT_57B                        NVBIT(1)
-#define DMA_ALLOC_VASPACE_SIZE_ALIGNED          NVBIT(9)
+#define DMA_ALLOC_VASPACE_NONE                      0
+#define DMA_VA_LIMIT_49B                            NVBIT(0)
+#define DMA_VA_LIMIT_57B                            NVBIT(1)
+#define DMA_ALLOC_VASPACE_SIZE_ALIGNED              NVBIT(9)
+// 
+// Bug 3610538 For unlinked SLI, clients want to restrict internal buffers to
+// Internal VA range, so that SLI vaspaces can mirror each other.
+//
+#define DMA_ALLOC_VASPACE_USE_RM_INTERNAL_VALIMITS  NVBIT(10)
 
 //
 // Internal device allocation flags

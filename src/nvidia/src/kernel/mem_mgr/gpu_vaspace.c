@@ -665,7 +665,8 @@ gvaspaceConstruct__IMPL
         // By default allocations will be routed within RM internal va range.
         pGVAS->bRMInternalRestrictedVaRange = NV_TRUE;
 
-        status = _gvaspaceReserveRange(pGVAS, pVAS->vasLimit + 1, pGVAS->vaLimitMax);
+        if (pVAS->vasLimit != pGVAS->vaLimitMax)
+            status = _gvaspaceReserveRange(pGVAS, pVAS->vasLimit + 1, pGVAS->vaLimitMax);
     }
     else
     {
@@ -1178,7 +1179,6 @@ _gvaspaceGpuStateConstruct
     if (flags & VASPACE_FLAGS_RESTRICTED_RM_INTERNAL_VALIMITS)
     {
         NV_ASSERT_OR_RETURN(vaLimitInternal <= vaLimitMax, NV_ERR_INVALID_ARGUMENT);
-        NV_ASSERT_OR_RETURN(vaLimitInternal <= vaLimit, NV_ERR_INVALID_ARGUMENT);
         NV_ASSERT_OR_RETURN(vaStartInternal <= vaLimitInternal, NV_ERR_INVALID_ARGUMENT);
         NV_ASSERT_OR_RETURN(vaStartInternal >= vaStartMin, NV_ERR_INVALID_ARGUMENT);
 

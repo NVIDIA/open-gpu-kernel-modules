@@ -344,6 +344,9 @@ typedef struct MEMORY_DESCRIPTOR
     // Serve as a head node in a list of submemdescs
     MEMORY_DESCRIPTOR_LIST *pSubMemDescList;
 
+    // Reserved for RM exclusive use
+    NvBool bRmExclusiveUse;
+
     // If strung in a intrusive linked list
     ListNode   node;
 
@@ -652,6 +655,8 @@ NvBool memdescGetCustomHeap(PMEMORY_DESCRIPTOR);
 
 // Temporary function for 64-bit pageSize transition
 NvU64 memdescGetPageSize64(MEMORY_DESCRIPTOR *pMemDesc, ADDRESS_TRANSLATION addressTranslation);
+
+NvBool memdescAcquireRmExclusiveUse(MEMORY_DESCRIPTOR *pMemDesc);
 
 /*!
  *  @brief Get PTE kind

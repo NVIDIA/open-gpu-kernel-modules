@@ -2638,6 +2638,8 @@ memmgrPmaRegisterRegions_IMPL
     NvU32 blackListCount;
     NvU64 base, size;
     NV_STATUS status = NV_OK;
+    const MEMORY_SYSTEM_STATIC_CONFIG *pMemsysConfig = 
+               kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
 
     blackListCount = pHeap->blackListAddresses.count;
     base = pHeap->base;
@@ -2764,9 +2766,9 @@ memmgrPmaRegisterRegions_IMPL
 _pmaInitFailed:
     portMemFree(pBlacklistPages);
 
-    if ((status == NV_OK) && (pMemoryManager->fbOverrideStartKb != 0))
+    if ((status == NV_OK) && (pMemsysConfig->fbOverrideStartKb != 0))
     {
-        NvU64 allocSize = NV_ALIGN_UP(((NvU64)pMemoryManager->fbOverrideStartKb << 10), PMA_GRANULARITY);
+        NvU64 allocSize = NV_ALIGN_UP(((NvU64)pMemsysConfig->fbOverrideStartKb << 10), PMA_GRANULARITY);
         NvU32 numPages  = (NvU32)(allocSize >> PMA_PAGE_SHIFT);
         PMA_ALLOCATION_OPTIONS allocOptions = {0};
 
@@ -2785,7 +2787,6 @@ _pmaInitFailed:
             portMemFree(pPages);
         }
     }
-
     if (status != NV_OK)
     {
         if (memmgrIsPmaInitialized(pMemoryManager))

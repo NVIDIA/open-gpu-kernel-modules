@@ -696,7 +696,7 @@ static int uvm_mmap(struct file *filp, struct vm_area_struct *vma)
     // of removing CPU mappings in the parent on fork()+exec(). Users can call
     // madvise(MDV_DOFORK) if the child process requires access to the
     // allocation.
-    vma->vm_flags |= VM_MIXEDMAP | VM_DONTEXPAND | VM_DONTCOPY;
+    nv_vm_flags_set(vma, VM_MIXEDMAP | VM_DONTEXPAND | VM_DONTCOPY);
 
     vma->vm_ops = &uvm_vm_ops_managed;
 

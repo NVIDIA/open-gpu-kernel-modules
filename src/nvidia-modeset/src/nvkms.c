@@ -5795,13 +5795,6 @@ NvBool nvSurfaceEvoInAnyOpens(const NVSurfaceEvoRec *pSurfaceEvo)
 }
 #endif
 
-NVDevEvoPtr nvGetDevEvoFromOpenDev(
-    const struct NvKmsPerOpenDev *pOpenDev)
-{
-    nvAssert(pOpenDev != NULL);
-    return pOpenDev->pDevEvo;
-}
-
 const struct NvKmsFlipPermissions *nvGetFlipPermissionsFromOpenDev(
     const struct NvKmsPerOpenDev *pOpenDev)
 {

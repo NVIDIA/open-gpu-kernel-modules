@@ -1880,7 +1880,11 @@ static inline NvU32 nvHardwareHeadToApiHead(const NVDevEvoRec *pDevEvo,
      */
 
     if (head < pDevEvo->numHeads) {
-        return (pDevEvo->numHeads - 1) - head;
+        if (!nvkms_force_api_to_hw_head_identity_mappings()) {
+            return (pDevEvo->numHeads - 1) - head;
+        } else {
+            return head;
+        }
     } else {
         nvAssert(head == NV_INVALID_HEAD);
         return head;
@@ -2360,11 +2364,19 @@ typedef struct _NVFrameLockEvo {
 
     NvBool videoModeReadOnly;   /* If video mode is read-only */
 
+    NvU32 maxMulDivValue;       /* Max sync multiply/divide value */
+
+    NvBool mulDivSupported;     /* Whether this board supports setting a sync
+                                 * multiplier/divider; maxMulDivValue is only
+                                 * valid if this is true */
+
     /* Current device state */
     enum NvKmsFrameLockAttributePolarityValue  polarity;
     NvU32  syncDelay;
     NvU32  syncInterval;
     enum NvKmsFrameLockAttributeVideoModeValue videoMode;
+    NvU8 mulDivValue;
+    enum NvKmsFrameLockAttributeMulDivModeValue mulDivMode;
     NvBool testMode;
 
 } NVFrameLockEvoRec;

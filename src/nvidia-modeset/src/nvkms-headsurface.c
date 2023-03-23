@@ -549,21 +549,22 @@ static NvBool HsFlipQueueEntryIsReady(
  * Update the reference count of all the surfaces described in the pFlipState.
  */
 static void HsUpdateFlipQueueEntrySurfaceRefCount(
+    NVDevEvoPtr pDevEvo,
     const NVHsLayerRequestedFlipState *pFlipState,
     NvBool increase)
 {
     HsChangeSurfaceFlipRefCount(
-        pFlipState->pSurfaceEvo[NVKMS_LEFT], increase);
+        pDevEvo, pFlipState->pSurfaceEvo[NVKMS_LEFT], increase);
 
     HsChangeSurfaceFlipRefCount(
-        pFlipState->pSurfaceEvo[NVKMS_RIGHT], increase);
+        pDevEvo, pFlipState->pSurfaceEvo[NVKMS_RIGHT], increase);
 
     if (!pFlipState->syncObject.usingSyncpt) {
         HsChangeSurfaceFlipRefCount(
-            pFlipState->syncObject.u.semaphores.acquireSurface.pSurfaceEvo, increase);
+            pDevEvo, pFlipState->syncObject.u.semaphores.acquireSurface.pSurfaceEvo, increase);
 
         HsChangeSurfaceFlipRefCount(
-            pFlipState->syncObject.u.semaphores.releaseSurface.pSurfaceEvo, increase);
+            pDevEvo, pFlipState->syncObject.u.semaphores.releaseSurface.pSurfaceEvo, increase);
     }
 }
 
@@ -602,7 +603,7 @@ static void HsReleaseFlipQueueEntry(
      * HeadSurface no longer needs to read from the surfaces in pFlipState;
      * decrement their reference counts.
      */
-    HsUpdateFlipQueueEntrySurfaceRefCount(pFlipState, FALSE);
+    HsUpdateFlipQueueEntrySurfaceRefCount(pDevEvo, pFlipState, FALSE);
 }
 
 /*!
@@ -684,6 +685,7 @@ void nvHsPushFlipQueueEntry(
     const NvU8 layer,
     const NVHsLayerRequestedFlipState *pFlipState)
 {
+    NVDevEvoPtr pDevEvo = pHsChannel->pDispEvo->pDevEvo;
     NVListRec *pFlipQueue = &pHsChannel->flipQueue[layer].queue;
     NVHsChannelFlipQueueEntry *pEntry = nvCalloc(1, sizeof(*pEntry));
 
@@ -700,7 +702,7 @@ void nvHsPushFlipQueueEntry(
 
     /* Increment the ref counts on the surfaces in the flip queue entry. */
 
-    HsUpdateFlipQueueEntrySurfaceRefCount(&pEntry->hwState, TRUE);
+    HsUpdateFlipQueueEntrySurfaceRefCount(pDevEvo, &pEntry->hwState, TRUE);
 
     /* "Fast forward" through existing flip queue entries that are ready. */
 
@@ -722,7 +724,7 @@ void nvHsPushFlipQueueEntry(
  * If this function returns TRUE, it is the caller's responsibility to
  * eventually call
  *
- *    HsUpdateFlipQueueEntrySurfaceRefCount(pFlipState, FALSE)
+ *    HsUpdateFlipQueueEntrySurfaceRefCount(pDevEvo, pFlipState, FALSE)
  *
  * for the returned pFlipState.
  *
@@ -2097,9 +2099,15 @@ static NvBool HsCanOmitNonSgHsUpdate(NVHsChannelEvoPtr pHsChannel)
      * config) still require rendering an updated frame to the backbuffer.
      * Thus, we will simply limit this optimization for frames that come
      * within one frame time after the last recorded flip.
+     *
+     * This doesn't apply with full screen swap group flipping clients, which
+     * must have one fliplocked hardware flip for each flip IOCTL request,
+     * and would break if RG interrupt fake flips interfered with the flip
+     * queue.
      */
     if (pHeadSwapGroup &&
-        pHeadSwapGroup->swapGroupIsFullscreen) {
+        pHeadSwapGroup->swapGroupIsFullscreen &&
+        !pHsChannel->swapGroupFlipping) {
 
         NvU64 nowUs = nvkms_get_usec();
         NvU64 frameTimeUs = nvEvoFrametimeUsFromTimings(
@@ -2243,8 +2251,11 @@ static void HsVBlankCallback(NVDispEvoRec *pDispEvo,
      */
 
     /*
-     * When fullscreen swapgroup flipping, we don't need to update
-     * non-swapgroup content at vblank.
+     * When fullscreen swapgroup flipping, updating
+     * non-swapgroup content at vblank is unnecessary and
+     * dangerous, since it results in releasing client
+     * semaphores before their contents have actually been
+     * displayed.
      */
     if (!pHsChannel->swapGroupFlipping) {
         nvHsNextFrame(pHsDevice, pHsChannel,

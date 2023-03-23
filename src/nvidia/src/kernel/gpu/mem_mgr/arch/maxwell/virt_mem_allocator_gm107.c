@@ -629,13 +629,13 @@ dmaAllocMapping_GM107
         NvU64           vaAlign   = NV_MAX(pLocals->pageSize, compAlign);
         NvU64           vaSize    = RM_ALIGN_UP(pLocals->mapLength, vaAlign);
         NvU64           pageSizeLockMask = 0;
+        pGVAS = dynamicCast(pVAS, OBJGVASPACE);
 
         if (FLD_TEST_DRF(OS46, _FLAGS, _PAGE_SIZE, _BOTH, flags))
         {
             vaAlign = NV_MAX(vaAlign, pLocals->vaspaceBigPageSize);
             vaSize  = RM_ALIGN_UP(pLocals->mapLength, vaAlign);
         }
-
         //
         // Third party code path, nvidia_p2p_get_pages, expects on BAR1 VA to be
         // always aligned at 64K.
@@ -665,6 +665,14 @@ dmaAllocMapping_GM107
                     goto cleanup;
                 }
             }
+            if (pGVAS != NULL && gvaspaceIsInternalVaRestricted(pGVAS))
+            {
+                if ((pLocals->vaRangeLo >= pGVAS->vaStartInternal && pLocals->vaRangeLo <= pGVAS->vaLimitInternal) ||
+                    (pLocals->vaRangeHi <= pGVAS->vaLimitInternal && pLocals->vaRangeHi >= pGVAS->vaStartInternal))
+                {
+                    return NV_ERR_INVALID_PARAMETER;
+                }
+            }
         }
         else if (pDma->getProperty(pDma, PDB_PROP_DMA_RESTRICT_VA_RANGE))
         {
@@ -690,7 +698,6 @@ dmaAllocMapping_GM107
         // Clients can pass an allocation flag to the device or VA space constructor
         // so that mappings and allocations will fail without an explicit address.
         //
-        pGVAS = dynamicCast(pVAS, OBJGVASPACE);
         if (pGVAS != NULL)
         {
             if ((pGVAS->flags & VASPACE_FLAGS_REQUIRE_FIXED_OFFSET) &&
@@ -699,6 +706,18 @@ dmaAllocMapping_GM107
                 status = NV_ERR_INVALID_ARGUMENT;
                 NV_PRINTF(LEVEL_ERROR, "The VA space requires all allocations to specify a fixed address\n");
                 goto cleanup;
+            }
+
+            // 
+            // Bug 3610538 clients can allocate GPU VA, during mapping for ctx dma.
+            // But if clients enable RM to map internal buffers in a reserved 
+            // range of VA for unlinked SLI in Linux, we want to tag these 
+            // allocations as "client allocated", so that it comes outside of 
+            // RM internal region.
+            //
+            if (gvaspaceIsInternalVaRestricted(pGVAS))
+            {
+                allocFlags.bClientAllocation = NV_TRUE;
             }
         }
 
@@ -2210,8 +2229,19 @@ dmaMapBuffer_GM107
         vaAlign = NV_MAX(vaAlign, temp);
     }
 
+    // Set this first in case we ignore DMA_ALLOC_VASPACE_USE_RM_INTERNAL_VALIMITS next
     rangeLo = vaspaceGetVaStart(pVAS);
     rangeHi = vaspaceGetVaLimit(pVAS);
+
+    if (flagsForAlloc & DMA_ALLOC_VASPACE_USE_RM_INTERNAL_VALIMITS)
+    {
+        OBJGVASPACE *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
+        if (pGVAS)
+        {
+            rangeLo = pGVAS->vaStartInternal;
+            rangeHi = pGVAS->vaLimitInternal;
+        }
+    }
 
     // If trying to conserve 32bit address space, map RM buffers at 4GB+
     if (pDma->getProperty(pDma, PDB_PROP_DMA_ENFORCE_32BIT_POINTER) &&
