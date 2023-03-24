@@ -83,4 +83,3 @@ nvidia-modeset.clean:
 
 .PHONY: kernel-open.clean
 kernel-open.clean:
-	$(MAKE) -C kernel-open clean
