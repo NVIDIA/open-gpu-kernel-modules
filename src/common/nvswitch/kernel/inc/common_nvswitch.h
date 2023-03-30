@@ -254,6 +254,8 @@ typedef struct
     NvU32 link_recal_settings;
     NvU32 crc_bit_error_rate_short;
     NvU32 crc_bit_error_rate_long;
+    NvU32 block_code_mode;
+    NvU32 reference_clock_mode;
 } NVSWITCH_REGKEY_TYPE;
 
 //

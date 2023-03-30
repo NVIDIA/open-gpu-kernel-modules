@@ -630,21 +630,6 @@ typedef struct // GPU specific data for core logic object, stored in GPU object
 #define GPU_STATE_DEFAULT                  0       // Default flags for destructive state loads
                                                    // and unloads
 
-typedef struct engine_event_node
-{
-    PEVENTNOTIFICATION pEventNotify;
-    struct Memory *pMemory;
-    struct engine_event_node *pNext;
-} ENGINE_EVENT_NODE;
-
-// Linked list of per engine non-stall event nodes
-typedef struct
-{
-    ENGINE_EVENT_NODE *pEventNode;
-    // lock to protect above list
-    PORT_SPINLOCK *pSpinlock;
-} ENGINE_EVENT_LIST;
-
 struct OBJHWBC;
 typedef struct hwbc_list
 {
@@ -906,7 +891,7 @@ struct OBJGPU {
     OS_RM_CAPS *pOsRmCaps;
     NvU32 halImpl;
     void *hPci;
-    ENGINE_EVENT_LIST engineNonstallIntr[52];
+    GpuEngineEventNotificationList *engineNonstallIntrEventNotifications[52];
     NvBool bIsSOC;
     NvU32 gpuInstance;
     NvU32 gpuDisabled;

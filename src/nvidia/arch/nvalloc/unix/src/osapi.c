@@ -354,9 +354,7 @@ static void free_os_event_under_lock(nv_event_t *event)
     // If refcount > 0, event will be freed by osDereferenceObjectCount
     // when the last associated RM event is freed.
     if (event->refcount == 0)
-    {
         portMemFree(event);
-    }
 }
 
 static void free_os_events(

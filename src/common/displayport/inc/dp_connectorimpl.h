@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -329,6 +329,12 @@ namespace DisplayPort
         // and its parent's DSC capability
         //
         bool        bDscCapBasedOnParent;
+
+        //
+        // MST device connnected to dock may issue IRQ for link lost.
+        // Send PowerDown path msg to suppress that.
+        //
+        bool        bPowerDownPhyBeforeD3;
 
         void sharedInit();
         ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Connector::EventSink * sink);

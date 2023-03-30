@@ -430,7 +430,7 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     if ((uElementSize & 7) != 0)
         portMemSet(pSrc + uElementSize, 0, 8 - (uElementSize & 7));
 
-    pCQE->seqNum   = pMQI->txSeqNum++;
+    pCQE->seqNum   = pMQI->txSeqNum;
     pCQE->checkSum = 0;
     pCQE->checkSum = _checkSum32(pSrc, uElementSize);
 
@@ -488,6 +488,9 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         nvStatus = NV_ERR_INVALID_STATE;
         goto done;
     }
+
+    // Advance seq num only if we actually used it.
+    pMQI->txSeqNum++;
 
     nvStatus = NV_OK;
 

@@ -5305,6 +5305,28 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_ACPI_VIDEO_BACKLIGHT_USE_NATIVE" "" "functions"
         ;;
 
+        drm_connector_has_override_edid)
+            #
+            # Determine if 'struct drm_connector' has an 'override_edid' member.
+            #
+            # Removed by commit 90b575f52c6ab ("drm/edid: detach debugfs EDID
+            # override from EDID property update") in linux-next, expected in
+            # v6.2-rc1.
+            #
+            CODE="
+            #if defined(NV_DRM_DRM_CRTC_H_PRESENT)
+            #include <drm/drm_crtc.h>
+            #endif
+            #if defined(NV_DRM_DRM_CONNECTOR_H_PRESENT)
+            #include <drm/drm_connector.h>
+            #endif
+            int conftest_drm_connector_has_override_edid(void) {
+                return offsetof(struct drm_connector, override_edid);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HAS_OVERRIDE_EDID" "" "types"
+        ;;
+
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.
         #

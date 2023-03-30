@@ -835,9 +835,18 @@ _kgspRpcRecvPoll
         NV_ASSERT(portSafeMulU32(GSP_SCALE_TIMEOUT_EMU_SIM, 1500000, &timeoutResult));
         timeoutUs = timeoutResult;
     }
+    else
+    {
+        // We should only ever timeout this when GSP is in really bad state, so if it just
+        // happens to timeout on default timeout it should be OK for us to give it a little
+        // more time - make this timeout 1.5 of the default to allow some leeway.
+        NvU32 defaultus = pGpu->timeoutData.defaultus;
+
+        timeoutUs = defaultus + defaultus / 2;
+    }
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
-    gpuSetTimeout(pGpu, timeoutUs, &timeout, 0);
+    gpuSetTimeout(pGpu, timeoutUs, &timeout, GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
 
     for (;;)
     {
@@ -1461,6 +1470,13 @@ kgspUnloadRm_IMPL
 
     // Dump GSP-RM logs and reset before invoking FWSEC-SB
     kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+
+    //
+    // Avoid cascading timeouts when attempting to invoke the below ucodes if
+    // we are unloading due to a GSP-RM timeout.
+    //
+    threadStateResetTimeout(pGpu);
+
     kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
 
     // Invoke FWSEC-SB to put back PreOsApps during driver unload

@@ -2,6 +2,10 @@
 
 ## Release 515 Entries
 
+### [515.105.01] 2023-03-30
+
+- Fixed nvenc compatibility with usermode clients [#104](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/104)
+
 ### [515.86.01] 2022-11-22
 
 ### [515.76] 2022-09-20

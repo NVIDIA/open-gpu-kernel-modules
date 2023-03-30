@@ -32,6 +32,8 @@
 
 #include "edid.h"
 
+
+
 PUSH_SEGMENTS
 
 // Macro to declare a TIMING initializer for given parameters without border
@@ -2084,8 +2086,8 @@ NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongVal
 
                     // validate DTD blocks
                     pDTD = (DETAILEDTIMINGDESCRIPTOR *)&pExt[((EIA861EXTENSION *)pExt)->offset];
-                    while (pDTD->wDTPixelClock != 0 &&
-                            (NvU8 *)pDTD - pExt < (int)sizeof(EIA861EXTENSION))
+                    while ((pDTD->wDTPixelClock != 0) &&
+                           (((NvU8 *)pDTD - pExt + sizeof(DETAILEDTIMINGDESCRIPTOR)) < ((NvU8)sizeof(EIA861EXTENSION) - 1)))
                     {
                         if (parseEdidDetailedTimingDescriptor((NvU8 *)pDTD, NULL) != NVT_STATUS_SUCCESS)
                         {

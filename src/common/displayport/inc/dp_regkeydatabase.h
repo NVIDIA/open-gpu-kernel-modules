@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,6 +59,9 @@
 
 #define NV_DP_REGKEY_FORCE_EDP_ILR                    "DP_BYPASS_EDP_ILR_REV_CHECK"
 
+// Message to power down video stream before power down link (set D3)
+#define NV_DP_REGKEY_POWER_DOWN_PHY                   "DP_POWER_DOWN_PHY"
+
 //
 // DSC capability of downstream device should be decided based on device's own
 // and its parent's DSC capability.
@@ -110,6 +113,7 @@ struct DP_REGKEY_DATABASE
     bool  bDscOptimizeLTBug3534707;
     bool  bNoReplyTimerForBusyWaiting;
     bool  bDpcdProbingForBusyWaiting;
+    bool  bPowerDownPhyBeforeD3;
 };
 
 #endif //INCLUDED_DP_REGKEYDATABASE_H

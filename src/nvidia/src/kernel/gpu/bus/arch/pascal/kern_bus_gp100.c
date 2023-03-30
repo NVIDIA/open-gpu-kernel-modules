@@ -362,8 +362,11 @@ kbusRemoveNvlinkPeerMapping_GP100
                   peerId, gpuGetInstance(pGpu0));
 
         // Before removing the NVLink peer mapping in HSHUB flush both ends
-        kbusFlush_HAL(pGpu0, pKernelBus0, BUS_FLUSH_VIDEO_MEMORY);
-        kbusFlush_HAL(pGpu1, GPU_GET_KERNEL_BUS(pGpu1), BUS_FLUSH_VIDEO_MEMORY);
+        if (IsAMPEREorBetter(pGpu0))
+        {
+            kbusFlush_HAL(pGpu0, pKernelBus0, BUS_FLUSH_VIDEO_MEMORY | BUS_FLUSH_USE_PCIE_READ);
+            kbusFlush_HAL(pGpu1, GPU_GET_KERNEL_BUS(pGpu1), BUS_FLUSH_VIDEO_MEMORY | BUS_FLUSH_USE_PCIE_READ);
+        }
 
         NV2080_CTRL_NVLINK_ENABLE_NVLINK_PEER_PARAMS  params;
         portMemSet(&params, 0, sizeof(params));

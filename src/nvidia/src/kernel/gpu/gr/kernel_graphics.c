@@ -2103,7 +2103,8 @@ deviceCtrlCmdKGrGetCaps_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
-    NvBool  bCapsPopulated = NV_FALSE;
+    NvU8 *pGrCaps = NvP64_VALUE(pParams->capsTbl);
+    NvBool bCapsPopulated = NV_FALSE;
 
     LOCK_ASSERT_AND_RETURN(rmApiLockIsOwner());
 
@@ -2111,6 +2112,9 @@ deviceCtrlCmdKGrGetCaps_IMPL
     {
         return NV_ERR_NOT_SUPPORTED;
     }
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGrCaps != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->capsTblSize == NV0080_CTRL_GR_CAPS_TBL_SIZE, NV_ERR_INVALID_ARGUMENT);
 
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
     {
@@ -2128,7 +2132,7 @@ deviceCtrlCmdKGrGetCaps_IMPL
         if (!bCapsPopulated)
         {
             NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-                kgraphicsGetCaps(pGpu, pKernelGraphics, pParams->capsTbl),
+                kgraphicsGetCaps(pGpu, pKernelGraphics, pGrCaps),
                 SLI_LOOP_RETURN(status););
 
             bCapsPopulated = NV_TRUE;

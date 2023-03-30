@@ -466,6 +466,10 @@
 #define ESC_4000_G4_DEVID                  0xA1C1
 #define ESC_4000_G4_SSDEVID                0x871E
 
+// Lenovo Tomcat Workstation
+#define LENOVO_TOMCAT_DEVID                0x1B81
+#define LENOVO_TOMCAT_SSDEVID              0x104e
+
 
 // NVIDIA C51
 #define NVIDIA_C51_DEVICE_ID_MIN                        0x2F0

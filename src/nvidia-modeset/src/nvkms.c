@@ -934,14 +934,6 @@ static void RevokePermissionsInternal(
     }
 }
 
-static void ReallocCoreChannel(NVDevEvoRec *pDevEvo)
-{
-    if (nvAllocCoreChannelEvo(pDevEvo)) {
-        nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
-        AllocSurfaceCtxDmasForAllOpens(pDevEvo);
-    }
-}
-
 static void RestoreConsole(NVDevEvoPtr pDevEvo)
 {
     pDevEvo->modesetOwnerChanged = TRUE;
@@ -956,7 +948,10 @@ static void RestoreConsole(NVDevEvoPtr pDevEvo)
         // Reallocate the core channel right after freeing it. This makes sure
         // that it's allocated and ready right away if another NVKMS client is
         // started.
-        ReallocCoreChannel(pDevEvo);
+        if (nvAllocCoreChannelEvo(pDevEvo)) {
+            nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
+            AllocSurfaceCtxDmasForAllOpens(pDevEvo);
+        }
     }
 }
 
@@ -4845,7 +4840,7 @@ void nvKmsSuspend(NvU32 gpuId)
 
             FreeSurfaceCtxDmasForAllOpens(pDevEvo);
 
-            nvFreeCoreChannelEvo(pDevEvo);
+            nvSuspendDevEvo(pDevEvo);
         }
     }
 
@@ -4862,9 +4857,10 @@ void nvKmsResume(NvU32 gpuId)
         FOR_ALL_EVO_DEVS(pDevEvo) {
             nvEvoLogDevDebug(pDevEvo, EVO_LOG_INFO, "Resuming");
 
-            nvRestoreSORAssigmentsEvo(pDevEvo);
-
-            ReallocCoreChannel(pDevEvo);
+            if (nvResumeDevEvo(pDevEvo)) {
+                nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
+                AllocSurfaceCtxDmasForAllOpens(pDevEvo);
+            }
 
             if (pDevEvo->modesetOwner == NULL) {
                 // Hardware state was lost, so we need to force a console

@@ -521,6 +521,11 @@ NV_STATUS engineNonStallIntrNotify(OBJGPU *, NvU32);
 NV_STATUS notifyEvents(OBJGPU*, EVENTNOTIFICATION*, NvU32, NvU32, NvU32, NV_STATUS, NvU32);
 NV_STATUS engineNonStallIntrNotifyEvent(OBJGPU *, NvU32, NvHandle);
 
+typedef struct GpuEngineEventNotificationList GpuEngineEventNotificationList;
+
+NV_STATUS gpuEngineEventNotificationListCreate(OBJGPU *, GpuEngineEventNotificationList **);
+void      gpuEngineEventNotificationListDestroy(OBJGPU *, GpuEngineEventNotificationList *);
+
 #endif // _EVENT_H_
 
 #ifdef __cplusplus

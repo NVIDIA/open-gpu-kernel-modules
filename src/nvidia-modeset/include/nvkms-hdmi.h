@@ -60,6 +60,7 @@ NvBool nvInitHdmiLibrary(NVDevEvoRec *pDevEvo);
 void nvTeardownHdmiLibrary(NVDevEvoRec *pDevEvo);
 
 NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo);
+NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo);
 NvBool nvHdmiFrlQueryConfig(const NVDpyEvoRec *pDpyEvo,
                             const NvModeTimings *pModeTimings,
                             NVHwModeTimingsEvo *pTimings,

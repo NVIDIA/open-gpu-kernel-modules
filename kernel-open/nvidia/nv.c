@@ -169,7 +169,11 @@ NvBool nv_ats_supported = NVCPU_IS_PPC64LE
 /* nvos_ functions.. do not take a state device parameter  */
 static int      nvos_count_devices(void);
 
-static nv_alloc_t  *nvos_create_alloc(struct device *, int);
+
+static nv_alloc_t  *nvos_create_alloc(struct device *, NvU64);
+
+
+
 static int          nvos_free_alloc(nv_alloc_t *);
 
 /***
@@ -284,11 +288,20 @@ void nv_sev_init(
 static
 nv_alloc_t *nvos_create_alloc(
     struct device *dev,
-    int num_pages
+
+    NvU64          num_pages
+
+
+
 )
 {
-    nv_alloc_t *at;
-    unsigned int pt_size, i;
+    nv_alloc_t  *at;
+
+    NvU64        pt_size;
+
+
+
+    unsigned int i;
 
     NV_KMALLOC(at, sizeof(nv_alloc_t));
     if (at == NULL)
@@ -300,7 +313,29 @@ nv_alloc_t *nvos_create_alloc(
     memset(at, 0, sizeof(nv_alloc_t));
 
     at->dev = dev;
+
     pt_size = num_pages *  sizeof(nvidia_pte_t *);
+    //
+    // Check for multiplication overflow and check whether num_pages value can fit in at->num_pages.
+    //
+    if ((num_pages != 0) && ((pt_size / num_pages) != sizeof(nvidia_pte_t*)))
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Invalid page table allocation - Number of pages exceeds max value.\n");
+        NV_KFREE(at, sizeof(nv_alloc_t));
+        return NULL;
+    }
+
+    at->num_pages = num_pages;
+    if (at->num_pages != num_pages)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Invalid page table allocation - requested size overflows.\n");
+        NV_KFREE(at, sizeof(nv_alloc_t));
+        return NULL;
+    }
+
+
+
+
     if (os_alloc_mem((void **)&at->page_table, pt_size) != NV_OK)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to allocate page table\n");
@@ -309,7 +344,9 @@ nv_alloc_t *nvos_create_alloc(
     }
 
     memset(at->page_table, 0, pt_size);
-    at->num_pages = num_pages;
+
+
+
     NV_ATOMIC_SET(at->usage_count, 0);
 
     for (i = 0; i < at->num_pages; i++)

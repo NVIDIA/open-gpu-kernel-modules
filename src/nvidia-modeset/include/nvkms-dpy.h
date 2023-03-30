@@ -31,6 +31,9 @@ extern "C" {
 #endif
 
 void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo);
+NVEvoPassiveDpDongleType nvDpyGetPassiveDpDongleType(
+    const NVDpyEvoRec *pDpyEvo,
+    NvU32 *passiveDpDongleMaxPclkKHz);
 void nvDpySetValidSyncsEvo(const NVDpyEvoRec *pDpyEvo,
                            struct NvKmsModeValidationValidSyncs *pValidSyncs);
 NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,

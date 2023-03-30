@@ -852,21 +852,16 @@ bool DisplayPort::isModePossibleMSTWithFEC
 
 unsigned DisplayPort::pbnForMode(const ModesetInfo & modesetInfo)
 {
+    // When DSC is enabled consider depth will multiplied by 16 
+    unsigned dsc_factor = modesetInfo.bEnableDsc ? 16 : 1;
+
     //
     // Calculate PBN in terms of 54/64 mbyte/sec
     // round up by .6% for spread de-rate. Note: if we're not spreading our link
     // this MUST still be counted.  It's also to allow downstream links to be spread.
     //
     unsigned pbnForMode = (NvU32)(divide_ceil(modesetInfo.pixelClockHz * modesetInfo.depth * 1006 * 64 / 8,
-                                    (NvU64)54000000 *1000));
-
-    if(modesetInfo.bEnableDsc)
-    {
-        //
-        // When DSC is enabled consider depth will multiplied by 16 and also 3% FEC Overhead
-        // as per DP1.4 spec
-        pbnForMode = (NvU32)(divide_ceil(pbnForMode * 100, 97 * DSC_DEPTH_FACTOR));
-    }
+                                    (NvU64)54000000 * 1000 * dsc_factor));
 
     return pbnForMode;
 }

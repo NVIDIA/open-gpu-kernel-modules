@@ -649,5 +649,7 @@ NvlStatus nvswitch_service_nvldl_fatal_link_lr10(nvswitch_device *device, NvU32 
 NvlStatus nvswitch_service_minion_link_lr10(nvswitch_device *device, NvU32 nvliptInstance);
 void      nvswitch_apply_recal_settings_lr10(nvswitch_device *device, nvlink_link *link);
 NvlStatus nvswitch_ctrl_get_sw_info_lr10(nvswitch_device *device, NVSWITCH_GET_SW_INFO_PARAMS *p);
+void      nvswitch_setup_link_system_registers_lr10(nvswitch_device *device, nvlink_link *link);
+void      nvswitch_load_link_disable_settings_lr10(nvswitch_device *device, nvlink_link *link);
 
 #endif //_LR10_H_

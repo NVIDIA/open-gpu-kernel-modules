@@ -122,7 +122,9 @@
     _op(NvlStatus, nvswitch_soe_prepare_for_reset, (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_post_init_device_setup, (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_post_init_blacklist_device_setup, (nvswitch_device *device), _arch)  \
-    _op(NvlStatus, nvswitch_setup_link_system_registers, (nvswitch_device *device), _arch)  \
+    _op(NvlStatus, nvswitch_setup_system_registers, (nvswitch_device *device), _arch)  \
+    _op(void,      nvswitch_setup_link_system_registers, (nvswitch_device *device, nvlink_link *link), _arch)  \
+    _op(void,      nvswitch_load_link_disable_settings, (nvswitch_device *device, nvlink_link *link), _arch)  \
     _op(NvlStatus, nvswitch_get_nvlink_ecc_errors,  (nvswitch_device *device, NVSWITCH_GET_NVLINK_ECC_ERRORS_PARAMS *p), _arch)  \
     _op(NvlStatus, nvswitch_inforom_ecc_log_error_event, (nvswitch_device *device, INFOROM_ECC_OBJECT *pEccGeneric, INFOROM_NVS_ECC_ERROR_EVENT *error_event), _arch)  \
     _op(void,      nvswitch_oms_set_device_disable, (INFOROM_OMS_STATE *pOmsState, NvBool bForceDeviceDisable), _arch)  \

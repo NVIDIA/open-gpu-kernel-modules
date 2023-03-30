@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -97,7 +97,8 @@ const struct
     {NV_DP_DSC_MST_ENABLE_PASS_THROUGH,             &dpRegkeyDatabase.bDscMstEnablePassThrough,        DP_REG_VAL_BOOL},
     {NV_DP_DSC_OPTIMIZE_LT_BUG_3534707,             &dpRegkeyDatabase.bDscOptimizeLTBug3534707,        DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_NO_REPLY_TIMER_FOR_BUSY_WAITING,  &dpRegkeyDatabase.bNoReplyTimerForBusyWaiting,     DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_DPCD_PROBING_FOR_BUSY_WAITING,    &dpRegkeyDatabase.bDpcdProbingForBusyWaiting,      DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_DPCD_PROBING_FOR_BUSY_WAITING,    &dpRegkeyDatabase.bDpcdProbingForBusyWaiting,      DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :

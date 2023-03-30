@@ -3194,10 +3194,13 @@ NV_STATUS gpuConstructEngineTable_IMPL
     // Initialize per-GPU per-engine list of non-stall interrupt event nodes.
     for (engineId = 0; engineId < NV2080_ENGINE_TYPE_LAST; engineId++)
     {
-        pGpu->engineNonstallIntr[engineId].pEventNode = NULL;
-        pGpu->engineNonstallIntr[engineId].pSpinlock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
-        if (pGpu->engineNonstallIntr[engineId].pSpinlock == NULL)
-            return NV_ERR_INSUFFICIENT_RESOURCES;
+        NV_STATUS status = gpuEngineEventNotificationListCreate(pGpu,
+            &pGpu->engineNonstallIntrEventNotifications[engineId]);
+        if (status != NV_OK)
+        {
+            gpuDestroyEngineTable(pGpu);
+            return status;
+        }
     }
 
     return NV_OK;
@@ -3251,7 +3254,9 @@ NV_STATUS gpuUpdateEngineTable_IMPL
 }
 void gpuDestroyEngineTable_IMPL(OBJGPU *pGpu)
 {
-    NvU32     engineId      = 0;
+    for (NvU32 engineId = 0; engineId < NV2080_ENGINE_TYPE_LAST; engineId++)
+        gpuEngineEventNotificationListDestroy(pGpu,
+            pGpu->engineNonstallIntrEventNotifications[engineId]);
 
     if (pGpu->engineDB.pType)
     {
@@ -3259,16 +3264,6 @@ void gpuDestroyEngineTable_IMPL(OBJGPU *pGpu)
         portMemFree(pGpu->engineDB.pType);
         pGpu->engineDB.pType = NULL;
         pGpu->engineDB.bValid = NV_FALSE;
-    }
-
-    for (engineId = 0; engineId < NV2080_ENGINE_TYPE_LAST; engineId++)
-    {
-        NV_ASSERT(pGpu->engineNonstallIntr[engineId].pEventNode == NULL);
-
-        if (pGpu->engineNonstallIntr[engineId].pSpinlock != NULL)
-        {
-            portSyncSpinlockDestroy(pGpu->engineNonstallIntr[engineId].pSpinlock);
-        }
     }
 }
 

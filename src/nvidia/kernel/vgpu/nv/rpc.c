@@ -267,9 +267,9 @@ static NV_STATUS _issueRpcLarge
 
     //
     // Copy the initial buffer
-    // Temporary black magic WAR for bug 3594082: reducing the size by 1
+    // Temporary black magic WAR for bug 3594082: reducing the size by 2
     //
-    entryLength = NV_MIN(bufSize, pRpc->maxRpcSize - 1);
+    entryLength = NV_MIN(bufSize, pRpc->maxRpcSize - 2);
 
     if ((NvU8 *)vgpu_rpc_message_header_v != pBuf8)
         portMemCopy(vgpu_rpc_message_header_v, entryLength, pBuf8, entryLength);
@@ -296,9 +296,9 @@ static NV_STATUS _issueRpcLarge
 
     //
     // Copy the remaining buffers
-    // Temporary black magic WAR for bug 3594082: reducing the size by 1
+    // Temporary black magic WAR for bug 3594082: reducing the size by 2
     //
-    entryLength = pRpc->maxRpcSize - sizeof(rpc_message_header_v) - 1;
+    entryLength = pRpc->maxRpcSize - sizeof(rpc_message_header_v) - 2;
     while (remainingSize != 0)
     {
         if (entryLength > remainingSize)
@@ -357,7 +357,8 @@ static NV_STATUS _issueRpcLarge
 
     pBuf8 = (NvU8 *)pBuffer;
     remainingSize = bufSize;
-    entryLength = NV_MIN(bufSize, pRpc->maxRpcSize);
+    entryLength = NV_MIN(bufSize, vgpu_rpc_message_header_v->length);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, entryLength <= pRpc->maxRpcSize, NV_ERR_INVALID_STATE);
 
     if (((NvU8 *)vgpu_rpc_message_header_v != pBuf8) && bBidirectional)
       portMemCopy(pBuf8, entryLength, vgpu_rpc_message_header_v, entryLength);
@@ -388,8 +389,11 @@ static NV_STATUS _issueRpcLarge
                 NV_ASSERT(0);
                 return nvStatus;
             }
-            entryLength = vgpu_rpc_message_header_v->length - sizeof(rpc_message_header_v);
+
+            entryLength = vgpu_rpc_message_header_v->length;
             NV_CHECK_OR_RETURN(LEVEL_ERROR, entryLength <= pRpc->maxRpcSize, NV_ERR_INVALID_STATE);
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, entryLength >= sizeof(rpc_message_header_v), NV_ERR_INVALID_STATE);
+            entryLength -= sizeof(rpc_message_header_v);
 
             if (entryLength > remainingSize)
                 entryLength = remainingSize;
@@ -1635,9 +1639,9 @@ NV_STATUS rpcRmApiControl_GSP
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_WARNING,
-                  "GspRmControl failed: hClient=0x%08x; hObject=0x%08x; cmd=0x%08x; paramsSize=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
-                  hClient, hObject, cmd, paramsSize, rpc_params->status, status);
+        NV_PRINTF_COND((status == (NV_ERR_NOT_SUPPORTED || NV_ERR_OBJECT_NOT_FOUND)), LEVEL_INFO, LEVEL_WARNING,
+            "GspRmControl failed: hClient=0x%08x; hObject=0x%08x; cmd=0x%08x; paramsSize=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
+            hClient, hObject, cmd, paramsSize, rpc_params->status, status);
     }
 
 done:

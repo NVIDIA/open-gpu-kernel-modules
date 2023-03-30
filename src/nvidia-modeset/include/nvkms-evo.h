@@ -231,7 +231,6 @@ void nvSetColorSpaceAndRangeEvo(
     NVEvoUpdateState *pUpdateState);
 
 NvBool nvAssignSOREvo(NVConnectorEvoPtr pConnectorEvo, NvU32 sorExcludeMask);
-void nvRestoreSORAssigmentsEvo(NVDevEvoRec *pDevEvo);
 
 void nvSetSwapBarrierNotifyEvo(NVDispEvoPtr pDispEvo,
                                NvBool enable, NvBool isPre);
@@ -289,6 +288,9 @@ void nvDPSerializerPostSetMode(NVDispEvoPtr pDispEvo,
 
 NvBool nvFramelockSetControlUnsyncEvo(NVDispEvoPtr pDispEvo, const NvU32 headMask,
                                       NvBool server);
+
+void nvSuspendDevEvo(NVDevEvoRec *pDevEvo);
+NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo);
 
 #ifdef __cplusplus
 };

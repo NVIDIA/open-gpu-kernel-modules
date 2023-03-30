@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -190,6 +190,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bDscMstCapBug3143315          = dpRegkeyDatabase.bDscMstCapBug3143315;
     this->bDscMstEnablePassThrough      = dpRegkeyDatabase.bDscMstEnablePassThrough;
     this->bDscOptimizeLTBug3534707      = dpRegkeyDatabase.bDscOptimizeLTBug3534707;
+    this->bPowerDownPhyBeforeD3         = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -3178,6 +3179,22 @@ void ConnectorImpl::powerdownLink(bool bPowerdownPanel)
     bool bPanelPwrSts = true;
     powerOff.lanes = 0;
     // Inform Sink about Main Link Power Down.
+
+    if (linkUseMultistream() && bPowerDownPhyBeforeD3)
+    {
+        PowerDownPhyMessage powerDownPhyMsg;
+        NakData nack;
+
+        for (Device * i = enumDevices(0); i; i=enumDevices(i))
+        {
+            if (i->isPlugged() && i->isVideoSink())
+            {
+                Address devAddress = ((DeviceImpl*)i)->address;
+                powerDownPhyMsg.set(devAddress.parent(), devAddress.tail(), NV_TRUE);
+                this->messageManager->send(&powerDownPhyMsg, nack);
+            }
+        }
+    }
 
     //
     // 1> If it is eDP and the power is not on, we don't need to put it into D3 here

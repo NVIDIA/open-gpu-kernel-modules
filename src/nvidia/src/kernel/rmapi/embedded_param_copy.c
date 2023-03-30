@@ -722,24 +722,32 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
     {
         case NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS*)pParams)->sessionInfoTbl = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_GPU_GET_ENGINES:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GPU_GET_ENGINES_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_GPU_GET_ENGINES_PARAMS*)pParams)->engineList = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_BUS_GET_INFO:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_BUS_GET_INFO_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_BUS_GET_INFO_PARAMS*)pParams)->busInfoList = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_FB_GET_INFO:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_FB_GET_INFO_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_FB_GET_INFO_PARAMS*)pParams)->fbInfoList = paramCopies[0].pUserParams;
             break;
@@ -748,6 +756,9 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
         case NV2080_CTRL_CMD_FB_GET_AMAP_CONF:
         {
             NV_STATUS status2;
+
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_CMD_FB_GET_AMAP_CONF_PARAMS);
+
             NV2080_CTRL_CMD_FB_GET_AMAP_CONF_PARAMS *pParamsUser =
                 (NV2080_CTRL_CMD_FB_GET_AMAP_CONF_PARAMS *) pParams;
 
@@ -763,12 +774,16 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
 #endif
         case NV2080_CTRL_CMD_CE_GET_CAPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_CE_GET_CAPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_CE_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_FIFO_GET_CHANNELLIST:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS);
+
             NV_STATUS handleListParamStatus = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS*)pParams)->pChannelHandleList = paramCopies[0].pUserParams;
 
@@ -782,94 +797,126 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
         }
         case NV83DE_CTRL_CMD_DEBUG_READ_MEMORY:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS*)pRmCtrlParams->pParams)->buffer = paramCopies[0].pUserParams;
             break;
         }
         case NV83DE_CTRL_CMD_DEBUG_WRITE_MEMORY:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS);
+                        
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS*)pRmCtrlParams->pParams)->buffer = paramCopies[0].pUserParams;
             break;
         }
         case NV83DE_CTRL_CMD_DEBUG_READ_BATCH_MEMORY:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS*)pRmCtrlParams->pParams)->pData = paramCopies[0].pUserParams;
             break;
         }
         case NV83DE_CTRL_CMD_DEBUG_WRITE_BATCH_MEMORY:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV83DE_CTRL_DEBUG_ACCESS_MEMORY_PARAMS*)pRmCtrlParams->pParams)->pData = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_HOST_GET_CAPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_HOST_GET_CAPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_HOST_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_MSENC_GET_CAPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_MSENC_GET_CAPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_MSENC_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_BIOS_GET_INFO:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_BIOS_GET_INFO_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_BIOS_GET_INFO_PARAMS*)pParams)->biosInfoList = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_GR_GET_INFO:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_GR_GET_INFO_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_GR_GET_INFO_PARAMS*)pParams)->grInfoList = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_FIFO_START_SELECTED_CHANNELS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS*)pParams)->fifoStartChannelList = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_FIFO_GET_CAPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_FIFO_GET_CAPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_FIFO_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
             break;
         }
         case NV402C_CTRL_CMD_I2C_INDEXED:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV402C_CTRL_I2C_INDEXED_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV402C_CTRL_I2C_INDEXED_PARAMS*)pParams)->pMessage = paramCopies[0].pUserParams;
             break;
         }
         case NV402C_CTRL_CMD_I2C_TRANSACTION:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV402C_CTRL_I2C_TRANSACTION_PARAMS);
+
             return i2cTransactionCopyOut(paramCopies, pRmCtrlParams);
         }
         case NV2080_CTRL_CMD_GPU_EXEC_REG_OPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GPU_EXEC_REG_OPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_GPU_EXEC_REG_OPS_PARAMS*)pParams)->regOps = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_NVD_GET_DUMP:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_NVD_GET_DUMP_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_NVD_GET_DUMP_PARAMS*)pParams)->pBuffer = paramCopies[0].pUserParams;
             break;
         }
         case NV0000_CTRL_CMD_NVD_GET_DUMP:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0000_CTRL_NVD_GET_DUMP_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0000_CTRL_NVD_GET_DUMP_PARAMS*)pParams)->pBuffer = paramCopies[0].pUserParams;
             break;
         }
         case NV0041_CTRL_CMD_GET_SURFACE_INFO:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0041_CTRL_GET_SURFACE_INFO_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0041_CTRL_GET_SURFACE_INFO_PARAMS*)pParams)->surfaceInfoList = paramCopies[0].pUserParams;
             break;
@@ -878,6 +925,8 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
         // Not defined on all platforms
         case NV0000_CTRL_CMD_OS_GET_CAPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0000_CTRL_OS_GET_CAPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0000_CTRL_OS_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
             break;
@@ -885,72 +934,96 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
 #endif
         case NV0000_CTRL_CMD_SYSTEM_GET_P2P_CAPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busPeerIds = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_FB_GET_CAPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_FB_GET_CAPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_FB_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_GPU_GET_CLASSLIST:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS*)pParams)->classList = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_GPU_GET_ENGINE_CLASSLIST:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS*)pParams)->classList = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_GR_GET_CAPS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_GR_GET_CAPS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_GR_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_I2C_ACCESS:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_I2C_ACCESS_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_I2C_ACCESS_PARAMS*)pParams)->data = paramCopies[0].pUserParams;
             break;
         }
         case NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS*)pParams)->pFeatureDebugValues = NvP64_VALUE(paramCopies[0].pUserParams);
             break;
         }
         case NV2080_CTRL_CMD_GR_GET_INFO:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GR_GET_INFO_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_GR_GET_INFO_PARAMS*)pParams)->grInfoList = paramCopies[0].pUserParams;
             break;
         }
         case NVB06F_CTRL_CMD_MIGRATE_ENGINE_CTX_DATA:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NVB06F_CTRL_MIGRATE_ENGINE_CTX_DATA_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NVB06F_CTRL_MIGRATE_ENGINE_CTX_DATA_PARAMS*)pParams)->pEngineCtxBuff = paramCopies[0].pUserParams;
             break;
         }
         case NVB06F_CTRL_CMD_GET_ENGINE_CTX_DATA:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS*)pParams)->pEngineCtxBuff = paramCopies[0].pUserParams;
             break;
         }
         case NV2080_CTRL_CMD_RC_READ_VIRTUAL_MEM:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS*)pRmCtrlParams->pParams)->bufferPtr = paramCopies[0].pUserParams;
             break;
         }
         case NV0080_CTRL_CMD_DMA_UPDATE_PDE_2:
         {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS);
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS*)pParams)->pPdeBuffer = paramCopies[0].pUserParams;
 

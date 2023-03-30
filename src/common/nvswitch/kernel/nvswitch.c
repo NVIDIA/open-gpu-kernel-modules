@@ -479,6 +479,14 @@ _nvswitch_init_device_regkeys
     NVSWITCH_INIT_REGKEY(_PRIVATE, link_recal_settings,
                          NV_SWITCH_REGKEY_LINK_RECAL_SETTINGS,
                          NV_SWITCH_REGKEY_LINK_RECAL_SETTINGS_NOP);
+
+    NVSWITCH_INIT_REGKEY(_PRIVATE, block_code_mode,
+                         NV_SWITCH_REGKEY_BLOCK_CODE_MODE,
+                         NV_SWITCH_REGKEY_BLOCK_CODE_MODE_DEFAULT);
+
+    NVSWITCH_INIT_REGKEY(_PRIVATE, reference_clock_mode,
+                         NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE,
+                         NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_DEFAULT);
 }
 NvU64
 nvswitch_lib_deferred_task_dispatcher
@@ -734,12 +742,12 @@ _nvswitch_post_init_device_setup
 }
 
 static NvlStatus
-_nvswitch_setup_link_system_registers
+_nvswitch_setup_system_registers
 (
     nvswitch_device *device
 )
 {
-    return device->hal.nvswitch_setup_link_system_registers(device);
+    return device->hal.nvswitch_setup_system_registers(device);
 }
 
 static void
@@ -1406,7 +1414,7 @@ nvswitch_lib_post_init_device
             __FUNCTION__);
     }
 
-    retval = _nvswitch_setup_link_system_registers(device);
+    retval = _nvswitch_setup_system_registers(device);
     if (retval != NVL_SUCCESS)
     {
         return retval;
@@ -3933,6 +3941,27 @@ nvswitch_apply_recal_settings
 )
 {
     return device->hal.nvswitch_apply_recal_settings(device, link);
+}
+
+
+void      
+nvswitch_setup_link_system_registers
+(
+    nvswitch_device *device, 
+    nvlink_link *link
+)
+{
+    device->hal.nvswitch_setup_link_system_registers(device, link);
+}
+
+void
+nvswitch_load_link_disable_settings
+(
+    nvswitch_device *device,
+    nvlink_link *link
+)
+{
+    device->hal.nvswitch_load_link_disable_settings(device, link);
 }
 
 NvlStatus

@@ -67,13 +67,18 @@ struct ProfilerBase {
     struct GpuResource *__nvoc_pbase_GpuResource;
     struct ProfilerBase *__nvoc_pbase_ProfilerBase;
     NV_STATUS (*__profilerBaseCtrlCmdReserveHwpmLegacy__)(struct ProfilerBase *, NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS *);
+    NV_STATUS (*__profilerBaseCtrlCmdInternalReserveHwpmLegacy__)(struct ProfilerBase *, NVB0CC_CTRL_INTERNAL_RESERVE_HWPM_LEGACY_PARAMS *);
     NV_STATUS (*__profilerBaseCtrlCmdReleaseHwpmLegacy__)(struct ProfilerBase *);
     NV_STATUS (*__profilerBaseCtrlCmdReservePmAreaSmpc__)(struct ProfilerBase *, NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS *);
     NV_STATUS (*__profilerBaseCtrlCmdReleasePmAreaSmpc__)(struct ProfilerBase *);
     NV_STATUS (*__profilerBaseCtrlCmdAllocPmaStream__)(struct ProfilerBase *, NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS *);
     NV_STATUS (*__profilerBaseCtrlCmdFreePmaStream__)(struct ProfilerBase *, NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS *);
+    NV_STATUS (*__profilerBaseCtrlCmdInternalFreePmaStream__)(struct ProfilerBase *, NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS *);
+    NV_STATUS (*__profilerBaseCtrlCmdInternalGetMaxPmas__)(struct ProfilerBase *, NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS *);
     NV_STATUS (*__profilerBaseCtrlCmdBindPmResources__)(struct ProfilerBase *);
     NV_STATUS (*__profilerBaseCtrlCmdUnbindPmResources__)(struct ProfilerBase *);
+    NV_STATUS (*__profilerBaseCtrlCmdInternalBindPmResources__)(struct ProfilerBase *);
+    NV_STATUS (*__profilerBaseCtrlCmdInternalUnbindPmResources__)(struct ProfilerBase *);
     NV_STATUS (*__profilerBaseCtrlCmdPmaStreamUpdateGetPut__)(struct ProfilerBase *, NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS *);
     NV_STATUS (*__profilerBaseCtrlCmdExecRegops__)(struct ProfilerBase *, NVB0CC_CTRL_EXEC_REG_OPS_PARAMS *);
     NV_STATUS (*__profilerBaseCtrlCmdInternalAllocPmaStream__)(struct ProfilerBase *, NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS *);
@@ -105,6 +110,13 @@ struct ProfilerBase {
     NV_STATUS (*__profilerBaseControlLookup__)(struct ProfilerBase *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__profilerBaseMap__)(struct ProfilerBase *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__profilerBaseAccessCallback__)(struct ProfilerBase *, struct RsClient *, void *, RsAccessRight);
+    NvU32 maxPmaChannels;
+    NvU32 pmaVchIdx;
+    NvBool bLegacyHwpm;
+    struct RsResourceRef **ppBytesAvailable;
+    struct RsResourceRef **ppStreamBuffers;
+    struct RsResourceRef *pBoundCntBuf;
+    struct RsResourceRef *pBoundPmaBuf;
 };
 
 #ifndef __NVOC_CLASS_ProfilerBase_TYPEDEF__
@@ -136,13 +148,18 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase**, Dynamic*, NvU32, struct 
     __nvoc_objCreate_ProfilerBase((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 #define profilerBaseCtrlCmdReserveHwpmLegacy(pProfiler, pParams) profilerBaseCtrlCmdReserveHwpmLegacy_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdInternalReserveHwpmLegacy(pProfiler, pParams) profilerBaseCtrlCmdInternalReserveHwpmLegacy_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdReleaseHwpmLegacy(pProfiler) profilerBaseCtrlCmdReleaseHwpmLegacy_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdReservePmAreaSmpc(pProfiler, pParams) profilerBaseCtrlCmdReservePmAreaSmpc_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdReleasePmAreaSmpc(pProfiler) profilerBaseCtrlCmdReleasePmAreaSmpc_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdAllocPmaStream(pProfiler, pParams) profilerBaseCtrlCmdAllocPmaStream_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdFreePmaStream(pProfiler, pParams) profilerBaseCtrlCmdFreePmaStream_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdInternalFreePmaStream(pProfiler, pParams) profilerBaseCtrlCmdInternalFreePmaStream_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdInternalGetMaxPmas(pProfiler, pParams) profilerBaseCtrlCmdInternalGetMaxPmas_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdBindPmResources(pProfiler) profilerBaseCtrlCmdBindPmResources_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdUnbindPmResources(pProfiler) profilerBaseCtrlCmdUnbindPmResources_DISPATCH(pProfiler)
+#define profilerBaseCtrlCmdInternalBindPmResources(pProfiler) profilerBaseCtrlCmdInternalBindPmResources_DISPATCH(pProfiler)
+#define profilerBaseCtrlCmdInternalUnbindPmResources(pProfiler) profilerBaseCtrlCmdInternalUnbindPmResources_DISPATCH(pProfiler)
 #define profilerBaseCtrlCmdPmaStreamUpdateGetPut(pProfiler, pParams) profilerBaseCtrlCmdPmaStreamUpdateGetPut_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdExecRegops(pProfiler, pParams) profilerBaseCtrlCmdExecRegops_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdInternalAllocPmaStream(pProfiler, pParams) profilerBaseCtrlCmdInternalAllocPmaStream_DISPATCH(pProfiler, pParams)
@@ -209,6 +226,12 @@ static inline NV_STATUS profilerBaseCtrlCmdReserveHwpmLegacy_DISPATCH(struct Pro
     return pProfiler->__profilerBaseCtrlCmdReserveHwpmLegacy__(pProfiler, pParams);
 }
 
+NV_STATUS profilerBaseCtrlCmdInternalReserveHwpmLegacy_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_RESERVE_HWPM_LEGACY_PARAMS *pParams);
+
+static inline NV_STATUS profilerBaseCtrlCmdInternalReserveHwpmLegacy_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_RESERVE_HWPM_LEGACY_PARAMS *pParams) {
+    return pProfiler->__profilerBaseCtrlCmdInternalReserveHwpmLegacy__(pProfiler, pParams);
+}
+
 NV_STATUS profilerBaseCtrlCmdReleaseHwpmLegacy_IMPL(struct ProfilerBase *pProfiler);
 
 static inline NV_STATUS profilerBaseCtrlCmdReleaseHwpmLegacy_DISPATCH(struct ProfilerBase *pProfiler) {
@@ -239,6 +262,18 @@ static inline NV_STATUS profilerBaseCtrlCmdFreePmaStream_DISPATCH(struct Profile
     return pProfiler->__profilerBaseCtrlCmdFreePmaStream__(pProfiler, pParams);
 }
 
+NV_STATUS profilerBaseCtrlCmdInternalFreePmaStream_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS *pParams);
+
+static inline NV_STATUS profilerBaseCtrlCmdInternalFreePmaStream_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS *pParams) {
+    return pProfiler->__profilerBaseCtrlCmdInternalFreePmaStream__(pProfiler, pParams);
+}
+
+NV_STATUS profilerBaseCtrlCmdInternalGetMaxPmas_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS *pParams);
+
+static inline NV_STATUS profilerBaseCtrlCmdInternalGetMaxPmas_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS *pParams) {
+    return pProfiler->__profilerBaseCtrlCmdInternalGetMaxPmas__(pProfiler, pParams);
+}
+
 NV_STATUS profilerBaseCtrlCmdBindPmResources_IMPL(struct ProfilerBase *pProfiler);
 
 static inline NV_STATUS profilerBaseCtrlCmdBindPmResources_DISPATCH(struct ProfilerBase *pProfiler) {
@@ -249,6 +284,18 @@ NV_STATUS profilerBaseCtrlCmdUnbindPmResources_IMPL(struct ProfilerBase *pProfil
 
 static inline NV_STATUS profilerBaseCtrlCmdUnbindPmResources_DISPATCH(struct ProfilerBase *pProfiler) {
     return pProfiler->__profilerBaseCtrlCmdUnbindPmResources__(pProfiler);
+}
+
+NV_STATUS profilerBaseCtrlCmdInternalBindPmResources_IMPL(struct ProfilerBase *pProfiler);
+
+static inline NV_STATUS profilerBaseCtrlCmdInternalBindPmResources_DISPATCH(struct ProfilerBase *pProfiler) {
+    return pProfiler->__profilerBaseCtrlCmdInternalBindPmResources__(pProfiler);
+}
+
+NV_STATUS profilerBaseCtrlCmdInternalUnbindPmResources_IMPL(struct ProfilerBase *pProfiler);
+
+static inline NV_STATUS profilerBaseCtrlCmdInternalUnbindPmResources_DISPATCH(struct ProfilerBase *pProfiler) {
+    return pProfiler->__profilerBaseCtrlCmdInternalUnbindPmResources__(pProfiler);
 }
 
 NV_STATUS profilerBaseCtrlCmdPmaStreamUpdateGetPut_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS *pParams);
