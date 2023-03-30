@@ -630,6 +630,14 @@ knvlinkInbandMsgCallbackDispatcher_WORKITEM
 
     pHeader = (nvlink_inband_msg_header_t *)pMessage->data;
 
+    if (pKernelNvlink->inbandCallback[pHeader->type].pCallback == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "No Callback Registered for type %d. Dropping the msg\n", 
+                  pHeader->type);
+        return;
+    }
+
     // Assert reserved in msgHdr are zero
     pRsvd = &pHeader->reserved[0];
     NV_ASSERT((pRsvd[0] == 0) && portMemCmp(pRsvd, pRsvd + 1,

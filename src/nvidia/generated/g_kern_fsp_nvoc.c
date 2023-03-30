@@ -441,6 +441,17 @@ static void __nvoc_init_funcTable_KernelFsp_1(KernelFsp *pThis, RmHalspecOwner *
         pThis->__kfspCheckGspSecureScratch__ = &kfspCheckGspSecureScratch_491d52;
     }
 
+    // Hal function -- kfspRequiresBug3957833WAR
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kfspRequiresBug3957833WAR__ = &kfspRequiresBug3957833WAR_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__kfspRequiresBug3957833WAR__ = &kfspRequiresBug3957833WAR_491d52;
+    }
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelFsp_engstateConstructEngine;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_thunk_KernelFsp_engstateStateDestroy;

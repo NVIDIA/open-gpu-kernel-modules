@@ -497,8 +497,8 @@ typedef struct
               NV_NPORT_PORTSTAT_LS10(_block, _reg, _idx, ), _data);                 \
     }
 
-#define NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS (10 * NVSWITCH_INTERVAL_1SEC_IN_NS)
-#define NVSWITCH_DEFERRED_FAULT_UP_CHECK_INTERVAL_NS   (10 * NVSWITCH_INTERVAL_1MSEC_IN_NS)
+#define NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS (12 * NVSWITCH_INTERVAL_1SEC_IN_NS)
+#define NVSWITCH_DEFERRED_FAULT_UP_CHECK_INTERVAL_NS   (12 * NVSWITCH_INTERVAL_1MSEC_IN_NS)
 
 // Struct used for passing around error masks in error handling functions
 typedef struct
@@ -978,6 +978,7 @@ void      nvswitch_link_disable_interrupts_ls10(nvswitch_device *device, NvU32 l
 void      nvswitch_execute_unilateral_link_shutdown_ls10(nvlink_link *link);
 
 void      nvswitch_init_dlpl_interrupts_ls10(nvlink_link *link);
+void      nvswitch_set_dlpl_interrupts_ls10(nvlink_link *link);
 NvlStatus nvswitch_reset_and_drain_links_ls10(nvswitch_device *device, NvU64 link_mask);
 
 void      nvswitch_service_minion_all_links_ls10(nvswitch_device *device);
@@ -996,9 +997,6 @@ NvlStatus nvswitch_launch_ALI_ls10(nvswitch_device *device);
 
 NvlStatus nvswitch_ctrl_set_mc_rid_table_ls10(nvswitch_device *device, NVSWITCH_SET_MC_RID_TABLE_PARAMS *p);
 NvlStatus nvswitch_ctrl_get_mc_rid_table_ls10(nvswitch_device *device, NVSWITCH_GET_MC_RID_TABLE_PARAMS *p);
-
-void      nvswitch_init_dlpl_interrupts_ls10(nvlink_link *link);
-NvlStatus nvswitch_reset_and_drain_links_ls10(nvswitch_device *device, NvU64 link_mask);
 
 void      nvswitch_service_minion_all_links_ls10(nvswitch_device *device);
 

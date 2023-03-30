@@ -92,9 +92,9 @@ static int __nv_drm_gem_user_memory_mmap(struct nv_drm_gem_object *nv_gem,
         return -EINVAL;
     }
 
-    vma->vm_flags &= ~VM_PFNMAP;
-    vma->vm_flags &= ~VM_IO;
-    vma->vm_flags |= VM_MIXEDMAP;
+    nv_vm_flags_clear(vma, VM_PFNMAP);
+    nv_vm_flags_clear(vma, VM_IO);
+    nv_vm_flags_set(vma, VM_MIXEDMAP);
 
     return 0;
 }

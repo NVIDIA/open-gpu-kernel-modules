@@ -301,7 +301,12 @@ nvswitch_ctrl_i2c_indexed_ls10
         }
         return nvswitch_ctrl_i2c_indexed_lr10(device, pParams);
     }
-    
+
+    if (pParams->port == NVSWITCH_I2C_PORT_I2CA)
+    {
+        pParams->flags = FLD_SET_DRF(SWITCH_CTRL, _I2C_FLAGS, _SPEED_MODE, _100KHZ, pParams->flags);
+    }
+
     if (pI2c->soeI2CSupported)
     {
         return soeI2CAccess_HAL(device, pParams);

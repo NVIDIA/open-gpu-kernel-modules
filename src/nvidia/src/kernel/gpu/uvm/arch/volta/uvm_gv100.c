@@ -138,9 +138,9 @@ uvmDisableAccessCntr_GV100
         uvmReadAccessCntrBufferGetPtr_HAL(pGpu, pUvm, &getPtr);
         if (getPtr != putPtr)
         {
-            MEMORY_DESCRIPTOR *pMemDesc = IS_GSP_CLIENT(pGpu) ?
-                                          pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc :
-                                          pUvm->accessCntrBuffer.pUvmAccessCntrMemDesc;
+            MEMORY_DESCRIPTOR *pMemDesc = RMCFG_FEATURE_PLATFORM_GSP ?
+                                          pUvm->accessCntrBuffer.pUvmAccessCntrMemDesc :
+                                          pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc;
             NvU8 *pAccessCntrBufferPage;
             NvU32 entriesPerPage = RM_PAGE_SIZE / NVC365_NOTIFY_BUF_SIZE;
             NvU32 pageSizeModBufSize = RM_PAGE_SIZE % NVC365_NOTIFY_BUF_SIZE;
@@ -156,7 +156,8 @@ uvmDisableAccessCntr_GV100
                                 NV_TRUE, NV_PROTECT_READ_WRITE, &pAddr, &pPriv);
             if (status != NV_OK)
             {
-                NV_PRINTF(LEVEL_ERROR, "Failed to map access counter buffer while disabling it.\n");
+                NV_PRINTF(LEVEL_ERROR, "Failed to map access counter buffer while disabling it: %d\n",
+                          status);
                 return status;
             }
 
@@ -180,7 +181,12 @@ uvmDisableAccessCntr_GV100
                                         NV_TRUE, NV_PROTECT_READ_WRITE, &pAddr, &pPriv);
                     if (status != NV_OK)
                     {
-                        NV_PRINTF(LEVEL_ERROR, "Failed to map access counter buffer while disabling it.\n");
+                        NV_PRINTF(LEVEL_ERROR, "Failed to map access counter buffer while disabling it: %d\n",
+                                  status);
+
+                        // Write get progress so far, all entries in [get, put)
+                        // are valid or will become valid.
+                        uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, getPtr);
                         return status;
                     }
                 }

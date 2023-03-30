@@ -563,12 +563,11 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
         // If we own a higher order lock than one of the needed ones, we are
         // violating the locking order and need to do a conditional acquire
         // clz32(0) == ctz(0) == 32:
-        //    owned=0b00110000, needed=0b00001100: (4  < (32-28)), bCond=FALSE
-        //    owned=0b00110010, needed=0b00001100: (1  < (32-28)), bCond=TRUE
-        //    owned=0b00010000, needed=0b11000011: (4  < (32-24)), bCond=TRUE
-        //    owned=0b00000000, needed=0b00001100: (32 < (32-28)), bCond=FALSE
-        //    owned=0b00000001, needed=0b00000000: (0  < (32-32)), bCond=FALSE
-        if (portUtilCountTrailingZeros32(ownedMask) < (32-portUtilCountLeadingZeros32(gpuMask)))
+        //    owned=0b00001100, needed=0b00110000: ((32-28) >  4), bCond=FALSE
+        //    owned=0b00001100, needed=0b00110010: ((32-28) >  1), bCond=TRUE
+        //    owned=0b11000011, needed=0b00010000: ((32-24) >  4), bCond=TRUE
+        //    owned=0b00000000, needed=0b00000001: ((32-32) >  0), bCond=FALSE
+        if ((32-portUtilCountLeadingZeros32(ownedMask)) > portUtilCountTrailingZeros32(gpuMask))
         {
             bCondAcquireCheck = NV_TRUE;
         }

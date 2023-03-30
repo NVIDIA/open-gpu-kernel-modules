@@ -52,6 +52,7 @@
 #include "virtualization/hypervisor/hypervisor.h"
 #include "finn_rm_api.h"
 #include "os/os.h"
+#include "objtmr.h"
 
 #define SDK_ALL_CLASSES_INCLUDE_FULL_HEADER
 #include "g_allclasses.h"
@@ -362,7 +363,8 @@ static NV_STATUS _issueRpcLarge
 
     pBuf8 = (NvU8 *)pBuffer;
     remainingSize = bufSize;
-    entryLength = NV_MIN(bufSize, pRpc->maxRpcSize);
+    entryLength = NV_MIN(bufSize, vgpu_rpc_message_header_v->length);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, entryLength <= pRpc->maxRpcSize, NV_ERR_INVALID_STATE);
 
     if (((NvU8 *)vgpu_rpc_message_header_v != pBuf8) && bBidirectional)
       portMemCopy(pBuf8, entryLength, vgpu_rpc_message_header_v, entryLength);
@@ -393,8 +395,11 @@ static NV_STATUS _issueRpcLarge
                 NV_ASSERT(0);
                 return nvStatus;
             }
-            entryLength = vgpu_rpc_message_header_v->length - sizeof(rpc_message_header_v);
+
+            entryLength = vgpu_rpc_message_header_v->length;
             NV_CHECK_OR_RETURN(LEVEL_ERROR, entryLength <= pRpc->maxRpcSize, NV_ERR_INVALID_STATE);
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, entryLength >= sizeof(rpc_message_header_v), NV_ERR_INVALID_STATE);
+            entryLength -= sizeof(rpc_message_header_v);
 
             if (entryLength > remainingSize)
                 entryLength = remainingSize;
@@ -1311,6 +1316,9 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
         rpcInfo->bUpstreamL1PorSupported  = pGpu->getProperty(pGpu, PDB_PROP_GPU_UPSTREAM_PORT_L1_POR_SUPPORTED);
         rpcInfo->bUpstreamL1PorMobileOnly = pGpu->getProperty(pGpu, PDB_PROP_GPU_UPSTREAM_PORT_L1_POR_MOBILE_ONLY);
         rpcInfo->upstreamAddressValid     = pGpu->gpuClData.upstreamPort.addr.valid;
+
+        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+        rpcInfo->sysTimerOffsetNs = pTmr->sysTimerOffsetNs;
 
         status = _issueRpcAsync(pGpu, pRpc);
     }

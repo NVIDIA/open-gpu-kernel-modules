@@ -310,7 +310,8 @@ continue_alloc_object:
 
         pPteArray = memdescGetPteArray(pMemDesc, AT_GPU);
 
-        if (!portSafeMulU32(sizeof(NvU64), pAllocParams->pageCount, &result))
+        if ((pAllocParams->pageCount > pMemDesc->PageCount) ||
+            !portSafeMulU32(sizeof(NvU64), pAllocParams->pageCount, &result))
         {
             memdescDestroy(pMemDesc);
             return NV_ERR_INVALID_ARGUMENT;

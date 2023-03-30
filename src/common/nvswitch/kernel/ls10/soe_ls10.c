@@ -480,14 +480,6 @@ nvswitch_init_soe_ls10
         return status;
     }
 
-    //
-    // Set TRACEPC to stack mode for better ucode trace
-    // In Vulcan CR firmware, this is set to reduced mode in the SOE's manifest
-    //
-    data = flcnRiscvRegRead_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL);
-    data = FLD_SET_DRF(_PRISCV, _RISCV_TRACECTL, _MODE, _STACK, data);
-    flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL, data);
-
     // Sanity the command and message queues as a final check
     if (_nvswitch_soe_send_test_cmd(device) != NV_OK)
     {

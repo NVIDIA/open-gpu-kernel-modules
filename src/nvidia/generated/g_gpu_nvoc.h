@@ -733,6 +733,7 @@ typedef struct
     PSRIOV_P2P_INFO pP2PInfo;
     NvBool          bP2PAllocated;
     NvU32           maxP2pGfid;
+    NvU32           p2pFabricPartitionId;
 } _GPU_SRIOV_STATE;
 
 // Max # of instances for GPU children
@@ -3795,6 +3796,7 @@ NV_STATUS gpuGetByHandle(struct RsClient *pClient, NvHandle hResource, NvBool *p
 #define IS_GFID_VF(gfid)    (((NvU32)(gfid)) != GPU_GFID_PF)
 // Invalid P2P GFID
 #define INVALID_P2P_GFID    (0xFFFFFFFF)
+#define INVALID_FABRIC_PARTITION_ID (0xFFFFFFFF)
 
 //
 // Generates GPU child accessor macros (i.e.: GPU_GET_{ENG})

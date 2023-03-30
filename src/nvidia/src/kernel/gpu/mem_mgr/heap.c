@@ -4735,8 +4735,11 @@ NV_STATUS heapResize_IMPL
 
     if (resizeBy < 0) // Shrink the allocation
     {
+        NvS64 newSize;
+
         NV_ASSERT_OR_RETURN(pBlockLast->owner == NVOS32_BLOCK_TYPE_FREE, NV_ERR_NO_MEMORY);
-        NV_ASSERT_OR_RETURN((pBlockLast->end - pBlockLast->begin + resizeBy > 0), NV_ERR_INVALID_LIMIT);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddS64(pBlockLast->end - pBlockLast->begin, resizeBy, &newSize) &&
+                                        (newSize > 0), NV_ERR_INVALID_LIMIT);
         pBlockLast->end += resizeBy;
     }
     else // Grow the allocation

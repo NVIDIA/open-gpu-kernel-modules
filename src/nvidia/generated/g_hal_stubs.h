@@ -550,10 +550,22 @@ NV_STATUS gpioWritePinHwEnum_MISSING(
     return NV_ERR_NOT_SUPPORTED;
 }
 
-// GPIO:hal:CHECK_PROTECTION  -  GPIO disabled
-NV_STATUS gpioCheckProtection_MISSING(
+// GPIO:hal:OUTPUT_CNTL_CHECK_PROTECTION  -  GPIO disabled
+NV_STATUS gpioOutputCntlCheckProtection_MISSING(
+    POBJGPU       pGpu,
     POBJGPIO      pGpio,
     NvU32         gpioPin,
+    NvBool       *pbIsProtected
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+// GPIO:hal:INPUT_CNTL_CHECK_PROTECTION  -  GPIO disabled
+NV_STATUS gpioInputCntlCheckProtection_MISSING(
+    POBJGPU       pGpu,
+    POBJGPIO      pGpio,
+    NvU32         inputHwEnum,
     NvBool       *pbIsProtected
 )
 {

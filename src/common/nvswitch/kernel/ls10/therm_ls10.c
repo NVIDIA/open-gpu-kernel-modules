@@ -460,7 +460,7 @@ nvswitch_therm_soe_callback_ls10
 }
 
 //
-// nvswitch_therm_read_voltage
+// nvswitch_ctrl_therm_read_voltage
 //
 // Temperature and voltage are only available on SKUs which have thermal and
 // voltage sensors.
@@ -543,3 +543,86 @@ nvswitch_ctrl_therm_read_voltage_ls10
     return NVL_SUCCESS;
 }
 
+//
+// nvswitch_ctrl_therm_read_power
+//
+// Power is only available on SKUs which have thermal and
+// voltage sensors.
+//
+NvlStatus
+nvswitch_ctrl_therm_read_power_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_POWER_PARAMS *pParams
+)
+{
+    FLCN                *pFlcn;
+    NvU32               cmdSeqDesc;
+    NV_STATUS           status;
+    NvU8                flcnStatus;
+    RM_FLCN_CMD_SOE     cmd;
+    RM_FLCN_MSG_SOE     msg;
+    RM_SOE_CORE_CMD_GET_POWER *pGetPowerCmd;
+    NVSWITCH_TIMEOUT    timeout;
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    if (pParams == NULL)
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    pFlcn = device->pSoe->pFlcn;
+
+    nvswitch_os_memset(pParams, 0, sizeof(NVSWITCH_GET_POWER_PARAMS));
+    nvswitch_os_memset(&cmd, 0, sizeof(RM_FLCN_CMD_SOE));
+    nvswitch_os_memset(&msg, 0, sizeof(RM_FLCN_MSG_SOE));
+
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, GET_POWER);
+
+    msg.hdr.unitId = RM_SOE_UNIT_CORE;
+    msg.hdr.size   = RM_SOE_MSG_SIZE(CORE, GET_POWER);
+
+    pGetPowerCmd = &cmd.cmd.core.getPower;
+    pGetPowerCmd->cmdType = RM_SOE_CORE_CMD_GET_POWER_VALUES;
+
+    cmdSeqDesc = 0;
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_1SEC_IN_NS * 5, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      (PRM_FLCN_MSG)&msg,   // pMsg
+                                      NULL, // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to read power 0x%x\n", 
+                       __FUNCTION__, status);
+        return -NVL_ERR_INVALID_STATE;
+    }
+
+    flcnStatus = msg.msg.core.getPower.flcnStatus;
+    if (flcnStatus != FLCN_OK)
+    {
+        if (flcnStatus == FLCN_ERR_MORE_PROCESSING_REQUIRED)
+        {
+            return -NVL_MORE_PROCESSING_REQUIRED;
+        }
+        else
+        {
+            return -NVL_ERR_GENERIC;
+        }
+    }
+
+    pParams->vdd_w = msg.msg.core.getPower.vdd_w;
+    pParams->dvdd_w = msg.msg.core.getPower.dvdd_w;
+    pParams->hvdd_w = msg.msg.core.getPower.hvdd_w;
+
+    return NVL_SUCCESS;
+}

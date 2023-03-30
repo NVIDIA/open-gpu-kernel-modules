@@ -166,6 +166,7 @@ struct KernelFsp {
     NV_STATUS (*__kfspErrorCode2NvStatusMap__)(struct OBJGPU *, struct KernelFsp *, NvU32);
     NvU64 (*__kfspGetExtraReservedMemorySize__)(struct OBJGPU *, struct KernelFsp *);
     NvBool (*__kfspCheckGspSecureScratch__)(struct OBJGPU *, struct KernelFsp *);
+    NvBool (*__kfspRequiresBug3957833WAR__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspReconcileTunableState__)(POBJGPU, struct KernelFsp *, void *);
     NV_STATUS (*__kfspStateLoad__)(POBJGPU, struct KernelFsp *, NvU32);
     NV_STATUS (*__kfspStateUnload__)(POBJGPU, struct KernelFsp *, NvU32);
@@ -293,6 +294,8 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
 #define kfspGetExtraReservedMemorySize_HAL(pGpu, pKernelFsp) kfspGetExtraReservedMemorySize_DISPATCH(pGpu, pKernelFsp)
 #define kfspCheckGspSecureScratch(pGpu, pKernelFsp) kfspCheckGspSecureScratch_DISPATCH(pGpu, pKernelFsp)
 #define kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp) kfspCheckGspSecureScratch_DISPATCH(pGpu, pKernelFsp)
+#define kfspRequiresBug3957833WAR(pGpu, pKernelFsp) kfspRequiresBug3957833WAR_DISPATCH(pGpu, pKernelFsp)
+#define kfspRequiresBug3957833WAR_HAL(pGpu, pKernelFsp) kfspRequiresBug3957833WAR_DISPATCH(pGpu, pKernelFsp)
 #define kfspReconcileTunableState(pGpu, pEngstate, pTunableState) kfspReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kfspStateLoad(pGpu, pEngstate, arg0) kfspStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kfspStateUnload(pGpu, pEngstate, arg0) kfspStateUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -583,6 +586,16 @@ static inline NvBool kfspCheckGspSecureScratch_491d52(struct OBJGPU *pGpu, struc
 
 static inline NvBool kfspCheckGspSecureScratch_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return pKernelFsp->__kfspCheckGspSecureScratch__(pGpu, pKernelFsp);
+}
+
+NvBool kfspRequiresBug3957833WAR_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline NvBool kfspRequiresBug3957833WAR_491d52(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool kfspRequiresBug3957833WAR_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return pKernelFsp->__kfspRequiresBug3957833WAR__(pGpu, pKernelFsp);
 }
 
 static inline NV_STATUS kfspReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, void *pTunableState) {

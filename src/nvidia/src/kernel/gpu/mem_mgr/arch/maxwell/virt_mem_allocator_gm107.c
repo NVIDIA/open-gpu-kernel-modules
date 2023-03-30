@@ -894,13 +894,23 @@ dmaAllocMapping_GM107
 
             if (pPeerGpu != NULL)
             {
-                KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
-
-                if ((pKernelNvlink != NULL) &&
-                     knvlinkIsNvlinkP2pSupported(pMappingGpu, pKernelNvlink, pPeerGpu))
+                if (IS_VIRTUAL_WITH_SRIOV(pMappingGpu) &&
+                    !gpuIsWarBug200577889SriovHeavyEnabled(pMappingGpu))
                 {
-                    pLocals->peerNumber = kbusGetPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu),
-                                                           pPeerGpu);
+                    pLocals->peerNumber = kbusGetNvlinkPeerId_HAL(pMappingGpu,
+                                                                GPU_GET_KERNEL_BUS(pMappingGpu),
+                                                                pPeerGpu);
+                }
+                else
+                {
+                    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
+
+                    if ((pKernelNvlink != NULL) &&
+                        knvlinkIsNvlinkP2pSupported(pMappingGpu, pKernelNvlink, pPeerGpu))
+                    {
+                        pLocals->peerNumber = kbusGetPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu),
+                                                            pPeerGpu);
+                    }
                 }
             }
             else

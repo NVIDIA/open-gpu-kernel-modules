@@ -153,6 +153,7 @@ typedef struct GspSystemInfo
     BUSINFO FHBBusInfo;
     BUSINFO chipsetIDInfo;
     ACPI_METHOD_DATA acpiMethodData;
+    NvU64 sysTimerOffsetNs;
 } GspSystemInfo;
 
 

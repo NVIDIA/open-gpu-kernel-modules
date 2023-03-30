@@ -3701,6 +3701,9 @@ typedef struct NV2080_CTRL_GPU_GET_GFID_PARAMS {
  *   bEnable [IN]
  *      - Set to NV_TRUE if the GPU partition has been activated.
  *      - Set to NV_FALSE if the GPU partition will be deactivated.
+ *   fabricPartitionId [IN]
+ *      - Set the fabric manager partition ID dring partition activation.
+ *      - Ignored during partition deactivation.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -3716,6 +3719,7 @@ typedef struct NV2080_CTRL_GPU_GET_GFID_PARAMS {
 typedef struct NV2080_CTRL_CMD_GPU_UPDATE_GFID_P2P_CAPABILITY_PARAMS {
     NvU32  gfid;
     NvBool bEnable;
+    NvU32  fabricPartitionId;
 } NV2080_CTRL_CMD_GPU_UPDATE_GFID_P2P_CAPABILITY_PARAMS;
 
 /*!
@@ -4112,4 +4116,24 @@ typedef NV2080_CTRL_GPU_MIGRATABLE_OPS_CMN_PARAMS NV2080_CTRL_GPU_MIGRATABLE_OPS
 #define NV2080_CTRL_GPU_MIGRATABLE_OPS_VGPU_PARAMS_MESSAGE_ID (0xA8U)
 
 typedef NV2080_CTRL_GPU_MIGRATABLE_OPS_CMN_PARAMS NV2080_CTRL_GPU_MIGRATABLE_OPS_VGPU_PARAMS;
+
+/*
+ * NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2
+ *
+ * This command returns NVENC software sessions information for the associate GPU.
+ * This command is similar to NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO but doesn't have
+ * embedded pointers.
+ *
+ * Check NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO for detailed information.
+ */
+
+#define NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS_MESSAGE_ID (0xA9U)
+
+typedef struct NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS {
+    NvU32                             sessionInfoTblEntry;
+    NV2080_CTRL_NVENC_SW_SESSION_INFO sessionInfoTbl[NV2080_CTRL_GPU_NVENC_SESSION_INFO_MAX_COPYOUT_ENTRIES];
+} NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS;
+
+#define NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2 (0x208001a9U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS_MESSAGE_ID" */
+
 /* _ctrl2080gpu_h_ */

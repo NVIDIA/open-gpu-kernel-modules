@@ -153,7 +153,6 @@ done:
 
 static NV_STATUS test_unexpected_completed_values(uvm_va_space_t *va_space)
 {
-    NV_STATUS status;
     uvm_gpu_t *gpu;
 
     for_each_va_space_gpu(gpu, va_space) {

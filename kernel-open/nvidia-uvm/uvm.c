@@ -618,7 +618,7 @@ static int uvm_mmap(struct file *filp, struct vm_area_struct *vma)
     // Using VM_DONTCOPY would be nice, but madvise(MADV_DOFORK) can reset that
     // so we have to handle vm_open on fork anyway. We could disable MADV_DOFORK
     // with VM_IO, but that causes other mapping issues.
-    vma->vm_flags |= VM_MIXEDMAP | VM_DONTEXPAND;
+    nv_vm_flags_set(vma, VM_MIXEDMAP | VM_DONTEXPAND);
 
     vma->vm_ops = &uvm_vm_ops_managed;
 

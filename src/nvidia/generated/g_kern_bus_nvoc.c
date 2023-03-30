@@ -98,16 +98,16 @@ static NV_STATUS __nvoc_thunk_KernelBus_engstateStateUnload(OBJGPU *pGpu, struct
     return kbusStateUnload(pGpu, (struct KernelBus *)(((unsigned char *)pKernelBus) - __nvoc_rtti_KernelBus_OBJENGSTATE.offset), flags);
 }
 
+static NV_STATUS __nvoc_thunk_KernelBus_engstateStatePostUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelBus, NvU32 arg0) {
+    return kbusStatePostUnload(pGpu, (struct KernelBus *)(((unsigned char *)pKernelBus) - __nvoc_rtti_KernelBus_OBJENGSTATE.offset), arg0);
+}
+
 static void __nvoc_thunk_KernelBus_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pKernelBus) {
     kbusStateDestroy(pGpu, (struct KernelBus *)(((unsigned char *)pKernelBus) - __nvoc_rtti_KernelBus_OBJENGSTATE.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbusReconcileTunableState(POBJGPU pGpu, struct KernelBus *pEngstate, void *pTunableState) {
     return engstateReconcileTunableState(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBus_OBJENGSTATE.offset), pTunableState);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbusStatePostUnload(POBJGPU pGpu, struct KernelBus *pEngstate, NvU32 arg0) {
-    return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelBus_OBJENGSTATE.offset), arg0);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kbusStateInitUnlocked(POBJGPU pGpu, struct KernelBus *pEngstate) {
@@ -309,6 +309,12 @@ static void __nvoc_init_funcTable_KernelBus_1(KernelBus *pThis, RmHalspecOwner *
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->__kbusStateUnload__ = &kbusStateUnload_GM107;
+    }
+
+    // Hal function -- kbusStatePostUnload
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    {
+        pThis->__kbusStatePostUnload__ = &kbusStatePostUnload_56cd7a;
     }
 
     // Hal function -- kbusStateDestroy
@@ -844,11 +850,11 @@ static void __nvoc_init_funcTable_KernelBus_1(KernelBus *pThis, RmHalspecOwner *
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_thunk_KernelBus_engstateStateUnload;
 
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostUnload__ = &__nvoc_thunk_KernelBus_engstateStatePostUnload;
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_thunk_KernelBus_engstateStateDestroy;
 
     pThis->__kbusReconcileTunableState__ = &__nvoc_thunk_OBJENGSTATE_kbusReconcileTunableState;
-
-    pThis->__kbusStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kbusStatePostUnload;
 
     pThis->__kbusStateInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kbusStateInitUnlocked;
 

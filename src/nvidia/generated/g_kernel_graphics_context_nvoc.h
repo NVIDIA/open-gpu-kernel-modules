@@ -904,6 +904,17 @@ static inline void kgrctxFreeAssociatedCtxBuffers(struct OBJGPU *arg0, struct Ke
 #define kgrctxFreeAssociatedCtxBuffers(arg0, arg1) kgrctxFreeAssociatedCtxBuffers_IMPL(arg0, arg1)
 #endif //__nvoc_kernel_graphics_context_h_disabled
 
+NvBool kgrctxIsFinalGlobalBufMapRefDuped_IMPL(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelChannel *arg2, GR_GLOBALCTX_BUFFER bufId);
+
+#ifdef __nvoc_kernel_graphics_context_h_disabled
+static inline NvBool kgrctxIsFinalGlobalBufMapRefDuped(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelChannel *arg2, GR_GLOBALCTX_BUFFER bufId) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsContext was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_kernel_graphics_context_h_disabled
+#define kgrctxIsFinalGlobalBufMapRefDuped(arg0, arg1, arg2, bufId) kgrctxIsFinalGlobalBufMapRefDuped_IMPL(arg0, arg1, arg2, bufId)
+#endif //__nvoc_kernel_graphics_context_h_disabled
+
 #undef PRIVATE_FIELD
 
 

@@ -353,6 +353,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdGpuGetEncoderCapacity__)(struct Subdevice *, NV2080_CTRL_GPU_GET_ENCODER_CAPACITY_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetNvencSwSessionStats__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_STATS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetNvencSwSessionInfo__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetNvfbcSwSessionStats__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_STATS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuGetNvfbcSwSessionInfo__)(struct Subdevice *, NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuSetFabricAddr__)(struct Subdevice *, NV2080_CTRL_GPU_SET_FABRIC_BASE_ADDR_PARAMS *);
@@ -898,6 +899,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdGpuGetEncoderCapacity(pSubdevice, pEncoderCapacityParams) subdeviceCtrlCmdGpuGetEncoderCapacity_DISPATCH(pSubdevice, pEncoderCapacityParams)
 #define subdeviceCtrlCmdGpuGetNvencSwSessionStats(pSubdevice, pParams) subdeviceCtrlCmdGpuGetNvencSwSessionStats_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetNvencSwSessionInfo(pSubdevice, pParams) subdeviceCtrlCmdGpuGetNvencSwSessionInfo_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2(pSubdevice, pParams) subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuGetNvfbcSwSessionStats(pSubdevice, params) subdeviceCtrlCmdGpuGetNvfbcSwSessionStats_DISPATCH(pSubdevice, params)
 #define subdeviceCtrlCmdGpuGetNvfbcSwSessionInfo(pSubdevice, params) subdeviceCtrlCmdGpuGetNvfbcSwSessionInfo_DISPATCH(pSubdevice, params)
 #define subdeviceCtrlCmdGpuSetFabricAddr(pSubdevice, pParams) subdeviceCtrlCmdGpuSetFabricAddr_DISPATCH(pSubdevice, pParams)
@@ -2566,6 +2568,12 @@ NV_STATUS subdeviceCtrlCmdGpuGetNvencSwSessionInfo_IMPL(struct Subdevice *pSubde
 
 static inline NV_STATUS subdeviceCtrlCmdGpuGetNvencSwSessionInfo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdGpuGetNvencSwSessionInfo__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdGpuGetNvfbcSwSessionStats_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_STATS_PARAMS *params);

@@ -201,7 +201,7 @@ static struct sg_table *__nv_drm_gem_nvkms_memory_prime_get_sg_table(
                 nv_dev,
                 "Cannot create sg_table for NvKmsKapiMemory 0x%p",
                 nv_gem->pMemory);
-        return NULL;
+        return ERR_PTR(-ENOMEM);
     }
 
     sg_table = nv_drm_prime_pages_to_sg(nv_dev->dev,

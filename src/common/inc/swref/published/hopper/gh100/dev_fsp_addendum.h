@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,11 @@
 
 #ifndef __gh100_dev_fsp_addendum_h__
 #define __gh100_dev_fsp_addendum_h__
+
+#define NV_GFW_FSP_UCODE_VERSION        NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_3(1)
+#define NV_GFW_FSP_UCODE_VERSION_FULL   11:0
+#define NV_GFW_FSP_UCODE_VERSION_MAJOR  11:8
+#define NV_GFW_FSP_UCODE_VERSION_MINOR  7:0
 
 //
 // RM uses channel 0 for FSP EMEM on GH100.

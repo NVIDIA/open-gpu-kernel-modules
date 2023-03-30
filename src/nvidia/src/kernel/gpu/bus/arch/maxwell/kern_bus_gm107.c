@@ -475,16 +475,12 @@ kbusStateUnload_GM107
         kbusUnlinkP2P_HAL(pGpu, pKernelBus);
     }
 
-    if (flags & GPU_STATE_FLAGS_PRESERVING)
+    if ((flags & GPU_STATE_FLAGS_PRESERVING) && !IS_VIRTUAL_WITH_SRIOV(pGpu))
     {
         if (!IS_GPU_GC6_STATE_ENTERING(pGpu))
         {
 			status = kbusTeardownBar2CpuAperture_HAL(pGpu, pKernelBus, GPU_GFID_PF);
-			if (!IS_VIRTUAL_WITH_SRIOV(pGpu))
-            {
-                // Do not use BAR2 physical mode for bootstrapping BAR2 across S/R.
-                pKernelBus->bUsePhysicalBar2InitPagetable = NV_FALSE;
-            }
+            pKernelBus->bUsePhysicalBar2InitPagetable = NV_FALSE;
         }
     }
     else
@@ -1439,6 +1435,9 @@ kbusSetupBar2GpuVaSpace_GM107
         status = mmuWalkReserveEntries(pWalk, pLevelFmt, pKernelBus->bar2[gfid].cpuVisibleBase,
                                        pKernelBus->bar2[gfid].cpuVisibleLimit, NV_FALSE);
         NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
+
+        pKernelBus->bar2[gfid].cpuVisiblePgTblSize = pKernelBus->bar2[gfid].pageTblInit * pKernelBus->bar2[gfid].pageTblSize;
+
         status = mmuWalkSparsify(pWalk, pKernelBus->bar2[gfid].cpuVisibleBase, pKernelBus->bar2[gfid].cpuVisibleLimit, NV_TRUE);
         NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -182,10 +182,9 @@ _portMemCounterInc
 
     activeAllocs = PORT_MEM_ATOMIC_INC_U32(&pCounter->activeAllocs);
     PORT_MEM_ATOMIC_INC_U32(&pCounter->totalAllocs);
-    if (PORT_MEM_TRACK_USE_FENCEPOSTS)
-    {
-        activeSize = PORT_MEM_ATOMIC_ADD_SIZE(&pCounter->activeSize, size);
-    }
+#if PORT_MEM_TRACK_USE_FENCEPOSTS
+    activeSize = PORT_MEM_ATOMIC_ADD_SIZE(&pCounter->activeSize, size);
+#endif
     PORT_MEM_ATOMIC_ADD_SIZE(&pCounter->totalSize, size);
 
     // Atomically compare the peak value with the active, and update if greater.
@@ -211,12 +210,12 @@ _portMemCounterDec
     void             *pMem
 )
 {
+    PORT_UNREFERENCED_VARIABLE(pMem);
     PORT_MEM_ATOMIC_DEC_U32(&pCounter->activeAllocs);
-    if (PORT_MEM_TRACK_USE_FENCEPOSTS)
-    {
-        PORT_MEM_ATOMIC_SUB_SIZE(&pCounter->activeSize,
-                                 ((PORT_MEM_FENCE_HEAD *)pMem-1)->blockSize);
-    }
+#if PORT_MEM_TRACK_USE_FENCEPOSTS
+    PORT_MEM_ATOMIC_SUB_SIZE(&pCounter->activeSize,
+                             ((PORT_MEM_HEADER *)pMem-1)->fence.blockSize);
+#endif
 }
 
 #define PORT_MEM_COUNTER_INIT(pCounter)      _portMemCounterInit(pCounter)
@@ -538,11 +537,10 @@ static struct PORT_MEM_GLOBALS
 static NV_INLINE void
 _portMemLimitInc(NvU32 pid, void *pMem, NvU64 size)
 {
+    PORT_MEM_HEADER *pMemHeader = PORT_MEM_SUB_HEADER_PTR(pMem);
+    pMemHeader->pid = pid;
     if (portMemGlobals.bLimitEnabled)
     {
-        PORT_MEM_HEADER *pMemHeader = PORT_MEM_SUB_HEADER_PTR(pMem);
-        pMemHeader->pid = pid;
-
         if ((pid > 0) && (pid <= PORT_MEM_LIMIT_MAX_PIDS))
         {
             NvU32 pidIdx = pid - 1;
@@ -565,7 +563,6 @@ _portMemLimitDec(void *pMem)
             NvU32 pidIdx = pid - 1;
             if (portMemGlobals.counterPid[pidIdx] < pMemHeader->blockSize)
             {
-                // TODO: How do we protect against double frees?
                 PORT_MEM_PRINT_ERROR("memory free error: counter underflow\n");
                 PORT_BREAKPOINT_CHECKED();
             }
