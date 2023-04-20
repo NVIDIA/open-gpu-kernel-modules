@@ -294,7 +294,7 @@ nvswitch_i2c_add_adapter
                               NV_PCI_BUS_NUMBER(pci_dev),
                               NV_PCI_SLOT_NUMBER(pci_dev),
                               PCI_FUNC(pci_dev->devfn));
-    if ((rc < 0) && (rc >= sizeof(adapter->name)))
+    if ((rc < 0) || (rc >= sizeof(adapter->name)))
     {
         goto cleanup;
     }
