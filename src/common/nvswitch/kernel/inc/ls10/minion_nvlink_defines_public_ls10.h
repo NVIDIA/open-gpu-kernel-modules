@@ -47,5 +47,5 @@ typedef enum _MINION_STATUS
 } MINION_STATUS;
 
   #define LINKSTATUS_EMERGENCY_SHUTDOWN         0x29
-#define LINKSTATUS_INITPHASE1                 0x24
+  #define LINKSTATUS_INITPHASE1                 0x24
 #endif // _MINION_NVLINK_DEFINES_PUBLIC_H_

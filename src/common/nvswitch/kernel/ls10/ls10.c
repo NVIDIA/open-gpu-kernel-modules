@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1103,6 +1103,18 @@ nvswitch_link_disable_interrupts_ls10
     instance     = link / NVSWITCH_LINKS_PER_NVLIPT_LS10;
     localLinkIdx = link % NVSWITCH_LINKS_PER_NVLIPT_LS10;
 
+    if (nvswitch_is_soe_supported(device))
+    {
+        nvswitch_soe_set_nport_interrupts_ls10(device, link, NV_FALSE);
+    }
+    else
+    {
+        NVSWITCH_NPORT_WR32_LS10(device, link, _NPORT, _ERR_CONTROL_COMMON_NPORT,
+            DRF_NUM(_NPORT, _ERR_CONTROL_COMMON_NPORT, _CORRECTABLEENABLE, 0x0) |
+            DRF_NUM(_NPORT, _ERR_CONTROL_COMMON_NPORT, _FATALENABLE,       0x0) |
+            DRF_NUM(_NPORT, _ERR_CONTROL_COMMON_NPORT, _NONFATALENABLE,    0x0));
+    }
+
     NVSWITCH_ENG_WR32(device, NVLW, , instance, _NVLW, _LINK_INTR_0_MASK(localLinkIdx),
         DRF_NUM(_NVLW, _LINK_INTR_0_MASK, _FATAL,       0x0) |
         DRF_NUM(_NVLW, _LINK_INTR_0_MASK, _NONFATAL,    0x0) |
@@ -1132,6 +1144,18 @@ _nvswitch_link_reset_interrupts_ls10
     NvU32 regval;
     NvU32 eng_instance = link / NVSWITCH_LINKS_PER_NVLIPT_LS10;
     NvU32 localLinkNum = link % NVSWITCH_LINKS_PER_NVLIPT_LS10;
+
+    if (nvswitch_is_soe_supported(device))
+    {
+        nvswitch_soe_set_nport_interrupts_ls10(device, link, NV_TRUE);
+    }
+    else
+    {
+        NVSWITCH_NPORT_WR32_LS10(device, link, _NPORT, _ERR_CONTROL_COMMON_NPORT,
+            DRF_NUM(_NPORT, _ERR_CONTROL_COMMON_NPORT, _CORRECTABLEENABLE, 0x1) |
+            DRF_NUM(_NPORT, _ERR_CONTROL_COMMON_NPORT, _FATALENABLE, 0x1) |
+            DRF_NUM(_NPORT, _ERR_CONTROL_COMMON_NPORT, _NONFATALENABLE, 0x1));
+    }
 
     NVSWITCH_ENG_WR32(device, NVLW, , eng_instance, _NVLW, _LINK_INTR_0_MASK(localLinkNum),
         DRF_NUM(_NVLW, _LINK_INTR_0_MASK, _FATAL, 0x1) |
@@ -1477,7 +1501,7 @@ nvswitch_reset_and_drain_links_ls10
         //   DEBUG_CLEAR (0x144) register
         // - Assert NPortWarmReset[i] using the WARMRESET (0x140) register
         //
-        // nvswitch_soe_issue_nport_reset_ls10(device, link);
+        nvswitch_soe_issue_nport_reset_ls10(device, link);
 
         //
         // Step 5.0 : Issue Minion request to perform the link reset sequence
@@ -1555,7 +1579,7 @@ nvswitch_reset_and_drain_links_ls10
         // - Assert NPORT INITIALIZATION and program the state tracking RAMS
         // - Restore NPORT state after reset
         //
-        // nvswitch_soe_restore_nport_state_ls10(device, link);
+        nvswitch_soe_restore_nport_state_ls10(device, link);
 
         // Step 7.0 : Re-program the routing table for DBEs
   
@@ -2715,6 +2739,46 @@ nvswitch_get_num_links_ls10
     return NVSWITCH_NUM_LINKS_LS10;
 }
 
+NvlStatus
+nvswitch_ctrl_get_fom_values_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_FOM_VALUES_PARAMS *p
+)
+{
+    NvlStatus status;
+    NvU32     statData;
+    nvlink_link *link;
+
+    link = nvswitch_get_link(device, p->linkId);
+    if (link == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: link #%d invalid\n",
+            __FUNCTION__, p->linkId);
+        return -NVL_BAD_ARGS;
+    }
+
+    if (nvswitch_is_link_in_reset(device, link))
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: link #%d is in reset\n",
+            __FUNCTION__, p->linkId);
+        return -NVL_ERR_INVALID_STATE;
+    }
+
+    status = nvswitch_minion_get_dl_status(device, p->linkId,
+                                        NV_NVLSTAT_TR16, 0, &statData);
+    p->figureOfMeritValues[0] = (NvU16) (statData & 0xFFFF);
+    p->figureOfMeritValues[1] = (NvU16) ((statData >> 16) & 0xFFFF);
+
+    status = nvswitch_minion_get_dl_status(device, p->linkId,
+                                        NV_NVLSTAT_TR17, 0, &statData);
+    p->figureOfMeritValues[2] = (NvU16) (statData & 0xFFFF);
+    p->figureOfMeritValues[3] = (NvU16) ((statData >> 16) & 0xFFFF);
+
+    p->numLanes = nvswitch_get_sublink_width(device, p->linkId);
+
+    return status;
+}
 
 void
 nvswitch_set_fatal_error_ls10
@@ -5406,7 +5470,7 @@ nvswitch_ctrl_get_board_part_number_ls10
     if (!pInforom->OBD.bValid)
     {
         NVSWITCH_PRINT(device, ERROR, "OBD data is not available\n");
-        return -NVL_ERR_GENERIC;
+        return -NVL_ERR_NOT_SUPPORTED;
     }
 
     pOBDObj = &pInforom->OBD.object.v2;

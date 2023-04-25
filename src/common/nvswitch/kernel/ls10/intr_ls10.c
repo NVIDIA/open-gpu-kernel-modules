@@ -6335,7 +6335,7 @@ _nvswitch_service_nvlipt_lnk_nonfatal_ls10
         lnkStateRequest = NVSWITCH_LINK_RD32_LS10(device, link_info->linkNumber,
                             NVLIPT_LNK , _NVLIPT_LNK , _CTRL_LINK_STATE_REQUEST);
 
-        if(FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_LINK_STATE_REQUEST, _REQUEST, _ACTIVE, lnkStateRequest)                &&
+        if(FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_LINK_STATE_REQUEST, _REQUEST, _ACTIVE, lnkStateRequest) &&
             linkState == NV_NVLDL_TOP_LINK_STATE_STATE_FAULT)
         {
             chip_device->deferredLinkErrors[link].bResetAndDrainRetry = NV_TRUE;

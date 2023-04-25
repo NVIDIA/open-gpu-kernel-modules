@@ -2310,7 +2310,6 @@ kgrctxIsFinalGlobalBufMapRefDuped_IMPL
     }
     return NV_FALSE;
 }
-
 /**
  * @brief Unmap associated ctx buffers (main, patch, global buffers etc).
  *
@@ -3071,7 +3070,6 @@ kgrctxIncObjectCount_IMPL
     NV_ASSERT_OK_OR_ELSE(status,
         kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
         return;);
-
     switch (objType)
     {
         case GR_OBJECT_TYPE_COMPUTE:
@@ -3584,4 +3582,3 @@ void shrkgrctxDetach_IMPL
         SLI_LOOP_END;
     }
 }
-

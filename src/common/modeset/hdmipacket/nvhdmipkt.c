@@ -315,7 +315,8 @@ NvHdmi_QueryFRLConfig(NvHdmiPkt_Handle                      libHandle,
     }
 
     // if there is no FRL capability reported fail this call
-    if (pSinkCaps->linkMaxFRLRate == HDMI_FRL_DATA_RATE_NONE)
+    if ((pSrcCaps->linkMaxFRLRate == HDMI_FRL_DATA_RATE_NONE) ||
+        (pSinkCaps->linkMaxFRLRate == HDMI_FRL_DATA_RATE_NONE))
     {
         return NVHDMIPKT_FAIL;
     }

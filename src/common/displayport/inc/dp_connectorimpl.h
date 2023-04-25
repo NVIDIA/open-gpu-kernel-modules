@@ -335,6 +335,14 @@ namespace DisplayPort
         //
         bool        bPowerDownPhyBeforeD3;
 
+        //
+        // Reset the MSTM_CTRL registers on Synaptics branch device irrespective of
+        // IRQ VECTOR register having stale message. Synaptics device needs to reset
+        // the topology before issue of new LAM message if previous LAM was not finished
+        // bug 3928070
+        //
+        bool bForceClearPendingMsg;
+
         void sharedInit();
         ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Connector::EventSink * sink);
 

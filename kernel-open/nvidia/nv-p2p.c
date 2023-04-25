@@ -431,6 +431,8 @@ static int nv_p2p_get_pages(
             goto failed;
         }
 
+        (*page_table)->gpu_uuid = gpu_uuid;
+
         rc = nvidia_dev_get_uuid(gpu_uuid, sp);
         if (rc != 0)
         {
@@ -461,10 +463,11 @@ static int nv_p2p_get_pages(
         {
             goto failed;
         }
+
+        (*page_table)->gpu_uuid = gpu_uuid;
     }
 
     bGetPages = NV_TRUE;
-    (*page_table)->gpu_uuid = gpu_uuid;
 
     status = os_alloc_mem((void *)&(*page_table)->pages,
              (entries * sizeof(page)));

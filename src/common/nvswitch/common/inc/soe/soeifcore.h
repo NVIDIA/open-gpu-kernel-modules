@@ -86,6 +86,11 @@ enum
      * Read Power
      */
     RM_SOE_CORE_CMD_GET_POWER_VALUES,
+
+    /*!
+     * Set NPORT interrupts
+     */
+    RM_SOE_CORE_CMD_SET_NPORT_INTRS,
 };
 
 // Timeout for SOE reset callback function
@@ -162,6 +167,13 @@ typedef struct
     NvU8   cmdType;
 } RM_SOE_CORE_CMD_GET_POWER;
 
+typedef struct
+{
+    NvU8   cmdType;
+    NvU32  nport;
+    NvBool bEnable;
+} RM_SOE_CORE_CMD_NPORT_INTRS;
+
 typedef union
 {
     NvU8 cmdType;
@@ -174,8 +186,8 @@ typedef union
     RM_SOE_CORE_CMD_GET_VOLTAGE getVoltage;
     RM_SOE_CORE_CMD_L2_STATE l2State;
     RM_SOE_CORE_CMD_GET_POWER getPower;
+    RM_SOE_CORE_CMD_NPORT_INTRS nportIntrs;
 } RM_SOE_CORE_CMD;
-
 
 typedef struct
 {

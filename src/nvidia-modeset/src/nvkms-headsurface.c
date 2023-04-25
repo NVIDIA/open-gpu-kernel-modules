@@ -549,24 +549,25 @@ static NvBool HsFlipQueueEntryIsReady(
  * Update the reference count of all the surfaces described in the pHwState.
  */
 static void HsUpdateFlipQueueEntrySurfaceRefCount(
+    NVDevEvoPtr pDevEvo,
     const NVFlipChannelEvoHwState *pHwState,
     NvBool increase)
 {
     HsChangeSurfaceFlipRefCount(
-        pHwState->pSurfaceEvo[NVKMS_LEFT], increase);
+        pDevEvo, pHwState->pSurfaceEvo[NVKMS_LEFT], increase);
 
     HsChangeSurfaceFlipRefCount(
-        pHwState->pSurfaceEvo[NVKMS_RIGHT], increase);
+        pDevEvo, pHwState->pSurfaceEvo[NVKMS_RIGHT], increase);
 
     HsChangeSurfaceFlipRefCount(
-        pHwState->completionNotifier.surface.pSurfaceEvo, increase);
+        pDevEvo, pHwState->completionNotifier.surface.pSurfaceEvo, increase);
 
     if (!pHwState->syncObject.usingSyncpt) {
         HsChangeSurfaceFlipRefCount(
-            pHwState->syncObject.u.semaphores.acquireSurface.pSurfaceEvo, increase);
+            pDevEvo, pHwState->syncObject.u.semaphores.acquireSurface.pSurfaceEvo, increase);
 
         HsChangeSurfaceFlipRefCount(
-            pHwState->syncObject.u.semaphores.releaseSurface.pSurfaceEvo, increase);
+            pDevEvo, pHwState->syncObject.u.semaphores.releaseSurface.pSurfaceEvo, increase);
     }
 }
 
@@ -605,7 +606,7 @@ static void HsReleaseFlipQueueEntry(
      * HeadSurface no longer needs to read from the surfaces in pHwState;
      * decrement their reference counts.
      */
-    HsUpdateFlipQueueEntrySurfaceRefCount(pHwState, FALSE);
+    HsUpdateFlipQueueEntrySurfaceRefCount(pDevEvo, pHwState, FALSE);
 }
 
 /*!
@@ -687,6 +688,7 @@ void nvHsPushFlipQueueEntry(
     const NvU8 layer,
     const NVFlipChannelEvoHwState *pHwState)
 {
+    NVDevEvoPtr pDevEvo = pHsChannel->pDispEvo->pDevEvo;
     NVListRec *pFlipQueue = &pHsChannel->flipQueue[layer].queue;
     NVHsChannelFlipQueueEntry *pEntry = nvCalloc(1, sizeof(*pEntry));
 
@@ -703,7 +705,7 @@ void nvHsPushFlipQueueEntry(
 
     /* Increment the ref counts on the surfaces in the flip queue entry. */
 
-    HsUpdateFlipQueueEntrySurfaceRefCount(&pEntry->hwState, TRUE);
+    HsUpdateFlipQueueEntrySurfaceRefCount(pDevEvo, &pEntry->hwState, TRUE);
 
     /* "Fast forward" through existing flip queue entries that are ready. */
 
@@ -2093,6 +2095,17 @@ static NvBool HsCanOmitNonSgHsUpdate(NVHsChannelEvoPtr pHsChannel)
         pHsChannel->pDispEvo->pSwapGroup[pHsChannel->apiHead];
 
     /*
+     * When fullscreen swapgroup flipping, updating
+     * non-swapgroup content at vblank is unnecessary and
+     * dangerous, since it results in releasing client
+     * semaphores before their contents have actually been
+     * displayed.
+     */
+    if (pHsChannel->swapGroupFlipping) {
+        return NV_TRUE;
+    }
+
+    /*
      * In the case of a fullscreen swapgroup, we can generally omit updating
      * the headsurface entirely upon vblank as long as the client is
      * actively rendering. All the swapgroup content has already been
@@ -2251,8 +2264,11 @@ static void HsVBlankCallback(NVDispEvoRec *pDispEvo,
      */
 
     /*
-     * When fullscreen swapgroup flipping, we don't need to update
-     * non-swapgroup content at vblank.
+     * When fullscreen swapgroup flipping, updating
+     * non-swapgroup content at vblank is unnecessary and
+     * dangerous, since it results in releasing client
+     * semaphores before their contents have actually been
+     * displayed.
      */
     if (!pHsChannel->swapGroupFlipping) {
         nvHsNextFrame(pHsDevice, pHsChannel,

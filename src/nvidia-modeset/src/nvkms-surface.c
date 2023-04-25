@@ -992,7 +992,7 @@ void nvEvoFreeClientSurfaces(NVDevEvoPtr pDevEvo,
         nvEvoDestroyApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
         if (isOwner) {
-            nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
+            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
         } else {
             nvEvoDecrementSurfaceStructRefCnt(pSurfaceEvo);
         }
@@ -1037,7 +1037,7 @@ void nvEvoUnregisterSurface(NVDevEvoPtr pDevEvo,
     /* Remove the handle from the calling client's namespace. */
     nvEvoDestroyApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
-    nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
+    nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
 }
 
 void nvEvoReleaseSurface(NVDevEvoPtr pDevEvo,
@@ -1075,15 +1075,13 @@ void nvEvoIncrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo)
     pSurfaceEvo->structRefCnt++;
 }
 
-void nvEvoDecrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo)
+void nvEvoDecrementSurfaceRefCnts(NVDevEvoPtr pDevEvo,
+                                  NVSurfaceEvoPtr pSurfaceEvo)
 {
     nvAssert(pSurfaceEvo->rmRefCnt >= 1);
     pSurfaceEvo->rmRefCnt--;
 
     if (pSurfaceEvo->rmRefCnt == 0) {
-        NVDevEvoPtr pDevEvo =
-            nvGetDevEvoFromOpenDev(pSurfaceEvo->owner.pOpenDev);
-
         /*
          * Don't sync if this surface was registered as not requiring display
          * hardware access, to WAR timeouts that result from OGL unregistering
@@ -1288,7 +1286,7 @@ void nvEvoUnregisterDeferredRequestFifo(
                     pDeferredRequestFifo->fifo,
                     0);
 
-    nvEvoDecrementSurfaceRefCnts(pDeferredRequestFifo->pSurfaceEvo);
+    nvEvoDecrementSurfaceRefCnts(pDevEvo, pDeferredRequestFifo->pSurfaceEvo);
 
     nvFree(pDeferredRequestFifo);
 }

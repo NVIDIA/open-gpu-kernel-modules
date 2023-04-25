@@ -118,7 +118,7 @@ SetCursorImage(NVDispEvoPtr pDispEvo,
         }
 
         if (pSurfaceEvoOld) {
-            nvEvoDecrementSurfaceRefCnts(pSurfaceEvoOld);
+            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvoOld);
         }
 
         pDevEvo->gpus[sd].headState[head].cursor.pSurfaceEvo = pSurfaceEvoNew;

@@ -592,6 +592,50 @@ clientCopyResource_IMPL
 }
 
 static
+void
+_refCleanupDependencies
+(
+    RsResourceRef *pResourceRef
+)
+{
+    RsResourceRef **ppIndepRef;
+    while (NULL != (ppIndepRef = multimapFirstItem(&pResourceRef->depBackRefMap)))
+    {
+        refRemoveDependant(*ppIndepRef, pResourceRef);
+    }
+}
+
+static
+void
+_refCleanupDependants
+(
+    RsResourceRef *pResourceRef
+)
+{
+    RsResourceRef **ppDepRef;
+    while (NULL != (ppDepRef = multimapFirstItem(&pResourceRef->depRefMap)))
+    {
+        refRemoveDependant(pResourceRef, *ppDepRef);
+    }
+}
+
+static
+void
+_refRemoveAllDependencies
+(
+    RsResourceRef *pResourceRef
+)
+{
+    _refCleanupDependencies(pResourceRef);
+
+    if (pResourceRef->pDependantSession != NULL)
+        sessionRemoveDependency(pResourceRef->pDependantSession, pResourceRef);
+
+    if (pResourceRef->pSession != NULL)
+        sessionRemoveDependant(pResourceRef->pSession, pResourceRef);
+}
+
+static
 NV_STATUS
 _clientAllocResourceHelper
 (
@@ -693,11 +737,7 @@ fail:
         pOldContext = NULL;
 
         // First undo dependency tracking since it might access the resource
-        if (pResourceRef->pDependantSession != NULL)
-            sessionRemoveDependency(pResourceRef->pDependantSession, pResourceRef);
-
-        if (pResourceRef->pSession != NULL)
-            sessionRemoveDependant(pResourceRef->pSession, pResourceRef);
+        _refRemoveAllDependencies(pResourceRef);
 
         portMemSet(&params, 0, sizeof(params));
         portMemSet(&callContext, 0, sizeof(callContext));
@@ -725,38 +765,6 @@ fail:
     }
 
     return status;
-}
-
-static
-NV_STATUS
-_refCleanupDependencies
-(
-    RsResourceRef *pResourceRef
-)
-{
-    RsResourceRef **ppIndepRef;
-    while (NULL != (ppIndepRef = multimapFirstItem(&pResourceRef->depBackRefMap)))
-    {
-        refRemoveDependant(*ppIndepRef, pResourceRef);
-    }
-
-    return NV_OK;
-}
-
-static
-NV_STATUS
-_refCleanupDependants
-(
-    RsResourceRef *pResourceRef
-)
-{
-    RsResourceRef **ppDepRef;
-    while (NULL != (ppDepRef = multimapFirstItem(&pResourceRef->depRefMap)))
-    {
-        refRemoveDependant(pResourceRef, *ppDepRef);
-    }
-
-    return NV_OK;
 }
 
 NV_STATUS
@@ -814,13 +822,7 @@ clientFreeResource_IMPL
 
     // Remove this resource as a dependency from other resources
     pResourceRef->bInvalidated = NV_TRUE;
-    _refCleanupDependencies(pResourceRef);
-
-    if (pResourceRef->pDependantSession != NULL)
-        sessionRemoveDependency(pResourceRef->pDependantSession, pResourceRef);
-
-    if (pResourceRef->pSession != NULL)
-        sessionRemoveDependant(pResourceRef->pSession, pResourceRef);
+    _refRemoveAllDependencies(pResourceRef);
 
     status = serverFreeResourceRpcUnderLock(pServer, pParams);
     NV_ASSERT(status == NV_OK);

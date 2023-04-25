@@ -47,7 +47,8 @@ void nvEvoIncrementSurfaceStructRefCnt(NVSurfaceEvoPtr pSurfaceEvo);
 void nvEvoDecrementSurfaceStructRefCnt(NVSurfaceEvoPtr pSurfaceEvo);
 
 void nvEvoIncrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo);
-void nvEvoDecrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo);
+void nvEvoDecrementSurfaceRefCnts(NVDevEvoPtr pDevEvo,
+                                  NVSurfaceEvoPtr pSurfaceEvo);
 
 NvBool nvEvoSurfaceRefCntsTooLarge(const NVSurfaceEvoRec *pSurfaceEvo);
 

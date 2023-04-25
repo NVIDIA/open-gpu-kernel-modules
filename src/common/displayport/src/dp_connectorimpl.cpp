@@ -5756,7 +5756,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             discoveryManager = new DiscoveryManager(messageManager, this, timer, hal);
 
             // Check and clear if any pending message here
-            if (hal->clearPendingMsg())
+            if (hal->clearPendingMsg() || bForceClearPendingMsg)
             {
                 DP_LOG(("DP> Stale MSG found: set branch to D3 and back to D0..."));
                 if (hal->isAtLeastVersion(1, 4))
@@ -6799,6 +6799,7 @@ bool ConnectorImpl::updatePsrLinkState(bool bTrainLink)
     {
         // Bug 3438892 If the panel is turned off the reciever on its side,
         // force panel link on by writting 600 = 1
+        this->hal->setDirtyLinkStatus(true);
         if (this->isLinkLost())
         {
             hal->setPowerState(PowerStateD0);
@@ -6963,5 +6964,6 @@ void ConnectorImpl::configInit()
     bNoFallbackInPostLQA = 0;
     LT2FecLatencyMs = 0;
     bDscCapBasedOnParent = false;
+    bForceClearPendingMsg = false;
 }
 
