@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2022 NVIDIA Corporation
+    Copyright (c) 2022-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -53,7 +53,7 @@ typedef enum
 // The VA range is determined from either the uvm_va_range_t for managed
 // allocations or the uvm_va_policy_node_t for HMM allocations.
 //
-typedef struct uvm_va_policy_struct
+struct uvm_va_policy_struct
 {
     // Read duplication policy for this VA range (unset, enabled, or disabled).
     uvm_read_duplication_policy_t read_duplication;
@@ -66,7 +66,7 @@ typedef struct uvm_va_policy_struct
     // their page tables updated to access the (possibly remote) pages.
     uvm_processor_mask_t accessed_by;
 
-} uvm_va_policy_t;
+};
 
 // Policy nodes are used for storing policies in HMM va_blocks.
 // The va_block lock protects the tree so that invalidation callbacks can

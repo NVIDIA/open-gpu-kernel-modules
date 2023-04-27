@@ -164,16 +164,6 @@ typedef struct
     NvBool  bBlockProtocol;
 } NVSWITCH_I2C_HW_CMD, *PNVSWITCH_I2C_HW_CMD;
 
-
-typedef enum
-{
-    NVSWITCH_I2C_ACQUIRER_NONE = 0,
-    NVSWITCH_I2C_ACQUIRER_UNKNOWN,
-    NVSWITCH_I2C_ACQUIRER_IOCTL,          // e.g. MODS                  
-    NVSWITCH_I2C_ACQUIRER_EXTERNAL,       // e.g. Linux Direct
-
-} NVSWITCH_I2C_ACQUIRER;
-
 typedef enum {
     i2cProfile_Standard,
     i2cProfile_Fast,

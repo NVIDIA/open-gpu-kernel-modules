@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -102,7 +102,7 @@ static NV_STATUS phys_mem_allocate_sysmem(uvm_page_tree_t *tree, NvLength size, 
     NvU64 dma_addr;
     unsigned long flags = __GFP_ZERO;
     uvm_memcg_context_t memcg_context;
-    uvm_va_space_t *va_space;
+    uvm_va_space_t *va_space = NULL;
     struct mm_struct *mm = NULL;
 
     if (tree->type == UVM_PAGE_TREE_TYPE_USER && tree->gpu_va_space && UVM_CGROUP_ACCOUNTING_SUPPORTED()) {

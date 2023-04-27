@@ -2368,7 +2368,7 @@ static void ChangeSurfaceFlipRefCount(
         if (increase) {
             nvEvoIncrementSurfaceRefCnts(pSurfaceEvo);
         } else {
-            nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
+            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
         }
     }
 }

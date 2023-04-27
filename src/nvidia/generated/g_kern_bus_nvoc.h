@@ -216,6 +216,7 @@ struct __nvoc_inner_struc_KernelBus_2__ {
     NvU32 pageTblSize;
     NvU32 pageDirInit;
     NvU32 pageTblInit;
+    NvU32 cpuVisiblePgTblSize;
 };
 
 struct __nvoc_inner_struc_KernelBus_3__ {
@@ -302,6 +303,7 @@ struct KernelBus {
     NV_STATUS (*__kbusStatePostLoad__)(OBJGPU *, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStatePreUnload__)(OBJGPU *, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStateUnload__)(OBJGPU *, struct KernelBus *, NvU32);
+    NV_STATUS (*__kbusStatePostUnload__)(OBJGPU *, struct KernelBus *, NvU32);
     void (*__kbusStateDestroy__)(OBJGPU *, struct KernelBus *);
     NV_STATUS (*__kbusTeardownBar2CpuAperture__)(OBJGPU *, struct KernelBus *, NvU32);
     void (*__kbusGetP2PMailboxAttributes__)(OBJGPU *, struct KernelBus *, NvU32 *, NvU32 *, NvU32 *);
@@ -349,7 +351,6 @@ struct KernelBus {
     void (*__kbusUnmapCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, PMEMORY_DESCRIPTOR);
     void (*__kbusTeardownCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, NvBool);
     NV_STATUS (*__kbusReconcileTunableState__)(POBJGPU, struct KernelBus *, void *);
-    NV_STATUS (*__kbusStatePostUnload__)(POBJGPU, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStateInitUnlocked__)(POBJGPU, struct KernelBus *);
     void (*__kbusInitMissing__)(POBJGPU, struct KernelBus *);
     NV_STATUS (*__kbusStatePreInitUnlocked__)(POBJGPU, struct KernelBus *);
@@ -462,6 +463,8 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusStatePreUnload_HAL(pGpu, pKernelBus, arg0) kbusStatePreUnload_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusStateUnload(pGpu, pKernelBus, flags) kbusStateUnload_DISPATCH(pGpu, pKernelBus, flags)
 #define kbusStateUnload_HAL(pGpu, pKernelBus, flags) kbusStateUnload_DISPATCH(pGpu, pKernelBus, flags)
+#define kbusStatePostUnload(pGpu, pKernelBus, arg0) kbusStatePostUnload_DISPATCH(pGpu, pKernelBus, arg0)
+#define kbusStatePostUnload_HAL(pGpu, pKernelBus, arg0) kbusStatePostUnload_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusStateDestroy(pGpu, pKernelBus) kbusStateDestroy_DISPATCH(pGpu, pKernelBus)
 #define kbusStateDestroy_HAL(pGpu, pKernelBus) kbusStateDestroy_DISPATCH(pGpu, pKernelBus)
 #define kbusTeardownBar2CpuAperture(pGpu, pKernelBus, gfid) kbusTeardownBar2CpuAperture_DISPATCH(pGpu, pKernelBus, gfid)
@@ -557,7 +560,6 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusTeardownCoherentCpuMapping(pGpu, pKernelBus, arg0) kbusTeardownCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusTeardownCoherentCpuMapping_HAL(pGpu, pKernelBus, arg0) kbusTeardownCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusReconcileTunableState(pGpu, pEngstate, pTunableState) kbusReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
-#define kbusStatePostUnload(pGpu, pEngstate, arg0) kbusStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kbusStateInitUnlocked(pGpu, pEngstate) kbusStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kbusInitMissing(pGpu, pEngstate) kbusInitMissing_DISPATCH(pGpu, pEngstate)
 #define kbusStatePreInitUnlocked(pGpu, pEngstate) kbusStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
@@ -1089,6 +1091,24 @@ static inline void kbusDestroyPeerAccess(OBJGPU *pGpu, struct KernelBus *pKernel
 #endif //__nvoc_kern_bus_h_disabled
 
 #define kbusDestroyPeerAccess_HAL(pGpu, pKernelBus, peerNum) kbusDestroyPeerAccess(pGpu, pKernelBus, peerNum)
+
+NvU32 kbusGetNvlinkPeerId_GA100(OBJGPU *pGpu, struct KernelBus *pKernelBus, OBJGPU *pPeerGpu);
+
+static inline NvU32 kbusGetNvlinkPeerId_c732fb(OBJGPU *pGpu, struct KernelBus *pKernelBus, OBJGPU *pPeerGpu) {
+    return 4294967295U;
+}
+
+
+#ifdef __nvoc_kern_bus_h_disabled
+static inline NvU32 kbusGetNvlinkPeerId(OBJGPU *pGpu, struct KernelBus *pKernelBus, OBJGPU *pPeerGpu) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBus was disabled!");
+    return 0;
+}
+#else //__nvoc_kern_bus_h_disabled
+#define kbusGetNvlinkPeerId(pGpu, pKernelBus, pPeerGpu) kbusGetNvlinkPeerId_c732fb(pGpu, pKernelBus, pPeerGpu)
+#endif //__nvoc_kern_bus_h_disabled
+
+#define kbusGetNvlinkPeerId_HAL(pGpu, pKernelBus, pPeerGpu) kbusGetNvlinkPeerId(pGpu, pKernelBus, pPeerGpu)
 
 NvU32 kbusGetPeerIdFromTable_GM107(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 locPeerIdx, NvU32 remPeerIdx);
 
@@ -1637,6 +1657,14 @@ static inline NV_STATUS kbusStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelBus 
     return pKernelBus->__kbusStateUnload__(pGpu, pKernelBus, flags);
 }
 
+static inline NV_STATUS kbusStatePostUnload_56cd7a(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kbusStatePostUnload_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvU32 arg0) {
+    return pKernelBus->__kbusStatePostUnload__(pGpu, pKernelBus, arg0);
+}
+
 void kbusStateDestroy_GM107(OBJGPU *pGpu, struct KernelBus *pKernelBus);
 
 static inline void kbusStateDestroy_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus) {
@@ -2091,10 +2119,6 @@ static inline void kbusTeardownCoherentCpuMapping_DISPATCH(OBJGPU *pGpu, struct 
 
 static inline NV_STATUS kbusReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, void *pTunableState) {
     return pEngstate->__kbusReconcileTunableState__(pGpu, pEngstate, pTunableState);
-}
-
-static inline NV_STATUS kbusStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, NvU32 arg0) {
-    return pEngstate->__kbusStatePostUnload__(pGpu, pEngstate, arg0);
 }
 
 static inline NV_STATUS kbusStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate) {

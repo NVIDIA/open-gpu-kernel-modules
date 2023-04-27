@@ -74,14 +74,23 @@ enum
 
     /*!
      * Read VRs
-     * Needed to be in sync with chips_a defines
      */
     RM_SOE_CORE_CMD_GET_VOLTAGE_VALUES,
 
     /*!
      * Init PLM2 protected registers
      */
-    RM_SOE_CORE_CMD_INIT_L2_STATE
+    RM_SOE_CORE_CMD_INIT_L2_STATE,
+
+    /*!
+     * Read Power
+     */
+    RM_SOE_CORE_CMD_GET_POWER_VALUES,
+
+    /*!
+     * Set NPORT interrupts
+     */
+    RM_SOE_CORE_CMD_SET_NPORT_INTRS,
 };
 
 // Timeout for SOE reset callback function
@@ -153,6 +162,18 @@ typedef struct
     NvU8   cmdType;
 } RM_SOE_CORE_CMD_L2_STATE;
 
+typedef struct
+{
+    NvU8   cmdType;
+} RM_SOE_CORE_CMD_GET_POWER;
+
+typedef struct
+{
+    NvU8   cmdType;
+    NvU32  nport;
+    NvBool bEnable;
+} RM_SOE_CORE_CMD_NPORT_INTRS;
+
 typedef union
 {
     NvU8 cmdType;
@@ -164,8 +185,9 @@ typedef union
     RM_SOE_CORE_CMD_NPORT_TPROD_STATE nportTprodState;
     RM_SOE_CORE_CMD_GET_VOLTAGE getVoltage;
     RM_SOE_CORE_CMD_L2_STATE l2State;
+    RM_SOE_CORE_CMD_GET_POWER getPower;
+    RM_SOE_CORE_CMD_NPORT_INTRS nportIntrs;
 } RM_SOE_CORE_CMD;
-
 
 typedef struct
 {
@@ -176,9 +198,19 @@ typedef struct
     NvU32  hvdd_mv;
 } RM_SOE_CORE_MSG_GET_VOLTAGE;
 
+typedef struct
+{
+    NvU8   msgType;
+    NvU8   flcnStatus;
+    NvU32  vdd_w;
+    NvU32  dvdd_w;
+    NvU32  hvdd_w;
+} RM_SOE_CORE_MSG_GET_POWER;
+
 typedef union
 {
     NvU8 msgType;
     RM_SOE_CORE_MSG_GET_VOLTAGE getVoltage;
+    RM_SOE_CORE_MSG_GET_POWER getPower;
 } RM_SOE_CORE_MSG;
 #endif  // _SOECORE_H_

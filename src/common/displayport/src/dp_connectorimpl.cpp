@@ -5539,7 +5539,8 @@ void ConnectorImpl::notifyLongPulse(bool statusConnected)
 
         if (existingDev && existingDev->isFakedMuxDevice() && !bIsMuxOnDgpu)
         {
-            DP_LOG((" NotifyLongPulse ignored as mux is not pointing to dGPU and there is a faked device"));
+            DP_LOG((" NotifyLongPulse ignored as mux is not pointing to dGPU and there is a faked device. Marking detect complete"));
+            sink->notifyDetectComplete();
             return;
         }
 
@@ -5755,7 +5756,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             discoveryManager = new DiscoveryManager(messageManager, this, timer, hal);
 
             // Check and clear if any pending message here
-            if (hal->clearPendingMsg())
+            if (hal->clearPendingMsg() || bForceClearPendingMsg)
             {
                 DP_LOG(("DP> Stale MSG found: set branch to D3 and back to D0..."));
                 if (hal->isAtLeastVersion(1, 4))
@@ -6513,6 +6514,7 @@ void ConnectorImpl::createFakeMuxDevice(const NvU8 *buffer, NvU32 bufferSize)
 
     // Initialize DSC state
     newDev->dscCaps.bDSCSupported = true;
+    newDev->dscCaps.bDSCDecompressionSupported = true;
     newDev->parseDscCaps(buffer, bufferSize);
     dpMemCopy(newDev->rawDscCaps, buffer, DP_MIN(bufferSize, 16));
     newDev->bDSCPossible = true;
@@ -6797,6 +6799,7 @@ bool ConnectorImpl::updatePsrLinkState(bool bTrainLink)
     {
         // Bug 3438892 If the panel is turned off the reciever on its side,
         // force panel link on by writting 600 = 1
+        this->hal->setDirtyLinkStatus(true);
         if (this->isLinkLost())
         {
             hal->setPowerState(PowerStateD0);
@@ -6961,5 +6964,6 @@ void ConnectorImpl::configInit()
     bNoFallbackInPostLQA = 0;
     LT2FecLatencyMs = 0;
     bDscCapBasedOnParent = false;
+    bForceClearPendingMsg = false;
 }
 

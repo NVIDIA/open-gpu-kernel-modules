@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,5 +64,9 @@
 #define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2__DEVICE_MAP                                                0x00000016 /*       */
 #define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2_VAL                                                        31:0           /* RWIVF */
 #define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2_VAL_INIT                                                   0x00000000     /* RWI-V */
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_3(i)                                                         (0x008f0330+(i)*4) /* RW-4A */
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_3__SIZE_1                                                    4              /*       */
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_3_VAL                                                        31:0           /* RWIVF */
+#define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_3_VAL_INIT                                                   0x00000000     /* RWI-V */
 
 #endif // __gh100_dev_fsp_pri_h__

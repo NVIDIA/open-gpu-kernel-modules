@@ -239,6 +239,7 @@ struct OBJTMR {
     NvBool bAlarmIntrEnabled;
     PENG_INFO_LINK_NODE infoList;
     struct OBJREFCNT *pGrTickFreqRefcnt;
+    NvU64 sysTimerOffsetNs;
 };
 
 #ifndef __NVOC_CLASS_OBJTMR_TYPEDEF__

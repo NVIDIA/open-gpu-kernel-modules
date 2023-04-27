@@ -397,7 +397,7 @@ void parse861ExtDetailedTiming(NvU8 *pEdidExt,
     // Get all detailed timings in CEA ext block
     pDTD = (DETAILEDTIMINGDESCRIPTOR *)&pEdidExt[pEIA861->offset];
 
-    while((NvU8 *)pDTD < (pEdidExt + sizeof(EDIDV1STRUC)) && // Check that we're not going beyond this extension block.
+    while((NvU8 *)pDTD + sizeof(DETAILEDTIMINGDESCRIPTOR) < (pEdidExt + sizeof(EDIDV1STRUC) - 1) &&
           pDTD->wDTPixelClock != 0)
     {
         NVMISC_MEMSET(&newTiming, 0, sizeof(newTiming));
@@ -1237,6 +1237,12 @@ NVT_STATUS get861ExtInfo(NvU8 *p, NvU32 size, NVT_EDID_CEA861_INFO *p861info)
         return NVT_STATUS_ERR;
     }
 
+    // DTD offset sanity check 
+    if (p[2] >= 1 && p[2] <= 3)
+    {
+        return NVT_STATUS_ERR;
+    }
+
     // don't do anything further if p861info is NULL
     if (p861info == NULL)
     {
@@ -1299,6 +1305,11 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
         tag = NVT_CEA861_GET_SHORT_DESCRIPTOR_TAG(p[i]);
         payload = NVT_CEA861_GET_SHORT_DESCRIPTOR_SIZE(p[i]);
 
+        /*don't allow data colleciton totally size larger than [127 - 5 (tag, revision, offset, describing native video format, checksum)]*/
+        if ((i + payload > size) || (i + payload > 122))  
+        {
+            return NVT_STATUS_ERR;
+        }
         // move the pointer to the payload section or extended Tag Code
         i++;
         

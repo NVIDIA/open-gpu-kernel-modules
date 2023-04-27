@@ -3482,12 +3482,6 @@ kmigmgrCreateComputeInstances_VF
                 (params.type == KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_REQUEST)
                 ? params.inst.request.pReqComputeInstanceInfo[CIIdx].sharedEngFlag
                 : params.inst.restore.pComputeInstanceSave->ciInfo.sharedEngFlags;
-        NvU32 grCount;
-        NvU32 ceCount;
-        NvU32 decCount;
-        NvU32 encCount;
-        NvU32 jpgCount;
-        NvU32 ofaCount;
         NvU32 spanStart;
         NvU32 ctsId;
 
@@ -3592,112 +3586,214 @@ kmigmgrCreateComputeInstances_VF
             remainingGpcCount -= pCIProfile->gpcCount;
         }
 
-        if (params.type == KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_REQUEST)
-        {
-            grCount = 1;
-            ceCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].ceCount;
-            decCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].nvDecCount;
-            encCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].nvEncCount;
-            jpgCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].nvJpgCount;
-            ofaCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].ofaCount;
-        }
-        else
+        if (params.type == KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_RESTORE)
         {
             ENGTYPE_BIT_VECTOR engines;
+            bitVectorClrAll(&pResourceAllocation->engines);
 
-            bitVectorFromRaw(&engines,
+            // Set engines requested directly in resource allocation mask
+            bitVectorFromRaw(&pResourceAllocation->engines,
                              params.inst.restore.pComputeInstanceSave->ciInfo.enginesMask,
                              sizeof(params.inst.restore.pComputeInstanceSave->ciInfo.enginesMask));
 
-            grCount = kmigmgrCountEnginesOfType(&engines,
-                                                RM_ENGINE_TYPE_GR(0));
+            // Sanity check that all engines requested exist in the GI engine mask
+            bitVectorClrAll(&engines);
+            bitVectorAnd(&engines, &pResourceAllocation->engines, &pKernelMIGGpuInstance->resourceAllocation.localEngines);
+            NV_CHECK_OR_ELSE(LEVEL_ERROR,
+                bitVectorTestEqual(&engines, &pResourceAllocation->engines), 
+                status = NV_ERR_INVALID_ARGUMENT; goto done;);
 
-            ceCount = kmigmgrCountEnginesOfType(&engines,
-                                                RM_ENGINE_TYPE_COPY(0));
+            // Set Shared/Exclusive Engine Masks for GRs restored
+            bitVectorClrAll(&engines);
+            bitVectorSetRange(&engines, RM_ENGINE_RANGE_GR());
+            bitVectorAnd(&engines, &engines, &pResourceAllocation->engines);
 
-            decCount = kmigmgrCountEnginesOfType(&engines,
-                                                 RM_ENGINE_TYPE_NVDEC(0));
+            // Only 1 GR can be requested per compute instance
+            NV_CHECK_OR_ELSE(LEVEL_ERROR, 
+                (kmigmgrCountEnginesOfType(&engines, RM_ENGINE_TYPE_GR(0)) == 1),
+                status = NV_ERR_INVALID_ARGUMENT; goto done;);
 
-            encCount = kmigmgrCountEnginesOfType(&engines,
-                                                 RM_ENGINE_TYPE_NVENC(0));
+            if ((pMIGComputeInstance->sharedEngFlag & NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NONE) != 0x0)
+                bitVectorOr(&shadowSharedEngMask, &shadowSharedEngMask, &engines);
+            else
+            {
+                ENGTYPE_BIT_VECTOR tempVector;
 
-            jpgCount = kmigmgrCountEnginesOfType(&engines,
-                                                 RM_ENGINE_TYPE_NVJPEG(0));
+                // Exclusive engine mask should not intersect with the current exclusive mask
+                bitVectorAnd(&tempVector, &engines, &shadowExclusiveEngMask);
+                NV_CHECK_OR_ELSE(LEVEL_ERROR, 
+                    bitVectorTestAllCleared(&tempVector),
+                    status = NV_ERR_STATE_IN_USE; goto done;);
+                bitVectorOr(&shadowExclusiveEngMask, &shadowExclusiveEngMask, &engines);
+            }
 
-            ofaCount = kmigmgrCountEnginesOfType(&engines,
-                                                 RM_ENGINE_TYPE_OFA);
+            // Set Shared/Exclusive Engine Masks for CEs restored
+            bitVectorClrAll(&engines);
+            bitVectorSetRange(&engines, RM_ENGINE_RANGE_COPY());
+            bitVectorAnd(&engines, &engines, &pResourceAllocation->engines);
+            if ((pMIGComputeInstance->sharedEngFlag & NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_CE) != 0x0)
+                bitVectorOr(&shadowSharedEngMask, &shadowSharedEngMask, &engines);
+            else
+            {
+                ENGTYPE_BIT_VECTOR tempVector;
 
-            NV_ASSERT(grCount == 1);
+                // Exclusive engine mask should not intersect with the current exclusive mask
+                bitVectorAnd(&tempVector, &engines, &shadowExclusiveEngMask);
+                NV_CHECK_OR_ELSE(LEVEL_ERROR, 
+                    bitVectorTestAllCleared(&tempVector),
+                    status = NV_ERR_STATE_IN_USE; goto done;);
+                bitVectorOr(&shadowExclusiveEngMask, &shadowExclusiveEngMask, &engines);
+            }
+
+            // Set Shared/Exclusive Engine Masks for NVDECs restored
+            bitVectorClrAll(&engines);
+            bitVectorSetRange(&engines, RM_ENGINE_RANGE_NVDEC());
+            bitVectorAnd(&engines, &engines, &pResourceAllocation->engines);
+            if ((pMIGComputeInstance->sharedEngFlag & NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVDEC) != 0x0)
+                bitVectorOr(&shadowSharedEngMask, &shadowSharedEngMask, &engines);
+            else
+            {
+                ENGTYPE_BIT_VECTOR tempVector;
+
+                // Exclusive engine mask should not intersect with the current exclusive mask
+                bitVectorAnd(&tempVector, &engines, &shadowExclusiveEngMask);
+                NV_CHECK_OR_ELSE(LEVEL_ERROR, 
+                    bitVectorTestAllCleared(&tempVector),
+                    status = NV_ERR_STATE_IN_USE; goto done;);
+                bitVectorOr(&shadowExclusiveEngMask, &shadowExclusiveEngMask, &engines);
+            }
+
+            // Set Shared/Exclusive Engine Masks for NVENCs restored
+            bitVectorClrAll(&engines);
+            bitVectorSetRange(&engines, RM_ENGINE_RANGE_NVENC());
+            bitVectorAnd(&engines, &engines, &pResourceAllocation->engines);
+            if ((pMIGComputeInstance->sharedEngFlag & NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVENC) != 0x0)
+                bitVectorOr(&shadowSharedEngMask, &shadowSharedEngMask, &engines);
+            else
+            {
+                ENGTYPE_BIT_VECTOR tempVector;
+
+                // Exclusive engine mask should not intersect with the current exclusive mask
+                bitVectorAnd(&tempVector, &engines, &shadowExclusiveEngMask);
+                NV_CHECK_OR_ELSE(LEVEL_ERROR, 
+                    bitVectorTestAllCleared(&tempVector),
+                    status = NV_ERR_STATE_IN_USE; goto done;);
+                bitVectorOr(&shadowExclusiveEngMask, &shadowExclusiveEngMask, &engines);
+            }
+
+            // Set Shared/Exclusive Engine Masks for NVJPEGs restored
+            bitVectorClrAll(&engines);
+            bitVectorSetRange(&engines, RM_ENGINE_RANGE_NVJPEG());
+            bitVectorAnd(&engines, &engines, &pResourceAllocation->engines);
+            if ((pMIGComputeInstance->sharedEngFlag & NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVJPG) != 0x0)
+                bitVectorOr(&shadowSharedEngMask, &shadowSharedEngMask, &engines);
+            else
+            {
+                ENGTYPE_BIT_VECTOR tempVector;
+
+                // Exclusive engine mask should not intersect with the current exclusive mask
+                bitVectorAnd(&tempVector, &engines, &shadowExclusiveEngMask);
+                NV_CHECK_OR_ELSE(LEVEL_ERROR, 
+                    bitVectorTestAllCleared(&tempVector),
+                    status = NV_ERR_STATE_IN_USE; goto done;);
+                bitVectorOr(&shadowExclusiveEngMask, &shadowExclusiveEngMask, &engines);
+            }
+
+            // Set Shared/Exclusive Engine Masks for OFAs restored
+            bitVectorClrAll(&engines);
+            bitVectorSetRange(&engines, rangeMake(RM_ENGINE_TYPE_OFA, RM_ENGINE_TYPE_OFA));
+            bitVectorAnd(&engines, &engines, &pResourceAllocation->engines);
+            if ((pMIGComputeInstance->sharedEngFlag & NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_OFA) != 0x0)
+                bitVectorOr(&shadowSharedEngMask, &shadowSharedEngMask, &engines);
+            else
+            {
+                ENGTYPE_BIT_VECTOR tempVector;
+
+                // Exclusive engine mask should not intersect with the current exclusive mask
+                bitVectorAnd(&tempVector, &engines, &shadowExclusiveEngMask);
+                NV_CHECK_OR_ELSE(LEVEL_ERROR, 
+                    bitVectorTestAllCleared(&tempVector),
+                    status = NV_ERR_STATE_IN_USE; goto done;);
+                bitVectorOr(&shadowExclusiveEngMask, &shadowExclusiveEngMask, &engines);
+            }
         }
+        else
+        {
+            NvU32 grCount = 1;
+            NvU32 ceCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].ceCount;
+            NvU32 decCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].nvDecCount;
+            NvU32 encCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].nvEncCount;
+            NvU32 jpgCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].nvJpgCount;
+            NvU32 ofaCount = params.inst.request.pReqComputeInstanceInfo[CIIdx].ofaCount;
 
-        bitVectorClrAll(&pResourceAllocation->engines);
+            bitVectorClrAll(&pResourceAllocation->engines);
 
-        // Allocate the GR engines for this compute instance
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
-                                           ((pMIGComputeInstance->sharedEngFlag &
-                                            NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NONE) != 0x0),
-                                           RM_ENGINE_RANGE_GR(),
-                                           grCount,
-                                           &pResourceAllocation->engines,
-                                           &shadowExclusiveEngMask,
-                                           &shadowSharedEngMask), done);
+            // Allocate the GR engines for this compute instance
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
+                                               ((pMIGComputeInstance->sharedEngFlag &
+                                                NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NONE) != 0x0),
+                                               RM_ENGINE_RANGE_GR(),
+                                               grCount,
+                                               &pResourceAllocation->engines,
+                                               &shadowExclusiveEngMask,
+                                               &shadowSharedEngMask), done);
 
-        // Allocate the Copy engines for this compute instance
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
-                                           ((pMIGComputeInstance->sharedEngFlag &
-                                            NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_CE) != 0x0),
-                                           RM_ENGINE_RANGE_COPY(),
-                                           ceCount,
-                                           &pResourceAllocation->engines,
-                                           &shadowExclusiveEngMask,
-                                           &shadowSharedEngMask), done);
+            // Allocate the Copy engines for this compute instance
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
+                                               ((pMIGComputeInstance->sharedEngFlag &
+                                                NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_CE) != 0x0),
+                                               RM_ENGINE_RANGE_COPY(),
+                                               ceCount,
+                                               &pResourceAllocation->engines,
+                                               &shadowExclusiveEngMask,
+                                               &shadowSharedEngMask), done);
 
-        // Allocate the NVDEC engines for this compute instance
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
-                                           ((pMIGComputeInstance->sharedEngFlag &
-                                            NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVDEC) != 0x0),
-                                           RM_ENGINE_RANGE_NVDEC(),
-                                           decCount,
-                                           &pResourceAllocation->engines,
-                                           &shadowExclusiveEngMask,
-                                           &shadowSharedEngMask), done);
+            // Allocate the NVDEC engines for this compute instance
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
+                                               ((pMIGComputeInstance->sharedEngFlag &
+                                                NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVDEC) != 0x0),
+                                               RM_ENGINE_RANGE_NVDEC(),
+                                               decCount,
+                                               &pResourceAllocation->engines,
+                                               &shadowExclusiveEngMask,
+                                               &shadowSharedEngMask), done);
 
-        // Allocate the NVENC engines for this compute instance
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
-                                           ((pMIGComputeInstance->sharedEngFlag &
-                                            NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVENC) != 0x0),
-                                           RM_ENGINE_RANGE_NVENC(),
-                                           encCount,
-                                           &pResourceAllocation->engines,
-                                           &shadowExclusiveEngMask,
-                                           &shadowSharedEngMask), done);
+            // Allocate the NVENC engines for this compute instance
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
+                                               ((pMIGComputeInstance->sharedEngFlag &
+                                                NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVENC) != 0x0),
+                                               RM_ENGINE_RANGE_NVENC(),
+                                               encCount,
+                                               &pResourceAllocation->engines,
+                                               &shadowExclusiveEngMask,
+                                               &shadowSharedEngMask), done);
 
-        // Allocate the NVJPG engines for this compute instance
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
-                                           ((pMIGComputeInstance->sharedEngFlag &
-                                            NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVJPG) != 0x0),
-                                           RM_ENGINE_RANGE_NVJPEG(),
-                                           jpgCount,
-                                           &pResourceAllocation->engines,
-                                           &shadowExclusiveEngMask,
-                                           &shadowSharedEngMask), done);
+            // Allocate the NVJPG engines for this compute instance
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
+                                               ((pMIGComputeInstance->sharedEngFlag &
+                                                NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_NVJPG) != 0x0),
+                                               RM_ENGINE_RANGE_NVJPEG(),
+                                               jpgCount,
+                                               &pResourceAllocation->engines,
+                                               &shadowExclusiveEngMask,
+                                               &shadowSharedEngMask), done);
 
-        // Allocate the NVOFA engines for this compute instance
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
-                                           ((pMIGComputeInstance->sharedEngFlag &
-                                            NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_OFA) != 0x0),
-                                           rangeMake(RM_ENGINE_TYPE_OFA, RM_ENGINE_TYPE_OFA),
-                                           ofaCount,
-                                           &pResourceAllocation->engines,
-                                           &shadowExclusiveEngMask,
-                                           &shadowSharedEngMask), done);
-
+            // Allocate the NVOFA engines for this compute instance
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kmigmgrAllocateInstanceEngines(&pKernelMIGGpuInstance->resourceAllocation.engines,
+                                               ((pMIGComputeInstance->sharedEngFlag &
+                                                NVC637_CTRL_EXEC_PARTITIONS_SHARED_FLAG_OFA) != 0x0),
+                                               rangeMake(RM_ENGINE_TYPE_OFA, RM_ENGINE_TYPE_OFA),
+                                               ofaCount,
+                                               &pResourceAllocation->engines,
+                                               &shadowExclusiveEngMask,
+                                               &shadowSharedEngMask), done);
+        }
 
         // Cache local mask of engine IDs for this compute instance
         kmigmgrGetLocalEngineMask(&pResourceAllocation->engines,

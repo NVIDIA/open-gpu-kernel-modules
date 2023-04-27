@@ -828,15 +828,15 @@ static inline const BINDATA_ARCHIVE *kgspGetBinArchiveBooterUnloadUcode_DISPATCH
     return pKernelGsp->__kgspGetBinArchiveBooterUnloadUcode__(pKernelGsp);
 }
 
-static inline NvU64 kgspGetWprHeapSize_5661b8(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return 64 * 1024 * 1024;
-}
-
-static inline NvU64 kgspGetWprHeapSize_15390a(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return 80 * 1024 * 1024;
+static inline NvU64 kgspGetWprHeapSize_e3e8a1(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return 96 * 1024 * 1024;
 }
 
 NvU64 kgspGetWprHeapSize_AD102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
+
+static inline NvU64 kgspGetWprHeapSize_cffea5(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return 104 * 1024 * 1024;
+}
 
 static inline NvU64 kgspGetWprHeapSize_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
     return pKernelGsp->__kgspGetWprHeapSize__(pGpu, pKernelGsp);

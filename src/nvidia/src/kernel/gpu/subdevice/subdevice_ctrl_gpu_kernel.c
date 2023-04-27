@@ -721,6 +721,19 @@ subdeviceCtrlCmdGpuGetNvencSwSessionStats_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+_subdeviceCtrlCmdGpuGetNvencSwSessionInfo
+(
+    OBJGPU                              *pGpu,
+    NvU32                               sessionInfoTblEntry,
+    NV2080_CTRL_NVENC_SW_SESSION_INFO   *pSessionInfo,
+    NvU32                               *entryCount
+)
+{
+
+    return NV_OK;
+}
+
 //
 // subdeviceCtrlCmdGpuGetNvencSwSessionInfo
 //
@@ -735,9 +748,23 @@ subdeviceCtrlCmdGpuGetNvencSwSessionInfo_IMPL
     NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS *pParams
 )
 {
+    NV_STATUS               status = NV_OK;
     pParams->sessionInfoTblEntry = 0;
 
-    return NV_OK;
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS *pParams
+)
+{
+    NV_STATUS               status = NV_OK;
+    pParams->sessionInfoTblEntry = 0;
+
+    return status;
 }
 
 //
@@ -2432,6 +2459,7 @@ subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
                 if (pP2PInfo[idx].gfid == INVALID_P2P_GFID)
                 {
                     pP2PInfo[idx].gfid = pParams->gfid;
+                    pGpu->sriovState.p2pFabricPartitionId = pParams->fabricPartitionId;
                     bSetP2PAccess = NV_TRUE;
                     break;
                 }
@@ -2441,6 +2469,7 @@ subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
                 if (pP2PInfo[idx].gfid == pParams->gfid)
                 {
                     pP2PInfo[idx].gfid = INVALID_P2P_GFID;
+                    pGpu->sriovState.p2pFabricPartitionId = INVALID_FABRIC_PARTITION_ID;
                     bSetP2PAccess = NV_TRUE;
                     break;
                 }

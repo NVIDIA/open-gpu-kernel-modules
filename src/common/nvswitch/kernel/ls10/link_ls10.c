@@ -1230,12 +1230,29 @@ nvswitch_init_dlpl_interrupts_ls10
     NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TOP, _INTR, 0xffffffff);
     NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TOP, _INTR_SW2, 0xffffffff);
 
+    // Set the interrupt bits
+    nvswitch_set_dlpl_interrupts_ls10(link);
+
+    // Setup error rate thresholds
+    nvswitch_set_error_rate_threshold_ls10(link, NV_TRUE);
+    nvswitch_configure_error_rate_threshold_interrupt_ls10(link, NV_TRUE);
+}
+
+void
+nvswitch_set_dlpl_interrupts_ls10
+(
+    nvlink_link *link
+)
+{
+    nvswitch_device *device            = link->dev->pDevInfo;
+    NvU32            linkNumber        = link->linkNumber;
     // Stall tree routes to INTR_A which is connected to NVLIPT fatal tree
 
     NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TOP, _INTR_STALL_EN,
               DRF_DEF(_NVLDL_TOP, _INTR_STALL_EN, _TX_REPLAY, _DISABLE)               |
               DRF_DEF(_NVLDL_TOP, _INTR_STALL_EN, _TX_RECOVERY_SHORT, _DISABLE)       |
               DRF_DEF(_NVLDL_TOP, _INTR_STALL_EN, _LTSSM_FAULT_UP, _ENABLE)           |
+              DRF_DEF(_NVLDL_TOP, _INTR_STALL_EN, _LTSSM_FAULT_DOWN, _ENABLE)         |
               DRF_DEF(_NVLDL_TOP, _INTR_STALL_EN, _TX_FAULT_RAM, _ENABLE)             |
               DRF_DEF(_NVLDL_TOP, _INTR_STALL_EN, _TX_FAULT_INTERFACE, _ENABLE)       |
               DRF_DEF(_NVLDL_TOP, _INTR_STALL_EN, _TX_FAULT_SUBLINK_CHANGE, _DISABLE) |
@@ -1262,9 +1279,6 @@ nvswitch_init_dlpl_interrupts_ls10
               DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _RX_CRC_COUNTER, _ENABLE)           |
               DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _LTSSM_PROTOCOL, _DISABLE)          |
               DRF_DEF(_NVLDL_TOP, _INTR_NONSTALL_EN, _MINION_REQUEST, _DISABLE));
-
-    nvswitch_set_error_rate_threshold_ls10(link, NV_TRUE);
-    nvswitch_configure_error_rate_threshold_interrupt_ls10(link, NV_TRUE);
 }
 
 static NvU32

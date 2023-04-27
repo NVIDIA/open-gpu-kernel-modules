@@ -921,7 +921,9 @@ static void nv_drm_update_drm_driver_features(void)
 
     nv_drm_driver.dumb_create      = nv_drm_dumb_create;
     nv_drm_driver.dumb_map_offset  = nv_drm_dumb_map_offset;
+#if defined(NV_DRM_DRIVER_HAS_DUMB_DESTROY)
     nv_drm_driver.dumb_destroy     = nv_drm_dumb_destroy;
+#endif /* NV_DRM_DRIVER_HAS_DUMB_DESTROY */
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 }
 

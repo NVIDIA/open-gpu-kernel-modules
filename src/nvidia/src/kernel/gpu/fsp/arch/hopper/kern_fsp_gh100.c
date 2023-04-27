@@ -953,6 +953,18 @@ kfspDumpDebugState_GH100
     KernelFsp *pKernelFsp
 )
 {
+    //
+    // Older microcodes did not have the version populated in scratch.
+    // They will report a version of 0.
+    //
+    const NvU32 fspUcodeVersion = GPU_REG_RD_DRF(pGpu, _GFW, _FSP_UCODE_VERSION, _FULL);
+    if (fspUcodeVersion > 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "FSP microcode v%u.%u\n",
+                  DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MAJOR, fspUcodeVersion),
+                  DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MINOR, fspUcodeVersion));
+    }
+
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0) = 0x%x\n",
               GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)));
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1) = 0x%x\n",
@@ -1208,4 +1220,16 @@ kfspGetExtraReservedMemorySize_GH100
 {
     // Bug: 3763996
     return 4 * 1024;
+}
+
+NvBool
+kfspRequiresBug3957833WAR_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    const NvU32 FSP_BUG_3957833_FIX_VERSION = 0x44C;
+    const NvU32 fspUcodeVersion = GPU_REG_RD_DRF(pGpu, _GFW, _FSP_UCODE_VERSION, _FULL);
+    return fspUcodeVersion < FSP_BUG_3957833_FIX_VERSION;
 }

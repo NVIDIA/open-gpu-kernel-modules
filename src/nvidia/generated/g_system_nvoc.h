@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -322,6 +322,16 @@ typedef struct SYS_STATIC_CONFIG
     NvBool bOsSevEnabled;
 } SYS_STATIC_CONFIG;
 
+typedef enum 
+{
+    CPU_VENDOR_UNKNOWN = 0,
+    CPU_VENDOR_INTEL,
+    CPU_VENDOR_AMD,
+    CPU_VENDOR_WINCHIP,
+    CPU_VENDOR_CYRIX,
+    CPU_VENDOR_TRANSM
+} CPU_VENDOR;
+
 typedef struct
 {
     NvBool bInitialized;           // Set to true once we id the CPU
@@ -340,6 +350,7 @@ typedef struct
                                    // filled in if CPU has embedded name
     NvU32 family;                  // Vendor defined Family/extended Family
     NvU32 model;                   // Vendor defined Model/extended Model
+    NvU8  vendor;                  // Vendor CPU_VENDOR
     NvU32 coresOnDie;              // # of cores on the die (0 if unknown)
     NvU32 platformID;              // Chip package type
     NvU8 stepping;                 // Silicon stepping

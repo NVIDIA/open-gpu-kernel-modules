@@ -106,6 +106,7 @@ kgspGetWprHeapSize_AD102
     }
     else
     {
-        return 80 * 1024 * 1024;
+        // GSP-RM WPR heap (96MB) + libos3 (16MB)
+        return 112 * 1024 * 1024;
     }
 }

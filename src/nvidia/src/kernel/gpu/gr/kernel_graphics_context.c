@@ -2244,6 +2244,73 @@ kgrctxUnmapCtxPreemptionBuffers_IMPL
     kgraphicsUnmapCtxBuffer(pGpu, pKernelGraphics, pVAS, &pKernelGraphicsContextUnicast->rtvCbCtxswBuffer.vAddrList);
 }
 
+/*!
+ * @brief This funciton operates as a last step check before proceeding with unmapping 
+ *        various global ctx buffers. 
+ *
+ * @param[in]  pGpu
+ * @param[in]  pKernelGraphicsContext
+ * @param[in]  pKernelChannel          KernelChannel attempting to be unmapped
+ * @param[in]  bufId                   GR_GLOBALCTX_BUFFER checking for un-accounted references
+ *
+ * @return NV_FALSE             unmapping on bufId can proceed for pKernelChannel's VAS
+ * @return NV_TRUE              References which use the mapping are still alive
+ */
+NvBool
+kgrctxIsFinalGlobalBufMapRefDuped_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    KernelChannel *pKernelChannel,
+    GR_GLOBALCTX_BUFFER bufId
+)
+{
+    CHANNEL_NODE *pChanNode;
+    CHANNEL_LIST *pChanList;
+    KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
+    NV_STATUS status = NV_OK;
+    NvU64 refCount;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelChannel != NULL, NV_FALSE);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelChannel->pKernelChannelGroupApi != NULL, NV_FALSE);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup != NULL, NV_FALSE);
+
+    NV_ASSERT_OK_OR_ELSE(status,
+            kgrctxGetUnicast(pGpu,
+                             pKernelGraphicsContext,
+                             &pKernelGraphicsContextUnicast),
+            return NV_FALSE;);
+    
+    //
+    // Return NV_FALSE if the VA is not found or the refCount for the channels pVAS is not exactly 1.
+    // Both cases we want to handle in the unmapping call itself.
+    //
+    status = vaListGetRefCount(&pKernelGraphicsContextUnicast->globalCtxBufferVaList[bufId], pKernelChannel->pVAS, &refCount);
+    if (status != NV_OK || refCount != 1)
+    {
+        return NV_FALSE;
+    }
+    
+    pChanList = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pChanList;
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pChanList != NULL, NV_FALSE);
+
+    for (pChanNode = pChanList->pHead; pChanNode; pChanNode = pChanNode->pNext)
+    {
+        // Skip the channel we are looking to unmap
+        if (kchannelGetDebugTag(pKernelChannel) == kchannelGetDebugTag(pChanNode->pKernelChannel))
+            continue;
+        
+        if (pKernelChannel->pVAS == pChanNode->pKernelChannel->pVAS)
+        {
+            NV_PRINTF(LEVEL_INFO, "Channel %d shares a pVAS with channel %d\n", 
+                      kchannelGetDebugTag(pKernelChannel), 
+                      kchannelGetDebugTag(pChanNode->pKernelChannel));
+            return NV_TRUE;
+        }
+    }
+    return NV_FALSE;
+}
+
 /**
  * @brief Unmap associated ctx buffers (main, patch, global buffers etc).
  *
@@ -2304,7 +2371,8 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
         (vaListGetRefCount(&pKernelGraphicsContextUnicast->globalCtxBufferVaList[GR_GLOBALCTX_BUFFER_FECS_EVENT], pKernelChannel->pVAS, &refCount) == NV_OK) &&
         (refCount == 1))
     {
-        kgrctxUnmapGlobalCtxBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS, GR_GLOBALCTX_BUFFER_FECS_EVENT);
+        if (!(kgrctxIsFinalGlobalBufMapRefDuped(pGpu, pKernelGraphicsContext, pKernelChannel, GR_GLOBALCTX_BUFFER_FECS_EVENT)))
+            kgrctxUnmapGlobalCtxBuffer(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel->pVAS, GR_GLOBALCTX_BUFFER_FECS_EVENT);
     }
 
     if ((pKernelGraphicsContextUnicast->pmCtxswBuffer.pMemDesc != NULL) &&
@@ -3003,7 +3071,6 @@ kgrctxIncObjectCount_IMPL
     NV_ASSERT_OK_OR_ELSE(status,
         kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast),
         return;);
-
     switch (objType)
     {
         case GR_OBJECT_TYPE_COMPUTE:
@@ -3516,4 +3583,3 @@ void shrkgrctxDetach_IMPL
         SLI_LOOP_END;
     }
 }
-

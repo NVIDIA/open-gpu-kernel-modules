@@ -167,12 +167,25 @@ const NvU8 * RmGetGpuUuidRaw(
 )
 {
     NV_STATUS rmStatus;
-    OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+    OBJGPU *pGpu = NULL;
     NvU32 gidFlags;
     NvBool isApiLockTaken = NV_FALSE;
 
     if (pNv->nv_uuid_cache.valid)
-        goto done;
+        return pNv->nv_uuid_cache.uuid;
+
+    if (!rmapiLockIsOwner())
+    {
+        rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU);
+        if (rmStatus != NV_OK)
+        {
+            return NULL;
+        }
+
+        isApiLockTaken = NV_TRUE;
+    }
+
+    pGpu = NV_GET_NV_PRIV_PGPU(pNv);
 
     //
     // PBI is not present in simulation and the loop inside
@@ -193,7 +206,7 @@ const NvU8 * RmGetGpuUuidRaw(
         rmStatus = gpumgrSetUuid(pNv->gpu_id, pNv->nv_uuid_cache.uuid);
         if (rmStatus != NV_OK)
         {
-            return NULL;
+            goto err;
         }
 
         pNv->nv_uuid_cache.valid = NV_TRUE;
@@ -209,45 +222,35 @@ const NvU8 * RmGetGpuUuidRaw(
     gidFlags = DRF_DEF(2080_GPU_CMD,_GPU_GET_GID_FLAGS,_TYPE,_SHA1)
              | DRF_DEF(2080_GPU_CMD,_GPU_GET_GID_FLAGS,_FORMAT,_BINARY);
 
-    if (!rmapiLockIsOwner())
-    {
-        rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU);
-        if (rmStatus != NV_OK)
-        {
-            return NULL;
-        }
-
-        isApiLockTaken = NV_TRUE;
-    }
-
-    if (pGpu == NULL)
-    {
-        if (isApiLockTaken == NV_TRUE)
-        {
-            rmapiLockRelease();
-        }
-
-        return NULL;
-    }
+    if (!pGpu)
+        goto err;
 
     rmStatus = gpuGetGidInfo(pGpu, NULL, NULL, gidFlags);
-    if (isApiLockTaken == NV_TRUE)
-    {
-        rmapiLockRelease();
-    }
-
     if (rmStatus != NV_OK)
-        return NULL;
+        goto err;
 
     if (!pGpu->gpuUuid.isInitialized)
-        return NULL;
+        goto err;
 
     // copy the uuid from the OBJGPU uuid cache
     os_mem_copy(pNv->nv_uuid_cache.uuid, pGpu->gpuUuid.uuid, GPU_UUID_LEN);
     pNv->nv_uuid_cache.valid = NV_TRUE;
 
 done:
+    if (isApiLockTaken)
+    {
+        rmapiLockRelease();
+    }
+
     return pNv->nv_uuid_cache.uuid;
+
+err:
+    if (isApiLockTaken)
+    {
+        rmapiLockRelease();
+    }
+
+    return NULL;
 }
 
 static NV_STATUS RmGpuUuidRawToString(

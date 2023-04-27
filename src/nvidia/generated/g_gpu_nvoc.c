@@ -220,6 +220,7 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
         pThis->setProperty(pThis, PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK, ((NvBool)(0 == 0)));
     }
     pThis->setProperty(pThis, PDB_PROP_GPU_OPTIMUS_GOLD_CFG_SPACE_RESTORE, ((NvBool)(0 == 0)));
+    pThis->setProperty(pThis, PDB_PROP_GPU_SRIOV_HEAVY_FORCE_INVALIDATE_ALL_PDBS_WAR_BUG3896322, ((NvBool)(0 != 0)));
 
     pThis->boardId = ~0;
 
@@ -312,6 +313,17 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->bSriovCapable = ((NvBool)(0 == 0));
+    }
+
+    // Hal field -- bEnableBar1SparseForFillPteMemUnmap
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    {
+        pThis->bEnableBar1SparseForFillPteMemUnmap = ((NvBool)(0 == 0));
+    }
+    // default
+    else
+    {
+        pThis->bEnableBar1SparseForFillPteMemUnmap = ((NvBool)(0 != 0));
     }
 }
 

@@ -133,7 +133,7 @@ kgmmuInvalidateTlb_GM107
     // Not using range-based invalidate.
     params.regVal = FLD_SET_DRF(_PFB_PRI, _MMU_INVALIDATE, _ALL_VA, _TRUE, params.regVal);
 
-    if (NULL != pRootPageDir)
+    if ((NULL != pRootPageDir) && !pGpu->getProperty(pGpu, PDB_PROP_GPU_SRIOV_HEAVY_FORCE_INVALIDATE_ALL_PDBS_WAR_BUG3896322))
     {
         // Invalidatating only one VAS.
         params.regVal = FLD_SET_DRF(_PFB_PRI, _MMU_INVALIDATE, _ALL_PDB, _FALSE, params.regVal);

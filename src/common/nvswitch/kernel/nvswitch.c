@@ -3253,13 +3253,26 @@ _nvswitch_ctrl_get_board_part_number
     NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p
 )
 {
-    if (!nvswitch_is_inforom_supported(device))
+    if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
     {
-        NVSWITCH_PRINT(device, ERROR, "InfoROM is not supported\n");
-        return -NVL_ERR_NOT_SUPPORTED;
-    }
+        NVSWITCH_PRINT(device, INFO,
+        "%s: Skipping retrieval of board part number on FSF\n",
+            __FUNCTION__);
 
-    return device->hal.nvswitch_ctrl_get_board_part_number(device, p);
+        nvswitch_os_memset(p, 0, sizeof(NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR));
+
+       return NVL_SUCCESS;
+    }
+    else
+    {
+        if (!nvswitch_is_inforom_supported(device))
+        {
+            NVSWITCH_PRINT(device, ERROR, "InfoROM is not supported\n");
+            return -NVL_ERR_NOT_SUPPORTED;
+        }
+
+        return device->hal.nvswitch_ctrl_get_board_part_number(device, p);
+    }
 }
 
 static NvlStatus
@@ -4732,6 +4745,16 @@ _nvswitch_ctrl_therm_read_voltage
     return device->hal.nvswitch_ctrl_therm_read_voltage(device, info);
 }
 
+static NvlStatus
+_nvswitch_ctrl_therm_read_power
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_POWER_PARAMS *info
+)
+{
+    return device->hal.nvswitch_ctrl_therm_read_power(device, info);
+}
+
 NvlStatus
 nvswitch_lib_ctrl
 (
@@ -5071,6 +5094,9 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_VOLTAGE,
                 _nvswitch_ctrl_therm_read_voltage,
                 NVSWITCH_CTRL_GET_VOLTAGE_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_POWER,
+                _nvswitch_ctrl_therm_read_power,
+                NVSWITCH_GET_POWER_PARAMS);
 
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);

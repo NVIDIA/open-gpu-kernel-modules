@@ -1375,3 +1375,36 @@ kbusGetFlaRange_GA100
 
     return NV_OK;
 }
+
+/*!
+ * @brief Returns the Nvlink specific peer number from pGpu (Local) to pGpuPeer.
+ *        Used only by VF.
+ *
+ * @param[in] pGpu          Local
+ * @param[in] pKernelBus    Local
+ * @param[in] pGpuPeer      Remote
+ *
+ * @returns NvU32 bus peer number
+ */
+NvU32
+kbusGetNvlinkPeerId_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    OBJGPU    *pGpuPeer
+)
+{
+    NvU32 gpuPeerInst = gpuGetInstance(pGpuPeer);
+    NvU32 peerId = pKernelBus->p2p.busNvlinkPeerNumberMask[gpuPeerInst];
+
+    if (peerId == 0)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "NVLINK P2P not set up between GPU%u and GPU%u, checking for PCIe P2P...\n",
+                  gpuGetInstance(pGpu), gpuPeerInst);
+        return BUS_INVALID_PEER;
+    }
+
+    LOWESTBITIDX_32(peerId);
+    return peerId;
+}

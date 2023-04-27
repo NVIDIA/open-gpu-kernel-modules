@@ -2,6 +2,28 @@
 
 ## Release 525 Entries
 
+### [525.89.02] 2023-02-08
+
+### [525.85.12] 2023-01-30
+
+### [525.85.05] 2023-01-19
+
+#### Fixed
+
+- Fix build problems with Clang 15.0, [#377](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/377) by @ptr1337
+
+### [525.78.01] 2023-01-05
+
+### [525.60.13] 2022-12-05
+
+### [525.60.11] 2022-11-28
+
+#### Fixed
+
+- Fixed nvenc compatibility with usermode clients [#104](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/104)
+
+### [525.53] 2022-11-10
+
 #### Changed
 
 - GSP firmware is now distributed as multiple firmware files: this release has `gsp_tu10x.bin` and `gsp_ad10x.bin` replacing `gsp.bin` from previous releases.
@@ -10,7 +32,6 @@
 
 #### Fixed
 
-- Fix build problems with Clang 15.0, [#https://github.com/NVIDIA/open-gpu-kernel-modules/issues/377] by @ptr1337
 - Add support for IBT (indirect branch tracking) on supported platforms, [#256](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/256) by @rnd-ash
 - Return EINVAL when [failing to] allocating memory, [#280](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/280) by @YusufKhan-gamedev
 - Fix various typos in nvidia/src/kernel, [#16](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/16) by @alexisgeoffrey

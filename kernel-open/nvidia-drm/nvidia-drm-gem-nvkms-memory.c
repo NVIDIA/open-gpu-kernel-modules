@@ -201,7 +201,7 @@ static struct sg_table *__nv_drm_gem_nvkms_memory_prime_get_sg_table(
                 nv_dev,
                 "Cannot create sg_table for NvKmsKapiMemory 0x%p",
                 nv_gem->pMemory);
-        return NULL;
+        return ERR_PTR(-ENOMEM);
     }
 
     sg_table = nv_drm_prime_pages_to_sg(nv_dev->dev,
@@ -583,11 +583,13 @@ int nv_drm_dumb_map_offset(struct drm_file *file,
     return ret;
 }
 
+#if defined(NV_DRM_DRIVER_HAS_DUMB_DESTROY)
 int nv_drm_dumb_destroy(struct drm_file *file,
                         struct drm_device *dev,
                         uint32_t handle)
 {
     return drm_gem_handle_delete(file, handle);
 }
+#endif /* NV_DRM_DRIVER_HAS_DUMB_DESTROY */
 
 #endif

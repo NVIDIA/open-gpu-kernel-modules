@@ -942,6 +942,23 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VFIO_MIGRATION_OPS_PRESENT" "" "types"
         ;;
 
+        vfio_migration_ops_has_migration_get_data_size)
+            #
+            # Determine if vfio_migration_ops struct has .migration_get_data_size field.
+            #
+            # Added by commit in 4e016f969529f ("vfio: Add an option to get migration 
+            # data size") in v6.2 kernel.
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/vfio.h>
+            int conftest_mdev_vfio_migration_ops_has_migration_get_data_size(void) {
+                return offsetof(struct vfio_migration_ops, migration_get_data_size);
+            }"
+
+            compile_check_conftest "$CODE" "NV_VFIO_MIGRATION_OPS_HAS_MIGRATION_GET_DATA_SIZE" "" "types"
+        ;;
+
         mdev_parent)
             #
             # Determine if the struct mdev_parent type is present.
@@ -5473,6 +5490,49 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_CONNECTOR_HAS_OVERRIDE_EDID" "" "types"
+        ;;
+
+        vm_area_struct_has_const_vm_flags)
+            #
+            # Determine if the 'vm_area_struct' structure has
+            # const 'vm_flags'.
+            #
+            # A union of '__vm_flags' and 'const vm_flags' was added 
+            # by commit bc292ab00f6c ("mm: introduce vma->vm_flags
+            # wrapper functions") in mm-stable branch (2023-02-09)
+            # of the akpm/mm maintainer tree.
+            #
+            CODE="
+            #include <linux/mm_types.h>
+            int conftest_vm_area_struct_has_const_vm_flags(void) {
+                return offsetof(struct vm_area_struct, __vm_flags);
+            }"
+
+            compile_check_conftest "$CODE" "NV_VM_AREA_STRUCT_HAS_CONST_VM_FLAGS" "" "types"
+        ;;
+
+        drm_driver_has_dumb_destroy)
+            #
+            # Determine if the 'drm_driver' structure has a 'dumb_destroy'
+            # function pointer.
+            #
+            # Removed by commit 96a7b60f6ddb2 ("drm: remove dumb_destroy
+            # callback") in v6.3 linux-next (2023-02-10).
+            #
+            CODE="
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+
+            #if defined(NV_DRM_DRM_DRV_H_PRESENT)
+            #include <drm/drm_drv.h>
+            #endif
+
+            int conftest_drm_driver_has_dumb_destroy(void) {
+                return offsetof(struct drm_driver, dumb_destroy);
+            }"
+
+            compile_check_conftest "$CODE" "NV_DRM_DRIVER_HAS_DUMB_DESTROY" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

@@ -400,7 +400,7 @@ nvswitch_soe_init_l2_state_ls10
 
     nvswitch_os_memset(&cmd, 0, sizeof(cmd));
     cmd.hdr.unitId = RM_SOE_UNIT_CORE;
-    cmd.hdr.size   = sizeof(cmd);
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, L2_STATE);
 
     pL2State = &cmd.cmd.core.l2State;
     pL2State->cmdType = RM_SOE_CORE_CMD_INIT_L2_STATE;
@@ -418,6 +418,65 @@ nvswitch_soe_init_l2_state_ls10
         NVSWITCH_PRINT(device, ERROR, "%s: Failed to send INIT_L2_STATE command to SOE, status 0x%x\n", 
                        __FUNCTION__, status);
     }
+}
+
+/*
+ * @Brief : Enable/Disable NPORT interrupts
+ *
+ * @param[in] device
+ * @param[in] nport
+ */
+NvlStatus
+nvswitch_soe_set_nport_interrupts_ls10
+(
+    nvswitch_device *device,
+    NvU32           nport,
+    NvBool          bEnable
+)
+{
+    FLCN            *pFlcn;
+    NvU32            cmdSeqDesc = 0;
+    NV_STATUS        status;
+    RM_FLCN_CMD_SOE  cmd;
+    NVSWITCH_TIMEOUT timeout;
+    RM_SOE_CORE_CMD_NPORT_INTRS *pNportIntrs;
+
+    if (!nvswitch_is_soe_supported(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: SOE is not supported\n",
+            __FUNCTION__);
+        return -NVL_ERR_INVALID_STATE;
+    }
+
+    pFlcn       = device->pSoe->pFlcn;
+
+    nvswitch_os_memset(&cmd, 0, sizeof(cmd));
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, NPORT_INTRS);
+
+    pNportIntrs = &cmd.cmd.core.nportIntrs;
+    pNportIntrs->cmdType = RM_SOE_CORE_CMD_SET_NPORT_INTRS;
+    pNportIntrs->nport = nport;
+    pNportIntrs->bEnable = bEnable;
+
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      NULL,                 // pMsg
+                                      NULL,                 // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to send SET_NPORT_INTRS command to SOE, status 0x%x\n", 
+            __FUNCTION__, status);
+        return -NVL_ERR_GENERIC;
+    }
+
+    return NVL_SUCCESS;
 }
 
 /*
@@ -479,14 +538,6 @@ nvswitch_init_soe_ls10
             "SOE init failed(2)\n");
         return status;
     }
-
-    //
-    // Set TRACEPC to stack mode for better ucode trace
-    // In Vulcan CR firmware, this is set to reduced mode in the SOE's manifest
-    //
-    data = flcnRiscvRegRead_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL);
-    data = FLD_SET_DRF(_PRISCV, _RISCV_TRACECTL, _MODE, _STACK, data);
-    flcnRiscvRegWrite_HAL(device, pFlcn, NV_PRISCV_RISCV_TRACECTL, data);
 
     // Sanity the command and message queues as a final check
     if (_nvswitch_soe_send_test_cmd(device) != NV_OK)

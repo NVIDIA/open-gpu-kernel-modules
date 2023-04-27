@@ -224,7 +224,8 @@
     _op(NvlStatus, nvswitch_ctrl_set_nvlink_error_threshold, (nvswitch_device *device, NVSWITCH_SET_NVLINK_ERROR_THRESHOLD_PARAMS *pParams), _arch) \
     _op(NvlStatus, nvswitch_ctrl_get_nvlink_error_threshold, (nvswitch_device *device, NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS *pParams), _arch) \
     _op(NvlStatus, nvswitch_ctrl_therm_read_voltage, (nvswitch_device *device, NVSWITCH_CTRL_GET_VOLTAGE_PARAMS *info), _arch) \
-    _op(NvlStatus, nvswitch_ctrl_get_board_part_number, (nvswitch_device *device, NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p), _arch)
+    _op(NvlStatus, nvswitch_ctrl_therm_read_power, (nvswitch_device *device, NVSWITCH_GET_POWER_PARAMS *info), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_get_board_part_number, (nvswitch_device *device, NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p), _arch) \
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \
     _op(NvlStatus, nvswitch_launch_ALI, (nvswitch_device *device), _arch) \

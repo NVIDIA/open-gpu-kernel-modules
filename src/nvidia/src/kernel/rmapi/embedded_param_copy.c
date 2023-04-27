@@ -334,6 +334,27 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
 
             break;
         }
+        case NV0073_CTRL_CMD_SYSTEM_EXECUTE_ACPI_METHOD:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS);
+
+            RMAPI_PARAM_COPY_INIT(paramCopies[0],
+                            ((NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->inData,
+                            ((NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->inData,
+                            ((NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->inDataSize, 1);
+            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
+
+            RMAPI_PARAM_COPY_INIT(paramCopies[1],
+                            ((NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->outData,
+                            ((NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->outData,
+                            ((NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->outDataSize, 1);
+            paramCopies[1].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
+            paramCopies[1].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
+
+            paramsCnt++;
+
+            break;
+        }
         case NV0080_CTRL_CMD_HOST_GET_CAPS:
         {
             CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0080_CTRL_HOST_GET_CAPS_PARAMS);
@@ -835,6 +856,20 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
 
             status = rmapiParamsRelease(&paramCopies[1]);
             ((NV0000_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->outData = paramCopies[1].pUserParams;
+
+            if (inParamsStatus != NV_OK)
+                status = inParamsStatus;
+            break;
+        }
+        case NV0073_CTRL_CMD_SYSTEM_EXECUTE_ACPI_METHOD:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS);
+
+            NV_STATUS inParamsStatus = rmapiParamsRelease(&paramCopies[0]);
+            ((NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->inData = paramCopies[0].pUserParams;
+
+            status = rmapiParamsRelease(&paramCopies[1]);
+            ((NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS*)pParams)->outData = paramCopies[1].pUserParams;
 
             if (inParamsStatus != NV_OK)
                 status = inParamsStatus;

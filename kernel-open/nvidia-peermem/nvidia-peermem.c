@@ -284,8 +284,9 @@ out:
     return 0;
 }
 
-
-static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
+static void nv_mem_put_pages_common(int nc,
+                                    struct sg_table *sg_head,
+                                    void *context)
 {
     int ret = 0;
     struct nv_mem_context *nv_mem_context =
@@ -302,8 +303,13 @@ static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
     if (nv_mem_context->callback_task == current)
         return;
 
-    ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
-                               nv_mem_context->page_table);
+    if (nc) {
+        ret = nvidia_p2p_put_pages_persistent(nv_mem_context->page_virt_start,
+                                              nv_mem_context->page_table, 0);
+    } else {
+        ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
+                                   nv_mem_context->page_table);
+    }
 
 #ifdef _DEBUG_ONLY_
     /* Here we expect an error in real life cases that should be ignored - not printed.
@@ -316,6 +322,16 @@ static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
 #endif
 
     return;
+}
+
+static void nv_mem_put_pages(struct sg_table *sg_head, void *context)
+{
+    nv_mem_put_pages_common(0, sg_head, context);
+}
+
+static void nv_mem_put_pages_nc(struct sg_table *sg_head, void *context)
+{
+    nv_mem_put_pages_common(1, sg_head, context);
 }
 
 static void nv_mem_release(void *context)
@@ -396,8 +412,9 @@ static int nv_mem_get_pages_nc(unsigned long addr,
     nv_mem_context->core_context = core_context;
     nv_mem_context->page_size = GPU_PAGE_SIZE;
 
-    ret = nvidia_p2p_get_pages(0, 0, nv_mem_context->page_virt_start, nv_mem_context->mapped_size,
-                               &nv_mem_context->page_table, NULL, NULL);
+    ret = nvidia_p2p_get_pages_persistent(nv_mem_context->page_virt_start,
+                                          nv_mem_context->mapped_size,
+                                          &nv_mem_context->page_table, 0);
     if (ret < 0) {
         peer_err("error %d while calling nvidia_p2p_get_pages() with NULL callback\n", ret);
         return ret;
@@ -407,13 +424,13 @@ static int nv_mem_get_pages_nc(unsigned long addr,
 }
 
 static struct peer_memory_client nv_mem_client_nc = {
-	.acquire        = nv_mem_acquire,
-	.get_pages      = nv_mem_get_pages_nc,
-	.dma_map        = nv_dma_map,
-	.dma_unmap      = nv_dma_unmap,
-	.put_pages      = nv_mem_put_pages,
-	.get_page_size  = nv_mem_get_page_size,
-	.release        = nv_mem_release,
+    .acquire        = nv_mem_acquire,
+    .get_pages      = nv_mem_get_pages_nc,
+    .dma_map        = nv_dma_map,
+    .dma_unmap      = nv_dma_unmap,
+    .put_pages      = nv_mem_put_pages_nc,
+    .get_page_size  = nv_mem_get_page_size,
+    .release        = nv_mem_release,
 };
 
 #endif /* NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT */
@@ -477,9 +494,6 @@ static int __init nv_mem_client_init(void)
     }
 
     // The nc client enables support for persistent pages.
-    // Thanks to this check, nvidia-peermem requires the new symbol from nvidia.ko, which 
-    // prevents users to unintentionally load this module with unsupported nvidia.ko.
-    BUG_ON(!nvidia_p2p_cap_persistent_pages);
     strcpy(nv_mem_client_nc.name, DRV_NAME "_nc");
     strcpy(nv_mem_client_nc.version, DRV_VERSION);
     reg_handle_nc = ib_register_peer_memory_client(&nv_mem_client_nc, NULL);

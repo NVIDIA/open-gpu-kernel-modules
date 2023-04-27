@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,11 @@
 #include "nv-p2p.h"
 #include "rmp2pdefines.h"
 
+typedef enum nv_p2p_page_table_type {
+    NV_P2P_PAGE_TABLE_TYPE_NON_PERSISTENT = 0,
+    NV_P2P_PAGE_TABLE_TYPE_PERSISTENT,
+} nv_p2p_page_table_type_t;
+
 typedef struct nv_p2p_dma_mapping {
     struct list_head list_node;
     struct nvidia_p2p_dma_mapping *dma_mapping;
@@ -44,12 +49,8 @@ typedef struct nv_p2p_mem_info {
         struct list_head list_head;
         struct semaphore lock;
     } dma_mapping_list;
-    NvBool bPersistent;
     void *private;
 } nv_p2p_mem_info_t;
-
-int nvidia_p2p_cap_persistent_pages = 1;
-EXPORT_SYMBOL(nvidia_p2p_cap_persistent_pages);
 
 // declared and created in nv.c
 extern void *nvidia_p2p_page_t_cache;
@@ -238,6 +239,7 @@ static void nv_p2p_free_page_table(
 }
 
 static NV_STATUS nv_p2p_put_pages(
+    nv_p2p_page_table_type_t pt_type,
     nvidia_stack_t * sp,
     uint64_t p2p_token,
     uint32_t va_space,
@@ -246,9 +248,6 @@ static NV_STATUS nv_p2p_put_pages(
 )
 {
     NV_STATUS status;
-    struct nv_p2p_mem_info *mem_info = NULL;
-
-    mem_info = container_of(*page_table, nv_p2p_mem_info_t, page_table);
 
     /*
      * rm_p2p_put_pages returns NV_OK if the page_table was found and
@@ -258,8 +257,15 @@ static NV_STATUS nv_p2p_put_pages(
      * rm_p2p_put_pages returns NV_ERR_OBJECT_NOT_FOUND if the page_table
      * was already unlinked.
      */
-    if (mem_info->bPersistent)
+    if (pt_type == NV_P2P_PAGE_TABLE_TYPE_PERSISTENT)
     {
+        struct nv_p2p_mem_info *mem_info = NULL;
+
+        /*
+         * It is safe to access persistent page_table as there is no async
+         * callback which can free it unlike non-persistent page_table.
+         */
+        mem_info = container_of(*page_table, nv_p2p_mem_info_t, page_table);
         status = rm_p2p_put_pages_persistent(sp, mem_info->private, *page_table);
     }
     else
@@ -273,7 +279,8 @@ static NV_STATUS nv_p2p_put_pages(
         nv_p2p_free_page_table(*page_table);
         *page_table = NULL;
     }
-    else if (!mem_info->bPersistent && (status == NV_ERR_OBJECT_NOT_FOUND))
+    else if ((pt_type == NV_P2P_PAGE_TABLE_TYPE_NON_PERSISTENT) &&
+             (status == NV_ERR_OBJECT_NOT_FOUND))
     {
         status = NV_OK;
         *page_table = NULL;
@@ -327,7 +334,8 @@ static void nv_p2p_mem_info_free_callback(void *data)
     nv_p2p_free_platform_data(&mem_info->page_table);
 }
 
-int nvidia_p2p_get_pages(
+static int nv_p2p_get_pages(
+    nv_p2p_page_table_type_t pt_type,
     uint64_t p2p_token,
     uint32_t va_space,
     uint64_t virtual_address,
@@ -376,9 +384,10 @@ int nvidia_p2p_get_pages(
 
     *page_table = &(mem_info->page_table);
 
-    mem_info->bPersistent = (free_callback == NULL);
-
-    //asign length to temporary variable since do_div macro does in-place division
+    /*
+     * assign length to temporary variable since do_div macro does in-place
+     * division
+     */
     temp_length = length;
     do_div(temp_length, page_size);
     page_count = temp_length;
@@ -405,7 +414,7 @@ int nvidia_p2p_get_pages(
         goto failed;
     }
 
-    if (mem_info->bPersistent)
+    if (pt_type == NV_P2P_PAGE_TABLE_TYPE_PERSISTENT)
     {
         void *gpu_info = NULL;
 
@@ -415,11 +424,14 @@ int nvidia_p2p_get_pages(
             goto failed;
         }
 
-        status = rm_p2p_get_gpu_info(sp, virtual_address, length, &gpu_uuid, &gpu_info);
+        status = rm_p2p_get_gpu_info(sp, virtual_address, length,
+                                     &gpu_uuid, &gpu_info);
         if (status != NV_OK)
         {
             goto failed;
         }
+
+        (*page_table)->gpu_uuid = gpu_uuid;
 
         rc = nvidia_dev_get_uuid(gpu_uuid, sp);
         if (rc != 0)
@@ -432,8 +444,10 @@ int nvidia_p2p_get_pages(
 
         bGetUuid = NV_TRUE;
 
-        status = rm_p2p_get_pages_persistent(sp, virtual_address, length, &mem_info->private,
-                                             physical_addresses, &entries, *page_table, gpu_info);
+        status = rm_p2p_get_pages_persistent(sp, virtual_address, length,
+                                             &mem_info->private,
+                                             physical_addresses, &entries,
+                                             *page_table, gpu_info);
         if (status != NV_OK)
         {
             goto failed;
@@ -449,10 +463,11 @@ int nvidia_p2p_get_pages(
         {
             goto failed;
         }
+
+        (*page_table)->gpu_uuid = gpu_uuid;
     }
 
     bGetPages = NV_TRUE;
-    (*page_table)->gpu_uuid = gpu_uuid;
 
     status = os_alloc_mem((void *)&(*page_table)->pages,
              (entries * sizeof(page)));
@@ -516,10 +531,12 @@ failed:
     {
         os_free_mem(physical_addresses);
     }
+
     if (wreqmb_h != NULL)
     {
         os_free_mem(wreqmb_h);
     }
+
     if (rreqmb_h != NULL)
     {
         os_free_mem(rreqmb_h);
@@ -527,7 +544,7 @@ failed:
 
     if (bGetPages)
     {
-        (void)nv_p2p_put_pages(sp, p2p_token, va_space,
+        (void)nv_p2p_put_pages(pt_type, sp, p2p_token, va_space,
                                virtual_address, page_table);
     }
 
@@ -546,7 +563,44 @@ failed:
     return nvidia_p2p_map_status(status);
 }
 
+int nvidia_p2p_get_pages(
+    uint64_t p2p_token,
+    uint32_t va_space,
+    uint64_t virtual_address,
+    uint64_t length,
+    struct nvidia_p2p_page_table **page_table,
+    void (*free_callback)(void * data),
+    void *data
+)
+{
+    if (free_callback == NULL)
+    {
+        return -EINVAL;
+    }
+
+    return nv_p2p_get_pages(NV_P2P_PAGE_TABLE_TYPE_NON_PERSISTENT,
+                            p2p_token, va_space, virtual_address,
+                            length, page_table, free_callback, data);
+}
 EXPORT_SYMBOL(nvidia_p2p_get_pages);
+
+int nvidia_p2p_get_pages_persistent(
+    uint64_t virtual_address,
+    uint64_t length,
+    struct nvidia_p2p_page_table **page_table,
+    uint32_t flags
+)
+{
+    if (flags != 0)
+    {
+        return -EINVAL;
+    }
+
+    return nv_p2p_get_pages(NV_P2P_PAGE_TABLE_TYPE_PERSISTENT, 0, 0,
+                            virtual_address, length, page_table,
+                            NULL, NULL);
+}
+EXPORT_SYMBOL(nvidia_p2p_get_pages_persistent);
 
 /*
  * This function is a no-op, but is left in place (for now), in order to allow
@@ -568,15 +622,14 @@ int nvidia_p2p_put_pages(
     struct nvidia_p2p_page_table *page_table
 )
 {
-    struct nv_p2p_mem_info *mem_info = NULL;
-    NvU8 uuid[NVIDIA_P2P_GPU_UUID_LEN] = {0};
     NV_STATUS status;
     nvidia_stack_t *sp = NULL;
     int rc = 0;
 
-    os_mem_copy(uuid, page_table->gpu_uuid, NVIDIA_P2P_GPU_UUID_LEN);
-
-    mem_info = container_of(page_table, nv_p2p_mem_info_t, page_table);
+    if (page_table == NULL)
+    {
+        return 0;
+    }
 
     rc = nv_kmem_cache_alloc_stack(&sp);
     if (rc != 0)
@@ -584,20 +637,55 @@ int nvidia_p2p_put_pages(
         return -ENOMEM;
     }
 
-    status = nv_p2p_put_pages(sp, p2p_token, va_space,
+    status = nv_p2p_put_pages(NV_P2P_PAGE_TABLE_TYPE_NON_PERSISTENT,
+                              sp, p2p_token, va_space,
                               virtual_address, &page_table);
-
-    if (mem_info->bPersistent)
-    {
-        nvidia_dev_put_uuid(uuid, sp);
-    }
 
     nv_kmem_cache_free_stack(sp);
 
     return nvidia_p2p_map_status(status);
 }
-
 EXPORT_SYMBOL(nvidia_p2p_put_pages);
+
+int nvidia_p2p_put_pages_persistent(
+    uint64_t virtual_address,
+    struct nvidia_p2p_page_table *page_table,
+    uint32_t flags
+)
+{
+    NvU8 uuid[NVIDIA_P2P_GPU_UUID_LEN] = {0};
+    NV_STATUS status;
+    nvidia_stack_t *sp = NULL;
+    int rc = 0;
+
+    if (flags != 0)
+    {
+        return -EINVAL;
+    }
+
+    if (page_table == NULL)
+    {
+        return 0;
+    }
+
+    rc = nv_kmem_cache_alloc_stack(&sp);
+    if (rc != 0)
+    {
+        return -ENOMEM;
+    }
+
+    os_mem_copy(uuid, page_table->gpu_uuid, NVIDIA_P2P_GPU_UUID_LEN);
+
+    status = nv_p2p_put_pages(NV_P2P_PAGE_TABLE_TYPE_PERSISTENT,
+                              sp, 0, 0, virtual_address, &page_table);
+
+    nvidia_dev_put_uuid(uuid, sp);
+
+    nv_kmem_cache_free_stack(sp);
+
+    return nvidia_p2p_map_status(status);
+}
+EXPORT_SYMBOL(nvidia_p2p_put_pages_persistent);
 
 int nvidia_p2p_dma_map_pages(
     struct pci_dev *peer,

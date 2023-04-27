@@ -894,13 +894,23 @@ dmaAllocMapping_GM107
 
             if (pPeerGpu != NULL)
             {
-                KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
-
-                if ((pKernelNvlink != NULL) &&
-                     knvlinkIsNvlinkP2pSupported(pMappingGpu, pKernelNvlink, pPeerGpu))
+                if (IS_VIRTUAL_WITH_SRIOV(pMappingGpu) &&
+                    !gpuIsWarBug200577889SriovHeavyEnabled(pMappingGpu))
                 {
-                    pLocals->peerNumber = kbusGetPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu),
-                                                           pPeerGpu);
+                    pLocals->peerNumber = kbusGetNvlinkPeerId_HAL(pMappingGpu,
+                                                                GPU_GET_KERNEL_BUS(pMappingGpu),
+                                                                pPeerGpu);
+                }
+                else
+                {
+                    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
+
+                    if ((pKernelNvlink != NULL) &&
+                        knvlinkIsNvlinkP2pSupported(pMappingGpu, pKernelNvlink, pPeerGpu))
+                    {
+                        pLocals->peerNumber = kbusGetPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu),
+                                                            pPeerGpu);
+                    }
                 }
             }
             else
@@ -1612,9 +1622,7 @@ dmaUpdateVASpace_GF100
     NvU32       alignSize = pMemorySystemConfig->comprPageSize;
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
     NvBool      bFillPteMem = !!(flags & DMA_UPDATE_VASPACE_FLAGS_FILL_PTE_MEM);
-    NvBool      bUnmap = !bFillPteMem &&
-                         (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
-                         (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE);
+    NvBool      bUnmap;
     NvBool      bIsIndirectPeer;
     VAS_PTE_UPDATE_TYPE update_type;
 
@@ -1625,6 +1633,17 @@ dmaUpdateVASpace_GF100
     readDisable = !!(flags & DMA_UPDATE_VASPACE_FLAGS_SHADER_WRITE_ONLY);
     bIsIndirectPeer = !!(flags & DMA_UPDATE_VASPACE_FLAGS_INDIRECT_PEER);
 
+    if (pGpu->bEnableBar1SparseForFillPteMemUnmap)
+    {
+        bUnmap = (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
+                 (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE);
+    }
+    else
+    {
+        bUnmap = !bFillPteMem &&
+                  (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
+                  (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE);
+    }
     //
     // Determine whether we are invalidating or revoking privileges, so we know
     // whether to flush page accesses or not. ReadDisable and writeDisable have

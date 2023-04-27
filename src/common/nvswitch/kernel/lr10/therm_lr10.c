@@ -314,3 +314,13 @@ nvswitch_ctrl_therm_read_voltage_lr10
     return -NVL_ERR_NOT_SUPPORTED;
 }
 
+NvlStatus
+nvswitch_ctrl_therm_read_power_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_POWER_PARAMS *info
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+

@@ -3855,7 +3855,7 @@ nvswitch_initialize_device_state_lr10
     }
     else
     {
-        NVSWITCH_PRINT(device, ERROR,
+        NVSWITCH_PRINT(device, WARN,
             "%s: Skipping SPI init.\n",
             __FUNCTION__);
     }
@@ -3874,7 +3874,7 @@ nvswitch_initialize_device_state_lr10
     }
     else
     {
-        NVSWITCH_PRINT(device, ERROR,
+        NVSWITCH_PRINT(device, WARN,
             "%s: Skipping SMBPBI init.\n",
             __FUNCTION__);
     }
@@ -4579,17 +4579,6 @@ _nvswitch_get_info_revision_minor_ext
     return (DRF_VAL(_PSMC, _BOOT_42, _MINOR_EXTENDED_REVISION, val));
 }
 
-static NvU32
-_nvswitch_get_info_voltage
-(
-    nvswitch_device *device
-)
-{
-    NvU32 voltage = 0;
-
-    return voltage;
-}
-
 static NvBool
 _nvswitch_inforom_nvl_supported
 (
@@ -4769,7 +4758,7 @@ nvswitch_ctrl_get_info_lr10
                 p->info[i] = device->switch_pll.vco_freq_khz;
                 break;
             case NVSWITCH_GET_INFO_INDEX_VOLTAGE_MVOLT:
-                p->info[i] = _nvswitch_get_info_voltage(device);
+                retval = -NVL_ERR_NOT_SUPPORTED;
                 break;
             case NVSWITCH_GET_INFO_INDEX_PHYSICAL_ID:
                 p->info[i] = nvswitch_read_physical_id(device);
@@ -6411,13 +6400,6 @@ nvswitch_ctrl_get_fom_values_lr10
         NVSWITCH_PRINT(device, ERROR, "%s: link #%d invalid\n",
             __FUNCTION__, p->linkId);
         return -NVL_BAD_ARGS;
-    }
-
-    if (nvswitch_is_link_in_reset(device, link))
-    {
-        NVSWITCH_PRINT(device, ERROR, "%s: link #%d is in reset\n",
-            __FUNCTION__, p->linkId);
-        return -NVL_ERR_INVALID_STATE;
     }
 
     status = nvswitch_minion_get_dl_status(device, p->linkId,

@@ -97,9 +97,11 @@ int nv_drm_dumb_map_offset(struct drm_file *file,
                            struct drm_device *dev, uint32_t handle,
                            uint64_t *offset);
 
+#if defined(NV_DRM_DRIVER_HAS_DUMB_DESTROY)
 int nv_drm_dumb_destroy(struct drm_file *file,
                         struct drm_device *dev,
                         uint32_t handle);
+#endif /* NV_DRM_DRIVER_HAS_DUMB_DESTROY */
 
 struct drm_gem_object *nv_drm_gem_nvkms_prime_import(
     struct drm_device *dev,
