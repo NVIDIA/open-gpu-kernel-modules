@@ -80,7 +80,7 @@ This is currently Linux kernel 3.10 or newer.
 ## How to Contribute
 
 Contributions can be made by creating a pull request on
-https://github.com/NVIDIA/open-gpu-kernel-modules
+https://github.com/NVIDIA/open-gpu-kernel-modules.
 We'll respond via GitHub.
 
 Note that when submitting a pull request, you will be prompted to accept
