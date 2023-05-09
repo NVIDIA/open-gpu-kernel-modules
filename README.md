@@ -167,7 +167,7 @@ for the target kernel.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 530.41.03 release,
+(see the following table). However, in the 530.41.03 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -177,7 +177,7 @@ README here:
 
 https://us.download.nvidia.com/XFree86/Linux-x86_64/530.41.03/README/kernel_open.html
 
-In the below table, if three IDs are listed, the first is the PCI Device
+In the following table, if three IDs are listed, the first is the PCI Device
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
 Subsystem Device ID.
 
